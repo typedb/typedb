@@ -603,8 +603,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             return getConcept(Schema.ConceptProperty.ID, id.getValue());
         }
     }
-    private <T extends Type> T getTypeByLabel(TypeLabel label, Schema.BaseType baseType){
-        Type type = buildType(label, ()->getConcept(Schema.ConceptProperty.TYPE_LABEL, label.getId()));
+    private <T extends Type> T getTypeById(TypeLabel label, Schema.BaseType baseType){
+        Type type = buildType(label, ()->getConcept(Schema.ConceptProperty.TYPE_ID, label.getId()));
         return validateConceptType(type, baseType, () -> null);
     }
 
@@ -634,72 +634,72 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends Type> T getType(TypeLabel label) {
-        return getTypeByLabel(label, Schema.BaseType.TYPE);
+        return getTypeById(label, Schema.BaseType.TYPE);
     }
 
     @Override
     public EntityType getEntityType(String label) {
-        return getTypeByLabel(TypeLabel.of(label), Schema.BaseType.ENTITY_TYPE);
+        return getTypeById(TypeLabel.of(label), Schema.BaseType.ENTITY_TYPE);
     }
 
     @Override
     public RelationType getRelationType(String label) {
-        return getTypeByLabel(TypeLabel.of(label), Schema.BaseType.RELATION_TYPE);
+        return getTypeById(TypeLabel.of(label), Schema.BaseType.RELATION_TYPE);
     }
 
     @Override
     public <V> ResourceType<V> getResourceType(String label) {
-        return getTypeByLabel(TypeLabel.of(label), Schema.BaseType.RESOURCE_TYPE);
+        return getTypeById(TypeLabel.of(label), Schema.BaseType.RESOURCE_TYPE);
     }
 
     @Override
     public RoleType getRoleType(String label) {
-        return getTypeByLabel(TypeLabel.of(label), Schema.BaseType.ROLE_TYPE);
+        return getTypeById(TypeLabel.of(label), Schema.BaseType.ROLE_TYPE);
     }
 
     @Override
     public RuleType getRuleType(String label) {
-        return getTypeByLabel(TypeLabel.of(label), Schema.BaseType.RULE_TYPE);
+        return getTypeById(TypeLabel.of(label), Schema.BaseType.RULE_TYPE);
     }
 
     @Override
     public Type getMetaConcept() {
-        return getTypeByLabel(Schema.MetaSchema.CONCEPT.getLabel(), Schema.BaseType.TYPE);
+        return getTypeById(Schema.MetaSchema.CONCEPT.getLabel(), Schema.BaseType.TYPE);
     }
 
     @Override
     public RelationType getMetaRelationType() {
-        return getTypeByLabel(Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
+        return getTypeById(Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
     }
 
     @Override
     public RoleType getMetaRoleType() {
-        return getTypeByLabel(Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE_TYPE);
+        return getTypeById(Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE_TYPE);
     }
 
     @Override
     public ResourceType getMetaResourceType() {
-        return getTypeByLabel(Schema.MetaSchema.RESOURCE.getLabel(), Schema.BaseType.RESOURCE_TYPE);
+        return getTypeById(Schema.MetaSchema.RESOURCE.getLabel(), Schema.BaseType.RESOURCE_TYPE);
     }
 
     @Override
     public EntityType getMetaEntityType() {
-        return getTypeByLabel(Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
+        return getTypeById(Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
     }
 
     @Override
     public RuleType getMetaRuleType(){
-        return getTypeByLabel(Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
+        return getTypeById(Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
     }
 
     @Override
     public RuleType getMetaRuleInference() {
-        return getTypeByLabel(Schema.MetaSchema.INFERENCE_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
+        return getTypeById(Schema.MetaSchema.INFERENCE_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
     }
 
     @Override
     public RuleType getMetaRuleConstraint() {
-        return getTypeByLabel(Schema.MetaSchema.CONSTRAINT_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
+        return getTypeById(Schema.MetaSchema.CONSTRAINT_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
     }
 
     //-----------------------------------------------Casting Functionality----------------------------------------------
