@@ -358,7 +358,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             instances.addAll(this.<V>getIncomingNeighbours(Schema.EdgeLabel.ISA).collect(Collectors.toSet()));
         } else {
             GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerPopGraph().traversal().V()
-                    .has(Schema.ConceptProperty.TYPE_LABEL.name(), getLabel().getValue())
+                    .has(Schema.ConceptProperty.TYPE_LABEL.name(), getLabel().getId())
                     .union(__.identity(),
                             __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
                     ).unfold()

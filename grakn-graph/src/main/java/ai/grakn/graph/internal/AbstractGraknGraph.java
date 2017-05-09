@@ -604,7 +604,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
     private <T extends Type> T getTypeByLabel(TypeLabel label, Schema.BaseType baseType){
-        Type type = buildType(label, ()->getConcept(Schema.ConceptProperty.TYPE_LABEL, label.getValue()));
+        Type type = buildType(label, ()->getConcept(Schema.ConceptProperty.TYPE_LABEL, label.getId()));
         return validateConceptType(type, baseType, () -> null);
     }
 
