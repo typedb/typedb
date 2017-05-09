@@ -23,7 +23,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.reasoner.Reasoner;
+import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.util.ErrorMessage;
 
@@ -51,7 +51,7 @@ class MatchQueryInfer extends MatchQueryModifier {
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
 
-        if (!Reasoner.hasRules(graph)) return inner.stream(optionalGraph);
+        if (!ReasonerUtils.hasRules(graph)) return inner.stream(optionalGraph);
 
         Iterator<Conjunction<VarAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         Conjunction<VarAdmin> conj = conjIt.next();

@@ -31,7 +31,7 @@ import com.google.common.collect.Sets;
 
 import java.util.Set;
 
-import static ai.grakn.graql.internal.reasoner.Utility.capture;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
 
 
 /**

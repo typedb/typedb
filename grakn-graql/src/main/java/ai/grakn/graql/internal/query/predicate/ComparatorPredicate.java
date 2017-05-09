@@ -99,6 +99,17 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
     }
 
     @Override
+    public boolean isCompatibleWith(ValuePredicateAdmin predicate) {
+        if (!(predicate instanceof EqPredicate)) return false;
+        EqPredicate p = (EqPredicate) predicate;
+        Object v = value.orElse(null);
+        Object pval = p.equalsValue().orElse(null);
+        return v == null
+                || pval == null
+                || gremlinPredicate(v).test(pval);
+    }
+
+    @Override
     public int hashCode() {
         return value != null ? value.hashCode() : 0;
     }

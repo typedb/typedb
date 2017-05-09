@@ -60,8 +60,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
-import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getListPermutations;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilterWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
@@ -502,8 +502,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             else{
                 if (ruleIterator.hasNext()) {
                     currentRule = ruleIterator.next();
-                    LOG.debug("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", id: " + currentRule.getRuleId());
-                    LOG.debug(currentRule.getBody().getResolutionPlan());
+                    LOG.trace("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", id: " + currentRule.getRuleId());
+                    LOG.trace(currentRule.getBody().getResolutionPlan());
                     queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
                     return hasNext();
                 }

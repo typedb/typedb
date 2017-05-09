@@ -69,6 +69,11 @@ public class IdPredicate extends Predicate<ConceptId>{
     }
 
     @Override
+    public String toString(){
+        return "[" + getVarName() + "/" + getPredicateValue() + "]";
+    }
+
+    @Override
     public Atomic copy(){
         return new IdPredicate(this);
     }

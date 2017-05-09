@@ -221,16 +221,26 @@ public class LoaderClient {
             // Add this status to the set of completable futures
             futures.put(status.hashCode(), status);
 
-            // Function to execute when the task completes
-            status.whenComplete((result, error) -> {
+            status
+            // Unblock and log errors when task completes
+            .handle((result, error) -> {
                 unblock(status);
 
+                // Log any errors
                 if(error != null){
                     LOG.error("Error", error);
                 }
 
-                onCompletionOfTask.accept(result);
+                return result;
+            })
+            // Execute registered completion function
+            .thenAcceptAsync(onCompletionOfTask)
+            // Log errors in completion function
+            .exceptionally(t -> {
+                LOG.error("error in callback", t);
+                throw new RuntimeException(t);
             });
+
         } catch (Throwable throwable){
             LOG.error("Error", throwable);
             blocker.release();

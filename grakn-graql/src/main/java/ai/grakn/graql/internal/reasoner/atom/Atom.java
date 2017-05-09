@@ -24,9 +24,9 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -44,7 +44,7 @@ import javafx.util.Pair;
 import java.util.HashSet;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesCompatible;
 
 /**
  *
@@ -100,14 +100,16 @@ public abstract class Atom extends AtomBase {
         if (priority == Integer.MAX_VALUE) {
             priority = 0;
             priority += getPartialSubstitutions().size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
-            priority += getApplicableRules().size() * ResolutionStrategy.APPLICABLE_RULE;
+            priority += isRuleResolvable()? ResolutionStrategy.RULE_RESOLVABLE_ATOM : 0;
+            priority += isRecursive()? ResolutionStrategy.RECURSIVE_ATOM : 0;
+
             priority += getTypeConstraints().size() * ResolutionStrategy.GUARD;
             Set<VarName> otherVars = getParentQuery().getAtoms().stream()
                     .filter(a -> a != this)
                     .flatMap(at -> at.getVarNames().stream())
                     .collect(Collectors.toSet());
             priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
-            priority += isRecursive()? ResolutionStrategy.RECURSIVE_ATOM : 0;
+
         }
         return priority;
     }
@@ -121,7 +123,7 @@ public abstract class Atom extends AtomBase {
         Type type = getType();
         return type != null ?
                 type.subTypes().stream().flatMap(t -> t.getRulesOfConclusion().stream()).collect(Collectors.toSet()) :
-                Reasoner.getRules(graph());
+                ReasonerUtils.getRules(graph());
     }
 
     /**
@@ -225,6 +227,7 @@ public abstract class Atom extends AtomBase {
         Set<TypeAtom> relevantTypes = new HashSet<>();
         //ids from indirect types
         ((ReasonerQueryImpl) getParentQuery()).getTypeConstraints().stream()
+                .filter(atom -> atom != this)
                 .filter(atom -> containsVar(atom.getVarName()))
                 .forEach(relevantTypes::add);
         return relevantTypes;

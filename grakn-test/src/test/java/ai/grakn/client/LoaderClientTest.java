@@ -27,9 +27,13 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,6 +43,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static java.util.stream.Stream.generate;
 import static org.mockito.Mockito.*;
@@ -54,6 +59,45 @@ public class LoaderClientTest {
     public void setupSession(){
         this.session = engine.factoryWithNewKeyspace();
 
+    }
+
+    @Test
+    public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged(){
+        // Mock the Logger
+        Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(LoaderClient.class);
+        Appender<ILoggingEvent> mockAppender = mock(Appender.class);
+        root.addAppender(mockAppender);
+
+        // Create a LoaderClient with a callback that will fail
+        LoaderClient loader = loader();
+        loader.setTaskCompletionConsumer((json) -> assertTrue("Testing Log failure",false));
+
+        // Load some queries
+        generate(this::query).limit(1).forEach(loader::add);
+
+        // Wait for queries to finish
+        loader.waitToFinish();
+
+        // Verify that the logger received the failed log message
+        verify(mockAppender).doAppend(argThat(argument -> argument.getFormattedMessage().contains("error in callback")));
+    }
+
+    @Test
+    public void whenSingleQueryLoaded_TaskCompletionExecutesExactlyOnce(){
+        AtomicInteger tasksCompleted = new AtomicInteger(0);
+
+        // Create a LoaderClient with a callback that will fail
+        LoaderClient loader = loader();
+        loader.setTaskCompletionConsumer((json) -> tasksCompleted.incrementAndGet());
+
+        // Load some queries
+        generate(this::query).limit(1).forEach(loader::add);
+
+        // Wait for queries to finish
+        loader.waitToFinish();
+
+        // Verify that the logger received the failed log message
+        assertEquals(1, tasksCompleted.get());
     }
 
     @Test
