@@ -96,8 +96,12 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         Optional<TypeLabel> relType = relIsaFragment
                 .map(IsaFragmentSet::type)
-                .flatMap(type -> findTypeLabel(fragmentSets, type))
-                .filter(type -> !hasDirectSubTypes(graph, type));
+                .flatMap(type -> findTypeLabel(fragmentSets, type));
+
+        // We can't use the shortcut's relation type label if the relation type has sub-types, because we don't know
+        // precisely which type the shortcut edge label will have. However, we can still use the shortcut edge and
+        // check the type of the relation the old fashioned way.
+        relType = relType.filter(type -> !hasDirectSubTypes(graph, type));
 
         // Try and get role type
         Optional<IsaCastingsFragmentSet> castingIsaFragment = fragmentSetOfType(IsaCastingsFragmentSet.class, fragmentSets)
