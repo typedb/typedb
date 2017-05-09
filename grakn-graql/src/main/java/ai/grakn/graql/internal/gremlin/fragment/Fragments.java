@@ -146,10 +146,6 @@ public class Fragments {
         return new RegexFragment(start, regex);
     }
 
-    public static Fragment value(VarName start) {
-        return new ValueFlagFragment(start);
-    }
-
     public static Fragment notInternal(VarName start) {
         return new NotInternalFragment(start);
     }
