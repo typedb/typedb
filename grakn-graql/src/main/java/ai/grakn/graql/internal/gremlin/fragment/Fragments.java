@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
@@ -31,9 +32,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
 
-import static ai.grakn.util.Schema.ConceptProperty.INSTANCE_TYPE_ID;
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
-import static ai.grakn.util.Schema.ConceptProperty.TYPE;
+import static ai.grakn.util.Schema.ConceptProperty.INSTANCE_TYPE_ID;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
 
 /**
@@ -179,7 +179,7 @@ public class Fragments {
     }
 
     static void applyTypeLabelToTraversal(
-            GraphTraversal<Vertex, Edge> traversal, Schema.EdgeProperty property, Optional<TypeLabel> typeLabel) {
-        typeLabel.ifPresent(label -> traversal.has(property.name(), label.getValue()));
+            GraphTraversal<Vertex, Edge> traversal, Schema.EdgeProperty property, Optional<TypeLabel> typeLabel, GraknGraph graph) {
+        typeLabel.ifPresent(label -> graph.admin().convertToId(label).ifPresent(id -> traversal.has(property.name(), id)));
     }
 }
