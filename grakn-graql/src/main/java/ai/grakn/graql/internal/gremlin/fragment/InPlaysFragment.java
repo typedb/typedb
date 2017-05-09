@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.VarName;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -35,7 +36,7 @@ class InPlaysFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
         if (required) {
             traversal.inE(PLAYS.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
         } else {

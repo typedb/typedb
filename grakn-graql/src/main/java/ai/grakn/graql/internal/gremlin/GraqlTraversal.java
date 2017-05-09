@@ -96,7 +96,7 @@ public class GraqlTraversal {
         VarName currentName = null;
 
         for (Fragment fragment : fragmentList) {
-            applyFragment(fragment, traversal, currentName, foundNames);
+            applyFragment(fragment, traversal, currentName, foundNames, graph);
             currentName = fragment.getEnd().orElse(fragment.getStart());
         }
 
@@ -114,7 +114,8 @@ public class GraqlTraversal {
      * @param names a set of variable names so far encountered in the query
      */
     private void applyFragment(
-            Fragment fragment, GraphTraversal<Vertex, Vertex> traversal, VarName currentName, Set<VarName> names
+            Fragment fragment, GraphTraversal<Vertex, Vertex> traversal, VarName currentName, Set<VarName> names,
+            GraknGraph graph
     ) {
         VarName start = fragment.getStart();
 
@@ -136,7 +137,7 @@ public class GraqlTraversal {
         names.add(start);
 
         // Apply fragment to traversal
-        fragment.applyTraversal(traversal);
+        fragment.applyTraversal(traversal, graph);
 
         fragment.getEnd().ifPresent(end -> {
             if (!names.contains(end)) {

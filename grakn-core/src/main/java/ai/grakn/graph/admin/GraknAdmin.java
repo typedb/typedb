@@ -132,7 +132,7 @@ public interface GraknAdmin {
      * @param label The label to be converted to the id
      * @return The matching type id if it is found
      */
-    Optional<Integer> getId(TypeLabel label);
+    Optional<Integer> convertToId(TypeLabel label);
 
     /**
      * Commits to the graph without submitting any commit logs.
