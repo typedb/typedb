@@ -40,7 +40,6 @@ import spark.Service;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import java.time.Duration;
 import java.util.Optional;
 
 import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
@@ -98,8 +97,7 @@ public class CommitLogController {
 
         // TODO Make interval configurable
         TaskState postProcessingTask = TaskState.of(
-                PostProcessingTask.class, this.getClass().getName(),
-                TaskSchedule.recurring(Duration.ofSeconds(10)));
+                PostProcessingTask.class, this.getClass().getName(), TaskSchedule.now());
 
         //Instances to count
         Json countingConfiguration = Json.object();
