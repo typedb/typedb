@@ -198,7 +198,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      *
      * @return The internal type id which is used for fast lookups
      */
-    private int getTypeId(){
+    public int getTypeId(){
         return getProperty(Schema.ConceptProperty.TYPE_ID);
     }
 
