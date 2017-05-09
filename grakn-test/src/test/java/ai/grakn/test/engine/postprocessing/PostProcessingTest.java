@@ -30,7 +30,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.exception.GraknValidationException;
@@ -121,8 +120,8 @@ public class PostProcessingTest {
         Assert.assertEquals(2, ((AbstractGraknGraph) graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
         //Break The Graph With Fake Castings
-        Set<Vertex> castings1 = buildDuplicateCasting(graph, relationTypeId, roleType1.getLabel(), mainInstanceId, otherRoleTypeId, otherInstanceId3);
-        Set<Vertex> castings2 = buildDuplicateCasting(graph, relationTypeId, roleType1.getLabel(), mainInstanceId, otherRoleTypeId, otherInstanceId4);
+        Set<Vertex> castings1 = buildDuplicateCasting(graph, relationTypeId, roleType1, mainInstanceId, otherRoleTypeId, otherInstanceId3);
+        Set<Vertex> castings2 = buildDuplicateCasting(graph, relationTypeId, roleType1, mainInstanceId, otherRoleTypeId, otherInstanceId4);
 
         //Check the graph is broken
         assertEquals(6, ((AbstractGraknGraph) graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
@@ -162,7 +161,7 @@ public class PostProcessingTest {
         graph.close();
     }
 
-    private Set<Vertex> buildDuplicateCasting(GraknGraph graph, ConceptId relationTypeId, TypeLabel mainRoleTypeLabel, ConceptId mainInstanceId, ConceptId otherRoleTypeId, ConceptId otherInstanceId) throws Exception {
+    private Set<Vertex> buildDuplicateCasting(GraknGraph graph, ConceptId relationTypeId, RoleType mainRoleType, ConceptId mainInstanceId, ConceptId otherRoleTypeId, ConceptId otherInstanceId) throws Exception {
         //Get Needed Grakn Objects
         RelationType relationType = graph.getConcept(relationTypeId);
         Instance otherInstance = graph.getConcept(otherInstanceId);
@@ -174,7 +173,7 @@ public class PostProcessingTest {
 
         //Get Needed Vertices
         Vertex mainRoleTypeVertexShard = rawGraph.traversal().V().
-                has(Schema.ConceptProperty.TYPE_ID.name(), mainRoleTypeLabel.getId()).in(Schema.EdgeLabel.SHARD.getLabel()).next();
+                has(Schema.ConceptProperty.TYPE_ID.name(), mainRoleType.getTypeId()).in(Schema.EdgeLabel.SHARD.getLabel()).next();
 
         Vertex relationVertex = rawGraph.traversal().V().
                 hasId(relationId.getValue()).next();
@@ -193,10 +192,10 @@ public class PostProcessingTest {
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleTypeVertexShard);
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstanceVertex);
-        edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleTypeLabel.getId());
+        edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleType.getId());
 
         edge = relationVertex.addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
-        edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleTypeLabel.getId());
+        edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleType.getId());
 
         return Sets.newHashSet(otherCasting, castingVertex);
     }
