@@ -164,14 +164,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private int getNextTypeId(){
         //Instance count is used here to prevent creating another schema property.
         TypeImpl<?, ?> metaConcept = (TypeImpl<?, ?>) getMetaConcept();
-        Integer currentValue = metaConcept.getProperty(Schema.ConceptProperty.INSTANCE_COUNT);
+        Integer currentValue = metaConcept.getProperty(Schema.ConceptProperty.CURRENT_TYPE_ID);
         if(currentValue == null){
             currentValue = Schema.MetaSchema.values().length + 1;
         } else {
             currentValue = currentValue + 1;
         }
         //Vertex is used directly here to bypass meta type mutation check
-        metaConcept.getVertex().property(Schema.ConceptProperty.INSTANCE_COUNT.name(), currentValue);
+        metaConcept.getVertex().property(Schema.ConceptProperty.CURRENT_TYPE_ID.name(), currentValue);
         return currentValue;
     }
 
