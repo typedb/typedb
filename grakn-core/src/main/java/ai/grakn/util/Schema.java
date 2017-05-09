@@ -84,24 +84,30 @@ public final class Schema {
      * The concepts which represent our internal schema
      */
     public enum MetaSchema {
-        CONCEPT("concept"),
-        ENTITY("entity"),
-        ROLE("role"),
-        RESOURCE("resource"),
-        RELATION("relation"),
-        RULE("rule"),
-        INFERENCE_RULE("inference-rule"),
-        CONSTRAINT_RULE("constraint-rule");
+        CONCEPT("concept", 1),
+        ENTITY("entity", 2),
+        ROLE("role", 3),
+        RESOURCE("resource", 4),
+        RELATION("relation", 5),
+        RULE("rule", 6),
+        INFERENCE_RULE("inference-rule", 7),
+        CONSTRAINT_RULE("constraint-rule", 8);
 
 
         private final TypeLabel label;
+        private final int id;
 
-        MetaSchema(String i) {
-            label = TypeLabel.of(i);
+        MetaSchema(String s, int id) {
+            label = TypeLabel.of(s);
+            this.id = id;
         }
 
         public TypeLabel getLabel() {
             return label;
+        }
+
+        public int getId(){
+            return id;
         }
 
         public static boolean isMetaLabel(TypeLabel label) {
