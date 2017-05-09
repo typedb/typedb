@@ -55,8 +55,8 @@ import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_QUERY_PARAMETERS;
-import static ai.grakn.util.ErrorMessage.MISSING_QUERY_POST_BODY;
+import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
+import static ai.grakn.util.ErrorMessage.MISSING_POST_REQUEST_BODY;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
@@ -164,7 +164,7 @@ public class GraqlController {
      */
     static String mandatoryQueryParameter(Request request, String parameter){
         return queryParameter(request, parameter).orElseThrow(() ->
-                new GraknEngineServerException(400, MISSING_MANDATORY_QUERY_PARAMETERS, parameter));
+                new GraknEngineServerException(400, MISSING_MANDATORY_REQUEST_PARAMETERS, parameter));
     }
 
     /**
@@ -186,7 +186,7 @@ public class GraqlController {
      */
     static String mandatoryBody(Request request){
         return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(() ->
-                new GraknEngineServerException(400, MISSING_QUERY_POST_BODY));
+                new GraknEngineServerException(400, MISSING_POST_REQUEST_BODY));
     }
 
     /**

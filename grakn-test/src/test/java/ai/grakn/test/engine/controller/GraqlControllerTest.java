@@ -45,8 +45,8 @@ import spark.Service;
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.test.GraknTestEnv.usingTitan;
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_QUERY_PARAMETERS;
-import static ai.grakn.util.ErrorMessage.MISSING_QUERY_POST_BODY;
+import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
+import static ai.grakn.util.ErrorMessage.MISSING_POST_REQUEST_BODY;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
@@ -186,7 +186,7 @@ public class GraqlControllerTest {
         Response response = RestAssured.with().get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
 
         assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_QUERY_PARAMETERS.getMessage(KEYSPACE)));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
     }
 
     @Test
@@ -196,7 +196,7 @@ public class GraqlControllerTest {
                 .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
 
         assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_QUERY_PARAMETERS.getMessage(QUERY)));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(QUERY)));
     }
 
     @Test
@@ -208,7 +208,7 @@ public class GraqlControllerTest {
                 .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
 
         assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_QUERY_PARAMETERS.getMessage(MATERIALISE)));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(MATERIALISE)));
     }
 
     @Test
@@ -233,7 +233,7 @@ public class GraqlControllerTest {
                 .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
 
         assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_QUERY_PARAMETERS.getMessage(INFER)));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(INFER)));
     }
 
     @Test
@@ -548,7 +548,7 @@ public class GraqlControllerTest {
                 .post(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
 
         assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_QUERY_PARAMETERS.getMessage(KEYSPACE)));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
     }
 
     @Test
@@ -557,7 +557,7 @@ public class GraqlControllerTest {
                 .post(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
 
         assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_QUERY_POST_BODY.getMessage()));
+        assertThat(exception(response), containsString(MISSING_POST_REQUEST_BODY.getMessage()));
     }
 
     @Test
