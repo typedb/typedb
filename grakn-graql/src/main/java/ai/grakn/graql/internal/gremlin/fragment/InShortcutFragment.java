@@ -21,6 +21,8 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -33,6 +35,13 @@ import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_LABEL;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_LABEL;
 
+/**
+ * A fragment representing traversing a {@link Schema.EdgeLabel#SHORTCUT} edge from the role-player to the relation.
+ * <p>
+ * Part of a {@link EquivalentFragmentSet}, along with {@link OutShortcutFragment}.
+ *
+ * @author Felix Chapman
+ */
 class InShortcutFragment extends AbstractFragment {
 
     private final VarName edge;
