@@ -101,4 +101,8 @@ public interface Fragment {
     }
 
     double fragmentCost(double previousCost);
+
+    default boolean hasFixedFragmentCost() {
+        return false;
+    }
 }

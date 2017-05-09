@@ -60,6 +60,11 @@ class ValueFragment extends AbstractFragment {
     }
 
     @Override
+    public boolean hasFixedFragmentCost() {
+        return predicate.isSpecific();
+    }
+
+    @Override
     public Set<VarName> getDependencies() {
         return optionalToStream(predicate.getInnerVar()).map(VarAdmin::getVarName).collect(toSet());
     }

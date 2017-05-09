@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
@@ -95,8 +96,16 @@ public class GreedyTraversalPlan {
      * @return a semi-optimal traversal plan to execute the given conjunction
      */
     private static List<Fragment> semiOptimalConjunction(ConjunctionQuery query, long maxTraversalAttempts) {
-
-        Set<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(query.getEquivalentFragmentSets());
+        Plan initialPlan = Plan.base();
+        Set<EquivalentFragmentSet> fragmentSets = query.getEquivalentFragmentSets().stream().filter(fragmentSet -> {
+            if (fragmentSet.fragments().size() == 1) {
+                Fragment fragment = fragmentSet.fragments().iterator().next();
+                if (fragment.hasFixedFragmentCost()) {
+                    return !initialPlan.tryPush(fragment);
+                }
+            }
+            return true;
+        }).collect(Collectors.toSet());
 
         long numFragments = fragments(fragmentSets).count();
         long depth = 0;
@@ -109,7 +118,7 @@ public class GreedyTraversalPlan {
             numFragments -= 1;
         }
 
-        Plan plan = Plan.base();
+        Plan plan = initialPlan.copy();
 
         while (!fragmentSets.isEmpty()) {
             List<Plan> allPlans = Lists.newArrayList();
@@ -125,9 +134,7 @@ public class GreedyTraversalPlan {
 
             plan = newPlan;
 
-            plan.fragments().forEach(fragment -> {
-                fragmentSets.remove(fragment.getEquivalentFragmentSet());
-            });
+            plan.fragments().forEach(fragment -> fragmentSets.remove(fragment.getEquivalentFragmentSet()));
         }
 
         return plan.fragments();
