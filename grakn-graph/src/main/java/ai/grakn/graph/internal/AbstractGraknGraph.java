@@ -120,6 +120,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<Boolean> localIsReadOnly = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeLabel, Type>> localCloneCache = new ThreadLocal<>();
+    private final ThreadLocal<Map<TypeLabel, Integer>> localTypeIdCache = new ThreadLocal<>();
 
     public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled, Properties properties) {
         this.graph = graph;
@@ -200,29 +201,38 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return cachedOntology;
     }
 
+    ConceptLog getConceptLog() {
+        ConceptLog conceptLog = getObjectFromThreadLocal(localConceptLog, () -> new ConceptLog(this));
+        loadOntologyCacheIntoTransactionCache(conceptLog);
+        return conceptLog;
+    }
+
+    private Map<TypeLabel, Type> getCloneCache(){
+        return getObjectFromThreadLocal(localCloneCache, HashMap::new);
+    }
+
+    private <X> X getObjectFromThreadLocal(ThreadLocal<X> threadLocal, Supplier<X> supplier){
+        X object = threadLocal.get();
+        if(object == null){
+            threadLocal.set(object = supplier.get());
+        }
+        return object;
+    }
+
     @Override
     public boolean isClosed(){
-        return !getBooleanFromLocalThread(localIsOpen);
+        return !getObjectFromThreadLocal(localIsOpen, () -> false);
     }
     public abstract boolean isSessionClosed();
 
     @Override
     public boolean implicitConceptsVisible(){
-        return getBooleanFromLocalThread(localShowImplicitStructures);
+        return getObjectFromThreadLocal(localShowImplicitStructures, () -> false);
     }
 
     @Override
     public boolean isReadOnly(){
-        return getBooleanFromLocalThread(localIsReadOnly);
-    }
-
-    private boolean getBooleanFromLocalThread(ThreadLocal<Boolean> local){
-        Boolean value = local.get();
-        if(value == null) {
-            return false;
-        } else {
-            return value;
-        }
+        return getObjectFromThreadLocal(localIsReadOnly, () -> false);
     }
 
     @Override
@@ -341,23 +351,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 concepts.add(getElementFactory().buildConcept(v));
             });
         return concepts;
-    }
-
-    ConceptLog getConceptLog() {
-        ConceptLog conceptLog = localConceptLog.get();
-        if(conceptLog == null){
-            localConceptLog.set(conceptLog = new ConceptLog(this));
-            loadOntologyCacheIntoTransactionCache(conceptLog);
-        }
-        return conceptLog;
-    }
-
-    private Map<TypeLabel, Type> getCloneCache(){
-        Map<TypeLabel, Type> cloneCache = localCloneCache.get();
-        if(cloneCache == null){
-            localCloneCache.set(cloneCache = new HashMap<>());
-        }
-        return cloneCache;
     }
 
     /**
