@@ -41,7 +41,6 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 import javax.ws.rs.POST;
 import mjson.Json;
-import org.apache.commons.httpclient.util.ExceptionUtil;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.http.entity.ContentType;
 import spark.Request;
@@ -54,7 +53,6 @@ import javax.ws.rs.Produces;
 import java.util.ArrayList;
 import java.util.Optional;
 
-import static ai.grakn.GraknTxType.READ;
 import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
@@ -137,7 +135,7 @@ public class GraqlController {
             value = "Executes graql insert query on the server and returns the IDs of the inserted concepts.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QUERY,       value = "Match query to execute", required = true, dataType = "string", paramType = "body"),
+            @ApiImplicitParam(name = QUERY,       value = "Insert query to execute", required = true, dataType = "string", paramType = "body"),
     })
     private Json executeGraqlPOST(Request request, Response response){
         String queryString = mandatoryBody(request);
