@@ -251,7 +251,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     protected T type(V type) {
         if(type != null){
             putEdge(type, Schema.EdgeLabel.ISA);
-            setInternalType(type().getLabel());
+            setInternalType(type());
         }
         return getThis();
     }
@@ -261,9 +261,9 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @param type The type of this concept
      * @return The concept itself casted to the correct interface
      */
-    private T setInternalType(TypeLabel type){
-        cachedInternalType.set(type);
-        return setProperty(Schema.ConceptProperty.INSTANCE_TYPE_ID, type.getId());
+    private T setInternalType(Type type){
+        cachedInternalType.set(type.getLabel());
+        return setProperty(Schema.ConceptProperty.INSTANCE_TYPE_ID, type.getTypeId());
     }
 
     /**
