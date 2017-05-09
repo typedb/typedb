@@ -29,17 +29,17 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Locale;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.function.Consumer;
 
 public class MovieGraph extends TestGraph {
 
     private static EntityType production, movie, person, genre, character, cluster, language;
     private static ResourceType<String> title, gender, realName, name;
-    private static ResourceType<Long> tmdbVoteCount, releaseDate, runtime;
+    private static ResourceType<Long> tmdbVoteCount, runtime;
     private static ResourceType<Double> tmdbVoteAverage;
+    private static ResourceType<LocalDateTime> releaseDate;
     private static RelationType hasCast, directedBy, hasGenre, hasCluster;
     private static RoleType productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
     private static RoleType genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
@@ -55,14 +55,6 @@ public class MovieGraph extends TestGraph {
 
     public static Consumer<GraknGraph> get(){
         return new MovieGraph().build();
-    }
-
-    private static long date(String dateString) {
-        try {
-            return new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US).parse(dateString).getTime();
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
@@ -91,7 +83,7 @@ public class MovieGraph extends TestGraph {
         title = graph.putResourceType("title", ResourceType.DataType.STRING);
         tmdbVoteCount = graph.putResourceType("tmdb-vote-count", ResourceType.DataType.LONG);
         tmdbVoteAverage = graph.putResourceType("tmdb-vote-average", ResourceType.DataType.DOUBLE);
-        releaseDate = graph.putResourceType("release-date", ResourceType.DataType.LONG);
+        releaseDate = graph.putResourceType("release-date", ResourceType.DataType.DATE);
         runtime = graph.putResourceType("runtime", ResourceType.DataType.LONG);
         gender = graph.putResourceType("gender", ResourceType.DataType.STRING).setRegex("(fe)?male");
         realName = graph.putResourceType("real-name", ResourceType.DataType.STRING);
@@ -141,13 +133,13 @@ public class MovieGraph extends TestGraph {
         putResource(godfather, title, "Godfather");
         putResource(godfather, tmdbVoteCount, 1000L);
         putResource(godfather, tmdbVoteAverage, 8.6);
-        putResource(godfather, releaseDate, date("Sun Jan 01 00:00:00 GMT 1984"));
+        putResource(godfather, releaseDate, LocalDate.of(1984, 1, 1).atStartOfDay());
 
         theMuppets = movie.addEntity();
         putResource(theMuppets, title, "The Muppets");
         putResource(theMuppets, tmdbVoteCount, 100L);
         putResource(theMuppets, tmdbVoteAverage, 7.6);
-        putResource(theMuppets, releaseDate, date("Sat Feb 02 00:00:00 GMT 1985"));
+        putResource(theMuppets, releaseDate, LocalDate.of(1985, 2, 2).atStartOfDay());
 
         apocalypseNow = movie.addEntity();
         putResource(apocalypseNow, title, "Apocalypse Now");
@@ -163,13 +155,13 @@ public class MovieGraph extends TestGraph {
 
         spy = movie.addEntity();
         putResource(spy, title, "Spy");
-        putResource(spy, releaseDate, date("Mon Mar 03 00:00:00 BST 1986"));
+        putResource(spy, releaseDate, LocalDate.of(1986, 3, 3).atStartOfDay());
 
         chineseCoffee = movie.addEntity();
         putResource(chineseCoffee, title, "Chinese Coffee");
         putResource(chineseCoffee, tmdbVoteCount, 5L);
         putResource(chineseCoffee, tmdbVoteAverage, 3.1d);
-        putResource(chineseCoffee, releaseDate, date("Sat Sep 02 00:00:00 GMT 2000"));
+        putResource(chineseCoffee, releaseDate, LocalDate.of(2000, 9, 2).atStartOfDay());
 
         marlonBrando = person.addEntity();
         putResource(marlonBrando, name, "Marlon Brando");
