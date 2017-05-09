@@ -43,14 +43,16 @@ public class TimingListener extends RunListener {
     private long startTime = 0;
     private String test = "";
     
-    private void writeTime(String test, long time) {
+    private void writeTime(Description description, long time) {
         String timeLogFile = System.getProperty("grakn.test.timerecord.file");
         if (timeLogFile == null) {
             timeLogFile = "grakn-test-timings.log";
         }
         try {
-            Files.write(Paths.get(timeLogFile), Collections.singleton(test + "," + time), APPEND, CREATE);
-            System.out.println("WROTE to file " + Paths.get(timeLogFile));
+            String line = description.getTestClass().getPackage().getName() + "," + 
+                          description.getTestClass().getSimpleName() + "," + 
+                          description.getMethodName() + ", " + time;                          
+            Files.write(Paths.get(timeLogFile), Collections.singleton(line), APPEND, CREATE);
         } catch (IOException e) {
             System.err.println("Failed to write test time to file " + timeLogFile);
             System.err.println("Please fix configuration or disable test time measurement altogether.");
@@ -71,6 +73,6 @@ public class TimingListener extends RunListener {
         if (!test.equals(finishedTest)) {
             throw new RuntimeException("Test started " + test + " different from test finished " + finishedTest);
         }
-        writeTime(test, (System.currentTimeMillis() - startTime));
+        writeTime(description, (System.currentTimeMillis() - startTime));
     }
 }

@@ -203,7 +203,7 @@
                 <configuration>
                     <systemProperties>
                         <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
-                        <grakn.test.timerecord.file>${main.basedir}/test-timings.csv</grakn.test.timerecord.file>
+                        <grakn.test.timerecord.file>test-timings.csv</grakn.test.timerecord.file>
                     </systemProperties>
                     <properties>
                         <property>
