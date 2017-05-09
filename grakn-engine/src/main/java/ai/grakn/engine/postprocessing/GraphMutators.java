@@ -60,26 +60,35 @@ public abstract class GraphMutators {
 
     /**
      *
+     *
      * @param configuration
-     * @param mutatingFunction
-     * @return
+     * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
-    public static void runGraphMutationWithRetry(TaskConfiguration configuration, Consumer<GraknGraph> mutatingFunction){
-        String keyspace = getKeyspace(configuration);
-
-        runGraphMutationWithRetry(keyspace, mutatingFunction);
+    public static void runBatchMutationWithRetry(TaskConfiguration configuration, Consumer<GraknGraph> mutatingFunction){
+        runGraphMutationWithRetry(configuration, GraknTxType.BATCH, mutatingFunction);
     }
 
     /**
      *
-     *
-     * @param keyspace Keyspace on which to create the graph
+     * @param configuration
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      * @return
      */
-    protected static void runGraphMutationWithRetry(String keyspace, Consumer<GraknGraph> mutatingFunction){
+    public static void runGraphMutationWithRetry(TaskConfiguration configuration, Consumer<GraknGraph> mutatingFunction){
+        runGraphMutationWithRetry(configuration, GraknTxType.WRITE, mutatingFunction);
+    }
+
+    /**
+     *
+     * @param configuration
+     * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
+     * @return
+     */
+    private static void runGraphMutationWithRetry(TaskConfiguration configuration, GraknTxType txType, Consumer<GraknGraph> mutatingFunction){
+        String keyspace = getKeyspace(configuration);
+
         for(int retry = 0; retry < MAX_RETRY; retry++) {
-            try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.BATCH))  {
+            try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, txType))  {
 
                 mutatingFunction.accept(graph);
 

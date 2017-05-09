@@ -49,7 +49,7 @@ public class LoaderTask implements BackgroundTask {
 
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
-        GraphMutators.runGraphMutationWithRetry(configuration, (graph) ->
+        GraphMutators.runBatchMutationWithRetry(configuration, (graph) ->
                 insertQueriesInOneTransaction(graph, getInserts(configuration))
         );
 
