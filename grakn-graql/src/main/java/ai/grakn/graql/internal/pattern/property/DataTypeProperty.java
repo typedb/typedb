@@ -70,6 +70,8 @@ public class DataTypeProperty extends AbstractVarProperty implements NamedProper
             return "long";
         } else if (datatype == ResourceType.DataType.STRING) {
             return "string";
+        } else if (datatype == ResourceType.DataType.DATE) {
+            return "date";
         } else {
             throw new RuntimeException("Unknown data type: " + datatype.getName());
         }
