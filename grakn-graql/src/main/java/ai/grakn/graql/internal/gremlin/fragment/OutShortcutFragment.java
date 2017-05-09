@@ -62,7 +62,7 @@ class OutShortcutFragment extends AbstractFragment {
         GraphTraversal<Vertex, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel()).as(edge.getValue());
         applyTypeLabelToTraversal(edgeTraversal, ROLE_TYPE_LABEL, roleType);
         applyTypeLabelToTraversal(edgeTraversal, RELATION_TYPE_LABEL, relationType);
-        edgeTraversal.otherV();
+        edgeTraversal.inV();
     }
 
     @Override
