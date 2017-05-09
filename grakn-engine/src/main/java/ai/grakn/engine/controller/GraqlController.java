@@ -25,7 +25,6 @@ import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
@@ -116,7 +115,7 @@ public class GraqlController {
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
 
-            if(!readOnly(query)){
+            if(!query.isReadOnly()){
                 throw new GraknEngineServerException(405, "Only \"read-only\" queries are allowed.");
             }
 
@@ -224,15 +223,6 @@ public class GraqlController {
         }
 
         return true;
-    }
-
-    /**
-     * This API only supports read-only queries, or non-insert queries.
-     * @param query the query to check
-     * @return if the query is read-only
-     */
-    private boolean readOnly(Query<?> query){
-        return !(query instanceof InsertQuery) && !(query instanceof DeleteQuery);
     }
 
     /**
