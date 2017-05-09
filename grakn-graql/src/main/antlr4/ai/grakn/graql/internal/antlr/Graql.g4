@@ -135,7 +135,7 @@ DEGREES        : 'degrees' ;
 MEMBERS        : 'members' ;
 SIZE           : 'size' ;
 
-DATATYPE       : 'long' | 'double' | 'string' | 'boolean' ;
+DATATYPE       : 'long' | 'double' | 'string' | 'boolean' | 'date' ;
 ORDER          : 'asc' | 'desc' ;
 BOOLEAN        : 'true' | 'false' ;
 VARIABLE       : '$' [a-zA-Z0-9_-]+ ;

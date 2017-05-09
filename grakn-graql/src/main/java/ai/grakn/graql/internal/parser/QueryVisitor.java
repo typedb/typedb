@@ -726,6 +726,8 @@ class QueryVisitor extends GraqlBaseVisitor {
                 return ResourceType.DataType.STRING;
             case "boolean":
                 return ResourceType.DataType.BOOLEAN;
+            case "date":
+                return ResourceType.DataType.DATE;
             default:
                 throw new RuntimeException("Unrecognized datatype " + datatype.getText());
         }

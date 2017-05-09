@@ -378,6 +378,14 @@ public class QueryParserTest {
     }
 
     @Test
+    public void whenParsingDateKeyword_ParseAsTheCorrectDataType() {
+        MatchQuery expected = match(var("x").datatype(ResourceType.DataType.DATE));
+        MatchQuery parsed = parse("match $x datatype date;");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
     public void testInsertDataTypeQuery() {
         InsertQuery expected = insert(label("my-type").sub("resource").datatype(ResourceType.DataType.LONG));
         InsertQuery parsed = parse("insert my-type sub resource, datatype long;");
