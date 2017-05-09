@@ -21,8 +21,10 @@ package ai.grakn.engine.controller;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.InsertQuery;
@@ -91,7 +93,15 @@ public class GraqlController {
         spark.get(REST.WebPath.Graph.GRAQL,  this::executeGraqlGET);
         spark.post(REST.WebPath.Graph.GRAQL, this::executeGraqlPOST);
 
-        spark.exception(IllegalArgumentException.class, (e, req, res) -> handleGraqlSyntaxError(e, res));
+        //TODO The below exceptions are very broad. They should be revised after we improve exception
+        //TODO hierarchies in Graql and Graph
+        // Handle graql syntax exceptions
+        spark.exception(IllegalStateException.class, (e, req, res) -> handleError(400, e, res));
+        spark.exception(IllegalArgumentException.class, (e, req, res) -> handleError(400, e, res));
+
+        // Handle invalid type castings and invalid insertions
+        spark.exception(ConceptException.class, (e, req, res) -> handleError(422, e, res));
+        spark.exception(GraknValidationException.class, (e, req, res) -> handleError(422, e, res));
     }
 
     @GET
@@ -191,14 +201,14 @@ public class GraqlController {
     }
 
     /**
-     * Handle any {@link IllegalArgumentException} that are thrown by the server. Configures and returns
-     * the correct JSON response.
+     * Handle any {@link Exception} that are thrown by the server. Configures and returns
+     * the correct JSON response with the given status.
      *
      * @param exception exception thrown by the server
      * @param response response to the client
      */
-    private static void handleGraqlSyntaxError(Exception exception, Response response){
-        response.status(400);
+    private static void handleError(int status, Exception exception, Response response){
+        response.status(status);
         response.body(Json.object("exception", exception.getMessage()).toString());
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }

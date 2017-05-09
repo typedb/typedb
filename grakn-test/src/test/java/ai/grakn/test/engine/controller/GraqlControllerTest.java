@@ -611,6 +611,20 @@ public class GraqlControllerTest {
     }
 
     @Test
+    public void POSTGraqlInsertNotValid_ResponseStatusCodeIs422(){
+        Response response = sendPOST("insert person plays movie;");
+
+        assertThat(response.statusCode(), equalTo(422));
+    }
+
+    @Test
+    public void POSTGraqlInsertNotValid_ResponseExceptionContains(){
+        Response response = sendPOST("insert person plays movie;");
+
+        assertThat(exception(response), containsString("is not of type"));
+    }
+
+    @Test
     public void POSTGraqlInsert_ResponseContentTypeIsJson(){
         Response response = sendPOST("insert $x isa movie;");
 
