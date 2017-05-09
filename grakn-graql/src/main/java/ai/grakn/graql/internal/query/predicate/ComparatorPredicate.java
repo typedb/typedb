@@ -60,12 +60,12 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
             this.value = Optional.empty();
             this.var = Optional.of((VarAdmin) value);
         } else {
-            this.originalValue = Optional.of(value);
-
             // Convert integers to longs for consistency
             if (value instanceof Integer) {
                 value = ((Integer) value).longValue();
             }
+
+            this.originalValue = Optional.of(value);
 
             // Convert dates to epoch time to reflect how they are stored
             if (value instanceof LocalDateTime) {
