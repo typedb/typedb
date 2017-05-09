@@ -55,6 +55,9 @@ import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -634,6 +637,16 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public Boolean visitValueBoolean(GraqlParser.ValueBooleanContext ctx) {
         return Boolean.valueOf(ctx.BOOLEAN().getText());
+    }
+
+    @Override
+    public LocalDateTime visitValueDate(GraqlParser.ValueDateContext ctx) {
+        return LocalDate.parse(ctx.DATE().getText(), DateTimeFormatter.ISO_DATE).atStartOfDay();
+    }
+
+    @Override
+    public Object visitValueDateTime(GraqlParser.ValueDateTimeContext ctx) {
+        return LocalDateTime.parse(ctx.DATETIME().getText(), DateTimeFormatter.ISO_DATE_TIME);
     }
 
     private MatchQuery visitMatchQuery(GraqlParser.MatchQueryContext ctx) {
