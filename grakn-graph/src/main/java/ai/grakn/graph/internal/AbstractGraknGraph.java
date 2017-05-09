@@ -146,6 +146,20 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
+     *
+     * @return the current available Grakn id which can be used for types
+     */
+    private int getCurrentAvailableId(){
+        //Instance count is used here to prevent creating another schema property.
+        Integer currentValue = ((ConceptImpl<?>)getMetaConcept()).getProperty(Schema.ConceptProperty.INSTANCE_COUNT);
+        if(currentValue == null){
+            return Integer.MIN_VALUE;
+        } else {
+            return currentValue + 1;
+        }
+    }
+
+    /**
      * @param concept A concept in the graph
      * @return True if the concept has been modified in the transaction
      */
@@ -428,15 +442,30 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Vertex vertex;
         ConceptImpl concept = getConcept(Schema.ConceptProperty.TYPE_ID, label.getId());
         if(concept == null) {
-            vertex = addVertex(baseType);
-            vertex.property(Schema.ConceptProperty.TYPE_LABEL.name(), label.getValue());
-            vertex.property(Schema.ConceptProperty.TYPE_ID.name(), label.getId());
+            vertex = addTypeVertex(label, baseType);
         } else {
             if(!baseType.equals(concept.getBaseType())) {
                 throw new ConceptNotUniqueException(concept, label.getValue());
             }
             vertex = concept.getVertex();
         }
+        return vertex;
+    }
+
+    /**
+     * Adds a new type vertex which occupies a grakn id. This result in the grakn id count on the meta concept to be
+     * incremented.
+     *
+     * @param label The label of the new type vertex
+     * @param baseType The base type of the new type
+     * @return The new type vertex
+     */
+    private Vertex addTypeVertex(TypeLabel label, Schema.BaseType baseType){
+        int currentId = getCurrentAvailableId();
+        Vertex vertex = addVertex(baseType);
+        vertex.property(Schema.ConceptProperty.TYPE_LABEL.name(), label.getValue());
+        vertex.property(Schema.ConceptProperty.TYPE_ID.name(), currentId);
+        ((ConceptImpl) getMetaConcept()).setProperty(Schema.ConceptProperty.INSTANCE_COUNT, currentId); //Update Current Count
         return vertex;
     }
 
