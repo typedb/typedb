@@ -315,7 +315,7 @@ public class TaskManagerTest {
         });
 
         // Make task recurring
-        task.schedule(TaskSchedule.recurring(Duration.ofMillis(1)));
+        task.schedule(TaskSchedule.recurring(Instant.now(), Duration.ofSeconds(10)));
 
         // Execute task and wait for it to complete
         manager.addLowPriorityTask(task, configuration(task));
