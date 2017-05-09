@@ -198,6 +198,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      *
      * @return The internal type id which is used for fast lookups
      */
+    @Override
     public int getTypeId(){
         return getProperty(Schema.ConceptProperty.TYPE_ID);
     }
@@ -369,7 +370,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             instances.addAll(this.<V>getIncomingNeighbours(Schema.EdgeLabel.ISA).collect(Collectors.toSet()));
         } else {
             GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerPopGraph().traversal().V()
-                    .has(Schema.ConceptProperty.TYPE_ID.name(), getLabel().getId())
+                    .has(Schema.ConceptProperty.TYPE_ID.name(), getTypeId())
                     .union(__.identity(),
                             __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
                     ).unfold()

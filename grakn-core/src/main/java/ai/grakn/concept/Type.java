@@ -101,6 +101,13 @@ public interface Type extends Concept {
 
     //------------------------------------- Accessors ---------------------------------
     /**
+     * Returns the unique id of this Type.
+     *
+     * @return The unique id of this type
+     */
+    int getTypeId();
+
+    /**
      * Returns the unique label of this Type.
      *
      * @return The unique label of this type
