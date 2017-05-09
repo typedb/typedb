@@ -91,13 +91,14 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
-        cachedTypeId = v.value(Schema.ConceptProperty.TYPE_ID.name());
         VertexProperty<String> typeLabel = v.property(Schema.ConceptProperty.TYPE_LABEL.name());
         if(typeLabel.isPresent()) {
             cachedTypeLabel = TypeLabel.of(typeLabel.value());
+            cachedTypeId = v.value(Schema.ConceptProperty.TYPE_ID.name());
             isShard(false);
         } else {
             cachedTypeLabel = TypeLabel.of("SHARDED TYPE-" + getId().getValue()); //This is just a place holder it is never actually committed
+            cachedTypeId = null; //Shards don't have indexed Ids
             isShard(true);
         }
     }
@@ -199,7 +200,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The internal type id which is used for fast lookups
      */
     @Override
-    public int getTypeId(){
+    public Integer getTypeId(){
         return getProperty(Schema.ConceptProperty.TYPE_ID);
     }
 

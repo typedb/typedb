@@ -105,7 +105,7 @@ public interface Type extends Concept {
      *
      * @return The unique id of this type
      */
-    int getTypeId();
+    Integer getTypeId();
 
     /**
      * Returns the unique label of this Type.
