@@ -22,7 +22,7 @@ public class OutPlaysFragmentTest {
     @SuppressWarnings("unchecked")
     public void testApplyTraversalFollowsSubsUpwards() {
         GraphTraversal<Vertex, Vertex> traversal = __.V();
-        fragment.applyTraversal(traversal, );
+        fragment.applyTraversal(traversal, null);
 
         // Make sure we traverse upwards subs once and plays
         assertThat(traversal, is(__.V()
