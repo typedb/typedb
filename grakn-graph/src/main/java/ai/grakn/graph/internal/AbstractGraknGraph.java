@@ -152,11 +152,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public Optional<Integer> convertToId(TypeLabel label){
+    public Integer convertToId(TypeLabel label){
         if(getConceptLog().isLabelCached(label)){
-            return Optional.of(getConceptLog().convertLabelToId(label));
+            return getConceptLog().convertLabelToId(label);
         }
-        return Optional.empty();
+        return -1;
     }
 
     /**
@@ -466,9 +466,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private Vertex putVertex(TypeLabel label, Schema.BaseType baseType){
         Vertex vertex;
-        Optional<Integer> id = convertToId(label);
+        Integer id = convertToId(label);
         ConceptImpl concept = null;
-        if(id.isPresent()) concept = getConcept(Schema.ConceptProperty.TYPE_ID, id.get());
+        if(id != -1) concept = getConcept(Schema.ConceptProperty.TYPE_ID, id);
         if(concept == null) {
             vertex = addTypeVertex(getNextTypeId(), label, baseType);
         } else {
@@ -662,9 +662,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
         Type type = buildType(label, ()-> {
-            Optional<Integer> id = convertToId(label);
-            if (id.isPresent()) {
-                return getType(id.get());
+            Integer id = convertToId(label);
+            if (id != -1) {
+                return getType(id);
             } else {
                 return null;
             }

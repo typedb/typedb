@@ -130,9 +130,9 @@ public interface GraknAdmin {
      * so be sure to use the correct graph when performing the mapping.
      *
      * @param label The label to be converted to the id
-     * @return The matching type id if it is found
+     * @return The matching type id or -1 if no such type exists
      */
-    Optional<Integer> convertToId(TypeLabel label);
+    Integer convertToId(TypeLabel label);
 
     /**
      * Commits to the graph without submitting any commit logs.

@@ -38,7 +38,7 @@ class LabelFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        graph.admin().convertToId(label).ifPresent(id -> traversal.has(TYPE_ID.name(), id));
+        traversal.has(TYPE_ID.name(), graph.admin().convertToId(label));
     }
 
     @Override

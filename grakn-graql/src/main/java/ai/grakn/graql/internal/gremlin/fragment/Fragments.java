@@ -180,6 +180,6 @@ public class Fragments {
 
     static void applyTypeLabelToTraversal(
             GraphTraversal<Vertex, Edge> traversal, Schema.EdgeProperty property, Optional<TypeLabel> typeLabel, GraknGraph graph) {
-        typeLabel.ifPresent(label -> graph.admin().convertToId(label).ifPresent(id -> traversal.has(property.name(), id)));
+        typeLabel.ifPresent(label -> traversal.has(property.name(), graph.admin().convertToId(label)));
     }
 }
