@@ -32,16 +32,14 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import com.google.common.collect.ImmutableList;
-import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.function.Function;
-
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.internal.gremlin.GraqlMatchers.feature;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItem;
@@ -156,15 +154,5 @@ public class ConjunctionQueryTest {
             Conjunction<VarAdmin> conjunction = pattern.admin().getDisjunctiveNormalForm().getPatterns().iterator().next();
             return new ConjunctionQuery(conjunction, graph).getEquivalentFragmentSets();
         });
-    }
-
-    private <T, U> Matcher<T> feature(Matcher<? super U> subMatcher, String name, Function<T, U> extractor) {
-        return new FeatureMatcher<T, U>(subMatcher, name, name) {
-
-            @Override
-            protected U featureValueOf(T actual) {
-                return extractor.apply(actual);
-            }
-        };
     }
 }

@@ -26,7 +26,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.ConceptException;
-import ai.grakn.graql.internal.reasoner.Utility;
+import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import javafx.util.Pair;
 import org.semanticweb.owlapi.model.AsOWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
@@ -195,7 +195,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         Map<TypeLabel, TypeLabel> roleMap = new HashMap<>();
         roleMap.put(migrator.namer().subjectRole(superRelation.getLabel()), migrator.namer().subjectRole(subRelation.getLabel()));
         roleMap.put(migrator.namer().objectRole(superRelation.getLabel()), migrator.namer().objectRole(subRelation.getLabel()));
-        Utility.createSubPropertyRule(superRelation, subRelation, roleMap, migrator.graph());
+        ReasonerUtils.createSubPropertyRule(superRelation, subRelation, roleMap, migrator.graph());
 
         migrator.subjectRole(subRelation).superType(migrator.subjectRole(superRelation));
         migrator.objectRole(subRelation).superType(migrator.objectRole(superRelation));
@@ -232,7 +232,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
                             migrator.namer().subjectRole(eqRelation.getLabel()));
                     roleMap.put(migrator.namer().objectRole(relation.getLabel()),
                             migrator.namer().objectRole(eqRelation.getLabel()));
-                    Utility.createSubPropertyRule(relation, eqRelation, roleMap, migrator.graph());
+                    ReasonerUtils.createSubPropertyRule(relation, eqRelation, roleMap, migrator.graph());
                 }
             });
         }
@@ -250,12 +250,12 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         Map<TypeLabel, TypeLabel> roleMapFD = new HashMap<>();
         roleMapFD.put(migrator.namer().subjectRole(relation.getLabel()), migrator.namer().objectRole(inverseRelation.getLabel()));
         roleMapFD.put(migrator.namer().objectRole(relation.getLabel()), migrator.namer().subjectRole(inverseRelation.getLabel()));
-        Utility.createSubPropertyRule(relation, inverseRelation, roleMapFD, migrator.graph());
+        ReasonerUtils.createSubPropertyRule(relation, inverseRelation, roleMapFD, migrator.graph());
 
         Map<TypeLabel, TypeLabel> roleMapBD = new HashMap<>();
         roleMapBD.put(migrator.namer().subjectRole(inverseRelation.getLabel()), migrator.namer().objectRole(relation.getLabel()));
         roleMapBD.put(migrator.namer().objectRole(inverseRelation.getLabel()), migrator.namer().subjectRole(relation.getLabel()));
-        Utility.createSubPropertyRule(inverseRelation, relation, roleMapBD, migrator.graph());
+        ReasonerUtils.createSubPropertyRule(inverseRelation, relation, roleMapBD, migrator.graph());
         return null;
     }
 
@@ -265,7 +265,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
             return null;
         }
         RelationType relation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
-        Utility.createTransitiveRule(
+        ReasonerUtils.createTransitiveRule(
                 relation,
                 migrator.namer().subjectRole(relation.getLabel()),
                 migrator.namer().objectRole(relation.getLabel()),
@@ -279,7 +279,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
             return null;
         }
         RelationType relation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
-        Utility.createReflexiveRule(
+        ReasonerUtils.createReflexiveRule(
                 relation,
                 migrator.namer().subjectRole(relation.getLabel()),
                 migrator.namer().objectRole(relation.getLabel()),
@@ -301,7 +301,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
                     new Pair<>(migrator.namer().subjectRole(relation.getLabel()), migrator.namer().objectRole(relation.getLabel())));
         });
 
-        Utility.createPropertyChainRule(superRelation, migrator.namer().subjectRole(superRelation.getLabel()),
+        ReasonerUtils.createPropertyChainRule(superRelation, migrator.namer().subjectRole(superRelation.getLabel()),
                 migrator.namer().objectRole(superRelation.getLabel()), chain, migrator.graph());
         return null;
     }

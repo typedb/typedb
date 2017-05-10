@@ -30,6 +30,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -159,6 +160,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "unchecked"})
 public class MatchQueryTest {
@@ -481,9 +483,30 @@ public class MatchQueryTest {
     }
 
     @Test
+    public void testRobertDeNiroNotRelatedToSelfWhenMetaRoleIsSpecified() {
+        // This can go wrong because one role-player may use a shortcut edge and the other may not
+        MatchQuery query = qb.match(
+                var().rel("role", "x").rel("actor", "y").isa("has-cast"),
+                var("y").has("name", "Robert de Niro")
+        ).select("x");
+
+        assertThat(query, variable("x", containsInAnyOrder(heat, neilMcCauley)));
+    }
+
+    @Test
     public void testKermitIsRelatedToSelf() {
         MatchQuery query = qb.match(
                 var().rel("x").rel("y").isa("has-cast"),
+                var("y").has("name", "Kermit The Frog")
+        ).select("x");
+
+        assertThat(query, variable("x", (Matcher) hasItem(kermitTheFrog)));
+    }
+
+    @Test
+    public void testKermitIsRelatedToSelfWhenMetaRoleIsSpecified() {
+        MatchQuery query = qb.match(
+                var().rel("role", "x").rel("y").isa("has-cast"),
                 var("y").has("name", "Kermit The Frog")
         ).select("x");
 
@@ -884,6 +907,18 @@ public class MatchQueryTest {
         query.forEach(result -> {
             assertNotEquals(result.get("x"), result.get("y"));
         });
+    }
+
+    @Test
+    public void whenQueryingForSuperRelationType_ReturnResults() {
+        AskQuery query = qb.match(var().isa("relation").rel("x").rel("y")).ask();
+        assertTrue("Query had no results", query.execute());
+    }
+
+    @Test
+    public void whenQueryingForSuperRoleType_ReturnResults() {
+        AskQuery query = qb.match(var().rel("role", "x").rel("y")).ask();
+        assertTrue("Query had no results", query.execute());
     }
 
     @Test

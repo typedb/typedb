@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
@@ -29,7 +28,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -37,11 +35,10 @@ import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getIdPredicate;
 
 /**
  * Represents the {@code isa} property on a {@link Instance}.
@@ -75,16 +72,6 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     @Override
     public String getProperty() {
         return type.getPrintableName();
-    }
-
-    @Override
-    public void modifyShortcutTraversal(ShortcutTraversal shortcutTraversal) {
-        Optional<TypeLabel> typeLabel = type.getTypeLabel();
-        if (typeLabel.isPresent()) {
-            shortcutTraversal.setType(typeLabel.get());
-        } else {
-            shortcutTraversal.setInvalid();
-        }
     }
 
     @Override

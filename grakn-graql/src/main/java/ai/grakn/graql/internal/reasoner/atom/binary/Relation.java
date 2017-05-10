@@ -32,7 +32,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.reasoner.Utility;
+import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
@@ -58,7 +58,6 @@ import javafx.util.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -67,13 +66,13 @@ import java.util.UUID;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.Utility.capture;
-import static ai.grakn.graql.internal.reasoner.Utility.checkTypesDisjoint;
-import static ai.grakn.graql.internal.reasoner.Utility.getCompatibleRelationTypes;
-import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
-import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
-import static ai.grakn.graql.internal.reasoner.Utility.roleToRelationTypes;
-import static ai.grakn.graql.internal.reasoner.Utility.typeToRelationTypes;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getCompatibleRelationTypes;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getListPermutations;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUnifiersFromPermutations;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.roleToRelationTypes;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.typeToRelationTypes;
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableMultiset;
 import static java.util.stream.Collectors.toSet;
 
@@ -106,7 +105,10 @@ public class Relation extends TypeAtom {
 
     @Override
     public String toString(){
-        return (getType() != null? getType().getLabel() : "") + getRelationPlayers().toString();
+        String relationString = (isUserDefinedName()? getVarName() + " ": " ") +
+                        (getType() != null? getType().getLabel() : "") +
+                        getRelationPlayers().toString();
+        return relationString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
     }
 
     public Set<RelationPlayer> getRelationPlayers() {
@@ -357,7 +359,7 @@ public class Relation extends TypeAtom {
     private void inferRelationTypeFromTypes() {
         //look at available role types
         Type type = null;
-        Set<Type> compatibleTypes = Utility.getTopTypes(
+        Set<Type> compatibleTypes = ReasonerUtils.getTopTypes(
                 getCompatibleRelationTypes(getExplicitRoleTypes(), roleToRelationTypes)
         );
         if (compatibleTypes.size() == 1) type = compatibleTypes.iterator().next();
@@ -556,9 +558,9 @@ public class Relation extends TypeAtom {
                     VarName varName = casting.getRolePlayer().getVarName();
                     Type type = varTypeMap.get(varName);
                     if (type != null && !Schema.MetaSchema.isMetaLabel(type.getLabel())) {
-                        mappings.put(casting, Utility.getCompatibleRoleTypes(type, possibleRoles));
+                        mappings.put(casting, ReasonerUtils.getCompatibleRoleTypes(type, possibleRoles));
                     } else {
-                        mappings.put(casting, Utility.getTopTypes(possibleRoles).stream().map(t -> (RoleType) t).collect(toSet()));
+                        mappings.put(casting, ReasonerUtils.getTopTypes(possibleRoles).stream().map(t -> (RoleType) t).collect(toSet()));
                     }
                 });
 
@@ -630,13 +632,14 @@ public class Relation extends TypeAtom {
         Set<Pair<RelationPlayer, RelationPlayer>> rolePlayerMappings = new HashSet<>();
 
         //establish compatible castings for each parent casting
-        Map<RelationPlayer, Collection<RelationPlayer>> compatibleMappings = new HashMap<>();
+        Multimap<RelationPlayer, RelationPlayer> compatibleMappings = HashMultimap.create();
         parentAtom.getRoleRelationPlayerMap();
         Multimap<RoleType, RelationPlayer> childRoleRPMap = getRoleRelationPlayerMap();
         Map<VarName, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap();
         Map<VarName, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap();
 
-        Set<RoleType> rolesAvailable = childRoleRPMap.keySet();
+        Set<RoleType> relationRoles = new HashSet<>(getType().asRelationType().relates());
+        Set<RoleType> childRoles = new HashSet<>(childRoleRPMap.keySet());
 
         parentAtom.getRelationPlayers().stream()
                 .filter(prp -> prp.getRoleType().isPresent())
@@ -652,10 +655,20 @@ public class Relation extends TypeAtom {
                         VarName parentRolePlayer = prp.getRolePlayer().getVarName();
                         Type parentType = parentVarTypeMap.get(parentRolePlayer);
 
-                        Set<RoleType> possibleRoles = parentType != null?
-                                Sets.intersection(new HashSet<>(rolesAvailable), new HashSet<>(parentType.plays())) :
-                                new HashSet<>(rolesAvailable);
-                        Set<RoleType> compatibleChildRoles = isMetaRole? possibleRoles : Sets.intersection(new HashSet<>(parentRole.subTypes()), possibleRoles);
+                        Set<RoleType> compatibleChildRoles = isMetaRole? childRoles : Sets.intersection(new HashSet<>(parentRole.subTypes()), childRoles);
+
+                        if (parentType != null){
+                            boolean isMetaType = Schema.MetaSchema.isMetaLabel(parentType.getLabel());
+                            Set<RoleType> typeRoles = isMetaType? childRoles : new HashSet<>(parentType.plays());
+
+                            //incompatible type
+                            if (Sets.intersection(relationRoles, typeRoles).isEmpty()) compatibleChildRoles.clear();
+                            else {
+                                compatibleChildRoles = compatibleChildRoles.stream()
+                                        .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || typeRoles.contains(rc))
+                                        .collect(toSet());
+                            }
+                        }
 
                         compatibleChildRoles.stream()
                                 .filter(childRoleRPMap::containsKey)
@@ -669,31 +682,30 @@ public class Relation extends TypeAtom {
                                                 }).collect(toSet()) :
                                             childRoleRPMap.get(r);
 
-                                    if (!compatibleMappings.containsKey(prp)) {
-                                        compatibleMappings.put(prp, childRPs);
-                                    } else {
-                                        compatibleMappings.get(prp).addAll(childRPs);
-                                    }
-
+                                    childRPs.forEach(rp -> compatibleMappings.put(prp, rp));
                                 });
                     }
-
                 });
 
         //self-consistent procedure until no non-empty mappings present
-        while( compatibleMappings.values().stream().filter(s -> !s.isEmpty()).count() > 0) {
-            Map.Entry<RelationPlayer, Collection<RelationPlayer>> entry = compatibleMappings.entrySet().stream()
-                    .filter(e -> !e.getValue().isEmpty())
-                    .sorted(Comparator.comparing(e -> e.getValue().size()))
+        while( compatibleMappings.asMap().values().stream().filter(s -> !s.isEmpty()).count() > 0) {
+            //prioritise mappings with equivalent types and unambiguous mappings
+            Map.Entry<RelationPlayer, RelationPlayer> entry = compatibleMappings.entries().stream()
+                    .sorted(Comparator.comparing(e -> {
+                        Type parentType = parentVarTypeMap.get(e.getKey().getRolePlayer().getVarName());
+                        Type childType = childVarTypeMap.get(e.getValue().getRolePlayer().getVarName());
+                        return !(parentType != null && childType != null && parentType.equals(childType));
+                    }))
+                    .sorted(Comparator.comparing(e -> compatibleMappings.get(e.getKey()).size()))
                     .findFirst().orElse(null);
 
-            Collection<RelationPlayer> compatibleRelationPlayers = entry.getValue();
             RelationPlayer parentCasting = entry.getKey();
-            RelationPlayer childCasting = compatibleRelationPlayers.iterator().next();
+            RelationPlayer childCasting = entry.getValue();
 
             rolePlayerMappings.add(new Pair<>(childCasting, parentCasting));
-            compatibleMappings.remove(parentCasting);
-            compatibleMappings.values().forEach(s -> s.remove(childCasting));
+            compatibleMappings.removeAll(parentCasting);
+            compatibleMappings.values().remove(childCasting);
+
         }
         return rolePlayerMappings;
     }

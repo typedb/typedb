@@ -31,6 +31,9 @@ entity5 sub entity
     plays role2
     plays role3;
 
+entity6 sub entity5;
+entity7 sub entity6;
+
 #Relations
 
 binary sub relation

@@ -20,11 +20,10 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 
 import java.util.Collection;
@@ -36,10 +35,6 @@ import java.util.stream.Stream;
  * @author Felix Chapman
  */
 public interface VarPropertyInternal extends VarProperty {
-
-    default void modifyShortcutTraversal(ShortcutTraversal shortcutTraversal) {
-        shortcutTraversal.setInvalid();
-    }
 
     /**
      * Check if the given property can be used in a match query
