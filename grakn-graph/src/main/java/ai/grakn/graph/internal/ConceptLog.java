@@ -165,7 +165,9 @@ class ConceptLog {
         modifiedResources.remove(concept);
         conceptCache.remove(concept.getId());
         if(concept.isType()){
-            typeCache.remove(((TypeImpl) concept).getLabel());
+            TypeLabel label = ((TypeImpl) concept).getLabel();
+            typeCache.remove(label);
+            labelCache.remove(label);
         }
     }
 
@@ -190,6 +192,17 @@ class ConceptLog {
             typeCache.put(type.getLabel(), type);
             if(!type.isShard()) labelCache.put(type.getLabel(), type.getTypeId());
         }
+    }
+
+
+    /**
+     * Caches the mapping of a type label to a type id. This is necessary in order for ANY types to be looked up.
+     *
+     * @param label The type label to cache
+     * @param id Its equivalent id which can be looked up quickly in the graph
+     */
+    void cacheLabel(TypeLabel label, Integer id){
+        labelCache.put(label, id);
     }
 
     /**

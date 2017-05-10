@@ -313,7 +313,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             ontologyInitialised = true;
         }
 
-        //Copy entire ontology to the cache. This may be a bad idea as it will slow down graph initialisation
+        //Copy entire ontology to the graph cache. This may be a bad idea as it will slow down graph initialisation
         getMetaConcept().subTypes().forEach(type -> {
             getCachedLabels().put(type.getLabel(), type.getTypeId());
             getCachedOntology().put(type.getLabel(), type);
@@ -391,6 +391,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private void loadOntologyCacheIntoTransactionCache(ConceptLog conceptLog){
         ImmutableMap<TypeLabel, Type> cachedOntologySnapshot = ImmutableMap.copyOf(getCachedOntology().asMap());
+        ImmutableMap<TypeLabel, Integer> cachedLabelsSnapshot = ImmutableMap.copyOf(getCachedLabels());
 
         //Read central cache into conceptLog cloning only base concepts. Sets clones later
         for (Type type : cachedOntologySnapshot.values()) {
@@ -403,6 +404,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //noinspection unchecked
             ((TypeImpl) type).copyCachedConcepts(cachedOntologySnapshot.get(type.getLabel()));
         }
+
+        //Load Labels Separately. We do this because the TypeCache may have expired.
+        cachedLabelsSnapshot.forEach(conceptLog::cacheLabel);
 
         //Purge clone cache to save memory
         localCloneCache.remove();
