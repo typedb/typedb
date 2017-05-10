@@ -117,7 +117,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //----------------------------- Transaction Thread Bound
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
-    private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsReadOnly = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeLabel, Type>> localCloneCache = new ThreadLocal<>();
@@ -143,9 +142,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //Initialise Graph
         getTxCache().openTx();
 
-        localShowImplicitStructures.set(true);
+        getTxCache().showImplicitTypes(true);
         if(initialiseMetaConcepts()) close(true, false);
-        localShowImplicitStructures.set(false);
+        getTxCache().showImplicitTypes(false);
 
         //Set batch loading because ontology has been loaded
         this.batchLoadingEnabled = batchLoadingEnabled;
@@ -261,7 +260,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public boolean implicitConceptsVisible(){
-        return getObjectFromThreadLocal(localShowImplicitStructures, () -> false);
+        return getTxCache().implicitTypesVisibile();
     }
 
     @Override
@@ -271,7 +270,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public void showImplicitConcepts(boolean flag){
-        localShowImplicitStructures.set(flag);
+        getTxCache().showImplicitTypes(flag);
     }
 
     @Override

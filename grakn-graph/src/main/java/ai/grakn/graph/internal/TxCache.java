@@ -53,6 +53,7 @@ import java.util.Set;
  *
  */
 class TxCache {
+    //TODO: Make graph specific caches shared among transactions
     private final AbstractGraknGraph<?> graknGraph;
 
     //Caches any concept which has been touched before
@@ -75,8 +76,9 @@ class TxCache {
     //We Track the number of instances each type has lost or gained
     private final Map<TypeLabel, Long> instanceCount = new HashMap<>();
 
-    //Transaction Meta Data
+    //Transaction Specific Meta Data
     private boolean isTxOpen = false;
+    private boolean showImplicitTypes = false;
 
     TxCache(AbstractGraknGraph<?> graknGraph) {
         this.graknGraph = graknGraph;
@@ -318,14 +320,21 @@ class TxCache {
         return new JSONObject(conceptByIndex);
     }
 
-
-    public void closeTx(){
+    //--------------------------------------- Transaction Specific Meta Data -------------------------------------------
+    void closeTx(){
         isTxOpen = false;
     }
-    public void openTx(){
+    void openTx(){
         isTxOpen = true;
     }
-    public boolean isTxOpen(){
+    boolean isTxOpen(){
         return isTxOpen;
+    }
+
+    void showImplicitTypes(boolean flag){
+        showImplicitTypes = flag;
+    }
+    boolean implicitTypesVisibile(){
+        return showImplicitTypes;
     }
 }
