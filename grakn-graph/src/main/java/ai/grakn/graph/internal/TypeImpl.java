@@ -68,7 +68,6 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
-    private final Integer cachedTypeId;
     private final TypeLabel cachedTypeLabel;
     private ComponentCache<Boolean> cachedIsImplicit = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
     private ComponentCache<Boolean> cachedIsAbstract = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
@@ -94,11 +93,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         VertexProperty<String> typeLabel = v.property(Schema.ConceptProperty.TYPE_LABEL.name());
         if(typeLabel.isPresent()) {
             cachedTypeLabel = TypeLabel.of(typeLabel.value());
-            cachedTypeId = v.value(Schema.ConceptProperty.TYPE_ID.name());
             isShard(false);
         } else {
             cachedTypeLabel = TypeLabel.of("SHARDED TYPE-" + getId().getValue()); //This is just a place holder it is never actually committed
-            cachedTypeId = null; //Shards don't have indexed Ids
             isShard(true);
         }
     }
@@ -117,7 +114,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     TypeImpl(TypeImpl<T, V> type) {
         super(type);
         this.cachedTypeLabel = type.getLabel();
-        this.cachedTypeId = type.getTypeId();
         type.cachedIsImplicit.ifPresent(value -> this.cachedIsImplicit.set(value));
         type.cachedIsAbstract.ifPresent(value -> this.cachedIsAbstract.set(value));
     }
