@@ -81,6 +81,8 @@ public class TypeAtom extends Binary{
     public boolean isRuleApplicable(InferenceRule child) {
         Atom ruleAtom = child.getHead().getAtom();
         return ruleAtom.isType()
+                //ensure not ontological atom query
+                && getPattern().asVar().hasProperty(IsaProperty.class)
                 && this.getType() != null
                 && this.getType().subTypes().contains(ruleAtom.getType());
     }
