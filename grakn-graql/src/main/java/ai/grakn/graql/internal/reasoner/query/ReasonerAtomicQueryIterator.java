@@ -18,11 +18,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tuple-at-a-time iterator for this atomic query.
+ *
+ * <p>
+ * Tuple-at-a-time iterator for atomic queries.
  * Resolves the atomic query by:
  * 1) doing DB lookup
  * 2) applying a rule
- * 3) doing a lemma (previously derived answer) lookup
+ * 3) doing a lemma (previously derived answer) lookup from query cache
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
  */
 class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 

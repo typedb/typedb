@@ -84,7 +84,6 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         else {
             if (atomicQueryIterator.hasNext()) {
                 partialSub = atomicQueryIterator.next();
-                //TODO if to use the polymorphic iterator method the atomic iterator needs to acknowledge the sub
                 queryIterator = getQueryPrime().iterator(partialSub, subGoals, cache);
                 return hasNext();
             }
@@ -99,7 +98,7 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         return sub;
     }
 
-    //TODO ensapsulate in factory
+    //TODO encapsulate in factory
     private ReasonerQueryImpl getQueryPrime(){
         return queryPrime.isAtomic()? new ReasonerAtomicQuery(queryPrime.getTopAtom()) : queryPrime;
     }
