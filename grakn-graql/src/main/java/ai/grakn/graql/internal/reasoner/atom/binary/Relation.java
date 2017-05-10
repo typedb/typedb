@@ -39,8 +39,6 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -91,7 +89,6 @@ public class Relation extends TypeAtom {
     private Multimap<RoleType, Pair<VarName, Type>> roleVarTypeMap = null;
     private Multimap<RoleType, String> roleConceptIdMap = null;
     private Set<RelationPlayer> relationPlayers = null;
-
 
     public Relation(VarAdmin pattern, IdPredicate predicate, ReasonerQuery par) { super(pattern, predicate, par);}
 
@@ -383,35 +380,10 @@ public class Relation extends TypeAtom {
         if (type != null) addType(type);
     }
 
-    private void inferRelationTypeFromRelates() {
-        ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-        VarName valueVariable = getValueVariable();
-        TypeAtom hrAtom = parent.getAtoms().stream()
-                .filter(at -> at.getVarName().equals(valueVariable))
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .filter(Atom::isType).map(at -> (TypeAtom) at)
-                .findFirst().orElse(null);
-        if (hrAtom != null) {
-            ReasonerAtomicQuery hrQuery = new ReasonerAtomicQuery(hrAtom);
-            QueryAnswers answers = new QueryAnswers(hrQuery.getMatchQuery().execute());
-            if (answers.size() == 1) {
-                IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
-                        answers.stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
-
-                Relation newRelation = new Relation(getPattern().asVar(), newPredicate, parent);
-                parent.removeAtomic(hrAtom.getPredicate());
-                parent.removeAtomic(hrAtom);
-                parent.removeAtomic(this);
-                parent.addAtomic(newRelation);
-                parent.addAtomic(newPredicate);
-            }
-        }
-    }
 
     @Override
     public void inferTypes() {
         if (getPredicate() == null) inferRelationTypeFromTypes();
-        if (getPredicate() == null) inferRelationTypeFromRelates();
     }
 
     @Override

@@ -49,12 +49,12 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
     private final QueryCache<ReasonerAtomicQuery> cache;
     private final Set<ReasonerAtomicQuery> subGoals;
 
-    private Iterator<Answer> queryIterator;
     private final Iterator<Answer> atomicQueryIterator;
+    private Iterator<Answer> queryIterator = Collections.emptyIterator();
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
-    ReasonerQueryImplIterator(ReasonerQueryImpl query,
+    ReasonerQueryImplIterator(ReasonerQueryImpl q,
                               Answer sub,
                               Set<ReasonerAtomicQuery> subGoals,
                               QueryCache<ReasonerAtomicQuery> cache){
@@ -62,20 +62,15 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         this.cache = cache;
 
         //get prioritised atom and construct atomic query from it
-        this.queryPrime = new ReasonerQueryImpl(query);
-        queryPrime.addSubstitution(sub);
-        Atom topAtom = queryPrime.getTopAtom();
-        ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
+        ReasonerQueryImpl query = new ReasonerQueryImpl(q);
+        query.addSubstitution(sub);
+        Atom topAtom = query.getTopAtom();
 
-        LOG.trace("CQ: " + queryPrime);
+        LOG.trace("CQ: " + query);
         LOG.trace("CQ delta: " + sub);
 
-        //TODO:query factory should simplify that
-        boolean isAtomic = queryPrime.isAtomic();
-        if (!isAtomic) queryPrime.removeAtom(topAtom);
-
-        atomicQueryIterator = isAtomic? Collections.emptyIterator() : q.iterator(new QueryAnswer(), subGoals, cache);
-        queryIterator = isAtomic? q.iterator(new QueryAnswer(), subGoals, cache) : Collections.emptyIterator();
+        this.atomicQueryIterator = new ReasonerAtomicQuery(topAtom).iterator(new QueryAnswer(), subGoals, cache);
+        this.queryPrime = ReasonerQueries.prime(query, topAtom);
     }
 
     @Override
@@ -84,7 +79,7 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         else {
             if (atomicQueryIterator.hasNext()) {
                 partialSub = atomicQueryIterator.next();
-                queryIterator = getQueryPrime().iterator(partialSub, subGoals, cache);
+                queryIterator = queryPrime.iterator(partialSub, subGoals, cache);
                 return hasNext();
             }
             else return false;
@@ -96,10 +91,5 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         Answer sub = queryIterator.next();
         sub = sub.merge(partialSub, true);
         return sub;
-    }
-
-    //TODO encapsulate in factory
-    private ReasonerQueryImpl getQueryPrime(){
-        return queryPrime.isAtomic()? new ReasonerAtomicQuery(queryPrime.getTopAtom()) : queryPrime;
     }
 }

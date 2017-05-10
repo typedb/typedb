@@ -49,12 +49,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -83,17 +81,17 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     private Atom atom;
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
-    public ReasonerAtomicQuery(Conjunction<VarAdmin> pattern, GraknGraph graph) {
+    ReasonerAtomicQuery(Conjunction<VarAdmin> pattern, GraknGraph graph) {
         super(pattern, graph);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
-    public ReasonerAtomicQuery(ReasonerAtomicQuery query) {
+    ReasonerAtomicQuery(ReasonerQueryImpl query) {
         super(query);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
-    public ReasonerAtomicQuery(Atom at) {
+    ReasonerAtomicQuery(Atom at) {
         super(at);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
@@ -330,6 +328,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return dCache.record(this, answerStream);
     }
 
+    @Override
     public Stream<Answer> resolve(boolean materialise, boolean explanation, LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
         if (!this.getAtom().isRuleResolvable()) {
             return this.getMatchQuery().admin().stream().map(QueryAnswer::new);
