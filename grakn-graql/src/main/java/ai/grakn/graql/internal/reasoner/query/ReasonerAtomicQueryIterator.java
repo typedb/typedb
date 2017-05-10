@@ -1,14 +1,9 @@
 package ai.grakn.graql.internal.reasoner.query;
 
-/**
- * Created by kasper on 10/05/17.
- */
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
@@ -16,9 +11,7 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.util.Pair;
 import org.slf4j.Logger;
@@ -52,16 +45,15 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
         query.addSubstitution(sub);
 
-        LOG.debug("AQ: " + query);
+        LOG.trace("AQ: " + query);
+        LOG.trace("AQ delta: " + sub);
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
         this.queryIterator = streamUnifierPair.getKey().iterator();
         this.cacheUnifier = streamUnifierPair.getValue().invert();
 
-        this.ruleIterator = subGoals.contains(query)? Collections.emptyIterator() : query.getRuleIterator();
-
         //if this already has full substitution and exists in the db then do not resolve further
-        /*
+        //NB: the queryIterator check is purely because we may want to ask for an explanation
         boolean hasFullSubstitution = query.hasFullSubstitution();
         if(subGoals.contains(query)
                 || (hasFullSubstitution && queryIterator.hasNext() ) ){
@@ -70,7 +62,6 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         else {
             this.ruleIterator = query.getRuleIterator();
         }
-        */
 
         //mark as visited and hence not admissible
         if (ruleIterator.hasNext()) subGoals.add(query);
@@ -82,8 +73,8 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         else{
             if (ruleIterator.hasNext()) {
                 currentRule = ruleIterator.next();
-                LOG.debug("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", id: " + currentRule.getRuleId());
-                LOG.debug(currentRule.getBody().getResolutionPlan());
+                LOG.trace("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", id: " + currentRule.getRuleId());
+                LOG.trace(currentRule.getBody().getResolutionPlan());
                 //TODO: empty sub as the sub is propagated in rule.propagateConstraints method
                 queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
                 return hasNext();
@@ -102,8 +93,6 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         if (sub.getExplanation().isLookupExplanation()) sub = sub.explain(new LookupExplanation(query));
         else sub = sub.explain(new RuleExplanation(currentRule));
 
-        LOG.debug("Answer to: " + query);
-        LOG.debug(sub.toString());
         return cache.recordAnswerWithUnifier(query, sub, cacheUnifier);
     }
 

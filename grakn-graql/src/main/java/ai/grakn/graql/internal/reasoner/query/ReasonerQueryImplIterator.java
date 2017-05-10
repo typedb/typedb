@@ -29,7 +29,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  *
  * <p>
@@ -44,7 +43,7 @@ import org.slf4j.LoggerFactory;
  */
 class ReasonerQueryImplIterator extends ReasonerQueryIterator {
 
-    private final Answer partialSubstitution;
+    private Answer partialSub = new QueryAnswer();
     private final ReasonerQueryImpl queryPrime;
 
     private final QueryCache<ReasonerAtomicQuery> cache;
@@ -59,7 +58,6 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
                               Answer sub,
                               Set<ReasonerAtomicQuery> subGoals,
                               QueryCache<ReasonerAtomicQuery> cache){
-        this.partialSubstitution = sub;
         this.subGoals = subGoals;
         this.cache = cache;
 
@@ -69,9 +67,10 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         Atom topAtom = queryPrime.getTopAtom();
         ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
 
-        LOG.debug("CQ: " + queryPrime);
-        LOG.debug("top: " + q);
+        LOG.trace("CQ: " + queryPrime);
+        LOG.trace("CQ delta: " + sub);
 
+        //TODO:query factory should simplify that
         boolean isAtomic = queryPrime.isAtomic();
         if (!isAtomic) queryPrime.removeAtom(topAtom);
 
@@ -84,9 +83,9 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         if (queryIterator.hasNext()) return true;
         else {
             if (atomicQueryIterator.hasNext()) {
-                Answer sub = atomicQueryIterator.next();
+                partialSub = atomicQueryIterator.next();
                 //TODO if to use the polymorphic iterator method the atomic iterator needs to acknowledge the sub
-                queryIterator = getQueryPrime().iterator(sub, subGoals, cache);
+                queryIterator = getQueryPrime().iterator(partialSub, subGoals, cache);
                 return hasNext();
             }
             else return false;
@@ -96,10 +95,9 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
     @Override
     public Answer next() {
         Answer sub = queryIterator.next();
-        sub = sub.merge(partialSubstitution, true);
+        sub = sub.merge(partialSub, true);
         return sub;
     }
-
 
     //TODO ensapsulate in factory?
     private ReasonerQueryImpl getQueryPrime(){
