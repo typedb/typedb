@@ -19,12 +19,15 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -50,6 +53,8 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
     private Iterator<Answer> queryIterator;
     private final Iterator<Answer> atomicQueryIterator;
 
+    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
+
     ReasonerQueryImplIterator(ReasonerQueryImpl query,
                               Answer sub,
                               Set<ReasonerAtomicQuery> subGoals,
@@ -64,11 +69,14 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         Atom topAtom = queryPrime.getTopAtom();
         ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
 
+        LOG.debug("CQ: " + queryPrime);
+        LOG.debug("top: " + q);
+
         boolean isAtomic = queryPrime.isAtomic();
         if (!isAtomic) queryPrime.removeAtom(topAtom);
 
-        atomicQueryIterator = isAtomic? Collections.emptyIterator() : q.iterator(subGoals, cache);
-        queryIterator = isAtomic? q.iterator(subGoals, cache) : Collections.emptyIterator();
+        atomicQueryIterator = isAtomic? Collections.emptyIterator() : q.iterator(new QueryAnswer(), subGoals, cache);
+        queryIterator = isAtomic? q.iterator(new QueryAnswer(), subGoals, cache) : Collections.emptyIterator();
     }
 
     @Override
@@ -77,6 +85,7 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         else {
             if (atomicQueryIterator.hasNext()) {
                 Answer sub = atomicQueryIterator.next();
+                //TODO if to use the polymorphic iterator method the atomic iterator needs to acknowledge the sub
                 queryIterator = getQueryPrime().iterator(sub, subGoals, cache);
                 return hasNext();
             }
@@ -91,6 +100,8 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         return sub;
     }
 
+
+    //TODO ensapsulate in factory?
     private ReasonerQueryImpl getQueryPrime(){
         return queryPrime.isAtomic()? new ReasonerAtomicQuery(queryPrime.getTopAtom()) : queryPrime;
     }

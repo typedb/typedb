@@ -177,7 +177,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return queryVisited ? cache.getAnswerStream(this) : DBlookup(cache);
     }
 
-    private Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
+    Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
         boolean queryVisited = cache.contains(this);
         return queryVisited ? cache.getAnswerStreamWithUnifier(this) : new Pair<>(DBlookup(), new UnifierImpl());
     }
@@ -234,17 +234,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return getUnifiersFromPermutations(permuteVars, varPermutations);
     }
 
-    @SuppressWarnings("unchecked")
-    //Query type atoms -> Answer
-    private Answer getIdPredicateAnswer(){
-        Object result = this.getTypeConstraints().stream()
-                .map(TypeAtom::getPredicate).filter(Objects::nonNull)
-                .collect(Collectors.toMap(IdPredicate::getVarName, sub -> graph().getConcept(sub.getPredicate())));
-        return new QueryAnswer((Map<VarName, Concept>)result);
-    }
-
     private Stream<Answer> getIdPredicateAnswerStream(Stream<Answer> stream){
-        Answer idPredicateAnswer = getIdPredicateAnswer();
+        Answer idPredicateAnswer = getSubstitution();
         return stream.map(answer -> {
             AnswerExplanation exp = answer.getExplanation();
             return answer.merge(idPredicateAnswer).explain(exp);
@@ -347,10 +338,27 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
     }
 
+    @Override
+    public ReasonerQueryIterator iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return new ReasonerAtomicQueryIterator(this, sub, subGoals, cache);
+    }
 
-    public ReasonerQueryIterator iterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        //TODO switch to iterative deepening for queries with no subs?
-        return new ReasonerAtomicQueryIterator(subGoals, cache);
+    Iterator<InferenceRule> getRuleIterator(){
+        Atom atom = getAtom();
+        //list cause rules with permuted role types are alpha-equivalent
+        List<InferenceRule> rules = getAtom().getApplicableRules().stream()
+                .map(rule -> rule.unify(atom))
+                .collect(Collectors.toList());
+        if (atom.isRelation()
+                && !((Relation)atom).getUnmappedRolePlayers().isEmpty()) {
+            rules = rules.stream()
+                    .flatMap(rule -> {
+                        Set<Unifier> permutationUnifiers = getPermutationUnifiers(rule.getHead().getAtom());
+                        return permutationUnifiers.stream()
+                                .map(unifier -> new InferenceRule(rule).unify(unifier));
+                    }).collect(Collectors.toList());
+        }
+        return rules.stream().map(rule -> rule.propagateConstraints(getAtom())).iterator();
     }
 
     /**
@@ -436,93 +444,5 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         private long differentialAnswerSize(){
             return dCache.answerSize(subGoals);
         }
-    }
-
-    /**
-     * Tuple-at-a-time iterator for this atomic query.
-     * Resolves the atomic query by:
-     * 1) doing DB lookup
-     * 2) applying a rule
-     * 3) doing a lemma (previously derived answer) lookup
-     */
-    private class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
-
-        private final QueryCache<ReasonerAtomicQuery> cache;
-        private final Set<ReasonerAtomicQuery> subGoals;
-        private final Iterator<InferenceRule> ruleIterator;
-        private Iterator<Answer> queryIterator = Collections.emptyIterator();
-        private Unifier cacheUnifier = new UnifierImpl();
-
-        private InferenceRule currentRule = null;
-
-        ReasonerAtomicQueryIterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> qc){
-            this.subGoals = subGoals;
-            this.cache = qc;
-
-            boolean hasFullSubstitution = hasFullSubstitution();
-
-            Pair<Stream<Answer>, Unifier> streamUnifierPair = lookupWithUnifier(cache);
-            this.queryIterator = streamUnifierPair.getKey().iterator();
-            this.cacheUnifier = streamUnifierPair.getValue().invert();
-
-            //if this already has full substitution and exists in the db then do not resolve further
-            if(subGoals.contains(ReasonerAtomicQuery.this)
-                || (hasFullSubstitution && queryIterator.hasNext() ) ){
-                this.ruleIterator = Collections.emptyIterator();
-            }
-            else {
-                this.ruleIterator = getRuleIterator();
-            }
-
-            //mark as visited and hence not admissible
-            if (ruleIterator.hasNext()) subGoals.add(ReasonerAtomicQuery.this);
-        }
-
-        private Iterator<InferenceRule> getRuleIterator(){
-            Atom atom = getAtom();
-            //list cause rules with permuted role types are alpha-equivalent
-            List<InferenceRule> rules = getAtom().getApplicableRules().stream()
-                    .map(rule -> rule.unify(atom))
-                    .collect(Collectors.toList());
-            if (atom.isRelation()
-                    && !((Relation)atom).getUnmappedRolePlayers().isEmpty()) {
-                rules = rules.stream()
-                        .flatMap(rule -> {
-                            Set<Unifier> permutationUnifiers = getPermutationUnifiers(rule.getHead().getAtom());
-                            return permutationUnifiers.stream()
-                                    .map(unifier -> new InferenceRule(rule).unify(unifier));
-                        }).collect(Collectors.toList());
-            }
-            return rules.stream().map(rule -> rule.propagateConstraints(getAtom())).iterator();
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (queryIterator.hasNext()) return true;
-            else{
-                if (ruleIterator.hasNext()) {
-                    currentRule = ruleIterator.next();
-                    LOG.trace("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", id: " + currentRule.getRuleId());
-                    LOG.trace(currentRule.getBody().getResolutionPlan());
-                    queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
-                    return hasNext();
-                }
-                else return false;
-            }
-        }
-
-        @Override
-        public Answer next() {
-            Answer sub = queryIterator.next()
-                    .merge(getIdPredicateAnswer())
-                    .filterVars(getVarNames());
-
-            //assign appropriate explanation
-            if (sub.getExplanation().isLookupExplanation()) sub = sub.explain(new LookupExplanation(ReasonerAtomicQuery.this));
-            else sub = sub.explain(new RuleExplanation(currentRule));
-
-            return cache.recordAnswerWithUnifier(ReasonerAtomicQuery.this, sub, cacheUnifier);
-        }
-
     }
 }

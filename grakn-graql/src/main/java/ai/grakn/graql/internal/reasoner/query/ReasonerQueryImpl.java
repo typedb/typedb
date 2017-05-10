@@ -526,7 +526,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return true;
     }
 
-    private Answer getSubstitution(){
+    Answer getSubstitution(){
         Set<IdPredicate> predicates = this.getTypeConstraints().stream()
                 .map(TypeAtom::getPredicate)
                 .filter(Objects::nonNull)
