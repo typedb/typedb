@@ -17,7 +17,7 @@
  *
  */
 
-package ai.grakn.graph.property;
+package ai.grakn.graph.abc;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
@@ -78,6 +78,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
+
 
 @RunWith(JUnitQuickcheck.class)
 public class GraknGraphPropertyTest {

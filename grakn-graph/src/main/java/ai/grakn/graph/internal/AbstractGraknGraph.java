@@ -124,6 +124,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<Map<TypeLabel, Type>> localCloneCache = new ThreadLocal<>();
 
     public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled, Properties properties) {
+        localShowImplicitStructures.set(true);
+
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
@@ -142,9 +144,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 .expireAfterWrite(cacheTimeout, TimeUnit.MILLISECONDS)
                 .build();
 
-        if(initialiseMetaConcepts()) commitTransactionInternal();
+        if(initialiseMetaConcepts()) close(true, false);
 
         this.batchLoadingEnabled = batchLoadingEnabled;
+
         localShowImplicitStructures.set(false);
     }
 
@@ -191,6 +194,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * Opens the thread bound transaction
      */
     public void openTransaction(GraknTxType txType){
+        if(localConceptLog.get() != null){
+            ConceptLog log = localConceptLog.get();
+            if(log.convertLabelToId(Schema.MetaSchema.CONCEPT.getLabel()) == null) {
+                System.out.println("Concept Log Left Over From Previous Transaction AND it is empty");
+            }
+        }
+
         localIsOpen.set(true);
         if(GraknTxType.READ.equals(txType)) {
             localIsReadOnly.set(true);
@@ -221,11 +231,26 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     ConceptLog getConceptLog() {
-        return getObjectFromThreadLocal(localConceptLog, () -> {
+        ConceptLog log = getObjectFromThreadLocal(localConceptLog, () -> {
             ConceptLog conceptLog = new ConceptLog(this);
             loadOntologyCacheIntoTransactionCache(conceptLog);
             return conceptLog;
         });
+
+
+        if(log.convertLabelToId(Schema.MetaSchema.CONCEPT.getLabel()) == null){
+            StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+
+            if(stack.length >= 7){
+                if(stack[7].getMethodName().equals("initialiseMetaConcepts")){
+                    System.out.println(".");
+                } else {
+                    System.out.println("Loaded empty concept log");
+                }
+            }
+        }
+
+        return log;
     }
 
     private Map<TypeLabel, Type> getCloneCache(){
@@ -310,10 +335,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             ontologyInitialised = true;
         }
 
-        //Copy the ontology to the caches
+        //Initialise Ontology Caches
         getMetaConcept().subTypes().forEach(type -> {
             cachedLabels.put(type.getLabel(), type.getTypeId());
-            getConceptLog().cacheConcept((ConceptImpl) type);
+            cachedOntology.put(type.getLabel(), type);
         });
 
         return ontologyInitialised;
