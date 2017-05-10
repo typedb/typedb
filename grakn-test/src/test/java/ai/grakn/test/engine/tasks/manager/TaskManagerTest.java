@@ -36,6 +36,7 @@ import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,6 +47,8 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.tasks.TaskSchedule.now;
@@ -81,6 +84,8 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(JUnitQuickcheck.class)
 public class TaskManagerTest {
+
+    private final static Logger LOG = LoggerFactory.getLogger(TaskManagerTest.class);
 
     @Before
     public void clearAllTasks(){
@@ -311,7 +316,7 @@ public class TaskManagerTest {
 
         whenTaskStarts(taskId -> {
             startedCounter.incrementAndGet();
-            throw new RuntimeException();
+            throw new RuntimeException("Deliberate test failure");
         });
 
         // Make task recurring
@@ -369,8 +374,19 @@ public class TaskManagerTest {
     }
 
 
-    private void assertStatus(TaskManager manager, TaskState task, TaskStatus... status) {
+    private void assertStatus(TaskManager manager, TaskState task, TaskStatus... expectedStatus) {
         assertTrue("Task not in storage", manager.storage().containsTask(task.getId()));
-        assertThat(manager.storage().getState(task.getId()).status(), isOneOf(status));
+
+        // Get the state from storage
+        TaskState stateInStorage = manager.storage().getState(task.getId());
+        TaskStatus statusInStorage = stateInStorage.status();
+
+        // If the task has failed and was not expected to, print why
+        if(statusInStorage == TaskStatus.FAILED && !Arrays.asList(expectedStatus).contains(statusInStorage)){
+            LOG.error(stateInStorage.stackTrace());
+        }
+
+        // Assert the final state was expected
+        assertThat(statusInStorage, isOneOf(expectedStatus));
     }
 }

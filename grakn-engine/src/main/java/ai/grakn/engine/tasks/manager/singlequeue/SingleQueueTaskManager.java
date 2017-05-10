@@ -123,7 +123,6 @@ public class SingleQueueTaskManager implements TaskManager {
             if (event.getType() == CHILD_ADDED) {
                 TaskId id = TaskId.of(new String(event.getData().getData(), zkCharset));
                 LOG.debug("Attempting to stop task {}", id);
-                System.out.println(taskRunners);
                 taskRunners.forEach(taskRunner -> taskRunner.stopTask(id));
             }
         });
