@@ -233,7 +233,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             localConceptLog.set(txCache = new TxCache(this));
         }
 
-        if(txCache.ontologyNotCached()){
+        if(txCache.isTxOpen() && txCache.ontologyNotCached()){
             loadOntologyCacheIntoTransactionCache(txCache);
         }
 
