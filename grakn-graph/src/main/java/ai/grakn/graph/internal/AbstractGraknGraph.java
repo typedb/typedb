@@ -245,7 +245,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 if(stack[7].getMethodName().equals("initialiseMetaConcepts")){
                     System.out.println(".");
                 } else {
-                    System.out.println("Loaded empty concept log");
+                    System.out.println("Loaded empty concept log on graph " + keyspace);
                 }
             }
         }
