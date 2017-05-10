@@ -201,7 +201,12 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.19.1</version>
                 <configuration>
-                    <systemProperties>
+                    <systemPropertyVariables>
+                        <grakn.conf>${main.basedir}/conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
+                        <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
+                        <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
+                    </systemPropertyVariables>                    
+                    <systemProperties>                        
                         <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
                         <grakn.test.timerecord.file>test-timings.csv</grakn.test.timerecord.file>
                     </systemProperties>
@@ -211,7 +216,8 @@
                             <value>ai.grakn.test.listener.TimingListener</value>
                         </property>
                     </properties>
-                    <workingDirectory>${main.basedir}</workingDirectory>                    
+                    <trimStackTrace>false</trimStackTrace>
+                    <argLine>-XX:+HeapDumpOnOutOfMemoryError</argLine>                    
                 </configuration>
             </plugin>            
             <plugin>
