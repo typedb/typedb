@@ -117,7 +117,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //----------------------------- Transaction Thread Bound
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
-    private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeLabel, Type>> localCloneCache = new ThreadLocal<>();
 
     public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled, Properties properties) {
@@ -254,7 +253,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public boolean implicitConceptsVisible(){
-        return getTxCache().implicitTypesVisibile();
+        return getTxCache().implicitTypesVisible();
     }
 
     @Override
@@ -507,7 +506,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private <X> X operateOnOpenGraph(Supplier<X> supplier){
         if(isClosed()){
-            String reason = localClosedReason.get();
+            String reason = getTxCache().getClosedReason();
             if(reason == null){
                 throw new GraphRuntimeException(ErrorMessage.GRAPH_CLOSED.getMessage(getKeyspace()));
             } else {
@@ -853,8 +852,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public void closeSession(){
         try {
+            getTxCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(getKeyspace()));
             getTinkerPopGraph().close();
-            localClosedReason.set(ErrorMessage.SESSION_CLOSED.getMessage(getKeyspace()));
         } catch (Exception e) {
             throw new GraphRuntimeException("Unable to close graph [" + getKeyspace() + "]", e);
         }
@@ -903,9 +902,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
         } finally {
-            localClosedReason.set(closedReason);
             localConceptLog.remove();
-            getTxCache().closeTx();
+            getTxCache().closeTx(closedReason);
         }
     }
 
