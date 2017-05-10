@@ -178,7 +178,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     boolean isAtomic() {
-        return selectAtoms().size() == 1;
+        return getAtoms().stream().filter(Atomic::isSelectable).count() == 1;
     }
 
     /**
