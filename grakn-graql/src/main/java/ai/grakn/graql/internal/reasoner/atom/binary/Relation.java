@@ -632,13 +632,14 @@ public class Relation extends TypeAtom {
         Set<Pair<RelationPlayer, RelationPlayer>> rolePlayerMappings = new HashSet<>();
 
         //establish compatible castings for each parent casting
-        Map<RelationPlayer, Collection<RelationPlayer>> compatibleMappings = new HashMap<>();
+        Multimap<RelationPlayer, RelationPlayer> compatibleMappings = HashMultimap.create();
         parentAtom.getRoleRelationPlayerMap();
         Multimap<RoleType, RelationPlayer> childRoleRPMap = getRoleRelationPlayerMap();
         Map<VarName, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap();
         Map<VarName, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap();
 
-        Set<RoleType> rolesAvailable = childRoleRPMap.keySet();
+        Set<RoleType> relationRoles = new HashSet<>(getType().asRelationType().relates());
+        Set<RoleType> childRoles = new HashSet<>(childRoleRPMap.keySet());
 
         parentAtom.getRelationPlayers().stream()
                 .filter(prp -> prp.getRoleType().isPresent())
@@ -654,10 +655,20 @@ public class Relation extends TypeAtom {
                         VarName parentRolePlayer = prp.getRolePlayer().getVarName();
                         Type parentType = parentVarTypeMap.get(parentRolePlayer);
 
-                        Set<RoleType> possibleRoles = parentType != null?
-                                Sets.intersection(new HashSet<>(rolesAvailable), new HashSet<>(parentType.plays())) :
-                                new HashSet<>(rolesAvailable);
-                        Set<RoleType> compatibleChildRoles = isMetaRole? possibleRoles : Sets.intersection(new HashSet<>(parentRole.subTypes()), possibleRoles);
+                        Set<RoleType> compatibleChildRoles = isMetaRole? childRoles : Sets.intersection(new HashSet<>(parentRole.subTypes()), childRoles);
+
+                        if (parentType != null){
+                            boolean isMetaType = Schema.MetaSchema.isMetaLabel(parentType.getLabel());
+                            Set<RoleType> typeRoles = isMetaType? childRoles : new HashSet<>(parentType.plays());
+
+                            //incompatible type
+                            if (Sets.intersection(relationRoles, typeRoles).isEmpty()) compatibleChildRoles.clear();
+                            else {
+                                compatibleChildRoles = compatibleChildRoles.stream()
+                                        .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || typeRoles.contains(rc))
+                                        .collect(toSet());
+                            }
+                        }
 
                         compatibleChildRoles.stream()
                                 .filter(childRoleRPMap::containsKey)
@@ -671,31 +682,30 @@ public class Relation extends TypeAtom {
                                                 }).collect(toSet()) :
                                             childRoleRPMap.get(r);
 
-                                    if (!compatibleMappings.containsKey(prp)) {
-                                        compatibleMappings.put(prp, childRPs);
-                                    } else {
-                                        compatibleMappings.get(prp).addAll(childRPs);
-                                    }
-
+                                    childRPs.forEach(rp -> compatibleMappings.put(prp, rp));
                                 });
                     }
-
                 });
 
         //self-consistent procedure until no non-empty mappings present
-        while( compatibleMappings.values().stream().filter(s -> !s.isEmpty()).count() > 0) {
-            Map.Entry<RelationPlayer, Collection<RelationPlayer>> entry = compatibleMappings.entrySet().stream()
-                    .filter(e -> !e.getValue().isEmpty())
-                    .sorted(Comparator.comparing(e -> e.getValue().size()))
+        while( compatibleMappings.asMap().values().stream().filter(s -> !s.isEmpty()).count() > 0) {
+            //prioritise mappings with equivalent types and unambiguous mappings
+            Map.Entry<RelationPlayer, RelationPlayer> entry = compatibleMappings.entries().stream()
+                    .sorted(Comparator.comparing(e -> {
+                        Type parentType = parentVarTypeMap.get(e.getKey().getRolePlayer().getVarName());
+                        Type childType = childVarTypeMap.get(e.getValue().getRolePlayer().getVarName());
+                        return !(parentType != null && childType != null && parentType.equals(childType));
+                    }))
+                    .sorted(Comparator.comparing(e -> compatibleMappings.get(e.getKey()).size()))
                     .findFirst().orElse(null);
 
-            Collection<RelationPlayer> compatibleRelationPlayers = entry.getValue();
             RelationPlayer parentCasting = entry.getKey();
-            RelationPlayer childCasting = compatibleRelationPlayers.iterator().next();
+            RelationPlayer childCasting = entry.getValue();
 
             rolePlayerMappings.add(new Pair<>(childCasting, parentCasting));
-            compatibleMappings.remove(parentCasting);
-            compatibleMappings.values().forEach(s -> s.remove(childCasting));
+            compatibleMappings.removeAll(parentCasting);
+            compatibleMappings.values().remove(childCasting);
+
         }
         return rolePlayerMappings;
     }
