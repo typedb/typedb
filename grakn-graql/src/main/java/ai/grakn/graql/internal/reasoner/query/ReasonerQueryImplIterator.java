@@ -99,7 +99,7 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         return sub;
     }
 
-    //TODO ensapsulate in factory?
+    //TODO ensapsulate in factory
     private ReasonerQueryImpl getQueryPrime(){
         return queryPrime.isAtomic()? new ReasonerAtomicQuery(queryPrime.getTopAtom()) : queryPrime;
     }
