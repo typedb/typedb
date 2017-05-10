@@ -380,6 +380,14 @@ public class AtomicTest {
         assertEquals(1, relation2.getApplicableRules().size());
     }
 
+    @Test
+    public void testRuleApplicability_TypeRelation(){
+        GraknGraph graph = ruleApplicabilitySet.graph();
+        String typeString = "{$x isa relation3;}";
+        TypeAtom type = (TypeAtom) new ReasonerAtomicQuery(conjunction(typeString, graph), graph).getAtom();
+        assertEquals(2, type.getApplicableRules().size());
+    }
+
     @Test //test rule applicability for atom with unspecified roles with missing relation players but with possible ambiguous role mapping
     public void testRuleApplicability_MissingRelationPlayers_TypeContradiction(){
         GraknGraph graph = ruleApplicabilitySetWithTypes.graph();
@@ -524,17 +532,22 @@ public class AtomicTest {
     }
 
     @Test
-    public void testRuleApplicability_Resource_TypeMismatch(){
+    public void testRuleApplicability_TypeResource(){
         GraknGraph graph = resourceApplicabilitySet.graph();
         String typeString = "{$x isa res1;}";
+        TypeAtom type = (TypeAtom) new ReasonerAtomicQuery(conjunction(typeString, graph), graph).getAtom();
+        assertEquals(1, type.getApplicableRules().size());
+    }
+
+    @Test
+    public void testRuleApplicability_Resource_TypeMismatch(){
+        GraknGraph graph = resourceApplicabilitySet.graph();
         String resourceString = "{$x isa entity1, has res1 $r;}";
         String resourceString2 = "{$x isa entity2, has res1 $r;}";
         String resourceString3 = "{$x isa entity2, has res1 'test';}";
-        TypeAtom type = (TypeAtom) new ReasonerAtomicQuery(conjunction(typeString, graph), graph).getAtom();
         Resource resource = (Resource) new ReasonerAtomicQuery(conjunction(resourceString, graph), graph).getAtom();
         Resource resource2 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString2, graph), graph).getAtom();
         Resource resource3 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString3, graph), graph).getAtom();
-        assertEquals(1, type.getApplicableRules().size());
         assertEquals(1, resource.getApplicableRules().size());
         assertEquals(0, resource2.getApplicableRules().size());
         assertEquals(0, resource3.getApplicableRules().size());
