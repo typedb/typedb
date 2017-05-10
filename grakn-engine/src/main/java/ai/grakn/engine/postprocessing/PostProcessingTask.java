@@ -121,7 +121,7 @@ public class PostProcessingTask implements BackgroundTask {
             GraphMutators.runGraphMutationWithRetry(configuration,
                     (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds, postProcessingMethod));
 
-            LOG.info(JOB_FINISHED, baseType.name(), conceptIndex, keyspace);
+            LOG.debug(JOB_FINISHED, baseType.name(), conceptIndex, keyspace);
         });
     }
 

@@ -220,7 +220,7 @@ public class LoaderClientTest {
 
             nameTag.resource(nameTagString);
             nameTag.resource(nameTagId);
-            graph.commit();
+            graph.admin().commitNoLogs();
 
             return spy(new LoaderClient(graph.getKeyspace(), Grakn.DEFAULT_URI));
         }
