@@ -53,14 +53,14 @@ public class ResourceDeduplicationMapReduceIT {
     static void transact(Consumer<GraknGraph> action) {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             action.accept(graph);
-            graph.commit();
+            graph.admin().commitNoLogs();
         }
     }
 
     static <T> T transact(Function<GraknGraph, T> action) {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             T result = action.apply(graph);
-            graph.commit();
+            graph.admin().commitNoLogs();
             return result;
         }
     }
@@ -170,8 +170,8 @@ public class ResourceDeduplicationMapReduceIT {
             e2.resource(integerResource.putResource(42));
             r1.resource(booleanResource.putResource(true));
             r1.resource(floatResource.putResource(56.43f));
-            r1.resource(doubleResource.putResource(2342.546));            
-            graph.commit();
+            r1.resource(doubleResource.putResource(2342.546));
+            graph.admin().commitNoLogs();
         });
         ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 
         task.start(checkpoint -> { throw new RuntimeException("No checkpoint expected."); },

@@ -58,8 +58,8 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
 
     @Override
     public boolean isReadOnly() {
-        // An aggregate query may modify the graph if using a user-defined aggregate method
-        return false;
+        //TODO An aggregate query may modify the graph if using a user-defined aggregate method. See TP # 13731.
+        return true;
     }
 
     @Override

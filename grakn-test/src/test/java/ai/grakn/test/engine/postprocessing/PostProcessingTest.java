@@ -141,7 +141,6 @@ public class PostProcessingTest {
 
         //Now fix everything
         PostProcessingTask task = new PostProcessingTask();
-        task.setTimeLapse(0);
         TaskConfiguration configuration = TaskConfiguration.of(
                 Json.object(
                         KEYSPACE, graph.getKeyspace(),
@@ -241,7 +240,6 @@ public class PostProcessingTest {
 
         //Now fix everything
         PostProcessingTask task = new PostProcessingTask();
-        task.setTimeLapse(0);
         TaskConfiguration configuration = TaskConfiguration.of(
                 Json.object(
                         KEYSPACE, graph.getKeyspace(),

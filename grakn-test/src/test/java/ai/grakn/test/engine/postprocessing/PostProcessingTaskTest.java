@@ -18,12 +18,10 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -38,11 +36,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import static ai.grakn.util.REST.Request.KEYSPACE;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -76,57 +70,21 @@ public class PostProcessingTaskTest {
     }
 
     @Test
-    public void whenPPTaskStartCalledAndNotEnoughTimeElapsed_PostProcessingRunNotCalled(){
-        PostProcessingTask task = new PostProcessingTask();
-
-        task.setTimeLapse(Long.MAX_VALUE);
-        task.start(mockConsumer, mockConfiguration);
-
-        verify(mockConfiguration, never()).json();
-    }
-
-    @Test
-    public void whenPPTaskStartCalledAndEnoughTimeElapsed_PostProcessingRunCalled(){
-        PostProcessingTask task = new PostProcessingTask();
-
-        task.setTimeLapse(0);
-        task.start(mockConsumer, mockConfiguration);
-
-        verify(mockConfiguration, times(4)).json();
-    }
-
-    @Test
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.runDelayedTask(mockConsumer, mockConfiguration);
+        task.start(mockConsumer, mockConfiguration);
 
-        verify(mockConfiguration, times(4)).json();
+        verify(mockConfiguration, times(6)).json();
     }
 
     @Test
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.runDelayedTask(mockConsumer, mockConfiguration);
+        task.start(mockConsumer, mockConfiguration);
 
-        verify(mockConfiguration, times(4)).json();
-    }
-
-    @Test
-    public void whenPPTaskStartCalledAndNotEnoughTimeElapsed_PostProcessingStartReturnsTrue(){
-        PostProcessingTask task = new PostProcessingTask();
-        task.setTimeLapse(Long.MAX_VALUE);
-
-        assertTrue("Task " + task + " ran when it should not have", task.start(mockConsumer, mockConfiguration));
-    }
-
-    @Test
-    public void whenPPTaskStartCalledAndPostProcessingRuns_PostProcessingStartReturnsFalse(){
-        PostProcessingTask task = new PostProcessingTask();
-        task.setTimeLapse(0);
-
-        assertFalse("Task " + task + " did not run when it should have", task.start(mockConsumer, mockConfiguration));
+        verify(mockConfiguration, times(6)).json();
     }
 
     @Test
@@ -135,8 +93,8 @@ public class PostProcessingTaskTest {
         PostProcessingTask task1 = new PostProcessingTask();
         PostProcessingTask task2 = new PostProcessingTask();
 
-        Thread pp1 = new Thread(() -> task1.runDelayedTask(mockConsumer, mockConfiguration));
-        Thread pp2 = new Thread(() -> task2.runDelayedTask(mockConsumer, mockConfiguration));
+        Thread pp1 = new Thread(() -> task1.start(mockConsumer, mockConfiguration));
+        Thread pp2 = new Thread(() -> task2.start(mockConsumer, mockConfiguration));
 
         pp1.start();
         pp2.start();
@@ -144,6 +102,6 @@ public class PostProcessingTaskTest {
         pp1.join();
         pp2.join();
 
-        verify(mockConfiguration, times(8)).json();
+        verify(mockConfiguration, times(12)).json();
     }
 }
