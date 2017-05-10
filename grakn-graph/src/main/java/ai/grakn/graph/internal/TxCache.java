@@ -286,7 +286,7 @@ class TxCache {
      * @param label The type label to cache
      * @param id Its equivalent id which can be looked up quickly in the graph
      */
-    void cacheLabel(TypeLabel label, Integer id){
+    private void cacheLabel(TypeLabel label, Integer id){
         labelCache.put(label, id);
     }
 
@@ -391,7 +391,13 @@ class TxCache {
     //--------------------------------------- Transaction Specific Meta Data -------------------------------------------
     void closeTx(String closedReason){
         isTxOpen = false;
-        this.closedReason =  closedReason;
+        this.closedReason = closedReason;
+        modifiedConcepts.clear();
+        modifiedCastings.clear();
+        modifiedResources.clear();
+        conceptCache.clear();
+        typeCache.clear();
+        labelCache.clear();
     }
     void openTx(GraknTxType txType){
         isTxOpen = true;

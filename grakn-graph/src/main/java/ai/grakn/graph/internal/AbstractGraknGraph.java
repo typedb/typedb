@@ -123,7 +123,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         shardingFactor = Long.parseLong(properties.get(SHARDING_THRESHOLD).toString());
         elementFactory = new ElementFactory(this);
 
-        //Initialise Caches
+        //Initialise Graph Caches
         cachedLabels = new ConcurrentHashMap<>();
 
         int cacheTimeout = Integer.parseInt(
@@ -819,7 +819,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
         } finally {
-            localConceptLog.remove();
             getTxCache().closeTx(closedReason);
         }
     }
@@ -1081,8 +1080,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                    type.setInstanceCount(0L);
                    type.createShard();
                }
-
-
            }
        });
     }
