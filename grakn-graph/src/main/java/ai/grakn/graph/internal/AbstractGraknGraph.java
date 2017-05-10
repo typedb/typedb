@@ -116,9 +116,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final Map<TypeLabel, Integer> cachedLabels; //This cannot expire
 
     //----------------------------- Transaction Thread Bound
-    private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
+    private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
-    private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsReadOnly = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeLabel, Type>> localCloneCache = new ThreadLocal<>();
@@ -132,7 +131,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         elementFactory = new ElementFactory(this);
 
         //Initialise Caches
-        localIsOpen.set(true);
         cachedLabels = new ConcurrentHashMap<>();
 
         int cacheTimeout = Integer.parseInt(
@@ -143,6 +141,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 .build();
 
         //Initialise Graph
+        getTxCache().openTx();
+
         localShowImplicitStructures.set(true);
         if(initialiseMetaConcepts()) close(true, false);
         localShowImplicitStructures.set(false);
@@ -153,8 +153,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public Integer convertToId(TypeLabel label){
-        if(getConceptLog().isLabelCached(label)){
-            return getConceptLog().convertLabelToId(label);
+        if(getTxCache().isLabelCached(label)){
+            return getTxCache().convertLabelToId(label);
         }
         return -1;
     }
@@ -194,7 +194,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * Opens the thread bound transaction
      */
     public void openTransaction(GraknTxType txType){
-        localIsOpen.set(true);
+        getTxCache().openTx();
         if(GraknTxType.READ.equals(txType)) {
             localIsReadOnly.set(true);
         } else {
@@ -223,12 +223,22 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return cachedLabels;
     }
 
-    ConceptLog getConceptLog() {
-        return getObjectFromThreadLocal(localConceptLog, () -> {
-            ConceptLog conceptLog = new ConceptLog(this);
-            loadOntologyCacheIntoTransactionCache(conceptLog);
-            return conceptLog;
-        });
+    TxCache getTxCache() {
+        /*return getObjectFromThreadLocal(localConceptLog, () -> {
+            TxCache txCache = new TxCache(this);
+            loadOntologyCacheIntoTransactionCache(txCache);
+            return txCache;
+        });*/
+        TxCache txCache = localConceptLog.get();
+        if(txCache == null){
+            localConceptLog.set(txCache = new TxCache(this));
+        }
+
+        if(txCache.ontologyNotCached()){
+            loadOntologyCacheIntoTransactionCache(txCache);
+        }
+
+        return txCache;
     }
 
     private Map<TypeLabel, Type> getCloneCache(){
@@ -245,7 +255,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public boolean isClosed(){
-        return !getObjectFromThreadLocal(localIsOpen, () -> false);
+        return !getTxCache().isTxOpen();
     }
     public abstract boolean isSessionClosed();
 
@@ -387,15 +397,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * This method performs this operation whilst making a deep clone of the cached concepts to ensure transactions
      * do not accidentally break the central ontology cache.
      *
-     * @param conceptLog The thread bound concept log to read the snapshot into.
+     * @param txCache The thread bound concept log to read the snapshot into.
      */
-    private void loadOntologyCacheIntoTransactionCache(ConceptLog conceptLog){
+    private void loadOntologyCacheIntoTransactionCache(TxCache txCache){
         ImmutableMap<TypeLabel, Type> cachedOntologySnapshot = ImmutableMap.copyOf(getCachedOntology().asMap());
         ImmutableMap<TypeLabel, Integer> cachedLabelsSnapshot = ImmutableMap.copyOf(getCachedLabels());
 
-        //Read central cache into conceptLog cloning only base concepts. Sets clones later
+        //Read central cache into txCache cloning only base concepts. Sets clones later
         for (Type type : cachedOntologySnapshot.values()) {
-            conceptLog.cacheConcept((TypeImpl) clone(type));
+            txCache.cacheConcept((TypeImpl) clone(type));
         }
 
         //Iterate through cached clones completing the cloning process.
@@ -406,7 +416,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         //Load Labels Separately. We do this because the TypeCache may have expired.
-        cachedLabelsSnapshot.forEach(conceptLog::cacheLabel);
+        cachedLabelsSnapshot.forEach(txCache::cacheLabel);
 
         //Purge clone cache to save memory
         localCloneCache.remove();
@@ -561,8 +571,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return The type which was either cached or built via a DB read or write
      */
     private TypeImpl buildType(TypeLabel label, Supplier<TypeImpl> dbBuilder){
-        if(getConceptLog().isTypeCached(label)){
-            return getConceptLog().getCachedType(label);
+        if(getTxCache().isTypeCached(label)){
+            return getTxCache().getCachedType(label);
         } else {
             return dbBuilder.get();
         }
@@ -652,8 +662,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
-        if(getConceptLog().isConceptCached(id)){
-            return getConceptLog().getCachedConcept(id);
+        if(getTxCache().isConceptCached(id)){
+            return getTxCache().getCachedConcept(id);
         } else {
             return getConcept(Schema.ConceptProperty.ID, id.getValue());
         }
@@ -793,7 +803,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         EdgeImpl relationToCasting = relation.putEdge(foundCasting, Schema.EdgeLabel.CASTING);
         relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId());
-        getConceptLog().trackConceptForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
+        getTxCache().trackConceptForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
 
         //TODO: Only execute this if we need to. I.e if the above relation.putEdge() actually added a new edge.
         if(rolePlayer != null) putShortcutEdge(rolePlayer, relation, role);
@@ -821,7 +831,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private RelationImpl getRelation(RelationType relationType, Map<RoleType, Set<Instance>> roleMap){
         String hash = generateNewHash(relationType, roleMap);
-        RelationImpl concept = getConceptLog().getCachedRelation(hash);
+        RelationImpl concept = getTxCache().getCachedRelation(hash);
 
         if(concept == null) {
             concept = getConcept(Schema.ConceptProperty.INDEX, hash);
@@ -884,9 +894,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 if(logs.isPresent() && submitLogs) {
                     LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, logs.get()) + "]");
                 }
-                getConceptLog().writeToCentralCache(true);
+                getTxCache().writeToCentralCache(true);
             } else {
-                getConceptLog().writeToCentralCache(isReadOnly());
+                getTxCache().writeToCentralCache(isReadOnly());
             }
         } finally {
             closeTransaction(closeMessage);
@@ -901,8 +911,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //Ignored for Tinker
         } finally {
             localClosedReason.set(closedReason);
-            localIsOpen.remove();
             localConceptLog.remove();
+            getTxCache().closeTx();
         }
     }
 
@@ -919,10 +929,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private Optional<String> commitWithLogs() throws GraknValidationException {
         validateGraph();
 
-        boolean submissionNeeded = !getConceptLog().getInstanceCount().isEmpty() ||
-                !getConceptLog().getModifiedCastings().isEmpty() ||
-                !getConceptLog().getModifiedResources().isEmpty();
-        JSONObject conceptLog = getConceptLog().getFormattedLog();
+        boolean submissionNeeded = !getTxCache().getInstanceCount().isEmpty() ||
+                !getTxCache().getModifiedCastings().isEmpty() ||
+                !getTxCache().getModifiedResources().isEmpty();
+        JSONObject conceptLog = getTxCache().getFormattedLog();
 
         LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransactionInternal();
@@ -1042,7 +1052,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 }
             }
 
-            getConceptLog().removeConcept(otherCasting);
+            getTxCache().removeConcept(otherCasting);
             getTinkerPopGraph().traversal().V(otherCasting.getId().getRawValue()).next().remove();
         }
 
@@ -1146,7 +1156,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //Explicitly track this new relation so we don't create duplicates
         String newHash = generateNewHash(relationType, allRolePlayers);
-        getConceptLog().getModifiedRelations().put(newHash, foundRelation);
+        getTxCache().getModifiedRelations().put(newHash, foundRelation);
     }
 
     @Override

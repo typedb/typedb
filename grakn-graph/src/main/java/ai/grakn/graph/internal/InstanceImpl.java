@@ -91,18 +91,18 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     public void delete() {
         InstanceImpl<?, ?> parent = this;
         Set<CastingImpl> castings = parent.castings();
-        getGraknGraph().getConceptLog().removedInstance(type().getLabel());
+        getGraknGraph().getTxCache().removedInstance(type().getLabel());
         deleteNode();
         for(CastingImpl casting: castings){
             Set<Relation> relations = casting.getRelations();
-            getGraknGraph().getConceptLog().trackConceptForValidation(casting);
+            getGraknGraph().getTxCache().trackConceptForValidation(casting);
 
             for(Relation relation : relations) {
                 if(relation.type().isImplicit()){//For now implicit relations die
                     relation.delete();
                 } else {
                     RelationImpl rel = (RelationImpl) relation;
-                    getGraknGraph().getConceptLog().trackConceptForValidation(rel);
+                    getGraknGraph().getTxCache().trackConceptForValidation(rel);
                     rel.cleanUp();
                 }
             }

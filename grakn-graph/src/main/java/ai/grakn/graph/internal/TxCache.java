@@ -34,20 +34,25 @@ import java.util.Set;
 
 /**
  * <p>
- *     Tracks Graph Mutations.
+ *     Tracks Graph Transaction Specific Variables
  * </p>
  *
  * <p>
- *     This package keeps track of changes to the rootGraph that need to be validated. This includes:
- *      new concepts,
- *      concepts that have had edges added/deleted,
- *      edge cases, for example, relationship where a new role player is added.
+ *
+ *     Caches Transaction specific data this includes:
+ *
+ *     <ol>
+ *         <li>Validation Concepts - Concepts which need to undergo validation.</li>
+ *         <li>Built Concepts -  Prevents rebuilding when the same vertex is encountered</li>
+ *         <li>The Ontology - Optimises validation checks by preventing db read. </li>
+ *         <li>Type Labels - Allows mapping type labels to type Ids</li>
+ *     <ol/>
  * </p>
  *
  * @author fppt
  *
  */
-class ConceptLog {
+class TxCache {
     private final AbstractGraknGraph<?> graknGraph;
 
     //Caches any concept which has been touched before
@@ -70,8 +75,10 @@ class ConceptLog {
     //We Track the number of instances each type has lost or gained
     private final Map<TypeLabel, Long> instanceCount = new HashMap<>();
 
+    //Transaction Meta Data
+    private boolean isTxOpen = false;
 
-    ConceptLog(AbstractGraknGraph<?> graknGraph) {
+    TxCache(AbstractGraknGraph<?> graknGraph) {
         this.graknGraph = graknGraph;
     }
 
@@ -89,6 +96,14 @@ class ConceptLog {
 
         //When a commit has not occurred some checks are required
         //TODO: Fill our cache when not committing and when not read only graph.
+    }
+
+    /**
+     *
+     * @return true if ths ontology labels have been cached. The graph cannot operate if this is false.
+     */
+    boolean ontologyNotCached(){
+        return labelCache.isEmpty();
     }
 
     /**
@@ -273,7 +288,6 @@ class ConceptLog {
         if(instanceCount.get(name) == 0) instanceCount.remove(name);
     }
 
-
     JSONObject getFormattedLog(){
         //Concepts In Need of Inspection
         JSONObject conceptsForInspection = new JSONObject();
@@ -297,11 +311,21 @@ class ConceptLog {
 
         return formattedLog;
     }
-
     private  <X extends InstanceImpl> JSONObject loadConceptsForFixing(Set<X> instances){
         Map<String, Set<String>> conceptByIndex = new HashMap<>();
         instances.forEach(concept ->
                 conceptByIndex.computeIfAbsent(concept.getIndex(), (e) -> new HashSet<>()).add(concept.getId().getValue()));
         return new JSONObject(conceptByIndex);
+    }
+
+
+    public void closeTx(){
+        isTxOpen = false;
+    }
+    public void openTx(){
+        isTxOpen = true;
+    }
+    public boolean isTxOpen(){
+        return isTxOpen;
     }
 }

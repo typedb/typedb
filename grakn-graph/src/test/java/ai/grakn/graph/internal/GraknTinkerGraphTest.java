@@ -41,31 +41,27 @@ import static org.junit.Assert.assertTrue;
 public class GraknTinkerGraphTest extends GraphTestBase{
 
     @Test
-    public void whenAddingMultipleConceptToTinkerGraph_EnsureGraphIsMutatedDirectlyNotViaTransaction(){
+    public void whenAddingMultipleConceptToTinkerGraph_EnsureGraphIsMutatedDirectlyNotViaTransaction() throws ExecutionException, InterruptedException {
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
+
+        graknGraph.putEntityType("Thing");
+        graknGraph.commit();
 
         for(int i = 0; i < 20; i ++){
             futures.add(pool.submit(this::addRandomEntity));
         }
 
-        graknGraph.putEntityType("Thing");
-        graknGraph.commit();
-
-        futures.forEach(future -> {
-            try {
-                future.get();   
-            } catch (InterruptedException | ExecutionException ignored) {
-                ignored.printStackTrace();
-            }
-        });
+        for (Future future : futures) {
+            future.get();
+        }
 
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
         assertEquals(20, graknGraph.getEntityType("Thing").instances().size());
     }
     private synchronized void addRandomEntity(){
         try(GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE)){
-            graph.putEntityType("Thing").addEntity();
+            graph.getEntityType("Thing").addEntity();
             graph.commit();
         }
     }

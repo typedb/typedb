@@ -171,7 +171,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         Vertex instanceVertex = getGraknGraph().addVertex(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
-            getGraknGraph().getConceptLog().addedInstance(getLabel());
+            getGraknGraph().getTxCache().addedInstance(getLabel());
         }
         return producer.apply(instanceVertex, currentShard());
     }
@@ -283,7 +283,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             cachedDirectPlays.clear();
 
             //Clear Global ComponentCache
-            getGraknGraph().getConceptLog().removeConcept(this);
+            getGraknGraph().getTxCache().removeConcept(this);
         }
     }
 
@@ -498,7 +498,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             instances().forEach(concept -> {
                 if (concept.isInstance()) {
                     ((InstanceImpl<?, ?>) concept).castings().forEach(
-                            instance -> getGraknGraph().getConceptLog().trackConceptForValidation(instance));
+                            instance -> getGraknGraph().getTxCache().trackConceptForValidation(instance));
                 }
             });
         }
@@ -574,7 +574,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         //Add castings to tracking to make sure they can still be played.
         instances().forEach(concept -> {
             if (concept.isInstance()) {
-                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> getGraknGraph().getConceptLog().trackConceptForValidation(casting));
+                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> getGraknGraph().getTxCache().trackConceptForValidation(casting));
             }
         });
 
@@ -596,7 +596,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     public T setAbstract(Boolean isAbstract) {
         setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
-        if(isAbstract) getGraknGraph().getConceptLog().trackConceptForValidation(this);
+        if(isAbstract) getGraknGraph().getTxCache().trackConceptForValidation(this);
         cachedIsAbstract.set(isAbstract);
         return getThis();
     }
