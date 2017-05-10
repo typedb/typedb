@@ -242,12 +242,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             StackTraceElement[] stack = Thread.currentThread().getStackTrace();
 
             if(stack.length >= 7){
-                if(stack[7].getMethodName().equals("initialiseMetaConcepts")){
+                if(stack[7].getMethodName().equals("initialiseMetaConcepts") || stack[8].getMethodName().equals("initialiseMetaConcepts")){
                     System.out.println(".");
                 } else {
                     System.out.println("Loaded empty concept log on graph " + keyspace);
                     System.out.println("Type Cache: " + cachedOntology.asMap().size());
                     System.out.println("Label Cache: " + cachedLabels.size());
+                    System.out.println("Transaction Type Cache: " + log.typeCache.size());
+                    System.out.println("Transaction Label Cache: " + log.labelCache.size());
                 }
             }
         }

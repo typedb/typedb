@@ -52,8 +52,8 @@ class ConceptLog {
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
-    private final Map<TypeLabel, TypeImpl> typeCache = new HashMap<>();
-    private final Map<TypeLabel, Integer> labelCache = new HashMap<>();
+    public final Map<TypeLabel, TypeImpl> typeCache = new HashMap<>();
+    public final Map<TypeLabel, Integer> labelCache = new HashMap<>();
 
     //We Track Modified Concepts For Validation
     private final Set<ConceptImpl> modifiedConcepts = new HashSet<>();
