@@ -128,12 +128,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         this.keyspace = keyspace;
         this.engine = engine;
         this.properties = properties;
-        cachedLabels = new ConcurrentHashMap<>();
         shardingFactor = Long.parseLong(properties.get(SHARDING_THRESHOLD).toString());
-
         elementFactory = new ElementFactory(this);
 
+        //Initialise Caches
         localIsOpen.set(true);
+        cachedLabels = new ConcurrentHashMap<>();
 
         int cacheTimeout = Integer.parseInt(
                 properties.get(batchLoadingEnabled ? BATCH_CACHE_TIMEOUT_MS : NORMAL_CACHE_TIMEOUT_MS).toString());
@@ -142,15 +142,18 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 .expireAfterWrite(cacheTimeout, TimeUnit.MILLISECONDS)
                 .build();
 
-        if(initialiseMetaConcepts()) commitTransactionInternal();
-
-        this.batchLoadingEnabled = batchLoadingEnabled;
+        //Initialise Graph
+        localShowImplicitStructures.set(true);
+        if(initialiseMetaConcepts()) close(true, false);
         localShowImplicitStructures.set(false);
+
+        //Set batch loading because ontology has been loaded
+        this.batchLoadingEnabled = batchLoadingEnabled;
     }
 
     @Override
     public Optional<Integer> convertToId(TypeLabel label){
-        if(getConceptLog().isTypeCached(label)){
+        if(getConceptLog().isLabelCached(label)){
             return Optional.of(getConceptLog().convertLabelToId(label));
         }
         return Optional.empty();
@@ -314,7 +317,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         getMetaConcept().subTypes().forEach(type -> {
             getCachedLabels().put(type.getLabel(), type.getTypeId());
             getCachedOntology().put(type.getLabel(), type);
-            getConceptLog().cacheConcept((ConceptImpl) type);
         });
 
         return ontologyInitialised;

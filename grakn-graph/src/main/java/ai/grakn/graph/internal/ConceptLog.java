@@ -212,6 +212,15 @@ class ConceptLog {
     }
 
     /**
+     *
+     * @param label the type label which may be in the cache
+     * @return true if the label is cached and has a valid mapping to a id
+     */
+    boolean isLabelCached(TypeLabel label){
+        return labelCache.containsKey(label);
+    }
+
+    /**
      * Returns a previously built concept
      *
      * @param id The id of the concept
