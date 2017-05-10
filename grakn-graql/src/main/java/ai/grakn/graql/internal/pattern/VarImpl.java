@@ -425,18 +425,23 @@ class VarImpl implements VarAdmin {
 
         StringBuilder builder = new StringBuilder();
 
-        String name = isUserDefinedName() ? getPrintableName() + " " : "";
+        String name = isUserDefinedName() ? getPrintableName() : "";
 
         builder.append(name);
 
-        boolean first = true;
+        if (!properties.isEmpty()) {
+            // Add a space after the var name
+            builder.append(" ");
 
-        for (VarProperty property : properties) {
-            if (!first) {
-                builder.append(" ");
+            boolean first = true;
+
+            for (VarProperty property : properties) {
+                if (!first) {
+                    builder.append(" ");
+                }
+                first = false;
+                property.buildString(builder);
             }
-            first = false;
-            property.buildString(builder);
         }
 
         return builder.toString();
