@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -525,12 +526,15 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_Resource_TypeMismatch(){
         GraknGraph graph = resourceApplicabilitySet.graph();
+        String typeString = "{$x isa res1;}";
         String resourceString = "{$x isa entity1, has res1 $r;}";
         String resourceString2 = "{$x isa entity2, has res1 $r;}";
         String resourceString3 = "{$x isa entity2, has res1 'test';}";
+        TypeAtom type = (TypeAtom) new ReasonerAtomicQuery(conjunction(typeString, graph), graph).getAtom();
         Resource resource = (Resource) new ReasonerAtomicQuery(conjunction(resourceString, graph), graph).getAtom();
         Resource resource2 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString2, graph), graph).getAtom();
         Resource resource3 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString3, graph), graph).getAtom();
+        assertEquals(1, type.getApplicableRules().size());
         assertEquals(1, resource.getApplicableRules().size());
         assertEquals(0, resource2.getApplicableRules().size());
         assertEquals(0, resource3.getApplicableRules().size());
