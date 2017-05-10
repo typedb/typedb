@@ -45,6 +45,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static junit.framework.TestCase.assertEquals;
@@ -133,12 +135,11 @@ public class PostProcessingIT {
             Set<TaskState> runningPPTasks = engine.getTaskManager().storage().getTasks(null, PostProcessingTask.class.getName(), null, null, 0, 0);
             tasksStillRunning = false;
             for (TaskState runningPPTask : runningPPTasks) {
-                if(!runningPPTask.status().equals(TaskStatus.STOPPED)){
+                if(!runningPPTask.status().equals(TaskStatus.COMPLETED)){
                     tasksStillRunning = true;
                     break;
                 }
             }
-
         } while(tasksStillRunning);
 
         assertFalse("Failed at fixing graph", graphIsBroken(session));
@@ -155,7 +156,7 @@ public class PostProcessingIT {
 
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
     private boolean graphIsBroken(GraknSession session){
-        try(GraknGraph graph = session.open(GraknTxType.BATCH)) {
+        try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
             Collection<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subTypes();
             for (ResourceType<?> resourceType : resourceTypes) {
                 if (!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {

@@ -20,6 +20,7 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.util.Schema;
@@ -47,7 +48,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author alexandraorth
  */
-public class PostProcessingTask extends AbstractDelayedTask {
+public class PostProcessingTask implements BackgroundTask {
 
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
     private static final String JOB_FINISHED = "Post processing Job [{}] completed on index [{}] on graph [{}]";
@@ -58,14 +59,29 @@ public class PostProcessingTask extends AbstractDelayedTask {
      *
      * @param saveCheckpoint Checkpointing is not implemented in this task, so this parameter is not used.
      * @param configuration Configuration containing the IDs to be post processed.
-     * @return False if successful. Returns false so the PostProcessingTask will be marked as STOPPED and never re-run.
+     * @return True if successful.
      */
     @Override
-    public boolean runDelayedTask(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
         runPostProcessingMethod(configuration, Schema.BaseType.CASTING, this::runCastingFix);
         runPostProcessingMethod(configuration, Schema.BaseType.RESOURCE, this::runResourceFix);
 
-        return false;
+        return true;
+    }
+
+    @Override
+    public boolean stop() {
+        throw new UnsupportedOperationException("Delayed task cannot be stopped while in progress");
+    }
+
+    @Override
+    public void pause() {
+        throw new UnsupportedOperationException("Delayed task cannot be paused");
+    }
+
+    @Override
+    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
+        throw new UnsupportedOperationException("Delayed task cannot be resumed");
     }
 
     /**
@@ -81,7 +97,6 @@ public class PostProcessingTask extends AbstractDelayedTask {
                 e -> e.getValue().asList().stream().map(ConceptId::of).collect(toSet())
         ));
     }
-
 
     /**
      * Main method which attempts to run all post processing jobs.
@@ -103,7 +118,7 @@ public class PostProcessingTask extends AbstractDelayedTask {
 
             String keyspace = GraphMutators.getKeyspace(configuration);
 
-            GraphMutators.runGraphMutationWithRetry(keyspace,
+            GraphMutators.runGraphMutationWithRetry(configuration,
                     (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds, postProcessingMethod));
 
             LOG.info(JOB_FINISHED, baseType.name(), conceptIndex, keyspace);
