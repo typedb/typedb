@@ -29,8 +29,8 @@ import com.google.common.collect.Sets;
 import mjson.Json;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.hamcrest.Matcher;
-import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -73,8 +73,7 @@ public class GraqlShellIT {
     private static final String expectedVersion = "graql-9.9.9";
     private static final String historyFile = System.getProperty("java.io.tmpdir") + "/graql-test-history";
 
-    private static final ImmutableList<String> keyspaces =
-            ImmutableList.of(GraqlShell.DEFAULT_KEYSPACE, "foo", "bar", "batch");
+    private static int keyspaceSuffix = 0;
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -83,11 +82,9 @@ public class GraqlShellIT {
         trueErr = System.err;
     }
 
-    @After
-    public void tearDown() throws Exception {
-        for (String keyspace : keyspaces){
-            testShellAllowErrors("clean\nconfirm\n", "-k", keyspace);
-        }
+    @Before
+    public void changeSuffix() {
+        keyspaceSuffix += 1;
     }
 
     @AfterClass
@@ -612,6 +609,8 @@ public class GraqlShellIT {
     }
 
     private String testShell(String input, ByteArrayOutputStream berr, String... args) throws Exception {
+        args = specifyUniqueKeyspace(args);
+
         InputStream in = new ByteArrayInputStream(input.getBytes());
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
@@ -643,6 +642,22 @@ public class GraqlShellIT {
 
 
         return bout.toString();
+    }
+
+    // TODO: Remove this when we can clear graphs properly (TP #13745)
+    private String[] specifyUniqueKeyspace(String[] args) {
+        List<String> argList = Lists.newArrayList(args);
+
+        int keyspaceIndex = argList.indexOf("-k") + 1;
+        if (keyspaceIndex == 0) {
+            argList.add("-k");
+            argList.add(GraqlShell.DEFAULT_KEYSPACE);
+            keyspaceIndex = argList.size() - 1;
+        }
+
+        argList.set(keyspaceIndex, argList.get(keyspaceIndex) + keyspaceSuffix);
+
+        return argList.toArray(new String[argList.size()]);
     }
 }
 
