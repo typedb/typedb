@@ -17,7 +17,7 @@
  *
  */
 
-package ai.grakn.graph.property;
+package ai.grakn.graph.abc;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
@@ -42,10 +42,10 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graph.property.PropertyUtil.choose;
-import static ai.grakn.graph.property.PropertyUtil.directInstances;
-import static ai.grakn.graph.property.PropertyUtil.directSubTypes;
-import static ai.grakn.graph.property.PropertyUtil.indirectSuperTypes;
+import static ai.grakn.graph.abc.PropertyUtil.choose;
+import static ai.grakn.graph.abc.PropertyUtil.directInstances;
+import static ai.grakn.graph.abc.PropertyUtil.directSubTypes;
+import static ai.grakn.graph.abc.PropertyUtil.indirectSuperTypes;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.SUPER_TYPE_LOOP_DETECTED;

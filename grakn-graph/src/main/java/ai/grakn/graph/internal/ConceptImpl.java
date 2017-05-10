@@ -584,6 +584,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     T createShard(){
         Vertex shardVertex = getGraknGraph().addVertex(getBaseType());
         shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), getVertex());
+        shardVertex.property(Schema.ConceptProperty.TYPE_ID.name(), graknGraph.getNextTypeId());
 
         ConceptImpl shardConcept = getGraknGraph().buildConcept(shardVertex);
         shardConcept.isShard(true);

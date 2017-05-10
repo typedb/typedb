@@ -84,24 +84,30 @@ public final class Schema {
      * The concepts which represent our internal schema
      */
     public enum MetaSchema {
-        CONCEPT("concept"),
-        ENTITY("entity"),
-        ROLE("role"),
-        RESOURCE("resource"),
-        RELATION("relation"),
-        RULE("rule"),
-        INFERENCE_RULE("inference-rule"),
-        CONSTRAINT_RULE("constraint-rule");
+        CONCEPT("concept", 1),
+        ENTITY("entity", 2),
+        ROLE("role", 3),
+        RESOURCE("resource", 4),
+        RELATION("relation", 5),
+        RULE("rule", 6),
+        INFERENCE_RULE("inference-rule", 7),
+        CONSTRAINT_RULE("constraint-rule", 8);
 
 
         private final TypeLabel label;
+        private final int id;
 
-        MetaSchema(String i) {
-            label = TypeLabel.of(i);
+        MetaSchema(String s, int id) {
+            label = TypeLabel.of(s);
+            this.id = id;
         }
 
         public TypeLabel getLabel() {
             return label;
+        }
+
+        public int getId(){
+            return id;
         }
 
         public static boolean isMetaLabel(TypeLabel label) {
@@ -147,10 +153,10 @@ public final class Schema {
      */
     public enum ConceptProperty {
         //Unique Properties
-        TYPE_LABEL(String.class), INDEX(String.class), ID(String.class),
+        TYPE_LABEL(String.class), INDEX(String.class), ID(String.class), TYPE_ID(Integer.class),
 
         //Other Properties
-        TYPE(String.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_SHARD(Boolean.class),
+        INSTANCE_TYPE_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_SHARD(Boolean.class),
         REGEX(String.class), DATA_TYPE(String.class), INSTANCE_COUNT(Long.class),
         RULE_LHS(String.class), RULE_RHS(String.class), CURRENT_SHARD(String.class),
 
@@ -175,8 +181,8 @@ public final class Schema {
      * A property enum defining the possible labels that can go on the edge label.
      */
     public enum EdgeProperty {
-        ROLE_TYPE_LABEL(String.class),
-        RELATION_TYPE_LABEL(String.class),
+        ROLE_TYPE_ID(Integer.class),
+        RELATION_TYPE_ID(Integer.class),
         REQUIRED(Boolean.class);
 
         private final Class dataType;

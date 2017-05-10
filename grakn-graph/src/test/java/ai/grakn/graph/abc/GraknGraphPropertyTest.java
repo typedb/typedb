@@ -17,7 +17,7 @@
  *
  */
 
-package ai.grakn.graph.property;
+package ai.grakn.graph.abc;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
@@ -79,6 +79,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
 
+
 @RunWith(JUnitQuickcheck.class)
 public class GraknGraphPropertyTest {
 
@@ -92,7 +93,7 @@ public class GraknGraphPropertyTest {
         // TODO: Should `admin`, `close`, `implicitConceptsVisible`, `showImplicitConcepts`, `getKeyspace` and `graql` be here?
         assumeThat(method.getName(), not(isOneOf(
                 "isClosed", "admin", "close", "commit", "abort", "isReadOnly", "implicitConceptsVisible", "showImplicitConcepts",
-                "getKeyspace", "graql"
+                "getKeyspace", "graql", "getId"
         )));
         Object[] params = mockParamsOf(method);
 

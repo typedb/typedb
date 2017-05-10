@@ -68,7 +68,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
-    private TypeLabel cachedTypeLabel;
+    private final TypeLabel cachedTypeLabel;
     private ComponentCache<Boolean> cachedIsImplicit = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
     private ComponentCache<Boolean> cachedIsAbstract = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
     private ComponentCache<T> cachedSuperType = new ComponentCache<>(() -> this.<T>getOutgoingNeighbours(Schema.EdgeLabel.SUB).findFirst().orElse(null));
@@ -90,9 +90,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
-        VertexProperty<Object> typeLabel = v.property(Schema.ConceptProperty.TYPE_LABEL.name());
+        VertexProperty<String> typeLabel = v.property(Schema.ConceptProperty.TYPE_LABEL.name());
         if(typeLabel.isPresent()) {
-            cachedTypeLabel = TypeLabel.of(v.value(Schema.ConceptProperty.TYPE_LABEL.name()));
+            cachedTypeLabel = TypeLabel.of(typeLabel.value());
             isShard(false);
         } else {
             cachedTypeLabel = TypeLabel.of("SHARDED TYPE-" + getId().getValue()); //This is just a place holder it is never actually committed
@@ -189,6 +189,15 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlays().keySet()));
 
         return Collections.unmodifiableCollection(filterImplicitStructures(allRoleTypes));
+    }
+
+    /**
+     *
+     * @return The internal type id which is used for fast lookups
+     */
+    @Override
+    public Integer getTypeId(){
+        return getProperty(Schema.ConceptProperty.TYPE_ID);
     }
 
     @Override
@@ -358,7 +367,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             instances.addAll(this.<V>getIncomingNeighbours(Schema.EdgeLabel.ISA).collect(Collectors.toSet()));
         } else {
             GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerPopGraph().traversal().V()
-                    .has(Schema.ConceptProperty.TYPE_LABEL.name(), getLabel().getValue())
+                    .has(Schema.ConceptProperty.TYPE_ID.name(), getTypeId())
                     .union(__.identity(),
                             __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
                     ).unfold()

@@ -111,10 +111,7 @@ class EdgeImpl {
      * @param type The property to retrieve
      * @param value The value of the property
      */
-    void setProperty(Schema.EdgeProperty type, String value){
-        edge.property(type.name(), value);
-    }
-    void setProperty(Schema.EdgeProperty type, boolean value){
+    void setProperty(Schema.EdgeProperty type, Object value){
         edge.property(type.name(), value);
     }
 
