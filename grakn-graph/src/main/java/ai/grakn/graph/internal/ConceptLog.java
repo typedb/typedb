@@ -192,6 +192,10 @@ class ConceptLog {
         }
     }
 
+    void cacheLabel(TypeLabel label, Integer id){
+        labelCache.put(label, id);
+    }
+
     /**
      * Checks if the concept has been built before and is currently cached
      *
@@ -209,6 +213,11 @@ class ConceptLog {
      */
     boolean isTypeCached(TypeLabel label){
         return typeCache.containsKey(label);
+    }
+
+
+    boolean isLabelCached(TypeLabel label){
+        return labelCache.containsKey(label);
     }
 
     /**

@@ -153,7 +153,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public Optional<Integer> convertToId(TypeLabel label){
-        if(getConceptLog().isTypeCached(label)){
+        if(getConceptLog().isLabelCached(label)){
             return Optional.of(getConceptLog().convertLabelToId(label));
         }
         return Optional.empty();
@@ -246,6 +246,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                     System.out.println(".");
                 } else {
                     System.out.println("Loaded empty concept log on graph " + keyspace);
+                    System.out.println("Type Cache: " + cachedOntology.asMap().size());
+                    System.out.println("Label Cache: " + cachedLabels.size());
                 }
             }
         }
@@ -341,6 +343,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             cachedOntology.put(type.getLabel(), type);
         });
 
+        if(cachedLabels.isEmpty() || cachedOntology.asMap().isEmpty()){
+            System.out.println("Empty main cache on graph " + keyspace);
+        }
+
         return ontologyInitialised;
     }
     private void createMetaShard(Vertex metaNode, Schema.BaseType baseType){
@@ -413,6 +419,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private void loadOntologyCacheIntoTransactionCache(ConceptLog conceptLog){
         ImmutableMap<TypeLabel, Type> cachedOntologySnapshot = ImmutableMap.copyOf(getCachedOntology().asMap());
+        ImmutableMap<TypeLabel, Integer> cachedLabelsSnapshot = ImmutableMap.copyOf(getCachedLabels());
 
         //Read central cache into conceptLog cloning only base concepts. Sets clones later
         for (Type type : cachedOntologySnapshot.values()) {
@@ -425,6 +432,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //noinspection unchecked
             ((TypeImpl) type).copyCachedConcepts(cachedOntologySnapshot.get(type.getLabel()));
         }
+
+        //Load Labels Separately. We do this because the TypeCache may have expired.
+        cachedLabelsSnapshot.forEach(conceptLog::cacheLabel);
 
         //Purge clone cache to save memory
         localCloneCache.remove();
