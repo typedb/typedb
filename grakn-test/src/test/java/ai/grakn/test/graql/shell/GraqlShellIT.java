@@ -535,7 +535,7 @@ public class GraqlShellIT {
         testShell("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
 
         assertShellMatches(ImmutableList.of("-k", "batch", "-b", "src/test/graql/batch-test-bad.gql"),
-                is("Status of batch [1]: FAILED"),
+                is("Status of batch: FAILED"),
                 is("Number batches completed: 1"),
                 containsString("Approximate queries executed:"),
                 containsString("All tasks completed")

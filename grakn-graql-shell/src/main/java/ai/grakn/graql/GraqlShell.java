@@ -292,10 +292,9 @@ public class GraqlShell {
 
         loaderClient.setTaskCompletionConsumer((json) -> {
             TaskStatus status = TaskStatus.valueOf(json.at("status").asString());
-            int batch = Json.read(json.at("configuration").asString()).at("batchNumber").asInteger();
 
             numberBatchesCompleted.incrementAndGet();
-            System.out.println(format("Status of batch [%s]: %s", batch, status));
+            System.out.println(format("Status of batch: %s", status));
             System.out.println(format("Number batches completed: %s", numberBatchesCompleted.get()));
             System.out.println(format("Approximate queries executed: %s", numberBatchesCompleted.get() * loaderClient.getBatchSize()));
         });
