@@ -211,6 +211,7 @@
                             <value>ai.grakn.test.listener.TimingListener</value>
                         </property>
                     </properties>
+                    <workingDirectory>${main.basedir}</workingDirectory>                    
                 </configuration>
             </plugin>            
             <plugin>
