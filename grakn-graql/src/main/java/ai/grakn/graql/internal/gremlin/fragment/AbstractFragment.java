@@ -30,14 +30,15 @@ abstract class AbstractFragment implements Fragment{
     // TODO: Find a better way to represent these values (either abstractly, or better estimates)
     static final long NUM_INSTANCES_PER_TYPE = 100;
     static final long NUM_INSTANCES_PER_SCOPE = 100;
-    static final long NUM_RELATION_PER_CASTING = 10;
-    static final long NUM_SHORTCUT_EDGES_PER_INSTANCE = 10;
+    static final long NUM_RELATIONS_PER_CASTING = 10;
     static final long NUM_SUBTYPES_PER_TYPE = 3;
     static final long NUM_CASTINGS_PER_INSTANCE = 3;
+    static final long NUM_RELATIONS_PER_INSTANCE = NUM_RELATIONS_PER_CASTING * NUM_CASTINGS_PER_INSTANCE;
     static final long NUM_SCOPES_PER_INSTANCE = 3;
     static final long NUM_TYPES_PER_ROLE = 3;
     static final long NUM_ROLES_PER_TYPE = 3;
-    static final long NUM_ROLES_PER_RELATION = 2;
+    static final long NUM_ROLE_PLAYERS_PER_RELATION = 2;
+    static final long NUM_ROLE_PLAYERS_PER_ROLE = 1;
     static final long NUM_RESOURCES_PER_VALUE = 2;
 
     private final VarName start;
@@ -55,6 +56,12 @@ abstract class AbstractFragment implements Fragment{
         this.start = start;
         this.end = Optional.of(end);
         this.varNames = ImmutableSet.of(start, end);
+    }
+
+    AbstractFragment(VarName start, VarName end, VarName... others) {
+        this.start = start;
+        this.end = Optional.of(end);
+        this.varNames = ImmutableSet.<VarName>builder().add(start).add(end).add(others).build();
     }
 
     @Override

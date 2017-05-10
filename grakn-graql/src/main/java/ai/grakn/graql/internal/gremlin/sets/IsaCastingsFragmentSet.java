@@ -30,7 +30,20 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsaCastings;
  */
 class IsaCastingsFragmentSet extends EquivalentFragmentSet {
 
+    private final VarName casting;
+    private final VarName roleType;
+
     IsaCastingsFragmentSet(VarName casting, VarName roleType) {
         super(outIsaCastings(casting, roleType), inIsaCastings(roleType, casting));
+        this.casting = casting;
+        this.roleType = roleType;
+    }
+
+    public VarName casting() {
+        return casting;
+    }
+
+    public VarName roleType() {
+        return roleType;
     }
 }

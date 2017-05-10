@@ -119,7 +119,7 @@ public class GraknEngineServer implements AutoCloseable {
         }
     }
 
-    private void startHTTP() {
+    public void startHTTP() {
         configureSpark(spark, port);
 
         // Start all the controllers
@@ -160,7 +160,7 @@ public class GraknEngineServer implements AutoCloseable {
         spark.exception(Exception.class,                  (e, req, res) -> handleInternalError(e, res));
     }
 
-    private void stopHTTP() {
+    public void stopHTTP() {
         spark.stop();
 
         // Block until server is truly stopped

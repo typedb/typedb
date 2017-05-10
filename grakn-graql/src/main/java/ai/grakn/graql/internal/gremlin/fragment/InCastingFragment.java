@@ -41,6 +41,6 @@ class InCastingFragment extends AbstractFragment {
 
     @Override
     public double fragmentCost(double previousCost) {
-        return previousCost * NUM_RELATION_PER_CASTING;
+        return previousCost * NUM_RELATIONS_PER_CASTING;
     }
 }

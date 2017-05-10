@@ -135,27 +135,17 @@ class ConjunctionQuery {
     }
 
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(VarAdmin var) {
-        ShortcutTraversal shortcutTraversal = new ShortcutTraversal();
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
-
-        // If the user has provided a variable name, it can't be represented with a shortcut edge because it may be
-        // referred to later.
-        if (var.isUserDefinedName()) {
-            shortcutTraversal.setInvalid();
-        }
 
         VarName start = var.getVarName();
 
         var.getProperties().forEach(property -> {
             VarPropertyInternal propertyInternal = (VarPropertyInternal) property;
-            propertyInternal.modifyShortcutTraversal(shortcutTraversal);
             Collection<EquivalentFragmentSet> newTraversals = propertyInternal.match(start);
             traversals.addAll(newTraversals);
         });
 
-        if (shortcutTraversal.isValid()) {
-            return Stream.of(shortcutTraversal.getEquivalentFragmentSet());
-        } else if (!traversals.isEmpty()) {
+        if (!traversals.isEmpty()) {
             return traversals.stream();
         } else {
             // If this variable has no properties, only confirm that it is not internal and nothing else.
