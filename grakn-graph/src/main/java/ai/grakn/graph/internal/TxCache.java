@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
@@ -79,6 +80,7 @@ class TxCache {
     //Transaction Specific Meta Data
     private boolean isTxOpen = false;
     private boolean showImplicitTypes = false;
+    private boolean txReadOnly = false;
 
     TxCache(AbstractGraknGraph<?> graknGraph) {
         this.graknGraph = graknGraph;
@@ -324,8 +326,9 @@ class TxCache {
     void closeTx(){
         isTxOpen = false;
     }
-    void openTx(){
+    void openTx(GraknTxType txType){
         isTxOpen = true;
+        txReadOnly = GraknTxType.READ.equals(txType);
     }
     boolean isTxOpen(){
         return isTxOpen;
@@ -336,5 +339,9 @@ class TxCache {
     }
     boolean implicitTypesVisibile(){
         return showImplicitTypes;
+    }
+
+    boolean isTxReadOnly(){
+        return txReadOnly;
     }
 }

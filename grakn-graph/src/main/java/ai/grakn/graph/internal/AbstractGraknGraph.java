@@ -117,7 +117,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //----------------------------- Transaction Thread Bound
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
-    private final ThreadLocal<Boolean> localIsReadOnly = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeLabel, Type>> localCloneCache = new ThreadLocal<>();
 
@@ -140,7 +139,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 .build();
 
         //Initialise Graph
-        getTxCache().openTx();
+        getTxCache().openTx(GraknTxType.WRITE);
 
         getTxCache().showImplicitTypes(true);
         if(initialiseMetaConcepts()) close(true, false);
@@ -193,12 +192,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * Opens the thread bound transaction
      */
     public void openTransaction(GraknTxType txType){
-        getTxCache().openTx();
-        if(GraknTxType.READ.equals(txType)) {
-            localIsReadOnly.set(true);
-        } else {
-            localIsReadOnly.set(false);
-        }
+        getTxCache().openTx(txType);
     }
 
     String getEngineUrl(){
@@ -265,7 +259,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public boolean isReadOnly(){
-        return getObjectFromThreadLocal(localIsReadOnly, () -> false);
+        return getTxCache().isTxReadOnly();
     }
 
     @Override
