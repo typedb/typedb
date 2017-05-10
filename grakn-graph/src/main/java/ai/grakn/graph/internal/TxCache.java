@@ -25,6 +25,8 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -32,6 +34,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -82,6 +85,7 @@ class TxCache {
     private boolean showImplicitTypes = false;
     private boolean txReadOnly = false;
     private String closedReason = null;
+    private Map<TypeLabel, Type> cloningCache = new HashMap<>();
 
     TxCache(AbstractGraknGraph<?> graknGraph) {
         this.graknGraph = graknGraph;
@@ -109,6 +113,67 @@ class TxCache {
      */
     boolean ontologyNotCached(){
         return labelCache.isEmpty();
+    }
+
+    /**
+     * Refreshes the transaction ontology cache by reading the central ontology cache is read into this transaction cache.
+     * This method performs this operation whilst making a deep clone of the cached concepts to ensure transactions
+     * do not accidentally break the central ontology cache.
+     *
+     */
+    void refreshOntologyCache(){
+        ImmutableMap<TypeLabel, Type> cachedOntologySnapshot = ImmutableMap.copyOf(graknGraph.getCachedOntology().asMap());
+        ImmutableMap<TypeLabel, Integer> cachedLabelsSnapshot = ImmutableMap.copyOf(graknGraph.getCachedLabels());
+
+        //Read central cache into txCache cloning only base concepts. Sets clones later
+        for (Type type : cachedOntologySnapshot.values()) {
+            cacheConcept((TypeImpl) cacheClone(type));
+        }
+
+        //Iterate through cached clones completing the cloning process.
+        //This part has to be done in a separate iteration otherwise we will infinitely recurse trying to clone everything
+        for (Type type : ImmutableSet.copyOf(cloningCache.values())) {
+            //noinspection unchecked
+            ((TypeImpl) type).copyCachedConcepts(cachedOntologySnapshot.get(type.getLabel()));
+        }
+
+        //Load Labels Separately. We do this because the TypeCache may have expired.
+        cachedLabelsSnapshot.forEach(this::cacheLabel);
+
+        //Purge clone cache to save memory
+        cloningCache.clear();
+    }
+
+    /**
+     *
+     * @param type The type to clone
+     * @param <X> The type of the concept
+     * @return The newly deep cloned set
+     */
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    <X extends Type> X cacheClone(X type){
+        //Is a cloning even needed?
+        if(cloningCache.containsKey(type.getLabel())){
+            return (X) cloningCache.get(type.getLabel());
+        }
+
+        //If the clone has not happened then make a new one
+        Type clonedType = type.copy();
+
+        //Update clone cache so we don't clone multiple concepts in the same transaction
+        cloningCache.put(clonedType.getLabel(), clonedType);
+
+        return (X) clonedType;
+    }
+
+    /**
+     *
+     * @param types a set of concepts to clone
+     * @param <X> the type of those concepts
+     * @return the set of concepts deep cloned
+     */
+    <X extends Type> Set<X> cacheClone(Set<X> types){
+        return types.stream().map(this::cacheClone).collect(Collectors.toSet());
     }
 
     /**

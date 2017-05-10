@@ -50,8 +50,6 @@ import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -63,7 +61,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -117,7 +114,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //----------------------------- Transaction Thread Bound
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
-    private final ThreadLocal<Map<TypeLabel, Type>> localCloneCache = new ThreadLocal<>();
 
     public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled, Properties properties) {
         this.graph = graph;
@@ -216,33 +212,16 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     TxCache getTxCache() {
-        /*return getObjectFromThreadLocal(localConceptLog, () -> {
-            TxCache txCache = new TxCache(this);
-            loadOntologyCacheIntoTransactionCache(txCache);
-            return txCache;
-        });*/
         TxCache txCache = localConceptLog.get();
         if(txCache == null){
             localConceptLog.set(txCache = new TxCache(this));
         }
 
         if(txCache.isTxOpen() && txCache.ontologyNotCached()){
-            loadOntologyCacheIntoTransactionCache(txCache);
+            txCache.refreshOntologyCache();
         }
 
         return txCache;
-    }
-
-    private Map<TypeLabel, Type> getCloneCache(){
-        return getObjectFromThreadLocal(localCloneCache, HashMap::new);
-    }
-
-    private <X> X getObjectFromThreadLocal(ThreadLocal<X> threadLocal, Supplier<X> supplier){
-        X object = threadLocal.get();
-        if(object == null){
-            threadLocal.set(object = supplier.get());
-        }
-        return object;
     }
 
     @Override
@@ -382,68 +361,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         getTinkerTraversal().has(key.name(), value).
             forEachRemaining(v -> concepts.add(getElementFactory().buildConcept(v)));
         return concepts;
-    }
-
-    /**
-     * Given a concept log bound to a specific thread the central ontology cache is read into this concept log.
-     * This method performs this operation whilst making a deep clone of the cached concepts to ensure transactions
-     * do not accidentally break the central ontology cache.
-     *
-     * @param txCache The thread bound concept log to read the snapshot into.
-     */
-    private void loadOntologyCacheIntoTransactionCache(TxCache txCache){
-        ImmutableMap<TypeLabel, Type> cachedOntologySnapshot = ImmutableMap.copyOf(getCachedOntology().asMap());
-        ImmutableMap<TypeLabel, Integer> cachedLabelsSnapshot = ImmutableMap.copyOf(getCachedLabels());
-
-        //Read central cache into txCache cloning only base concepts. Sets clones later
-        for (Type type : cachedOntologySnapshot.values()) {
-            txCache.cacheConcept((TypeImpl) clone(type));
-        }
-
-        //Iterate through cached clones completing the cloning process.
-        //This part has to be done in a separate iteration otherwise we will infinitely recurse trying to clone everything
-        for (Type type : ImmutableSet.copyOf(getCloneCache().values())) {
-            //noinspection unchecked
-            ((TypeImpl) type).copyCachedConcepts(cachedOntologySnapshot.get(type.getLabel()));
-        }
-
-        //Load Labels Separately. We do this because the TypeCache may have expired.
-        cachedLabelsSnapshot.forEach(txCache::cacheLabel);
-
-        //Purge clone cache to save memory
-        localCloneCache.remove();
-    }
-
-    /**
-     *
-     * @param type The type to clone
-     * @param <X> The type of the concept
-     * @return The newly deep cloned set
-     */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
-    <X extends Type> X clone(X type){
-        //Is a cloning even needed?
-        if(getCloneCache().containsKey(type.getLabel())){
-            return (X) getCloneCache().get(type.getLabel());
-        }
-
-        //If the clone has not happened then make a new one
-        Type clonedType = type.copy();
-
-        //Update clone cache so we don't clone multiple concepts in the same transaction
-        getCloneCache().put(clonedType.getLabel(), clonedType);
-
-        return (X) clonedType;
-    }
-
-    /**
-     *
-     * @param types a set of concepts to clone
-     * @param <X> the type of those concepts
-     * @return the set of concepts deep cloned
-     */
-    <X extends Type> Set<X> clone(Set<X> types){
-        return types.stream().map(this::clone).collect(toSet());
     }
 
     void checkOntologyMutation(){
