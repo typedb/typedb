@@ -712,8 +712,8 @@ public class InsertQueryTest {
     @Test
     public void testInsertInstanceWithoutType() {
         exception.expect(IllegalStateException.class);
-        exception.expectMessage(allOf(containsString("123"), containsString("isa")));
-        qb.insert(var().id(ConceptId.of("123")).has("name", "Bob")).execute();
+        exception.expectMessage(allOf(containsString("isa")));
+        qb.insert(var().has("name", "Bob")).execute();
     }
 
     @Test
