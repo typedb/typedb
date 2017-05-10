@@ -80,8 +80,7 @@ public class TypeAtom extends Binary{
     @Override
     public boolean isRuleApplicable(InferenceRule child) {
         Atom ruleAtom = child.getHead().getAtom();
-        return ruleAtom.isType()
-                && this.getType() != null
+        return this.getType() != null
                 && this.getType().subTypes().contains(ruleAtom.getType());
     }
 
