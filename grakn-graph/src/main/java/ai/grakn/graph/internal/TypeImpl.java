@@ -70,14 +70,14 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     private final Integer cachedTypeId;
     private final TypeLabel cachedTypeLabel;
-    private ComponentCache<Boolean> cachedIsImplicit = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
-    private ComponentCache<Boolean> cachedIsAbstract = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
-    private ComponentCache<T> cachedSuperType = new ComponentCache<>(() -> this.<T>getOutgoingNeighbours(Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private ComponentCache<Set<T>> cachedDirectSubTypes = new ComponentCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
-    private ComponentCache<Set<T>> cachedShards = new ComponentCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
+    private ConceptCache<Boolean> cachedIsImplicit = new ConceptCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
+    private ConceptCache<Boolean> cachedIsAbstract = new ConceptCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
+    private ConceptCache<T> cachedSuperType = new ConceptCache<>(() -> this.<T>getOutgoingNeighbours(Schema.EdgeLabel.SUB).findFirst().orElse(null));
+    private ConceptCache<Set<T>> cachedDirectSubTypes = new ConceptCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private ConceptCache<Set<T>> cachedShards = new ConceptCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
 
     //This cache is different in order to keep track of which plays are required
-    private ComponentCache<Map<RoleType, Boolean>> cachedDirectPlays = new ComponentCache<>(() -> {
+    private ConceptCache<Map<RoleType, Boolean>> cachedDirectPlays = new ConceptCache<>(() -> {
         Map<RoleType, Boolean> roleTypes = new HashMap<>();
 
         getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
@@ -282,7 +282,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             cachedDirectSubTypes.clear();
             cachedDirectPlays.clear();
 
-            //Clear Global ComponentCache
+            //Clear Global ConceptCache
             getGraknGraph().getTxCache().removeConcept(this);
         }
     }

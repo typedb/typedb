@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    private ComponentCache<Set<RoleType>> cachedRelates = new ComponentCache<>(() -> this.<RoleType>getOutgoingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private ConceptCache<Set<RoleType>> cachedRelates = new ConceptCache<>(() -> this.<RoleType>getOutgoingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -93,10 +93,10 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         checkTypeMutation();
         putEdge(roleType, Schema.EdgeLabel.RELATES);
 
-        //ComponentCache the Role internally
+        //ConceptCache the Role internally
         cachedRelates.ifPresent(set -> set.add(roleType));
 
-        //ComponentCache the relation type in the role
+        //ConceptCache the relation type in the role
         ((RoleTypeImpl) roleType).addCachedRelationType(this);
 
         //Put all the instance back in for tracking because their unique hashes need to be regenerated

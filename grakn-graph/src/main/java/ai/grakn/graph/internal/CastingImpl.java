@@ -72,7 +72,7 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
      * @param rolePlayer The {@link Instance} which is the roleplayer in this casting
      * @return The casting itself.
      */
-    public CastingImpl setHash(RoleTypeImpl role, InstanceImpl rolePlayer){
+    CastingImpl setHash(RoleTypeImpl role, InstanceImpl rolePlayer){
         String hash;
         if(getGraknGraph().isBatchLoadingEnabled()) {
             hash = "CastingBaseId_" + this.getId().getValue() + UUID.randomUUID().toString();
@@ -89,7 +89,7 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
      * @param rolePlayer The {@link Instance} which is the roleplayer in this casting
      * @return A unique hash for the casting.
      */
-    public static String generateNewHash(RoleTypeImpl role, InstanceImpl rolePlayer){
+    static String generateNewHash(RoleTypeImpl role, InstanceImpl rolePlayer){
         return "Casting-Role-" + role.getId() + "-RolePlayer-" + rolePlayer.getId();
     }
 
