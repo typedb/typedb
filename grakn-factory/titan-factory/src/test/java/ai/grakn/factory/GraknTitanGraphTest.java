@@ -100,7 +100,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
     }
 
     @Test
-    public void testCaseSensitiveKeyspaces(){
+    public void whenCreatingGraphsWithDifferentKeyspace_EnsureCaseIsIgnored(){
         TitanInternalFactory factory1 =  new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES);
         TitanInternalFactory factory2 = new TitanInternalFactory("Case", Grakn.IN_MEMORY, TEST_PROPERTIES);
         GraknTitanGraph case1 = factory1.open(GraknTxType.WRITE);
@@ -110,7 +110,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
     }
 
     @Test
-    public void testClearTitanGraph(){
+    public void whenClearingTheGraph_AllNonMetaConceptsAreRemoved(){
         GraknTitanGraph graph = new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
         graph.clear();
         expectedException.expect(GraphRuntimeException.class);
@@ -119,7 +119,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
     }
 
     @Test
-    public void testPermanentlyClosedGraph(){
+    public void whenClosingTheGraph_EnsureTheTransactionIsClosed(){
         GraknTitanGraph graph = new TitanInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
 
         String entityTypeLabel = "Hello";
