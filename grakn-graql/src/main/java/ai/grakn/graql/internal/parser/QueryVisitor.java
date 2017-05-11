@@ -730,19 +730,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     private ResourceType.DataType getDatatype(TerminalNode datatype) {
-        switch (datatype.getText()) {
-            case "long":
-                return ResourceType.DataType.LONG;
-            case "double":
-                return ResourceType.DataType.DOUBLE;
-            case "string":
-                return ResourceType.DataType.STRING;
-            case "boolean":
-                return ResourceType.DataType.BOOLEAN;
-            case "date":
-                return ResourceType.DataType.DATE;
-            default:
-                throw new RuntimeException("Unrecognized datatype " + datatype.getText());
-        }
+        return QueryParser.DATA_TYPES.get(datatype.getText());
     }
 }
