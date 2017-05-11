@@ -1000,10 +1000,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //Remove any resources associated with this index that are not the main resource
         if(duplicates.size() > 0){
-            Iterator<ResourceImpl> it = duplicates.iterator();
-
-            while(it.hasNext()){
-                ResourceImpl<?> otherResource = it.next();
+            for (ResourceImpl<?> otherResource : duplicates) {
                 Collection<Relation> otherRelations = otherResource.relations();
 
                 //Delete the shortcut edges of the resource we going to delete.
