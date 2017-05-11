@@ -156,4 +156,8 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         allSubTypes.addAll(statisticsResourceTypeLabels);
         return allSubTypes;
     }
+
+    Set<Integer> convertLabelsToIds(Set<TypeLabel> labelSet) {
+        return labelSet.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+    }
 }

@@ -31,7 +31,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements StdQuery {
 
@@ -48,10 +47,8 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
 
-        Set<Integer> allSubTypeIds =
-                getCombinedSubTypes().stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
-        Set<Integer> statisticsResourceTypeIds =
-                statisticsResourceTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+        Set<Integer> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
+        Set<Integer> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds),
