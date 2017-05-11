@@ -168,7 +168,7 @@ public enum ErrorMessage {
     //Server Errors
     UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
     MISSING_MANDATORY_REQUEST_PARAMETERS("Missing mandatory query parameter [%s]"),
-    MISSING_REQUEST_BODY("Empty POST body- it should contain the Graql query to be executed."),
+    MISSING_REQUEST_BODY("Empty body- it should contain the Graql query to be executed."),
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
     INVALID_CONTENT_TYPE("Invalid combination of query [%s] and content type [%s]"),
     EXPLAIN_ONLY_MATCH("Cannot get explanation for non-match query, given: [%s]"),
