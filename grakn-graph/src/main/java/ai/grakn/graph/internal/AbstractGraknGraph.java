@@ -1005,7 +1005,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
                 //Delete the shortcut edges of the resource we going to delete.
                 //This is so we can copy them uniquely later
-                otherResource.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT).forEach(EdgeImpl::delete);
+                //otherResource.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT).forEach(EdgeImpl::delete);
 
                 //Copy the actual relation
                 for (Relation otherRelation : otherRelations) {
@@ -1044,10 +1044,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             otherRelation.deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelation = otherRelation;
-
+            RelationType relationType = foundRelation.type();
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
-            otherRelation.allRolePlayers().forEach((roleType, instances) -> {
-                if(instances.contains(other)) addCasting((RoleTypeImpl) roleType, main, otherRelation);
+            other.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).forEach(edge -> {
+                if(relationType.getLabel().getValue().equals(edge.getProperty(Schema.EdgeProperty.RELATION_TYPE_LABEL))){
+                    RoleTypeImpl roleType = (RoleTypeImpl) getRoleType(edge.getProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL));
+                    addCasting(roleType, main, otherRelation);
+                }
             });
         }
 
