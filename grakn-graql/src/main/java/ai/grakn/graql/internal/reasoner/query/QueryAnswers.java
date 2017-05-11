@@ -34,9 +34,7 @@ import java.util.stream.Stream;
 /**
  *
  * <p>
- * Wrapper class for a set of answers providing higher level filtering facilities
- * as well as unification operation.
- * </p>
+ * Wrapper class for a set of {@link Answer} objects providing higher level facilities.
  *
  * @author Kasper Piskorski
  *

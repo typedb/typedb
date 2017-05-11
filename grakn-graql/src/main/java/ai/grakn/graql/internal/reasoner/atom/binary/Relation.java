@@ -79,7 +79,8 @@ import static java.util.stream.Collectors.toSet;
 /**
  *
  * <p>
- * Atom implementation defining a relation atom.
+ * Atom implementation defining a relation atom corresponding to a combined {@link RelationProperty}
+ * and (optional) {@link IsaProperty}.
  * </p>
  *
  * @author Kasper Piskorski

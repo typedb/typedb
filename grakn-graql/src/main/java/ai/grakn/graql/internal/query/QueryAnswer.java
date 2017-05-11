@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * Wrapper for query result class.
+ * Wrapper for a query result class {@link Answer}.
  * </p>
  *
  * @author Kasper Piskorski

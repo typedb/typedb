@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * Implementation of Unifier interface.
+ * Implementation of {@link Unifier} interface.
  * </p>
  *
  * @author Kasper Piskorski

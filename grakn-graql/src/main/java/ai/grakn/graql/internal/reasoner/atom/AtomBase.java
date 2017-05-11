@@ -37,7 +37,7 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
 /**
  *
  * <p>
- * Base atom implementation providing basic functionalities.
+ * Base {@link Atomic} implementation providing basic functionalities.
  * </p>
  *
  * @author Kasper Piskorski

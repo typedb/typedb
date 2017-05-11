@@ -48,7 +48,7 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
 /**
  *
  * <p>
- * Atom implementation defining a resource atom.
+ * Atom implementation defining a resource atom corresponding to a {@link HasResourceProperty}.
  * </p>
  *
  * @author Kasper Piskorski

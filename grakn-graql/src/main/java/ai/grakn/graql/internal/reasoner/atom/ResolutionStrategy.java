@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.atom;
 /**
  *
  * <p>
- * Class defining the resolution strategy in terms of different weights applicable to certain atom configurations.
+ * Class defining the resolution strategy in terms of different weights applicable to certain {@link Atom} configurations.
  * </p>
  *
  * @author Kasper Piskorski
