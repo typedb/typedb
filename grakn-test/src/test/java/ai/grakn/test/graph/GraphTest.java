@@ -97,6 +97,8 @@ public class GraphTest {
 
     @Test
     public void afterCommitting_NumberOfOpenTransactionsDecrementsOnce() {
+        assumeFalse(usingTinker()); // Tinker graph only ever has one open transaction
+
         GraknSession session = engine.factoryWithNewKeyspace();
 
         GraknGraph graph = session.open(GraknTxType.READ);
