@@ -31,7 +31,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -67,10 +66,12 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
             this.originalValue = Optional.of(value);
 
-            // Convert dates to epoch time to reflect how they are stored
-            if (value instanceof LocalDateTime) {
-                value = ResourceType.DataType.DATE.getPersistenceValue((LocalDateTime) value);
-            }
+            // Convert values to how they are stored in the graph
+            ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getName());
+
+            // We can trust the `SUPPORTED_TYPES` map to store things with the right type
+            //noinspection unchecked
+            value = dataType.getPersistenceValue(value);
 
             this.value = Optional.of(value);
             this.var = Optional.empty();
