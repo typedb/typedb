@@ -202,12 +202,12 @@
                 <version>2.19.1</version>
                 <configuration>
                     <systemPropertyVariables>
-                        <grakn.conf>${main.basedir}/conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
+                        <grakn.conf>${project.basedir}/../conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
-                        <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
+                        <logback.configurationFile>${project.basedir}/../conf/test/logback-test.xml</logback.configurationFile>
                     </systemPropertyVariables>                    
                     <systemProperties>                        
-                        <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
+                        <logback.configurationFile>${project.basedir}/../conf/test/logback-test.xml</logback.configurationFile>
                         <grakn.test.timerecord.file>test-timings.csv</grakn.test.timerecord.file>
                     </systemProperties>
                     <properties>
