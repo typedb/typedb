@@ -514,6 +514,9 @@ public class GraqlShell {
 
         session.sendJson(Json.object(ACTION, ACTION_END));
         handleMessagesFromServer();
+
+        // Flush the console so the output is all displayed before the next command
+        console.flush();
     }
 
     private void handleMessagesFromServer() {
