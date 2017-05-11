@@ -51,7 +51,7 @@ import static java.util.stream.Collectors.toSet;
 public class PostProcessingTask implements BackgroundTask {
 
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
-    private static final String JOB_FINISHED = "Post processing Job [{}] completed on index [{}] on graph [{}]";
+    private static final String JOB_FINISHED = "Post processing Job [{}] completed for indeces and ids: [{}]";
     public static final String LOCK_KEY = "/post-processing-lock";
 
     /**
@@ -116,13 +116,11 @@ public class PostProcessingTask implements BackgroundTask {
             String conceptIndex = e.getKey();
             Set<ConceptId> conceptIds = e.getValue();
 
-            String keyspace = GraphMutators.getKeyspace(configuration);
-
             GraphMutators.runGraphMutationWithRetry(configuration,
                     (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds, postProcessingMethod));
-
-            LOG.debug(JOB_FINISHED, baseType.name(), conceptIndex, keyspace);
         });
+
+        LOG.debug(JOB_FINISHED, baseType.name(), allToPostProcess);
     }
 
     /**

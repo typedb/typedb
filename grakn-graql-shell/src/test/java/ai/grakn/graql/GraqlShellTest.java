@@ -32,10 +32,12 @@ import java.util.concurrent.CompletableFuture;
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -86,6 +88,14 @@ public class GraqlShellTest {
         GraqlShell.runShell(new String[]{"-s", String.valueOf(batchSize), "-a", String.valueOf(activeTasks), "-b", testFilePath}, expectedVersion, historyFile, client);
         verify(loaderClient).setNumberActiveTasks(activeTasks);
         verify(loaderClient).setBatchSize(batchSize);
+    }
+
+    @Test
+    public void testBatchArgsDontHaveToBePresent() {
+        String testFilePath = GraqlShellTest.class.getClassLoader().getResource("test-query.gql").getPath();
+        GraqlShell.runShell(new String[]{"-b", testFilePath}, expectedVersion, historyFile, client);
+        verify(loaderClient, never()).setNumberActiveTasks(anyInt());
+        verify(loaderClient, never()).setBatchSize(anyInt());
     }
 
 }

@@ -216,12 +216,20 @@ public class GraqlShell {
 
         if (cmd.hasOption("b")) {
             try {
-                int activeTasks = Integer.parseInt(cmd.getOptionValue("a"));
-                int batchSize = Integer.parseInt(cmd.getOptionValue("s"));
-                sendBatchRequest(client.loaderClient(keyspace, uriString), cmd.getOptionValue("b"),
-                        activeTasks, batchSize);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+                Optional<Integer> activeTasks = Optional.empty();
+                Optional<Integer> batchSize = Optional.empty();
+                if (cmd.hasOption("a")) {
+                    activeTasks = Optional.of(Integer.parseInt(cmd.getOptionValue("a")));
+                }
+                if (cmd.hasOption("s")) {
+                    batchSize = Optional.of(Integer.parseInt(cmd.getOptionValue("s")));
+                }
+                try {
+                    sendBatchRequest(client.loaderClient(keyspace, uriString), cmd.getOptionValue("b"),
+                            activeTasks, batchSize);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             } catch (NumberFormatException e) {
                 printUsage(options, "Cannot cast argument to an integer "+e.getMessage());
             }
@@ -276,18 +284,17 @@ public class GraqlShell {
             return lines.stream().collect(joining("\n"));
     }
 
-    private static void sendBatchRequest(LoaderClient loaderClient, String graqlPath, int activeTasks, int batchSize) throws IOException {
+    private static void sendBatchRequest(LoaderClient loaderClient, String graqlPath, Optional<Integer> activeTasks, Optional<Integer> batchSize) throws IOException {
         AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
 
-        loaderClient.setNumberActiveTasks(activeTasks);
-        loaderClient.setBatchSize(batchSize);
+        activeTasks.ifPresent(loaderClient::setNumberActiveTasks);
+        batchSize.ifPresent(loaderClient::setBatchSize);
 
         loaderClient.setTaskCompletionConsumer((json) -> {
             TaskStatus status = TaskStatus.valueOf(json.at("status").asString());
-            int batch = Json.read(json.at("configuration").asString()).at("batchNumber").asInteger();
 
             numberBatchesCompleted.incrementAndGet();
-            System.out.println(format("Status of batch [%s]: %s", batch, status));
+            System.out.println(format("Status of batch: %s", status));
             System.out.println(format("Number batches completed: %s", numberBatchesCompleted.get()));
             System.out.println(format("Approximate queries executed: %s", numberBatchesCompleted.get() * loaderClient.getBatchSize()));
         });
