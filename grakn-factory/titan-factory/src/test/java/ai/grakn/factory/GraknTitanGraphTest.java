@@ -22,12 +22,15 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.GraknTitanGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -133,5 +136,14 @@ public class GraknTitanGraphTest extends TitanTestBase{
         expectedException.expectMessage(GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
 
         graph.getEntityType(entityTypeLabel);
+    }
+
+    @Test
+    public void whenCreatingDateResource_EnsureDateCanBeRetrieved(){
+        GraknTitanGraph graph = new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        ResourceType<LocalDateTime> dateType = graph.putResourceType("date", ResourceType.DataType.DATE);
+        LocalDateTime now = LocalDateTime.now();
+        Resource<LocalDateTime> date = dateType.putResource(now);
+        assertEquals(now, date.getValue());
     }
 }
