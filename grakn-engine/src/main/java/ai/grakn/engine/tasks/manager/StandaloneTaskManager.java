@@ -249,11 +249,15 @@ public class StandaloneTaskManager implements TaskManager {
         return checkpoint -> saveState(state.checkpoint(checkpoint));
     }
 
-    private void cancelTask(TaskState task){
+    private synchronized void cancelTask(TaskState task){
+        if(!scheduledTasks.containsKey(task.getId())){
+            LOG.debug("Given task is not scheduled.");
+            return;
+        }
+
         // If stopped or failed, always cancel and clear the task
         if(task.status() == TaskStatus.STOPPED || task.status() == TaskStatus.FAILED){
-            scheduledTasks.get(task.getId()).cancel(true);
-            scheduledTasks.remove(task.getId());
+            scheduledTasks.remove(task.getId()).cancel(true);
         }
 
         // Only clear COMPLETED tasks if they are not recurring
