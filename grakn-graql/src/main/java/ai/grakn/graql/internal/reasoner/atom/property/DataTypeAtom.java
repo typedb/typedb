@@ -29,7 +29,7 @@ import ai.grakn.graql.admin.Atomic;
 /**
  *
  * <p>
- * Atomic corresponding to graql DataTypeProperty.
+ * Atomic corresponding to {@link DataTypeProperty}.
  * </p>
  *
  * @author Kasper Piskorski
