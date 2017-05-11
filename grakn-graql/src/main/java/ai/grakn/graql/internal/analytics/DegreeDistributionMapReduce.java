@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeLabel;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -47,13 +46,13 @@ public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
     public DegreeDistributionMapReduce() {
     }
 
-    public DegreeDistributionMapReduce(Set<TypeLabel> selectedTypes) {
-        super(selectedTypes);
+    public DegreeDistributionMapReduce(Set<Integer> selectedTypeIds) {
+        super(selectedTypeIds);
     }
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<String>> emitter) {
-        if (selectedTypes.contains(Utility.getVertexType(vertex))) {
+        if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
             emitter.emit(vertex.value(DegreeVertexProgram.DEGREE), Collections.singleton(vertex.id().toString()));
         } else {
             emitter.emit(NullObject.instance(), Collections.emptySet());

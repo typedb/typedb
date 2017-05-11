@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
@@ -62,7 +61,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public ConnectedComponentVertexProgram() {
     }
 
-    public ConnectedComponentVertexProgram(Set<TypeLabel> selectedTypes, String randomId) {
+    public ConnectedComponentVertexProgram(Set<Integer> selectedTypes, String randomId) {
         this.selectedTypes = selectedTypes;
 
         isActiveCasting = IS_ACTIVE_CASTING + randomId;
@@ -98,7 +97,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public void safeExecute(final Vertex vertex, Messenger<String> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                if (selectedTypes.contains(Utility.getVertexType(vertex))) {
+                if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
                     String type = vertex.label();
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         // each role-player sends 1 to castings following incoming edges
@@ -131,7 +130,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                         messenger.sendMessage(messageScopeOutRolePlayer, id);
                         messenger.sendMessage(messageScopeInCasting, id);
                     }
-                } else if (selectedTypes.contains(Utility.getVertexType(vertex))) {
+                } else if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
                     String id = vertex.id().toString();
                     vertex.property(clusterLabel, id);
                     messenger.sendMessage(messageScopeInRolePlayer, id);
@@ -139,7 +138,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                 }
                 break;
             default:
-                if (selectedTypes.contains(Utility.getVertexType(vertex)) ||
+                if (selectedTypes.contains(Utility.getVertexTypeId(vertex)) ||
                         (vertex.label().equals(Schema.BaseType.CASTING.name()) &&
                                 (boolean) vertex.value(isActiveCasting))) {
                     update(vertex, messenger, memory);

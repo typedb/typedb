@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
@@ -81,8 +80,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     public ShortestPathVertexProgram() {
     }
 
-    public ShortestPathVertexProgram(Set<TypeLabel> selectedTypes, ConceptId sourceId, ConceptId destinationId) {
-        this.selectedTypes = selectedTypes;
+    public ShortestPathVertexProgram(Set<Integer> selectedTypeIds, ConceptId sourceId, ConceptId destinationId) {
+        this.selectedTypes = selectedTypeIds;
         this.persistentProperties.put(SOURCE, sourceId.getValue());
         this.persistentProperties.put(DESTINATION, destinationId.getValue());
     }
@@ -120,7 +119,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
         switch (memory.getIteration()) {
             // the first two iterations mark castings in subgraph active
             case 0:
-                if (selectedTypes.contains(Utility.getVertexType(vertex))) {
+                if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
                     String type = vertex.label();
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         messenger.sendMessage(messageScopeInRolePlayer, Pair.with(MESSAGE_FROM_ROLE_PLAYER, 0));
@@ -185,7 +184,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                     if (messenger.receiveMessages().hasNext()) {
                         // split because shortcut edges cannot be filtered out
                         if (memory.getIteration() % 2 == 0) {
-                            if (selectedTypes.contains(Utility.getVertexType(vertex))) {
+                            if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
                                 updateInstance(vertex, messenger, memory);
                             }
                         } else {

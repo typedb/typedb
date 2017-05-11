@@ -66,10 +66,13 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
         }
         ComputerResult result;
 
+        Set<Integer> subTypeIds =
+                subTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+
         try {
             result = getGraphComputer().compute(
-                    new ShortestPathVertexProgram(subTypeLabels, sourceId, destinationId),
-                    new ClusterMemberMapReduce(subTypeLabels, ShortestPathVertexProgram.FOUND_IN_ITERATION));
+                    new ShortestPathVertexProgram(subTypeIds, sourceId, destinationId),
+                    new ClusterMemberMapReduce(subTypeIds, ShortestPathVertexProgram.FOUND_IN_ITERATION));
         } catch (RuntimeException e) {
             if ((e.getCause() instanceof IllegalStateException && e.getCause().getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage())) ||
                     (e instanceof IllegalStateException && e.getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage()))) {

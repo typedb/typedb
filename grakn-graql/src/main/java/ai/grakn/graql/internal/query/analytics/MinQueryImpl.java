@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MinQuery {
 
@@ -46,11 +47,14 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
-        Set<TypeLabel> allSubTypes = getCombinedSubTypes();
+        Set<Integer> allSubTypeIds =
+                getCombinedSubTypes().stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+        Set<Integer> statisticsResourceTypeIds =
+                statisticsResourceTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeLabels),
-                new MinMapReduce(statisticsResourceTypeLabels, dataType));
+                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds),
+                new MinMapReduce(statisticsResourceTypeIds, dataType));
         Map<Serializable, Number> min = result.memory().get(MinMapReduce.class.getName());
 
         LOGGER.debug("Min = " + min.get(MapReduce.NullObject.instance()));

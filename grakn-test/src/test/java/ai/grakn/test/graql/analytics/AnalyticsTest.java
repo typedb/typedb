@@ -88,7 +88,7 @@ public class AnalyticsTest {
             graph.commit();
         }
 
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees;
             degrees = graph.graql().compute().degree().of("thing").in("thing", "degree").execute();
             assertEquals(1, degrees.size());
@@ -122,11 +122,10 @@ public class AnalyticsTest {
             relationType.addRelation().addRolePlayer(degreeOwner, thisThing);
 
             graph.commit();
-
         }
 
         // the null role-player caused analytics to fail at some stage
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().degree().execute();
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -148,7 +147,7 @@ public class AnalyticsTest {
         queryList.add("compute path from \"" + entityId1 + "\" to \"" + entityId4 + "\";");
 
         queryList.parallelStream().forEach(query -> {
-            try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+            try (GraknGraph graph = factory.open(GraknTxType.READ)) {
                 graph.graql().parse(query).execute();
             }
         });
