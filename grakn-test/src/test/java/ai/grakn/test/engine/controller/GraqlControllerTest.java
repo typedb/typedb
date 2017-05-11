@@ -528,7 +528,7 @@ public class GraqlControllerTest {
     }
 
     @Test
-    public void POSTGraqlInsert_DeleteWasExecutedOnGraph(){
+    public void POSTGraqlInsert_InsertWasExecutedOnGraph(){
         String query = "insert $x isa person;";
 
         int personCountBefore = graphContext.graph().getEntityType("person").instances().size();
