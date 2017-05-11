@@ -940,10 +940,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         RoleType role = mainCasting.getRole();
         Set<Relation> relations = mainCasting.getRelations();
         Set<Relation> relationsToClean = new HashSet<>();
+        Set<RelationImpl> relationsRequiringReIndexing = new HashSet<>();
 
         for (CastingImpl otherCasting : castings) {
             //Transfer assertion edges
-            for(Relation otherRelation : otherCasting.getRelations()){
+            for(Relation rel : otherCasting.getRelations()){
+                RelationImpl otherRelation = (RelationImpl) rel;
                 boolean transferEdge = true;
 
                 //Check if an equivalent Relation is already connected to this casting. This could be a slow process
@@ -957,15 +959,20 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
                 //Perform the transfer
                 if(transferEdge) {
+                    //Delete index so we can reset it when things are finalised.
+                    otherRelation.setProperty(Schema.ConceptProperty.INDEX, null);
                     EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
                     assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL, role.getId().getValue());
                     relations = mainCasting.getRelations();
+                    relationsRequiringReIndexing.add(otherRelation);
                 }
             }
 
             getConceptLog().removeConcept(otherCasting);
             getTinkerPopGraph().traversal().V(otherCasting.getId().getRawValue()).next().remove();
         }
+
+        relationsRequiringReIndexing.forEach(RelationImpl::setHash);
 
         return relationsToClean;
     }
@@ -977,8 +984,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return True if the roleplayers of the relations are the same.
      */
     private boolean relationsEqual(Relation mainRelation, Relation otherRelation){
-        return mainRelation.allRolePlayers().equals(otherRelation.allRolePlayers()) &&
-                mainRelation.type().equals(otherRelation.type());
+        String mainIndex = getRelationIndex((RelationImpl) mainRelation);
+        String otherIndex = getRelationIndex((RelationImpl) otherRelation);
+        return mainIndex.equals(otherIndex);
+    }
+    private String getRelationIndex(RelationImpl relation){
+        String index = relation.getIndex();
+        if(index == null) index = RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers());
+        return index;
     }
 
     /**

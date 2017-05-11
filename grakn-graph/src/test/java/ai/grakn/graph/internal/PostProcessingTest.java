@@ -97,6 +97,8 @@ public class PostProcessingTest extends GraphTestBase{
         edge = relation.getVertex().addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
         edge.property(Schema.EdgeProperty.ROLE_TYPE_LABEL.name(), mainRoleType.getId());
 
+        relation.setHash();
+
         return graknGraph.admin().buildConcept(castingVertex);
     }
 
