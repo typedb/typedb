@@ -174,6 +174,8 @@ public class StandaloneTaskManager implements TaskManager {
         }
 
         scheduledTasks.put(taskState.getId(), future);
+
+        LOG.info("Added task " + taskState.getId());
     }
 
     private Runnable executeTask(TaskState task, TaskConfiguration configuration) {
