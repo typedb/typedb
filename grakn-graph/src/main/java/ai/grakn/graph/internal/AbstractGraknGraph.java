@@ -1048,37 +1048,25 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param otherRelation The other relation to potentially be absorbed
      */
     private void copyRelation(ResourceImpl main, ResourceImpl<?> other, RelationImpl otherRelation){
-        RelationType relationType = otherRelation.type();
-        Set<RoleTypeImpl> roleTypesOfResource = new HashSet<>(); //All the role types which the resource must play by the end
-        Map<RoleType, Set<Instance>> allRolePlayers = otherRelation.allRolePlayers();
+        //Gets the other resource index and replaces all occurrences of the other resource id with the main resource id
+        //This allows us to find relations far more quickly.
+        String newIndex = otherRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
+        RelationImpl foundRelation = getConceptLog().getModifiedRelations().get(newIndex);
+        if(foundRelation == null) getConcept(Schema.ConceptProperty.INDEX, newIndex);
 
-        //Replace all occurrences of other with main. That we we can quickly find out if the relation on main exists
-        for (Map.Entry<RoleType, Set<Instance>> allRolePlayerEntries : allRolePlayers.entrySet()) {
-
-            Iterator<Instance> it = allRolePlayerEntries.getValue().iterator();
-            while (it.hasNext()){
-                Instance instance = it.next();
-                if(instance.isResource() && instance.asResource().getValue().equals(other.getValue())){//If the values are the same replace with main
-                    it.remove();
-                    allRolePlayerEntries.getValue().add(main);
-                    roleTypesOfResource.add((RoleTypeImpl) allRolePlayerEntries.getKey());
-                }
-            }
-        }
-
-        //See if a duplicate relation already exists
-        RelationImpl foundRelation = getRelation(relationType, allRolePlayers);
-
-        if(foundRelation != null){//If it exists delete the other one
+        if (foundRelation != null) {//If it exists delete the other one
             otherRelation.deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelation = otherRelation;
-            roleTypesOfResource.forEach(roleType -> addCasting(roleType, main, otherRelation));
+
+            //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
+            otherRelation.allRolePlayers().forEach((roleType, instances) -> {
+                if(instances.contains(other)) addCasting((RoleTypeImpl) roleType, main, otherRelation);
+            });
         }
 
         //Explicitly track this new relation so we don't create duplicates
-        String newHash = generateNewHash(relationType, allRolePlayers);
-        getConceptLog().getModifiedRelations().put(newHash, foundRelation);
+        getConceptLog().getModifiedRelations().put(newIndex, foundRelation);
     }
 
     @Override
