@@ -23,7 +23,6 @@ import ai.grakn.graql.macro.Macro;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
@@ -67,7 +66,7 @@ public class DateMacro implements Macro<Unescaped<String>> {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(originalFormat);
 
             TemporalAccessor parsedDate = formatter.parseBest(
-                    originalDate, LocalDateTime::from, LocalDate::from, LocalTime::from, YearMonth::from);
+                    originalDate, LocalDateTime::from, LocalDate::from, LocalTime::from);
 
             return extractLocalDateTime(parsedDate).format(DateTimeFormatter.ISO_DATE_TIME);
         } catch (IllegalArgumentException e){
@@ -81,7 +80,6 @@ public class DateMacro implements Macro<Unescaped<String>> {
      * Extract a {@link LocalDateTime} object from a {@link TemporalAccessor}.
      * If the given date is a {@link LocalDate}, sets the response to the start of that day.
      * If the given date is a {@link LocalTime}, sets the response to the current day.
-     * If the given date is a {@link YearMonth}, sets the response to the first day of that month.
      *
      * @param parsedDate The parsed date to convert.
      * @return A {@link LocalDateTime} object containing a formatted date.
@@ -91,8 +89,6 @@ public class DateMacro implements Macro<Unescaped<String>> {
             return ((LocalDate) parsedDate).atStartOfDay();
         } else if(parsedDate instanceof LocalTime){
             return ((LocalTime) parsedDate).atDate(LocalDate.now());
-        } else if(parsedDate instanceof YearMonth){
-            return((YearMonth) parsedDate).atDay(1).atStartOfDay();
         } else {
             return LocalDateTime.from(parsedDate);
         }
