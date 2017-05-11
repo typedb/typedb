@@ -48,8 +48,6 @@ import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -69,8 +67,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -109,10 +105,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final G graph;
     private final ElementFactory elementFactory;
     private final long shardingFactor;
-    private final Cache<TypeLabel, Type> cachedOntology;
-    private final Map<TypeLabel, Integer> cachedLabels; //This cannot expire
+    private final GraphCache graphCache;
 
-    //----------------------------- Transaction Thread Bound
+    //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
 
     public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled, Properties properties) {
@@ -124,14 +119,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         elementFactory = new ElementFactory(this);
 
         //Initialise Graph Caches
-        cachedLabels = new ConcurrentHashMap<>();
-
-        int cacheTimeout = Integer.parseInt(
-                properties.get(batchLoadingEnabled ? BATCH_CACHE_TIMEOUT_MS : NORMAL_CACHE_TIMEOUT_MS).toString());
-        cachedOntology = CacheBuilder.newBuilder()
-                .maximumSize(1000)
-                .expireAfterWrite(cacheTimeout, TimeUnit.MILLISECONDS)
-                .build();
+        graphCache = new GraphCache(properties, batchLoadingEnabled);
 
         //Initialise Graph
         getTxCache().openTx(GraknTxType.WRITE);
@@ -172,6 +160,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
+     *
+     * @return The graph cache which contains all the data cached and accessible by all transactions.
+     */
+    GraphCache getGraphCache(){
+        return graphCache;
+    }
+
+    /**
      * @param concept A concept in the graph
      * @return True if the concept has been modified in the transaction
      */
@@ -203,18 +199,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return keyspace;
     }
 
-    Cache<TypeLabel, Type> getCachedOntology(){
-        return cachedOntology;
-    }
-
-    Map<TypeLabel, Integer> getCachedLabels(){
-        return cachedLabels;
-    }
-
     TxCache getTxCache() {
         TxCache txCache = localConceptLog.get();
         if(txCache == null){
-            localConceptLog.set(txCache = new TxCache(this));
+            localConceptLog.set(txCache = new TxCache(getGraphCache()));
         }
 
         if(txCache.isTxOpen() && txCache.ontologyNotCached()){
@@ -296,8 +284,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //Copy entire ontology to the graph cache. This may be a bad idea as it will slow down graph initialisation
         getMetaConcept().subTypes().forEach(type -> {
-            getCachedLabels().put(type.getLabel(), type.getTypeId());
-            getCachedOntology().put(type.getLabel(), type);
+            getGraphCache().cacheLabel(type.getLabel(), type.getTypeId());
+            getGraphCache().cacheType(type.getLabel(), type);
         });
 
         return ontologyInitialised;
@@ -709,7 +697,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         // Relation To Casting
-
         EdgeImpl relationToCasting = relation.putEdge(foundCasting, Schema.EdgeLabel.CASTING);
         relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId());
         getTxCache().trackConceptForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
@@ -803,9 +790,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 if(logs.isPresent() && submitLogs) {
                     LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, logs.get()) + "]");
                 }
-                getTxCache().writeToCentralCache(true);
+                getTxCache().writeToGraphCache(true);
             } else {
-                getTxCache().writeToCentralCache(isReadOnly());
+                getTxCache().writeToGraphCache(isReadOnly());
             }
         } finally {
             closeTransaction(closeMessage);

@@ -141,13 +141,13 @@ public class GraknGraphTest extends GraphTestBase {
         Collection<? extends Type> types = graknGraph.getMetaConcept().subTypes();
         graknGraph.abort();
 
-        for (Type type : graknGraph.getCachedOntology().asMap().values()) {
+        for (Type type : graknGraph.getGraphCache().getCachedTypes().values()) {
             assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", types.contains(type));
         }
     }
     private void assertCacheOnlyContainsMetaTypes(){
         Set<TypeLabel> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(Collectors.toSet());
-        graknGraph.getCachedOntology().asMap().keySet().forEach(cachedLabel -> {
+        graknGraph.getGraphCache().getCachedTypes().keySet().forEach(cachedLabel -> {
             assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel));
         });
     }
@@ -261,7 +261,7 @@ public class GraknGraphTest extends GraphTestBase {
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         //Check cache is in good order
-        Collection<Type> cachedValues = graknGraph.getCachedOntology().asMap().values();
+        Collection<Type> cachedValues = graknGraph.getGraphCache().getCachedTypes().values();
         assertTrue("Type [" + r1 + "] was not cached", cachedValues.contains(r1));
         assertTrue("Type [" + r2 + "] was not cached", cachedValues.contains(r2));
         assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
@@ -279,7 +279,7 @@ public class GraknGraphTest extends GraphTestBase {
         }).get();
 
         //Check the above mutation did not affect central repo
-        Type foundE1 = graknGraph.getCachedOntology().asMap().get(e1.getLabel());
+        Type foundE1 = graknGraph.getGraphCache().getCachedTypes().get(e1.getLabel());
         assertTrue("Main cache was affected by transaction", foundE1.plays().contains(r1));
     }
 

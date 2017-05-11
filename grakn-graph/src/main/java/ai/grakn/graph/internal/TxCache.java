@@ -25,7 +25,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -42,14 +41,13 @@ import java.util.stream.Collectors;
  * </p>
  *
  * <p>
- *
  *     Caches Transaction specific data this includes:
- *
  *     <ol>
  *         <li>Validation Concepts - Concepts which need to undergo validation.</li>
  *         <li>Built Concepts -  Prevents rebuilding when the same vertex is encountered</li>
  *         <li>The Ontology - Optimises validation checks by preventing db read. </li>
  *         <li>Type Labels - Allows mapping type labels to type Ids</li>
+ *         <li>Transaction meta Data - Allows transactions to function in different ways</li>
  *     <ol/>
  * </p>
  *
@@ -57,8 +55,8 @@ import java.util.stream.Collectors;
  *
  */
 class TxCache {
-    //TODO: Make graph specific caches shared among transactions
-    private final AbstractGraknGraph<?> graknGraph;
+    //Graph cache which is shared across multiple transactions
+    private final GraphCache graphCache;
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
@@ -87,21 +85,18 @@ class TxCache {
     private String closedReason = null;
     private Map<TypeLabel, Type> cloningCache = new HashMap<>();
 
-    TxCache(AbstractGraknGraph<?> graknGraph) {
-        this.graknGraph = graknGraph;
+    TxCache(GraphCache graphCache) {
+        this.graphCache = graphCache;
     }
 
     /**
-     * A helper method which writes back into the central cache at the end of a transaction.
+     * A helper method which writes back into the graph cache at the end of a transaction.
      *
      * @param isSafe true only if it is safe to copy the cache completely without any checks
      */
-    void writeToCentralCache(boolean isSafe){
+    void writeToGraphCache(boolean isSafe){
         //When a commit has occurred or a graph is read only all types can be overridden this is because we know they are valid.
-        if(isSafe){
-            graknGraph.getCachedOntology().putAll(typeCache);
-            graknGraph.getCachedLabels().putAll(labelCache);
-        }
+        if(isSafe) graphCache.readTxCache(this);
 
         //When a commit has not occurred some checks are required
         //TODO: Fill our cache when not committing and when not read only graph.
@@ -122,8 +117,8 @@ class TxCache {
      *
      */
     void refreshOntologyCache(){
-        ImmutableMap<TypeLabel, Type> cachedOntologySnapshot = ImmutableMap.copyOf(graknGraph.getCachedOntology().asMap());
-        ImmutableMap<TypeLabel, Integer> cachedLabelsSnapshot = ImmutableMap.copyOf(graknGraph.getCachedLabels());
+        Map<TypeLabel, Type> cachedOntologySnapshot = graphCache.getCachedTypes();
+        Map<TypeLabel, Integer> cachedLabelsSnapshot = graphCache.getCachedLabels();
 
         //Read central cache into txCache cloning only base concepts. Sets clones later
         for (Type type : cachedOntologySnapshot.values()) {
@@ -237,6 +232,22 @@ class TxCache {
      */
     Map<TypeLabel, Long> getInstanceCount(){
         return instanceCount;
+    }
+
+    /**
+     *
+     * @return All the types currently cached in the transaction. Used for
+     */
+    Map<TypeLabel, TypeImpl> getTypeCache(){
+        return typeCache;
+    }
+
+    /**
+     *
+     * @return All the types labels currently cached in the transaction.
+     */
+    Map<TypeLabel, Integer> getLabelCache(){
+        return labelCache;
     }
 
     /**
