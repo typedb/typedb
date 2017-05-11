@@ -98,8 +98,13 @@ public class StandaloneTaskManager implements TaskManager {
     public void close(){
         executorService.shutdown();
         schedulingService.shutdownNow();
-        scheduledTasks.clear();
+
+        runningTasks.keySet().forEach(this::stopTask);
         runningTasks.clear();
+
+        scheduledTasks.values().forEach(t -> t.cancel(true));
+        scheduledTasks.clear();
+
         LockProvider.clear();
     }
 
