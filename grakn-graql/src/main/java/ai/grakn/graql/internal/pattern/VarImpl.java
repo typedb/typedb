@@ -429,19 +429,19 @@ class VarImpl implements VarAdmin {
 
         builder.append(name);
 
-        if (!properties.isEmpty()) {
+        if (isUserDefinedName() && !properties.isEmpty()) {
             // Add a space after the var name
             builder.append(" ");
+        }
 
-            boolean first = true;
+        boolean first = true;
 
-            for (VarProperty property : properties) {
-                if (!first) {
-                    builder.append(" ");
-                }
-                first = false;
-                property.buildString(builder);
+        for (VarProperty property : properties) {
+            if (!first) {
+                builder.append(" ");
             }
+            first = false;
+            property.buildString(builder);
         }
 
         return builder.toString();

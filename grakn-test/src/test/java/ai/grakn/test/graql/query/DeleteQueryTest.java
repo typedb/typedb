@@ -320,13 +320,6 @@ public class DeleteQueryTest {
         qb.match(var("x").isa("movie")).delete(var("x").val("hello")).execute();
     }
 
-    @Test
-    public void whenCallingToStringOnDeleteQuery_ItLooksLikeOriginalQuery(){
-        String query = "match $x isa movie; delete $x;";
-
-        assertEquals(query, qb.parse(query).toString());
-    }
-
     private boolean exists(MatchQuery query) {
         return query.ask().execute();
     }
