@@ -19,7 +19,7 @@
 package ai.grakn.client;
 
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Query;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import mjson.Json;
@@ -76,7 +76,7 @@ public class LoaderClient {
     private final String GET = "http://%s" + TASKS + "/%s";
 
     private final Map<Integer,CompletableFuture> futures;
-    private final Collection<InsertQuery> queries;
+    private final Collection<Query> queries;
     private final String keyspace;
     private final String uri;
 
@@ -144,7 +144,7 @@ public class LoaderClient {
      * Number of active tasks running on the server at any one time.
      * Consider this a safeguard on system load.
      *
-     * The Loader {@link #add(InsertQuery)} method will block on the value of this field.
+     * The Loader {@link #add(Query)} method will block on the value of this field.
      *
      * @param size number of tasks to allow to run at any given time
      */
@@ -163,7 +163,10 @@ public class LoaderClient {
      *
      * @param query insert query to be executed
      */
-    public void add(InsertQuery query){
+    public void add(Query query){
+        if (query.isReadOnly()) {
+            throw new RuntimeException("Invalid query: "+query.toString()+". LoaderClient only accepts queries that mutate the graph.");
+        }
         queries.add(query);
         if(queries.size() >= batchSize){
             sendQueriesToLoader(new HashSet<>(queries));
@@ -206,7 +209,7 @@ public class LoaderClient {
      *
      * @param queries Queries to be inserted
      */
-    void sendQueriesToLoader(Collection<InsertQuery> queries){
+    void sendQueriesToLoader(Collection<Query> queries){
         try {
             blocker.acquire();
         } catch (InterruptedException e) {
@@ -377,11 +380,11 @@ public class LoaderClient {
      * @param batchNumber number of the current batch being sent
      * @return configuration for the loader task
      */
-    private String getConfiguration(Collection<InsertQuery> queries, int batchNumber){
+    private String getConfiguration(Collection<Query> queries, int batchNumber){
         return Json.object()
                 .set(KEYSPACE_PARAM, keyspace)
                 .set("batchNumber", batchNumber)
-                .set(TASK_LOADER_INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()))
+                .set(TASK_LOADER_INSERTS, queries.stream().map(Query::toString).collect(toList()))
                 .toString();
     }
 

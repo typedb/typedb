@@ -24,7 +24,7 @@ import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 
 import java.util.Collection;
@@ -77,7 +77,7 @@ public class LoaderTask implements BackgroundTask {
      * @param inserts graql queries to insert into the graph
      * @return true if the data was inserted, false otherwise
      */
-    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<InsertQuery> inserts) {
+    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts) {
         graph.showImplicitConcepts(true);
 
         inserts.forEach(q -> q.withGraph(graph).execute());
@@ -95,11 +95,17 @@ public class LoaderTask implements BackgroundTask {
      * @param configuration JSONObject containing configuration
      * @return insert queries from the configuration
      */
-    private Collection<InsertQuery> getInserts(TaskConfiguration configuration){
+    private Collection<Query> getInserts(TaskConfiguration configuration){
         if(configuration.json().has(TASK_LOADER_INSERTS)){
             return configuration.json().at(TASK_LOADER_INSERTS).asJsonList().stream()
                     .map(Json::asString)
-                    .map(builder::<InsertQuery>parse)
+                    .map(builder::<Query<?>>parse)
+                    .map(query -> {
+                        if (query.isReadOnly()) {
+                            throw new RuntimeException("Invalid query: "+query.toString()+". LoaderClient only accepts queries that mutate the graph.");
+                        }
+                        return query;
+                    })
                     .collect(Collectors.toList());
         }
 

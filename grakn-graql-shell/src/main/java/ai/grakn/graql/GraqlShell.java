@@ -303,7 +303,7 @@ public class GraqlShell {
 
         Graql.withoutGraph()
                 .parseList(queries).stream()
-                .map(p -> (InsertQuery) p)
+                .map(p -> (Query) p)
                 .forEach(loaderClient::add);
 
         loaderClient.waitToFinish();
