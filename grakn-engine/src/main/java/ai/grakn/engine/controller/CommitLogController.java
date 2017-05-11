@@ -19,7 +19,6 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.postprocessing.AbstractDelayedTask;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
@@ -40,7 +39,6 @@ import spark.Service;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import java.time.Duration;
 import java.util.Optional;
 
 import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
@@ -89,7 +87,7 @@ public class CommitLogController {
         String keyspace = Optional.ofNullable(req.queryParams(KEYSPACE_PARAM))
                 .orElse(GraknEngineConfig.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY));
 
-        LOG.info("Commit log received for graph [" + keyspace + "]");
+        LOG.debug("Commit log received for graph [" + keyspace + "]");
 
         // Instances to post process
         Json postProcessingConfiguration = Json.object();
@@ -98,8 +96,7 @@ public class CommitLogController {
 
         // TODO Make interval configurable
         TaskState postProcessingTask = TaskState.of(
-                PostProcessingTask.class, this.getClass().getName(),
-                TaskSchedule.recurring(Duration.ofSeconds(10)));
+                PostProcessingTask.class, this.getClass().getName(), TaskSchedule.now());
 
         //Instances to count
         Json countingConfiguration = Json.object();
@@ -108,10 +105,6 @@ public class CommitLogController {
 
         TaskState countingTask = TaskState.of(
                 UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now());
-
-
-        //TODO: Get rid of this update
-        AbstractDelayedTask.lastDelayedTaskCreated.set(System.currentTimeMillis());
 
         // Send two tasks to the pipeline
         manager.addLowPriorityTask(postProcessingTask, TaskConfiguration.of(postProcessingConfiguration));

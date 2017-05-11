@@ -27,7 +27,7 @@ import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 /**
  *
  * <p>
- * Atomic corresponding to graql IsAbstractProperty.
+ * Atomic corresponding to {@link ai.grakn.graql.internal.pattern.property.IsAbstractProperty}.
  * </p>
  *
  * @author Kasper Piskorski

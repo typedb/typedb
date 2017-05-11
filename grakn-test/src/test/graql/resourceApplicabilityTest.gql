@@ -4,9 +4,13 @@ entity1 sub entity
 	has res-string
 	has res-double
 	has res-long
-	has res-boolean;
+	has res-boolean
+	has res1;
+entity2 sub entity
+    has res1;
 
 #Resources
+res1 sub resource datatype string;
 res-string sub resource datatype string;
 res-double sub resource datatype double;
 res-long sub resource datatype long;
@@ -46,5 +50,10 @@ rhs {
     $x has res-boolean 'true';
 };
 
-#Data
-$x isa entity1;
+isa inference-rule
+lhs {
+    $x isa entity1;
+}
+rhs {
+    $x has res1 'test';
+};

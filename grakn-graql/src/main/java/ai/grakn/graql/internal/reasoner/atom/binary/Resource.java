@@ -17,6 +17,7 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -42,10 +43,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
+
 /**
  *
  * <p>
- * Atom implementation defining a resource atom.
+ * Atom implementation defining a resource atom corresponding to a {@link HasResourceProperty}.
  * </p>
  *
  * @author Kasper Piskorski
@@ -91,12 +94,22 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
-    protected boolean isRuleApplicable(InferenceRule child) {
-        Atom ruleAtom = child.getHead().getAtom();
-        if(!(ruleAtom instanceof Resource)) return false;
-        Resource childAtom = (Resource) ruleAtom;
-        if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
+    public boolean isRuleApplicable(InferenceRule child) {
+        Atom ruleAtom = child.getRuleConclusionAtom();
+        if(!(ruleAtom.isResource())) return false;
 
+        Resource childAtom = (Resource) ruleAtom;
+
+        //check types
+        TypeAtom parentTypeConstraint = this.getTypeConstraints().stream().findFirst().orElse(null);
+        TypeAtom childTypeConstraint = childAtom.getTypeConstraints().stream().findFirst().orElse(null);
+
+        Type parentType = parentTypeConstraint != null? parentTypeConstraint.getType() : null;
+        Type childType = childTypeConstraint != null? childTypeConstraint.getType() : null;
+        if (parentType != null && childType != null && checkTypesDisjoint(parentType, childType)) return false;
+
+        //check predicates
+        if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
         for (ValuePredicate childPredicate : childAtom.getMultiPredicate()) {
             Iterator<ValuePredicate> parentIt = getMultiPredicate().iterator();
             boolean predicateCompatible = false;

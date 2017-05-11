@@ -34,7 +34,7 @@ import ai.grakn.util.ErrorMessage;
 /**
  *
  * <p>
- * Predicate implementation specialising it to be an id predicate. Corresponds to graql IdProperty.
+ * Predicate implementation specialising it to be an id predicate. Corresponds to {@link IdProperty}.
  * </p>
  *
  * @author Kasper Piskorski

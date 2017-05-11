@@ -828,7 +828,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private void closeTransaction(String closedReason){
         try {
-            graph.tx().close();
+            // TODO: We check `isOpen` because of a Titan bug which decrements the transaction counter even if the transaction is closed
+            if (graph.tx().isOpen()) {
+                graph.tx().close();
+            }
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
         } finally {

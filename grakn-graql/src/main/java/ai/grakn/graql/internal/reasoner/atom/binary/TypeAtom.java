@@ -24,16 +24,25 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import java.util.stream.Collectors;
 
 /**
  *
  * <p>
- * Atom implementation defining type atoms of the type $varName {isa|sub|plays|has|has-scope} $valueVariable)
+ * Atom implementation defining type atoms of the general form: $varName {isa|sub|plays|relates|has|has-scope} $valueVariable).
+ * These correspond to the following respective graql properties:
+ * {@link IsaProperty},
+ * {@link ai.grakn.graql.internal.pattern.property.SubProperty},
+ * {@link ai.grakn.graql.internal.pattern.property.PlaysProperty}
+ * {@link ai.grakn.graql.internal.pattern.property.RelatesProperty}
+ * {@link ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty}
+ * {@link ai.grakn.graql.internal.pattern.property.HasScopeProperty}
  * </p>
  *
  * @author Kasper Piskorski
@@ -74,6 +83,13 @@ public class TypeAtom extends Binary{
 
     @Override
     public boolean isType(){ return true;}
+
+    @Override
+    public boolean isRuleApplicable(InferenceRule child) {
+        Atom ruleAtom = child.getHead().getAtom();
+        return this.getType() != null
+                && this.getType().subTypes().contains(ruleAtom.getType());
+    }
 
     @Override
     public boolean isSelectable() {

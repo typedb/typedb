@@ -25,7 +25,6 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.HashSet;
@@ -69,14 +68,6 @@ public abstract class BinaryBase extends Atom {
 
     @Override
     public boolean isBinary() { return true;}
-
-    @Override
-    protected boolean isRuleApplicable(InferenceRule child) {
-        Atom ruleAtom = child.getHead().getAtom();
-        return (ruleAtom instanceof BinaryBase)
-                && this.getType() != null
-                && this.getType().subTypes().contains(ruleAtom.getType());
-    }
 
     @Override
     public int hashCode() {
