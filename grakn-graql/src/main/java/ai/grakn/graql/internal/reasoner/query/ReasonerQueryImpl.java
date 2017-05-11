@@ -88,7 +88,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
-    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
     protected ReasonerQueryImpl(Conjunction<VarAdmin> pattern, GraknGraph graph) {
         this.graph = graph;
