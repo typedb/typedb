@@ -75,7 +75,7 @@ public class PostProcessingTaskTest {
 
         task.start(mockConsumer, mockConfiguration);
 
-        verify(mockConfiguration, times(6)).json();
+        verify(mockConfiguration, times(4)).json();
     }
 
     @Test
@@ -84,7 +84,7 @@ public class PostProcessingTaskTest {
 
         task.start(mockConsumer, mockConfiguration);
 
-        verify(mockConfiguration, times(6)).json();
+        verify(mockConfiguration, times(4)).json();
     }
 
     @Test
@@ -102,6 +102,6 @@ public class PostProcessingTaskTest {
         pp1.join();
         pp2.join();
 
-        verify(mockConfiguration, times(12)).json();
+        verify(mockConfiguration, times(8)).json();
     }
 }

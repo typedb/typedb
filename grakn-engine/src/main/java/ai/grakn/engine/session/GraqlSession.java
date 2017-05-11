@@ -106,6 +106,9 @@ class GraqlSession {
                 sendEnd();
             } catch (Throwable e) {
                 LOG.error(getFullStackTrace(e));
+                sendError(e.getMessage());
+                sendEnd();
+                session.close();
                 throw e;
             }
         });
@@ -246,7 +249,7 @@ class GraqlSession {
             try {
                 graph.commit();
             } catch (GraknValidationException e) {
-                sendCommitError(e.getMessage());
+                sendError(e.getMessage());
             } finally {
                 sendEnd();
                 attemptRefresh();
@@ -331,9 +334,9 @@ class GraqlSession {
     }
 
     /**
-     * Tell the client about an error during commit
+     * Tell the client about an error
      */
-    private void sendCommitError(String errorMessage) {
+    private void sendError(String errorMessage) {
         sendJson(Json.object(
                 ACTION, ACTION_ERROR,
                 ERROR, errorMessage

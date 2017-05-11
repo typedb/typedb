@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -379,6 +380,31 @@ public class AtomicTest {
         assertEquals(1, relation2.getApplicableRules().size());
     }
 
+    @Test
+    public void testRuleApplicability_TypeRelation(){
+        GraknGraph graph = ruleApplicabilitySet.graph();
+        String typeString = "{$x isa relation3;}";
+        TypeAtom type = (TypeAtom) new ReasonerAtomicQuery(conjunction(typeString, graph), graph).getAtom();
+        assertEquals(2, type.getApplicableRules().size());
+    }
+
+    @Test
+    public void testRuleApplicability_OntologicalTypes(){
+        GraknGraph graph = ruleApplicabilitySet.graph();
+        String typeString = "{$x sub relation;}";
+        String typeString2 = "{$x relates role1;}";
+        String typeString3 = "{$x plays role1;}";
+        String typeString4 = "{$x has res1;}";
+        TypeAtom type = (TypeAtom) new ReasonerAtomicQuery(conjunction(typeString, graph), graph).getAtom();
+        TypeAtom type2 = (TypeAtom) new ReasonerAtomicQuery(conjunction(typeString2, graph), graph).getAtom();
+        TypeAtom type3 = (TypeAtom) new ReasonerAtomicQuery(conjunction(typeString3, graph), graph).getAtom();
+        TypeAtom type4 = (TypeAtom) new ReasonerAtomicQuery(conjunction(typeString4, graph), graph).getAtom();
+        assertEquals(0, type.getApplicableRules().size());
+        assertEquals(0, type2.getApplicableRules().size());
+        assertEquals(0, type3.getApplicableRules().size());
+        assertEquals(0, type4.getApplicableRules().size());
+    }
+
     @Test //test rule applicability for atom with unspecified roles with missing relation players but with possible ambiguous role mapping
     public void testRuleApplicability_MissingRelationPlayers_TypeContradiction(){
         GraknGraph graph = ruleApplicabilitySetWithTypes.graph();
@@ -520,6 +546,14 @@ public class AtomicTest {
         Resource resource2 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString2, graph), graph).getAtom();
         assertEquals(1, resource.getApplicableRules().size());
         assertEquals(0, resource2.getApplicableRules().size());
+    }
+
+    @Test
+    public void testRuleApplicability_TypeResource(){
+        GraknGraph graph = resourceApplicabilitySet.graph();
+        String typeString = "{$x isa res1;}";
+        TypeAtom type = (TypeAtom) new ReasonerAtomicQuery(conjunction(typeString, graph), graph).getAtom();
+        assertEquals(1, type.getApplicableRules().size());
     }
 
     @Test
