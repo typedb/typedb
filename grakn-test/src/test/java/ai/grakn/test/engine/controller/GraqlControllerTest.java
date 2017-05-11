@@ -76,6 +76,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.booleanThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -392,6 +393,9 @@ public class GraqlControllerTest {
         String query = "match $x isa person; aggregate count;";
         Response response = sendGET(query, APPLICATION_TEXT);
 
+        // refresh graph
+        graphContext.graph().close();
+
         int numberPeople = graphContext.graph().getEntityType("person").instances().size();
         assertThat(stringResponse(response), equalTo(Integer.toString(numberPeople)));
     }
@@ -529,15 +533,23 @@ public class GraqlControllerTest {
 
     @Test
     public void POSTGraqlInsert_InsertWasExecutedOnGraph(){
+        doAnswer(answer -> {
+            graphContext.graph().commit();
+            return null;
+        }).when(mockGraph).commit();
+
         String query = "insert $x isa person;";
 
         int personCountBefore = graphContext.graph().getEntityType("person").instances().size();
 
         sendPOST(query);
 
-        int personCountAfter = graphContext.graph().getEntityType("person").instances().size();;
+        // refresh graph
+        graphContext.graph().close();
 
-        assertEquals(personCountAfter, personCountBefore + 1);
+        int personCountAfter = graphContext.graph().getEntityType("person").instances().size();
+
+        assertEquals(personCountBefore + 1, personCountAfter);
     }
 
     @Test
@@ -775,15 +787,23 @@ public class GraqlControllerTest {
 
     @Test
     public void DELETEGraqlDelete_DeleteWasExecutedOnGraph(){
+        doAnswer(answer -> {
+            graphContext.graph().commit();
+            return null;
+        }).when(mockGraph).commit();
+
         String query = "match $x has name \"Martin Sheen\"; limit 1; delete $x;";
 
         int personCountBefore = graphContext.graph().getEntityType("person").instances().size();
 
         sendDELETE(query);
 
-        int personCountAfter = graphContext.graph().getEntityType("person").instances().size();;
+        // refresh graph
+        graphContext.graph().close();
 
-        assertEquals(personCountAfter, personCountBefore - 1);
+        int personCountAfter = graphContext.graph().getEntityType("person").instances().size();
+
+        assertEquals(personCountBefore - 1, personCountAfter);
     }
 
     @Test
