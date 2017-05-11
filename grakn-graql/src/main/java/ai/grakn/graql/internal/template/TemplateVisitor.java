@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static ai.grakn.util.ErrorMessage.TEMPLATE_MISSING_KEY;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -344,7 +345,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         }
 
         if(value == ObjectUtils.NULL){
-            throw new GraqlTemplateParsingException("Key [" + ctx.getText() + "] not present in data: " + originalContext);
+            throw new GraqlTemplateParsingException(TEMPLATE_MISSING_KEY.getMessage(ctx.getText(), originalContext));
         }
 
         Function<Object, String> formatToApply = ctx.DOLLAR() != null ? this::formatVar : this::format;

@@ -31,23 +31,30 @@ import ai.grakn.test.EngineContext;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Collection;
+import org.junit.contrib.java.lang.system.SystemOutRule;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static ai.grakn.test.migration.MigratorTestUtils.getFileAsString;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public class CSVMigratorTest {
 
     private GraknSession factory;
     private Migrator migrator;
+
+    @Rule
+    public final SystemOutRule systemOutRule = new SystemOutRule().enableLog();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -163,6 +170,32 @@ public class CSVMigratorTest {
 
         Entity ventureLarge = graph.getConcept(ConceptId.of("Venture Large"));
         assertEquals(0, ventureLarge.resources(description).size());
+    }
+
+    @Test
+    public void whenDataKeyMissing_MissingMessageIsLogged(){
+        load(factory, getFile("csv", "pets/schema.gql"));
+
+        String missingKey = "missingKey";
+        String template = "insert $x isa <" + missingKey + ">";
+
+        declareAndLoad(template, "pets/data/pets.csv");
+
+        // Verify that the logger received the missing key message
+        assertThat(systemOutRule.getLog(), containsString(missingKey));
+    }
+
+    @Test
+    public void whenDataKeyMissing_TransactionIsNotExecuted(){
+        load(factory, getFile("csv", "pets/schema.gql"));
+
+        String template = "insert $x isa <MissingKey>";
+
+        declareAndLoad(template, "pets/data/pets.csv");
+
+        try(GraknGraph graph = factory.open(GraknTxType.READ)){
+            assertEquals(0, graph.admin().getMetaEntityType().instances().size());
+        }
     }
 
     private void declareAndLoad(String template, String file){
