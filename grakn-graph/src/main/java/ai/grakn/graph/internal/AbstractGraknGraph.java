@@ -77,7 +77,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graph.internal.RelationImpl.generateNewHash;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -749,16 +748,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_LABEL, fromRelation.type().getLabel().getValue());
             edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL, roleType.getLabel().getValue());
         }
-    }
-
-    private RelationImpl getRelation(RelationType relationType, Map<RoleType, Set<Instance>> roleMap){
-        String hash = generateNewHash(relationType, roleMap);
-        RelationImpl concept = getConceptLog().getCachedRelation(hash);
-
-        if(concept == null) {
-            concept = getConcept(Schema.ConceptProperty.INDEX, hash);
-        }
-        return concept;
     }
 
     /**
