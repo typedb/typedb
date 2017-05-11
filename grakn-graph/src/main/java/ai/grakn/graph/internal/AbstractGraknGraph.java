@@ -1057,15 +1057,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             otherRelation.deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelation = otherRelation;
-            RelationType relationType = foundRelation.type();
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
-            other.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).forEach(edge -> {
-                if(relationType.getLabel().getValue().equals(edge.getProperty(Schema.EdgeProperty.RELATION_TYPE_LABEL))){
-                    RoleTypeImpl roleType = (RoleTypeImpl) getRoleType(edge.getProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL));
-                    addCasting(roleType, main, otherRelation);
-                }
+            otherRelation.allRolePlayers().forEach((roleType, instances) -> {
+                if(instances.contains(other)) addCasting((RoleTypeImpl) roleType, main, otherRelation);
             });
         }
+        ResourceType.DataType.SUPPORTED_TYPES.values();
 
         //Explicitly track this new relation so we don't create duplicates
         getConceptLog().getModifiedRelations().put(newIndex, foundRelation);
