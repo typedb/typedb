@@ -43,6 +43,8 @@ import java.util.stream.Collectors;
 import javax.ws.rs.POST;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -85,6 +87,7 @@ import static java.lang.Boolean.parseBoolean;
 @Produces({"application/json", "text/plain"})
 public class GraqlController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private final EngineGraknGraphFactory factory;
 
     public GraqlController(EngineGraknGraphFactory factory, Service spark) {
@@ -208,6 +211,7 @@ public class GraqlController {
      * @param response response to the client
      */
     private static void handleError(int status, Exception exception, Response response){
+        LOG.error("REST error", exception);
         response.status(status);
         response.body(Json.object("exception", exception.getMessage()).toString());
         response.type(ContentType.APPLICATION_JSON.getMimeType());
