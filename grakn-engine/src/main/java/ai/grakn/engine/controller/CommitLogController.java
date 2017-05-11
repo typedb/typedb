@@ -87,8 +87,6 @@ public class CommitLogController {
         String keyspace = Optional.ofNullable(req.queryParams(KEYSPACE_PARAM))
                 .orElse(GraknEngineConfig.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY));
 
-        LOG.debug("Commit log received for graph [" + keyspace + "]");
-
         // Instances to post process
         Json postProcessingConfiguration = Json.object();
         postProcessingConfiguration.set(KEYSPACE, keyspace);
