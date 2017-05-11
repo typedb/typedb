@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
@@ -313,12 +314,12 @@ public class AtomicTest {
         assertEquals(2, relation.getApplicableRules().size());
     }
 
-    @Test //should assign (role: $x, role: $y) which is compatible with 2 rules
+    @Test //should assign (role: $x, role: $y) which is compatible with 3 rules
     public void testRuleApplicability_MatchAllAtom(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y);}";
         Relation relation = (Relation) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        assertEquals(2, relation.getApplicableRules().size());
+        assertEquals(4, relation.getApplicableRules().size());
     }
 
     @Test //should assign (role1: $x, role: $y, role1: $z) which is incompatible with any of the rule heads
@@ -367,6 +368,25 @@ public class AtomicTest {
         String relationString = "{($x, $y);$x isa entity6;}";
         Relation relation = (Relation) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         assertEquals(0, relation.getApplicableRules().size());
+    }
+
+    @Test
+    public void testRuleApplicability_ReifiedRelationsWithType(){
+        GraknGraph graph = ruleApplicabilitySet.graph();
+        String relationString = "{(role1: $x, role2: $y) isa relation3;}";
+        String relationString2 = "{$x isa entity2;(role1: $x, role2: $y) isa relation3;}";
+        Relation relation = (Relation) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
+        Relation relation2 = (Relation) ReasonerQueries.atomic(conjunction(relationString2, graph), graph).getAtom();
+        assertEquals(2, relation.getApplicableRules().size());
+        assertEquals(1, relation2.getApplicableRules().size());
+    }
+
+    @Test
+    public void testRuleApplicability_TypeRelation(){
+        GraknGraph graph = ruleApplicabilitySet.graph();
+        String typeString = "{$x isa relation3;}";
+        TypeAtom type = (TypeAtom) ReasonerQueries.atomic(conjunction(typeString, graph), graph).getAtom();
+        assertEquals(2, type.getApplicableRules().size());
     }
 
     @Test //test rule applicability for atom with unspecified roles with missing relation players but with possible ambiguous role mapping
@@ -510,6 +530,28 @@ public class AtomicTest {
         Resource resource2 = (Resource) ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
         assertEquals(1, resource.getApplicableRules().size());
         assertEquals(0, resource2.getApplicableRules().size());
+    }
+
+    @Test
+    public void testRuleApplicability_TypeResource(){
+        GraknGraph graph = resourceApplicabilitySet.graph();
+        String typeString = "{$x isa res1;}";
+        TypeAtom type = (TypeAtom) ReasonerQueries.atomic(conjunction(typeString, graph), graph).getAtom();
+        assertEquals(1, type.getApplicableRules().size());
+    }
+
+    @Test
+    public void testRuleApplicability_Resource_TypeMismatch(){
+        GraknGraph graph = resourceApplicabilitySet.graph();
+        String resourceString = "{$x isa entity1, has res1 $r;}";
+        String resourceString2 = "{$x isa entity2, has res1 $r;}";
+        String resourceString3 = "{$x isa entity2, has res1 'test';}";
+        Resource resource = (Resource) ReasonerQueries.atomic(conjunction(resourceString, graph), graph).getAtom();
+        Resource resource2 = (Resource) ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
+        Resource resource3 = (Resource) ReasonerQueries.atomic(conjunction(resourceString3, graph), graph).getAtom();
+        assertEquals(1, resource.getApplicableRules().size());
+        assertEquals(0, resource2.getApplicableRules().size());
+        assertEquals(0, resource3.getApplicableRules().size());
     }
 
     @Test
