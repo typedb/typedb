@@ -42,6 +42,7 @@ import static ai.grakn.engine.GraknEngineConfig.LOGGING_LEVEL;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.engine.GraknEngineConfig.USE_ZOOKEEPER_STORAGE;
+import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.test.GraknTestEnv.startKafka;
 import static ai.grakn.test.GraknTestEnv.stopKafka;
 import static java.lang.System.currentTimeMillis;
@@ -123,6 +124,8 @@ public class DistributionContext extends ExternalResource {
     @Override
     public void before() throws Throwable {
         unzipDistribution();
+
+        ensureCassandraRunning();
 
         startKafka();
 
