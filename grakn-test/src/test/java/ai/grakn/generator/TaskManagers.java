@@ -33,7 +33,7 @@ public class TaskManagers extends Generator<TaskManager> {
 
     @SuppressWarnings("unchecked")
     private Class<? extends TaskManager>[] taskManagerClasses = new Class[]{
-            StandaloneTaskManager.class
+            StandaloneTaskManager.class, SingleQueueTaskManager.class
     };
 
     private static Map<Class<? extends TaskManager>, TaskManager> taskManagers = new HashMap<>();
