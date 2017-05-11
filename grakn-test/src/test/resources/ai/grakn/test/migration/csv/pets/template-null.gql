@@ -5,4 +5,4 @@ $x isa <species>
     has owner <owner>
     has sex <sex>
     if(<birth> != null) do { has birth @date(<birth>, "yyyy-MM-dd") }
-    if(<death> != null) do { has death @date(<death>, "yyyy-MM-dd") }
+    if(<death> != null) do { has death @date(<death>, "yyyy-MM-dd") };
