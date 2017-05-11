@@ -110,19 +110,20 @@ public class CSVMigratorTest {
             migrator.load(template, m.setNullString("").convert());
         }
 
-        GraknGraph graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
+        try(GraknGraph graph = factory.open(GraknTxType.WRITE)) {//Re Open Transaction
 
-        Collection<Entity> pets = graph.getEntityType("pet").instances();
-        assertEquals(1, pets.size());
+            Collection<Entity> pets = graph.getEntityType("pet").instances();
+            assertEquals(1, pets.size());
 
-        Collection<Entity> cats = graph.getEntityType("cat").instances();
-        assertEquals(1, cats.size());
+            Collection<Entity> cats = graph.getEntityType("cat").instances();
+            assertEquals(1, cats.size());
 
-        ResourceType<String> name = graph.getResourceType("name");
-        ResourceType<String> death = graph.getResourceType("death");
+            ResourceType<String> name = graph.getResourceType("name");
+            ResourceType<String> death = graph.getResourceType("death");
 
-        Entity fluffy = name.getResource("Fluffy").ownerInstances().iterator().next().asEntity();
-        assertEquals(1, fluffy.resources(death).size());
+            Entity fluffy = name.getResource("Fluffy").ownerInstances().iterator().next().asEntity();
+            assertEquals(1, fluffy.resources(death).size());
+        }
     }
 
     @Test
