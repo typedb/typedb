@@ -31,6 +31,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
@@ -73,8 +74,8 @@ public class QueryTest {
     @Test //simple equality tests between original and a copy of a query
     public void testCopyConstructor(){
         String patternString = "{$x isa person;$y isa product;($x, $y) isa recommendation;}";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
-        ReasonerQueryImpl copy = new ReasonerQueryImpl(query);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
+        ReasonerQueryImpl copy = ReasonerQueries.create(query);
         assertQueriesEqual(query.getMatchQuery(), copy.getMatchQuery());
     }
 
@@ -89,8 +90,8 @@ public class QueryTest {
                 "($x, $y) isa tagging;" +
                 "$pr isa product;$pr val 'Michelangelo  The Last Judgement';}";
 
-        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, graph), graph);
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, graph), graph);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
+        ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, graph), graph);
         assertEquals(query, query2);
         assertEquals(query.hashCode(), query2.hashCode());
     }
@@ -103,10 +104,10 @@ public class QueryTest {
         String patternString3 = "{$x isa person, val 'Bob';}";
         String patternString4 = "{$x isa person;$x val 'Bob';}";
 
-        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, graph), graph);
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, graph), graph);
-        ReasonerQueryImpl query3 = new ReasonerQueryImpl(conjunction(patternString3, graph), graph);
-        ReasonerQueryImpl query4 = new ReasonerQueryImpl(conjunction(patternString4, graph), graph);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
+        ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, graph), graph);
+        ReasonerQueryImpl query3 = ReasonerQueries.create(conjunction(patternString3, graph), graph);
+        ReasonerQueryImpl query4 = ReasonerQueries.create(conjunction(patternString4, graph), graph);
         assertEquals(query, query2);
         assertEquals(query3, query4);
     }
@@ -117,8 +118,8 @@ public class QueryTest {
         String aId = getConcept(graph, "name", "a").getId().getValue();
         String patternString = "{$X id '" + aId + "'; (ancestor-friend: $X, person: $Y), isa Ancestor-friend;}";
         String patternString2 = "{$X id '" + aId + "'; (person: $X, ancestor-friend: $Y), isa Ancestor-friend;}";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, graph), graph);
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, graph), graph);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
+        ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, graph), graph);
         assertNotEquals(query, query2);
         assertNotEquals(query.hashCode(), query2.hashCode());
     }
@@ -132,10 +133,10 @@ public class QueryTest {
         String patternString3 = "{$x isa city; (entity-location: $y1, geo-entity: $x), isa is-located-in;}";
         String patternString4 = "{(geo-entity: $y1, entity-location: $y2), isa is-located-in;}";
 
-        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, graph), graph);
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, graph), graph);
-        ReasonerQueryImpl query3 = new ReasonerQueryImpl(conjunction(patternString3, graph), graph);
-        ReasonerQueryImpl query4 = new ReasonerQueryImpl(conjunction(patternString4, graph), graph);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
+        ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, graph), graph);
+        ReasonerQueryImpl query3 = ReasonerQueries.create(conjunction(patternString3, graph), graph);
+        ReasonerQueryImpl query4 = ReasonerQueries.create(conjunction(patternString4, graph), graph);
 
         assertTrue(!query.isEquivalent(query2));
         assertTrue(!query.isEquivalent(query3));
@@ -150,10 +151,10 @@ public class QueryTest {
         String patternString7 = "{(entity-location: $y, geo-entity: $x), isa is-located-in; $x isa city;}";
         String patternString8 = "{$x isa city; (entity-location: $y1, geo-entity: $x), isa is-located-in;}";
 
-        ReasonerQueryImpl query5 = new ReasonerQueryImpl(conjunction(patternString5, graph), graph);
-        ReasonerQueryImpl query6 = new ReasonerQueryImpl(conjunction(patternString6, graph), graph);
-        ReasonerQueryImpl query7 = new ReasonerQueryImpl(conjunction(patternString7, graph), graph);
-        ReasonerQueryImpl query8 = new ReasonerQueryImpl(conjunction(patternString8, graph), graph);
+        ReasonerQueryImpl query5 = ReasonerQueries.create(conjunction(patternString5, graph), graph);
+        ReasonerQueryImpl query6 = ReasonerQueries.create(conjunction(patternString6, graph), graph);
+        ReasonerQueryImpl query7 = ReasonerQueries.create(conjunction(patternString7, graph), graph);
+        ReasonerQueryImpl query8 = ReasonerQueries.create(conjunction(patternString8, graph), graph);
         assertEquals(query5, query6);
         assertEquals(query7, query8);
     }
@@ -172,8 +173,8 @@ public class QueryTest {
                 "$x-GRE-388fa981-faa8-4705-984e-f14b072eb688 val > 1099;}";
         Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
-        ReasonerQueryImpl parentQuery = new ReasonerQueryImpl(pattern, graph);
-        ReasonerQueryImpl childQuery = new ReasonerQueryImpl(pattern2, graph);
+        ReasonerQueryImpl parentQuery = ReasonerQueries.create(pattern, graph);
+        ReasonerQueryImpl childQuery = ReasonerQueries.create(pattern2, graph);
         assertEquals(parentQuery, childQuery);
         assertEquals(parentQuery.hashCode(), childQuery.hashCode());
     }
@@ -193,11 +194,11 @@ public class QueryTest {
         Conjunction<VarAdmin> pattern4 = conjunction(patternString4, graph);
         Conjunction<VarAdmin> pattern5 = conjunction(patternString5, graph);
 
-        ReasonerQueryImpl query = new ReasonerQueryImpl(pattern, graph);
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(pattern2, graph);
-        ReasonerQueryImpl query3 = new ReasonerQueryImpl(pattern3, graph);
-        ReasonerQueryImpl query4 = new ReasonerQueryImpl(pattern4, graph);
-        ReasonerQueryImpl query5 = new ReasonerQueryImpl(pattern5, graph);
+        ReasonerQueryImpl query = ReasonerQueries.create(pattern, graph);
+        ReasonerQueryImpl query2 = ReasonerQueries.create(pattern2, graph);
+        ReasonerQueryImpl query3 = ReasonerQueries.create(pattern3, graph);
+        ReasonerQueryImpl query4 = ReasonerQueries.create(pattern4, graph);
+        ReasonerQueryImpl query5 = ReasonerQueries.create(pattern5, graph);
         assertNotEquals(query, query2);
         assertNotEquals(query2, query3);
         assertEquals(query3, query4);
@@ -210,9 +211,9 @@ public class QueryTest {
         String patternString = "{$x has age $a;$a val >23; $a val <27;}";
         String patternString2 = "{$p has age $a;$a val >23;}";
         String patternString3 = "{$a has age $p;$p val <27;$p val >23;}";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, graph), graph);
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, graph), graph);
-        ReasonerQueryImpl query3 = new ReasonerQueryImpl(conjunction(patternString3, graph), graph);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
+        ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, graph), graph);
+        ReasonerQueryImpl query3 = ReasonerQueries.create(conjunction(patternString3, graph), graph);
         assertNotEquals(query, query2);
         assertEquals(query, query3);
     }
@@ -224,8 +225,8 @@ public class QueryTest {
                 "$x1 isa $t1; $t1 sub geoObject;}";
         String patternString2 = "{(geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
                 "$y1 isa $t2; $t2 sub geoObject;}";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, graph), graph);
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, graph), graph);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
+        ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, graph), graph);
         assertEquals(query, query2);
     }
 
@@ -235,31 +236,10 @@ public class QueryTest {
         GraknGraph graph = genealogyOntology.graph();
         String patternString = "{$rel (happening: $b, protagonist: $p) isa event-protagonist has event-role 'parent';}";
         String patternString2 = "{$rel (happening: $c, protagonist: $r) isa event-protagonist; $rel has event-role 'parent';}";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, graph), graph);
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, graph), graph);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
+        ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, graph), graph);
         assertEquals(query, query2);
     }
-
-    @Test //basic unification test based on mapping variables to corresponding roles together with checking copied atom is not affected
-    public void testUnification(){
-        GraknGraph graph = geoGraph.graph();
-        String parentString = "{(entity-location: $y, geo-entity: $y1), isa is-located-in;}";
-        String childString = "{(geo-entity: $y1, entity-location: $y2), isa is-located-in;}";
-
-        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(conjunction(parentString, graph), graph);
-        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(conjunction(childString, graph), graph);
-
-        Atomic childAtom = childQuery.getAtom();
-        Atomic parentAtom = parentQuery.getAtom();
-
-        Unifier unifiers = childAtom.getUnifier(parentAtom);
-
-        ReasonerAtomicQuery childCopy = new ReasonerAtomicQuery(childQuery);
-        childCopy.unify(unifiers);
-        Atomic childAtomCopy = childCopy.getAtom();
-        assertNotEquals(childAtomCopy, childAtom);
-    }
-
 
     private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){
         Set<VarAdmin> vars = graph.graql().parsePattern(patternString).admin()

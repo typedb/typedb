@@ -51,8 +51,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -88,15 +86,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
-    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
-    public ReasonerQueryImpl(Conjunction<VarAdmin> pattern, GraknGraph graph) {
+    protected ReasonerQueryImpl(Conjunction<VarAdmin> pattern, GraknGraph graph) {
         this.graph = graph;
         atomSet.addAll(AtomicFactory.createAtomSet(pattern, this));
         inferTypes();
     }
 
-    public ReasonerQueryImpl(ReasonerQueryImpl q) {
+    ReasonerQueryImpl(ReasonerQueryImpl q) {
         this.graph = q.graph;
         q.getAtoms().forEach(at -> addAtomic(AtomicFactory.create(at, this)));
         inferTypes();
@@ -178,7 +175,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     boolean isAtomic() {
-        return selectAtoms().size() == 1;
+        return getAtoms().stream().filter(Atomic::isSelectable).count() == 1;
     }
 
     /**
@@ -526,7 +523,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return true;
     }
 
-    private Answer getSubstitution(){
+    Answer getSubstitution(){
         Set<IdPredicate> predicates = this.getTypeConstraints().stream()
                 .map(TypeAtom::getPredicate)
                 .filter(Objects::nonNull)
@@ -559,7 +556,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getSubstitution().keySet().containsAll(getVarNames());
     }
 
-    private boolean requiresMaterialisation(){
+    boolean requiresMaterialisation(){
         for(Atom atom : selectAtoms()){
             for (InferenceRule rule : atom.getApplicableRules())
                 if (rule.requiresMaterialisation(atom)){
@@ -640,7 +637,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         if (materialise || requiresMaterialisation()) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
-            return new QueryAnswerIterator().hasStream();
+            return new QueryAnswerIterator(this).hasStream();
         }
     }
 
@@ -672,52 +669,5 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     public ReasonerQueryIterator iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return new ReasonerQueryImplIterator(this, sub, subGoals, cache);
-    }
-
-    private class QueryAnswerIterator extends ReasonerQueryIterator {
-
-        private int iter = 0;
-        private long oldAns = 0;
-        private final Set<Answer> answers = new HashSet<>();
-
-        private final QueryCache<ReasonerAtomicQuery> cache;
-        private Iterator<Answer> answerIterator;
-
-        QueryAnswerIterator(){
-            this.cache = new QueryCache<>();
-            LOG.trace(ReasonerQueryImpl.this.getResolutionPlan());
-            this.answerIterator = new ReasonerQueryImplIterator(ReasonerQueryImpl.this, new QueryAnswer(), new HashSet<>(), cache);
-        }
-
-        /**
-         * check whether answers available, if answers not fully computed compute more answers
-         * @return true if answers available
-         */
-        @Override
-        public boolean hasNext() {
-            if (answerIterator.hasNext()) return true;
-                //iter finished
-            else {
-                long dAns = answers.size() - oldAns;
-                if (dAns != 0 || iter == 0) {
-                    LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
-                    iter++;
-                    answerIterator = new ReasonerQueryImplIterator(ReasonerQueryImpl.this, new QueryAnswer(), new HashSet<>(), cache);
-                    oldAns = answers.size();
-                    return answerIterator.hasNext();
-                }
-                else return false;
-            }
-        }
-
-        /**
-         * @return single answer to the query
-         */
-        @Override
-        public Answer next() {
-            Answer ans = answerIterator.next();
-            answers.add(ans);
-            return ans;
-        }
     }
 }

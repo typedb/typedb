@@ -18,12 +18,14 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -31,28 +33,35 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * <p>
- *     Tracks Graph Mutations.
+ *     Tracks Graph Transaction Specific Variables
  * </p>
  *
  * <p>
- *     This package keeps track of changes to the rootGraph that need to be validated. This includes:
- *      new concepts,
- *      concepts that have had edges added/deleted,
- *      edge cases, for example, relationship where a new role player is added.
+ *     Caches Transaction specific data this includes:
+ *     <ol>
+ *         <li>Validation Concepts - Concepts which need to undergo validation.</li>
+ *         <li>Built Concepts -  Prevents rebuilding when the same vertex is encountered</li>
+ *         <li>The Ontology - Optimises validation checks by preventing db read. </li>
+ *         <li>Type Labels - Allows mapping type labels to type Ids</li>
+ *         <li>Transaction meta Data - Allows transactions to function in different ways</li>
+ *     <ol/>
  * </p>
  *
  * @author fppt
  *
  */
-class ConceptLog {
-    private final AbstractGraknGraph<?> graknGraph;
+class TxCache {
+    //Graph cache which is shared across multiple transactions
+    private final GraphCache graphCache;
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
     private final Map<TypeLabel, TypeImpl> typeCache = new HashMap<>();
+    private final Map<TypeLabel, Integer> labelCache = new HashMap<>();
 
     //We Track Modified Concepts For Validation
     private final Set<ConceptImpl> modifiedConcepts = new HashSet<>();
@@ -69,24 +78,97 @@ class ConceptLog {
     //We Track the number of instances each type has lost or gained
     private final Map<TypeLabel, Long> instanceCount = new HashMap<>();
 
+    //Transaction Specific Meta Data
+    private boolean isTxOpen = false;
+    private boolean showImplicitTypes = false;
+    private boolean txReadOnly = false;
+    private String closedReason = null;
+    private Map<TypeLabel, Type> cloningCache = new HashMap<>();
 
-    ConceptLog(AbstractGraknGraph<?> graknGraph) {
-        this.graknGraph = graknGraph;
+    TxCache(GraphCache graphCache) {
+        this.graphCache = graphCache;
     }
 
     /**
-     * A helper method which writes back into the central cache at the end of a transaction.
+     * A helper method which writes back into the graph cache at the end of a transaction.
      *
      * @param isSafe true only if it is safe to copy the cache completely without any checks
      */
-    void writeToCentralCache(boolean isSafe){
+    void writeToGraphCache(boolean isSafe){
         //When a commit has occurred or a graph is read only all types can be overridden this is because we know they are valid.
-        if(isSafe){
-            graknGraph.getCachedOntology().putAll(typeCache);
-        }
+        if(isSafe) graphCache.readTxCache(this);
 
         //When a commit has not occurred some checks are required
         //TODO: Fill our cache when not committing and when not read only graph.
+    }
+
+    /**
+     *
+     * @return true if ths ontology labels have been cached. The graph cannot operate if this is false.
+     */
+    boolean ontologyNotCached(){
+        return labelCache.isEmpty();
+    }
+
+    /**
+     * Refreshes the transaction ontology cache by reading the central ontology cache is read into this transaction cache.
+     * This method performs this operation whilst making a deep clone of the cached concepts to ensure transactions
+     * do not accidentally break the central ontology cache.
+     *
+     */
+    void refreshOntologyCache(){
+        Map<TypeLabel, Type> cachedOntologySnapshot = graphCache.getCachedTypes();
+        Map<TypeLabel, Integer> cachedLabelsSnapshot = graphCache.getCachedLabels();
+
+        //Read central cache into txCache cloning only base concepts. Sets clones later
+        for (Type type : cachedOntologySnapshot.values()) {
+            cacheConcept((TypeImpl) cacheClone(type));
+        }
+
+        //Iterate through cached clones completing the cloning process.
+        //This part has to be done in a separate iteration otherwise we will infinitely recurse trying to clone everything
+        for (Type type : ImmutableSet.copyOf(cloningCache.values())) {
+            //noinspection unchecked
+            ((TypeImpl) type).copyCachedConcepts(cachedOntologySnapshot.get(type.getLabel()));
+        }
+
+        //Load Labels Separately. We do this because the TypeCache may have expired.
+        cachedLabelsSnapshot.forEach(this::cacheLabel);
+
+        //Purge clone cache to save memory
+        cloningCache.clear();
+    }
+
+    /**
+     *
+     * @param type The type to clone
+     * @param <X> The type of the concept
+     * @return The newly deep cloned set
+     */
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    <X extends Type> X cacheClone(X type){
+        //Is a cloning even needed?
+        if(cloningCache.containsKey(type.getLabel())){
+            return (X) cloningCache.get(type.getLabel());
+        }
+
+        //If the clone has not happened then make a new one
+        Type clonedType = type.copy();
+
+        //Update clone cache so we don't clone multiple concepts in the same transaction
+        cloningCache.put(clonedType.getLabel(), clonedType);
+
+        return (X) clonedType;
+    }
+
+    /**
+     *
+     * @param types a set of concepts to clone
+     * @param <X> the type of those concepts
+     * @return the set of concepts deep cloned
+     */
+    <X extends Type> Set<X> cacheClone(Set<X> types){
+        return types.stream().map(this::cacheClone).collect(Collectors.toSet());
     }
 
     /**
@@ -154,6 +236,22 @@ class ConceptLog {
 
     /**
      *
+     * @return All the types currently cached in the transaction. Used for
+     */
+    Map<TypeLabel, TypeImpl> getTypeCache(){
+        return typeCache;
+    }
+
+    /**
+     *
+     * @return All the types labels currently cached in the transaction.
+     */
+    Map<TypeLabel, Integer> getLabelCache(){
+        return labelCache;
+    }
+
+    /**
+     *
      * @param concept The concept to nio longer track
      */
     @SuppressWarnings("SuspiciousMethodCalls")
@@ -163,7 +261,9 @@ class ConceptLog {
         modifiedResources.remove(concept);
         conceptCache.remove(concept.getId());
         if(concept.isType()){
-            typeCache.remove(((TypeImpl) concept).getLabel());
+            TypeLabel label = ((TypeImpl) concept).getLabel();
+            typeCache.remove(label);
+            labelCache.remove(label);
         }
     }
 
@@ -186,7 +286,19 @@ class ConceptLog {
         if(concept.isType()){
             TypeImpl type = (TypeImpl) concept;
             typeCache.put(type.getLabel(), type);
+            if(!type.isShard()) labelCache.put(type.getLabel(), type.getTypeId());
         }
+    }
+
+
+    /**
+     * Caches the mapping of a type label to a type id. This is necessary in order for ANY types to be looked up.
+     *
+     * @param label The type label to cache
+     * @param id Its equivalent id which can be looked up quickly in the graph
+     */
+    private void cacheLabel(TypeLabel label, Integer id){
+        labelCache.put(label, id);
     }
 
     /**
@@ -206,6 +318,15 @@ class ConceptLog {
      */
     boolean isTypeCached(TypeLabel label){
         return typeCache.containsKey(label);
+    }
+
+    /**
+     *
+     * @param label the type label which may be in the cache
+     * @return true if the label is cached and has a valid mapping to a id
+     */
+    boolean isLabelCached(TypeLabel label){
+        return labelCache.containsKey(label);
     }
 
     /**
@@ -232,6 +353,10 @@ class ConceptLog {
         return (X) typeCache.get(label);
     }
 
+    Integer convertLabelToId(TypeLabel label){
+        return labelCache.get(label);
+    }
+
     void addedInstance(TypeLabel name){
         instanceCount.compute(name, (key, value) -> value == null ? 1 : value + 1);
         cleanupInstanceCount(name);
@@ -243,7 +368,6 @@ class ConceptLog {
     private void cleanupInstanceCount(TypeLabel name){
         if(instanceCount.get(name) == 0) instanceCount.remove(name);
     }
-
 
     JSONObject getFormattedLog(){
         //Concepts In Need of Inspection
@@ -268,11 +392,45 @@ class ConceptLog {
 
         return formattedLog;
     }
-
     private  <X extends InstanceImpl> JSONObject loadConceptsForFixing(Set<X> instances){
         Map<String, Set<String>> conceptByIndex = new HashMap<>();
         instances.forEach(concept ->
                 conceptByIndex.computeIfAbsent(concept.getIndex(), (e) -> new HashSet<>()).add(concept.getId().getValue()));
         return new JSONObject(conceptByIndex);
+    }
+
+    //--------------------------------------- Transaction Specific Meta Data -------------------------------------------
+    void closeTx(String closedReason){
+        isTxOpen = false;
+        this.closedReason = closedReason;
+        modifiedConcepts.clear();
+        modifiedCastings.clear();
+        modifiedResources.clear();
+        conceptCache.clear();
+        typeCache.clear();
+        labelCache.clear();
+    }
+    void openTx(GraknTxType txType){
+        isTxOpen = true;
+        txReadOnly = GraknTxType.READ.equals(txType);
+        closedReason = null;
+    }
+    boolean isTxOpen(){
+        return isTxOpen;
+    }
+
+    void showImplicitTypes(boolean flag){
+        showImplicitTypes = flag;
+    }
+    boolean implicitTypesVisible(){
+        return showImplicitTypes;
+    }
+
+    boolean isTxReadOnly(){
+        return txReadOnly;
+    }
+
+    String getClosedReason(){
+        return closedReason;
     }
 }

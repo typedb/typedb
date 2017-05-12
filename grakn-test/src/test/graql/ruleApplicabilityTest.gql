@@ -27,7 +27,8 @@ entity4 sub entity
 entity5 sub entity
     plays role1;
 
-entity6 sub entity;
+entity6 sub entity
+    has res1;
 
 #Relations
 
@@ -54,6 +55,9 @@ reified-relation sub relation
 relation3 sub relation
    relates role1
    relates role2;
+
+#Resources
+   res1 sub resource datatype string;
 
 #Rules
 

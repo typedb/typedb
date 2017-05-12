@@ -19,13 +19,15 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -41,57 +43,53 @@ import java.util.Set;
  */
 class ReasonerQueryImplIterator extends ReasonerQueryIterator {
 
-    private final Answer partialSubstitution;
+    private Answer partialSub = new QueryAnswer();
     private final ReasonerQueryImpl queryPrime;
 
     private final QueryCache<ReasonerAtomicQuery> cache;
     private final Set<ReasonerAtomicQuery> subGoals;
 
-    private Iterator<Answer> queryIterator;
     private final Iterator<Answer> atomicQueryIterator;
+    private Iterator<Answer> queryIterator = Collections.emptyIterator();
 
-    ReasonerQueryImplIterator(ReasonerQueryImpl query,
+    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
+
+    ReasonerQueryImplIterator(ReasonerQueryImpl q,
                               Answer sub,
                               Set<ReasonerAtomicQuery> subGoals,
                               QueryCache<ReasonerAtomicQuery> cache){
-        this.partialSubstitution = sub;
         this.subGoals = subGoals;
         this.cache = cache;
 
         //get prioritised atom and construct atomic query from it
-        this.queryPrime = new ReasonerQueryImpl(query);
-        queryPrime.addSubstitution(sub);
-        Atom topAtom = queryPrime.getTopAtom();
-        ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
+        ReasonerQueryImpl query = new ReasonerQueryImpl(q);
+        query.addSubstitution(sub);
+        Atom topAtom = query.getTopAtom();
 
-        boolean isAtomic = queryPrime.isAtomic();
-        if (!isAtomic) queryPrime.removeAtom(topAtom);
-
-        atomicQueryIterator = isAtomic? Collections.emptyIterator() : q.iterator(subGoals, cache);
-        queryIterator = isAtomic? q.iterator(subGoals, cache) : Collections.emptyIterator();
+        LOG.trace("CQ: " + query);
+        LOG.trace("CQ delta: " + sub);
+        LOG.trace("CQ plan: " + query.getResolutionPlan());
+        
+        this.atomicQueryIterator = new ReasonerAtomicQuery(topAtom).iterator(new QueryAnswer(), subGoals, cache);
+        this.queryPrime = ReasonerQueries.prime(query, topAtom);
     }
 
     @Override
     public boolean hasNext() {
         if (queryIterator.hasNext()) return true;
-        else {
-            if (atomicQueryIterator.hasNext()) {
-                Answer sub = atomicQueryIterator.next();
-                queryIterator = getQueryPrime().iterator(sub, subGoals, cache);
-                return hasNext();
-            }
-            else return false;
+
+        if (atomicQueryIterator.hasNext()) {
+            partialSub = atomicQueryIterator.next();
+            queryIterator = queryPrime.iterator(partialSub, subGoals, cache);
+            return hasNext();
         }
+        else return false;
     }
 
     @Override
     public Answer next() {
         Answer sub = queryIterator.next();
-        sub = sub.merge(partialSubstitution, true);
+        sub = sub.merge(partialSub, true);
         return sub;
-    }
-
-    private ReasonerQueryImpl getQueryPrime(){
-        return queryPrime.isAtomic()? new ReasonerAtomicQuery(queryPrime.getTopAtom()) : queryPrime;
     }
 }

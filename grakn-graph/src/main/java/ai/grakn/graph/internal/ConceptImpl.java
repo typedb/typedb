@@ -67,7 +67,7 @@ import java.util.stream.StreamSupport;
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
 abstract class ConceptImpl<T extends Concept> implements Concept {
-    private ComponentCache<Boolean> cachedIsShard = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_SHARD));
+    private ConceptCache<Boolean> cachedIsShard = new ConceptCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_SHARD));
     private final AbstractGraknGraph graknGraph;
     private final ConceptId conceptId;
     private final Vertex vertex;
@@ -147,7 +147,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * Deletes the node and adds it neighbours for validation
      */
     void deleteNode(){
-        graknGraph.getConceptLog().removeConcept(this);
+        graknGraph.getTxCache().removeConcept(this);
         // delete node
         getVertex().remove();
     }

@@ -42,7 +42,7 @@ import static org.junit.Assert.assertThat;
  * and concepts that have had new vertices added.
  *
  */
-public class ConceptLogTest extends GraphTestBase{
+public class TxCacheTest extends GraphTestBase{
 
     @Test
     public void whenNewAddingTypesToTheGraph_EnsureTheConceptLogContainsThem() {
@@ -54,7 +54,7 @@ public class ConceptLogTest extends GraphTestBase{
         EntityType t5 = graknGraph.putEntityType("5");
 
         // verify the concepts that we expected are returned in the set
-        assertThat(graknGraph.getConceptLog().getModifiedConcepts(), containsInAnyOrder(t1, t2, t3, t4, t5));
+        assertThat(graknGraph.getTxCache().getModifiedConcepts(), containsInAnyOrder(t1, t2, t3, t4, t5));
     }
 
     @Test
@@ -73,10 +73,10 @@ public class ConceptLogTest extends GraphTestBase{
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
+        assertThat(graknGraph.getTxCache().getModifiedConcepts(), is(empty()));
 
         t1.superType(t2);
-        assertThat(graknGraph.getConceptLog().getModifiedConcepts(), containsInAnyOrder(c1, c2));
+        assertThat(graknGraph.getTxCache().getModifiedConcepts(), containsInAnyOrder(c1, c2));
     }
 
     @Test
@@ -86,10 +86,10 @@ public class ConceptLogTest extends GraphTestBase{
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
+        assertThat(graknGraph.getTxCache().getModifiedConcepts(), is(empty()));
 
         Entity i1 = t1.addEntity();
-        assertThat(graknGraph.getConceptLog().getModifiedConcepts(), containsInAnyOrder(i1));
+        assertThat(graknGraph.getTxCache().getModifiedConcepts(), containsInAnyOrder(i1));
     }
 
     @Test
@@ -104,12 +104,12 @@ public class ConceptLogTest extends GraphTestBase{
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
+        assertThat(graknGraph.getTxCache().getModifiedConcepts(), is(empty()));
 
         Relation rel1 = rt1.addRelation().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
         CastingImpl c1 = ((EntityImpl) i1).castings().iterator().next();
         CastingImpl c2 = ((EntityImpl) i2).castings().iterator().next();
-        assertThat(graknGraph.getConceptLog().getModifiedConcepts(), containsInAnyOrder(rel1, c1, c2));
+        assertThat(graknGraph.getTxCache().getModifiedConcepts(), containsInAnyOrder(rel1, c1, c2));
     }
 
     @Test
@@ -120,10 +120,10 @@ public class ConceptLogTest extends GraphTestBase{
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
+        assertThat(graknGraph.getTxCache().getModifiedConcepts(), is(empty()));
 
         i1.delete();
-        assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
+        assertThat(graknGraph.getTxCache().getModifiedConcepts(), is(empty()));
     }
 
     @Test
@@ -131,24 +131,24 @@ public class ConceptLogTest extends GraphTestBase{
         EntityType entityType = graknGraph.putEntityType("My Type");
         RelationType relationType = graknGraph.putRelationType("My Relation Type");
 
-        ConceptLog conceptLog = graknGraph.getConceptLog();
-        assertThat(conceptLog.getInstanceCount().keySet(), empty());
+        TxCache txCache = graknGraph.getTxCache();
+        assertThat(txCache.getInstanceCount().keySet(), empty());
 
         //Add some instances
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
         relationType.addRelation();
-        assertEquals(2, (long) conceptLog.getInstanceCount().get(entityType.getLabel()));
-        assertEquals(1, (long) conceptLog.getInstanceCount().get(relationType.getLabel()));
+        assertEquals(2, (long) txCache.getInstanceCount().get(entityType.getLabel()));
+        assertEquals(1, (long) txCache.getInstanceCount().get(relationType.getLabel()));
 
         //Remove an entity
         e1.delete();
-        assertEquals(1, (long) conceptLog.getInstanceCount().get(entityType.getLabel()));
-        assertEquals(1, (long) conceptLog.getInstanceCount().get(relationType.getLabel()));
+        assertEquals(1, (long) txCache.getInstanceCount().get(entityType.getLabel()));
+        assertEquals(1, (long) txCache.getInstanceCount().get(relationType.getLabel()));
 
         //Remove another entity
         e2.delete();
-        assertFalse(conceptLog.getInstanceCount().containsKey(entityType.getLabel()));
-        assertEquals(1, (long) conceptLog.getInstanceCount().get(relationType.getLabel()));
+        assertFalse(txCache.getInstanceCount().containsKey(entityType.getLabel()));
+        assertEquals(1, (long) txCache.getInstanceCount().get(relationType.getLabel()));
     }
 }

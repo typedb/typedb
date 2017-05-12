@@ -92,8 +92,10 @@ public class GraqlTest {
     public void testGraqlCount() throws GraknValidationException, InterruptedException, ExecutionException {
         addOntologyAndEntities();
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            assertEquals(6L, ((Long) graph.graql().parse("compute count;").execute()).longValue());
-            assertEquals(3L, ((Long) graph.graql().parse("compute count in thing, thing;").execute()).longValue());
+            assertEquals(6L,
+                    ((Long) graph.graql().parse("compute count;").execute()).longValue());
+            assertEquals(3L,
+                    ((Long) graph.graql().parse("compute count in thing, thing;").execute()).longValue());
         }
     }
 
@@ -115,10 +117,10 @@ public class GraqlTest {
             correctDegrees.put(relationId24, 2L);
 
             assertTrue(!degrees.isEmpty());
-            degrees.entrySet().forEach(entry -> entry.getValue().forEach(
+            degrees.forEach((key, value) -> value.forEach(
                     id -> {
                         assertTrue(correctDegrees.containsKey(id));
-                        assertEquals(correctDegrees.get(id), entry.getKey());
+                        assertEquals(correctDegrees.get(id), key);
                     }
             ));
         }
@@ -165,7 +167,8 @@ public class GraqlTest {
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // use graql to compute various statistics
-            Optional<? extends Number> result = graph.graql().<SumQuery>parse("compute sum of my-resource;").execute();
+            Optional<? extends Number> result =
+                    graph.graql().<SumQuery>parse("compute sum of my-resource;").execute();
             assertEquals(Optional.of(6L), result);
             result = graph.graql().<MinQuery>parse("compute min of my-resource;").execute();
             assertEquals(Optional.of(1L), result);
@@ -202,11 +205,13 @@ public class GraqlTest {
         addOntologyAndEntities();
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            PathQuery query = graph.graql().parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
+            PathQuery query =
+                    graph.graql().parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
 
             Optional<List<Concept>> path = query.execute();
             assert path.isPresent();
-            List<String> result = path.get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+            List<String> result =
+                    path.get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
 
             List<String> expected = Lists.newArrayList(entityId1, relationId12, entityId2);
 
@@ -259,7 +264,7 @@ public class GraqlTest {
                 graph.graql().parse(command).execute();
             }
 
-            try(GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+            try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
                 // see if the node was commited
                 assertNull(graph.getEntityType("thing"));
             }
