@@ -131,7 +131,6 @@ public class GraknGraphTest extends GraphTestBase {
 
     @Test
     public void whenClosingReadOnlyGraph_EnsureTypesAreCached(){
-        //assertThat(graknGraph.getCachedOntology().asMap().keySet(), is(empty()));
         assertCacheOnlyContainsMetaTypes();
         graknGraph.getMetaConcept().subTypes(); //This loads some types into transaction cache
         graknGraph.abort();
