@@ -219,70 +219,7 @@ public class MacroTest {
 
 
 
-    @Test
-    public void whenDateMacroCalledWithMoreThanTwoArguments_ExceptionIsThrown(){
-        String template = "insert $x val @date(<date>, \"mm/dd/yyyy\", \"dd/mm/yyyy\");";
 
-        exception.expect(IllegalArgumentException.class);
-
-        //noinspection ResultOfMethodCallIgnored
-        Graql.parseTemplate(template, Collections.singletonMap("date", "10/09/1993"));
-    }
-
-    @Test
-    public void whenDateMacroCalledWithDateFormat_DateFormatConvertedToISODateTime() throws Exception {
-        String dateTimePattern = "MM/dd/yyyy";
-        String dateAsString = "10/09/1993";
-
-        String formattedTime = LocalDate
-                .parse(dateAsString, DateTimeFormatter.ofPattern(dateTimePattern)).atStartOfDay()
-                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-
-        String template = "insert $x val @date(<date>, \"" + dateTimePattern + "\");";
-        String expected = "insert $x0 val " + formattedTime + ";";
-
-        assertParseEquals(template, Collections.singletonMap("date", dateAsString), expected);
-    }
-
-    @Test
-    public void whenDateMacroCalledWithDateTimeFormat_DateFormatConvertedToISODateTime() throws Exception {
-        String dateTimePattern = "yyyy-MM-dd HH:mm";
-        String dateAsString = "1986-04-08 12:30";
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateTimePattern);
-
-        String formattedTime = LocalDateTime
-                .parse(dateAsString, formatter)
-                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-
-        String template = "insert $x val @date(<date>, \"" + dateTimePattern + "\");";
-        String expected = "insert $x0 val " + formattedTime + ";";
-
-        assertParseEquals(template, Collections.singletonMap("date", dateAsString), expected);
-    }
-
-    @Test
-    public void whenDateMacroCalledAndDateCannotBeParsed_ExceptionIsThrown(){
-        String dateTimePattern = "dd-MMM-yyyy HH:mm:ss";
-        String dateAsString = "03-feb-2014 01:16:31";
-
-        String template = "insert $x val @date(<date>, \"" + dateTimePattern + "\");";
-
-        exception.expect(DateTimeParseException.class);
-        exception.expectMessage("Cannot parse date value");
-
-        assertParseEquals(template, Collections.singletonMap("date", dateAsString), null);
-    }
-
-    @Test
-    public void whenDateMacroCalledWithInvalidDateFormat_ExceptionIsThrown(){
-        String template = "insert $x val @date(<date>, \"this is not a format\");";
-
-        exception.expect(IllegalArgumentException.class);
-        exception.expectMessage("Cannot parse date format");
-
-        assertParseEquals(template, Collections.singletonMap("date", "10/09/1993"), null);
-    }
 
     @Test
     public void stringToUpperCaseTest(){
