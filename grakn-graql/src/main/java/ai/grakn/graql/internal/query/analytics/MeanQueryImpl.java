@@ -46,11 +46,12 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
-        Set<TypeLabel> allSubTypes = getCombinedSubTypes();
+        Set<Integer> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
+        Set<Integer> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeLabels),
-                new MeanMapReduce(statisticsResourceTypeLabels, dataType));
+                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds),
+                new MeanMapReduce(statisticsResourceTypeIds, dataType));
         Map<Serializable, Map<String, Double>> mean = result.memory().get(MeanMapReduce.class.getName());
         Map<String, Double> meanPair = mean.get(MapReduce.NullObject.instance());
 

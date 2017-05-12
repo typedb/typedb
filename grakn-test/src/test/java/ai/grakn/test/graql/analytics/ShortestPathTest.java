@@ -31,7 +31,6 @@ import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeFalse;
 
 public class ShortestPathTest {
@@ -70,7 +69,7 @@ public class ShortestPathTest {
         assumeFalse(usingTinker());
 
         // test on an empty graph
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().path().from(entityId1).to(entityId2).execute();
         }
     }
@@ -81,7 +80,7 @@ public class ShortestPathTest {
         assumeFalse(usingTinker());
 
         addOntologyAndEntities();
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().path().from(entityId1).to(entityId4).in(thing, related).execute();
         }
     }
@@ -92,7 +91,7 @@ public class ShortestPathTest {
         assumeFalse(usingTinker());
 
         addOntologyAndEntities();
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             assertFalse(graph.graql().compute().path().from(entityId1).to(entityId5).execute().isPresent());
         }
     }
@@ -106,7 +105,7 @@ public class ShortestPathTest {
         List<String> result;
         addOntologyAndEntities();
 
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             // directly connected vertices
             correctPath = Lists.newArrayList(entityId1.getValue(), relationId12.getValue());
             result = graph.graql().compute().path().from(entityId1).to(relationId12).execute()
@@ -178,7 +177,7 @@ public class ShortestPathTest {
             GraknSparkComputer.clear();
             graph.close();
             list.parallelStream().forEach(i -> {
-                try (GraknGraph graph1 = factory.open(GraknTxType.WRITE)) {
+                try (GraknGraph graph1 = factory.open(GraknTxType.READ)) {
                     int size = graph1.graql().compute().path().in(thing, related).from(entityId2).to(entityId1)
                             .execute().get().stream().map(Concept::getId).map(ConceptId::getValue)
                             .collect(Collectors.toList()).size();
@@ -197,7 +196,7 @@ public class ShortestPathTest {
         List<String> result;
         addOntologyAndEntities2();
 
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(), entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
             result = graph.graql().compute().path().from(entityId2).to(entityId3).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
@@ -280,7 +279,7 @@ public class ShortestPathTest {
             graph.commit();
         }
 
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             Optional<List<Concept>> result = graph.graql().compute().path().from(startId).to(endId).execute();
             assertEquals(1, validPaths.stream().filter(path -> checkPathsAreEqual(path, result)).count());
         }

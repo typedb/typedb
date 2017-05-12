@@ -103,7 +103,7 @@ public class DegreeTest {
                 .addRolePlayer(role2, graph.getConcept(entity4))
                 .getId();
         graph.commit();
-        graph = factory.open(GraknTxType.WRITE);
+        graph = factory.open(GraknTxType.READ);
 
         Map<ConceptId, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1L);
@@ -121,79 +121,81 @@ public class DegreeTest {
         }
         GraknSparkComputer.clear();
         graph.close();
+
         list.parallelStream().forEach(i -> {
-            try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+            try (GraknGraph graph = factory.open(GraknTxType.READ)) {
                 Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
 
                 assertEquals(3, degrees.size());
-                degrees.entrySet().forEach(entry -> entry.getValue().forEach(
+                degrees.forEach((key, value) -> value.forEach(
                         id -> {
                             assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
-                            assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
+                            assertEquals(correctDegrees.get(ConceptId.of(id)), key);
                         }
                 ));
             }
         });
 
-        graph = factory.open(GraknTxType.WRITE);
-        Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thing").execute();
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thing").execute();
 
-        assertEquals(2, degrees2.size());
-        assertEquals(2, degrees2.get(1L).size());
-        assertEquals(1, degrees2.get(3L).size());
-        degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
-                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
+            assertEquals(2, degrees2.size());
+            assertEquals(2, degrees2.get(1L).size());
+            assertEquals(1, degrees2.get(3L).size());
+            degrees2.forEach((key, value) -> value.forEach(
+                    id -> {
+                        assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(correctDegrees.get(ConceptId.of(id)), key);
+                    }
+            ));
 
-        degrees2 = graph.graql().compute().degree().of("thing", "related").execute();
-        assertEquals(3, degrees2.size());
-        assertEquals(2, degrees2.get(1L).size());
-        assertEquals(3, degrees2.get(2L).size());
-        assertEquals(1, degrees2.get(3L).size());
-        degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
-                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
+            degrees2 = graph.graql().compute().degree().of("thing", "related").execute();
+            assertEquals(3, degrees2.size());
+            assertEquals(2, degrees2.get(1L).size());
+            assertEquals(3, degrees2.get(2L).size());
+            assertEquals(1, degrees2.get(3L).size());
+            degrees2.forEach((key, value) -> value.forEach(
+                    id -> {
+                        assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(correctDegrees.get(ConceptId.of(id)), key);
+                    }
+            ));
 
-        degrees2 = graph.graql().compute().degree().of().execute();
+            degrees2 = graph.graql().compute().degree().of().execute();
 
-        assertEquals(3, degrees2.size());
-        assertEquals(3, degrees2.get(1L).size());
-        assertEquals(3, degrees2.get(2L).size());
-        assertEquals(1, degrees2.get(3L).size());
-        degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
-                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
+            assertEquals(3, degrees2.size());
+            assertEquals(3, degrees2.get(1L).size());
+            assertEquals(3, degrees2.get(2L).size());
+            assertEquals(1, degrees2.get(3L).size());
+            degrees2.forEach((key, value) -> value.forEach(
+                    id -> {
+                        assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(correctDegrees.get(ConceptId.of(id)), key);
+                    }
+            ));
 
-        // compute degrees on subgraph
-        Map<Long, Set<String>> degrees3 = graph.graql().compute().degree().in("thing", "related").execute();
-        correctDegrees.put(id3, 1L);
-        assertTrue(!degrees3.isEmpty());
-        degrees3.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
-                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
+            // compute degrees on subgraph
+            Map<Long, Set<String>> degrees3 = graph.graql().compute().degree().in("thing", "related").execute();
+            correctDegrees.put(id3, 1L);
+            assertTrue(!degrees3.isEmpty());
+            degrees3.forEach((key, value) -> value.forEach(
+                    id -> {
+                        assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(correctDegrees.get(ConceptId.of(id)), key);
+                    }
+            ));
 
-        degrees3 = graph.graql().compute().degree().of("thing").in("thing", "related").execute();
-        assertEquals(2, degrees3.size());
-        assertEquals(2, degrees3.get(1L).size());
-        assertEquals(1, degrees3.get(3L).size());
-        degrees3.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
-                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
+            degrees3 = graph.graql().compute().degree().of("thing").in("thing", "related").execute();
+            assertEquals(2, degrees3.size());
+            assertEquals(2, degrees3.get(1L).size());
+            assertEquals(1, degrees3.get(3L).size());
+            degrees3.forEach((key, value) -> value.forEach(
+                    id -> {
+                        assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(correctDegrees.get(ConceptId.of(id)), key);
+                    }
+            ));
+        }
     }
 
     @Test
@@ -208,16 +210,18 @@ public class DegreeTest {
         graph.putEntityType("person").plays(owner);
         EntityType animal = graph.putEntityType("animal").plays(pet);
         EntityType dog = graph.putEntityType("dog").superType(animal);
-        ConceptId foofoo = dog.addEntity().getId();
+        dog.addEntity().getId();
         graph.commit();
-        graph = factory.open(GraknTxType.WRITE);
 
-        // set subgraph
-        HashSet<TypeLabel> ct = Sets.newHashSet(TypeLabel.of("person"), TypeLabel.of("animal"), TypeLabel.of("mans-best-friend"));
-        Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            // set subgraph
+            HashSet<TypeLabel> ct = Sets.newHashSet(TypeLabel.of("person"), TypeLabel.of("animal"),
+                    TypeLabel.of("mans-best-friend"));
+            Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
 
-        // check that dog has a degree to confirm sub has been inferred
-        assertTrue(degrees.keySet().iterator().next().equals(0L));
+            // check that dog has a degree to confirm sub has been inferred
+            assertTrue(degrees.keySet().iterator().next().equals(0L));
+        }
     }
 
     @Test
@@ -273,39 +277,42 @@ public class DegreeTest {
         referenceDegrees.put(cocoAltName.getId(), 2L);
 
         graph.commit();
-        graph = factory.open(GraknTxType.WRITE);
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
 
-        // create a subgraph excluding resources and the relationship
-        HashSet<TypeLabel> subGraphTypes = Sets.newHashSet(TypeLabel.of("animal"), TypeLabel.of("person"), TypeLabel.of("mans-best-friend"));
-        Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(subGraphTypes).execute();
-        assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(subGraphReferenceDegrees.containsKey(ConceptId.of(id)));
-                    assertEquals(subGraphReferenceDegrees.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
+            // create a subgraph excluding resources and the relationship
+            HashSet<TypeLabel> subGraphTypes = Sets.newHashSet(TypeLabel.of("animal"), TypeLabel.of("person"),
+                    TypeLabel.of("mans-best-friend"));
+            Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(subGraphTypes).execute();
+            assertFalse(degrees.isEmpty());
+            degrees.forEach((key, value1) -> value1.forEach(
+                    id -> {
+                        assertTrue(subGraphReferenceDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(subGraphReferenceDegrees.get(ConceptId.of(id)), key);
+                    }
+            ));
 
-        // create a subgraph excluding resource type only
-        HashSet<TypeLabel> almostFullTypes = Sets.newHashSet(TypeLabel.of("animal"), TypeLabel.of("person"), TypeLabel.of("mans-best-friend"), TypeLabel.of("has-name"), TypeLabel.of("name"));
-        degrees = graph.graql().compute().degree().in(almostFullTypes).execute();
-        assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(almostFullReferenceDegrees.containsKey(ConceptId.of(id)));
-                    assertEquals(almostFullReferenceDegrees.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
+            // create a subgraph excluding resource type only
+            HashSet<TypeLabel> almostFullTypes = Sets.newHashSet(TypeLabel.of("animal"), TypeLabel.of("person"),
+                    TypeLabel.of("mans-best-friend"), TypeLabel.of("has-name"), TypeLabel.of("name"));
+            degrees = graph.graql().compute().degree().in(almostFullTypes).execute();
+            assertFalse(degrees.isEmpty());
+            degrees.forEach((key, value1) -> value1.forEach(
+                    id -> {
+                        assertTrue(almostFullReferenceDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(almostFullReferenceDegrees.get(ConceptId.of(id)), key);
+                    }
+            ));
 
-        // full graph
-        degrees = graph.graql().compute().degree().execute();
-        assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
-                    assertEquals(referenceDegrees.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
+            // full graph
+            degrees = graph.graql().compute().degree().execute();
+            assertFalse(degrees.isEmpty());
+            degrees.forEach((key, value1) -> value1.forEach(
+                    id -> {
+                        assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(referenceDegrees.get(ConceptId.of(id)), key);
+                    }
+            ));
+        }
     }
 
     @Test
@@ -335,16 +342,16 @@ public class DegreeTest {
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
 
         graph.commit();
-        graph = factory.open(GraknTxType.WRITE);
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
 
-        // compute and persist degrees
-        Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
+            // compute and persist degrees
+            Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
 
-        // check degrees are correct
-        referenceDegrees.entrySet().forEach(entry ->
-                assertTrue(degrees.get(entry.getValue()).contains(entry.getKey().getValue())));
-        degrees.entrySet().forEach(entry ->
-                entry.getValue().forEach(id -> assertEquals(entry.getKey(), referenceDegrees.get(ConceptId.of(id)))));
+            // check degrees are correct
+            referenceDegrees.forEach((key, value) -> assertTrue(degrees.get(value).contains(key.getValue())));
+            degrees.forEach((key, value) -> value.forEach(id ->
+                    assertEquals(key, referenceDegrees.get(ConceptId.of(id)))));
+        }
     }
 
     @Test
@@ -401,33 +408,38 @@ public class DegreeTest {
         referenceDegrees2.put(daveOwnsCoco.getId(), 2L);
 
         graph.commit();
-        graph = factory.open(GraknTxType.WRITE);
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
 
-        // create a subgraph with assertion on assertion
-        HashSet<TypeLabel> ct =
-                Sets.newHashSet(TypeLabel.of("animal"), TypeLabel.of("person"), TypeLabel.of("mans-best-friend"), TypeLabel.of("start-date"), TypeLabel.of("has-ownership-resource"));
-        Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
-        assertTrue(!degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(referenceDegrees1.containsKey(ConceptId.of(id)));
-                    assertEquals(referenceDegrees1.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
+            // create a subgraph with assertion on assertion
+            HashSet<TypeLabel> ct =
+                    Sets.newHashSet(TypeLabel.of("animal"),
+                            TypeLabel.of("person"),
+                            TypeLabel.of("mans-best-friend"),
+                            TypeLabel.of("start-date"),
+                            TypeLabel.of("has-ownership-resource"));
+            Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
+            assertTrue(!degrees.isEmpty());
+            degrees.forEach((key1, value2) -> value2.forEach(
+                    id -> {
+                        assertTrue(referenceDegrees1.containsKey(ConceptId.of(id)));
+                        assertEquals(referenceDegrees1.get(ConceptId.of(id)), key1);
+                    }
+            ));
 
-        // create subgraph without assertion on assertion
-        ct.clear();
-        ct.add(TypeLabel.of("animal"));
-        ct.add(TypeLabel.of("person"));
-        ct.add(TypeLabel.of("mans-best-friend"));
-        degrees = graph.graql().compute().degree().in(ct).execute();
-        assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(referenceDegrees2.containsKey(ConceptId.of(id)));
-                    assertEquals(referenceDegrees2.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
+            // create subgraph without assertion on assertion
+            ct.clear();
+            ct.add(TypeLabel.of("animal"));
+            ct.add(TypeLabel.of("person"));
+            ct.add(TypeLabel.of("mans-best-friend"));
+            degrees = graph.graql().compute().degree().in(ct).execute();
+            assertFalse(degrees.isEmpty());
+            degrees.forEach((key, value1) -> value1.forEach(
+                    id -> {
+                        assertTrue(referenceDegrees2.containsKey(ConceptId.of(id)));
+                        assertEquals(referenceDegrees2.get(ConceptId.of(id)), key);
+                    }
+            ));
+        }
     }
 
     @Test
@@ -461,11 +473,12 @@ public class DegreeTest {
         ConceptId relationId = relation.getId();
 
         graph.commit();
-        graph = factory.open(GraknTxType.WRITE);
 
-        Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
-        assertTrue(degrees.get(3L).contains(relationId.getValue()));
-        assertTrue(degrees.get(1L).contains(marlonId.getValue()));
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
+            assertTrue(degrees.get(3L).contains(relationId.getValue()));
+            assertTrue(degrees.get(1L).contains(marlonId.getValue()));
+        }
     }
 
     @Test
@@ -499,16 +512,17 @@ public class DegreeTest {
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 3L);
 
         graph.commit();
-        graph = factory.open(GraknTxType.WRITE);
 
-        Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
-        assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
-                    assertEquals(referenceDegrees.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
+            assertFalse(degrees.isEmpty());
+            degrees.forEach((key, value) -> value.forEach(
+                    id -> {
+                        assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(referenceDegrees.get(ConceptId.of(id)), key);
+                    }
+            ));
+        }
     }
 
     @Test
@@ -545,18 +559,20 @@ public class DegreeTest {
 
         // validate
         graph.commit();
-        graph = factory.open(GraknTxType.WRITE);
 
-        // check degree for dave owning cats
-        //TODO: should we count the relationship even if there is no cat attached?
-        HashSet<TypeLabel> ct = Sets.newHashSet(TypeLabel.of("mans-best-friend"), TypeLabel.of("cat"), TypeLabel.of("person"));
-        Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
-        assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
-                    assertEquals(referenceDegrees.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            // check degree for dave owning cats
+            //TODO: should we count the relationship even if there is no cat attached?
+            HashSet<TypeLabel> ct = Sets.newHashSet(TypeLabel.of("mans-best-friend"), TypeLabel.of("cat"),
+                    TypeLabel.of("person"));
+            Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
+            assertFalse(degrees.isEmpty());
+            degrees.forEach((key, value) -> value.forEach(
+                    id -> {
+                        assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(referenceDegrees.get(ConceptId.of(id)), key);
+                    }
+            ));
+        }
     }
 }

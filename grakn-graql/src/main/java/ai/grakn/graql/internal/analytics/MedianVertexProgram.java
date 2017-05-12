@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
@@ -76,16 +75,16 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
             INDEX_START, INDEX_END, INDEX_MEDIAN, PIVOT, PIVOT_POSITIVE, PIVOT_NEGATIVE,
             POSITIVE_COUNT, NEGATIVE_COUNT, LABEL_SELECTED);
 
-    private Set<TypeLabel> statisticsResourceTypes = new HashSet<>();
+    private Set<Integer> statisticsResourceTypeIds = new HashSet<>();
 
     // Needed internally for OLAP tasks
     public MedianVertexProgram() {
     }
 
-    public MedianVertexProgram(Set<TypeLabel> selectedTypes,
-                               Set<TypeLabel> statisticsResourceTypes, String resourceDataType) {
-        this.selectedTypes = selectedTypes;
-        this.statisticsResourceTypes = statisticsResourceTypes;
+    public MedianVertexProgram(Set<Integer> selectedTypeId,
+                               Set<Integer> statisticsResourceTypeIds, String resourceDataType) {
+        this.selectedTypes = selectedTypeId;
+        this.statisticsResourceTypeIds = statisticsResourceTypeIds;
 
         String resourceDataTypeValue = resourceDataType.equals(ResourceType.DataType.LONG.getName()) ?
                 Schema.ConceptProperty.VALUE_LONG.name() : Schema.ConceptProperty.VALUE_DOUBLE.name();
@@ -121,15 +120,15 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     @Override
     public void storeState(final Configuration configuration) {
         super.storeState(configuration);
-        statisticsResourceTypes.forEach(
-                typeLabel -> configuration.addProperty(RESOURCE_TYPE + "." + typeLabel.getValue(), typeLabel.getValue()));
+        statisticsResourceTypeIds.forEach(
+                typeId -> configuration.addProperty(RESOURCE_TYPE + "." + typeId, typeId));
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(RESOURCE_TYPE).getKeys().forEachRemaining(key ->
-                statisticsResourceTypes.add(TypeLabel.of((String) configuration.getProperty(RESOURCE_TYPE + "." + key))));
+                statisticsResourceTypeIds.add(configuration.getInt(RESOURCE_TYPE + "." + key)));
     }
 
     @Override
@@ -157,7 +156,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                degreeStatisticsStepInstance(vertex, messenger, selectedTypes, statisticsResourceTypes);
+                degreeStatisticsStepInstance(vertex, messenger, selectedTypes, statisticsResourceTypeIds);
                 break;
             case 1:
                 degreeStatisticsStepCastingIn(vertex, messenger);
@@ -169,7 +168,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
                 degreeStatisticsStepCastingOut(vertex, messenger);
                 break;
             case 4:
-                if (statisticsResourceTypes.contains(Utility.getVertexType(vertex))) {
+                if (statisticsResourceTypeIds.contains(Utility.getVertexTypeId(vertex))) {
                     // put degree
                     long degree = getMessageCount(messenger);
                     vertex.property(DEGREE, degree);
@@ -182,7 +181,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
                 }
                 break;
             case 5:
-                if (statisticsResourceTypes.contains(Utility.getVertexType(vertex)) &&
+                if (statisticsResourceTypeIds.contains(Utility.getVertexTypeId(vertex)) &&
                         (long) vertex.value(DEGREE) > 0) {
                     Number value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE));
                     if (value.doubleValue() < memory.<Number>get(PIVOT).doubleValue()) {
@@ -198,7 +197,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
 
             // default case is almost the same as case 5, except that in case 5 no vertex has LABEL
             default:
-                if (statisticsResourceTypes.contains(Utility.getVertexType(vertex)) &&
+                if (statisticsResourceTypeIds.contains(Utility.getVertexTypeId(vertex)) &&
                         (long) vertex.value(DEGREE) > 0 &&
                         (int) vertex.value(LABEL) == memory.<Integer>get(LABEL_SELECTED)) {
                     Number value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE));
