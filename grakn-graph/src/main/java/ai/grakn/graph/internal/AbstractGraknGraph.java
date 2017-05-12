@@ -145,7 +145,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return the current available Grakn id which can be used for types
      */
     private int getNextTypeId(){
-        //Instance count is used here to prevent creating another schema property.
         TypeImpl<?, ?> metaConcept = (TypeImpl<?, ?>) getMetaConcept();
         Integer currentValue = metaConcept.getProperty(Schema.ConceptProperty.CURRENT_TYPE_ID);
         if(currentValue == null){
