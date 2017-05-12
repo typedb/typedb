@@ -34,6 +34,7 @@ import java.net.HttpRetryException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -95,7 +96,7 @@ public class BatchMutatorClient {
     public BatchMutatorClient(String keyspace, String uri, Consumer<Json> onCompletionOfTask){
         this.uri = uri;
         this.keyspace = keyspace;
-        this.queries = new HashSet<>();
+        this.queries = new ArrayList<>();
         this.futures = new ConcurrentHashMap<>();
         this.onCompletionOfTask = onCompletionOfTask;
         this.batchNumber = new AtomicInteger(0);
@@ -169,18 +170,19 @@ public class BatchMutatorClient {
             throw new IllegalArgumentException(READ_ONLY_QUERY.getMessage(query.toString()));
         }
         queries.add(query);
-        if(queries.size() >= batchSize){
-            sendQueriesToLoader(new HashSet<>(queries));
-            queries.clear();
-        }
+        sendQueriesWhenBatchLargerThanValue(batchSize-1);
     }
 
     /**
      * Load any remaining batches in the queue.
      */
     public void flush(){
-        if(queries.size() > 0){
-            sendQueriesToLoader(new HashSet<>(queries));
+        sendQueriesWhenBatchLargerThanValue(0);
+    }
+
+    void sendQueriesWhenBatchLargerThanValue(int value) {
+        if(queries.size() > value){
+            sendQueriesToLoader(new ArrayList<>(queries));
             queries.clear();
         }
     }

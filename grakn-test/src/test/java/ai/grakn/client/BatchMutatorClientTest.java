@@ -38,6 +38,7 @@ import org.junit.rules.ExpectedException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static ai.grakn.graql.Graql.insert;
 import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.Matchers.containsString;
@@ -221,6 +222,16 @@ public class BatchMutatorClientTest {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(READ_ONLY_QUERY.getMessage(matchQuery.toString()));
         loader.add(matchQuery);
+    }
+
+    @Test
+    public void whenInsertingIdenticalQueriesMakeSureTheyAreAllSuccessful() {
+        BatchMutatorClient mutatorClient = loader();
+        InsertQuery insertQuery = insert(var("x").isa("person"));
+        mutatorClient.add(insertQuery);
+        mutatorClient.add(insertQuery);
+        mutatorClient.waitToFinish();
+        verify(mutatorClient, times(1)).sendQueriesToLoader(argThat(insertQueries -> insertQueries.size() == 2));
     }
 
     private BatchMutatorClient loader(){
