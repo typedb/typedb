@@ -238,7 +238,7 @@ public class InferenceRule {
      * @return unified rule
      */
     public InferenceRule unify(Unifier unifier){
-        //do alpha-conversion
+        //NB: captures of bound variables have to be resolved to the same variable hence using head unifier
         Unifier headUnifier = head.unify(unifier);
         body.unify(headUnifier);
         return this;
