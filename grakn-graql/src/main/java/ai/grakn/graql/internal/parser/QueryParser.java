@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.parser;
 
+import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -30,6 +31,7 @@ import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -51,6 +53,14 @@ public class QueryParser {
 
     private final QueryBuilder queryBuilder;
     private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
+
+    public static final ImmutableBiMap<String, ResourceType.DataType> DATA_TYPES = ImmutableBiMap.of(
+            "long", ResourceType.DataType.LONG,
+            "double", ResourceType.DataType.DOUBLE,
+            "string", ResourceType.DataType.STRING,
+            "boolean", ResourceType.DataType.BOOLEAN,
+            "date", ResourceType.DataType.DATE
+    );
 
     /**
      * Create a query parser with the specified graph

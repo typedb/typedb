@@ -25,6 +25,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.parser.QueryParser;
 import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
 import com.google.common.collect.ImmutableSet;
 
@@ -62,17 +63,7 @@ public class DataTypeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public String getProperty() {
-        if (datatype == ResourceType.DataType.BOOLEAN) {
-            return "boolean";
-        } else if (datatype == ResourceType.DataType.DOUBLE) {
-            return "double";
-        } else if (datatype == ResourceType.DataType.LONG) {
-            return "long";
-        } else if (datatype == ResourceType.DataType.STRING) {
-            return "string";
-        } else {
-            throw new RuntimeException("Unknown data type: " + datatype.getName());
-        }
+        return QueryParser.DATA_TYPES.inverse().get(datatype);
     }
 
     @Override
