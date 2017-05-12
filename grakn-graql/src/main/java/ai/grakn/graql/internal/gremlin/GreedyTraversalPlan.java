@@ -96,6 +96,9 @@ public class GreedyTraversalPlan {
      */
     private static List<Fragment> semiOptimalConjunction(ConjunctionQuery query, long maxTraversalAttempts) {
         Plan initialPlan = Plan.base();
+
+        // Should always start with fragments with fixed cost
+        // So remove them from fragmentSets and add them to the plan
         Set<EquivalentFragmentSet> fragmentSets = query.getEquivalentFragmentSets().stream().filter(fragmentSet -> {
             if (fragmentSet.fragments().size() == 1) {
                 Fragment fragment = fragmentSet.fragments().iterator().next();
