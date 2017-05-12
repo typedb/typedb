@@ -96,8 +96,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
         if (ruleIterator.hasNext()) {
             currentRule = ruleIterator.next();
-            LOG.trace("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", id: " + currentRule.getRuleId());
-            LOG.trace(currentRule.getBody().getResolutionPlan());
+            LOG.trace("Applying rule: " + currentRule.getHead().getAtom() + ", id: " + currentRule.getRuleId());
             //TODO: empty sub as the sub is propagated in rule.propagateConstraints method
             queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
             return hasNext();

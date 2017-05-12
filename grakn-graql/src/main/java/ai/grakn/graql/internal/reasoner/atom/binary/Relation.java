@@ -631,7 +631,7 @@ public class Relation extends TypeAtom {
                             Set<RoleType> typeRoles = isMetaType? childRoles : new HashSet<>(parentType.plays());
 
                             //incompatible type
-                            if (Sets.intersection(relationRoles, typeRoles).isEmpty()) compatibleChildRoles.clear();
+                            if (Sets.intersection(relationRoles, typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
                             else {
                                 compatibleChildRoles = compatibleChildRoles.stream()
                                         .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || typeRoles.contains(rc))
