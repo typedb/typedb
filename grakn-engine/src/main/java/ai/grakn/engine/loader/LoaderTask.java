@@ -33,7 +33,8 @@ import java.util.stream.Collectors;
 import mjson.Json;
 
 import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
-import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
 
 /**
  * Task that will load data into a graph. It uses the engine running on the
@@ -49,8 +50,9 @@ public class LoaderTask implements BackgroundTask {
 
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
+        Collection<Query> inserts = getInserts(configuration);
         GraphMutators.runBatchMutationWithRetry(configuration, (graph) ->
-                insertQueriesInOneTransaction(graph, getInserts(configuration))
+                insertQueriesInOneTransaction(graph, inserts)
         );
 
         return true;
@@ -96,13 +98,13 @@ public class LoaderTask implements BackgroundTask {
      * @return insert queries from the configuration
      */
     private Collection<Query> getInserts(TaskConfiguration configuration){
-        if(configuration.json().has(TASK_LOADER_INSERTS)){
-            return configuration.json().at(TASK_LOADER_INSERTS).asJsonList().stream()
+        if(configuration.json().has(TASK_LOADER_MUTATIONS)){
+            return configuration.json().at(TASK_LOADER_MUTATIONS).asJsonList().stream()
                     .map(Json::asString)
                     .map(builder::<Query<?>>parse)
                     .map(query -> {
                         if (query.isReadOnly()) {
-                            throw new RuntimeException("Invalid query: "+query.toString()+". LoaderClient only accepts queries that mutate the graph.");
+                            throw new IllegalArgumentException(READ_ONLY_QUERY.getMessage(query.toString()));
                         }
                         return query;
                     })

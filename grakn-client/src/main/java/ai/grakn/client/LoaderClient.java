@@ -48,7 +48,7 @@ import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
+import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import static java.lang.String.format;
@@ -384,7 +384,7 @@ public class LoaderClient {
         return Json.object()
                 .set(KEYSPACE_PARAM, keyspace)
                 .set("batchNumber", batchNumber)
-                .set(TASK_LOADER_INSERTS, queries.stream().map(Query::toString).collect(toList()))
+                .set(TASK_LOADER_MUTATIONS, queries.stream().map(Query::toString).collect(toList()))
                 .toString();
     }
 
