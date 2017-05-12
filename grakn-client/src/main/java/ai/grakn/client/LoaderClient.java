@@ -58,6 +58,7 @@ import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.LIMIT_PARAM;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 
 /**
  * Client to load qraql queries into Grakn.
@@ -165,7 +166,7 @@ public class LoaderClient {
      */
     public void add(Query query){
         if (query.isReadOnly()) {
-            throw new RuntimeException("Invalid query: "+query.toString()+". LoaderClient only accepts queries that mutate the graph.");
+            throw new IllegalArgumentException(READ_ONLY_QUERY.getMessage(query.toString()));
         }
         queries.add(query);
         if(queries.size() >= batchSize){

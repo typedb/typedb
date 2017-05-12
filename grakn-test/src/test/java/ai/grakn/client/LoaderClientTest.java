@@ -26,16 +26,19 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.MatchQuery;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
+import org.junit.rules.ExpectedException;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -46,6 +49,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static java.util.stream.Stream.generate;
 import static org.mockito.Mockito.*;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 
 public class LoaderClientTest {
 
@@ -53,6 +57,9 @@ public class LoaderClientTest {
 
     @Rule
     public final SystemOutRule systemOut = new SystemOutRule().enableLog();
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -205,6 +212,15 @@ public class LoaderClientTest {
 
         assertThat(tasksCompletedWithoutError.get(), lessThanOrEqualTo(4));
         assertThat(tasksCompletedWithoutError.get() + tasksCompletedWithError.get(), equalTo(4));
+    }
+
+    @Test
+    public void whenAddingReadOnlyQueriesThrowError() {
+        LoaderClient loader = loader();
+        MatchQuery matchQuery = match(var("x").isa("y"));
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(READ_ONLY_QUERY.getMessage(matchQuery.toString()));
+        loader.add(matchQuery);
     }
 
     private LoaderClient loader(){
