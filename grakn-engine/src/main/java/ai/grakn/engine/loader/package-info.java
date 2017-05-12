@@ -17,7 +17,7 @@
  */
 
 /**
- *  Implements LoaderTask.
+ *  Implements MutatorTask.
  */
 
 package ai.grakn.engine.loader;

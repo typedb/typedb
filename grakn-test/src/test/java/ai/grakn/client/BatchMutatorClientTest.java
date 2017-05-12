@@ -51,7 +51,7 @@ import static java.util.stream.Stream.generate;
 import static org.mockito.Mockito.*;
 import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 
-public class LoaderClientTest {
+public class BatchMutatorClientTest {
 
     private GraknSession session;
 
@@ -71,8 +71,8 @@ public class LoaderClientTest {
 
     @Test
     public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged(){
-        // Create a LoaderClient with a callback that will fail
-        LoaderClient loader = loader();
+        // Create a BatchMutatorClient with a callback that will fail
+        BatchMutatorClient loader = loader();
         loader.setTaskCompletionConsumer((json) -> assertTrue("Testing Log failure",false));
 
         // Load some queries
@@ -89,8 +89,8 @@ public class LoaderClientTest {
     public void whenSingleQueryLoaded_TaskCompletionExecutesExactlyOnce(){
         AtomicInteger tasksCompleted = new AtomicInteger(0);
 
-        // Create a LoaderClient with a callback that will fail
-        LoaderClient loader = loader();
+        // Create a BatchMutatorClient with a callback that will fail
+        BatchMutatorClient loader = loader();
         loader.setTaskCompletionConsumer((json) -> tasksCompleted.incrementAndGet());
 
         // Load some queries
@@ -105,7 +105,7 @@ public class LoaderClientTest {
 
     @Test
     public void whenSending50InsertQueries_50EntitiesAreLoadedIntoGraph() {
-        LoaderClient loader = loader();
+        BatchMutatorClient loader = loader();
 
         generate(this::query).limit(100).forEach(loader::add);
         loader.waitToFinish();
@@ -117,7 +117,7 @@ public class LoaderClientTest {
 
     @Test
     public void whenSending100QueriesWithBatchSize20_EachBatchHas20Queries() {
-        LoaderClient loader = loader();
+        BatchMutatorClient loader = loader();
 
         loader.setBatchSize(20);
         generate(this::query).limit(100).forEach(loader::add);
@@ -128,7 +128,7 @@ public class LoaderClientTest {
 
     @Test
     public void whenSending90QueriesWithBatchSize20_TheLastBatchHas10Queries(){
-        LoaderClient loader = loader();
+        BatchMutatorClient loader = loader();
         loader.setBatchSize(20);
 
         generate(this::query).limit(90).forEach(loader::add);
@@ -141,7 +141,7 @@ public class LoaderClientTest {
 
     @Test
     public void whenSending20QueriesWith1ActiveTask_OnlyOneBatchIsActiveAtOnce() throws Exception {
-        LoaderClient loader = loader();
+        BatchMutatorClient loader = loader();
         loader.setNumberActiveTasks(1);
         loader.setBatchSize(5);
 
@@ -158,7 +158,7 @@ public class LoaderClientTest {
     public void whenEngineRESTFailsWhileLoadingWithRetryTrue_LoaderRetriesAndWaits() throws Exception {
         AtomicInteger tasksCompletedWithoutError = new AtomicInteger(0);
 
-        LoaderClient loader = loader();
+        BatchMutatorClient loader = loader();
         loader.setRetryPolicy(true);
         loader.setBatchSize(5);
         loader.setTaskCompletionConsumer((json) -> {
@@ -187,7 +187,7 @@ public class LoaderClientTest {
         AtomicInteger tasksCompletedWithoutError = new AtomicInteger(0);
         AtomicInteger tasksCompletedWithError = new AtomicInteger(0);
 
-        LoaderClient loader = loader();
+        BatchMutatorClient loader = loader();
         loader.setRetryPolicy(false);
         loader.setBatchSize(5);
         loader.setTaskCompletionConsumer((json) -> {
@@ -216,14 +216,14 @@ public class LoaderClientTest {
 
     @Test
     public void whenAddingReadOnlyQueriesThrowError() {
-        LoaderClient loader = loader();
+        BatchMutatorClient loader = loader();
         MatchQuery matchQuery = match(var("x").isa("y"));
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(READ_ONLY_QUERY.getMessage(matchQuery.toString()));
         loader.add(matchQuery);
     }
 
-    private LoaderClient loader(){
+    private BatchMutatorClient loader(){
         // load ontology
         try(GraknGraph graph = session.open(GraknTxType.WRITE)){
             EntityType nameTag = graph.putEntityType("name_tag");
@@ -234,7 +234,7 @@ public class LoaderClientTest {
             nameTag.resource(nameTagId);
             graph.admin().commitNoLogs();
 
-            return spy(new LoaderClient(graph.getKeyspace(), Grakn.DEFAULT_URI));
+            return spy(new BatchMutatorClient(graph.getKeyspace(), Grakn.DEFAULT_URI));
         }
     }
 

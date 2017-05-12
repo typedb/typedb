@@ -18,7 +18,7 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.client.LoaderClient;
+import ai.grakn.client.BatchMutatorClient;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
@@ -284,19 +284,19 @@ public class GraqlShell {
             return lines.stream().collect(joining("\n"));
     }
 
-    private static void sendBatchRequest(LoaderClient loaderClient, String graqlPath, Optional<Integer> activeTasks, Optional<Integer> batchSize) throws IOException {
+    private static void sendBatchRequest(BatchMutatorClient batchMutatorClient, String graqlPath, Optional<Integer> activeTasks, Optional<Integer> batchSize) throws IOException {
         AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
 
-        activeTasks.ifPresent(loaderClient::setNumberActiveTasks);
-        batchSize.ifPresent(loaderClient::setBatchSize);
+        activeTasks.ifPresent(batchMutatorClient::setNumberActiveTasks);
+        batchSize.ifPresent(batchMutatorClient::setBatchSize);
 
-        loaderClient.setTaskCompletionConsumer((json) -> {
+        batchMutatorClient.setTaskCompletionConsumer((json) -> {
             TaskStatus status = TaskStatus.valueOf(json.at("status").asString());
 
             numberBatchesCompleted.incrementAndGet();
             System.out.println(format("Status of batch: %s", status));
             System.out.println(format("Number batches completed: %s", numberBatchesCompleted.get()));
-            System.out.println(format("Approximate queries executed: %s", numberBatchesCompleted.get() * loaderClient.getBatchSize()));
+            System.out.println(format("Approximate queries executed: %s", numberBatchesCompleted.get() * batchMutatorClient.getBatchSize()));
         });
 
         String queries = loadQuery(graqlPath);
@@ -304,9 +304,9 @@ public class GraqlShell {
         Graql.withoutGraph()
                 .parseList(queries).stream()
                 .map(p -> (Query) p)
-                .forEach(loaderClient::add);
+                .forEach(batchMutatorClient::add);
 
-        loaderClient.waitToFinish();
+        batchMutatorClient.waitToFinish();
     }
 
     /**

@@ -17,7 +17,7 @@ import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 /**
  *
  */
-public class LoaderTaskTest {
+public class MutatorTaskTest {
 
     TaskConfiguration taskConfiguration;
     String readOnlyQuery = Graql.match(Graql.var("x").isa("person")).toString();
@@ -40,9 +40,9 @@ public class LoaderTaskTest {
 
     @Test
     public void checkReadOnlyQueriesAreRejected() {
-        LoaderTask loaderTask = new LoaderTask();
+        MutatorTask mutatorTask = new MutatorTask();
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(READ_ONLY_QUERY.getMessage(readOnlyQuery));
-        loaderTask.start((x) -> System.out.println(x.toString()), taskConfiguration);
+        mutatorTask.start((x) -> System.out.println(x.toString()), taskConfiguration);
     }
 }

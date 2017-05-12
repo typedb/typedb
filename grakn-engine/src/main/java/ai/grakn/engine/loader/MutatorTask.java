@@ -37,14 +37,14 @@ import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
 
 /**
- * Task that will load data into a graph. It uses the engine running on the
+ * Task that will mutate data in a graph. It uses the engine running on the
  * engine executing the task.
  *
  * The task will then submit all modified concepts for post processing.
  *
  * @author Alexandra Orth
  */
-public class LoaderTask implements BackgroundTask {
+public class MutatorTask implements BackgroundTask {
 
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
@@ -74,7 +74,7 @@ public class LoaderTask implements BackgroundTask {
     }
 
     /**
-     * Insert the given queries into the given graph. Return if the operation was successfully completed.
+     * Execute the given queries against the given graph. Return if the operation was successfully completed.
      * @param graph grakn graph in which to insert the data
      * @param inserts graql queries to insert into the graph
      * @return true if the data was inserted, false otherwise
@@ -93,9 +93,9 @@ public class LoaderTask implements BackgroundTask {
 
 
     /**
-     * Extract insert queries from a configuration object
+     * Extract mutate queries from a configuration object
      * @param configuration JSONObject containing configuration
-     * @return insert queries from the configuration
+     * @return graql queries from the configuration
      */
     private Collection<Query> getInserts(TaskConfiguration configuration){
         if(configuration.json().has(TASK_LOADER_MUTATIONS)){
