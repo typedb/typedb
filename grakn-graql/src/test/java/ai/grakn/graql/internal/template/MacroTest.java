@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.template;
+package ai.grakn.graql.internal.template;
 
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
@@ -217,19 +217,7 @@ public class MacroTest {
         assertParseEquals(template, Collections.singletonMap("value", 4), expected);
     }
 
-    @Test
-    public void booleanMacroTest(){
-        String template = "insert $x val @boolean(<value>);";
-        String expected = "insert $x0 val true;";
 
-        assertParseEquals(template, Collections.singletonMap("value", "true"), expected);
-        assertParseEquals(template, Collections.singletonMap("value", "True"), expected);
-
-        expected = "insert $x0 val false;";
-
-        assertParseEquals(template, Collections.singletonMap("value", "false"), expected);
-        assertParseEquals(template, Collections.singletonMap("value", "False"), expected);
-    }
 
     @Test
     public void whenDateMacroCalledWithMoreThanTwoArguments_ExceptionIsThrown(){
@@ -322,7 +310,7 @@ public class MacroTest {
         assertParseEquals(template, Collections.singletonMap("list", "cat,dog,orange"), expected);
     }
 
-    private void assertParseEquals(String template, Map<String, Object> data, String expected){
+    public static void assertParseEquals(String template, Map<String, Object> data, String expected){
         List<Query> result = Graql.parseTemplate(template, data);
         assertEquals(parse(expected), result.get(0));
     }
