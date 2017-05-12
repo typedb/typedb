@@ -44,6 +44,7 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
+import java.util.Collections;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -222,13 +223,17 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         if (!(atom.isRelation() && headAtom.isRelation())) return new HashSet<>();
 
         //if atom is match all atom, add type from rule head and find unmapped roles
-        Relation relAtom = atom.getValueVariable().getValue().isEmpty() ?
+        Relation relAtom = atom.getType() == null ?
                 ((Relation) AtomicFactory.create(atom, atom.getParentQuery())).addType(headAtom.getType()) :
                 (Relation) atom;
         List<VarName> permuteVars = new ArrayList<>(relAtom.getUnmappedRolePlayers());
+        if (!(atom.isRelation() && headAtom.isRelation()) || permuteVars.isEmpty()) return Collections.singleton(new UnifierImpl());
 
-        List<List<VarName>> varPermutations = getListPermutations(new ArrayList<>(permuteVars)).stream()
-                .filter(l -> !l.isEmpty()).collect(Collectors.toList());
+        List<List<VarName>> varPermutations = getListPermutations(
+                new ArrayList<>(permuteVars)).stream()
+                .filter(l -> !l.isEmpty())
+                .collect(Collectors.toList()
+                );
         return getUnifiersFromPermutations(permuteVars, varPermutations);
     }
 
@@ -340,24 +345,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public ReasonerQueryIterator iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return new ReasonerAtomicQueryIterator(this, sub, subGoals, cache);
-    }
-
-    Iterator<InferenceRule> getRuleIterator(){
-        Atom atom = getAtom();
-        //list cause rules with permuted role types are alpha-equivalent
-        List<InferenceRule> rules = getAtom().getApplicableRules().stream()
-                .map(rule -> rule.unify(atom))
-                .collect(Collectors.toList());
-        if (atom.isRelation()
-                && !((Relation)atom).getUnmappedRolePlayers().isEmpty()) {
-            rules = rules.stream()
-                    .flatMap(rule -> {
-                        Set<Unifier> permutationUnifiers = getPermutationUnifiers(rule.getHead().getAtom());
-                        return permutationUnifiers.stream()
-                                .map(unifier -> new InferenceRule(rule).unify(unifier));
-                    }).collect(Collectors.toList());
-        }
-        return rules.stream().map(rule -> rule.propagateConstraints(getAtom())).iterator();
     }
 
     /**

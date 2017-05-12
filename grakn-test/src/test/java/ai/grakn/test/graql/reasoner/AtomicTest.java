@@ -595,8 +595,8 @@ public class AtomicTest {
                     VarName.of("p"), VarName.of("x"),
                     VarName.of("c"), VarName.of("y"))
         );
-        assertTrue(unifier.toString(), unifier.getMappings().containsAll(correctUnifier.getMappings()));
-        assertTrue(unifier2.toString(), unifier2.getMappings().containsAll(correctUnifier2.getMappings()));
+        assertTrue(unifier.toString(), unifier.mappings().containsAll(correctUnifier.mappings()));
+        assertTrue(unifier2.toString(), unifier2.mappings().containsAll(correctUnifier2.mappings()));
     }
 
     @Test
@@ -611,7 +611,7 @@ public class AtomicTest {
         Unifier correctUnifiers = new UnifierImpl(
                 ImmutableMap.of(VarName.of("5b7a70db-2256-4d03-8fa4-2621a354899e"), VarName.of("x"))
         );
-        assertTrue(unifiers.getMappings().containsAll(correctUnifiers.getMappings()));
+        assertTrue(unifiers.mappings().containsAll(correctUnifiers.mappings()));
 
         Unifier reverseUnifiers = parentAtom.getUnifier(childAtom);
         Unifier correctReverseUnifiers = new UnifierImpl(
@@ -619,7 +619,7 @@ public class AtomicTest {
         );
         assertTrue(
                 "Unifiers not in subset relation:\n" + correctReverseUnifiers.toString() + "\n" + reverseUnifiers.toString(),
-                reverseUnifiers.getMappings().containsAll(correctReverseUnifiers.getMappings())
+                reverseUnifiers.mappings().containsAll(correctReverseUnifiers.mappings())
         );
     }
 
@@ -680,7 +680,7 @@ public class AtomicTest {
         );
         assertTrue(
                 "Unifiers not in subset relation:\n" + correctUnifiers.toString() + "\n" + unifiers.toString(),
-                unifiers.getMappings().containsAll(correctUnifiers.getMappings())
+                unifiers.mappings().containsAll(correctUnifiers.mappings())
         );
     }
 
@@ -704,7 +704,7 @@ public class AtomicTest {
         );
         assertTrue(
                 "Unifiers not in subset relation:\n" + correctUnifiers.toString() + "\n" + unifiers.toString(),
-                unifiers.getMappings().containsAll(correctUnifiers.getMappings())
+                unifiers.mappings().containsAll(correctUnifiers.mappings())
         );
     }
 

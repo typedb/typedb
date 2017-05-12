@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -90,8 +91,9 @@ public abstract class Binary extends BinaryBase {
     }
 
     @Override
-    public void unify (Unifier unifier) {
+    public Atomic unify (Unifier unifier) {
         super.unify(unifier);
         if (predicate != null) predicate.unify(unifier);
+        return this;
     }
 }

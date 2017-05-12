@@ -172,10 +172,10 @@ public class InferenceRule {
 
         Set<TypeAtom> types = parentAtom.getTypeConstraints().stream()
                 .collect(toSet());
-        Set<VarName> typeVars = types.stream().map(Atom::getVarName).collect(toSet());
-        Map<VarName, Type> varTypeMap = parentAtom.getParentQuery().getVarTypeMap();
 
         //remove less specific types if present
+        Map<VarName, Type> varTypeMap = parentAtom.getParentQuery().getVarTypeMap();
+        Set<VarName> typeVars = types.stream().map(Atom::getVarName).collect(toSet());
         body.getTypeConstraints().stream()
                 .filter(type -> typeVars.contains(type.getVarName()))
                 .filter(type -> !type.equals(varTypeMap.get(type.getVarName())))
@@ -217,7 +217,11 @@ public class InferenceRule {
                     });
     }
 
-    private InferenceRule unifyViaAtom(Atom parentAtom) {
+    /**
+     * @param parentAtom atom to be unified with
+     * @return unifier
+     */
+    public Unifier getUnifier(Atom parentAtom){
         Atom childAtom = getRuleConclusionAtom();
         Unifier unifier = new UnifierImpl();
         if (parentAtom.getType() != null){
@@ -230,7 +234,7 @@ public class InferenceRule {
                     .addType(childAtom.getType());
             unifier.merge(childAtom.getUnifier(extendedParent));
         }
-        return this.unify(unifier);
+        return unifier;
     }
 
     /**
@@ -250,7 +254,7 @@ public class InferenceRule {
      */
     public InferenceRule unify(Atom parentAtom) {
         if (parentAtom.isUserDefinedName()) rewriteHead(parentAtom);
-        unifyViaAtom(parentAtom);
+        this.unify(getUnifier(parentAtom));
         if (head.getAtom().isUserDefinedName()) rewriteBody();
         return this;
     }

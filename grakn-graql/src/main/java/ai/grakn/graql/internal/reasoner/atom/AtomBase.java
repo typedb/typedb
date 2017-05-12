@@ -108,13 +108,14 @@ public abstract class AtomBase implements Atomic {
      * @param unifier contain variable mappings to be applied
      */
     @Override
-    public void unify(Unifier unifier){
+    public Atomic unify(Unifier unifier){
         VarName var = getVarName();
         if (unifier.containsKey(var)) {
             setVarName(unifier.get(var));
         } else if (unifier.containsValue(var)) {
             setVarName(capture(var));
         }
+        return this;
     }
 
     /**

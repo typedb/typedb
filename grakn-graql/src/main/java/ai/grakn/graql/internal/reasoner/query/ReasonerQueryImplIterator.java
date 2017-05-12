@@ -66,8 +66,8 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         query.addSubstitution(sub);
         Atom topAtom = query.getTopAtom();
 
-        LOG.trace("CQ: " + query);
-        LOG.trace("CQ delta: " + sub);
+        LOG.debug("CQ: " + query);
+        LOG.debug("CQ delta: " + sub);
 
         this.atomicQueryIterator = new ReasonerAtomicQuery(topAtom).iterator(new QueryAnswer(), subGoals, cache);
         this.queryPrime = ReasonerQueries.prime(query, topAtom);

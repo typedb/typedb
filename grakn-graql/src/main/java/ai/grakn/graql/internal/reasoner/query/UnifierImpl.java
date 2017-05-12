@@ -22,10 +22,12 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Unifier;
 import com.google.common.collect.Maps;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javafx.util.Pair;
 
 /**
  *
@@ -88,7 +90,7 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Set<Map.Entry<VarName, VarName>> getMappings(){ return unifier.entrySet();}
+    public Set<Map.Entry<VarName, VarName>> mappings(){ return unifier.entrySet();}
 
     public VarName addMapping(VarName key, VarName value){
         return unifier.put(key, value);
@@ -110,12 +112,25 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public boolean containsAll(Unifier u) { return getMappings().containsAll(u.getMappings());}
+    public boolean containsAll(Unifier u) { return mappings().containsAll(u.mappings());}
 
     @Override
     public Unifier merge(Unifier d) {
-        unifier.putAll(d.map());
-        return this;
+        if (Collections.disjoint(this.values(), d.keySet())){
+            unifier.putAll(d.map());
+            return this;
+        }
+        Unifier merged = new UnifierImpl();
+        Unifier inverse = this.inverse();
+        this.mappings().stream().filter(m -> !d.containsKey(m.getValue())).forEach(m -> merged.addMapping(m.getKey(), m.getValue()));
+        d.mappings().stream()
+                .map(m -> {
+                    VarName lVar = m.getKey();
+                    if (inverse.containsKey(lVar)) return new Pair<>(inverse.get(lVar), m.getValue());
+                    else return new Pair<>(m.getKey(), m.getValue());
+                })
+                .forEach(m -> merged.addMapping(m.getKey(), m.getValue()) );
+        return merged;
     }
 
     @Override
@@ -129,7 +144,7 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Unifier invert() {
+    public Unifier inverse() {
         return new UnifierImpl(
                 unifier.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey))

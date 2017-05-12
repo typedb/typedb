@@ -122,7 +122,7 @@ public abstract class BinaryBase extends Atom {
     }
 
     @Override
-    public void unify (Unifier unifier) {
+    public Atomic unify (Unifier unifier) {
         super.unify(unifier);
         VarName var = valueVariable;
         if (unifier.containsKey(var)) {
@@ -130,6 +130,7 @@ public abstract class BinaryBase extends Atom {
         } else if (unifier.containsValue(var)) {
             setValueVariable(capture(var));
         }
+        return this;
     }
 
     @Override

@@ -76,7 +76,7 @@ public interface Unifier{
      *
      * @return set of mappings constituting this unifier
      */
-    Set<Map.Entry<VarName, VarName>> getMappings();
+    Set<Map.Entry<VarName, VarName>> mappings();
 
     /**
      * @param key variable to be inspected for presence
@@ -107,7 +107,7 @@ public interface Unifier{
     /**
      * @return unifier with inverted mappings
      */
-    Unifier invert();
+    Unifier inverse();
 
     /**
      * @return number of mappings that consittute this unifier

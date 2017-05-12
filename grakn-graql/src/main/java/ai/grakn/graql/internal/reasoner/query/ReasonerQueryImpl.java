@@ -307,7 +307,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Unifier mappings = new UnifierImpl(unifier);
         Unifier appliedMappings = new UnifierImpl();
         //do bidirectional mappings if any
-        for (Map.Entry<VarName, VarName> mapping: mappings.getMappings()) {
+        for (Map.Entry<VarName, VarName> mapping: mappings.mappings()) {
             VarName varToReplace = mapping.getKey();
             VarName replacementVar = mapping.getValue();
             //bidirectional mapping
@@ -317,7 +317,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 appliedMappings.addMapping(replacementVar, varToReplace);
             }
         }
-        mappings.getMappings().removeIf(e ->
+        mappings.mappings().removeIf(e ->
                 appliedMappings.containsKey(e.getKey()) && appliedMappings.get(e.getKey()).equals(e.getValue()));
 
         Set<Atomic> toRemove = new HashSet<>();

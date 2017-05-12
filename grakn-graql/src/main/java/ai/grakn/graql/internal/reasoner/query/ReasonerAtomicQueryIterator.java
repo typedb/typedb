@@ -49,13 +49,16 @@ import org.slf4j.LoggerFactory;
  */
 class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
+    private final Answer partialSub;
     private final ReasonerAtomicQuery query;
 
     private final QueryCache<ReasonerAtomicQuery> cache;
     private final Set<ReasonerAtomicQuery> subGoals;
     private final Iterator<InferenceRule> ruleIterator;
     private Iterator<Answer> queryIterator = Collections.emptyIterator();
+
     private Unifier cacheUnifier = new UnifierImpl();
+    private Unifier currentRuleUnifier = new UnifierImpl();
 
     private InferenceRule currentRule = null;
 
@@ -65,15 +68,16 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         this.subGoals = subGoals;
         this.cache = qc;
         this.query = new ReasonerAtomicQuery(q);
+        this.partialSub = sub;
 
-        query.addSubstitution(sub);
+        query.addSubstitution(partialSub);
 
-        LOG.trace("AQ: " + query);
-        LOG.trace("AQ delta: " + sub);
+        LOG.debug("AQ: " + query);
+        LOG.debug("AQ delta: " + partialSub);
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
         this.queryIterator = streamUnifierPair.getKey().iterator();
-        this.cacheUnifier = streamUnifierPair.getValue().invert();
+        this.cacheUnifier = streamUnifierPair.getValue().inverse();
 
         //if this already has full substitution and exists in the db then do not resolve further
         //NB: the queryIterator check is purely because we may want to ask for an explanation
@@ -83,7 +87,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
             this.ruleIterator = Collections.emptyIterator();
         }
         else {
-            this.ruleIterator = query.getRuleIterator();
+            this.ruleIterator = query.getAtom().getApplicableRules().iterator();
         }
 
         //mark as visited and hence not admissible
@@ -96,10 +100,12 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         else{
             if (ruleIterator.hasNext()) {
                 currentRule = ruleIterator.next();
-                LOG.trace("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", id: " + currentRule.getRuleId());
-                LOG.trace(currentRule.getBody().getResolutionPlan());
-                //TODO: empty sub as the sub is propagated in rule.propagateConstraints method
-                queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
+                currentRuleUnifier = currentRule.getUnifier(query.getAtom());
+
+                LOG.debug("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", t = " + currentRuleUnifier + " id: " + currentRule.getRuleId());
+                LOG.debug(currentRule.getBody().getResolutionPlan());
+
+                queryIterator = currentRule.getBody().iterator(partialSub.unify(currentRuleUnifier.inverse()), subGoals, cache);
                 return hasNext();
             }
             else return false;
@@ -108,7 +114,10 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
     @Override
     public Answer next() {
-        Answer sub = queryIterator.next()
+        Answer sub = queryIterator.next();
+        sub = sub
+                .filterVars(currentRule != null? currentRule.getHead().getVarNames() : sub.keySet())
+                .unify(currentRuleUnifier)
                 .merge(query.getSubstitution())
                 .filterVars(query.getVarNames());
 
@@ -116,6 +125,9 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         if (sub.getExplanation().isLookupExplanation()) sub = sub.explain(new LookupExplanation(query));
         else sub = sub.explain(new RuleExplanation(currentRule));
 
+
+        LOG.debug("Answer to: " + query);
+        LOG.debug(sub.toString());
         return cache.recordAnswerWithUnifier(query, sub, cacheUnifier);
     }
 

@@ -384,19 +384,20 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public void unify(Unifier mappings) {
-        super.unify(mappings);
+    public Atomic unify(Unifier u) {
+        super.unify(u);
         modifyRelationPlayers(c -> {
             VarName var = c.getRolePlayer().getVarName();
-            if (mappings.containsKey(var)) {
-                VarName target = mappings.get(var);
+            if (u.containsKey(var)) {
+                VarName target = u.get(var);
                 return c.setRolePlayer(c.getRolePlayer().setVarName(target));
-            } else if (mappings.containsValue(var)) {
+            } else if (u.containsValue(var)) {
                 return c.setRolePlayer(c.getRolePlayer().setVarName(capture(var)));
             } else {
                 return c;
             }
         });
+        return this;
     }
 
     @Override
