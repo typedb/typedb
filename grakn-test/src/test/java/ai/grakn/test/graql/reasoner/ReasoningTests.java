@@ -194,8 +194,6 @@ public class ReasoningTests {
         assertEquals(answers.size(), 3);
     }
 
-    //TODO unignore when unify only answers is in
-    //@Ignore
     @Test //Expected result: The query should return 10 unique matches (no duplicates).
     public void distinctLimitedAnswersOfInfinitelyGeneratingRule() {
         QueryBuilder iqb = testSet7.graph().graql().infer(true);

@@ -208,13 +208,13 @@ public class InferenceRule {
         return this;
     }
 
-    InferenceRule rewriteToUserDefined(){
+    private InferenceRule rewriteToUserDefined(){
         return this.rewriteHead().rewriteBody();
     }
 
     /**
-     * @param parentAtom
-     * @return
+     * @param parentAtom atom to unify the rule with
+     * @return corresponding unifier
      */
     public Unifier getUnifier(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
@@ -232,8 +232,6 @@ public class InferenceRule {
         return unifier;
     }
 
-    //TODO: at the moment unifying head and body separately will lead to losing binding between head and body variables
-    //TODO: if the same variable is captured in both -> will be fixed by only unifying answers
     /**
      *
      * @param unifier to be applied on this rule
