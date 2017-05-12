@@ -38,7 +38,6 @@ import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
-import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
@@ -328,15 +327,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends Concept> T  getConcept(Schema.ConceptProperty key, Object value) {
-        return getConcept(key, value, isBatchLoadingEnabled());
-    }
-    private  <T extends Concept> T  getConcept(Schema.ConceptProperty key, Object value, Boolean byPassDuplicates) {
         Iterator<Vertex> vertices = getTinkerTraversal().has(key.name(), value);
 
         if(vertices.hasNext()){
             Vertex vertex = vertices.next();
-            if(!byPassDuplicates && vertices.hasNext()) {
-                throw new MoreThanOneConceptException(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
+            if(vertices.hasNext()) {
+                LOG.warn(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
             }
             return getElementFactory().buildConcept(vertex);
         } else {
@@ -802,7 +798,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private void closeTransaction(String closedReason){
         try {
-            graph.tx().close();
+            // TODO: We check `isOpen` because of a Titan bug which decrements the transaction counter even if the transaction is closed
+            if (graph.tx().isOpen()) {
+                graph.tx().close();
+            }
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
         } finally {
@@ -893,7 +892,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 .collect(toSet());
 
         //This is done to ensure we merge into the indexed casting. Needs to be cleaned up though
-        CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX, index, true);
+        CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX, index);
         duplicated.remove(mainCasting);
 
         if(duplicated.size() > 0){
@@ -978,7 +977,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 .collect(toSet());
 
         //The "main resource" will be the one returned by the index
-        ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index, true);
+        ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index);
         duplicates.remove(mainResource);
 
         //Remove any resources associated with this index that are not the main resource

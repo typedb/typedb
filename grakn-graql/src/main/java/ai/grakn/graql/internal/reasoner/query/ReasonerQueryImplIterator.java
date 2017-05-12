@@ -30,7 +30,7 @@ import java.util.Set;
 /**
  *
  * <p>
- * Tuple-at-a-time iterator for ReasonerQueryImpl.
+ * Tuple-at-a-time iterator for {@link ReasonerQueryImpl}.
  * For a starting query Q it removes the top (highest priority) atom A, constructs a corresponding atomic query
  * AQ and uses it to feed the the remaining query Q' = Q\AQ with partial substitutions. The behaviour proceeds
  * in recursive fashion.

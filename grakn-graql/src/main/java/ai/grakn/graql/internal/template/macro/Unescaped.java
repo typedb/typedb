@@ -19,18 +19,25 @@
 package ai.grakn.graql.internal.template.macro;
 
 /**
- * Class representing a String that should not be escaped by the templator.
+ * Class representing a object that should not be escaped by the templator.
+ *
+ * @param <T> The type of the object that will not be escaped
  * @author alexandraorth
  */
-public class UnescapedString {
+public class Unescaped<T> {
 
-    private final String unescaped;
+    private final T unescaped;
 
-    public UnescapedString(String string){
+    private Unescaped(T string){
         this.unescaped = string;
     }
 
-    public String get(){
-        return unescaped;
+    public static Unescaped of(Object object){
+        return new Unescaped(object);
+    }
+
+    @Override
+    public String toString() {
+        return unescaped.toString();
     }
 }

@@ -42,7 +42,7 @@ import javafx.util.Pair;
 /**
  *
  * <p>
- * Wrapper class providing higher level stream operations on answer streams
+ * Wrapper class providing higher level stream operations streams of {@link Answer}.
  * </p>
  *
  * @author Kasper Piskorski

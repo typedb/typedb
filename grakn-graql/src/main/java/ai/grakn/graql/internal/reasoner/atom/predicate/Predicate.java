@@ -29,7 +29,7 @@ import ai.grakn.util.ErrorMessage;
 /**
  *
  * <p>
- * Atom implementation serving as base class for predicate implementations.
+ * {@link AtomBase} extension serving as base class for predicate implementations.
  * </p>
  *
  * @param <T> the type of the predicate on a concept

@@ -33,7 +33,7 @@ import java.util.Set;
 /**
  *
  * <p>
- * Predicate implementation specialising it to be an value predicate. Corresponds to graql ValueProperty.
+ * Predicate implementation specialising it to be an value predicate. Corresponds to {@link ValueProperty}.
  * </p>
  *
  * @author Kasper Piskorski

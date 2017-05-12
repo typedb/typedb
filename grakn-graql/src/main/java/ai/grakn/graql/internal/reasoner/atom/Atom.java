@@ -49,7 +49,7 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesCompatibl
 /**
  *
  * <p>
- * Atom implementation defining specialised functionalities.
+ * {@link AtomBase} extension defining specialised functionalities.
  * </p>
  *
  * @author Kasper Piskorski
@@ -114,7 +114,7 @@ public abstract class Atom extends AtomBase {
         return priority;
     }
 
-    protected abstract boolean isRuleApplicable(InferenceRule child);
+    public abstract boolean isRuleApplicable(InferenceRule child);
 
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability

@@ -119,7 +119,7 @@ public class GraknEngineServer implements AutoCloseable {
         }
     }
 
-    private void startHTTP() {
+    public void startHTTP() {
         configureSpark(spark, port);
 
         // Start all the controllers
@@ -160,7 +160,7 @@ public class GraknEngineServer implements AutoCloseable {
         spark.exception(Exception.class,                  (e, req, res) -> handleInternalError(e, res));
     }
 
-    private void stopHTTP() {
+    public void stopHTTP() {
         spark.stop();
 
         // Block until server is truly stopped
@@ -226,6 +226,7 @@ public class GraknEngineServer implements AutoCloseable {
      * @param response response to the client
      */
     private static void handleGraknServerError(Exception exception, Response response){
+        LOG.error("REST error", exception);
         response.status(((GraknEngineServerException) exception).getStatus());
         response.body(Json.object("exception", exception.getMessage()).toString());
         response.type(ContentType.APPLICATION_JSON.getMimeType());
@@ -237,6 +238,7 @@ public class GraknEngineServer implements AutoCloseable {
      * @param response response to the client
      */
     private static void handleInternalError(Exception exception, Response response){
+        LOG.error("REST error", exception);
         response.status(500);
         response.body(Json.object("exception", exception.getMessage()).toString());
         response.type(ContentType.APPLICATION_JSON.getMimeType());
