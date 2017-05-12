@@ -1016,9 +1016,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //Gets the other resource index and replaces all occurrences of the other resource id with the main resource id
         //This allows us to find relations far more quickly.
         String newIndex = otherRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
-        RelationImpl foundRelation = getTxCache().getModifiedRelations().get(newIndex);
-        // TODO: Probable bug, the result should be assigned to `foundRelation`
-        if(foundRelation == null) getConcept(Schema.ConceptProperty.INDEX, newIndex);
+        RelationImpl foundRelation = getTxCache().getCachedRelation(newIndex);
+        if(foundRelation == null) foundRelation = getConcept(Schema.ConceptProperty.INDEX, newIndex);
 
         if (foundRelation != null) {//If it exists delete the other one
             otherRelation.deleteNode(); //Raw deletion because the castings should remain
