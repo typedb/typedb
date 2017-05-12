@@ -28,7 +28,6 @@ import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,26 +41,28 @@ import static org.junit.Assert.assertTrue;
 public class GraknTinkerGraphTest extends GraphTestBase{
 
     @Test
-    public void whenAddingMultipleConceptToTinkerGraph_EnsureGraphIsMutatedDirectlyNotViaTransaction(){
+    public void whenAddingMultipleConceptToTinkerGraph_EnsureGraphIsMutatedDirectlyNotViaTransaction() throws ExecutionException, InterruptedException {
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
+        graknGraph.putEntityType("Thing");
+        graknGraph.commit();
+
         for(int i = 0; i < 20; i ++){
-            futures.add(pool.submit(this::addRandomEntityType));
+            futures.add(pool.submit(this::addRandomEntity));
         }
 
-        futures.forEach(future -> {
-            try {
-                future.get();   
-            } catch (InterruptedException | ExecutionException ignored) {
-                ignored.printStackTrace();
-            }
-        });
-        assertEquals(21, graknGraph.admin().getMetaEntityType().subTypes().size());
+        for (Future future : futures) {
+            future.get();
+        }
+
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        assertEquals(20, graknGraph.getEntityType("Thing").instances().size());
     }
-    private synchronized void addRandomEntityType(){
+    private synchronized void addRandomEntity(){
         try(GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE)){
-            graph.putEntityType(UUID.randomUUID().toString());
+            graph.getEntityType("Thing").addEntity();
+            graph.commit();
         }
     }
 

@@ -64,8 +64,6 @@ public class CountTest {
         Assert.assertEquals(0L, graph.graql().compute().count().execute().longValue());
 
         // create 3 instances
-        System.out.println("Creating 3 instances");
-//        graph = factory.getGraph();
         String nameThing = "thing";
         String nameAnotherThing = "another";
         EntityType thing = graph.putEntityType(nameThing);
@@ -110,7 +108,7 @@ public class CountTest {
                 .forEach(i -> Assert.assertEquals(3L, i.longValue()));
     }
     private Long executeCount(GraknSession factory){
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
+        GraknGraph graph = factory.open(GraknTxType.READ);
         Long result = graph.graql().compute().count().execute();
         graph.close();
         return result;

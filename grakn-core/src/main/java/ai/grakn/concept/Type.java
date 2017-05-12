@@ -100,6 +100,12 @@ public interface Type extends Concept {
     Type deleteScope(Instance scope);
 
     //------------------------------------- Accessors ---------------------------------
+    /**
+     * Returns the unique id of this Type.
+     *
+     * @return The unique id of this type
+     */
+    Integer getTypeId();
 
     /**
      * Returns the unique label of this Type.

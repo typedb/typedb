@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -46,7 +45,7 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     public DegreeStatisticsVertexProgram() {
     }
 
-    public DegreeStatisticsVertexProgram(Set<TypeLabel> types, Set<TypeLabel> ofTypeLabels) {
+    public DegreeStatisticsVertexProgram(Set<Integer> types, Set<Integer> ofTypeLabels) {
         super(types, ofTypeLabels);
     }
 
@@ -101,9 +100,9 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     }
 
     static void degreeStatisticsStepInstance(Vertex vertex, Messenger<Long> messenger,
-                                             Set<TypeLabel> selectedTypes, Set<TypeLabel> ofTypeLabels) {
-        TypeLabel type = Utility.getVertexType(vertex);
-        if (selectedTypes.contains(type) && !ofTypeLabels.contains(type)) {
+                                             Set<Integer> selectedTypeIds, Set<Integer> ofTypeIds) {
+        Integer typeId = Utility.getVertexTypeId(vertex);
+        if (selectedTypeIds.contains(typeId) && !ofTypeIds.contains(typeId)) {
             messenger.sendMessage(messageScopeInRolePlayer, 1L);
         }
     }
@@ -128,8 +127,8 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
         }
     }
 
-    static void degreeStatisticsStepResource(Vertex vertex, Messenger<Long> messenger, Set<TypeLabel> ofTypeLabels) {
-        if (ofTypeLabels.contains(Utility.getVertexType(vertex))) {
+    static void degreeStatisticsStepResource(Vertex vertex, Messenger<Long> messenger, Set<Integer> ofTypeLabels) {
+        if (ofTypeLabels.contains(Utility.getVertexTypeId(vertex))) {
             vertex.property(DEGREE, getMessageCount(messenger));
         }
     }

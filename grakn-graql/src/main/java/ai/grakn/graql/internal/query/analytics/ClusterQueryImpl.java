@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuery<T> {
 
@@ -55,16 +56,22 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         withResourceRelationTypes.addAll(subTypeLabels);
 
         String randomId = Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
+
+        Set<Integer> withResourceRelationTypeIds =
+                withResourceRelationTypes.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+        Set<Integer> subTypeIds =
+                subTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+
         if (members) {
             if (anySize) {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationTypes, randomId),
-                        new ClusterMemberMapReduce(subTypeLabels,
+                        new ConnectedComponentVertexProgram(withResourceRelationTypeIds, randomId),
+                        new ClusterMemberMapReduce(subTypeIds,
                                 ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId));
             } else {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationTypes, randomId),
-                        new ClusterMemberMapReduce(subTypeLabels,
+                        new ConnectedComponentVertexProgram(withResourceRelationTypeIds, randomId),
+                        new ClusterMemberMapReduce(subTypeIds,
                                 ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize));
             }
             LOGGER.info("ConnectedComponentsVertexProgram is done in "
@@ -73,13 +80,13 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         } else {
             if (anySize) {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationTypes, randomId),
-                        new ClusterSizeMapReduce(subTypeLabels,
+                        new ConnectedComponentVertexProgram(withResourceRelationTypeIds, randomId),
+                        new ClusterSizeMapReduce(subTypeIds,
                                 ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId));
             } else {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationTypes, randomId),
-                        new ClusterSizeMapReduce(subTypeLabels,
+                        new ConnectedComponentVertexProgram(withResourceRelationTypeIds, randomId),
+                        new ClusterSizeMapReduce(subTypeIds,
                                 ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize));
             }
             LOGGER.info("ConnectedComponentsVertexProgram is done in "

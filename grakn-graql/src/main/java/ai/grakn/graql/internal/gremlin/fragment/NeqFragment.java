@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.VarName;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -34,7 +35,7 @@ class NeqFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
         traversal.where(P.neq(other.getValue()));
     }
 

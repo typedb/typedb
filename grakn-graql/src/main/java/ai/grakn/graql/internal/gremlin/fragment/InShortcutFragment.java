@@ -19,6 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -30,8 +31,8 @@ import java.util.Optional;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelToTraversal;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabel;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
-import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_LABEL;
-import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_LABEL;
+import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_ID;
+import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
 
 /**
  * A fragment representing traversing a {@link ai.grakn.util.Schema.EdgeLabel#SHORTCUT} edge from the role-player to
@@ -57,10 +58,10 @@ class InShortcutFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
         GraphTraversal<Vertex, Edge> edgeTraversal = traversal.inE(SHORTCUT.getLabel()).as(edge.getValue());
-        applyTypeLabelToTraversal(edgeTraversal, ROLE_TYPE_LABEL, roleType);
-        applyTypeLabelToTraversal(edgeTraversal, RELATION_TYPE_LABEL, relationType);
+        applyTypeLabelToTraversal(edgeTraversal, ROLE_TYPE_ID, roleType, graph);
+        applyTypeLabelToTraversal(edgeTraversal, RELATION_TYPE_ID, relationType, graph);
         edgeTraversal.outV();
     }
 

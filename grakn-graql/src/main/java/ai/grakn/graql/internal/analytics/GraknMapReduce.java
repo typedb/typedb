@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
@@ -37,7 +36,6 @@ import java.util.Set;
  * <p>
  *
  * @param <T> type type of element that is being reduced
- *
  * @author Jason Liu
  * @author Sheldon Hall
  */
@@ -47,11 +45,11 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
 
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
 
-    public GraknMapReduce(Set<TypeLabel> selectedTypes) {
+    public GraknMapReduce(Set<Integer> selectedTypes) {
         this.selectedTypes = selectedTypes;
     }
 
-    public GraknMapReduce(Set<TypeLabel> selectedTypes, String resourceDataType) {
+    public GraknMapReduce(Set<Integer> selectedTypes, String resourceDataType) {
         this(selectedTypes);
         persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType);
     }
@@ -124,7 +122,7 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
     }
 
     final boolean resourceIsValid(Vertex vertex) {
-        boolean isSelected = selectedTypes.contains(Utility.getVertexType(vertex));
+        boolean isSelected = selectedTypes.contains(Utility.getVertexTypeId(vertex));
         return isSelected && vertex.<Long>value(DegreeVertexProgram.DEGREE) > 0;
     }
 

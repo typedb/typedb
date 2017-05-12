@@ -46,11 +46,12 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
-        Set<TypeLabel> allSubTypes = getCombinedSubTypes();
+        Set<Integer> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
+        Set<Integer> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeLabels),
-                new MaxMapReduce(statisticsResourceTypeLabels, dataType));
+                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds),
+                new MaxMapReduce(statisticsResourceTypeIds, dataType));
         Map<Serializable, Number> max = result.memory().get(MaxMapReduce.class.getName());
 
         LOGGER.debug("Max = " + max.get(MapReduce.NullObject.instance()));

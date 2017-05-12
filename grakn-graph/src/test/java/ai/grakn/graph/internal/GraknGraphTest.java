@@ -24,10 +24,13 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -128,18 +131,24 @@ public class GraknGraphTest extends GraphTestBase {
 
     @Test
     public void whenClosingReadOnlyGraph_EnsureTypesAreCached(){
-        assertThat(graknGraph.getCachedOntology().asMap().keySet(), is(empty()));
+        assertCacheOnlyContainsMetaTypes();
         graknGraph.getMetaConcept().subTypes(); //This loads some types into transaction cache
         graknGraph.abort();
-        assertThat(graknGraph.getCachedOntology().asMap().values(), is(empty())); //Ensure central cache is empty
+        assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.READ);
         Collection<? extends Type> types = graknGraph.getMetaConcept().subTypes();
         graknGraph.abort();
 
-        for (Type type : graknGraph.getCachedOntology().asMap().values()) {
+        for (Type type : graknGraph.getGraphCache().getCachedTypes().values()) {
             assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", types.contains(type));
         }
+    }
+    private void assertCacheOnlyContainsMetaTypes(){
+        Set<TypeLabel> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(Collectors.toSet());
+        graknGraph.getGraphCache().getCachedTypes().keySet().forEach(cachedLabel -> {
+            assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel));
+        });
     }
 
     @Test
@@ -239,7 +248,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void checkThatMainCentralCacheIsNotAffectedByTransactionModifications() throws GraknValidationException, ExecutionException, InterruptedException {
         //Check Central cache is empty
-        assertTrue(graknGraph.getCachedOntology().asMap().isEmpty());
+        assertCacheOnlyContainsMetaTypes();
 
         RoleType r1 = graknGraph.putRoleType("r1");
         RoleType r2 = graknGraph.putRoleType("r2");
@@ -251,7 +260,7 @@ public class GraknGraphTest extends GraphTestBase {
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         //Check cache is in good order
-        Collection<Type> cachedValues = graknGraph.getCachedOntology().asMap().values();
+        Collection<Type> cachedValues = graknGraph.getGraphCache().getCachedTypes().values();
         assertTrue("Type [" + r1 + "] was not cached", cachedValues.contains(r1));
         assertTrue("Type [" + r2 + "] was not cached", cachedValues.contains(r2));
         assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
@@ -269,7 +278,7 @@ public class GraknGraphTest extends GraphTestBase {
         }).get();
 
         //Check the above mutation did not affect central repo
-        Type foundE1 = graknGraph.getCachedOntology().asMap().get(e1.getLabel());
+        Type foundE1 = graknGraph.getGraphCache().getCachedTypes().get(e1.getLabel());
         assertTrue("Main cache was affected by transaction", foundE1.plays().contains(r1));
     }
 
