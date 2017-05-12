@@ -133,9 +133,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public void unify(Unifier unifier) {
-        super.unify(unifier);
+    public Unifier unify(Unifier unifier) {
+        Unifier u = super.unify(unifier);
         atom = selectAtoms().iterator().next();
+        return u;
     }
 
     @Override

@@ -43,7 +43,6 @@ import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import java.util.Map;
-import javafx.util.Pair;
 
 import java.util.Objects;
 import java.util.Set;
@@ -188,25 +187,9 @@ public class InferenceRule {
 
     private InferenceRule rewriteHead(){
         Atom childAtom = head.getAtom();
-        /*
-        Pair<Atom, Unifier> rewrite = childAtom.rewriteToUserDefinedWithUnifiers();
-        Unifier rewriteUnifiers = rewrite.getValue();
-        Atom newAtom = rewrite.getKey();
-        */
         Atom newAtom = childAtom.rewriteToUserDefined();
-
-        //if (newAtom != childAtom){
-            head.removeAtomic(childAtom);
-            head.addAtomic(newAtom);
-            //body.unify(rewriteUnifiers);
-
-            //resolve captures
-            /*
-            Set<VarName> varIntersection = Sets.intersection(body.getVarNames(), parentAtom.getVarNames());
-            varIntersection = Sets.difference(varIntersection, rewriteUnifiers.keySet());
-            varIntersection.forEach(var -> body.unify(var, VarName.anon()));
-            */
-        //}
+        head.removeAtomic(childAtom);
+        head.addAtomic(newAtom);
         return this;
     }
 
@@ -225,11 +208,15 @@ public class InferenceRule {
         return this;
     }
 
-    public InferenceRule rewriteToUserDefined(){
+    InferenceRule rewriteToUserDefined(){
         return this.rewriteHead().rewriteBody();
     }
 
-    private InferenceRule unifyViaAtom(Atom parentAtom) {
+    /**
+     * @param parentAtom
+     * @return
+     */
+    public Unifier getUnifier(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
         Unifier unifier = new UnifierImpl();
         if (parentAtom.getType() != null){
@@ -242,17 +229,20 @@ public class InferenceRule {
                     .addType(childAtom.getType());
             unifier.merge(childAtom.getUnifier(extendedParent));
         }
-        return this.unify(unifier);
+        return unifier;
     }
 
+    //TODO: at the moment unifying head and body separately will lead to losing binding between head and body variables
+    //TODO: if the same variable is captured in both -> will be fixed by only unifying answers
     /**
+     *
      * @param unifier to be applied on this rule
      * @return unified rule
      */
     public InferenceRule unify(Unifier unifier){
         //do alpha-conversion
-        head.unify(unifier);
-        body.unify(unifier);
+        Unifier headUnifier = head.unify(unifier);
+        body.unify(headUnifier);
         return this;
     }
 
@@ -262,8 +252,7 @@ public class InferenceRule {
      */
     public InferenceRule unify(Atom parentAtom) {
         if (parentAtom.isUserDefinedName()) rewriteToUserDefined();
-        unifyViaAtom(parentAtom);
-        //if (head.getAtom().isUserDefinedName()) rewriteBody();
+        this.unify(getUnifier(parentAtom));
         return this;
     }
 }

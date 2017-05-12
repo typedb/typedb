@@ -121,7 +121,7 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
 
-        atomicQuery.unify(VarName.of("y"), VarName.of("z"));
+        atomicQuery.unify(new UnifierImpl(ImmutableMap.of(VarName.of("y"), VarName.of("z"))));
         MatchQuery q1 = atomicQuery.getMatchQuery();
         MatchQuery q2 = copy.getMatchQuery();
         assertNotEquals(q1, q2);
@@ -135,7 +135,7 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
 
-        atomicQuery.unify(VarName.of("y"), VarName.of("z"));
+        atomicQuery.unify(new UnifierImpl(ImmutableMap.of(VarName.of("y"), VarName.of("z"))));
         assertEquals(ReasonerQueries.atomic(conjunction(patternString, graph), snbGraph.graph()).getAtom().getRoleVarTypeMap(), copy.getAtom().getRoleVarTypeMap());
     }
 
