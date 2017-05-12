@@ -76,14 +76,13 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
     @Override
     public boolean hasNext() {
         if (queryIterator.hasNext()) return true;
-        else {
-            if (atomicQueryIterator.hasNext()) {
-                partialSub = atomicQueryIterator.next();
-                queryIterator = queryPrime.iterator(partialSub, subGoals, cache);
-                return hasNext();
-            }
-            else return false;
+
+        if (atomicQueryIterator.hasNext()) {
+            partialSub = atomicQueryIterator.next();
+            queryIterator = queryPrime.iterator(partialSub, subGoals, cache);
+            return hasNext();
         }
+        else return false;
     }
 
     @Override

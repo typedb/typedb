@@ -93,17 +93,16 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
     @Override
     public boolean hasNext() {
         if (queryIterator.hasNext()) return true;
-        else{
-            if (ruleIterator.hasNext()) {
-                currentRule = ruleIterator.next();
-                LOG.trace("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", id: " + currentRule.getRuleId());
-                LOG.trace(currentRule.getBody().getResolutionPlan());
-                //TODO: empty sub as the sub is propagated in rule.propagateConstraints method
-                queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
-                return hasNext();
-            }
-            else return false;
+
+        if (ruleIterator.hasNext()) {
+            currentRule = ruleIterator.next();
+            LOG.trace("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", id: " + currentRule.getRuleId());
+            LOG.trace(currentRule.getBody().getResolutionPlan());
+            //TODO: empty sub as the sub is propagated in rule.propagateConstraints method
+            queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
+            return hasNext();
         }
+        else return false;
     }
 
     @Override

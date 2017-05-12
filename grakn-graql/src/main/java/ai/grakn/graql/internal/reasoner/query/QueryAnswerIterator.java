@@ -63,18 +63,17 @@ class QueryAnswerIterator extends ReasonerQueryIterator {
     @Override
     public boolean hasNext() {
         if (answerIterator.hasNext()) return true;
-            //iter finished
-        else {
-            long dAns = answers.size() - oldAns;
-            if (dAns != 0 || iter == 0) {
-                LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
-                iter++;
-                answerIterator = query.iterator(new QueryAnswer(), new HashSet<>(), cache);
-                oldAns = answers.size();
-                return answerIterator.hasNext();
-            }
-            else return false;
+
+        //iter finished
+        long dAns = answers.size() - oldAns;
+        if (dAns != 0 || iter == 0) {
+            LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
+            iter++;
+            answerIterator = query.iterator(new QueryAnswer(), new HashSet<>(), cache);
+            oldAns = answers.size();
+            return answerIterator.hasNext();
         }
+        else return false;
     }
 
     /**
