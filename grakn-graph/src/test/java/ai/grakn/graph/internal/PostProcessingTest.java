@@ -97,6 +97,8 @@ public class PostProcessingTest extends GraphTestBase{
         edge = relation.getVertex().addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
         edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleType.getTypeId());
 
+        relation.setHash();
+
         return graknGraph.admin().buildConcept(castingVertex);
     }
 
@@ -163,11 +165,22 @@ public class PostProcessingTest extends GraphTestBase{
         resourceIds.add(r111.getId());
 
         //Give resources some relationships
-        relationType.addRelation().addRolePlayer(roleResource, r1).addRolePlayer(roleEntity, e1);
-        relationType.addRelation().addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e1); //When merging this relation should not be absorbed
-        relationType.addRelation().addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e2); //Absorb
-        relationType.addRelation().addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e2); //Don't Absorb
-        relationType.addRelation().addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e3); //Absorb
+        RelationImpl rel1 = ((RelationImpl) relationType.addRelation().
+                addRolePlayer(roleResource, r1).addRolePlayer(roleEntity, e1));
+        RelationImpl rel2 = ((RelationImpl) relationType.addRelation().
+                addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e1)); //When merging this relation should not be absorbed
+        RelationImpl rel3 = ((RelationImpl) relationType.addRelation().
+                addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e2)); //Absorb
+        RelationImpl rel4 = ((RelationImpl) relationType.addRelation().
+                addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e2)); //Don't Absorb
+        RelationImpl rel5 = ((RelationImpl) relationType.addRelation().
+                addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e3)); //Absorb
+
+        rel1.setHash();
+        rel2.setHash();
+        rel3.setHash();
+        rel4.setHash();
+        rel5.setHash();
 
         //Check everything is broken
         assertEquals(3, resourceType.instances().size());
