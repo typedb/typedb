@@ -39,7 +39,12 @@ public class UsersHandler {
     public static final String USER_LAST_NAME = "user-last-name";
     public static final String USER_EMAIL = "user-email";
     public static final String USER_IS_ADMIN = "user-is-admin";
-
+    public static final String USER_AUTHORIZATION = "user-authorization";
+    public static final String ACCESS_RIGHT = "access-right";
+    public static final String AUTHORIZED_USER = "authorized-user";
+    public static final String AUTHORIZED_KEYSPACE = "authorized-keyspace";
+    public static final String AUTHORIZED_ACCESS_RIGHT = "authorized-access-right"; 
+    
     private static UsersHandler instance = null;
     private final Map<String, Json> usersMap = new HashMap<>();
 
