@@ -1058,7 +1058,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 if(instances.contains(other)) addCasting((RoleTypeImpl) roleType, main, otherRelation);
             });
         }
-        ResourceType.DataType.SUPPORTED_TYPES.values();
 
         //Explicitly track this new relation so we don't create duplicates
         getConceptLog().getModifiedRelations().put(newIndex, foundRelation);
