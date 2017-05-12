@@ -27,6 +27,7 @@ import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import mjson.Json;
@@ -35,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.Schema.MetaSchema.RESOURCE;
 
@@ -232,6 +232,73 @@ public class SystemKeyspaceUsers extends UsersHandler {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * <p>
+     * Return a JSON object holding all access rights for all keyspaces for the given user.
+     * The object can be embedded 
+     * </p>
+     * 
+     * @param username
+     * @return
+     */
+    public Json allAccessRights(String username) {
+        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
+            QueryBuilder qb = graph.graql();
+            List<Answer> L = qb.match(var("user").isa(USER_ENTITY).has(USER_NAME, username),
+                     var("keyspace").isa(SystemKeyspace.KEYSPACE_ENTITY.getValue())
+                                    .has(SystemKeyspace.KEYSPACE_RESOURCE.getValue(), "keyspace-name"),
+                     var("right").isa(ACCESS_RIGHT),
+                     var("authorization").isa(USER_AUTHORIZATION)
+                         .rel(AUTHORIZED_USER, "user")
+                         .rel(AUTHORIZED_KEYSPACE, "keyspace")
+                         .rel(AUTHORIZED_ACCESS_RIGHT, "right")
+            ).execute();
+            final Json result = Json.object();
+            L.forEach(ans -> {
+                String keyspace = ans.get("keyspace-name").asResource().getValue().toString();
+                result.at(keyspace, Json.object())
+                      .at("rights", Json.array()).add(ans.get("right").asResource().getValue().toString());
+            });
+            return result;
+        }
+    }
+    
+    public SystemKeyspaceUsers revokeAccess(String username, String keyspace, String right) {
+        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+            QueryBuilder qb = graph.graql();
+            qb.match(var("user").isa(USER_ENTITY).has(USER_NAME, username),
+                     var("keyspace").isa(SystemKeyspace.KEYSPACE_ENTITY.getValue())
+                                    .has(SystemKeyspace.KEYSPACE_RESOURCE.getValue(), keyspace))
+              .delete(var().isa(USER_AUTHORIZATION)
+                      .rel(AUTHORIZED_USER, "user")
+                      .rel(AUTHORIZED_KEYSPACE, "keyspace")
+                      .rel(AUTHORIZED_ACCESS_RIGHT, right));
+        }
+        catch (Throwable t) {
+            LOG.error("While granting access " + right + " to " + username + " for " + keyspace, t);
+            rethrow(t);
+        }        
+        return this;
+    }
+    
+    public SystemKeyspaceUsers grantAccess(String username, String keyspace, String right) {
+        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+            QueryBuilder qb = graph.graql();
+            qb.match(var("user").isa(USER_ENTITY).has(USER_NAME, username),
+                     var("keyspace").isa(SystemKeyspace.KEYSPACE_ENTITY.getValue())
+                                    .has(SystemKeyspace.KEYSPACE_RESOURCE.getValue(), keyspace))
+              .insert(var().isa(USER_AUTHORIZATION)
+                      .rel(AUTHORIZED_USER, "user")
+                      .rel(AUTHORIZED_KEYSPACE, "keyspace")
+                      .rel(AUTHORIZED_ACCESS_RIGHT, right));
+        }
+        catch (Throwable t) {
+            LOG.error("While granting access " + right + " to " + username + " for " + keyspace, t);
+            rethrow(t);
+        }        
+        return this;
+    }
+    
     private void rethrow(Throwable t) {
         if (t instanceof Error) {
             throw (Error) t;
