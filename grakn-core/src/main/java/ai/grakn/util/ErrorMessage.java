@@ -154,6 +154,9 @@ public enum ErrorMessage {
 
     NO_ANALYTICS_METHOD("No compute method exists with the name [%s]"),
 
+    //Templating
+    TEMPLATE_MISSING_KEY("Key [%s] not present in data: [%s]"),
+
     //--------------------------------------------- Engine Errors -----------------------------------------------
     NO_CONFIG_FILE("Cannot find config file [%s]"),
     NO_LOG_CONFIG_FILE("It was not possible to find the Logback configuration file [%s]. Default configurations for logging will be used."),
