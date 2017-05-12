@@ -32,6 +32,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
@@ -131,11 +132,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public Integer convertToId(TypeLabel label){
+    public TypeId convertToId(TypeLabel label){
         if(getTxCache().isLabelCached(label)){
             return getTxCache().convertLabelToId(label);
         }
-        return -1;
+        return TypeId.of(-1);
     }
 
     /**
@@ -367,9 +368,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private Vertex putVertex(TypeLabel label, Schema.BaseType baseType){
         Vertex vertex;
-        Integer id = convertToId(label);
-        ConceptImpl concept = null;
-        if(id != -1) concept = getConcept(Schema.ConceptProperty.TYPE_ID, id);
+        ConceptImpl concept = getType(convertToId(label));
         if(concept == null) {
             vertex = addTypeVertex(getNextTypeId(), label, baseType);
         } else {
@@ -389,10 +388,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param baseType The base type of the new type
      * @return The new type vertex
      */
-    private Vertex addTypeVertex(Integer id, TypeLabel label, Schema.BaseType baseType){
+    private Vertex addTypeVertex(TypeId id, TypeLabel label, Schema.BaseType baseType){
         Vertex vertex = addVertex(baseType);
         vertex.property(Schema.ConceptProperty.TYPE_LABEL.name(), label.getValue());
-        vertex.property(Schema.ConceptProperty.TYPE_ID.name(), id);
+        vertex.property(Schema.ConceptProperty.TYPE_ID.name(), id.getValue());
         return vertex;
     }
 
@@ -562,18 +561,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private <T extends Type> T getType(TypeLabel label, Schema.BaseType baseType){
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
-        Type type = buildType(label, ()-> {
-            Integer id = convertToId(label);
-            if (id != -1) {
-                return getType(id);
-            } else {
-                return null;
-            }
-        });
+        Type type = buildType(label, ()-> getType(convertToId(label)));
         return validateConceptType(type, baseType, () -> null);
     }
-    private <T extends Type> T getType(int id){
-        return getConcept(Schema.ConceptProperty.TYPE_ID, id);
+    private <T extends Type> T getType(TypeId id){
+        if(id.getValue() == -1) return null;
+        return getConcept(Schema.ConceptProperty.TYPE_ID, id.getValue());
     }
 
     @Override

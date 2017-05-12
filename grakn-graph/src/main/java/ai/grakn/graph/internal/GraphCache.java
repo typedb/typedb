@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -54,7 +55,7 @@ import static ai.grakn.graph.internal.AbstractGraknGraph.NORMAL_CACHE_TIMEOUT_MS
 class GraphCache {
     //Caches
     private final Cache<TypeLabel, Type> cachedTypes;
-    private final Map<TypeLabel, Integer> cachedLabels;
+    private final Map<TypeLabel, TypeId> cachedLabels;
 
     GraphCache(Properties properties, boolean batchLoadingEnabled){
         cachedLabels = new ConcurrentHashMap<>();
@@ -83,7 +84,7 @@ class GraphCache {
      * @param label The label of the type to cache
      * @param id The id of the type to cache
      */
-    void cacheLabel(TypeLabel label, Integer id){
+    void cacheLabel(TypeLabel label, TypeId id){
         cachedLabels.put(label, id);
     }
 
@@ -105,7 +106,7 @@ class GraphCache {
      *
      * @return an immutable copy of the cached labels.
      */
-    Map<TypeLabel, Integer> getCachedLabels(){
+    Map<TypeLabel, TypeId> getCachedLabels(){
         return ImmutableMap.copyOf(cachedLabels);
     }
 
