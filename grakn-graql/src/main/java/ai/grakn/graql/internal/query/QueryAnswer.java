@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.reasoner.explanation.Explanation;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -198,5 +199,4 @@ public class QueryAnswer implements Answer {
         this.getExplanation().getAnswers().forEach(ans -> ans.getExplanations().forEach(explanations::add));
         return explanations;
     }
-
 }

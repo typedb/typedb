@@ -185,24 +185,31 @@ public class InferenceRule {
         return this;
     }
 
-    private void rewriteHead(Atom parentAtom){
+    private InferenceRule rewriteHead(){
         Atom childAtom = head.getAtom();
+        /*
         Pair<Atom, Unifier> rewrite = childAtom.rewriteToUserDefinedWithUnifiers();
         Unifier rewriteUnifiers = rewrite.getValue();
         Atom newAtom = rewrite.getKey();
-        if (newAtom != childAtom){
+        */
+        Atom newAtom = childAtom.rewriteToUserDefined();
+
+        //if (newAtom != childAtom){
             head.removeAtomic(childAtom);
             head.addAtomic(newAtom);
-            body.unify(rewriteUnifiers);
+            //body.unify(rewriteUnifiers);
 
             //resolve captures
+            /*
             Set<VarName> varIntersection = Sets.intersection(body.getVarNames(), parentAtom.getVarNames());
             varIntersection = Sets.difference(varIntersection, rewriteUnifiers.keySet());
             varIntersection.forEach(var -> body.unify(var, VarName.anon()));
-        }
+            */
+        //}
+        return this;
     }
 
-    private void rewriteBody(){
+    private InferenceRule rewriteBody(){
         body.getAtoms().stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .filter(Atom::isRelation)
@@ -214,6 +221,11 @@ public class InferenceRule {
                     body.removeAtomic(at);
                     body.addAtomic(rewrite);
                     });
+        return this;
+    }
+
+    public InferenceRule rewriteToUserDefined(){
+        return this.rewriteHead().rewriteBody();
     }
 
     private InferenceRule unifyViaAtom(Atom parentAtom) {
@@ -248,9 +260,9 @@ public class InferenceRule {
      * @param parentAtom atom the rule should be unified with
      */
     public InferenceRule unify(Atom parentAtom) {
-        if (parentAtom.isUserDefinedName()) rewriteHead(parentAtom);
+        if (parentAtom.isUserDefinedName()) rewriteToUserDefined();
         unifyViaAtom(parentAtom);
-        if (head.getAtom().isUserDefinedName()) rewriteBody();
+        //if (head.getAtom().isUserDefinedName()) rewriteBody();
         return this;
     }
 }
