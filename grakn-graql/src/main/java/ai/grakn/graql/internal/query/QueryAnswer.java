@@ -59,7 +59,9 @@ public class QueryAnswer implements Answer {
     }
 
     @Override
-    public String toString(){ return map.toString();}
+    public String toString(){
+        return map.entrySet().stream().map(e -> "[" + e.getKey() + "/" + e.getValue().getId() + "]").collect(Collectors.joining());
+    }
 
     @Override
     public Answer copy(){ return new QueryAnswer(this);}

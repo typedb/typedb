@@ -37,6 +37,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
@@ -67,8 +68,8 @@ public class InferenceRule {
     public InferenceRule(Rule rule, GraknGraph graph){
         ruleId = rule.getId();
         //TODO simplify once changes propagated to rule objects
-        body = new ReasonerQueryImpl(conjunction(rule.getLHS().admin()), graph);
-        head = new ReasonerAtomicQuery(conjunction(rule.getRHS().admin()), graph);
+        body = ReasonerQueries.create(conjunction(rule.getLHS().admin()), graph);
+        head = ReasonerQueries.atomic(conjunction(rule.getRHS().admin()), graph);
 
         //run time check for head atom validity
         if (!getHead().getAtom().isAllowedToFormRuleHead()){
@@ -78,8 +79,8 @@ public class InferenceRule {
 
     public InferenceRule(InferenceRule r){
         this.ruleId = r.getRuleId();
-        this.body = new ReasonerQueryImpl(r.getBody());
-        this.head = new ReasonerAtomicQuery(r.getHead());
+        this.body = ReasonerQueries.create(r.getBody());
+        this.head = ReasonerQueries.atomic(r.getHead());
     }
 
     @Override
@@ -144,8 +145,8 @@ public class InferenceRule {
      * @return a conclusion atom which parent contains all atoms in the rule
      */
     public Atom getRuleConclusionAtom() {
-        ReasonerQueryImpl ruleQuery = new ReasonerQueryImpl(head);
-        Atom atom = ruleQuery.selectAtoms().iterator().next();
+        ReasonerAtomicQuery ruleQuery = ReasonerQueries.atomic(head);
+        Atom atom = ruleQuery.getAtom();
         body.getAtoms().forEach(at -> ruleQuery.addAtomic(at.copy()));
         return atom;
     }

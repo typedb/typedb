@@ -37,6 +37,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraphContext;
@@ -260,8 +261,8 @@ public class ReasonerTest {
     public void testParsingQueryWithResourceVariable(){
         String patternString = "{$x isa person, has firstname $y;}";
         String patternString2 = "{$x isa person;$x has firstname $y;}";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
+        ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
         assertTrue(query.isEquivalent(query2));
     }
 
@@ -287,8 +288,8 @@ public class ReasonerTest {
     public void testParsingQueryWithResourceVariable3(){
         String patternString = "{$x isa person;$x has age <10;}";
         String patternString2 = "{$x isa person;$x has age $y;$y val <10;}";
-        ReasonerQueryImpl query = new ReasonerAtomicQuery(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
-        ReasonerQueryImpl query2 = new ReasonerAtomicQuery(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
+        ReasonerQueryImpl query = ReasonerQueries.atomic(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
+        ReasonerQueryImpl query2 = ReasonerQueries.atomic(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
         assertTrue(query.equals(query2));
     }
 
@@ -296,8 +297,8 @@ public class ReasonerTest {
     public void testParsingQueryWithResourceVariable4(){
         String patternString = "{$x has firstname 'Bob';}";
         String patternString2 = "{$x has firstname $y;$y val 'Bob';}";
-        ReasonerQueryImpl query = new ReasonerAtomicQuery(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
-        ReasonerQueryImpl query2 = new ReasonerAtomicQuery(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
+        ReasonerQueryImpl query = ReasonerQueries.atomic(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
+        ReasonerQueryImpl query2 = ReasonerQueries.atomic(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
         assertTrue(query.equals(query2));
     }
 
@@ -308,10 +309,10 @@ public class ReasonerTest {
         String patternString2 = "{$x has firstname 'Bob';$x has lastname 'Geldof';}";
         String patternString3 = "{$x has firstname $x1;$x has lastname $x2;$x1 val 'Bob';$x2 val 'Geldof';}";
         String patternString4 = "{$x has firstname $x2;$x has lastname $x1;$x2 val 'Bob';$x1 val 'Geldof';}";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, graph), graph);
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, graph), graph);
-        ReasonerQueryImpl query3 = new ReasonerQueryImpl(conjunction(patternString3, graph), graph);
-        ReasonerQueryImpl query4 = new ReasonerQueryImpl(conjunction(patternString4, graph), graph);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
+        ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, graph), graph);
+        ReasonerQueryImpl query3 = ReasonerQueries.create(conjunction(patternString3, graph), graph);
+        ReasonerQueryImpl query4 = ReasonerQueries.create(conjunction(patternString4, graph), graph);
 
         assertTrue(query.equals(query3));
         assertTrue(query.equals(query4));

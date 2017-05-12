@@ -34,6 +34,7 @@ import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableSet;
@@ -76,8 +77,8 @@ public class LazyTest {
 
         Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(pattern, graph);
-        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         Stream<Answer> dbStream = query.getMatchQuery().stream();
@@ -99,9 +100,9 @@ public class LazyTest {
         Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
         Conjunction<VarAdmin> pattern3 = conjunction(patternString3, graph);
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(pattern, graph);
-        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
-        ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(pattern3, graph);
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
+        ReasonerAtomicQuery query3 = ReasonerQueries.atomic(pattern3, graph);
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         Stream<Answer> stream = query.lookup(cache);
@@ -127,9 +128,9 @@ public class LazyTest {
         Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
         Conjunction<VarAdmin> pattern3 = conjunction(patternString3, graph);
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(pattern, graph);
-        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
-        ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(pattern3, graph);
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
+        ReasonerAtomicQuery query3 = ReasonerQueries.atomic(pattern3, graph);
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         query.lookup(cache);

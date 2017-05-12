@@ -63,4 +63,5 @@ public class AtomicFactory {
                 .forEach(atoms::add);
         return atoms;
     }
+
 }
