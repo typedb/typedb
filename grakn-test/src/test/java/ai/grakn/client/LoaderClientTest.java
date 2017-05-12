@@ -27,18 +27,17 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
+import org.junit.contrib.java.lang.system.SystemOutRule;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.graql.Graql.var;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -52,22 +51,19 @@ public class LoaderClientTest {
 
     private GraknSession session;
 
+    @Rule
+    public final SystemOutRule systemOut = new SystemOutRule().enableLog();
+
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setupSession(){
         this.session = engine.factoryWithNewKeyspace();
-
     }
 
     @Test
     public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged(){
-        // Mock the Logger
-        Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(LoaderClient.class);
-        Appender<ILoggingEvent> mockAppender = mock(Appender.class);
-        root.addAppender(mockAppender);
-
         // Create a LoaderClient with a callback that will fail
         LoaderClient loader = loader();
         loader.setTaskCompletionConsumer((json) -> assertTrue("Testing Log failure",false));
@@ -79,7 +75,7 @@ public class LoaderClientTest {
         loader.waitToFinish();
 
         // Verify that the logger received the failed log message
-        verify(mockAppender).doAppend(argThat(argument -> argument.getFormattedMessage().contains("error in callback")));
+        assertThat(systemOut.getLog(), containsString("error in callback"));
     }
 
     @Test

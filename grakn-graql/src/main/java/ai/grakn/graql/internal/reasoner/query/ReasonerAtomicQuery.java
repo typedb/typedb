@@ -70,7 +70,7 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilter
  *
  * <p>
  * Base reasoner atomic query. An atomic query is a query constrained to having at most one rule-resolvable atom
- * together with its accompanying constraints (predicates and types)
+ * together with its accompanying constraints (predicates and types).
  * </p>
  *
  * @author Kasper Piskorski

@@ -94,6 +94,22 @@ public class GraphTest {
             assertEquals(3, openTransactions(batchGraph));
         }
     }
+
+    @Test
+    public void afterCommitting_NumberOfOpenTransactionsDecrementsOnce() {
+        assumeFalse(usingTinker()); // Tinker graph only ever has one open transaction
+
+        GraknSession session = engine.factoryWithNewKeyspace();
+
+        GraknGraph graph = session.open(GraknTxType.READ);
+
+        assertEquals(1, openTransactions(graph));
+
+        graph.commit();
+
+        assertEquals(0, openTransactions(graph));
+    }
+
     private int openTransactions(GraknGraph graph){
         if(graph == null) return 0;
         return ((AbstractGraknGraph) graph).numOpenTx();

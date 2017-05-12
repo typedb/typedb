@@ -28,7 +28,7 @@ import ai.grakn.graql.admin.Atomic;
 /**
  *
  * <p>
- * Atomic corresponding to graql RegexProperty.
+ * Atomic corresponding to {@link RegexProperty}.
  * </p>
  *
  * @author Kasper Piskorski

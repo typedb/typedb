@@ -30,8 +30,6 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -54,8 +52,6 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
  */
 //TODO Implement delete
 public class CommitLogController {
-    private final Logger LOG = LoggerFactory.getLogger(CommitLogController.class);
-
     private final TaskManager manager;
 
     public CommitLogController(Service spark, TaskManager manager){
@@ -86,8 +82,6 @@ public class CommitLogController {
     private String submitConcepts(Request req, Response res) {
         String keyspace = Optional.ofNullable(req.queryParams(KEYSPACE_PARAM))
                 .orElse(GraknEngineConfig.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY));
-
-        LOG.debug("Commit log received for graph [" + keyspace + "]");
 
         // Instances to post process
         Json postProcessingConfiguration = Json.object();

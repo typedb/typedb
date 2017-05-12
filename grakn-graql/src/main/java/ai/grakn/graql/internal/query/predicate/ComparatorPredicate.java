@@ -39,6 +39,7 @@ import static ai.grakn.concept.ResourceType.DataType.SUPPORTED_TYPES;
 
 abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
+    private final Optional<Object> originalValue;
     private final Optional<Object> value;
     private final Optional<VarAdmin> var;
 
@@ -54,6 +55,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
      */
     ComparatorPredicate(Object value) {
         if (value instanceof VarAdmin) {
+            this.originalValue = Optional.empty();
             this.value = Optional.empty();
             this.var = Optional.of((VarAdmin) value);
         } else {
@@ -61,6 +63,15 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
             if (value instanceof Integer) {
                 value = ((Integer) value).longValue();
             }
+
+            this.originalValue = Optional.of(value);
+
+            // Convert values to how they are stored in the graph
+            ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getName());
+
+            // We can trust the `SUPPORTED_TYPES` map to store things with the right type
+            //noinspection unchecked
+            value = dataType.getPersistenceValue(value);
 
             this.value = Optional.of(value);
             this.var = Optional.empty();
@@ -71,6 +82,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
      * @param var the variable that this predicate is testing against
      */
     ComparatorPredicate(Var var) {
+        this.originalValue = Optional.empty();
         this.value = Optional.empty();
         this.var = Optional.of(var.admin());
     }
@@ -141,7 +153,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
         value.ifPresent(theValue -> {
             // Compare to a given value
-            ResourceType.DataType<?> dataType = SUPPORTED_TYPES.get(theValue.getClass().getTypeName());
+            ResourceType.DataType<?> dataType = SUPPORTED_TYPES.get(originalValue.get().getClass().getTypeName());
             Schema.ConceptProperty property = dataType.getConceptProperty();
             traversal.has(property.name(), gremlinPredicate(theValue));
         });

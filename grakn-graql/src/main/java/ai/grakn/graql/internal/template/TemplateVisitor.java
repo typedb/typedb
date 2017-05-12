@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.template;
 import ai.grakn.exception.GraqlTemplateParsingException;
 import ai.grakn.graql.internal.antlr.GraqlTemplateBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
-import ai.grakn.graql.internal.template.macro.UnescapedString;
+import ai.grakn.graql.internal.template.macro.Unescaped;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.graql.macro.Macro;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static ai.grakn.util.ErrorMessage.TEMPLATE_MISSING_KEY;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -344,7 +345,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         }
 
         if(value == ObjectUtils.NULL){
-            throw new GraqlTemplateParsingException("Key [" + ctx.getText() + "] not present in data: " + originalContext);
+            throw new GraqlTemplateParsingException(TEMPLATE_MISSING_KEY.getMessage(ctx.getText(), originalContext));
         }
 
         Function<Object, String> formatToApply = ctx.DOLLAR() != null ? this::formatVar : this::format;
@@ -393,26 +394,21 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
         StringBuilder builder = new StringBuilder();
         for(Object value:values) {
-            if (value instanceof UnescapedString) {
-                builder.append(((UnescapedString) value).get());
-            } else {
-                builder.append(value);
-            }
+            builder.append(value);
         }
 
         return builder.toString();
     }
 
     public String format(Object val){
-        if(val instanceof UnescapedString){
-            return ((UnescapedString) val).get();
+        if(val instanceof Unescaped){
+            return val.toString();
         }
         return StringConverter.valueToString(val);
     }
 
-    public String formatVar(Object variable){
-        String var = variable instanceof UnescapedString ? ((UnescapedString) variable).get() : variable.toString();
-        return var.replaceAll("[^a-zA-Z0-9]", "-");
+    private String formatVar(Object variable){
+        return variable.toString().replaceAll("[^a-zA-Z0-9]", "-");
     }
 
     @Override

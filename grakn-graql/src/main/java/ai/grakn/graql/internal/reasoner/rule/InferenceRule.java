@@ -53,7 +53,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  *
  * <p>
- * Class providing resolution and higher level facilities for rule objects.
+ * Class providing resolution and higher level facilities for {@link Rule} objects.
  * </p>
  *
  * @author Kasper Piskorski

@@ -38,7 +38,6 @@ import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
-import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
@@ -77,7 +76,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graph.internal.RelationImpl.generateNewHash;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -304,15 +302,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends Concept> T  getConcept(Schema.ConceptProperty key, String value) {
-        return getConcept(key, value, isBatchLoadingEnabled());
-    }
-    private  <T extends Concept> T  getConcept(Schema.ConceptProperty key, String value, Boolean byPassDuplicates) {
         Iterator<Vertex> vertices = getTinkerTraversal().has(key.name(), value);
 
         if(vertices.hasNext()){
             Vertex vertex = vertices.next();
-            if(!byPassDuplicates && vertices.hasNext()) {
-                throw new MoreThanOneConceptException(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
+            if(vertices.hasNext()) {
+                LOG.warn(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
             }
             return getElementFactory().buildConcept(vertex);
         } else {
@@ -751,16 +746,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    private RelationImpl getRelation(RelationType relationType, Map<RoleType, Set<Instance>> roleMap){
-        String hash = generateNewHash(relationType, roleMap);
-        RelationImpl concept = getConceptLog().getCachedRelation(hash);
-
-        if(concept == null) {
-            concept = getConcept(Schema.ConceptProperty.INDEX, hash);
-        }
-        return concept;
-    }
-
     /**
      * Clears the graph completely.
      */
@@ -828,7 +813,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private void closeTransaction(String closedReason){
         try {
-            graph.tx().close();
+            // TODO: We check `isOpen` because of a Titan bug which decrements the transaction counter even if the transaction is closed
+            if (graph.tx().isOpen()) {
+                graph.tx().close();
+            }
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
         } finally {
@@ -921,7 +909,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 .collect(toSet());
 
         //This is done to ensure we merge into the indexed casting. Needs to be cleaned up though
-        CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX, index, true);
+        CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX, index);
         duplicated.remove(mainCasting);
 
         if(duplicated.size() > 0){
@@ -951,10 +939,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         RoleType role = mainCasting.getRole();
         Set<Relation> relations = mainCasting.getRelations();
         Set<Relation> relationsToClean = new HashSet<>();
+        Set<RelationImpl> relationsRequiringReIndexing = new HashSet<>();
 
         for (CastingImpl otherCasting : castings) {
             //Transfer assertion edges
-            for(Relation otherRelation : otherCasting.getRelations()){
+            for(Relation rel : otherCasting.getRelations()){
+                RelationImpl otherRelation = (RelationImpl) rel;
                 boolean transferEdge = true;
 
                 //Check if an equivalent Relation is already connected to this casting. This could be a slow process
@@ -968,15 +958,20 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
                 //Perform the transfer
                 if(transferEdge) {
+                    //Delete index so we can reset it when things are finalised.
+                    otherRelation.setProperty(Schema.ConceptProperty.INDEX, null);
                     EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
                     assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL, role.getId().getValue());
                     relations = mainCasting.getRelations();
+                    relationsRequiringReIndexing.add(otherRelation);
                 }
             }
 
             getConceptLog().removeConcept(otherCasting);
             getTinkerPopGraph().traversal().V(otherCasting.getId().getRawValue()).next().remove();
         }
+
+        relationsRequiringReIndexing.forEach(RelationImpl::setHash);
 
         return relationsToClean;
     }
@@ -988,8 +983,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return True if the roleplayers of the relations are the same.
      */
     private boolean relationsEqual(Relation mainRelation, Relation otherRelation){
-        return mainRelation.allRolePlayers().equals(otherRelation.allRolePlayers()) &&
-                mainRelation.type().equals(otherRelation.type());
+        String mainIndex = getRelationIndex((RelationImpl) mainRelation);
+        String otherIndex = getRelationIndex((RelationImpl) otherRelation);
+        return mainIndex.equals(otherIndex);
+    }
+    private String getRelationIndex(RelationImpl relation){
+        String index = relation.getIndex();
+        if(index == null) index = RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers());
+        return index;
     }
 
     /**
@@ -1006,20 +1007,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 .collect(toSet());
 
         //The "main resource" will be the one returned by the index
-        ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index, true);
+        ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index);
         duplicates.remove(mainResource);
 
         //Remove any resources associated with this index that are not the main resource
         if(duplicates.size() > 0){
-            Iterator<ResourceImpl> it = duplicates.iterator();
-
-            while(it.hasNext()){
-                ResourceImpl<?> otherResource = it.next();
+            for (ResourceImpl<?> otherResource : duplicates) {
                 Collection<Relation> otherRelations = otherResource.relations();
-
-                //Delete the shortcut edges of the resource we going to delete.
-                //This is so we can copy them uniquely later
-                otherResource.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT).forEach(EdgeImpl::delete);
 
                 //Copy the actual relation
                 for (Relation otherRelation : otherRelations) {
@@ -1048,37 +1042,24 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param otherRelation The other relation to potentially be absorbed
      */
     private void copyRelation(ResourceImpl main, ResourceImpl<?> other, RelationImpl otherRelation){
-        RelationType relationType = otherRelation.type();
-        Set<RoleTypeImpl> roleTypesOfResource = new HashSet<>(); //All the role types which the resource must play by the end
-        Map<RoleType, Set<Instance>> allRolePlayers = otherRelation.allRolePlayers();
+        //Gets the other resource index and replaces all occurrences of the other resource id with the main resource id
+        //This allows us to find relations far more quickly.
+        String newIndex = otherRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
+        RelationImpl foundRelation = getConceptLog().getModifiedRelations().get(newIndex);
+        if(foundRelation == null) getConcept(Schema.ConceptProperty.INDEX, newIndex);
 
-        //Replace all occurrences of other with main. That we we can quickly find out if the relation on main exists
-        for (Map.Entry<RoleType, Set<Instance>> allRolePlayerEntries : allRolePlayers.entrySet()) {
-
-            Iterator<Instance> it = allRolePlayerEntries.getValue().iterator();
-            while (it.hasNext()){
-                Instance instance = it.next();
-                if(instance.isResource() && instance.asResource().getValue().equals(other.getValue())){//If the values are the same replace with main
-                    it.remove();
-                    allRolePlayerEntries.getValue().add(main);
-                    roleTypesOfResource.add((RoleTypeImpl) allRolePlayerEntries.getKey());
-                }
-            }
-        }
-
-        //See if a duplicate relation already exists
-        RelationImpl foundRelation = getRelation(relationType, allRolePlayers);
-
-        if(foundRelation != null){//If it exists delete the other one
+        if (foundRelation != null) {//If it exists delete the other one
             otherRelation.deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelation = otherRelation;
-            roleTypesOfResource.forEach(roleType -> addCasting(roleType, main, otherRelation));
+            //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
+            otherRelation.allRolePlayers().forEach((roleType, instances) -> {
+                if(instances.contains(other)) addCasting((RoleTypeImpl) roleType, main, otherRelation);
+            });
         }
 
         //Explicitly track this new relation so we don't create duplicates
-        String newHash = generateNewHash(relationType, allRolePlayers);
-        getConceptLog().getModifiedRelations().put(newHash, foundRelation);
+        getConceptLog().getModifiedRelations().put(newIndex, foundRelation);
     }
 
     @Override
