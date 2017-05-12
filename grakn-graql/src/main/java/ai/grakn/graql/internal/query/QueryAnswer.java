@@ -28,10 +28,13 @@ import ai.grakn.graql.internal.reasoner.explanation.Explanation;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
 
 /**
  *
@@ -199,6 +202,11 @@ public class QueryAnswer implements Answer {
         Set<AnswerExplanation> explanations = Sets.newHashSet(this.getExplanation());
         this.getExplanation().getAnswers().forEach(ans -> ans.getExplanations().forEach(explanations::add));
         return explanations;
+    }
+
+    @Override
+    public Iterator<Answer> permutationIterator(Set<Unifier> pus){
+        return permuteFunction.apply(this, pus).iterator();
     }
 
 }

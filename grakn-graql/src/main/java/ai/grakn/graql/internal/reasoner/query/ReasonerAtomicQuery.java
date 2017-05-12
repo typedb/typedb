@@ -219,7 +219,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .map(ans -> ans.setExplanation(answer.getExplanation()));
     }
 
-    private Set<Unifier> getPermutationUnifiers(Atom headAtom) {
+    Set<Unifier> getPermutationUnifiers(Atom headAtom) {
         if (!(atom.isRelation() && headAtom.isRelation())) return new HashSet<>();
 
         //if atom is match all atom, add type from rule head and find unmapped roles
@@ -346,6 +346,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public ReasonerQueryIterator iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return new ReasonerAtomicQueryIterator(this, sub, subGoals, cache);
     }
+
+
 
     /**
      *

@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -123,4 +124,10 @@ public interface Answer {
      * @return all explanations taking part in the derivation of this answer
      */
     Set<AnswerExplanation> getExplanations();
+
+    /**
+     * @param us
+     * @return
+     */
+    Iterator<Answer> permutationIterator(Set<Unifier> us);
 }

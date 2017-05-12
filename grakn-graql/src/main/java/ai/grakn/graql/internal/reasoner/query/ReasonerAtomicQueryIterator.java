@@ -21,14 +21,20 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
+import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import com.google.common.collect.Iterators;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.util.Pair;
 import org.slf4j.Logger;
@@ -105,11 +111,27 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
                 LOG.debug("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", t = " + currentRuleUnifier + " id: " + currentRule.getRuleId());
                 LOG.debug(currentRule.getBody().getResolutionPlan());
 
-                queryIterator = currentRule.getBody().iterator(partialSub.unify(currentRuleUnifier.inverse()), subGoals, cache);
+                queryIterator = getRuleAnswerIterator();
                 return hasNext();
             }
             else return false;
         }
+    }
+
+    private Iterator<Answer> getRuleAnswerIterator(){
+        Atom atom = query.getAtom();
+        Iterator<Answer> baseIterator = currentRule.getBody().iterator(partialSub.unify(currentRuleUnifier.inverse()), subGoals, cache);
+
+        if (atom.isRelation() && !((Relation)atom).getUnmappedRolePlayers().isEmpty()) {
+            Set<Unifier> permutationUnifiers = query.getPermutationUnifiers(currentRule.getHead().getAtom());
+            return Iterators.concat(
+                    Iterators.transform(baseIterator, ans -> {
+                        if (ans == null) return null;
+                        return ans.permutationIterator(permutationUnifiers);
+                    })
+            );
+        }
+        return baseIterator;
     }
 
     @Override
