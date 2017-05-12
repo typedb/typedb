@@ -1016,10 +1016,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             for (ResourceImpl<?> otherResource : duplicates) {
                 Collection<Relation> otherRelations = otherResource.relations();
 
-                //Delete the shortcut edges of the resource we going to delete.
-                //This is so we can copy them uniquely later
-                //otherResource.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT).forEach(EdgeImpl::delete);
-
                 //Copy the actual relation
                 for (Relation otherRelation : otherRelations) {
                     copyRelation(mainResource, otherResource, (RelationImpl) otherRelation);
