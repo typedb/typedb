@@ -133,6 +133,11 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         return cachedShards.get();
     }
 
+    @Override
+    boolean isShard(){
+        return cachedTypeLabel == null || cachedTypeLabel.getValue().startsWith("SHARDED TYPE-");
+    }
+
     @SuppressWarnings("unchecked")
     void copyCachedConcepts(T type){
         ((TypeImpl<T, V>) type).cachedSuperType.ifPresent(value -> this.cachedSuperType.set(getGraknGraph().getTxCache().cacheClone(value)));
