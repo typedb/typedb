@@ -100,14 +100,7 @@ public abstract class Predicate<T> extends AtomBase {
 
     @Override
     public Unifier getUnifier(Atomic parentAtom) {
-        if (!(parentAtom instanceof Predicate)) {
-            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
-        }
-        Unifier unifier = new UnifierImpl();
-        if (!this.getVarName().equals(parentAtom.getVarName())) {
-            unifier.addMapping(this.getVarName(), parentAtom.getVarName());
-        }
-        return unifier;
+        throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
     }
 
     public T getPredicate(){ return predicate;}

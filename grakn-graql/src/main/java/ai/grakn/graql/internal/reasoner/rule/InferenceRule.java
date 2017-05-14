@@ -84,7 +84,7 @@ public class InferenceRule {
 
     @Override
     public String toString(){
-        return  "\n" + this.body.toString() + "\n->\n" + this.head.toString() + "\n";
+        return  "\n" + this.body.toString() + "->" + this.head.toString() + "\n";
     }
 
     @Override
@@ -192,9 +192,18 @@ public class InferenceRule {
      * @return rule with propagated constraints from parent
      */
     public InferenceRule propagateConstraints(Atom parentAtom, Unifier u, Unifier pu){
+        if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
 
-        //TODO
+        Set<TypeAtom> types = parentAtom.getTypeConstraints().stream()
+                .map(TypeAtom::copy)
+                .map(type -> type.unify(pu))
+                .map(type -> type.unify(u.inverse()))
+                .map(type -> (TypeAtom) type)
+                .collect(toSet());
+
+        body.addAtomConstraints(types.stream().filter(type -> !body.getTypeConstraints().contains(type)).collect(toSet()));
         return this;
+
     }
 
     private InferenceRule rewriteHead(){

@@ -88,10 +88,10 @@ public class GeoInferenceTest {
 
         assertEquals(answers, explicitAnswers);
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
+        //assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
     }
 
     @Test
@@ -111,8 +111,8 @@ public class GeoInferenceTest {
         QueryAnswers explicitAnswers = queryAnswers(qb.parse(explicitQuery));
         assertEquals(answers.size(), explicitAnswers.size());
         assertEquals(answers, explicitAnswers);
-        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
-        assertEquals(answers, answers2);
+        //QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        //assertEquals(answers, answers2);
     }
 
     @Test
@@ -261,17 +261,6 @@ public class GeoInferenceTest {
         String queryString = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in;";
 
         QueryAnswers answers = new QueryAnswers(iqb.materialise(false).<MatchQuery>parse(queryString).admin().stream().collect(Collectors.toSet()));
-        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
-        assertEquals(answers.size(), 51);
-        assertEquals(answers, answers2);
-    }
-
-    @Test
-    public void testRelationTypeQuery() {
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
-        String queryString = "match $x isa is-located-in;";
-
-        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
         assertEquals(answers.size(), 51);
         assertEquals(answers, answers2);

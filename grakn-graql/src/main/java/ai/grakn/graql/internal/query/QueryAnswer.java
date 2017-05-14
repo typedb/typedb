@@ -203,13 +203,10 @@ public class QueryAnswer implements Answer {
         this.getExplanation().getAnswers().forEach(ans -> ans.getExplanations().forEach(explanations::add));
         return explanations;
     }
-<<<<<<< HEAD
 
     @Override
     public Iterator<Answer> permutationIterator(Set<Unifier> pus){
+        //TODO move from querystream
         return permuteFunction.apply(this, pus).iterator();
     }
-
-=======
->>>>>>> 748a6762ef5e790f1191813a16dfbb99a1b01ccb
 }

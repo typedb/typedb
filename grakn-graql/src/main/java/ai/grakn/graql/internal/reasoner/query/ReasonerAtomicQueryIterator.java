@@ -65,6 +65,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
     private Unifier cacheUnifier = new UnifierImpl();
     private Unifier currentRuleUnifier = new UnifierImpl();
+    private Unifier currentPermutationUnifier = new UnifierImpl();
 
 
     private InferenceRule currentRule = null;
@@ -79,8 +80,8 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
         query.addSubstitution(partialSub);
 
-        LOG.debug("AQ: " + query);
-        LOG.debug("AQ delta: " + partialSub);
+        LOG.trace("AQ: " + query);
+        LOG.trace("AQ delta: " + partialSub);
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
         this.queryIterator = streamUnifierPair.getKey().iterator();
@@ -101,44 +102,33 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         if (ruleIterator.hasNext()) subGoals.add(query);
     }
 
-
-
     @Override
     public boolean hasNext() {
         if (queryIterator.hasNext()) return true;
         else{
             if (ruleIterator.hasNext()) {
                 Pair<InferenceRule, Pair<Unifier, Unifier>> rule = ruleIterator.next();
+
                 currentRule = rule.getKey();
+                currentRuleUnifier = rule.getValue().getKey();
+                currentPermutationUnifier = rule.getValue().getValue();
 
-                Unifier u = rule.getValue().getKey();
-                Unifier pu = rule.getValue().getValue();
-                currentRuleUnifier = u.merge(pu);
+                LOG.trace("Applying rule to: " + query +
+                        currentRule + "\n" +
+                        "delta = " + partialSub + "\n" +
+                        "t = " + currentRuleUnifier + "\n" +
+                        "tp = " + currentPermutationUnifier + "\n" +
+                        "id: " + currentRule.getRuleId());
 
-                LOG.debug("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", t = " + currentRuleUnifier + " id: " + currentRule.getRuleId());
-                LOG.debug(currentRule.getBody().getResolutionPlan());
-
-                queryIterator = currentRule.getBody().iterator(partialSub.unify(currentRuleUnifier.inverse()), subGoals, cache);
+                //delta' = theta . thetaP . delta
+                Answer partialSubPrime = query.getSubstitution()
+                        .unify(currentPermutationUnifier)
+                        .unify(currentRuleUnifier.inverse());
+                queryIterator = currentRule.getBody().iterator(partialSubPrime, subGoals, cache);
                 return hasNext();
             }
             else return false;
         }
-    }
-
-    private Iterator<Answer> getRuleAnswerIterator(){
-        Atom atom = query.getAtom();
-        Iterator<Answer> baseIterator = currentRule.getBody().iterator(partialSub.unify(currentRuleUnifier.inverse()), subGoals, cache);
-
-        if (atom.isRelation() && !((Relation)atom).getUnmappedRolePlayers().isEmpty()) {
-            Set<Unifier> permutationUnifiers = query.getPermutationUnifiers(currentRule.getHead().getAtom());
-            return Iterators.concat(
-                    Iterators.transform(baseIterator, ans -> {
-                        if (ans == null) return null;
-                        return ans.permutationIterator(permutationUnifiers);
-                    })
-            );
-        }
-        return baseIterator;
     }
 
     @Override
@@ -147,6 +137,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         sub = sub
                 .filterVars(currentRule != null? currentRule.getHead().getVarNames() : sub.keySet())
                 .unify(currentRuleUnifier)
+                .unify(currentPermutationUnifier)
                 .merge(query.getSubstitution())
                 .filterVars(query.getVarNames());
 
@@ -154,8 +145,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         if (sub.getExplanation().isLookupExplanation()) sub = sub.explain(new LookupExplanation(query));
         else sub = sub.explain(new RuleExplanation(currentRule));
 
-        LOG.debug("Answer to: " + query);
-        LOG.debug(sub.toString());
+
         return cache.recordAnswerWithUnifier(query, sub, cacheUnifier);
     }
 

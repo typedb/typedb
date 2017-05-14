@@ -477,6 +477,8 @@ public class AtomicTest {
         String resourceString6 = "{$x has res-double <= 5;}";
         String resourceString7 = "{$x has res-double = 3.14;}";
         String resourceString8 = "{$x has res-double != 5;}";
+        String resourceString9 = "{$x has res-double > $y;}";
+        String resourceString10 = "{$x has res-double $y;}";
 
         Resource resource = (Resource) ReasonerQueries.atomic(conjunction(resourceString, graph), graph).getAtom();
         Resource resource2 = (Resource) ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
@@ -486,6 +488,7 @@ public class AtomicTest {
         Resource resource6 = (Resource) ReasonerQueries.atomic(conjunction(resourceString6, graph), graph).getAtom();
         Resource resource7 = (Resource) ReasonerQueries.atomic(conjunction(resourceString7, graph), graph).getAtom();
         Resource resource8 = (Resource) ReasonerQueries.atomic(conjunction(resourceString8, graph), graph).getAtom();
+        Resource resource9 = (Resource) ReasonerQueries.atomic(conjunction(resourceString9, graph), graph).getAtom();
 
         assertEquals(resource.getApplicableRules().size(), 1);
         assertThat(resource2.getApplicableRules(), empty());

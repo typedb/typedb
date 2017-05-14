@@ -103,7 +103,7 @@ public class Relation extends TypeAtom {
 
     @Override
     public String toString(){
-        String relationString = (isUserDefinedName()? getVarName() + " ": " ") +
+        String relationString = (isUserDefinedName()? getVarName() + " ": "") +
                         (getType() != null? getType().getLabel() : "") +
                         getRelationPlayers().toString();
         return relationString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
