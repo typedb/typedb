@@ -115,7 +115,6 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
                 LOG.trace("Applying rule to: " + query +
                         currentRule + "\n" +
-                        "delta = " + partialSub + "\n" +
                         "t = " + currentRuleUnifier + "\n" +
                         "tp = " + currentPermutationUnifier + "\n" +
                         "id: " + currentRule.getRuleId());
@@ -144,7 +143,6 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         //assign appropriate explanation
         if (sub.getExplanation().isLookupExplanation()) sub = sub.explain(new LookupExplanation(query));
         else sub = sub.explain(new RuleExplanation(currentRule));
-
 
         return cache.recordAnswerWithUnifier(query, sub, cacheUnifier);
     }

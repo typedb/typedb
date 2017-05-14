@@ -202,25 +202,14 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return Graql.insert(getPattern().getVars()).withGraph(graph()).stream();
     }
 
-    private Stream<Answer> materialiseDirect() {
-        //check if unambiguous
-        if (atom.isRelation()) {
-            Relation relationAtom = (Relation) atom;
-            if (relationAtom.hasMetaRoles()) {
-                throw new IllegalStateException(ErrorMessage.MATERIALIZATION_ERROR.getMessage(this));
-            }
-        }
-        return insert();
-    }
-
     public Stream<Answer> materialise(Answer answer) {
         ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
         queryToMaterialise.addSubstitution(answer);
-        return queryToMaterialise.materialiseDirect()
+        return queryToMaterialise.insert()
                 .map(ans -> ans.setExplanation(answer.getExplanation()));
     }
 
-    Set<Unifier> getPermutationUnifiers(Atom headAtom) {
+    private Set<Unifier> getPermutationUnifiers(Atom headAtom) {
         if (!(atom.isRelation() && headAtom.isRelation())) return new HashSet<>();
 
         //if atom is match all atom, add type from rule head and find unmapped roles

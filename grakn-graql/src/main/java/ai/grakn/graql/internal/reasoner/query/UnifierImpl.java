@@ -120,10 +120,14 @@ public class UnifierImpl implements Unifier {
 
     @Override
     public Unifier merge(Unifier d) {
+        unifier.putAll(d.map());
+        return this;
+        /*
         if (Collections.disjoint(this.values(), d.keySet())){
             unifier.putAll(d.map());
             return this;
         }
+        //TODO doesn't work with $x isa relation;
         Unifier merged = new UnifierImpl();
         Unifier inverse = this.inverse();
         this.mappings().stream().filter(m -> !d.containsKey(m.getValue())).forEach(m -> merged.addMapping(m.getKey(), m.getValue()));
@@ -135,6 +139,7 @@ public class UnifierImpl implements Unifier {
                 })
                 .forEach(m -> merged.addMapping(m.getKey(), m.getValue()) );
         return merged;
+        */
     }
 
     @Override

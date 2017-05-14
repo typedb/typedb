@@ -61,7 +61,7 @@ public class GeoInferenceTest {
                 "$x isa city;$x has name $name;{$name val 'Warsaw';} or {$name val 'Wroclaw';};select $x;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -88,10 +88,10 @@ public class GeoInferenceTest {
 
         assertEquals(answers, explicitAnswers);
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
-        //assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
     }
 
     @Test
@@ -111,8 +111,8 @@ public class GeoInferenceTest {
         QueryAnswers explicitAnswers = queryAnswers(qb.parse(explicitQuery));
         assertEquals(answers.size(), explicitAnswers.size());
         assertEquals(answers, explicitAnswers);
-        //QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
-        //assertEquals(answers, answers2);
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        assertEquals(answers, answers2);
     }
 
     @Test
@@ -136,9 +136,9 @@ public class GeoInferenceTest {
                 "$z2 isa university;$z2 has name $name;" +
                 "{$z2 has name 'University-of-Warsaw';} or {$z2 has name'Warsaw-Polytechnics';};";
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
-        //assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
-        //assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
     }
 
     @Test
@@ -205,10 +205,10 @@ public class GeoInferenceTest {
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         assertEquals(answers.size(), 5);
-        //answers.forEach(ans -> assertEquals(ans.size(), 2));
-        //answers.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), masovia.getId().getValue()));
-        //QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
-        //assertEquals(answers.size(), answers2.size());
+        answers.forEach(ans -> assertEquals(ans.size(), 2));
+        answers.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), masovia.getId().getValue()));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
+        assertEquals(answers.size(), answers2.size());
     }
 
     @Test
