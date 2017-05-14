@@ -379,7 +379,6 @@ public class Relation extends TypeAtom {
     @Override
     public void inferTypes() {
         if (getPredicate() == null) inferRelationTypeFromTypes();
-        getRoleVarTypeMap();
     }
 
     @Override

@@ -140,8 +140,7 @@ public class QueryAnswer implements Answer {
             if(!this.getExplanation().isJoinExplanation()) exp.addAnswer(this);
             if(!a2.getExplanation().isJoinExplanation()) exp.addAnswer(a2);
         }
-        merged.setExplanation(exp);
-        return merged;
+        return merged.setExplanation(exp);
     }
 
     @Override
@@ -157,23 +156,28 @@ public class QueryAnswer implements Answer {
 
     @Override
     public Answer filterVars(Set<VarName> vars) {
-        QueryAnswer filteredAnswer = new QueryAnswer(Maps.filterKeys(map(), vars::contains));
-        filteredAnswer.setExplanation(this.getExplanation());
-        return filteredAnswer;
+        QueryAnswer filteredAnswer = new QueryAnswer(this);
+        Set<VarName> varsToRemove = Sets.difference(this.keySet(), vars);
+        varsToRemove.forEach(filteredAnswer::remove);
+
+        return filteredAnswer.setExplanation(this.getExplanation());
     }
 
     @Override
     public Answer unify(Unifier unifier){
         if (unifier.isEmpty()) return this;
-        QueryAnswer unified = new QueryAnswer(
+        return new QueryAnswer(
                 this.entrySet().stream()
-                        .collect(Collectors.toMap(e -> unifier.containsKey(e.getKey())?  unifier.get(e.getKey()) : e.getKey(), Map.Entry::getValue))
-        );
-        return unified.setExplanation(this.getExplanation());
+                        .collect(Collectors.toMap(e -> {
+                            VarName var = e.getKey();
+                            VarName uvar = unifier.get(var);
+                            return uvar == null? var : uvar;
+                        }, Map.Entry::getValue))
+        ).setExplanation(this.getExplanation());
     }
 
     @Override
-    public Stream<Answer> permute( Set<Unifier> unifierSet){
+    public Stream<Answer> permute(Set<Unifier> unifierSet){
         if (unifierSet.isEmpty()) return Stream.of(this);
         return unifierSet.stream().map(this::unify);
     }
