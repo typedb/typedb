@@ -24,7 +24,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import javafx.util.Pair;
 
