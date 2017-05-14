@@ -110,6 +110,8 @@ value          : STRING   # valueString
                | INTEGER  # valueInteger
                | REAL     # valueReal
                | BOOLEAN  # valueBoolean
+               | DATE     # valueDate
+               | DATETIME # valueDateTime
                ;
 
 label          : identifier ;
@@ -135,7 +137,7 @@ DEGREES        : 'degrees' ;
 MEMBERS        : 'members' ;
 SIZE           : 'size' ;
 
-DATATYPE       : 'long' | 'double' | 'string' | 'boolean' ;
+DATATYPE       : 'long' | 'double' | 'string' | 'boolean' | 'date' ;
 ORDER          : 'asc' | 'desc' ;
 BOOLEAN        : 'true' | 'false' ;
 VARIABLE       : '$' [a-zA-Z0-9_-]+ ;
@@ -144,6 +146,11 @@ STRING         : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\
 REGEX          : '/' (~'/' | '\\/')* '/' ;
 INTEGER        : ('+' | '-')? [0-9]+ ;
 REAL           : ('+' | '-')? [0-9]+ '.' [0-9]+ ;
+DATE           : DATE_FRAGMENT ;
+DATETIME       : DATE_FRAGMENT 'T' [0-2][0-9] ':' [0-6][0-9] (':' [0-6][0-9])?;
+
+fragment DATE_FRAGMENT : YEAR '-' [0-1][0-9] '-' [0-3][0-9] ;
+fragment YEAR          : [0-9][0-9][0-9][0-9] | ('+' | '-') [0-9]+ ;
 
 fragment ESCAPE_SEQ : '\\' . ;
 

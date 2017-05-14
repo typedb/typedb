@@ -4,11 +4,13 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTinkerGraph;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.ErrorMessage;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -94,6 +96,22 @@ public class GraphTest {
             assertEquals(3, openTransactions(batchGraph));
         }
     }
+
+    @Test
+    public void afterCommitting_NumberOfOpenTransactionsDecrementsOnce() {
+        assumeFalse(usingTinker()); // Tinker graph only ever has one open transaction
+
+        GraknSession session = engine.factoryWithNewKeyspace();
+
+        GraknGraph graph = session.open(GraknTxType.READ);
+
+        assertEquals(1, openTransactions(graph));
+
+        graph.commit();
+
+        assertEquals(0, openTransactions(graph));
+    }
+
     private int openTransactions(GraknGraph graph){
         if(graph == null) return 0;
         return ((AbstractGraknGraph) graph).numOpenTx();
@@ -107,8 +125,8 @@ public class GraphTest {
         GraknGraph graph = factory.open(GraknTxType.WRITE);
         factory.close();
 
-        expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage("Graph has been closed");
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(graph.getKeyspace()));
 
         graph.putEntityType("A Thing");
     }

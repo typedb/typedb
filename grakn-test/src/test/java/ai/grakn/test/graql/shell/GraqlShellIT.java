@@ -18,14 +18,9 @@
 
 package ai.grakn.test.graql.shell;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.GraqlShell;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.DistributionContext;
 import ai.grakn.util.Schema;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -34,8 +29,8 @@ import com.google.common.collect.Sets;
 import mjson.Json;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.hamcrest.Matcher;
-import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -67,15 +62,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
-/*
-These tests are failing for some reason. The websocket appears to close itself mid-test. Possibly the graphs are not being
-cleared correctly, or engine is not starting/stopping correctly.
- */
-@Ignore // TODO: Fix this test
 public class GraqlShellIT {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final DistributionContext dist = DistributionContext.startInMemoryEngineProcess().inheritIO(false);
 
     private static InputStream trueIn;
     private static PrintStream trueOut;
@@ -83,24 +73,18 @@ public class GraqlShellIT {
     private static final String expectedVersion = "graql-9.9.9";
     private static final String historyFile = System.getProperty("java.io.tmpdir") + "/graql-test-history";
 
-    private static final ImmutableList<String> keyspaces =
-            ImmutableList.of(GraqlShell.DEFAULT_KEYSPACE, "foo", "bar", "batch");
+    private static int keyspaceSuffix = 0;
 
     @BeforeClass
     public static void setUpClass() throws Exception {
         trueIn = System.in;
         trueOut = System.out;
         trueErr = System.err;
-
-        // Disable engine logs so we can test stdout
-        ((Logger) org.slf4j.LoggerFactory.getLogger("ai.grakn.engine")).setLevel(Level.OFF);
     }
 
-    @After
-    public void tearDown() throws GraknValidationException {
-        for (String keyspace : keyspaces){
-            Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE).clear();
-        }
+    @Before
+    public void changeSuffix() {
+        keyspaceSuffix += 1;
     }
 
     @AfterClass
@@ -417,7 +401,7 @@ public class GraqlShellIT {
         String value = Strings.repeat("really-", 100000) + "long-value";
 
         assertShellMatches(
-                "insert X sub resource datatype string; value '" + value + "' isa X;",
+                "insert X sub resource datatype string; val '" + value + "' isa X;",
                 anything(),
                 "match $x isa X;",
                 allOf(containsString("$x"), containsString(value))
@@ -623,6 +607,8 @@ public class GraqlShellIT {
     }
 
     private String testShell(String input, ByteArrayOutputStream berr, String... args) throws Exception {
+        args = specifyUniqueKeyspace(args);
+
         InputStream in = new ByteArrayInputStream(input.getBytes());
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
@@ -654,6 +640,22 @@ public class GraqlShellIT {
 
 
         return bout.toString();
+    }
+
+    // TODO: Remove this when we can clear graphs properly (TP #13745)
+    private String[] specifyUniqueKeyspace(String[] args) {
+        List<String> argList = Lists.newArrayList(args);
+
+        int keyspaceIndex = argList.indexOf("-k") + 1;
+        if (keyspaceIndex == 0) {
+            argList.add("-k");
+            argList.add(GraqlShell.DEFAULT_KEYSPACE);
+            keyspaceIndex = argList.size() - 1;
+        }
+
+        argList.set(keyspaceIndex, argList.get(keyspaceIndex) + keyspaceSuffix);
+
+        return argList.toArray(new String[argList.size()]);
     }
 }
 

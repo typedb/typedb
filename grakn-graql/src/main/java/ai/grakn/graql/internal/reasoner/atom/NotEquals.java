@@ -34,7 +34,7 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
 /**
  *
  * <p>
- * Implementation of atom corresponding to graql NotEquals property.
+ * Implementation of atom corresponding to {@link NeqProperty}.
  * </p>
  *
  * @author Kasper Piskorski

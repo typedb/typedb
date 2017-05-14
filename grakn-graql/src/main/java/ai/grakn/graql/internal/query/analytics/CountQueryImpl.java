@@ -29,6 +29,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
 
@@ -44,7 +45,8 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
         initSubGraph();
         if (!selectedTypesHaveInstance()) return 0L;
 
-        ComputerResult result = getGraphComputer().compute(new CountMapReduce(subTypeLabels));
+        ComputerResult result = getGraphComputer().compute(new CountMapReduce(
+                subTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet())));
         Map<Serializable, Long> count = result.memory().get(CountMapReduce.class.getName());
 
         LOGGER.debug("Count = " + count.get(MapReduce.NullObject.instance()));

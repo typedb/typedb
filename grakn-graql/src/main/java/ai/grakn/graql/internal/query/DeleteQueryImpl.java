@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
@@ -130,6 +131,11 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     @Override
     public MatchQuery getMatchQuery() {
         return matchQuery;
+    }
+
+    @Override
+    public String toString() {
+        return matchQuery + " delete " + deleters.stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
 
     @Override

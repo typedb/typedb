@@ -126,6 +126,15 @@ public interface GraknAdmin {
     //------------------------------------- Admin Specific Operations ----------------------------------
 
     /**
+     * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
+     * so be sure to use the correct graph when performing the mapping.
+     *
+     * @param label The label to be converted to the id
+     * @return The matching type id or -1 if no such type exists
+     */
+    Integer convertToId(TypeLabel label);
+
+    /**
      * Commits to the graph without submitting any commit logs.
      * @return the commit log that would have been submitted if it is needed.
      * @throws GraknValidationException when the graph does not conform to the object concept
@@ -161,7 +170,7 @@ public interface GraknAdmin {
      * @param value The value of the concept
      * @return A concept with the matching key and value
      */
-    <T extends Concept> T  getConcept(Schema.ConceptProperty key, String value);
+    <T extends Concept> T  getConcept(Schema.ConceptProperty key, Object value);
 
     /**
      * Closes the root session this graph stems from. This will automatically rollback any pending transactions.

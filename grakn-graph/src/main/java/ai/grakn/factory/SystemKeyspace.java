@@ -124,7 +124,7 @@ public class SystemKeyspace<T extends Graph> {
             graph.getResourceType("system-version").putResource(GraknVersion.VERSION);
             graph.admin().commitNoLogs();
             LOG.info("Loaded system ontology to system keyspace.");
-        } catch(IOException |GraknValidationException |NullPointerException e) {
+        } catch (IOException | GraknValidationException | NullPointerException e) {
             e.printStackTrace(System.err);
             LOG.error("Could not load system ontology. The error was: " + e);
         }

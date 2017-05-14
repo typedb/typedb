@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  * <p>
- * Tuple-at-a-time iterator for ReasonerQueryImpl.
+ * Tuple-at-a-time iterator for {@link ReasonerQueryImpl}.
  * For a starting query Q it removes the top (highest priority) atom A, constructs a corresponding atomic query
  * AQ and uses it to feed the the remaining query Q' = Q\AQ with partial substitutions. The behaviour proceeds
  * in recursive fashion.
@@ -66,8 +66,9 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         query.addSubstitution(sub);
         Atom topAtom = query.getTopAtom();
 
-        LOG.debug("CQ: " + query);
-        LOG.debug("CQ delta: " + sub);
+        LOG.trace("CQ: " + query);
+        LOG.trace("CQ delta: " + sub);
+        LOG.trace("CQ plan: " + query.getResolutionPlan());
 
         this.atomicQueryIterator = new ReasonerAtomicQuery(topAtom).iterator(new QueryAnswer(), subGoals, cache);
         this.queryPrime = ReasonerQueries.prime(query, topAtom);
@@ -76,14 +77,13 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
     @Override
     public boolean hasNext() {
         if (queryIterator.hasNext()) return true;
-        else {
-            if (atomicQueryIterator.hasNext()) {
-                partialSub = atomicQueryIterator.next();
-                queryIterator = queryPrime.iterator(partialSub, subGoals, cache);
-                return hasNext();
-            }
-            else return false;
+
+        if (atomicQueryIterator.hasNext()) {
+            partialSub = atomicQueryIterator.next();
+            queryIterator = queryPrime.iterator(partialSub, subGoals, cache);
+            return hasNext();
         }
+        else return false;
     }
 
     @Override

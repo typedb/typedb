@@ -53,6 +53,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -114,7 +115,7 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertValue() {
-        assertInsert(var("x").val(12109038210380L).isa("release-date"));
+        assertInsert(var("x").val(LocalDateTime.of(1992, 10, 7, 13, 14, 15)).isa("release-date"));
     }
 
     @Test
@@ -712,8 +713,8 @@ public class InsertQueryTest {
     @Test
     public void testInsertInstanceWithoutType() {
         exception.expect(IllegalStateException.class);
-        exception.expectMessage(allOf(containsString("123"), containsString("isa")));
-        qb.insert(var().id(ConceptId.of("123")).has("name", "Bob")).execute();
+        exception.expectMessage(allOf(containsString("isa")));
+        qb.insert(var().has("name", "Bob")).execute();
     }
 
     @Test

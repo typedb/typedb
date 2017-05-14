@@ -49,7 +49,7 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesCompatibl
 /**
  *
  * <p>
- * Atom implementation defining specialised functionalities.
+ * {@link AtomBase} extension defining specialised functionalities.
  * </p>
  *
  * @author Kasper Piskorski

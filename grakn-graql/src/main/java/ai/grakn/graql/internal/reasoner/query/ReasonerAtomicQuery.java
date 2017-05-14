@@ -71,7 +71,7 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilter
  *
  * <p>
  * Base reasoner atomic query. An atomic query is a query constrained to having at most one rule-resolvable atom
- * together with its accompanying constraints (predicates and types)
+ * together with its accompanying constraints (predicates and types).
  * </p>
  *
  * @author Kasper Piskorski
@@ -134,9 +134,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public void unify(Unifier unifier) {
-        super.unify(unifier);
+    public Unifier unify(Unifier unifier) {
+        Unifier u = super.unify(unifier);
         atom = selectAtoms().iterator().next();
+        return u;
     }
 
     @Override
@@ -347,8 +348,14 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return new ReasonerAtomicQueryIterator(this, sub, subGoals, cache);
     }
 
-
-
+    Iterator<Pair<InferenceRule, Pair<Unifier, Unifier>>> getRuleIterator(){
+        return getAtom().getApplicableRules().stream()
+                .flatMap(r -> {
+                    Unifier ruleUnifier = r.getUnifier(getAtom());
+                    return getPermutationUnifiers(r.getHead().getAtom()).stream()
+                            .map(pu -> new Pair<>(new InferenceRule(r).propagateConstraints(getAtom(), ruleUnifier, pu), new Pair<>(ruleUnifier, pu)));
+                }).iterator();
+    }
     /**
      *
      * <p>

@@ -18,8 +18,6 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -45,18 +43,11 @@ public class Utility {
      * @param vertex the Tinkerpop vertex
      * @return the type
      */
-    static TypeLabel getVertexType(Vertex vertex) {
-        return TypeLabel.of(vertex.value(Schema.ConceptProperty.TYPE.name()));
-    }
-
-    /**
-     * Whether the Tinkerpop vertex has a Grakn type property reserved for analytics.
-     *
-     * @param vertex the Tinkerpop vertex
-     * @return if the type is reserved or not
-     */
-    static boolean isAnalyticsElement(Vertex vertex) {
-        return CommonOLAP.analyticsElements.contains(getVertexType(vertex));
+    static Integer getVertexTypeId(Vertex vertex) {
+        if (vertex.property(Schema.ConceptProperty.INSTANCE_TYPE_ID.name()).isPresent()) {
+            return (Integer) vertex.value(Schema.ConceptProperty.INSTANCE_TYPE_ID.name());
+        }
+        return -1;
     }
 
     /**
@@ -69,23 +60,10 @@ public class Utility {
         if (vertex == null) return false;
 
         try {
-            return vertex.property(Schema.BaseType.TYPE.name()).isPresent();
+            return vertex.property(Schema.ConceptProperty.ID.name()).isPresent();
         } catch (IllegalStateException e) {
             return false;
         }
-    }
-
-    /**
-     * Converts from the java data type to the grakn data type. Some map reduce methods require the grakn resource
-     * datatype instead of the java datatype as arguments to the constructor. This method is a simple translator for
-     * longs and doubles.
-     *
-     * @param resourceDataType either java.int.long or java.int.double
-     * @return the grakn resource data type
-     */
-    static String graknJavaTypeConverter(String resourceDataType) {
-        return resourceDataType.equals(ResourceType.DataType.LONG.getName()) ?
-                Schema.ConceptProperty.VALUE_LONG.name() : Schema.ConceptProperty.VALUE_DOUBLE.name();
     }
 
     /**

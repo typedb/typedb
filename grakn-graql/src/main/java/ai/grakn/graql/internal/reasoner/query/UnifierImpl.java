@@ -32,7 +32,7 @@ import javafx.util.Pair;
 /**
  *
  * <p>
- * Implementation of Unifier interface.
+ * Implementation of {@link Unifier} interface.
  * </p>
  *
  * @author Kasper Piskorski
@@ -43,6 +43,10 @@ public class UnifierImpl implements Unifier {
     //TODO turn it to multimap to accommodate all cases
     private final Map<VarName, VarName> unifier = new HashMap<>();
 
+
+    /**
+     * Identity unifier.
+     */
     public UnifierImpl(){}
     public UnifierImpl(Map<VarName, VarName> map){
         unifier.putAll(map);

@@ -77,7 +77,8 @@ import static java.util.stream.Collectors.toSet;
 /**
  *
  * <p>
- * Atom implementation defining a relation atom.
+ * Atom implementation defining a relation atom corresponding to a combined {@link RelationProperty}
+ * and (optional) {@link IsaProperty}.
  * </p>
  *
  * @author Kasper Piskorski
@@ -632,7 +633,7 @@ public class Relation extends TypeAtom {
                             Set<RoleType> typeRoles = isMetaType? childRoles : new HashSet<>(parentType.plays());
 
                             //incompatible type
-                            if (Sets.intersection(relationRoles, typeRoles).isEmpty()) compatibleChildRoles.clear();
+                            if (Sets.intersection(relationRoles, typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
                             else {
                                 compatibleChildRoles = compatibleChildRoles.stream()
                                         .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || typeRoles.contains(rc))

@@ -39,7 +39,7 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFu
 /**
  *
  * <p>
- * Wrapper for query result class.
+ * Wrapper for a query result class {@link Answer}.
  * </p>
  *
  * @author Kasper Piskorski
@@ -203,10 +203,13 @@ public class QueryAnswer implements Answer {
         this.getExplanation().getAnswers().forEach(ans -> ans.getExplanations().forEach(explanations::add));
         return explanations;
     }
+<<<<<<< HEAD
 
     @Override
     public Iterator<Answer> permutationIterator(Set<Unifier> pus){
         return permuteFunction.apply(this, pus).iterator();
     }
 
+=======
+>>>>>>> 748a6762ef5e790f1191813a16dfbb99a1b01ccb
 }

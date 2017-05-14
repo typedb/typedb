@@ -38,11 +38,11 @@ import java.util.function.Supplier;
  * @author fppt
  *
  */
-class ComponentCache<V> {
+class ConceptCache<V> {
     private final Supplier<V> databaseReader;
     private Optional<V> cachedValue = Optional.empty();
 
-    public ComponentCache(Supplier<V> databaseReader){
+    ConceptCache(Supplier<V> databaseReader){
         this.databaseReader = databaseReader;
     }
 

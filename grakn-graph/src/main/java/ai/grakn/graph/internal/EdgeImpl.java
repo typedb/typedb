@@ -89,7 +89,7 @@ class EdgeImpl {
      * @param type The property to retrieve
      * @return The value of the property
      */
-    <X> X getProperty(Schema.EdgeProperty type){
+    private <X> X getProperty(Schema.EdgeProperty type){
         org.apache.tinkerpop.gremlin.structure.Property<X> property = edge.property(type.name());
         if(property != null && property.isPresent()) {
             return property.value();
@@ -111,10 +111,7 @@ class EdgeImpl {
      * @param type The property to retrieve
      * @param value The value of the property
      */
-    void setProperty(Schema.EdgeProperty type, String value){
-        edge.property(type.name(), value);
-    }
-    void setProperty(Schema.EdgeProperty type, boolean value){
+    void setProperty(Schema.EdgeProperty type, Object value){
         edge.property(type.name(), value);
     }
 

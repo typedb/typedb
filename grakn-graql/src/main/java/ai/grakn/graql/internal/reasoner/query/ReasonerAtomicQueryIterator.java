@@ -26,7 +26,6 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
-import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.Iterators;
@@ -55,16 +54,18 @@ import org.slf4j.LoggerFactory;
  */
 class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
+
     private final Answer partialSub;
     private final ReasonerAtomicQuery query;
 
     private final QueryCache<ReasonerAtomicQuery> cache;
     private final Set<ReasonerAtomicQuery> subGoals;
-    private final Iterator<InferenceRule> ruleIterator;
+    private final Iterator<Pair<InferenceRule, Pair<Unifier, Unifier>>> ruleIterator;
     private Iterator<Answer> queryIterator = Collections.emptyIterator();
 
     private Unifier cacheUnifier = new UnifierImpl();
     private Unifier currentRuleUnifier = new UnifierImpl();
+
 
     private InferenceRule currentRule = null;
 
@@ -93,25 +94,31 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
             this.ruleIterator = Collections.emptyIterator();
         }
         else {
-            this.ruleIterator = query.getAtom().getApplicableRules().iterator();
+            this.ruleIterator = query.getRuleIterator();
         }
 
         //mark as visited and hence not admissible
         if (ruleIterator.hasNext()) subGoals.add(query);
     }
 
+
+
     @Override
     public boolean hasNext() {
         if (queryIterator.hasNext()) return true;
         else{
             if (ruleIterator.hasNext()) {
-                currentRule = ruleIterator.next();
-                currentRuleUnifier = currentRule.getUnifier(query.getAtom());
+                Pair<InferenceRule, Pair<Unifier, Unifier>> rule = ruleIterator.next();
+                currentRule = rule.getKey();
+
+                Unifier u = rule.getValue().getKey();
+                Unifier pu = rule.getValue().getValue();
+                currentRuleUnifier = u.merge(pu);
 
                 LOG.debug("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", t = " + currentRuleUnifier + " id: " + currentRule.getRuleId());
                 LOG.debug(currentRule.getBody().getResolutionPlan());
 
-                queryIterator = getRuleAnswerIterator();
+                queryIterator = currentRule.getBody().iterator(partialSub.unify(currentRuleUnifier.inverse()), subGoals, cache);
                 return hasNext();
             }
             else return false;
@@ -146,7 +153,6 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         //assign appropriate explanation
         if (sub.getExplanation().isLookupExplanation()) sub = sub.explain(new LookupExplanation(query));
         else sub = sub.explain(new RuleExplanation(currentRule));
-
 
         LOG.debug("Answer to: " + query);
         LOG.debug(sub.toString());
