@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 /**
  *
@@ -90,16 +91,30 @@ public interface Answer {
     Answer merge(Answer a2, boolean explanation);
 
     /**
-     * explain this answer by providing explanation with preserving the structure of dependent answers
+     * explain this answer by providing explanation with preQueserving the structure of dependent answers
      *
      * @param exp explanation for this answer
      * @return explained answer
      */
     Answer explain(AnswerExplanation exp);
 
+    /**
+     * @param vars variables to be retained
+     * @return answer with filtered variables
+     */
     Answer filterVars(Set<VarName> vars);
 
+    /**
+     * @param unifier set of mappings between variables
+     * @return unified answer
+     */
     Answer unify(Unifier unifier);
+
+    /**
+     * @param unifierSet set of permutation mappings
+     * @return stream of permuted answers
+     */
+    Stream<Answer> permute(Set<Unifier> unifierSet);
 
     AnswerExplanation getExplanation();
 

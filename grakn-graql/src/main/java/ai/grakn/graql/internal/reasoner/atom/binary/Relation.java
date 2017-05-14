@@ -97,9 +97,7 @@ public class Relation extends TypeAtom {
         super(constructRelationVar(name, typeVariable, roleMap), pred, par);
     }
 
-    private Relation(Relation a) {
-        super(a);
-    }
+    private Relation(Relation a) { super(a);}
 
     @Override
     public String toString(){
@@ -109,7 +107,7 @@ public class Relation extends TypeAtom {
         return relationString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
     }
 
-    public Set<RelationPlayer> getRelationPlayers() {
+    private Set<RelationPlayer> getRelationPlayers() {
         if (relationPlayers == null) {
             relationPlayers = new HashSet<>();
             this.atomPattern.asVar().getProperty(RelationProperty.class)
@@ -305,7 +303,7 @@ public class Relation extends TypeAtom {
     /**
      * @return true if any of the relation's role types are meta role types
      */
-    public boolean hasMetaRoles(){
+    private boolean hasMetaRoles(){
         Set<RoleType> parentRoles = getRoleVarTypeMap().keySet();
         for(RoleType role : parentRoles) {
             if (Schema.MetaSchema.isMetaLabel(role.getLabel())) return true;
@@ -378,10 +376,10 @@ public class Relation extends TypeAtom {
         if (type != null) addType(type);
     }
 
-
     @Override
     public void inferTypes() {
         if (getPredicate() == null) inferRelationTypeFromTypes();
+        getRoleVarTypeMap();
     }
 
     @Override

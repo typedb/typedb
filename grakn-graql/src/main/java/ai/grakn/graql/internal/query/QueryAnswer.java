@@ -25,6 +25,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.explanation.Explanation;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  *
@@ -146,7 +148,7 @@ public class QueryAnswer implements Answer {
     public Answer merge(Answer a2){ return this.merge(a2, false);}
 
     @Override
-    public QueryAnswer explain(AnswerExplanation exp){
+    public Answer explain(AnswerExplanation exp){
         Set<Answer> answers = explanation.getAnswers();
         explanation = exp;
         answers.forEach(explanation::addAnswer);
@@ -154,23 +156,26 @@ public class QueryAnswer implements Answer {
     }
 
     @Override
-    public QueryAnswer filterVars(Set<VarName> vars) {
-        QueryAnswer filteredAnswer = new QueryAnswer(this);
-        Set<VarName> varsToRemove = Sets.difference(this.keySet(), vars);
-        varsToRemove.forEach(filteredAnswer::remove);
-
+    public Answer filterVars(Set<VarName> vars) {
+        QueryAnswer filteredAnswer = new QueryAnswer(Maps.filterKeys(map(), vars::contains));
         filteredAnswer.setExplanation(this.getExplanation());
         return filteredAnswer;
     }
 
     @Override
-    public QueryAnswer unify(Unifier unifier){
+    public Answer unify(Unifier unifier){
         if (unifier.isEmpty()) return this;
         QueryAnswer unified = new QueryAnswer(
                 this.entrySet().stream()
                         .collect(Collectors.toMap(e -> unifier.containsKey(e.getKey())?  unifier.get(e.getKey()) : e.getKey(), Map.Entry::getValue))
         );
         return unified.setExplanation(this.getExplanation());
+    }
+
+    @Override
+    public Stream<Answer> permute( Set<Unifier> unifierSet){
+        if (unifierSet.isEmpty()) return Stream.of(this);
+        return unifierSet.stream().map(this::unify);
     }
 
     @Override

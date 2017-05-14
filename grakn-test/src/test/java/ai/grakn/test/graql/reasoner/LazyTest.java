@@ -49,7 +49,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertTrue;
@@ -109,7 +108,7 @@ public class LazyTest {
         Stream<Answer> stream2 = query2.lookup(cache);
         Stream<Answer> joinedStream = QueryAnswerStream.join(stream, stream2);
 
-        joinedStream = cache.record(query3, joinedStream.flatMap(a -> varFilterFunction.apply(a, query3.getVarNames())));
+        joinedStream = cache.record(query3, joinedStream.map(a -> a.filterVars(query3.getVarNames())));
 
         Set<Answer> collect = joinedStream.collect(toSet());
         Set<Answer> collect2 = cache.getAnswerStream(query3).collect(toSet());
@@ -142,8 +141,8 @@ public class LazyTest {
                 query2.getMatchQuery().admin().stream(),
                 ImmutableSet.copyOf(joinVars),
                 true
-        )
-                .flatMap(a -> varFilterFunction.apply(a, rule.getHead().getVarNames()))
+                )
+                .map(a -> a.filterVars(rule.getHead().getVarNames()))
                 .distinct()
                 .map(ans -> ans.explain(new RuleExplanation(rule)));
 
