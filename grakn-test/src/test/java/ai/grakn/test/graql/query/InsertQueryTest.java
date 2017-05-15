@@ -35,7 +35,6 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraphContext;
@@ -323,7 +322,7 @@ public class InsertQueryTest {
         Set<Answer> results = insert.stream().collect(Collectors.toSet());
         assertEquals(1, results.size());
         Answer result = results.iterator().next();
-        assertEquals(ImmutableSet.of(Var.of("x"), Var.of("z")), result.keySet());
+        assertEquals(ImmutableSet.of(Graql.varName("x"), Graql.varName("z")), result.keySet());
         assertThat(result.values(), Matchers.everyItem(notNullValue(Concept.class)));
     }
 
@@ -343,7 +342,7 @@ public class InsertQueryTest {
         assertFalse(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
 
         Answer result1 = results.next();
-        assertEquals(ImmutableSet.of(Var.of("x")), result1.keySet());
+        assertEquals(ImmutableSet.of(Graql.varName("x")), result1.keySet());
 
         AskQuery query123 = qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask();
         AskQuery query456 = qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask();
@@ -359,7 +358,7 @@ public class InsertQueryTest {
 
         //Check that both are inserted correctly
         Answer result2 = results.next();
-        assertEquals(ImmutableSet.of(Var.of("x")), result1.keySet());
+        assertEquals(ImmutableSet.of(Graql.varName("x")), result1.keySet());
         assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
         assertTrue(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
         assertFalse(results.hasNext());
@@ -598,7 +597,7 @@ public class InsertQueryTest {
         List<Answer> results = query.execute();
         assertEquals(1, results.size());
         Answer result = results.get(0);
-        assertEquals(Sets.newHashSet(Var.of("x")), result.keySet());
+        assertEquals(Sets.newHashSet(Graql.varName("x")), result.keySet());
         Entity x = result.get("x").asEntity();
         assertEquals("movie", x.type().getLabel().getValue());
     }

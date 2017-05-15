@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
@@ -91,7 +92,7 @@ public class QueryAnswer implements Answer {
 
     @Override
     public Concept get(String var) {
-        return map.get(Var.of(var));
+        return map.get(Graql.varName(var));
     }
 
     @Override

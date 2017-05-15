@@ -14,10 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.internal.pattern;
 
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.function.Function;
@@ -26,7 +29,7 @@ import java.util.function.Function;
  *
  * @author Felix Chapman
  */
-public final class VarImpl implements Var {
+final class VarImpl implements Var {
     private final String value;
 
     VarImpl(String value) {
@@ -40,7 +43,7 @@ public final class VarImpl implements Var {
 
     @Override
     public Var map(Function<String, String> mapper) {
-        return Var.of(mapper.apply(value));
+        return Graql.varName(mapper.apply(value));
     }
 
     @Override

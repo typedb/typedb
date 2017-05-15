@@ -59,4 +59,8 @@ public class Patterns {
         return VarPatternImpl.merge(vars);
     }
 
+    public static Var varName(String value) {
+        return new VarImpl(value);
+    }
+
 }

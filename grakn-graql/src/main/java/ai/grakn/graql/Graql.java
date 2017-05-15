@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Main class containing static methods for creating Graql queries.
@@ -139,7 +140,7 @@ public class Graql {
      * @return a new query variable
      */
     public static VarPattern var(String name) {
-        return var(Var.of(name));
+        return var(varName(name));
     }
 
     /**
@@ -221,7 +222,7 @@ public class Graql {
      * Create an aggregate that will sum the values of a variable.
      */
     public static Aggregate<Answer, Number> sum(String name) {
-        return Aggregates.sum(Var.of(name));
+        return Aggregates.sum(varName(name));
     }
 
     /**
@@ -229,7 +230,7 @@ public class Graql {
      * @param name the variable to find the maximum of
      */
     public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> max(String name) {
-        return Aggregates.max(Var.of(name));
+        return Aggregates.max(varName(name));
     }
 
     /**
@@ -237,7 +238,7 @@ public class Graql {
      * @param name the variable to find the maximum of
      */
     public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> min(String name) {
-        return Aggregates.min(Var.of(name));
+        return Aggregates.min(varName(name));
     }
 
     /**
@@ -245,7 +246,7 @@ public class Graql {
      * @param name the variable to find the mean of
      */
     public static Aggregate<Answer, Optional<Double>> mean(String name) {
-        return Aggregates.mean(Var.of(name));
+        return Aggregates.mean(varName(name));
     }
 
     /**
@@ -253,7 +254,7 @@ public class Graql {
      * @param name the variable to find the median of
      */
     public static Aggregate<Answer, Optional<Number>> median(String name) {
-        return Aggregates.median(Var.of(name));
+        return Aggregates.median(varName(name));
     }
 
     /**
@@ -261,7 +262,7 @@ public class Graql {
      * @param name the variable to find the standard deviation of
      */
     public static Aggregate<Answer, Optional<Double>> std(String name) {
-        return Aggregates.std(Var.of(name));
+        return Aggregates.std(varName(name));
     }
 
     /**
@@ -280,7 +281,7 @@ public class Graql {
      */
     public static <T> Aggregate<Answer, Map<Concept, T>> group(
             String varName, Aggregate<? super Answer, T> aggregate) {
-        return Aggregates.group(Var.of(varName), aggregate);
+        return Aggregates.group(varName(varName), aggregate);
     }
 
     /**
@@ -440,5 +441,13 @@ public class Graql {
     public static ValuePredicate contains(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.contains(var.admin());
+    }
+
+    public static Var varName(String value) {
+        return Patterns.varName(value);
+    }
+
+    public static Var anonVarName() {
+        return Patterns.varName(UUID.randomUUID().toString());
     }
 }

@@ -21,6 +21,7 @@ package ai.grakn.test.graql.graql;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -124,7 +125,7 @@ public class MatchQueryTest {
     @Test
     public void whenSelectingVarNotInQuery_Throw() {
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Var.of("x")));
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.varName("x")));
         graph.graql().match(var()).select("x").execute();
     }
 

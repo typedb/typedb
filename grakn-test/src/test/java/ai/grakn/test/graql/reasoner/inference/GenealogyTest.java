@@ -20,9 +20,9 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graphs.GenealogyGraph;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
@@ -499,7 +499,7 @@ public class GenealogyTest {
         boolean isOk = true;
         Iterator<Answer> it =  answers.iterator();
         while (it.hasNext() && isOk){
-            Concept c = it.next().get(Var.of(var));
+            Concept c = it.next().get(Graql.varName(var));
             isOk = c.asResource().getValue().equals(value);
         }
         return isOk;

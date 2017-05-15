@@ -136,8 +136,8 @@ public class AtomicTest {
         Multimap<RoleType, Var> roleMap = roleSetMap(atom.getRoleVarTypeMap());
 
         ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("item-owner"), Var.of("z"),
-                graph.getRoleType("owned-item"), Var.of("y"));
+                graph.getRoleType("item-owner"), Graql.varName("z"),
+                graph.getRoleType("owned-item"), Graql.varName("y"));
         assertEquals(correctRoleMap, roleMap);
     }
 
@@ -150,8 +150,8 @@ public class AtomicTest {
 
         Multimap<RoleType, Var> roleMap = roleSetMap(atom.getRoleVarTypeMap());
         ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("item-owner"), Var.of("z"),
-                graph.getRoleType("role"), Var.of("y"));
+                graph.getRoleType("item-owner"), Graql.varName("z"),
+                graph.getRoleType("role"), Graql.varName("y"));
         assertEquals(correctRoleMap, roleMap);
     }
 
@@ -164,9 +164,9 @@ public class AtomicTest {
         Multimap<RoleType, Var> roleMap = roleSetMap(atom2.getRoleVarTypeMap());
 
         ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("seller"), Var.of("x"),
-                graph.getRoleType("transaction-item"), Var.of("y"),
-                graph.getRoleType("buyer"), Var.of("z"));
+                graph.getRoleType("seller"), Graql.varName("x"),
+                graph.getRoleType("transaction-item"), Graql.varName("y"),
+                graph.getRoleType("buyer"), Graql.varName("z"));
         assertEquals(correctRoleMap, roleMap);
     }
 
@@ -179,9 +179,9 @@ public class AtomicTest {
         Multimap<RoleType, Var> roleMap = roleSetMap(atom.getRoleVarTypeMap());
 
         ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("seller"), Var.of("x"),
-                graph.getRoleType("role"), Var.of("y"),
-                graph.getRoleType("buyer"), Var.of("z"));
+                graph.getRoleType("seller"), Graql.varName("x"),
+                graph.getRoleType("role"), Graql.varName("y"),
+                graph.getRoleType("buyer"), Graql.varName("z"));
         assertEquals(correctRoleMap, roleMap);
     }
 
@@ -193,9 +193,9 @@ public class AtomicTest {
         Multimap<RoleType, Var> roleMap = roleSetMap(query.getAtom().getRoleVarTypeMap());
 
         ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("role"), Var.of("x"),
-                graph.getRoleType("seller"), Var.of("y"),
-                graph.getRoleType("buyer"), Var.of("y"));
+                graph.getRoleType("role"), Graql.varName("x"),
+                graph.getRoleType("seller"), Graql.varName("y"),
+                graph.getRoleType("buyer"), Graql.varName("y"));
         assertEquals(correctRoleMap, roleMap);
     }
 
@@ -207,9 +207,9 @@ public class AtomicTest {
         Multimap<RoleType, Var> roleMap = roleSetMap(query.getAtom().getRoleVarTypeMap());
 
         ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("transaction-item"), Var.of("x"),
-                graph.getRoleType("role"), Var.of("y"),
-                graph.getRoleType("buyer"), Var.of("y"));
+                graph.getRoleType("transaction-item"), Graql.varName("x"),
+                graph.getRoleType("role"), Graql.varName("y"),
+                graph.getRoleType("buyer"), Graql.varName("y"));
         assertEquals(correctRoleMap, roleMap);
     }
 
@@ -224,11 +224,11 @@ public class AtomicTest {
         Multimap<RoleType, Var> roleMap2 = roleSetMap(relation2.getRoleVarTypeMap());
 
         ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("role"), Var.of("p"),
-                graph.getRoleType("son"), Var.of("gc"));
+                graph.getRoleType("role"), Graql.varName("p"),
+                graph.getRoleType("son"), Graql.varName("gc"));
         ImmutableSetMultimap<RoleType, Var> correctRoleMap2 = ImmutableSetMultimap.of(
-                graph.getRoleType("role"), Var.of("p"),
-                graph.getRoleType("father"), Var.of("gp"));
+                graph.getRoleType("role"), Graql.varName("p"),
+                graph.getRoleType("father"), Graql.varName("gp"));
         assertEquals(correctRoleMap, roleMap);
         assertEquals(correctRoleMap2, roleMap2);
     }
@@ -239,9 +239,9 @@ public class AtomicTest {
         String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity;}";
         Relation relation = (Relation) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         ImmutableSetMultimap<RoleType, Var> roleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("role1"), Var.of("x"),
-                graph.getRoleType("role"), Var.of("y"),
-                graph.getRoleType("role"), Var.of("z"));
+                graph.getRoleType("role1"), Graql.varName("x"),
+                graph.getRoleType("role"), Graql.varName("y"),
+                graph.getRoleType("role"), Graql.varName("z"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarTypeMap()));
     }
 
@@ -251,9 +251,9 @@ public class AtomicTest {
         String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity3;}";
         Relation relation = (Relation) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         ImmutableSetMultimap<RoleType, Var> roleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("role1"), Var.of("x"),
-                graph.getRoleType("role"), Var.of("y"),
-                graph.getRoleType("role"), Var.of("z"));
+                graph.getRoleType("role1"), Graql.varName("x"),
+                graph.getRoleType("role"), Graql.varName("y"),
+                graph.getRoleType("role"), Graql.varName("z"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarTypeMap()));
     }
 
@@ -279,8 +279,8 @@ public class AtomicTest {
         String relationString = "{($x, $y) isa knows;}";
         Relation relation = (Relation) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         ImmutableSetMultimap<RoleType, Var> roleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("friend"), Var.of("x"),
-                graph.getRoleType("friend"), Var.of("y"));
+                graph.getRoleType("friend"), Graql.varName("x"),
+                graph.getRoleType("friend"), Graql.varName("y"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarTypeMap()));
     }
 
@@ -611,13 +611,13 @@ public class AtomicTest {
         Unifier unifier2 = specialisedAtom2.getUnifier(atom);
         Unifier correctUnifier = new UnifierImpl(
                 ImmutableMap.of(
-                    Var.of("p"), Var.of("y"),
-                    Var.of("c"), Var.of("x"))
+                    Graql.varName("p"), Graql.varName("y"),
+                    Graql.varName("c"), Graql.varName("x"))
         );
         Unifier correctUnifier2 = new UnifierImpl(
                 ImmutableMap.of(
-                    Var.of("p"), Var.of("x"),
-                    Var.of("c"), Var.of("y"))
+                    Graql.varName("p"), Graql.varName("x"),
+                    Graql.varName("c"), Graql.varName("y"))
         );
         assertTrue(unifier.toString(), unifier.getMappings().containsAll(correctUnifier.getMappings()));
         assertTrue(unifier2.toString(), unifier2.getMappings().containsAll(correctUnifier2.getMappings()));
@@ -633,13 +633,13 @@ public class AtomicTest {
 
         Unifier unifiers = childAtom.getUnifier(parentAtom);
         Unifier correctUnifiers = new UnifierImpl(
-                ImmutableMap.of(Var.of("5b7a70db-2256-4d03-8fa4-2621a354899e"), Var.of("x"))
+                ImmutableMap.of(Graql.varName("5b7a70db-2256-4d03-8fa4-2621a354899e"), Graql.varName("x"))
         );
         assertTrue(unifiers.getMappings().containsAll(correctUnifiers.getMappings()));
 
         Unifier reverseUnifiers = parentAtom.getUnifier(childAtom);
         Unifier correctReverseUnifiers = new UnifierImpl(
-                ImmutableMap.of(Var.of("x"), Var.of("5b7a70db-2256-4d03-8fa4-2621a354899e"))
+                ImmutableMap.of(Graql.varName("x"), Graql.varName("5b7a70db-2256-4d03-8fa4-2621a354899e"))
         );
         assertTrue(
                 "Unifiers not in subset relation:\n" + correctReverseUnifiers.toString() + "\n" + reverseUnifiers.toString(),
@@ -663,7 +663,7 @@ public class AtomicTest {
         Multimap<RoleType, Var> roleMap = roleSetMap(headAtom.getRoleVarTypeMap());
         Collection<Var> wifeEntry = roleMap.get(graph.getRoleType("wife"));
         assertEquals(wifeEntry.size(), 1);
-        assertEquals(wifeEntry.iterator().next(), Var.of("x"));
+        assertEquals(wifeEntry.iterator().next(), Graql.varName("x"));
     }
 
     @Test
@@ -676,7 +676,7 @@ public class AtomicTest {
         Pair<Atom, Unifier> rewrite = childAtom.rewriteToUserDefinedWithUnifiers();
         Atom rewrittenAtom = rewrite.getKey();
         Unifier unifier = rewrite.getValue();
-        Set<Var> unifiedVariables = Sets.newHashSet(Var.of("x1"), Var.of("x2"));
+        Set<Var> unifiedVariables = Sets.newHashSet(Graql.varName("x1"), Graql.varName("x2"));
         assertTrue(rewrittenAtom.isUserDefinedName());
         assertTrue(
                 "Variables not in subset relation:\n" + unifier.keySet().toString() + "\n" + unifiedVariables.toString(),
@@ -697,10 +697,10 @@ public class AtomicTest {
         Unifier unifiers = childAtom.getUnifier(parentAtom);
         Unifier correctUnifiers = new UnifierImpl(
                 ImmutableMap.of(
-                    Var.of("x1"), Var.of("x"),
-                    Var.of("x2"), Var.of("y"),
-                    Var.of("r1"), Var.of("R1"),
-                    Var.of("r2"), Var.of("R2"))
+                    Graql.varName("x1"), Graql.varName("x"),
+                    Graql.varName("x2"), Graql.varName("y"),
+                    Graql.varName("r1"), Graql.varName("R1"),
+                    Graql.varName("r2"), Graql.varName("R2"))
         );
         assertTrue(
                 "Unifiers not in subset relation:\n" + correctUnifiers.toString() + "\n" + unifiers.toString(),
@@ -721,10 +721,10 @@ public class AtomicTest {
         Unifier unifiers = childAtom.getUnifier(parentAtom);
         Unifier correctUnifiers = new UnifierImpl(
                 ImmutableMap.of(
-                    Var.of("x1"), Var.of("x"),
-                    Var.of("x2"), Var.of("y"),
-                    Var.of("r1"), Var.of("R1"),
-                    Var.of("r2"), Var.of("R2"))
+                    Graql.varName("x1"), Graql.varName("x"),
+                    Graql.varName("x2"), Graql.varName("y"),
+                    Graql.varName("r1"), Graql.varName("R1"),
+                    Graql.varName("r2"), Graql.varName("R2"))
         );
         assertTrue(
                 "Unifiers not in subset relation:\n" + correctUnifiers.toString() + "\n" + unifiers.toString(),
@@ -744,8 +744,8 @@ public class AtomicTest {
 
         rule.unify(parent);
         Set<Var> vars = rule.getHead().getAtom().getVarNames();
-        Set<Var> correctVars = Sets.newHashSet(Var.of("r"), Var.of("a"), Var.of("x"));
-        assertTrue(!vars.contains(Var.of("")));
+        Set<Var> correctVars = Sets.newHashSet(Graql.varName("r"), Graql.varName("a"), Graql.varName("x"));
+        assertTrue(!vars.contains(Graql.varName("")));
         assertTrue(
                 "Variables not in subset relation:\n" + correctVars.toString() + "\n" + vars.toString(),
                 vars.containsAll(correctVars)

@@ -165,8 +165,8 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "unchecked"})
 public class MatchQueryTest {
 
-    private final Var x = Var.of("x");
-    private final Var y = Var.of("y");
+    private final Var x = Graql.varName("x");
+    private final Var y = Graql.varName("y");
 
     private QueryBuilder qb;
 
@@ -815,7 +815,7 @@ public class MatchQueryTest {
     public void whenMatchingHas_ThenTheResultOnlyContainsTheExpectedVariables() {
         MatchQuery query = qb.match(var("x").has("name"));
         for (Answer result : query) {
-            assertEquals(result.keySet(), ImmutableSet.of(Var.of("x")));
+            assertEquals(result.keySet(), ImmutableSet.of(Graql.varName("x")));
         }
     }
 

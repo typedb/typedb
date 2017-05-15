@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -71,15 +72,15 @@ import static org.mockito.Mockito.mock;
 
 public class GraqlTraversalTest {
 
-    private static final Var a = Var.of("a");
-    private static final Var b = Var.of("b");
-    private static final Var c = Var.of("c");
-    private static final Var x = Var.of("x");
-    private static final Var y = Var.of("y");
-    private static final Var z = Var.of("z");
-    private static final Var xx = Var.of("xx");
-    private static final Var yy = Var.of("yy");
-    private static final Var zz = Var.of("zz");
+    private static final Var a = Graql.varName("a");
+    private static final Var b = Graql.varName("b");
+    private static final Var c = Graql.varName("c");
+    private static final Var x = Graql.varName("x");
+    private static final Var y = Graql.varName("y");
+    private static final Var z = Graql.varName("z");
+    private static final Var xx = Graql.varName("xx");
+    private static final Var yy = Graql.varName("yy");
+    private static final Var zz = Graql.varName("zz");
     private static final Fragment xId = id(x, ConceptId.of("Titanic"));
     private static final Fragment xValue = value(x, eq("hello").admin());
     private static final Fragment yId = id(y, ConceptId.of("movie"));
@@ -146,9 +147,9 @@ public class GraqlTraversalTest {
 
     @Test
     public void testCheckDistinctCastingEarlyFaster() {
-        Var c1 = Var.of("c1");
-        Var c2 = Var.of("c2");
-        Var r = Var.of("r");
+        Var c1 = Graql.varName("c1");
+        Var c2 = Graql.varName("c2");
+        Var r = Graql.varName("r");
 
         Fragment neq = Fragments.neq(c2, c1);
         Fragment inRolePlayer = inRolePlayer(x, c1);

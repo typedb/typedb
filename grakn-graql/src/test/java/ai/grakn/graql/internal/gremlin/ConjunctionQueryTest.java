@@ -56,8 +56,8 @@ public class ConjunctionQueryTest {
     private VarPattern resourceTypeWithSubTypes = Graql.label(resourceTypeWithSubTypesLabel);
     private String literalValue = "Bob";
     private GraknGraph graph;
-    private Var x = Var.of("x");
-    private Var y = Var.of("y");
+    private Var x = Graql.varName("x");
+    private Var y = Graql.varName("y");
 
     @Before
     public void setUp() {

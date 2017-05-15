@@ -19,6 +19,7 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -140,7 +141,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     protected Var extractValueVariableName(VarPatternAdmin var){
         HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         VarPatternAdmin resVar = prop.getResource();
-        return resVar.isUserDefinedName()? resVar.getVarName() : Var.of("");
+        return resVar.isUserDefinedName()? resVar.getVarName() : Graql.varName("");
     }
 
     @Override
@@ -204,7 +205,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
         Unifier unifier = new UnifierImpl();
         unifier.addMapping(this.getValueVariable(), parentAtom.getVarName());
-        if (parentAtom.containsVar(this.getVarName())) unifier.addMapping(this.getVarName(), Var.anon());
+        if (parentAtom.containsVar(this.getVarName())) unifier.addMapping(this.getVarName(), Graql.anonVarName());
         return unifier;
     }
 

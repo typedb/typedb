@@ -127,7 +127,7 @@ public class Relation extends TypeAtom {
     @Override
     protected Var extractValueVariableName(VarPatternAdmin var) {
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
-        return isaProp != null ? isaProp.getType().getVarName() : Var.of("");
+        return isaProp != null ? isaProp.getType().getVarName() : Graql.varName("");
     }
 
     @Override
@@ -344,7 +344,7 @@ public class Relation extends TypeAtom {
     public Relation addType(Type type) {
         typeId = type.getId();
         Var typeVariable = getValueVariable().getValue().isEmpty() ?
-                Var.of("rel-" + UUID.randomUUID().toString()) : getValueVariable();
+                Graql.varName("rel-" + UUID.randomUUID().toString()) : getValueVariable();
         setPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin(), getParentQuery()));
         atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
         setValueVariable(typeVariable);
@@ -566,7 +566,7 @@ public class Relation extends TypeAtom {
                 });
 
         //pattern mutation!
-        atomPattern = constructRelationVar(isUserDefinedName() ? varName : Var.of(""), getValueVariable(), rolePlayerMappings);
+        atomPattern = constructRelationVar(isUserDefinedName() ? varName : Graql.varName(""), getValueVariable(), rolePlayerMappings);
         relationPlayers = null;
         return roleVarTypeMap;
     }
@@ -698,7 +698,7 @@ public class Relation extends TypeAtom {
 
     @Override
     public Atom rewriteToUserDefined(){
-        VarPattern newVar = Graql.var(Var.anon());
+        VarPattern newVar = Graql.var(Graql.anonVarName());
         VarPattern relVar = getPattern().asVar().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.getType()))
                 .orElse(newVar);
@@ -722,14 +722,14 @@ public class Relation extends TypeAtom {
     @Override
     public Pair<Atom, Unifier> rewriteToUserDefinedWithUnifiers() {
         Unifier unifier = new UnifierImpl();
-        VarPattern newVar = Graql.var(Var.anon());
+        VarPattern newVar = Graql.var(Graql.anonVarName());
         VarPattern relVar = getPattern().asVar().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.getType()))
                 .orElse(newVar);
 
         for (RelationPlayer c: getRelationPlayers()) {
             VarPatternAdmin rolePlayer = c.getRolePlayer();
-            Var rolePlayerVarName = Var.anon();
+            Var rolePlayerVarName = Graql.anonVarName();
             unifier.addMapping(rolePlayer.getVarName(), rolePlayerVarName);
             VarPatternAdmin roleType = c.getRoleType().orElse(null);
             if (roleType != null) {

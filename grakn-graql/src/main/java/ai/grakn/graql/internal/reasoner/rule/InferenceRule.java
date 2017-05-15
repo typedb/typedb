@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -199,7 +200,7 @@ public class InferenceRule {
             //resolve captures
             Set<Var> varIntersection = Sets.intersection(body.getVarNames(), parentAtom.getVarNames());
             varIntersection = Sets.difference(varIntersection, rewriteUnifiers.keySet());
-            varIntersection.forEach(var -> body.unify(var, Var.anon()));
+            varIntersection.forEach(var -> body.unify(var, Graql.anonVarName()));
         }
     }
 

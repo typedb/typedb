@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -269,9 +270,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     private void exchangeRelVarNames(Var from, Var to) {
-        unify(to, Var.of("temp"));
+        unify(to, Graql.varName("temp"));
         unify(from, to);
-        unify(Var.of("temp"), from);
+        unify(Graql.varName("temp"), from);
     }
 
     @Override
@@ -353,7 +354,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         getVarNames().stream().filter(ReasonerUtils::isCaptured)
                 .forEach(cap -> {
                     Var old = uncapture(cap);
-                    Var fresh = Var.anon();
+                    Var fresh = Graql.anonVarName();
                     unify(cap, fresh);
                     newMappings.addMapping(old, fresh);
                 });

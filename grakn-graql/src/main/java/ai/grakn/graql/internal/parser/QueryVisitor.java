@@ -675,7 +675,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     private Var getVariable(TerminalNode variable) {
         // Remove '$' prefix
-        return Var.of(variable.getText().substring(1));
+        return Graql.varName(variable.getText().substring(1));
     }
 
     private String getRegex(TerminalNode string) {

@@ -19,7 +19,6 @@
 
 package ai.grakn.graql;
 
-import java.util.UUID;
 import java.util.function.Function;
 
 /**
@@ -28,13 +27,6 @@ import java.util.function.Function;
  * @author Felix Chapman
  */
 public interface Var {
-    static Var of(String value) {
-        return new VarImpl(value);
-    }
-
-    static Var anon() {
-        return new VarImpl(UUID.randomUUID().toString());
-    }
 
     /**
      * Get the string name of the variable (without prefixed "$")

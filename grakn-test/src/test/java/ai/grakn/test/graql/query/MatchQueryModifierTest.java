@@ -19,9 +19,9 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.matcher.MovieMatchers;
 import org.junit.Before;
@@ -167,7 +167,7 @@ public class MatchQueryModifierTest {
         MatchQuery query = qb.match(var("x").isa("movie"));
 
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Var.of("y")));
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.varName("y")));
 
         query.select("y");
     }

@@ -22,8 +22,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.matcher.MovieMatchers;
@@ -82,8 +82,8 @@ public class AggregateTest {
 
         groups.forEach((movie, results) -> {
             results.forEach(result -> {
-                assertEquals(movie, result.get(Var.of("x")));
-                assertEquals(rule.graph().getEntityType("person"), result.get(Var.of("y")).asInstance().type());
+                assertEquals(movie, result.get(Graql.varName("x")));
+                assertEquals(rule.graph().getEntityType("person"), result.get(Graql.varName("y")).asInstance().type());
             });
         });
     }
