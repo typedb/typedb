@@ -142,7 +142,7 @@ public class CSVMigratorTest {
         declareAndLoad(template, "pets/data/pets.quotes");
 
         GraknGraph graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
-        assertEquals(1, graph.getEntityType("pet").instances().size());
+        assertEquals(8, graph.getEntityType("pet").instances().size());
     }
 
     @Ignore //Ignored because this feature is not yet supported
