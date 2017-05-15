@@ -370,7 +370,7 @@ public class BatchMutatorClient {
     }
 
     private String getPostParams(){
-        return TASK_CLASS_NAME_PARAMETER + "=ai.grakn.engine.loader.LoaderTask&" +
+        return TASK_CLASS_NAME_PARAMETER + "=ai.grakn.engine.loader.MutatorTask&" +
                 TASK_RUN_AT_PARAMETER + "=" + new Date().getTime() + "&" +
                 LIMIT_PARAM + "=" + 10000 + "&" +
                 TASK_CREATOR_PARAMETER + "=" + BatchMutatorClient.class.getName();
