@@ -22,7 +22,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -54,7 +54,7 @@ public class AtomicFactory {
      * @param parent query the created atoms should belong to
      * @return set of atoms
      */
-    public static Set<Atomic> createAtomSet(Conjunction<VarAdmin> pattern, ReasonerQuery parent) {
+    public static Set<Atomic> createAtomSet(Conjunction<VarPatternAdmin> pattern, ReasonerQuery parent) {
         Set<Atomic> atoms = new HashSet<>();
         pattern.getVars().stream()
                 .flatMap(var -> var.getProperties()

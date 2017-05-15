@@ -24,7 +24,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
@@ -49,7 +49,7 @@ public abstract class AtomBase implements Atomic {
     protected PatternAdmin atomPattern;
     private ReasonerQuery parent = null;
 
-    protected AtomBase(VarAdmin pattern, ReasonerQuery par) {
+    protected AtomBase(VarPatternAdmin pattern, ReasonerQuery par) {
         this.atomPattern = pattern;
         this.varName = pattern.getVarName();
         this.parent = par;

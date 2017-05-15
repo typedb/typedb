@@ -29,7 +29,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.ReasonerUtils;
@@ -87,7 +87,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
 
-    protected ReasonerQueryImpl(Conjunction<VarAdmin> pattern, GraknGraph graph) {
+    protected ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
         this.graph = graph;
         atomSet.addAll(AtomicFactory.createAtomSet(pattern, this));
         inferTypes();

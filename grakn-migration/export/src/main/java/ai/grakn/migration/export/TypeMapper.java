@@ -22,7 +22,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 
 import static ai.grakn.graql.Graql.var;
 
@@ -37,8 +37,8 @@ public class TypeMapper {
      * @param type type to be mapped
      * @return Graql var equivalent to the given type
      */
-    public static Var map(Type type) {
-        Var mapped = formatBase(type);
+    public static VarPattern map(Type type) {
+        VarPattern mapped = formatBase(type);
         if (type.isRelationType()) {
             mapped = map(mapped, type.asRelationType());
         } else if (type.isResourceType()) {
@@ -49,32 +49,32 @@ public class TypeMapper {
     }
 
     /**
-     * Map a RelationType to a Var with all of the relates edges
+     * Map a {@link RelationType} to a {@link VarPattern} with all of the relates edges
      * @param var holder var with basic information
      * @param relationType type to be mapped
      * @return var with RelationType specific metadata
      */
-    private static Var map(Var var, RelationType relationType) {
+    private static VarPattern map(VarPattern var, RelationType relationType) {
         return relates(var, relationType);
     }
 
     /**
-     * Map a ResourceType to a Var with the datatype
+     * Map a {@link ResourceType} to a {@link VarPattern} with the datatype
      * @param var holder var with basic information
      * @param resourceType type to be mapped
      * @return var with ResourceType specific metadata
      */
-    private static Var map(Var var, ResourceType resourceType) {
+    private static VarPattern map(VarPattern var, ResourceType resourceType) {
         return datatype(var, resourceType);
     }
 
     /**
      * Create a var with the information underlying all Types
      * @param type type to be mapped
-     * @return Var containing basic information about the given type
+     * @return {@link VarPattern} containing basic information about the given type
      */
-    private static Var formatBase(Type type) {
-        Var var = var().label(type.getLabel());
+    private static VarPattern formatBase(Type type) {
+        VarPattern var = var().label(type.getLabel());
 
         Type superType = type.superType();
         if (type.superType() != null) {
@@ -92,7 +92,7 @@ public class TypeMapper {
      * @param var var to be marked
      * @param type type from which metadata extracted
      */
-    private static Var isAbstract(Var var, Type type) {
+    private static VarPattern isAbstract(VarPattern var, Type type) {
        return type.isAbstract() ? var.isAbstract() : var;
     }
 
@@ -102,7 +102,7 @@ public class TypeMapper {
      * @param type type from which metadata extracted
      * @return var with appropriate plays edges
      */
-    private static Var plays(Var var, Type type) {
+    private static VarPattern plays(VarPattern var, Type type) {
         for(RoleType role:type.plays()){
             var = var.plays(Graql.label(role.getLabel()));
         }
@@ -115,7 +115,7 @@ public class TypeMapper {
      * @param type type from which metadata extracted
      * @return var with appropriate relates edges
      */
-    private static Var relates(Var var, RelationType type){
+    private static VarPattern relates(VarPattern var, RelationType type){
         for(RoleType role:type.relates()){
             var = var.relates(Graql.label(role.getLabel()));
         }
@@ -128,7 +128,7 @@ public class TypeMapper {
      * @param type type from which metadata extracted
      * @return var with appropriate datatype
      */
-    private static Var datatype(Var var, ResourceType type) {
+    private static VarPattern datatype(VarPattern var, ResourceType type) {
         ResourceType.DataType dataType = type.getDataType();
         if (dataType != null) {
             return var.datatype(dataType);

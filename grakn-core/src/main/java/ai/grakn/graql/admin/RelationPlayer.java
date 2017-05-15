@@ -30,17 +30,17 @@ public interface RelationPlayer {
     /**
      * @return the role type, if specified
      */
-    Optional<VarAdmin> getRoleType();
+    Optional<VarPatternAdmin> getRoleType();
 
     /**
      * @return the role player
      */
-    VarAdmin getRolePlayer();
+    VarPatternAdmin getRolePlayer();
 
-    // TODO: If `VarAdmin#setVarName` is removed, this may no longer be necessary
+    // TODO: If `VarPatternAdmin#setVarName` is removed, this may no longer be necessary
     /**
      * Set the role player, returning a new {@link RelationPlayer} with that role player set
      */
     @CheckReturnValue
-    RelationPlayer setRolePlayer(VarAdmin rolePlayer);
+    RelationPlayer setRolePlayer(VarPatternAdmin rolePlayer);
 }

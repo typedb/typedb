@@ -27,7 +27,7 @@ import ai.grakn.graql.admin.DeleteQueryAdmin;
  * A {@code DeleteQuery} is built from a {@code MatchQuery} and will perform a delete operation for every result of
  * the @{code MatchQuery}.
  * <p>
- * The delete operation to perform is based on what {@code Var} objects are provided to it. If only variable names
+ * The delete operation to perform is based on what {@link VarPattern} objects are provided to it. If only variable names
  * are provided, then the delete query will delete the concept bound to each given variable name. If property flags
  * are provided, e.g. {@code var("x").has("name")} then only those properties are deleted.
  *

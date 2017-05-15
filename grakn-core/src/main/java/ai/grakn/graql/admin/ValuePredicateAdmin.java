@@ -66,7 +66,7 @@ public interface ValuePredicateAdmin extends ValuePredicate {
      * Get the inner variable that this predicate refers to, if one is present
      * @return the inner variable that this predicate refers to, if one is present
      */
-    Optional<VarAdmin> getInnerVar();
+    Optional<VarPatternAdmin> getInnerVar();
 
     /**
      * Apply the predicate to the gremlin traversal, so the traversal will filter things that don't meet the predicate

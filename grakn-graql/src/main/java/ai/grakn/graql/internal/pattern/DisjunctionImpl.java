@@ -22,7 +22,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -45,9 +45,9 @@ class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
     }
 
     @Override
-    public Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm() {
+    public Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm() {
         // Concatenate all disjunctions into one big disjunction
-        Set<Conjunction<VarAdmin>> dnf = patterns.stream()
+        Set<Conjunction<VarPatternAdmin>> dnf = patterns.stream()
                 .flatMap(p -> p.getDisjunctiveNormalForm().getPatterns().stream())
                 .collect(toSet());
 

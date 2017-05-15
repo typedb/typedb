@@ -78,7 +78,7 @@ public class Graql {
      * @param vars an array of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
-    public static InsertQuery insert(Var... vars) {
+    public static InsertQuery insert(VarPattern... vars) {
         return withoutGraph().insert(vars);
     }
 
@@ -86,7 +86,7 @@ public class Graql {
      * @param vars a collection of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
-    public static InsertQuery insert(Collection<? extends Var> vars) {
+    public static InsertQuery insert(Collection<? extends VarPattern> vars) {
         return withoutGraph().insert(vars);
     }
 
@@ -138,7 +138,7 @@ public class Graql {
      * @param name the name of the variable
      * @return a new query variable
      */
-    public static Var var(String name) {
+    public static VarPattern var(String name) {
         return var(VarName.of(name));
     }
 
@@ -146,14 +146,14 @@ public class Graql {
      * @param name the name of the variable
      * @return a new query variable
      */
-    public static Var var(VarName name) {
+    public static VarPattern var(VarName name) {
         return Patterns.var(Objects.requireNonNull(name));
     }
 
     /**
      * @return a new, anonymous query variable
      */
-    public static Var var() {
+    public static VarPattern var() {
         return Patterns.var();
     }
 
@@ -161,7 +161,7 @@ public class Graql {
      * @param label the label of a concept
      * @return a query variable that identifies a concept by label
      */
-    public static Var label(TypeLabel label) {
+    public static VarPattern label(TypeLabel label) {
         return var().label(label);
     }
 
@@ -169,7 +169,7 @@ public class Graql {
      * @param label the label of a concept
      * @return a query variable that identifies a concept by label
      */
-    public static Var label(String label) {
+    public static VarPattern label(String label) {
         return var().label(label);
     }
 
@@ -320,7 +320,7 @@ public class Graql {
      * @param var the variable representing a resource
      * @return a predicate that is true when a value equals the specified value
      */
-    public static ValuePredicate eq(Var var) {
+    public static ValuePredicate eq(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.eq(var.admin());
     }
@@ -338,7 +338,7 @@ public class Graql {
      * @param var the variable representing a resource
      * @return a predicate that is true when a value does not equal the specified value
      */
-    public static ValuePredicate neq(Var var) {
+    public static ValuePredicate neq(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.neq(var.admin());
     }
@@ -356,7 +356,7 @@ public class Graql {
      * @param var the variable representing a resource
      * @return a predicate that is true when a value is strictly greater than the specified value
      */
-    public static ValuePredicate gt(Var var) {
+    public static ValuePredicate gt(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.gt(var.admin());
     }
@@ -374,7 +374,7 @@ public class Graql {
      * @param var the variable representing a resource
      * @return a predicate that is true when a value is greater or equal to the specified value
      */
-    public static ValuePredicate gte(Var var) {
+    public static ValuePredicate gte(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.gte(var.admin());
     }
@@ -392,7 +392,7 @@ public class Graql {
      * @param var the variable representing a resource
      * @return a predicate that is true when a value is strictly less than the specified value
      */
-    public static ValuePredicate lt(Var var) {
+    public static ValuePredicate lt(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.lt(var.admin());
     }
@@ -410,7 +410,7 @@ public class Graql {
      * @param var the variable representing a resource
      * @return a predicate that is true when a value is less or equal to the specified value
      */
-    public static ValuePredicate lte(Var var) {
+    public static ValuePredicate lte(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.lte(var.admin());
     }
@@ -437,7 +437,7 @@ public class Graql {
      * @param var the variable representing a resource
      * @return a predicate that returns true when a value contains the given substring
      */
-    public static ValuePredicate contains(Var var) {
+    public static ValuePredicate contains(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.contains(var.admin());
     }

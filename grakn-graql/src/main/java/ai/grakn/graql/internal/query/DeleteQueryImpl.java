@@ -26,7 +26,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableCollection;
@@ -44,14 +44,14 @@ import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
  * A DeleteQuery that will execute deletions for every result of a MatchQuery
  */
 class DeleteQueryImpl implements DeleteQueryAdmin {
-    private final ImmutableCollection<VarAdmin> deleters;
+    private final ImmutableCollection<VarPatternAdmin> deleters;
     private final MatchQueryAdmin matchQuery;
 
     /**
      * @param deleters a collection of variable patterns to delete
      * @param matchQuery a pattern to match and delete for each result
      */
-    DeleteQueryImpl(Collection<VarAdmin> deleters, MatchQuery matchQuery) {
+    DeleteQueryImpl(Collection<VarPatternAdmin> deleters, MatchQuery matchQuery) {
         if (deleters.isEmpty()) {
             throw new IllegalArgumentException(NO_PATTERNS.getMessage());
         }
@@ -89,7 +89,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     private void deleteResult(Answer result) {
-        for (VarAdmin deleter : deleters) {
+        for (VarPatternAdmin deleter : deleters) {
             Concept concept = result.get(deleter.getVarName());
 
             if (concept == null) {
@@ -106,7 +106,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
      * @param result the concept that matches the variable in the graph
      * @param deleter the pattern to delete on the concept
      */
-    private void deletePattern(Concept result, VarAdmin deleter) {
+    private void deletePattern(Concept result, VarPatternAdmin deleter) {
         if (!deleter.getProperties().findAny().isPresent()) {
             // Delete whole concept if nothing specified to delete
             result.delete();
@@ -124,7 +124,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public Collection<VarAdmin> getDeleters() {
+    public Collection<VarPatternAdmin> getDeleters() {
         return deleters;
     }
 

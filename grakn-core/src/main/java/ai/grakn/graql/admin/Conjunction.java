@@ -34,5 +34,5 @@ public interface Conjunction<T extends PatternAdmin> extends PatternAdmin {
     Set<T> getPatterns();
 
     @Override
-    Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm();
+    Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm();
 }

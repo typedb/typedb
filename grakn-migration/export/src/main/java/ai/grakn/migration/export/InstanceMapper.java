@@ -25,7 +25,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 
 import java.util.Map;
 import java.util.Set;
@@ -45,8 +45,8 @@ public class InstanceMapper {
      * @param instance instance to be mapped
      * @return Graql representation of given instance
      */
-    public static Var map(Instance instance){
-        Var mapped = var();
+    public static VarPattern map(Instance instance){
+        VarPattern mapped = var();
         if(instance.isEntity()){
             mapped = map(instance.asEntity());
         } else if(instance.isResource()){
@@ -61,12 +61,12 @@ public class InstanceMapper {
     }
 
     /**
-     * Map a Entity to a Var
+     * Map a {@link Entity} to a {@link VarPattern}
      * This includes mapping the instance itself, its id and any has relations
      * @param entity entity to be mapped
      * @return var patterns representing given instance
      */
-    private static Var map(Entity entity){
+    private static VarPattern map(Entity entity){
         return base(entity);
     }
 
@@ -77,12 +77,12 @@ public class InstanceMapper {
      * @return var patterns representing the given instance
      */
     //TODO resources on relations
-    private static Var map(Relation relation){
+    private static VarPattern map(Relation relation){
         if(relation.type().isImplicit()){
             return var();
         }
 
-        Var var = base(relation);
+        VarPattern var = base(relation);
         var = roleplayers(var, relation);
         return var;
     }
@@ -92,12 +92,12 @@ public class InstanceMapper {
      * @param resource resource to be mapped
      * @return var patterns representing the given instance
      */
-    private static Var map(Resource resource){
+    private static VarPattern map(Resource resource){
         if(isHasResourceResource(resource)){
             return var();
         }
 
-        Var var = base(resource);
+        VarPattern var = base(resource);
         var = var.val(resource.getValue());
         return var;
     }
@@ -108,8 +108,8 @@ public class InstanceMapper {
      * @return var patterns representing the given instance
      */
     //TODO hypothesis, conclusion, isMaterialize, etc
-    private static Var map(Rule rule){
-        Var var = base(rule);
+    private static VarPattern map(Rule rule){
+        VarPattern var = base(rule);
         var = var.lhs(and(rule.getLHS()));
         var = var.rhs(and(rule.getRHS()));
         return var;
@@ -121,7 +121,7 @@ public class InstanceMapper {
      * @param instance instance containing resource information
      * @return var pattern with resources
      */
-    private static Var hasResources(Var var, Instance instance){
+    private static VarPattern hasResources(VarPattern var, Instance instance){
         for(Resource resource:instance.resources()){
            var = var.has(resource.type().getLabel(), var().val(resource.getValue()));
         }
@@ -134,7 +134,7 @@ public class InstanceMapper {
      * @param relation relation that contains roleplayer data
      * @return var pattern with roleplayers
      */
-    private static  Var roleplayers(Var var, Relation relation){
+    private static VarPattern roleplayers(VarPattern var, Relation relation){
         for(Map.Entry<RoleType, Set<Instance>> entry:relation.allRolePlayers().entrySet()){
             RoleType role = entry.getKey();
             for (Instance instance : entry.getValue()) {
@@ -149,8 +149,8 @@ public class InstanceMapper {
      * @param instance instance to map
      * @return var patterns representing given instance
      */
-    private static  Var base(Instance instance){
-        Var var = var(instance.getId().getValue()).isa(Graql.label(instance.type().getLabel()));
+    private static VarPattern base(Instance instance){
+        VarPattern var = var(instance.getId().getValue()).isa(Graql.label(instance.type().getLabel()));
         return hasResources(var, instance);
     }
 

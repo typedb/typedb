@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom.predicate;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
@@ -41,7 +41,7 @@ public abstract class Predicate<T> extends AtomBase {
 
     protected T predicate;
 
-    protected Predicate(VarAdmin pattern, ReasonerQuery par) {
+    protected Predicate(VarPatternAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
         this.predicate = extractPredicate(pattern);
     }
@@ -112,5 +112,5 @@ public abstract class Predicate<T> extends AtomBase {
 
     public T getPredicate(){ return predicate;}
     public abstract String getPredicateValue();
-    protected abstract T extractPredicate(VarAdmin pattern);
+    protected abstract T extractPredicate(VarPatternAdmin pattern);
 }
