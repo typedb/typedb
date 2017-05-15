@@ -83,15 +83,6 @@ public class MacroTest {
     }
 
     @Test
-    public void longMacroTest(){
-        String template = "insert $x val @long(<value>);";
-        String expected = "insert $x0 val 4;";
-
-        assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
-        assertParseEquals(template, Collections.singletonMap("value", 4), expected);
-    }
-
-    @Test
     public void stringToUpperCaseTest(){
         String template = "insert $this has something @upper(<value>);";
         String expected = "insert $this0 has something \"CAMELCASEVALUE\";";

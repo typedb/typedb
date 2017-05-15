@@ -29,75 +29,71 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class IntMacroTest {
+public class LongMacroTest {
 
-    private final IntMacro intMacro = new IntMacro();
+    private final LongMacro longMacro = new LongMacro();
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void applyIntMacroToNoArguments_ExceptionIsThrown(){
+    public void applyLongMacroToNoArguments_ExceptionIsThrown(){
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage("Wrong number of arguments");
 
-        intMacro.apply(Collections.emptyList());
+        longMacro.apply(Collections.emptyList());
     }
 
     @Test
-    public void applyIntMacroToMoreThanOneArgument_ExceptionIsThrown(){
+    public void applyLongMacroToMoreThanOneArgument_ExceptionIsThrown(){
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage("Wrong number of arguments");
 
-        intMacro.apply(ImmutableList.of("1.0", "2.0"));
+        longMacro.apply(ImmutableList.of("1.0", "2.0"));
     }
 
     @Test
-    public void applyIntMacroToOneArgument_ItReturnsNonNull(){
-        assertNotNull(intMacro.apply(ImmutableList.of("1")));
+    public void applyLongMacroToOneArgument_ItReturnsNonNull(){
+        assertNotNull(longMacro.apply(ImmutableList.of("1")));
     }
 
     @Test
-    public void applyIntMacroToInvalidValue_ExceptionIsThrown(){
+    public void applyLongMacroToInvalidValue_ExceptionIsThrown(){
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(containsString("is not an integer"));
+        exception.expectMessage(containsString("is not a long"));
 
-        intMacro.apply(ImmutableList.of("invalid"));
+        longMacro.apply(ImmutableList.of("invalid"));
     }
 
     @Test
-    public void applyIntMacroToIntValue_ReturnsCorrectInt(){
-        assertEquals(new Integer(1), intMacro.apply(ImmutableList.of("1")));
+    public void applyLongMacroToIntValue_ReturnsCorrectLong(){
+        assertEquals(new Long(1), longMacro.apply(ImmutableList.of("1")));
     }
 
     @Test
-    public void applyIntMacroToDoubleValue_ExceptionIsThrown(){
+    public void applyLongMacroToVeryLongValue_ReturnsCorrectLong(){
+        assertEquals(new Long(123456789123456789L), longMacro.apply(ImmutableList.of("123456789123456789")));
+    }
+
+    @Test
+    public void applyLongMacroToDoubleValue_ExceptionIsThrown(){
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(containsString("is not an integer"));
+        exception.expectMessage(containsString("is not a long"));
 
-        intMacro.apply(ImmutableList.of("15.0"));
+        longMacro.apply(ImmutableList.of("15.0"));
     }
 
     @Test
-    public void applyIntMacroToIntValueWithUnderscores_ExceptionIsThrown(){
+    public void applyLongMacroToLongValueWithUnderscores_ExceptionIsThrown(){
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(containsString("is not an integer"));
+        exception.expectMessage(containsString("is not a long"));
 
-        intMacro.apply(ImmutableList.of("15_000"));
+        longMacro.apply(ImmutableList.of("15_000"));
     }
 
     @Test
-    public void whenUsingIntMacroInTemplate_ItExecutesCorrectly(){
-        String template = "insert $x val @int(<value>);";
-        String expected = "insert $x0 val 4;";
-
-        assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
-        assertParseEquals(template, Collections.singletonMap("value", 4), expected);
-    }
-
-    @Test
-    public void whenIntMacroIsWrongCase_ResolvedToLowerCase(){
-        String template = "insert $x val @InT(<value>);";
+    public void whenUsingLongMacroInTemplate_ItExecutesCorrectly(){
+        String template = "insert $x val @long(<value>);";
         String expected = "insert $x0 val 4;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
