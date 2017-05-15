@@ -122,7 +122,11 @@ public abstract class GraknTestEnv {
                         graph.clear();
                         graph.admin().commitNoLogs();
                     }));
+
+            systemGraph.clear();
+            systemGraph.admin().commitNoLogs();
         }
+
         engineGraknGraphFactory.refreshConnections();
     }
 
