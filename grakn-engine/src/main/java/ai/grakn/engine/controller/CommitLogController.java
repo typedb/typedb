@@ -101,7 +101,7 @@ public class CommitLogController {
                 UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now());
 
         // Send two tasks to the pipeline
-        manager.addLowPriorityTask(postProcessingTask, TaskConfiguration.of(postProcessingConfiguration));
+//        manager.addLowPriorityTask(postProcessingTask, TaskConfiguration.of(postProcessingConfiguration));
         manager.addHighPriorityTask(countingTask, TaskConfiguration.of(countingConfiguration));
 
         return "PP Task [ " + postProcessingTask.getId().getValue() + " ] and Counting task [" + countingTask.getId().getValue() + "] created for graph [" + keyspace + "]";
