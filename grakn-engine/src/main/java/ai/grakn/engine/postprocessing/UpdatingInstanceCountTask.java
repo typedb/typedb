@@ -21,10 +21,12 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import java.util.stream.Collectors;
+import ai.grakn.engine.tasks.connection.RedisConnection;
+import ai.grakn.util.REST;
 
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_INSTANCE_COUNT;
@@ -42,7 +44,7 @@ import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE_NAME;
  * @author fppt
  */
 public class UpdatingInstanceCountTask extends AbstractLockingTask {
-
+    public static final RedisConnection redis = RedisConnection.getConnection();
     public static final String LOCK_KEY = "/updating-instance-count-lock";
 
     @Override
@@ -53,19 +55,31 @@ public class UpdatingInstanceCountTask extends AbstractLockingTask {
     @Override
     public boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
         Map<TypeLabel, Long> jobs = getJobsFromConfiguration(configuration);
+        String keyspace = getKeyspace(configuration);
 
         GraphMutators.runGraphMutationWithRetry(configuration, (graph) -> {
             graph.admin().updateTypeShards(jobs);
             graph.admin().commitNoLogs();
         });
 
+        //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
+        //The graph cannot be used because each engine can have it's own snapshot of the graph with caching which makes
+        //values only approximately correct
+
+        //Update counts
+        jobs.forEach((key, value) -> redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace, key), value));
+
         return true;
     }
 
-    private Map<TypeLabel, Long> getJobsFromConfiguration(TaskConfiguration configuration){
+    private static Map<TypeLabel, Long> getJobsFromConfiguration(TaskConfiguration configuration){
         return  configuration.json().at(COMMIT_LOG_COUNTING).asJsonList().stream()
                 .collect(Collectors.toMap(
                         e -> TypeLabel.of(e.at(COMMIT_LOG_TYPE_NAME).asString()),
                         e -> e.at(COMMIT_LOG_INSTANCE_COUNT).asLong()));
+    }
+
+    private static String getKeyspace(TaskConfiguration configuration){
+        return configuration.json().at(REST.Request.KEYSPACE).asString();
     }
 }

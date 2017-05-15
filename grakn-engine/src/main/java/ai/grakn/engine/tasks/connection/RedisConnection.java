@@ -109,12 +109,10 @@ public class RedisConnection {
     /**
      * All the valid keys which map to values in the redis cache
      */
-    public static class KEYS {
-        public static String numInstances(String keyspace, TypeLabel label){
-            return "NI_"+ keyspace + "_" + label.getValue();
-        }
-        public static String numShards(String keyspace, TypeLabel label){
-            return "NS_" + keyspace + "_" + label.getValue();
-        }
+    public static String getKeyNumInstances(String keyspace, TypeLabel label){
+        return "NI_"+ keyspace + "_" + label.getValue();
+    }
+    public static String getKeyNumShards(String keyspace, TypeLabel label){
+        return "NS_" + keyspace + "_" + label.getValue();
     }
 }

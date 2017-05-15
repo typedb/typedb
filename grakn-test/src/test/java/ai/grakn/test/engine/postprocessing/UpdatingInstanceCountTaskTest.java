@@ -3,10 +3,12 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -15,7 +17,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_INSTANCE_COUNT;
@@ -70,6 +71,11 @@ public class UpdatingInstanceCountTaskTest {
             assertEquals(6L, (long) v1.value(Schema.ConceptProperty.INSTANCE_COUNT.name()));
             assertEquals(3L, (long) v2.value(Schema.ConceptProperty.INSTANCE_COUNT.name()));
         }
+
+        // Check cache in redis has been updated
+        RedisConnection redis = RedisConnection.getConnection();
+        assertEquals(6L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, TypeLabel.of(entityType1))));
+        assertEquals(3L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, TypeLabel.of(entityType2))));
     }
 
 }

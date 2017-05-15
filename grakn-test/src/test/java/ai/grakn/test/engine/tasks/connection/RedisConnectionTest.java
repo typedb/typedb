@@ -60,17 +60,17 @@ public class RedisConnectionTest {
         ExecutorService pool = Executors.newCachedThreadPool();
         Set<Future> futures = new HashSet<>();
 
-        assertEquals(0, redis.getCount(RedisConnection.KEYS.numInstances(keyspace, label)));
+        assertEquals(0, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, label)));
 
         for(int i =0; i < counts.length; i ++) {
             int finalI = i;
-            futures.add(pool.submit(() -> redis.adjustCount(RedisConnection.KEYS.numInstances(keyspace, label), counts[finalI])));
+            futures.add(pool.submit(() -> redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace, label), counts[finalI])));
         }
         for (Future future : futures) {
             future.get();
         }
 
-        assertEquals(23, redis.getCount(RedisConnection.KEYS.numInstances(keyspace, label)));
+        assertEquals(23, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, label)));
     }
 
     @Test
@@ -80,15 +80,15 @@ public class RedisConnectionTest {
         TypeLabel roach = TypeLabel.of("Roach");
         TypeLabel ciri = TypeLabel.of("Ciri");
 
-        assertEquals(0, redis.getCount(RedisConnection.KEYS.numInstances(keyspace1, roach)));
-        assertEquals(0, redis.getCount(RedisConnection.KEYS.numInstances(keyspace2, roach)));
+        assertEquals(0, redis.getCount(RedisConnection.getKeyNumInstances(keyspace1, roach)));
+        assertEquals(0, redis.getCount(RedisConnection.getKeyNumInstances(keyspace2, roach)));
 
-        redis.adjustCount(RedisConnection.KEYS.numInstances(keyspace1, roach), 1);
-        assertEquals(1, redis.getCount(RedisConnection.KEYS.numInstances(keyspace1, roach)));
-        assertEquals(0, redis.getCount(RedisConnection.KEYS.numInstances(keyspace2, roach)));
+        redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace1, roach), 1);
+        assertEquals(1, redis.getCount(RedisConnection.getKeyNumInstances(keyspace1, roach)));
+        assertEquals(0, redis.getCount(RedisConnection.getKeyNumInstances(keyspace2, roach)));
 
-        redis.adjustCount(RedisConnection.KEYS.numInstances(keyspace2, ciri), 1);
-        assertEquals(0, redis.getCount(RedisConnection.KEYS.numInstances(keyspace1, ciri)));
-        assertEquals(1, redis.getCount(RedisConnection.KEYS.numInstances(keyspace2, ciri)));
+        redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace2, ciri), 1);
+        assertEquals(0, redis.getCount(RedisConnection.getKeyNumInstances(keyspace1, ciri)));
+        assertEquals(1, redis.getCount(RedisConnection.getKeyNumInstances(keyspace2, ciri)));
     }
 }

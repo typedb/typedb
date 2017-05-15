@@ -25,9 +25,10 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.util.ErrorMessage;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.function.Consumer;
 
 import static ai.grakn.engine.GraknEngineConfig.LOADER_REPEAT_COMMITS;
 import static ai.grakn.util.REST.Request.KEYSPACE;
@@ -48,6 +49,7 @@ public abstract class GraphMutators {
     private static final Logger LOG = LoggerFactory.getLogger(GraphMutators.class);
     private static final int MAX_RETRY = GraknEngineConfig.getInstance().getPropertyAsInt(LOADER_REPEAT_COMMITS);
 
+    //TODO: Remove this. Pass in the keyspace instead.
     /**
      *
      * @param configuration
