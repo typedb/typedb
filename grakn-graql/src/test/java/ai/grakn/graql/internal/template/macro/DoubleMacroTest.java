@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.template.macro;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
+import java.util.Locale;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -82,16 +83,20 @@ public class DoubleMacroTest {
 
     @Test
     public void whenUsingDoubleMacroInTemplate_ResultIsAsExpected(){
-        String template = "insert $x val @boolean(<value>);";
-        String expected = "insert $x0 val true;";
+        String template = "insert $x val @double(<value>);";
+        String expected = "insert $x0 val 4.0;";
 
-        assertParseEquals(template, Collections.singletonMap("value", "true"), expected);
-        assertParseEquals(template, Collections.singletonMap("value", "True"), expected);
-
-        expected = "insert $x0 val false;";
-
-        assertParseEquals(template, Collections.singletonMap("value", "false"), expected);
-        assertParseEquals(template, Collections.singletonMap("value", "False"), expected);
+        assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
+        assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
     }
 
+    @Test
+    public void whenParsingDoubleInFrenchLocale_DontUseComma(){
+        Locale.setDefault(Locale.FRANCE);
+        String template = "insert $x val @double(<value>);";
+        String expected = "insert $x0 val 4.0;";
+
+        assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
+        assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
+    }
 }

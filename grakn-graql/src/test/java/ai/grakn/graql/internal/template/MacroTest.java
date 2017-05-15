@@ -72,57 +72,6 @@ public class MacroTest {
         Graql.parseTemplate(template, new HashMap<>());
     }
 
-    // int macro
-
-    @Test
-    public void intMacroTest(){
-        String template = "insert $x val @int(<value>);";
-        String expected = "insert $x0 val 4;";
-
-        assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
-        assertParseEquals(template, Collections.singletonMap("value", 4), expected);
-    }
-
-    @Test
-    public void whenMacroIsWrongCase_ResolvedToLowerCase(){
-        String template = "insert $x val @InT(<value>);";
-        String expected = "insert $x0 val 4;";
-
-        assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
-        assertParseEquals(template, Collections.singletonMap("value", 4), expected);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void intMacroBreaksWithWrongNumberArguments0(){
-        assertParseEquals("@int()", Collections.emptyMap(), "");
-    }
-
-    // double macro
-
-    @Test
-    public void doubleMacroTest(){
-        String template = "insert $x val @double(<value>);";
-        String expected = "insert $x0 val 4.0;";
-
-        assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
-        assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
-    }
-
-    @Test
-    public void whenParsingDoubleInFrenchLocale_DontUseComma(){
-        Locale.setDefault(Locale.FRANCE);
-        String template = "insert $x val @double(<value>);";
-        String expected = "insert $x0 val 4.0;";
-
-        assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
-        assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void doubleMacroBreaksWithWrongNumberArguments(){
-        assertParseEquals("@double()", Collections.emptyMap(), "");
-    }
-
     @Test
     public void stringMacroTest(){
         String template = "insert $this val @string(<value>);";
