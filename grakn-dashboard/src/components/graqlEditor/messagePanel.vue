@@ -36,6 +36,9 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     color: white;
     background-color: rgba(214, 4, 56, 1);
     margin-top: 10px;
+    white-space: pre;
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    font-size: 90%;
 }
 
 button{

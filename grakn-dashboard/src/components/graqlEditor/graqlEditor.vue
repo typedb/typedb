@@ -227,7 +227,7 @@ export default {
     onErrorMessage(message) {
       this.showMessagePanel = true;
       this.showTypeInstances = false;
-      this.message = message;
+      this.message = JSON.parse(message).exception;
             // set the panel class to be an error class
     },
     onWarningMessage(message) {
