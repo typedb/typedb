@@ -42,7 +42,7 @@ public class GraphContext implements TestRule {
     private String keyspace;
     private Consumer<GraknGraph> preLoad;
     private String[] files;
-    private boolean assumption;
+    private boolean assumption = true;
 
     private GraphContext(Consumer<GraknGraph> build, String[] files){
         this.preLoad = build;
@@ -118,7 +118,6 @@ public class GraphContext implements TestRule {
             @Override
             public void evaluate() throws Throwable {
                 org.junit.Assume.assumeTrue(assumption);
-                System.out.println("after assume");
                 ensureCassandraRunning();
 
                 loadGraph();
