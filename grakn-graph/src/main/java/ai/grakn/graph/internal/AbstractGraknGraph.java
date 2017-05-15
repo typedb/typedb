@@ -136,7 +136,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(getTxCache().isLabelCached(label)){
             return getTxCache().convertLabelToId(label);
         }
-        return TypeId.empty();
+        return TypeId.invalid();
     }
 
     /**

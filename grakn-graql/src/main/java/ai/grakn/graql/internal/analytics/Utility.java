@@ -48,7 +48,7 @@ public class Utility {
         if (vertex.property(Schema.ConceptProperty.INSTANCE_TYPE_ID.name()).isPresent()) {
             return TypeId.of(vertex.value(Schema.ConceptProperty.INSTANCE_TYPE_ID.name()));
         }
-        return TypeId.empty();
+        return TypeId.invalid();
     }
 
     /**

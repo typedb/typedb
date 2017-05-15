@@ -88,7 +88,7 @@ public class TypeId implements Comparable<TypeId>, Serializable {
     /**
      * @return a type id which does not match any type
      */
-    public static TypeId empty(){
+    public static TypeId invalid(){
         return new TypeId(-1);
     }
 }
