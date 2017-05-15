@@ -59,10 +59,10 @@ import static org.junit.Assume.assumeTrue;
 public class LazyTest {
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext graphContext = GraphContext.empty();
+    public static final GraphContext graphContext = GraphContext.empty().assumeTrue(usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {
