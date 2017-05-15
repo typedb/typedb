@@ -51,31 +51,12 @@ public class LoaderClientTest {
 
     private GraknSession session;
 
-    @Rule
-    public final SystemOutRule systemOut = new SystemOutRule().enableLog();
-
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setupSession(){
         this.session = engine.factoryWithNewKeyspace();
-    }
-
-    @Test
-    public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged(){
-        // Create a LoaderClient with a callback that will fail
-        LoaderClient loader = loader();
-        loader.setTaskCompletionConsumer((json) -> assertTrue("Testing Log failure",false));
-
-        // Load some queries
-        generate(this::query).limit(1).forEach(loader::add);
-
-        // Wait for queries to finish
-        loader.waitToFinish();
-
-        // Verify that the logger received the failed log message
-        assertThat(systemOut.getLog(), containsString("error in callback"));
     }
 
     @Test
