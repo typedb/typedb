@@ -20,20 +20,19 @@ package ai.grakn.graql.template;
 
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import org.junit.Rule;
-import org.junit.Test;
-
-import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.junit.rules.ExpectedException;
 
 import static ai.grakn.graql.Graql.parse;
 import static junit.framework.TestCase.assertEquals;
@@ -247,7 +246,7 @@ public class MacroTest {
 
         String formattedTime = LocalDate
                 .parse(dateAsString, DateTimeFormatter.ofPattern(dateTimePattern)).atStartOfDay()
-                .format(DateTimeFormatter.ISO_DATE_TIME);
+                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
         String template = "insert $x val @date(<date>, \"" + dateTimePattern + "\");";
         String expected = "insert $x0 val " + formattedTime + ";";
@@ -264,7 +263,7 @@ public class MacroTest {
 
         String formattedTime = LocalDateTime
                 .parse(dateAsString, formatter)
-                .format(DateTimeFormatter.ISO_DATE_TIME);
+                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
         String template = "insert $x val @date(<date>, \"" + dateTimePattern + "\");";
         String expected = "insert $x0 val " + formattedTime + ";";

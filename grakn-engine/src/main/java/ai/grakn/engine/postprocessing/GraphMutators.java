@@ -24,7 +24,6 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.ErrorMessage;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -96,10 +95,6 @@ public abstract class GraphMutators {
             } catch (GraknBackendException e){
                 // retry...
                 LOG.debug(ErrorMessage.GRAPH_MUTATION_ERROR.getMessage(e.getMessage()), e);
-            } catch(GraknValidationException e){
-                throw new RuntimeException(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()), e);
-            } catch (Throwable t) {
-                throw new RuntimeException(ErrorMessage.GRAPH_MUTATION_ERROR.getMessage(t.getMessage()), t);
             }
 
             performRetry(retry);

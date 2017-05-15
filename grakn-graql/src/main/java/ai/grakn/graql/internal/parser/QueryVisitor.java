@@ -641,12 +641,12 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public LocalDateTime visitValueDate(GraqlParser.ValueDateContext ctx) {
-        return LocalDate.parse(ctx.DATE().getText(), DateTimeFormatter.ISO_DATE).atStartOfDay();
+        return LocalDate.parse(ctx.DATE().getText(), DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
     }
 
     @Override
     public Object visitValueDateTime(GraqlParser.ValueDateTimeContext ctx) {
-        return LocalDateTime.parse(ctx.DATETIME().getText(), DateTimeFormatter.ISO_DATE_TIME);
+        return LocalDateTime.parse(ctx.DATETIME().getText(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 
     private MatchQuery visitMatchQuery(GraqlParser.MatchQueryContext ctx) {

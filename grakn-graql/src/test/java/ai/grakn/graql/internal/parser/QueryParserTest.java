@@ -236,6 +236,13 @@ public class QueryParserTest {
     }
 
     @Test
+    public void whenParsingDate_HandleTimeWithDecimalSeconds() {
+        MatchQuery expected = match(var("x").has("release-date", LocalDateTime.of(1000, 11, 12, 13, 14, 15, 123_456)));
+        MatchQuery parsed = parse("match $x has release-date 1000-11-12T13:14:15.000123456;");
+        assertEquals(expected, parsed);
+    }
+
+    @Test
     public void testLongComparatorQuery() throws ParseException {
         MatchQuery expected = match(
                 var("x").isa("movie").has("tmdb-vote-count", lte(400))
