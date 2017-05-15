@@ -22,6 +22,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -34,8 +35,8 @@ import static ai.grakn.test.GraknTestEnv.*;
 
 public class WineInferenceTest {
 
-    @Rule
-    public final GraphContext wineGraph = GraphContext.preLoad("wines-test.gql", "wines-rules.gql");
+    @ClassRule
+    public final GraphContext wineGraph = GraphContext.preLoad("wines-test.gql", "wines-rules.gql").assumeTrue(usingTinker());
 
     @BeforeClass
     public static void setUpClass() {
