@@ -11,7 +11,9 @@ pipeline {
         sh 'mvn test -Ptinker -pl grakn-test'
       }
       post {
-        junit '**/target/surefire-reports/*.xml' 
+        always {
+          junit '**/target/surefire-reports/*.xml' 
+        }
       }
     }
   }
