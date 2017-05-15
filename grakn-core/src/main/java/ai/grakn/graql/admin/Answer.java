@@ -91,7 +91,7 @@ public interface Answer {
     Answer merge(Answer a2, boolean explanation);
 
     /**
-     * explain this answer by providing explanation with preQueserving the structure of dependent answers
+     * explain this answer by providing explanation with preserving the structure of dependent answers
      *
      * @param exp explanation for this answer
      * @return explained answer
