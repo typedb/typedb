@@ -21,6 +21,8 @@ package ai.grakn.graql.admin;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * Admin class for inspecting and manipulating an AskQuery
  *
@@ -30,5 +32,6 @@ public interface AskQueryAdmin extends AskQuery {
     /**
      * @return the match query used to create this ask query
      */
+    @CheckReturnValue
     MatchQuery getMatchQuery();
 }

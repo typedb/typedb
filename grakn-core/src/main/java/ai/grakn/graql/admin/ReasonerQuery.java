@@ -22,6 +22,8 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
+
+import javax.annotation.CheckReturnValue;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -37,37 +39,43 @@ import java.util.stream.Stream;
  */
 public interface ReasonerQuery{
 
-
+    @CheckReturnValue
     ReasonerQuery copy();
 
     /**
      * @return GraknGraph associated with this reasoner query
      */
+    @CheckReturnValue
     GraknGraph graph();
 
     /**
      * @return conjunctive pattern corresponding to this reasoner query
      */
+    @CheckReturnValue
     Conjunction<PatternAdmin> getPattern();
 
     /**
      * @return set of variable names present in this reasoner query
      */
+    @CheckReturnValue
     Set<VarName> getVarNames();
 
     /**
      * @return atom set constituting this reasoner query
      */
+    @CheckReturnValue
     Set<Atomic> getAtoms();
 
     /**
      * @return corresponding MatchQuery
      */
+    @CheckReturnValue
     MatchQuery getMatchQuery();
 
     /**
      * @return true if any of the atoms constituting the query can be resolved through a rule
      */
+    @CheckReturnValue
     boolean isRuleResolvable();
 
     /**
@@ -87,6 +95,7 @@ public interface ReasonerQuery{
      * @param parent query to unify wth
      * @return unifier such that this and parent are equal
      */
+    @CheckReturnValue
     Unifier getUnifier(ReasonerQuery parent);
 
     /**
@@ -95,10 +104,12 @@ public interface ReasonerQuery{
      * @param explanation whether to provide explanation
      * @return stream of answers
      */
+    @CheckReturnValue
     Stream<Answer> resolve(boolean materialise, boolean explanation);
 
     /**
      * @return map of variable name - corresponding type pairs
      */
+    @CheckReturnValue
     Map<VarName, Type> getVarTypeMap();
 }

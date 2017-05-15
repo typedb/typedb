@@ -21,6 +21,8 @@ package ai.grakn.graql;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * A query for deleting concepts from a match query.
  * <p>
@@ -39,10 +41,12 @@ public interface DeleteQuery extends Query<Void> {
      * @param graph the graph to execute the query on
      * @return a new DeleteQuery with the graph set
      */
+    @Override
     DeleteQuery withGraph(GraknGraph graph);
 
     /**
      * @return admin instance for inspecting and manipulating this query
      */
+    @CheckReturnValue
     DeleteQueryAdmin admin();
 }
