@@ -232,15 +232,6 @@ public class SystemKeyspaceUsers extends UsersHandler {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * <p>
-     * Return a JSON object holding all access rights for all keyspaces for the given user.
-     * The object can be embedded 
-     * </p>
-     * 
-     * @param username
-     * @return
-     */
     public Json allAccessRights(String username) {
         try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
             QueryBuilder qb = graph.graql();

@@ -47,7 +47,8 @@ public class UsersHandler {
     
     private static UsersHandler instance = null;
     private final Map<String, Json> usersMap = new HashMap<>();
-
+    private final Json accessMap = Json.object();
+    
     public synchronized static UsersHandler getInstance() {
         if (instance == null) {
             instance = new SystemKeyspaceUsers(); // new UsersHandler();
@@ -95,5 +96,52 @@ public class UsersHandler {
 
     public Json allUsers(int offset, int limit) {
         return Json.make(usersMap.values());
+    }
+    
+    /**
+     * <p>
+     * Return a JSON object holding all access rights for all keyspaces for the given user.
+     * The object can be embedded in JWT to authorize various operations.
+     * </p>
+     * 
+     * @param username
+     * @return
+     */    
+    public Json allAccessRights(String username) {
+        return accessMap.at(username, Json.object());
+    }
+ 
+    /**
+     * <p>
+     * Grant an access right for a keyspace to a user. If the user already has that
+     * right, this is a NOP.
+     * </p>
+     * 
+     * @param username The username of the user.
+     * @param keyspace The name of the keyspace.
+     * @param right The right being granted. An access right is an arbitrary string 
+     * that is recognized and enforced by various operations.
+     * @return
+     */
+    public UsersHandler grantAccess(String username, String keyspace, String right) {
+        accessMap.at(username, Json.object()).at(keyspace, Json.array()).set(right, true);
+        return this;
+    }
+    
+    /**
+     * <p>
+     * Revoke an access right for a keyspace from a user. If the user doesn't have
+     * the access right, this is a NOP. 
+     * </p>
+     * 
+     * @param username The username of the user.
+     * @param keyspace The name of the keyspace.
+     * @param right The right being granted. An access right is an arbitrary string 
+     * that is recognized and enforced by various operations.
+     * @return
+     */
+   public UsersHandler revokeAccess(String username, String keyspace, String right) {
+        accessMap.at(username, Json.object()).at(keyspace, Json.array()).set(right, false);
+        return this;
     }
 }
