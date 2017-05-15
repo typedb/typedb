@@ -138,13 +138,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Unifier unify(Unifier unifier) {
-        Unifier u = super.unify(unifier);
-        atom = selectAtoms().iterator().next();
-        return u;
-    }
-
-    @Override
     public Set<Atom> selectAtoms() {
         Set<Atom> selectedAtoms = super.selectAtoms();
         if (selectedAtoms.size() != 1) {
@@ -213,7 +206,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .map(ans -> ans.setExplanation(answer.getExplanation()));
     }
 
-    Set<Unifier> getPermutationUnifiers(Atom headAtom) {
+    private Set<Unifier> getPermutationUnifiers(Atom headAtom) {
         if (!(atom.isRelation() && headAtom.isRelation())) return Collections.singleton(new UnifierImpl());
 
         //if atom is match all atom, add type from rule head and find unmapped roles
@@ -239,9 +232,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         });
     }
 
-    private Stream<Answer> getFilteredAnswerStream(Stream<Answer> answers, ReasonerAtomicQuery ruleHead){
+    private Stream<Answer> getFilteredAnswerStream(Stream<Answer> answers){
         Set<VarName> vars = getVarNames();
-        Set<Unifier> permutationUnifiers = getPermutationUnifiers(ruleHead.getAtom());
+        Set<Unifier> permutationUnifiers = getPermutationUnifiers(atom);
         Set<IdPredicate> unmappedIdPredicates = atom.getUnmappedIdPredicates();
         Set<TypeAtom> mappedTypeConstraints = atom.getMappedTypeConstraints();
         Set<TypeAtom> unmappedTypeConstraints = atom.getUnmappedTypeConstraints();
@@ -262,6 +255,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @return answers from rule resolution
      */
     private Stream<Answer> resolveViaRule(InferenceRule rule,
+                                          Unifier u,
+                                          Unifier pu,
                                           Set<ReasonerAtomicQuery> subGoals,
                                           Cache<ReasonerAtomicQuery, ?> cache,
                                           Cache<ReasonerAtomicQuery, ?> dCache,
@@ -269,10 +264,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                           boolean explanation,
                                           boolean differentialJoin){
         Atom atom = this.getAtom();
-        Answer sub = this.getSubstitution();
-        rule.unify(atom).propagateConstraints(atom);
-        rule.getHead().addSubstitution(sub);
-        rule.getBody().addSubstitution(sub);
+
+        LOG.debug("Applying rule to: " + this + rule + rule.getRuleId());
+        LOG.debug("delta: " + u);
 
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
@@ -281,7 +275,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         subGoals.add(this);
         Stream<Answer> answers = ruleBody
                 .computeJoin(subGoals, cache, dCache, materialise, explanation, differentialJoin)
-                .flatMap(a -> varFilterFunction.apply(a, varsToRetain))
+                .map(a -> a.filterVars(varsToRetain))
                 .distinct()
                 .map(ans -> ans.explain(new RuleExplanation(rule)));
 
@@ -298,8 +292,18 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
             answers = dCache.record(ruleHead, answers);
         }
+
+
+        //unify answers
+        Set<VarName> queryVars = u.keySet();
+        answers = answers
+                .map(a -> a.filterVars(queryVars))
+                .map(a -> a.unify(u))
+                .map(a -> a.unify(pu));
+
         //if query not exactly equal to the rule head, do some conversion
-        return this.equals(ruleHead)? dCache.record(ruleHead, answers) : dCache.record(this, getFilteredAnswerStream(answers, ruleHead));
+        //return atom.isEquivalent(ruleHead.getAtom())? dCache.record(this, answers) : dCache.record(this, getFilteredAnswerStream(answers));
+        return dCache.record(this, answers);
     }
 
     /**
@@ -318,11 +322,22 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                        boolean differentialJoin){
         boolean queryAdmissible = !subGoals.contains(this);
 
+        LOG.debug("AQ: " + this);
+
         Stream<Answer> answerStream = cache.contains(this) ? Stream.empty() : dCache.record(this, lookup(cache));
         if(queryAdmissible) {
-            Set<InferenceRule> rules = getAtom().getApplicableRules();
-            for (InferenceRule rule : rules) {
-                Stream<Answer> localStream = resolveViaRule(rule, subGoals, cache, dCache, materialise, explanation, differentialJoin);
+            Answer sub = this.getSubstitution();
+            Iterator<Pair<InferenceRule, Pair<Unifier, Unifier>>> ruleIterator = getRuleIterator();
+            while(ruleIterator.hasNext()) {
+                Pair<InferenceRule, Pair<Unifier, Unifier>> rulePair = ruleIterator.next();
+                InferenceRule rule = rulePair.getKey();
+                Unifier u = rulePair.getValue().getKey();
+                Unifier pu = rulePair.getValue().getValue();
+
+                rule.getHead().addSubstitution(sub);
+                rule.getBody().addSubstitution(sub);
+
+                Stream<Answer> localStream = resolveViaRule(rule, u, pu, subGoals, cache, dCache, materialise, explanation, differentialJoin);
                 answerStream = Stream.concat(answerStream, localStream);
             }
         }
@@ -347,6 +362,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     Iterator<Pair<InferenceRule, Pair<Unifier, Unifier>>> getRuleIterator(){
         return getAtom().getApplicableRules().stream()
                 .flatMap(r -> {
+                    r.rewriteToUserDefined(getAtom());
                     Unifier ruleUnifier = r.getUnifier(getAtom());
                     return getPermutationUnifiers(r.getHead().getAtom()).stream()
                             .map(pu -> new Pair<>(new InferenceRule(r).propagateConstraints(getAtom(), ruleUnifier.inverse(), pu), new Pair<>(ruleUnifier, pu)));

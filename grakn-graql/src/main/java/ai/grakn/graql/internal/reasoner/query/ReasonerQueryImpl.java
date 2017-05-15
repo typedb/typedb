@@ -268,95 +268,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return atomSet.stream().filter(at -> at.isEquivalent(atom)).collect(Collectors.toSet());
     }
 
-    private void exchangeRelVarNames(VarName from, VarName to) {
-        unify(to, VarName.of("temp"));
-        unify(from, to);
-        unify(VarName.of("temp"), from);
-    }
-
-    /**
-     * change each variable occurrence in the query (apply unifier [from/to])
-     * @param from variable name to be changed
-     * @param to   new variable name
-     */
-    private void unify(VarName from, VarName to) {
-        Set<Atomic> toRemove = new HashSet<>();
-        Set<Atomic> toAdd = new HashSet<>();
-
-        atomSet.stream().filter(atom -> atom.getVarNames().contains(from)).forEach(toRemove::add);
-        toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom, this)));
-        toRemove.forEach(this::removeAtomic);
-        toAdd.forEach(atom -> atom.unify(new UnifierImpl(ImmutableMap.of(from, to))));
-        toAdd.forEach(this::addAtomic);
-    }
-
     @Override
     public Unifier getUnifier(ReasonerQuery parent) {
         throw new IllegalStateException("Attempted to obtain unifiers on non-atomic queries.");
-    }
-
-    /**
-     * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
-     * @param unifier (variable mappings) to be applied
-     * @return union of the entry unifier and the unifier used to resolve potential captures
-     */
-    @Override
-    public Unifier unify(Unifier unifier) {
-        if (unifier.size() == 0) return new UnifierImpl();
-        Unifier mappings = new UnifierImpl(unifier);
-        Unifier appliedMappings = new UnifierImpl();
-        //do bidirectional mappings if any
-        for (Map.Entry<VarName, VarName> mapping: mappings.mappings()) {
-            VarName varToReplace = mapping.getKey();
-            VarName replacementVar = mapping.getValue();
-            //bidirectional mapping
-            if (!replacementVar.equals(appliedMappings.get(varToReplace)) && varToReplace.equals(mappings.get(replacementVar))) {
-                exchangeRelVarNames(varToReplace, replacementVar);
-                appliedMappings.addMapping(varToReplace, replacementVar);
-                appliedMappings.addMapping(replacementVar, varToReplace);
-            }
-        }
-        mappings.mappings().removeIf(e ->
-                appliedMappings.containsKey(e.getKey()) && appliedMappings.get(e.getKey()).equals(e.getValue()));
-
-        Set<Atomic> toRemove = new HashSet<>();
-        Set<Atomic> toAdd = new HashSet<>();
-
-        atomSet.stream()
-                .filter(atom -> {
-                    Set<VarName> keyIntersection = atom.getVarNames();
-                    Set<VarName> valIntersection = atom.getVarNames();
-                    keyIntersection.retainAll(mappings.keySet());
-                    valIntersection.retainAll(mappings.values());
-                    return (!keyIntersection.isEmpty() || !valIntersection.isEmpty());
-                })
-                .forEach(toRemove::add);
-        toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom, this)));
-        toRemove.forEach(this::removeAtomic);
-        toAdd.forEach(atom -> atom.unify(mappings));
-        toAdd.forEach(this::addAtomic);
-
-        //NB:captures not resolved in place as resolution in-place alters respective atom hash
-        return new UnifierImpl(unifier).merge(resolveCaptures());
-    }
-
-    /**
-     * finds captured variable occurrences in a query and replaces them with fresh variables
-     *
-     * @return new mappings resulting from capture resolution
-     */
-    private Unifier resolveCaptures() {
-        Unifier newMappings = new UnifierImpl();
-        //find and resolve captures
-        // TODO: This could cause bugs if a user has a variable including the word "capture"
-        getVarNames().stream().filter(ReasonerUtils::isCaptured)
-                .forEach(cap -> {
-                    VarName old = uncapture(cap);
-                    VarName fresh = VarName.anon();
-                    unify(cap, fresh);
-                    newMappings.addMapping(old, fresh);
-                });
-        return newMappings;
     }
 
     /**
@@ -555,7 +469,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getSubstitution().keySet().containsAll(getVarNames());
     }
 
-    boolean requiresMaterialisation(){
+    private boolean requiresMaterialisation(){
         for(Atom atom : selectAtoms()){
             for (InferenceRule rule : atom.getApplicableRules())
                 if (rule.requiresMaterialisation(atom)){

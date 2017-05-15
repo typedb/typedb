@@ -113,6 +113,7 @@ public class AtomicQueryTest {
         assertEquals(atomicQuery.hashCode(), copy.hashCode());
     }
 
+    /*
     @Test
     public void testWhenModifyingAQuery_TheCopyDoesNotChange(){
         GraknGraph graph = snbGraph.graph();
@@ -138,6 +139,7 @@ public class AtomicQueryTest {
         atomicQuery.unify(new UnifierImpl(ImmutableMap.of(VarName.of("y"), VarName.of("z"))));
         assertEquals(ReasonerQueries.atomic(conjunction(patternString, graph), snbGraph.graph()).getAtom().getRoleVarTypeMap(), copy.getAtom().getRoleVarTypeMap());
     }
+    */
 
     @Test
     public void testWhenMaterialising_MaterialisedInformationIsPresentInGraph(){
@@ -212,6 +214,7 @@ public class AtomicQueryTest {
         assertEquals(query2.getAtoms().size(), 2);
     }
 
+    /*
     @Test //basic unification test based on mapping variables to corresponding roles together with checking copied atom is not affected
     public void testWhenUnifiying_CopyIsNotAffected(){
         GraknGraph graph = geoGraph.graph();
@@ -231,6 +234,7 @@ public class AtomicQueryTest {
         Atomic childAtomCopy = childCopy.getAtom();
         assertNotEquals(childAtomCopy, childAtom);
     }
+    */
 
     @Test
     public void testWhenUnifiyingAtomWithItself_UnifierIsTrivial(){

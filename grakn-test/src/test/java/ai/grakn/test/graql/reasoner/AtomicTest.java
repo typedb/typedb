@@ -654,6 +654,7 @@ public class AtomicTest {
         );
     }
 
+    /*
     @Test
     public void testRewriteAndUnification(){
         GraknGraph graph = genealogyOntology.graph();
@@ -672,6 +673,7 @@ public class AtomicTest {
         assertEquals(wifeEntry.size(), 1);
         assertEquals(wifeEntry.iterator().next(), VarName.of("x"));
     }
+    */
 
     @Test
     public void testRewritingAtomToAtomWithUserDefinedName(){
@@ -739,6 +741,7 @@ public class AtomicTest {
         );
     }
 
+    /*
     @Test
     public void testUnification_WithMatchAllAtom(){
         GraknGraph graph = snbGraph.graph();
@@ -758,6 +761,7 @@ public class AtomicTest {
                 vars.containsAll(correctVars)
         );
     }
+    */
 
     @Test
     public void testWhenCreatingQueryWithNonexistentType_ExceptionIsThrown(){

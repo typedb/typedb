@@ -198,14 +198,6 @@ public class InferenceRule {
         return this;
     }
 
-    /**
-     * @param parentAtom from which constrained are propagated
-     * @return the inference rule with constraints
-     */
-    public InferenceRule propagateConstraints(Atom parentAtom){
-        return propagateConstraints(parentAtom, new UnifierImpl(), new UnifierImpl());
-    }
-
     private InferenceRule rewriteHead(){
         Atom childAtom = head.getAtom();
         Atom newAtom = childAtom.rewriteToUserDefined();
@@ -256,27 +248,5 @@ public class InferenceRule {
             unifier.merge(childAtom.getUnifier(extendedParent));
         }
         return unifier;
-    }
-
-    /**
-     *
-     * @param unifier to be applied on this rule
-     * @return unified rule
-     */
-    public InferenceRule unify(Unifier unifier){
-        //NB: captures of bound variables have to be resolved to the same variable hence using head unifier
-        Unifier headUnifier = head.unify(unifier);
-        body.unify(headUnifier);
-        return this;
-    }
-
-    /**
-     * make rule consistent variable-wise with the parent atom by means of unification
-     * @param parentAtom atom the rule should be unified with
-     */
-    public InferenceRule unify(Atom parentAtom) {
-        return this
-                .rewriteToUserDefined(parentAtom)
-                .unify(getUnifier(parentAtom));
     }
 }
