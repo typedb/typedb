@@ -123,81 +123,6 @@ public class MacroTest {
         assertParseEquals("@double()", Collections.emptyMap(), "");
     }
 
-    // equals
-
-    @Test
-    public void equalsMacroTest(){
-        String template = "insert $x val @equals(<this>, <that>);";
-        String expected = "insert $x0 val true;";
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("this", "50");
-        data.put("that", "50");
-
-        assertParseEquals(template, data, expected);
-
-        template = "insert $x val @equals(<this>, <notThat>);";
-        expected = "insert $x0 val false;";
-
-        data = new HashMap<>();
-        data.put("this", "50");
-        data.put("notThat", "500");
-
-        assertParseEquals(template, data, expected);
-
-        template = "insert $x val @equals(<this>, <notThat>);";
-        expected = "insert $x0 val false;";
-
-        data = new HashMap<>();
-        data.put("this", "50");
-        data.put("notThat", 50);
-
-        assertParseEquals(template, data, expected);
-
-        template = "insert $x val @equals(<this>, <that>, <those>);";
-        expected = "insert $x0 val true;";
-
-        data = new HashMap<>();
-        data.put("this", 50);
-        data.put("that", 50);
-        data.put("those", 50);
-
-        assertParseEquals(template, data, expected);
-
-        template = "insert $x val @equals(<this>, <that>, <notThat>);";
-        expected = "insert $x0 val false;";
-
-        data = new HashMap<>();
-        data.put("this", 50);
-        data.put("that", 50);
-        data.put("notThat", 50.0);
-
-        assertParseEquals(template, data, expected);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void equalsMacroBreaksWithWrongNumberArguments(){
-        assertParseEquals("@equals(<this>)", Collections.singletonMap("this", "one"), "");
-    }
-
-    @Test
-    public void macroInArgumentTest(){
-        String template = "if (@equals(<this>, <that>)) do { insert $this isa equals; } else { insert $this isa not; }";
-        String expected = "insert $this0 isa equals;";
-        Map<String, Object> data = new HashMap<>();
-        data.put("this", "50");
-        data.put("that", "50");
-
-        assertParseEquals(template, data, expected);
-
-        expected = "insert $this0 isa not;";
-        data = new HashMap<>();
-        data.put("this", "50");
-        data.put("that", "500");
-
-        assertParseEquals(template, data, expected);
-    }
-
     @Test
     public void stringMacroTest(){
         String template = "insert $this val @string(<value>);";
@@ -216,10 +141,6 @@ public class MacroTest {
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4), expected);
     }
-
-
-
-
 
     @Test
     public void stringToUpperCaseTest(){
