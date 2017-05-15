@@ -31,7 +31,7 @@ import java.util.List;
 /**
  * <p>
  * Parse the given value (arg1) using the format (arg2).
- * Returns a String with the value of the date parsed into {@link DateTimeFormatter#ISO_DATE_TIME} which
+ * Returns a String with the value of the date parsed into {@link DateTimeFormatter#ISO_LOCAL_DATE_TIME} which
  * is the date format that Graql accepts.
  *
  * Usage:
@@ -68,7 +68,7 @@ public class DateMacro implements Macro<Unescaped<String>> {
             TemporalAccessor parsedDate = formatter.parseBest(
                     originalDate, LocalDateTime::from, LocalDate::from, LocalTime::from);
 
-            return extractLocalDateTime(parsedDate).format(DateTimeFormatter.ISO_DATE_TIME);
+            return extractLocalDateTime(parsedDate).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         } catch (IllegalArgumentException e){
             throw new IllegalArgumentException("Cannot parse date format " + originalFormat + ". See DateTimeFormatter#ofPattern");
         } catch (DateTimeParseException e){
