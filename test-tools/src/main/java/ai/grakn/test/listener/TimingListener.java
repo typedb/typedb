@@ -32,14 +32,15 @@ import org.junit.runner.notification.RunListener;
  * <p>
  * A junit listener around each executed test that collects the time it takes to run the test and
  * logs into a file. The file name where time is logged can be specified in a
- * <code>grakn.test.timerecord.file</code> system property. 
+ * <code>grakn.test.timerecord.file</code> system property. The listener will be effectively inactive
+ * unless the system property <code>grakn.test.timing</code> is set to true.
  * </p>
  * 
  * @author borislav
  *
  */
 public class TimingListener extends RunListener {
-    
+    private boolean ignore = !Boolean.getBoolean("grakn.test.timing");
     private long startTime = 0;
     private String test = "";
     
@@ -61,14 +62,17 @@ public class TimingListener extends RunListener {
     }
     
     public void testStarted(Description description) throws Exception {
-        if (!description.isTest()) {
+        if (ignore || !description.isTest()) {
             return;
         }
         startTime = System.currentTimeMillis();
         test = description.getClassName() + "." + description.getMethodName();
     }
 
-    public void testFinished(Description description) throws Exception {        
+    public void testFinished(Description description) throws Exception {
+        if (ignore) {
+            return; 
+        }
         String finishedTest = description.getClassName() + "." + description.getMethodName();
         if (!test.equals(finishedTest)) {
             throw new RuntimeException("Test started " + test + " different from test finished " + finishedTest);
