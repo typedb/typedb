@@ -21,7 +21,8 @@ package ai.grakn.graql.admin;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
+
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -53,7 +54,7 @@ public interface ReasonerQuery{
     /**
      * @return set of variable names present in this reasoner query
      */
-    Set<VarName> getVarNames();
+    Set<Var> getVarNames();
 
     /**
      * @return atom set constituting this reasoner query
@@ -75,7 +76,7 @@ public interface ReasonerQuery{
      * @param from variable name to be changed
      * @param to new variable name
      */
-    void unify(VarName from, VarName to);
+    void unify(Var from, Var to);
 
     /**
      * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
@@ -100,5 +101,5 @@ public interface ReasonerQuery{
     /**
      * @return map of variable name - corresponding type pairs
      */
-    Map<VarName, Type> getVarTypeMap();
+    Map<Var, Type> getVarTypeMap();
 }

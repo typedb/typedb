@@ -23,7 +23,7 @@ import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.MatrixGraphII;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -136,7 +136,7 @@ public class LazyTest {
         query.lookup(cache);
         InferenceRule rule = new InferenceRule(ReasonerUtils.getRules(graph).iterator().next(), graph);
 
-        Set<VarName> joinVars = Sets.intersection(query.getVarNames(), query2.getVarNames());
+        Set<Var> joinVars = Sets.intersection(query.getVarNames(), query2.getVarNames());
         Stream<Answer> join = join(
                 query.getMatchQuery().admin().stream(),
                 query2.getMatchQuery().admin().stream(),

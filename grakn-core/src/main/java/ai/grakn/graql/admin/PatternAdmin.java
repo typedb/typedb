@@ -19,7 +19,7 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 
 import java.util.Set;
 
@@ -46,7 +46,7 @@ public interface PatternAdmin extends Pattern {
     /**
      * Get all common, user-defined variable names in the pattern.
      */
-    Set<VarName> commonVarNames();
+    Set<Var> commonVarNames();
 
     /**
      * @return true if this Pattern.Admin is a Conjunction

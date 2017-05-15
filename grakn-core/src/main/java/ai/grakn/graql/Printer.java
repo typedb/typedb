@@ -57,8 +57,8 @@ public interface Printer<T> {
     default T graqlString(boolean inner, Object object) {
         if (object instanceof Concept) {
             return graqlString(inner, (Concept) object);
-        } else if (object instanceof VarName) {
-            return graqlString(inner, (VarName) object);
+        } else if (object instanceof Var) {
+            return graqlString(inner, (Var) object);
         } else if (object instanceof Boolean) {
             return graqlString(inner, (boolean) object);
         } else if (object instanceof Optional) {

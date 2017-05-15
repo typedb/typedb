@@ -29,7 +29,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
@@ -504,9 +504,9 @@ public class QueryParserTest {
     public void testCustomAggregate() {
         QueryBuilder qb = withoutGraph();
 
-        qb.registerAggregate("get-any", args -> new GetAny((VarName) args.get(0)));
+        qb.registerAggregate("get-any", args -> new GetAny((Var) args.get(0)));
 
-        AggregateQuery<Concept> expected = qb.match(var("x").isa("movie")).aggregate(new GetAny(VarName.of("x")));
+        AggregateQuery<Concept> expected = qb.match(var("x").isa("movie")).aggregate(new GetAny(Var.of("x")));
         AggregateQuery<Concept> parsed = qb.parse("match $x isa movie; aggregate get-any $x;");
 
         assertEquals(expected, parsed);
@@ -773,9 +773,9 @@ public class QueryParserTest {
 
     class GetAny extends AbstractAggregate<Answer, Concept> {
 
-        private final VarName varName;
+        private final Var varName;
 
-        GetAny(VarName varName) {
+        GetAny(Var varName) {
             this.varName = varName;
         }
 

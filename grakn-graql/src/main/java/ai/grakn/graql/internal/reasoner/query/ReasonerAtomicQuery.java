@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.Atomic;
@@ -225,9 +225,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Relation relAtom = atom.getValueVariable().getValue().isEmpty() ?
                 ((Relation) AtomicFactory.create(atom, atom.getParentQuery())).addType(headAtom.getType()) :
                 (Relation) atom;
-        List<VarName> permuteVars = new ArrayList<>(relAtom.getUnmappedRolePlayers());
+        List<Var> permuteVars = new ArrayList<>(relAtom.getUnmappedRolePlayers());
 
-        List<List<VarName>> varPermutations = getListPermutations(new ArrayList<>(permuteVars)).stream()
+        List<List<Var>> varPermutations = getListPermutations(new ArrayList<>(permuteVars)).stream()
                 .filter(l -> !l.isEmpty()).collect(Collectors.toList());
         return getUnifiersFromPermutations(permuteVars, varPermutations);
     }
@@ -241,7 +241,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     private Stream<Answer> getFilteredAnswerStream(Stream<Answer> answers, ReasonerAtomicQuery ruleHead){
-        Set<VarName> vars = getVarNames();
+        Set<Var> vars = getVarNames();
         Set<Unifier> permutationUnifiers = getPermutationUnifiers(ruleHead.getAtom());
         Set<IdPredicate> unmappedIdPredicates = atom.getUnmappedIdPredicates();
         Set<TypeAtom> mappedTypeConstraints = atom.getMappedTypeConstraints();
@@ -274,7 +274,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
-        Set<VarName> varsToRetain = rule.hasDisconnectedHead()? ruleBody.getVarNames() : ruleHead.getVarNames();
+        Set<Var> varsToRetain = rule.hasDisconnectedHead()? ruleBody.getVarNames() : ruleHead.getVarNames();
 
         subGoals.add(this);
         Stream<Answer> answers = ruleBody
@@ -286,8 +286,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         if (materialise || rule.requiresMaterialisation(atom)) {
             if (!cache.contains(ruleHead)) dCache.record(ruleHead, ruleHead.lookup(cache));
             //filter known to make sure no duplicates are inserted (put behaviour)
-            Map<Pair<VarName, Concept>, Set<Answer>> known = cache.getInverseAnswerMap(ruleHead);
-            Map<Pair<VarName, Concept>, Set<Answer>> dknown = dCache.getInverseAnswerMap(ruleHead);
+            Map<Pair<Var, Concept>, Set<Answer>> known = cache.getInverseAnswerMap(ruleHead);
+            Map<Pair<Var, Concept>, Set<Answer>> dknown = dCache.getInverseAnswerMap(ruleHead);
 
             answers = answers
                     .filter(a -> knownFilterWithInverse(a, known))

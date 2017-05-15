@@ -25,7 +25,7 @@ import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -81,10 +81,10 @@ public class ExplanationTest {
     public void testExplanationTreeCorrect_TransitiveClosure() {
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
 
-        Answer answer1 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), warsaw));
-        Answer answer2 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), masovia));
-        Answer answer3 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), poland));
-        Answer answer4 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), europe));
+        Answer answer1 = new QueryAnswer(ImmutableMap.of(Var.of("x"), polibuda, Var.of("y"), warsaw));
+        Answer answer2 = new QueryAnswer(ImmutableMap.of(Var.of("x"), polibuda, Var.of("y"), masovia));
+        Answer answer3 = new QueryAnswer(ImmutableMap.of(Var.of("x"), polibuda, Var.of("y"), poland));
+        Answer answer4 = new QueryAnswer(ImmutableMap.of(Var.of("x"), polibuda, Var.of("y"), europe));
 
         List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
         answers.stream()
@@ -131,8 +131,8 @@ public class ExplanationTest {
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$y isa country;$y has name 'Poland';";
 
-        Answer answer1 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), poland));
-        Answer answer2 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), uw, VarName.of("y"), poland));
+        Answer answer1 = new QueryAnswer(ImmutableMap.of(Var.of("x"), polibuda, Var.of("y"), poland));
+        Answer answer2 = new QueryAnswer(ImmutableMap.of(Var.of("x"), uw, Var.of("y"), poland));
 
         List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
         answers.stream()
@@ -244,7 +244,7 @@ public class ExplanationTest {
 
     private boolean isExplanationConsistentWithAnswer(Answer a){
         ReasonerQuery query = a.getExplanation().getQuery();
-        Set<VarName> vars = query != null? query.getVarNames() : new HashSet<>();
+        Set<Var> vars = query != null? query.getVarNames() : new HashSet<>();
         return a.map().keySet().containsAll(vars);
     }
 

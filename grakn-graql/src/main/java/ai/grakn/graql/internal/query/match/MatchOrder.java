@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 
 import ai.grakn.graql.admin.Answer;
 import java.util.stream.Stream;
@@ -29,7 +29,7 @@ import java.util.stream.Stream;
  * @author Felix Chapman
  */
 public interface MatchOrder {
-    VarName getVar();
+    Var getVar();
 
     /**
      * Order the stream

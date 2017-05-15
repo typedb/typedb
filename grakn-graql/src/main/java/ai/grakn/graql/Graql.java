@@ -139,14 +139,14 @@ public class Graql {
      * @return a new query variable
      */
     public static VarPattern var(String name) {
-        return var(VarName.of(name));
+        return var(Var.of(name));
     }
 
     /**
      * @param name the name of the variable
      * @return a new query variable
      */
-    public static VarPattern var(VarName name) {
+    public static VarPattern var(Var name) {
         return Patterns.var(Objects.requireNonNull(name));
     }
 
@@ -221,7 +221,7 @@ public class Graql {
      * Create an aggregate that will sum the values of a variable.
      */
     public static Aggregate<Answer, Number> sum(String name) {
-        return Aggregates.sum(VarName.of(name));
+        return Aggregates.sum(Var.of(name));
     }
 
     /**
@@ -229,7 +229,7 @@ public class Graql {
      * @param name the variable to find the maximum of
      */
     public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> max(String name) {
-        return Aggregates.max(VarName.of(name));
+        return Aggregates.max(Var.of(name));
     }
 
     /**
@@ -237,7 +237,7 @@ public class Graql {
      * @param name the variable to find the maximum of
      */
     public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> min(String name) {
-        return Aggregates.min(VarName.of(name));
+        return Aggregates.min(Var.of(name));
     }
 
     /**
@@ -245,7 +245,7 @@ public class Graql {
      * @param name the variable to find the mean of
      */
     public static Aggregate<Answer, Optional<Double>> mean(String name) {
-        return Aggregates.mean(VarName.of(name));
+        return Aggregates.mean(Var.of(name));
     }
 
     /**
@@ -253,7 +253,7 @@ public class Graql {
      * @param name the variable to find the median of
      */
     public static Aggregate<Answer, Optional<Number>> median(String name) {
-        return Aggregates.median(VarName.of(name));
+        return Aggregates.median(Var.of(name));
     }
 
     /**
@@ -261,7 +261,7 @@ public class Graql {
      * @param name the variable to find the standard deviation of
      */
     public static Aggregate<Answer, Optional<Double>> std(String name) {
-        return Aggregates.std(VarName.of(name));
+        return Aggregates.std(Var.of(name));
     }
 
     /**
@@ -280,7 +280,7 @@ public class Graql {
      */
     public static <T> Aggregate<Answer, Map<Concept, T>> group(
             String varName, Aggregate<? super Answer, T> aggregate) {
-        return Aggregates.group(VarName.of(varName), aggregate);
+        return Aggregates.group(Var.of(varName), aggregate);
     }
 
     /**

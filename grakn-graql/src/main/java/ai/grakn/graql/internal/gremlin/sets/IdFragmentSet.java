@@ -20,7 +20,7 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
@@ -29,7 +29,7 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
  */
 class IdFragmentSet extends EquivalentFragmentSet {
 
-    IdFragmentSet(VarName start, ConceptId id) {
+    IdFragmentSet(Var start, ConceptId id) {
         super(Fragments.id(start, id));
     }
 }

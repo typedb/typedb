@@ -19,7 +19,7 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 
 import java.util.Collection;
 import java.util.Map;
@@ -39,35 +39,35 @@ public interface Answer {
 
     Answer copy();
 
-    Set<VarName> keySet();
+    Set<Var> keySet();
 
     Collection<Concept> values();
 
     Set<Concept> concepts();
 
-    Set<Map.Entry<VarName, Concept>> entrySet();
+    Set<Map.Entry<Var, Concept>> entrySet();
 
     Concept get(String var);
 
-    Concept get(VarName var);
+    Concept get(Var var);
 
-    Concept put(VarName var, Concept con);
+    Concept put(Var var, Concept con);
 
-    Concept remove(VarName var);
+    Concept remove(Var var);
 
-    Map<VarName, Concept> map();
+    Map<Var, Concept> map();
 
     void putAll(Answer a);
 
-    void putAll(Map<VarName, Concept> m2);
+    void putAll(Map<Var, Concept> m2);
 
-    boolean containsKey(VarName var);
+    boolean containsKey(Var var);
 
     boolean isEmpty();
 
     int size();
 
-    void forEach(BiConsumer<? super VarName, ? super Concept> consumer);
+    void forEach(BiConsumer<? super Var, ? super Concept> consumer);
 
     /**
      * perform an answer merge without explanation
@@ -97,7 +97,7 @@ public interface Answer {
      */
     Answer explain(AnswerExplanation exp);
 
-    Answer filterVars(Set<VarName> vars);
+    Answer filterVars(Set<Var> vars);
 
     Answer unify(Unifier unifier);
 

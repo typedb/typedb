@@ -27,8 +27,8 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -97,7 +97,7 @@ public class ReasonerUtils {
      * @param var the variable name to capture
      * @return the captured variable
      */
-    public static VarName capture(VarName var) {
+    public static Var capture(Var var) {
         return var.map(CAPTURE_MARK::concat);
     }
 
@@ -106,7 +106,7 @@ public class ReasonerUtils {
      * @param var the variable name to uncapture
      * @return the uncaptured variable
      */
-    public static VarName uncapture(VarName var) {
+    public static Var uncapture(Var var) {
         // TODO: This could cause bugs if a user has a variable including the word "capture"
         return var.map(name -> name.replace(CAPTURE_MARK, ""));
     }
@@ -116,7 +116,7 @@ public class ReasonerUtils {
      * @param var the variable to check
      * @return if the variable has been captured
      */
-    public static boolean isCaptured(VarName var) {
+    public static boolean isCaptured(Var var) {
         // TODO: This could cause bugs if a user has a variable including the word "capture"
         return var.getValue().contains(CAPTURE_MARK);
     }
@@ -129,7 +129,7 @@ public class ReasonerUtils {
      * @param parent reasoner query the mapped predicate should belong to
      * @return mapped IdPredicate
      */
-    public static IdPredicate getUserDefinedIdPredicate(VarName typeVariable, Set<VarPatternAdmin> vars, ReasonerQuery parent){
+    public static IdPredicate getUserDefinedIdPredicate(Var typeVariable, Set<VarPatternAdmin> vars, ReasonerQuery parent){
         return  vars.stream()
                 .filter(v -> v.getVarName().equals(typeVariable))
                 .flatMap(v -> v.hasProperty(LabelProperty.class)?
@@ -147,7 +147,7 @@ public class ReasonerUtils {
      * @param parent reasoner query the mapped predicate should belong to
      * @return mapped IdPredicate
      */
-    public static IdPredicate getIdPredicate(VarName typeVariable, VarPatternAdmin typeVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
+    public static IdPredicate getIdPredicate(Var typeVariable, VarPatternAdmin typeVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
         IdPredicate predicate = null;
         //look for id predicate among vars
         if(typeVar.isUserDefinedName()) {
@@ -168,7 +168,7 @@ public class ReasonerUtils {
      * @param parent reasoner query the mapped predicate should belong to
      * @return set of mapped ValuePredicates
      */
-    public static Set<ValuePredicate> getValuePredicates(VarName valueVariable, VarPatternAdmin valueVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
+    public static Set<ValuePredicate> getValuePredicates(Var valueVariable, VarPatternAdmin valueVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
         Set<ValuePredicate> predicates = new HashSet<>();
         if(valueVar.isUserDefinedName()){
             vars.stream()
@@ -209,15 +209,15 @@ public class ReasonerUtils {
      * @param permutations different permutations on the variables
      * @return set of unifiers
      */
-    public static Set<Unifier> getUnifiersFromPermutations(List<VarName> originalVars, List<List<VarName>> permutations){
+    public static Set<Unifier> getUnifiersFromPermutations(List<Var> originalVars, List<List<Var>> permutations){
         Set<Unifier> unifierSet = new HashSet<>();
         permutations.forEach(perm -> {
             Unifier unifier = new UnifierImpl();
-            Iterator<VarName> pIt = originalVars.iterator();
-            Iterator<VarName> cIt = perm.iterator();
+            Iterator<Var> pIt = originalVars.iterator();
+            Iterator<Var> cIt = perm.iterator();
             while(pIt.hasNext() && cIt.hasNext()){
-                VarName pVar = pIt.next();
-                VarName chVar = cIt.next();
+                Var pVar = pIt.next();
+                Var chVar = cIt.next();
                 if (!pVar.equals(chVar)) unifier.addMapping(pVar, chVar);
             }
             unifierSet.add(unifier);
@@ -327,11 +327,11 @@ public class ReasonerUtils {
      * @param roleMap initial rolePlayer-roleType roleMap to be complemented
      * @param roleMaps output set containing possible role mappings complementing the roleMap configuration
      */
-    public static void computeRoleCombinations(Set<VarName> vars, Set<RoleType> roles, Map<VarName, VarPattern> roleMap,
-                                        Set<Map<VarName, VarPattern>> roleMaps){
-        Set<VarName> tempVars = Sets.newHashSet(vars);
+    public static void computeRoleCombinations(Set<Var> vars, Set<RoleType> roles, Map<Var, VarPattern> roleMap,
+                                               Set<Map<Var, VarPattern>> roleMaps){
+        Set<Var> tempVars = Sets.newHashSet(vars);
         Set<RoleType> tempRoles = Sets.newHashSet(roles);
-        VarName var = vars.iterator().next();
+        Var var = vars.iterator().next();
 
         roles.forEach(role -> {
             tempVars.remove(var);
@@ -405,7 +405,7 @@ public class ReasonerUtils {
         VarPattern childVar = var().isa(Graql.label(child.getLabel()));
 
         for (Map.Entry<TypeLabel, TypeLabel> entry : roleMappings.entrySet()) {
-            VarName varName = VarName.anon();
+            Var varName = Var.anon();
             parentVar = parentVar.rel(Graql.label(entry.getKey()), var(varName));
             childVar = childVar.rel(Graql.label(entry.getValue()), var(varName));
         }
@@ -423,11 +423,11 @@ public class ReasonerUtils {
      */
     public static Rule createPropertyChainRule(RelationType relation, TypeLabel fromRoleLabel, TypeLabel toRoleLabel,
                                                LinkedHashMap<RelationType, Pair<TypeLabel, TypeLabel>> chain, GraknGraph graph){
-        Stack<VarName> varNames = new Stack<>();
-        varNames.push(VarName.of("x"));
+        Stack<Var> varNames = new Stack<>();
+        varNames.push(Var.of("x"));
         Set<VarPatternAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
-            VarName varName = VarName.anon();
+            Var varName = Var.anon();
             VarPatternAdmin var = var().isa(Graql.label(relType.getLabel()))
                     .rel(Graql.label(rolePair.getKey()), var(varNames.peek()))
                     .rel(Graql.label(rolePair.getValue()), var(varName)).admin();

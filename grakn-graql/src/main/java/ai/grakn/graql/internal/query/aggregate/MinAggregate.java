@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
 import java.util.Optional;
@@ -31,9 +31,9 @@ import static java.util.Comparator.naturalOrder;
  */
 class MinAggregate<T extends Comparable<T>> extends AbstractAggregate<Answer, Optional<T>> {
 
-    private final VarName varName;
+    private final Var varName;
 
-    MinAggregate(VarName varName) {
+    MinAggregate(Var varName) {
         this.varName = varName;
     }
 

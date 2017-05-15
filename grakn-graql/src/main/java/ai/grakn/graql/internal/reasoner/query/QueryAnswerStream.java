@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
@@ -61,9 +61,9 @@ public class QueryAnswerStream {
         return true;
     }
 
-    static boolean knownFilterWithInverse(Answer answer, Map<Pair<VarName, Concept>, Set<Answer>> stream2InverseMap) {
-        Iterator<Map.Entry<VarName, Concept>> eit = answer.entrySet().iterator();
-        Map.Entry<VarName, Concept> entry = eit.next();
+    static boolean knownFilterWithInverse(Answer answer, Map<Pair<Var, Concept>, Set<Answer>> stream2InverseMap) {
+        Iterator<Map.Entry<Var, Concept>> eit = answer.entrySet().iterator();
+        Map.Entry<Var, Concept> entry = eit.next();
         Set<Answer> matchAnswers = findMatchingAnswers(entry.getKey(), entry.getValue(), stream2InverseMap);
         while(eit.hasNext()){
             entry = eit.next();
@@ -100,7 +100,7 @@ public class QueryAnswerStream {
     public static boolean entityTypeFilter(Answer answer, Set<TypeAtom> types){
         if (types.isEmpty()) return true;
         for (TypeAtom type : types){
-            VarName var = type.getVarName();
+            Var var = type.getVarName();
             Type t = type.getType();
             if(!t.subTypes().contains(answer.get(var).asInstance().type())){
                 return false;
@@ -116,16 +116,16 @@ public class QueryAnswerStream {
 
     private static Answer joinOperator(Answer m1, Answer m2){
         boolean isCompatible = true;
-        Set<VarName> joinVars = Sets.intersection(m1.keySet(), m2.keySet());
-        Iterator<VarName> it = joinVars.iterator();
+        Set<Var> joinVars = Sets.intersection(m1.keySet(), m2.keySet());
+        Iterator<Var> it = joinVars.iterator();
         while(it.hasNext() && isCompatible) {
-            VarName var = it.next();
+            Var var = it.next();
             isCompatible = m1.get(var).equals(m2.get(var));
         }
         return isCompatible? m1.merge(m2) : new QueryAnswer();
     }
 
-    public static final BiFunction<Answer, Set<VarName>, Stream<Answer>> varFilterFunction = (a, vars) -> {
+    public static final BiFunction<Answer, Set<Var>, Stream<Answer>> varFilterFunction = (a, vars) -> {
         Answer filteredAnswer = a.filterVars(vars);
         return filteredAnswer.isEmpty() ? Stream.empty() : Stream.of(filteredAnswer);
     };
@@ -160,13 +160,13 @@ public class QueryAnswerStream {
         return s1.flatMap(a1 -> l2.stream().flatMap(a2 -> function.apply(a1,a2)));
     }
 
-    private static Set<Answer> findMatchingAnswers(VarName var, Concept con, Map<Pair<VarName, Concept>, Set<Answer>> inverseMap){
-        Pair<VarName, Concept> key = new Pair<>(var, con);
+    private static Set<Answer> findMatchingAnswers(Var var, Concept con, Map<Pair<Var, Concept>, Set<Answer>> inverseMap){
+        Pair<Var, Concept> key = new Pair<>(var, con);
         return inverseMap.containsKey(key)? inverseMap.get(key) : new HashSet<>();
     }
 
-    private static Set<Answer> findMatchingAnswers(Answer answer, Map<Pair<VarName, Concept>, Set<Answer>> inverseMap, VarName joinVar){
-        Pair<VarName, Concept> key = new Pair<>(joinVar, answer.get(joinVar));
+    private static Set<Answer> findMatchingAnswers(Answer answer, Map<Pair<Var, Concept>, Set<Answer>> inverseMap, Var joinVar){
+        Pair<Var, Concept> key = new Pair<>(joinVar, answer.get(joinVar));
         return inverseMap.containsKey(key)? inverseMap.get(key) : new HashSet<>();
     }
 
@@ -187,12 +187,12 @@ public class QueryAnswerStream {
      * @param joinVars intersection on variables of two streams
      * @return joined stream
      */
-    public static Stream<Answer> join(Stream<Answer> stream, Stream<Answer> stream2, ImmutableSet<VarName> joinVars, boolean explanation) {
+    public static Stream<Answer> join(Stream<Answer> stream, Stream<Answer> stream2, ImmutableSet<Var> joinVars, boolean explanation) {
         LazyAnswerIterator l2 = new LazyAnswerIterator(stream2);
         return stream.flatMap(a1 -> {
             Stream<Answer> answerStream = l2.stream();
             answerStream = answerStream.filter(ans -> {
-                for(VarName v: joinVars) {
+                for(Var v: joinVars) {
                     if (!ans.get(v).equals(a1.get(v))) {
                         return false;
                     }
@@ -213,15 +213,15 @@ public class QueryAnswerStream {
      */
     public static Stream<Answer> joinWithInverse(Stream<Answer> stream,
                                                                 Stream<Answer> stream2,
-                                                                Map<Pair<VarName, Concept>, Set<Answer>> stream2InverseMap,
-                                                                ImmutableSet<VarName> joinVars,
+                                                                Map<Pair<Var, Concept>, Set<Answer>> stream2InverseMap,
+                                                                ImmutableSet<Var> joinVars,
                                                                 boolean explanation) {
         if (joinVars.isEmpty()){
             LazyAnswerIterator l2 = new LazyAnswerIterator(stream2);
             return stream.flatMap(a1 -> l2.stream().map(a -> a.merge(a1, explanation)));
         }
         return stream.flatMap(a1 -> {
-            Iterator<VarName> vit = joinVars.iterator();
+            Iterator<Var> vit = joinVars.iterator();
             Set<Answer> matchAnswers = findMatchingAnswers(a1, stream2InverseMap, vit.next());
             while(vit.hasNext()){
                 matchAnswers = Sets.intersection(matchAnswers, findMatchingAnswers(a1, stream2InverseMap, vit.next()));

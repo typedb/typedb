@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -172,8 +172,8 @@ public class InferenceRule {
 
         Set<TypeAtom> types = parentAtom.getTypeConstraints().stream()
                 .collect(toSet());
-        Set<VarName> typeVars = types.stream().map(Atom::getVarName).collect(toSet());
-        Map<VarName, Type> varTypeMap = parentAtom.getParentQuery().getVarTypeMap();
+        Set<Var> typeVars = types.stream().map(Atom::getVarName).collect(toSet());
+        Map<Var, Type> varTypeMap = parentAtom.getParentQuery().getVarTypeMap();
 
         //remove less specific types if present
         body.getTypeConstraints().stream()
@@ -197,9 +197,9 @@ public class InferenceRule {
             body.unify(rewriteUnifiers);
 
             //resolve captures
-            Set<VarName> varIntersection = Sets.intersection(body.getVarNames(), parentAtom.getVarNames());
+            Set<Var> varIntersection = Sets.intersection(body.getVarNames(), parentAtom.getVarNames());
             varIntersection = Sets.difference(varIntersection, rewriteUnifiers.keySet());
-            varIntersection.forEach(var -> body.unify(var, VarName.anon()));
+            varIntersection.forEach(var -> body.unify(var, Var.anon()));
         }
     }
 

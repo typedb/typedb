@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import com.google.common.collect.ImmutableSet;
@@ -37,16 +37,16 @@ public class PlanTest {
 
     @Test
     public void planComplexityShouldAlwaysEqualCostFromGraqlTraversal() {
-        VarName a = VarName.of("a");
-        VarName x = VarName.of("x");
-        VarName y = VarName.of("y");
-        VarName z = VarName.of("z");
+        Var a = Var.of("a");
+        Var x = Var.of("x");
+        Var y = Var.of("y");
+        Var z = Var.of("z");
 
         Fragment outIsa = outIsa(y, a);
         outIsa.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
 
-        Fragment inShortcut = Fragments.inShortcut(y, VarName.anon(), x, Optional.empty(), Optional.empty());
-        Fragment outShortcut = Fragments.outShortcut(x, VarName.anon(), z, Optional.empty(), Optional.empty());
+        Fragment inShortcut = Fragments.inShortcut(y, Var.anon(), x, Optional.empty(), Optional.empty());
+        Fragment outShortcut = Fragments.outShortcut(x, Var.anon(), z, Optional.empty(), Optional.empty());
         inShortcut.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
         outShortcut.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
 

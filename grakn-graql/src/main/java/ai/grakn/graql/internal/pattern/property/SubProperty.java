@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
@@ -71,7 +71,7 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(VarName start) {
+    public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(EquivalentFragmentSets.sub(start, superType.getVarName()));
     }
 
@@ -122,9 +122,9 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        VarName varName = var.getVarName();
+        Var varName = var.getVarName();
         VarPatternAdmin typeVar = this.getSuperType();
-        VarName typeVariable = typeVar.getVarName();
+        Var typeVariable = typeVar.getVarName();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarPatternAdmin resVar = Graql.var(varName).sub(Graql.var(typeVariable)).admin();

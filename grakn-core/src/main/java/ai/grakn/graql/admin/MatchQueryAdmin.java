@@ -21,7 +21,7 @@ package ai.grakn.graql.admin;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 
 import java.util.Optional;
 import java.util.Set;
@@ -57,5 +57,5 @@ public interface MatchQueryAdmin extends MatchQuery {
     /**
      * @return all selected variable names in the query
      */
-    Set<VarName> getSelectedNames();
+    Set<Var> getSelectedNames();
 }

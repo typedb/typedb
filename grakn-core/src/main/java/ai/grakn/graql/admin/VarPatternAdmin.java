@@ -21,7 +21,7 @@ package ai.grakn.graql.admin;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -49,13 +49,13 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
     /**
      * @return the variable name of this variable
      */
-    VarName getVarName();
+    Var getVarName();
 
     /**
      * @param name the new variable name of this variable
      */
     @CheckReturnValue
-    VarPatternAdmin setVarName(VarName name);
+    VarPatternAdmin setVarName(Var name);
 
     /**
      * @return whether the user specified a name for this variable

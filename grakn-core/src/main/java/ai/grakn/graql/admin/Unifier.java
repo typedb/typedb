@@ -18,7 +18,8 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -44,7 +45,7 @@ public interface Unifier{
      * @param key specific variable
      * @return corresponding term
      */
-    VarName get(VarName key);
+    Var get(Var key);
 
     /**
      * add a new mapping
@@ -52,7 +53,7 @@ public interface Unifier{
      * @param value term
      * @return previous value associated with key, or null if there was no mapping for key
      */
-    VarName addMapping(VarName key, VarName value);
+    Var addMapping(Var key, Var value);
 
 
     /**
@@ -60,35 +61,35 @@ public interface Unifier{
      */
     boolean isEmpty();
 
-    Map<VarName, VarName> map();
+    Map<Var, Var> map();
 
     /**
      * @return variables present in this unifier
      */
-    Set<VarName> keySet();
+    Set<Var> keySet();
 
     /**
      * @return terms present in this unifier
      */
-    Collection<VarName> values();
+    Collection<Var> values();
 
     /**
      *
      * @return set of mappings constituting this unifier
      */
-    Set<Map.Entry<VarName, VarName>> getMappings();
+    Set<Map.Entry<Var, Var>> getMappings();
 
     /**
      * @param key variable to be inspected for presence
      * @return true if specified key is part of a mapping
      */
-    boolean containsKey(VarName key);
+    boolean containsKey(Var key);
 
     /**
      * @param value term to be checked for presence
      * @return true if specified value is part of a mapping
      */
-    boolean containsValue(VarName value);
+    boolean containsValue(Var value);
 
     /**
      * @param u unifier to compare with

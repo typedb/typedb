@@ -28,18 +28,18 @@ import java.util.function.Function;
  *
  * @author Felix Chapman
  */
-public final class VarName {
+public final class Var {
     private final String value;
 
-    public static VarName of(String value) {
-        return new VarName(value);
+    public static Var of(String value) {
+        return new Var(value);
     }
 
-    public static VarName anon() {
-        return new VarName(UUID.randomUUID().toString());
+    public static Var anon() {
+        return new Var(UUID.randomUUID().toString());
     }
 
-    private VarName(String value) {
+    private Var(String value) {
         this.value = value;
     }
 
@@ -51,12 +51,12 @@ public final class VarName {
     }
 
     /**
-     * Rename a variable (does not modify the original {@code VarName})
+     * Rename a variable (does not modify the original {@link Var})
      * @param mapper a function to apply to the underlying variable name
      * @return the new variable name
      */
-    public VarName map(Function<String, String> mapper) {
-        return VarName.of(mapper.apply(value));
+    public Var map(Function<String, String> mapper) {
+        return Var.of(mapper.apply(value));
     }
 
     /**
@@ -75,7 +75,7 @@ public final class VarName {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        VarName varName = (VarName) o;
+        Var varName = (Var) o;
 
         return value.equals(varName.value);
     }

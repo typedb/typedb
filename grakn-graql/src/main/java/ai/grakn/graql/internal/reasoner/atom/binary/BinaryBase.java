@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -44,7 +44,7 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
  *
  */
 public abstract class BinaryBase extends Atom {
-    private VarName valueVariable;
+    private Var valueVariable;
 
     protected BinaryBase(VarPatternAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
@@ -56,13 +56,13 @@ public abstract class BinaryBase extends Atom {
         this.valueVariable = a.getValueVariable();
     }
 
-    protected abstract VarName extractValueVariableName(VarPatternAdmin var);
+    protected abstract Var extractValueVariableName(VarPatternAdmin var);
     protected abstract boolean hasEquivalentPredicatesWith(BinaryBase atom);
 
-    public VarName getValueVariable() {
+    public Var getValueVariable() {
         return valueVariable;
     }
-    protected void setValueVariable(VarName var) {
+    protected void setValueVariable(Var var) {
         valueVariable = var;
     }
 
@@ -114,8 +114,8 @@ public abstract class BinaryBase extends Atom {
     }
 
     @Override
-    public Set<VarName> getVarNames() {
-        Set<VarName> vars = new HashSet<>();
+    public Set<Var> getVarNames() {
+        Set<Var> vars = new HashSet<>();
         if (isUserDefinedName()) vars.add(getVarName());
         if (!valueVariable.getValue().isEmpty()) vars.add(valueVariable);
         return vars;
@@ -124,7 +124,7 @@ public abstract class BinaryBase extends Atom {
     @Override
     public void unify (Unifier unifier) {
         super.unify(unifier);
-        VarName var = valueVariable;
+        Var var = valueVariable;
         if (unifier.containsKey(var)) {
             setValueVariable(unifier.get(var));
         } else if (unifier.containsValue(var)) {
@@ -139,12 +139,12 @@ public abstract class BinaryBase extends Atom {
         }
 
         Unifier unifier = new UnifierImpl();
-        VarName childValVarName = this.getValueVariable();
-        VarName parentValVarName = ((BinaryBase) parentAtom).getValueVariable();
+        Var childValVarName = this.getValueVariable();
+        Var parentValVarName = ((BinaryBase) parentAtom).getValueVariable();
 
         if (parentAtom.isUserDefinedName()){
-            VarName childVarName = this.getVarName();
-            VarName parentVarName = parentAtom.getVarName();
+            Var childVarName = this.getVarName();
+            Var parentVarName = parentAtom.getVarName();
             if (!childVarName.equals(parentVarName)) {
                 unifier.addMapping(childVarName, parentVarName);
             }
