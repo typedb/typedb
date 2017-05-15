@@ -34,6 +34,7 @@ import spark.Service;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 
@@ -56,6 +57,7 @@ public class UserController {
         spark.post(REST.WebPath.ONE_USER, this::createUser);
         spark.delete(REST.WebPath.ONE_USER, this::removeUser);
         spark.put(REST.WebPath.ONE_USER, this::updateUser);
+        spark.put("/user/one/:user-name/grant/:keyspace/:right", this::grantUserRight);
     }
 
     @GET
@@ -122,5 +124,45 @@ public class UserController {
             return false;
         }
         return users.updateUser(user);
+    }
+    
+    @GET
+    @Path("/one/:user-name/rights")
+    @ApiOperation(value = "Retrieve all access rights for all keyspaces for a given user.")
+    @ApiImplicitParam(name = "user-name", value = "Username of user.", required = true, dataType = "string", paramType = "path")
+    private Json allUserRights(Request request, Response response) {
+        return users.allAccessRights(request.queryParams(UsersHandler.USER_NAME));
+    }
+    
+    @PUT
+    @Path("/one/:user-name/grant/:keyspace/:right")
+    @ApiOperation(value = "Retrieve all access rights for all keyspaces for a given user.")
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "user-name", value = "Username of user.", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "keyspace", value = "Keyspace to which a right is granted.", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "right", value = "The right being granted.", required = true, dataType = "string", paramType = "path")
+    })
+    private boolean grantUserRight(Request request, Response response) {
+        String username = request.params("user-name");
+        String keyspace = request.params("keyspace");
+        String right = request.params("right");
+        users.grantAccess(username, keyspace, right);
+        return true;
+    }
+
+    @DELETE
+    @Path("/one/:user-name/grant/:keyspace/:right")
+    @ApiOperation(value = "Retrieve all access rights for all keyspaces for a given user.")
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "user-name", value = "Username of user.", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "keyspace", value = "Keyspace to which a right is granted.", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "right", value = "The right being granted.", required = true, dataType = "string", paramType = "path")
+    })
+    private boolean revokeUserRight(Request request, Response response) {
+        String username = request.params("user-name");
+        String keyspace = request.params("keyspace");
+        String right = request.params("right");
+        users.revokeAccess(username, keyspace, right);
+        return true;
     }
 }
