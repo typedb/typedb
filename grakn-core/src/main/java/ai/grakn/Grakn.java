@@ -18,6 +18,7 @@
 
 package ai.grakn;
 
+import javax.annotation.CheckReturnValue;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Locale;
@@ -124,6 +125,7 @@ public class Grakn {
      * If one doesn't exist, it will be created for you.
      * @return A session instance that can produce concurrent connection to the specified knowledge graph.
      */
+    @CheckReturnValue
     public static GraknSession session(String location, String keyspace) {
         String finalKeyspace = keyspace.toLowerCase(Locale.getDefault());
         String key = location + finalKeyspace;
