@@ -72,6 +72,10 @@ public class TypeId implements Comparable<TypeId>, Serializable {
         return getValue().toString();
     }
 
+    public boolean isValid(){
+        return typeId != -1;
+    }
+
     /**
      *
      * @param value The integer which potentially represents a Type
@@ -79,5 +83,12 @@ public class TypeId implements Comparable<TypeId>, Serializable {
      */
     public static TypeId of(Integer value){
         return new TypeId(value);
+    }
+
+    /**
+     * @return a type id which does not match any type
+     */
+    public static TypeId empty(){
+        return new TypeId(-1);
     }
 }

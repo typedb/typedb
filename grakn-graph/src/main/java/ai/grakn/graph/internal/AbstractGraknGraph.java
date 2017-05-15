@@ -136,7 +136,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(getTxCache().isLabelCached(label)){
             return getTxCache().convertLabelToId(label);
         }
-        return TypeId.of(-1);
+        return TypeId.empty();
     }
 
     /**
@@ -144,7 +144,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      *
      * @return the current available Grakn id which can be used for types
      */
-    private int getNextTypeId(){
+    private TypeId getNextId(){
         TypeImpl<?, ?> metaConcept = (TypeImpl<?, ?>) getMetaConcept();
         Integer currentValue = metaConcept.getProperty(Schema.ConceptProperty.CURRENT_TYPE_ID);
         if(currentValue == null){
@@ -154,7 +154,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
         //Vertex is used directly here to bypass meta type mutation check
         metaConcept.getVertex().property(Schema.ConceptProperty.CURRENT_TYPE_ID.name(), currentValue);
-        return currentValue;
+        return TypeId.of(currentValue);
     }
 
     /**
@@ -370,7 +370,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Vertex vertex;
         ConceptImpl concept = getType(convertToId(label));
         if(concept == null) {
-            vertex = addTypeVertex(getNextTypeId(), label, baseType);
+            vertex = addTypeVertex(getNextId(), label, baseType);
         } else {
             if(!baseType.equals(concept.getBaseType())) {
                 throw new ConceptNotUniqueException(concept, label.getValue());
@@ -565,7 +565,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return validateConceptType(type, baseType, () -> null);
     }
     private <T extends Type> T getType(TypeId id){
-        if(id.getValue() == -1) return null;
+        if(!id.isValid()) return null;
         return getConcept(Schema.ConceptProperty.TYPE_ID, id.getValue());
     }
 
