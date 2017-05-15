@@ -159,6 +159,7 @@ public class ConceptPropertyTest {
     public void whenConceptIsNotAType_TheConceptCannotBeConvertedToAType(Concept concept) {
         assumeFalse(concept.isType());
         exception.expect(InvalidConceptTypeException.class);
+        //noinspection ResultOfMethodCallIgnored
         concept.asType();
     }
 
@@ -166,6 +167,7 @@ public class ConceptPropertyTest {
     public void whenConceptIsNotAnEntityType_TheConceptCannotBeConvertedToAnEntityType(Concept concept) {
         assumeFalse(concept.isEntityType());
         exception.expect(InvalidConceptTypeException.class);
+        //noinspection ResultOfMethodCallIgnored
         concept.asEntityType();
     }
 
@@ -173,6 +175,7 @@ public class ConceptPropertyTest {
     public void whenConceptIsNotARelationType_TheConceptCannotBeConvertedToARelationType(Concept concept) {
         assumeFalse(concept.isRelationType());
         exception.expect(InvalidConceptTypeException.class);
+        //noinspection ResultOfMethodCallIgnored
         concept.asRelationType();
     }
 
@@ -180,6 +183,7 @@ public class ConceptPropertyTest {
     public void whenConceptIsNotARoleType_TheConceptCannotBeConvertedToARoleType(Concept concept) {
         assumeFalse(concept.isRoleType());
         exception.expect(InvalidConceptTypeException.class);
+        //noinspection ResultOfMethodCallIgnored
         concept.asRoleType();
     }
 
@@ -187,6 +191,7 @@ public class ConceptPropertyTest {
     public void whenConceptIsNotAResourceType_TheConceptCannotBeConvertedToAResourceType(Concept concept) {
         assumeFalse(concept.isResourceType());
         exception.expect(InvalidConceptTypeException.class);
+        //noinspection ResultOfMethodCallIgnored
         concept.asResourceType();
     }
 
@@ -194,6 +199,7 @@ public class ConceptPropertyTest {
     public void whenConceptIsNotARuleType_TheConceptCannotBeConvertedToARuleType(Concept concept) {
         assumeFalse(concept.isRuleType());
         exception.expect(InvalidConceptTypeException.class);
+        //noinspection ResultOfMethodCallIgnored
         concept.asRuleType();
     }
 
@@ -201,6 +207,7 @@ public class ConceptPropertyTest {
     public void whenConceptIsNotAnInstance_TheConceptCannotBeConvertedToAnInstance(Concept concept) {
         assumeFalse(concept.isInstance());
         exception.expect(InvalidConceptTypeException.class);
+        //noinspection ResultOfMethodCallIgnored
         concept.asInstance();
     }
 
@@ -208,6 +215,7 @@ public class ConceptPropertyTest {
     public void whenConceptIsNotAnEntity_TheConceptCannotBeConvertedToAnEntity(Concept concept) {
         assumeFalse(concept.isEntity());
         exception.expect(InvalidConceptTypeException.class);
+        //noinspection ResultOfMethodCallIgnored
         concept.asEntity();
     }
 
@@ -215,6 +223,7 @@ public class ConceptPropertyTest {
     public void whenConceptIsNotARelation_TheConceptCannotBeConvertedToARelation(Concept concept) {
         assumeFalse(concept.isRelation());
         exception.expect(InvalidConceptTypeException.class);
+        //noinspection ResultOfMethodCallIgnored
         concept.asRelation();
     }
 
@@ -222,6 +231,7 @@ public class ConceptPropertyTest {
     public void whenConceptIsNotAResource_TheConceptCannotBeConvertedToAResource(Concept concept) {
         assumeFalse(concept.isResource());
         exception.expect(InvalidConceptTypeException.class);
+        //noinspection ResultOfMethodCallIgnored
         concept.asResource();
     }
 
@@ -229,6 +239,7 @@ public class ConceptPropertyTest {
     public void whenConceptIsNotARule_TheConceptCannotBeConvertedToARule(Concept concept) {
         assumeFalse(concept.isRule());
         exception.expect(InvalidConceptTypeException.class);
+        //noinspection ResultOfMethodCallIgnored
         concept.asRule();
     }
 

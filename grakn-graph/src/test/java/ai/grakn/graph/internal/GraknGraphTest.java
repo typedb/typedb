@@ -132,6 +132,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void whenClosingReadOnlyGraph_EnsureTypesAreCached(){
         assertCacheOnlyContainsMetaTypes();
+        //noinspection ResultOfMethodCallIgnored
         graknGraph.getMetaConcept().subTypes(); //This loads some types into transaction cache
         graknGraph.abort();
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
@@ -363,6 +364,7 @@ public class GraknGraphTest extends GraphTestBase {
         failAtOpeningGraph(session, GraknTxType.BATCH, keyspace);
         graph.close();
 
+        //noinspection ResultOfMethodCallIgnored
         session.open(GraknTxType.BATCH);
         failAtOpeningGraph(session, GraknTxType.WRITE, keyspace);
         failAtOpeningGraph(session, GraknTxType.READ, keyspace);
@@ -370,6 +372,7 @@ public class GraknGraphTest extends GraphTestBase {
     private void failAtOpeningGraph(GraknSession session, GraknTxType txType, String keyspace){
         Exception exception = null;
         try{
+            //noinspection ResultOfMethodCallIgnored
             session.open(txType);
         } catch (GraphRuntimeException e){
             exception = e;
