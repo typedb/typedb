@@ -147,10 +147,16 @@ REGEX          : '/' (~'/' | '\\/')* '/' ;
 INTEGER        : ('+' | '-')? [0-9]+ ;
 REAL           : ('+' | '-')? [0-9]+ '.' [0-9]+ ;
 DATE           : DATE_FRAGMENT ;
-DATETIME       : DATE_FRAGMENT 'T' [0-2][0-9] ':' [0-6][0-9] (':' [0-6][0-9])?;
+DATETIME       : DATE_FRAGMENT 'T' TIME ;
 
-fragment DATE_FRAGMENT : YEAR '-' [0-1][0-9] '-' [0-3][0-9] ;
+fragment DATE_FRAGMENT : YEAR '-' MONTH '-' DAY ;
+fragment MONTH         : [0-1][0-9] ;
+fragment DAY           : [0-3][0-9] ;
 fragment YEAR          : [0-9][0-9][0-9][0-9] | ('+' | '-') [0-9]+ ;
+fragment TIME          : HOUR ':' MINUTE (':' SECOND)? ;
+fragment HOUR          : [0-2][0-9] ;
+fragment MINUTE        : [0-6][0-9] ;
+fragment SECOND        : [0-6][0-9] ('.' [0-9]+)? ;
 
 fragment ESCAPE_SEQ : '\\' . ;
 
