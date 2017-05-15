@@ -14,50 +14,57 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
 package ai.grakn.graql;
 
-import java.util.UUID;
+import org.apache.commons.lang.StringUtils;
+
 import java.util.function.Function;
 
 /**
- * A variable name in a Graql query
  *
  * @author Felix Chapman
  */
-public interface Var {
-    static Var of(String value) {
-        return new VarImpl(value);
+public final class VarImpl implements Var {
+    private final String value;
+
+    VarImpl(String value) {
+        this.value = value;
     }
 
-    static Var anon() {
-        return new VarImpl(UUID.randomUUID().toString());
+    @Override
+    public String getValue() {
+        return value;
     }
 
-    /**
-     * Get the string name of the variable (without prefixed "$")
-     */
-    String getValue();
-
-    /**
-     * Rename a variable (does not modify the original {@link Var})
-     * @param mapper a function to apply to the underlying variable name
-     * @return the new variable name
-     */
-    Var map(Function<String, String> mapper);
-
-    /**
-     * Get a shorter representation of the variable (with prefixed "$")
-     */
-    String shortName();
-
-    String toString();
+    @Override
+    public Var map(Function<String, String> mapper) {
+        return Var.of(mapper.apply(value));
+    }
 
     @Override
-    boolean equals(Object o);
+    public String shortName() {
+        return "$" + StringUtils.left(value, 3);
+    }
 
     @Override
-    int hashCode();
+    public String toString() {
+        return "$" + value;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        VarImpl varName = (VarImpl) o;
+
+        return value.equals(varName.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
 }
