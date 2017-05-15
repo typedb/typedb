@@ -8,7 +8,7 @@ pipeline {
     }
     stage ('Unit tests') {
       steps {
-        sh 'mvn test -Ptinker -pl grakn-test'
+        sh 'mvn test -Ptinker -pl grakn-graql'
       }
       post {
         always {
