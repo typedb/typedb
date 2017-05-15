@@ -10,6 +10,12 @@ pipeline {
       steps {
         sh 'mvn test -Ptinker -pl grakn-test'
       }
+      post {
+        success {
+          junit '**/target/surefire-reports/**/*.xml' 
+          junit 'target/surefire-reports/**/*.xml' 
+        }
+      }
     }
   }
 }
