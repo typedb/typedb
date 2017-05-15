@@ -61,31 +61,35 @@ public class RedisConnection {
         return redis;
     }
 
-    //TODO: Make generic when instances require sharding
     /**
-     * Increments the number of instances currently on a type.
+     * Adjusts the count for a specific key.
      *
-     * @param keyspace the keyspace the type is in
-     * @param label the label of the type
-     * @param count the number of instances which have been added/removes
+     * @param key the key of the value to adjust
+     * @param count the number to adjust the key by
      * @return true
      */
-    public long adjustCount(String keyspace, TypeLabel label, long count){
-        return contactRedis((jedis) -> {
-            String key = getRedisKey(keyspace, label);
-            if(count > 0) {
-                return jedis.incrBy(key, count);
-            } else if (count < 0){
-                return jedis.decrBy(key, -1L * count); //If you decrement by a negative number it adds!
+    public long adjustCount(String key, long count){
+        return contactRedis(jedis -> {
+            if(count != 0) {
+                return jedis.incrBy(key, count); //Number is decremented when count is negative
             } else {
-                String value = jedis.get(key);
-                if(value == null) return 0L;
-                return Long.parseLong(value);
+               return getCount(key);
             }
         });
     }
-    private String getRedisKey(String keyspace, TypeLabel label){
-        return keyspace + "_" + label.getValue();
+
+    /**
+     * Gets the count for the specified key. A count of 0 is returned if the key is not in redis
+     *
+     * @param key the key stored in redis
+     * @return the current count.
+     */
+    public long getCount(String key){
+        return contactRedis(jedis -> {
+            String value = jedis.get(key);
+            if(value == null) return 0L;
+            return Long.parseLong(value);
+        });
     }
 
     /**
@@ -99,6 +103,18 @@ public class RedisConnection {
     private <X> X contactRedis(Function<Jedis, X> function){
         try(Jedis jedis = jedisPool.getResource()){
             return function.apply(jedis);
+        }
+    }
+
+    /**
+     * All the valid keys which map to values in the redis cache
+     */
+    public static class KEYS {
+        public static String numInstances(String keyspace, TypeLabel label){
+            return "NI_"+ keyspace + "_" + label.getValue();
+        }
+        public static String numShards(String keyspace, TypeLabel label){
+            return "NS_" + keyspace + "_" + label.getValue();
         }
     }
 }
