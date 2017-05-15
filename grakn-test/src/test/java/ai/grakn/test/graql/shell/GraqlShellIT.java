@@ -78,12 +78,12 @@ public class GraqlShellIT {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        // TODO: Get these tests working consistently on Jenkins - causes timeouts
-        assumeFalse(usingTitan());
-
         trueIn = System.in;
         trueOut = System.out;
         trueErr = System.err;
+        
+        // TODO: Get these tests working consistently on Jenkins - causes timeouts
+        assumeFalse(usingTitan());
     }
 
     @Before
