@@ -34,10 +34,10 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -47,7 +47,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -60,9 +59,8 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFu
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.subFilter;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
-
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -158,7 +156,7 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
 
         assertFalse(qb.<MatchQuery>parse(explicitQuery).ask().execute());
-        answers.stream().flatMap(atomicQuery::materialise).collect(Collectors.toList());
+        answers.stream().forEach(atomicQuery::materialise);
         assertTrue(qb.<MatchQuery>parse(explicitQuery).ask().execute());
     }
 
