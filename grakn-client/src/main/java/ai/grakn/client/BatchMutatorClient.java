@@ -19,7 +19,7 @@
 package ai.grakn.client;
 
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Query;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import mjson.Json;
@@ -48,7 +48,7 @@ import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
+import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import static java.lang.String.format;
@@ -58,25 +58,26 @@ import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.LIMIT_PARAM;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 
 /**
- * Client to load qraql queries into Grakn.
+ * Client to batch load qraql queries into Grakn that mutate the graph.
  *
- * Provides methods to batch insert queries. Optionally can provide a consumer
- * that will execute when a batch finishes loading. LoaderClient will block when the configured
+ * Provides methods to batch load queries. Optionally can provide a consumer
+ * that will execute when a batch finishes loading. BatchMutatorClient will block when the configured
  * resources are being used to execute tasks.
  *
  * @author alexandraorth
  */
-public class LoaderClient {
+public class BatchMutatorClient {
 
-    private static final Logger LOG = LoggerFactory.getLogger(LoaderClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BatchMutatorClient.class);
 
     private final String POST = "http://%s" + TASKS;
     private final String GET = "http://%s" + TASKS + "/%s";
 
     private final Map<Integer,CompletableFuture> futures;
-    private final Collection<InsertQuery> queries;
+    private final Collection<Query> queries;
     private final String keyspace;
     private final String uri;
 
@@ -87,11 +88,11 @@ public class LoaderClient {
     private int blockerSize;
     private boolean retry = false;
 
-    public LoaderClient(String keyspace, String uri) {
+    public BatchMutatorClient(String keyspace, String uri) {
         this(keyspace, uri, (Json t) -> {});
     }
 
-    public LoaderClient(String keyspace, String uri, Consumer<Json> onCompletionOfTask){
+    public BatchMutatorClient(String keyspace, String uri, Consumer<Json> onCompletionOfTask){
         this.uri = uri;
         this.keyspace = keyspace;
         this.queries = new HashSet<>();
@@ -104,12 +105,12 @@ public class LoaderClient {
     }
 
     /**
-     * Tell the {@link LoaderClient} if it should retry sending tasks when the Engine
+     * Tell the {@link BatchMutatorClient} if it should retry sending tasks when the Engine
      * server is not available
      *
      * @param retry boolean representing if engine should retry
      */
-    public LoaderClient setRetryPolicy(boolean retry){
+    public BatchMutatorClient setRetryPolicy(boolean retry){
         this.retry = retry;
         return this;
     }
@@ -118,7 +119,7 @@ public class LoaderClient {
      * Provide a consumer function to execute upon task completion
      * @param onCompletionOfTask function applied to the last state of the task
      */
-    public LoaderClient setTaskCompletionConsumer(Consumer<Json> onCompletionOfTask){
+    public BatchMutatorClient setTaskCompletionConsumer(Consumer<Json> onCompletionOfTask){
         this.onCompletionOfTask = onCompletionOfTask;
         return this;
     }
@@ -127,7 +128,7 @@ public class LoaderClient {
      * Set the size of the each transaction in terms of number of vars.
      * @param size number of vars in each transaction
      */
-    public LoaderClient setBatchSize(int size){
+    public BatchMutatorClient setBatchSize(int size){
         this.batchSize = size;
         return this;
     }
@@ -144,11 +145,11 @@ public class LoaderClient {
      * Number of active tasks running on the server at any one time.
      * Consider this a safeguard on system load.
      *
-     * The Loader {@link #add(InsertQuery)} method will block on the value of this field.
+     * The Loader {@link #add(Query)} method will block on the value of this field.
      *
      * @param size number of tasks to allow to run at any given time
      */
-    public LoaderClient setNumberActiveTasks(int size){
+    public BatchMutatorClient setNumberActiveTasks(int size){
         this.blockerSize = size;
         this.blocker = new Semaphore(size);
         return this;
@@ -163,7 +164,10 @@ public class LoaderClient {
      *
      * @param query insert query to be executed
      */
-    public void add(InsertQuery query){
+    public void add(Query query){
+        if (query.isReadOnly()) {
+            throw new IllegalArgumentException(READ_ONLY_QUERY.getMessage(query.toString()));
+        }
         queries.add(query);
         if(queries.size() >= batchSize){
             sendQueriesToLoader(new HashSet<>(queries));
@@ -198,15 +202,16 @@ public class LoaderClient {
     }
 
     /**
-     * Send a collection of insert queries to the TasksController, blocking until
+     * Send a collection of queries to the TasksController, blocking until
      * there is availability to send.
+     * If the collection contains read only queries throw an illegal argument exception.
      *
      * Release the semaphore when a task completes.
      * If there was an error communicating with the host to get the status, throw an exception.
      *
      * @param queries Queries to be inserted
      */
-    void sendQueriesToLoader(Collection<InsertQuery> queries){
+    void sendQueriesToLoader(Collection<Query> queries){
         try {
             blocker.acquire();
         } catch (InterruptedException e) {
@@ -365,23 +370,24 @@ public class LoaderClient {
     }
 
     private String getPostParams(){
-        return TASK_CLASS_NAME_PARAMETER + "=ai.grakn.engine.loader.LoaderTask&" +
+        return TASK_CLASS_NAME_PARAMETER + "=ai.grakn.engine.loader.MutatorTask&" +
                 TASK_RUN_AT_PARAMETER + "=" + new Date().getTime() + "&" +
                 LIMIT_PARAM + "=" + 10000 + "&" +
-                TASK_CREATOR_PARAMETER + "=" + LoaderClient.class.getName();
+                TASK_CREATOR_PARAMETER + "=" + BatchMutatorClient.class.getName();
     }
 
     /**
-     * Transform queries into Json configuration needed by the Loader task
+     * Transform queries into Json configuration needed by the MutationTask.
+     *
      * @param queries queries to include in configuration
      * @param batchNumber number of the current batch being sent
      * @return configuration for the loader task
      */
-    private String getConfiguration(Collection<InsertQuery> queries, int batchNumber){
+    private String getConfiguration(Collection<Query> queries, int batchNumber){
         return Json.object()
                 .set(KEYSPACE_PARAM, keyspace)
                 .set("batchNumber", batchNumber)
-                .set(TASK_LOADER_INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()))
+                .set(TASK_LOADER_MUTATIONS, queries.stream().map(Query::toString).collect(toList()))
                 .toString();
     }
 

@@ -19,7 +19,7 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.client.LoaderClient;
+import ai.grakn.client.BatchMutatorClient;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.junit.Before;
@@ -46,7 +46,7 @@ public class GraqlShellTest {
     private GraqlClient client;
     private final String expectedVersion = "graql-9.9.9";
     private static final String historyFile = "/graql-test-history";
-    private LoaderClient loaderClient;
+    private BatchMutatorClient batchMutatorClient;
 
     @Before
     public void createMocks() {
@@ -63,9 +63,9 @@ public class GraqlShellTest {
             return session;
         });
 
-        loaderClient = mock(LoaderClient.class);
+        batchMutatorClient = mock(BatchMutatorClient.class);
 
-        when(client.loaderClient(anyString(), anyString())).thenReturn(loaderClient);
+        when(client.loaderClient(anyString(), anyString())).thenReturn(batchMutatorClient);
     }
 
    @Test
@@ -86,16 +86,16 @@ public class GraqlShellTest {
         int batchSize = 100;
         int activeTasks = 1000;
         GraqlShell.runShell(new String[]{"-s", String.valueOf(batchSize), "-a", String.valueOf(activeTasks), "-b", testFilePath}, expectedVersion, historyFile, client);
-        verify(loaderClient).setNumberActiveTasks(activeTasks);
-        verify(loaderClient).setBatchSize(batchSize);
+        verify(batchMutatorClient).setNumberActiveTasks(activeTasks);
+        verify(batchMutatorClient).setBatchSize(batchSize);
     }
 
     @Test
     public void testBatchArgsDontHaveToBePresent() {
         String testFilePath = GraqlShellTest.class.getClassLoader().getResource("test-query.gql").getPath();
         GraqlShell.runShell(new String[]{"-b", testFilePath}, expectedVersion, historyFile, client);
-        verify(loaderClient, never()).setNumberActiveTasks(anyInt());
-        verify(loaderClient, never()).setBatchSize(anyInt());
+        verify(batchMutatorClient, never()).setNumberActiveTasks(anyInt());
+        verify(batchMutatorClient, never()).setBatchSize(anyInt());
     }
 
 }
