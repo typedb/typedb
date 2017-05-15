@@ -122,6 +122,7 @@ public class UnifierImpl implements Unifier {
     public Unifier merge(Unifier d) {
         unifier.putAll(d.map());
         return this;
+
         /*
         if (Collections.disjoint(this.values(), d.keySet())){
             unifier.putAll(d.map());
@@ -140,6 +141,7 @@ public class UnifierImpl implements Unifier {
                 .forEach(m -> merged.addMapping(m.getKey(), m.getValue()) );
         return merged;
         */
+
     }
 
     @Override

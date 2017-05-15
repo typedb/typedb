@@ -110,12 +110,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return super.hashCode() + 37;
     }
 
+    @Override
+    public boolean isAtomic(){ return true;}
+
     /**
      * @return the atom constituting this atomic query
      */
     public Atom getAtom() {
         return atom;
     }
+
 
     @Override
     public boolean addAtomic(Atomic at) {
@@ -209,8 +213,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .map(ans -> ans.setExplanation(answer.getExplanation()));
     }
 
-    private Set<Unifier> getPermutationUnifiers(Atom headAtom) {
-        if (!(atom.isRelation() && headAtom.isRelation())) return new HashSet<>();
+    Set<Unifier> getPermutationUnifiers(Atom headAtom) {
+        if (!(atom.isRelation() && headAtom.isRelation())) return Collections.singleton(new UnifierImpl());
 
         //if atom is match all atom, add type from rule head and find unmapped roles
         Relation relAtom = atom.getType() == null ?
@@ -303,7 +307,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @param materialise whether inferred information should be materialised
      * @return stream of differential answers
      */
-    public Stream<Answer> answerStream(Set<ReasonerAtomicQuery> subGoals,
+    Stream<Answer> answerStream(Set<ReasonerAtomicQuery> subGoals,
                                        Cache<ReasonerAtomicQuery, ?> cache,
                                        Cache<ReasonerAtomicQuery, ?> dCache,
                                        boolean materialise,
