@@ -30,7 +30,7 @@ import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
