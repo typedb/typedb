@@ -31,7 +31,9 @@ import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
 import static ai.grakn.test.GraknTestEnv.startEngine;
 import static ai.grakn.test.GraknTestEnv.startKafka;
+import static ai.grakn.test.GraknTestEnv.startRedis;
 import static ai.grakn.test.GraknTestEnv.stopEngine;
+import static ai.grakn.test.GraknTestEnv.stopRedis;
 
 /**
  * <p>
@@ -91,6 +93,8 @@ public class EngineContext extends ExternalResource {
             startKafka();
         }
 
+        startRedis();
+
         if(startSingleQueueEngine){
             server = startEngine(SingleQueueTaskManager.class.getName(), port);
         }
@@ -112,6 +116,8 @@ public class EngineContext extends ExternalResource {
             if(startKafka){
                 noThrow(GraknTestEnv::stopKafka, "Error stopping kafka");
             }
+
+            stopRedis();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
         }

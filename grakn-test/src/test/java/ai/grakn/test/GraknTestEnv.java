@@ -9,11 +9,14 @@ import ai.grakn.factory.SystemKeyspace;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
+import redis.embedded.RedisServer;
 
+import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
 import static ai.grakn.engine.tasks.config.KafkaTerms.HIGH_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.LOW_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.graql.Graql.var;
@@ -38,6 +41,7 @@ public abstract class GraknTestEnv {
     private static AtomicInteger KAFKA_COUNTER = new AtomicInteger(0);
 
     private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
+    private static RedisServer redisServer;
 
     public static void ensureCassandraRunning() throws Exception {
         if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
@@ -73,6 +77,11 @@ public abstract class GraknTestEnv {
         return server;
     }
 
+    static void startRedis() throws IOException {
+        redisServer = new RedisServer(properties.getPropertyAsInt(REDIS_SERVER_PORT));
+        redisServer.start();
+    }
+
     static void startKafka() throws Exception {
         // Kafka is using log4j, which is super annoying. We make sure it only logs error here
         org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
@@ -96,6 +105,10 @@ public abstract class GraknTestEnv {
             kafkaUnit.shutdown();
             LOG.info("kafka stopped.");
         }
+    }
+
+    static void stopRedis(){
+        redisServer.stop();
     }
 
     static void stopEngine(GraknEngineServer server) throws Exception {
