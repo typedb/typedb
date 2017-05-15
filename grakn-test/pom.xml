@@ -84,6 +84,12 @@
             <version>${commons-csv.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.github.kstyrc</groupId>
+            <artifactId>embedded-redis</artifactId>
+            <version>${redis-test.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <!-- migration -->
         <dependency>
