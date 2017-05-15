@@ -269,7 +269,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                           boolean explanation,
                                           boolean differentialJoin){
         Atom atom = this.getAtom();
+        Answer sub = this.getSubstitution();
         rule.unify(atom).propagateConstraints(atom);
+        rule.getHead().addSubstitution(sub);
+        rule.getBody().addSubstitution(sub);
 
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
@@ -346,7 +349,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .flatMap(r -> {
                     Unifier ruleUnifier = r.getUnifier(getAtom());
                     return getPermutationUnifiers(r.getHead().getAtom()).stream()
-                            .map(pu -> new Pair<>(new InferenceRule(r).propagateConstraints(getAtom(), ruleUnifier, pu), new Pair<>(ruleUnifier, pu)));
+                            .map(pu -> new Pair<>(new InferenceRule(r).propagateConstraints(getAtom(), ruleUnifier.inverse(), pu), new Pair<>(ruleUnifier, pu)));
                 }).iterator();
     }
     /**
