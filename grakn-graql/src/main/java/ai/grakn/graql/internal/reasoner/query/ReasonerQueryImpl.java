@@ -71,7 +71,6 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.uncapture;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
 /**
  *
@@ -663,7 +662,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<VarName> vars = this.getVarNames();
         return answerStream
                 .filter(a -> nonEqualsFilter(a, filters))
-                .flatMap(a -> varFilterFunction.apply(a, vars));
+                .map(a -> a.filterVars(vars));
     }
 
     public ReasonerQueryIterator iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){

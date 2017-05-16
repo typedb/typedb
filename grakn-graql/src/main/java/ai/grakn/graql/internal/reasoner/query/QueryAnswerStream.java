@@ -22,7 +22,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -109,11 +108,6 @@ public class QueryAnswerStream {
         return true;
     }
 
-    private static Stream<Answer> permuteOperator(Answer answer, Set<Unifier> unifierSet){
-        if (unifierSet.isEmpty()) return Stream.of(answer);
-        return unifierSet.stream().flatMap(unifier -> Stream.of(answer.unify(unifier)));
-    }
-
     private static Answer joinOperator(Answer m1, Answer m2){
         boolean isCompatible = true;
         Set<VarName> joinVars = Sets.intersection(m1.keySet(), m2.keySet());
@@ -125,28 +119,10 @@ public class QueryAnswerStream {
         return isCompatible? m1.merge(m2) : new QueryAnswer();
     }
 
-    public static final BiFunction<Answer, Set<VarName>, Stream<Answer>> varFilterFunction = (a, vars) -> {
-        Answer filteredAnswer = a.filterVars(vars);
-        return filteredAnswer.isEmpty() ? Stream.empty() : Stream.of(filteredAnswer);
-    };
-
-    public static final BiFunction<Answer, Set<Unifier>, Stream<Answer>> permuteFunction = QueryAnswerStream::permuteOperator;
-
     private static final BiFunction<Answer, Answer, Stream<Answer>> joinFunction = (a1, a2) -> {
         Answer merged = joinOperator(a1, a2);
         return merged.isEmpty()? Stream.empty(): Stream.of(merged);
     };
-
-    /**
-     * unify answer stream by applying unifiers
-     * @param answers stream of answers to be unified
-     * @param unifier to apply on stream elements
-     * @return unified answer stream
-     */
-    public static Stream<Answer> unify(Stream<Answer> answers, Unifier unifier) {
-        if(unifier.isEmpty()) return answers;
-        return answers.map(ans -> ans.unify(unifier));
-    }
 
     /**
      * perform a lazy join operation on two streams (stream and stream2)
