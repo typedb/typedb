@@ -29,6 +29,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 
 import javax.annotation.CheckReturnValue;
@@ -97,11 +98,11 @@ public final class Schema {
 
 
         private final TypeLabel label;
-        private final int id;
+        private final TypeId id;
 
-        MetaSchema(String s, int id) {
+        MetaSchema(String s, int i) {
             label = TypeLabel.of(s);
-            this.id = id;
+            id = TypeId.of(i);
         }
 
         @CheckReturnValue
@@ -110,7 +111,7 @@ public final class Schema {
         }
 
         @CheckReturnValue
-        public int getId(){
+        public TypeId getId(){
             return id;
         }
 

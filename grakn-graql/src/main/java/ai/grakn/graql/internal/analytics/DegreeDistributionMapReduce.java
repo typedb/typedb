@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeId;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -46,7 +47,7 @@ public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
     public DegreeDistributionMapReduce() {
     }
 
-    public DegreeDistributionMapReduce(Set<Integer> selectedTypeIds) {
+    public DegreeDistributionMapReduce(Set<TypeId> selectedTypeIds) {
         super(selectedTypeIds);
     }
 

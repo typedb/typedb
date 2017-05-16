@@ -107,7 +107,7 @@ public interface Type extends Concept {
      * @return The unique id of this type
      */
     @CheckReturnValue
-    Integer getTypeId();
+    TypeId getTypeId();
 
     /**
      * Returns the unique label of this Type.

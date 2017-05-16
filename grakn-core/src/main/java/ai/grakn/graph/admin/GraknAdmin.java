@@ -27,6 +27,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.Schema;
@@ -142,10 +143,10 @@ public interface GraknAdmin {
      * so be sure to use the correct graph when performing the mapping.
      *
      * @param label The label to be converted to the id
-     * @return The matching type id or -1 if no such type exists
+     * @return The matching type id
      */
     @CheckReturnValue
-    Integer convertToId(TypeLabel label);
+    TypeId convertToId(TypeLabel label);
 
     /**
      * Commits to the graph without submitting any commit logs.

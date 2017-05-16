@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeId;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -39,7 +40,7 @@ public class CountMapReduce extends GraknMapReduce<Long> {
     public CountMapReduce() {
     }
 
-    public CountMapReduce(Set<Integer> typeIds) {
+    public CountMapReduce(Set<TypeId> typeIds) {
         super(typeIds);
     }
 
