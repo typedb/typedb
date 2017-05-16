@@ -19,7 +19,6 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.postprocessing.util.TaskConfigReader;
