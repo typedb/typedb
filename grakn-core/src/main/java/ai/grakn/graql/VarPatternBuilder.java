@@ -28,7 +28,7 @@ import javax.annotation.CheckReturnValue;
 /**
  * @author Felix Chapman
  */
-public interface VarPatternBuilder {
+public interface VarPatternBuilder extends PatternBuilder {
     /**
      * @param id a ConceptId that this variable's ID must match
      * @return this
@@ -305,6 +305,6 @@ public interface VarPatternBuilder {
     @CheckReturnValue
     VarPattern neq(VarPatternBuilder var);
 
-    @CheckReturnValue
+    @Override
     VarPattern pattern();
 }
