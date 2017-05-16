@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.query;
+package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Unifier;
@@ -40,7 +40,6 @@ public class UnifierImpl implements Unifier {
 
     //TODO turn it to multimap to accommodate all cases
     private final Map<VarName, VarName> unifier = new HashMap<>();
-
 
     /**
      * Identity unifier.
@@ -120,26 +119,6 @@ public class UnifierImpl implements Unifier {
     public Unifier merge(Unifier d) {
         unifier.putAll(d.map());
         return this;
-
-        /*
-        if (Collections.disjoint(this.values(), d.keySet())){
-            unifier.putAll(d.map());
-            return this;
-        }
-        //TODO doesn't work with $x isa relation;
-        Unifier merged = new UnifierImpl();
-        Unifier inverse = this.inverse();
-        this.mappings().stream().filter(m -> !d.containsKey(m.getValue())).forEach(m -> merged.addMapping(m.getKey(), m.getValue()));
-        d.mappings().stream()
-                .map(m -> {
-                    VarName lVar = m.getKey();
-                    if (inverse.containsKey(lVar)) return new Pair<>(inverse.get(lVar), m.getValue());
-                    else return new Pair<>(m.getKey(), m.getValue());
-                })
-                .forEach(m -> merged.addMapping(m.getKey(), m.getValue()) );
-        return merged;
-        */
-
     }
 
     @Override
