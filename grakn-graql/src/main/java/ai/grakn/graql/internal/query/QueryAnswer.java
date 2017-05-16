@@ -200,5 +200,4 @@ public class QueryAnswer implements Answer {
         this.getExplanation().getAnswers().forEach(ans -> ans.getExplanations().forEach(explanations::add));
         return explanations;
     }
-
 }
