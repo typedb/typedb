@@ -40,7 +40,7 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
  * @author Kasper Piskorski
  *
  */
-public class NotEquals extends AtomBase {
+public class NotEquals extends AtomicBase {
 
     private VarName refVarName;
 
