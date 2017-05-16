@@ -162,7 +162,7 @@ public interface GraknAdmin {
      *
      * @param typeCounts The types and the changes to put on their counts
      */
-    void updateTypeShards(Map<TypeLabel, Long> typeCounts);
+    void updateTypeCounts(Map<TypeLabel, Long> typeCounts);
 
     //TODO: Change this to use ConceptId
     /**

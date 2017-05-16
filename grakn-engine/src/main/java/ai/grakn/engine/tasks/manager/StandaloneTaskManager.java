@@ -91,7 +91,7 @@ public class StandaloneTaskManager implements TaskManager {
         Lock postProcessingLock = new NonReentrantLock();
         Lock countUpdateLock = new NonReentrantLock();
         LockProvider.add(PostProcessingTask.LOCK_KEY, () -> postProcessingLock);
-        LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, () -> countUpdateLock);
+        LockProvider.add(UpdatingInstanceCountTask.getLockingKey(), () -> countUpdateLock);
     }
 
     @Override

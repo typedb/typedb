@@ -35,7 +35,6 @@ import ai.grakn.engine.util.EngineID;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import java.util.stream.Stream;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
@@ -48,6 +47,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
@@ -133,7 +133,7 @@ public class SingleQueueTaskManager implements TaskManager {
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
 
         LockProvider.add(PostProcessingTask.LOCK_KEY, () -> new ZookeeperLock(zookeeper, PostProcessingTask.LOCK_KEY));
-        LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, () -> new ZookeeperLock(zookeeper, UpdatingInstanceCountTask.LOCK_KEY));
+        LockProvider.add(UpdatingInstanceCountTask.getLockingKey(), () -> new ZookeeperLock(zookeeper, UpdatingInstanceCountTask.getLockingKey()));
 
         LOG.debug("TaskManager started");
     }

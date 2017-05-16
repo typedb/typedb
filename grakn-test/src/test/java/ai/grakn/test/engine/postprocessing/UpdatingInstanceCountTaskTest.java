@@ -1,8 +1,5 @@
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
-import ai.grakn.GraknTxType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
@@ -10,9 +7,7 @@ import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.Schema;
 import mjson.Json;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -31,17 +26,10 @@ public class UpdatingInstanceCountTaskTest {
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Test
-    public void whenUpdatingInstanceCounts_EnsureTypesInGraphAreUpdated() throws InterruptedException {
+    public void whenUpdatingInstanceCounts_EnsureRedisIsUpdated() throws InterruptedException {
         String keyspace = "mysimplekeyspace";
         String entityType1 = "e1";
         String entityType2 = "e2";
-
-        //Create Simple Graph
-        try(GraknGraph graknGraph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)){
-            graknGraph.putEntityType(entityType1);
-            graknGraph.putEntityType(entityType2);
-            graknGraph.admin().commitNoLogs();
-        }
 
         //Create Artificial configuration
         Json instanceCounts = Json.array();
@@ -62,15 +50,6 @@ public class UpdatingInstanceCountTaskTest {
         // Check that task has ran
         // STOPPED because it is a recurring task
         assertEquals(COMPLETED, engine.getTaskManager().storage().getState(task.getId()).status());
-
-        // Check the results of the task
-        try(GraknGraph graknGraph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)){
-            Vertex v1 = graknGraph.admin().getTinkerTraversal().has(Schema.ConceptProperty.ID.name(), graknGraph.getEntityType(entityType1).getId().getValue()).next();
-            Vertex v2 = graknGraph.admin().getTinkerTraversal().has(Schema.ConceptProperty.ID.name(), graknGraph.getEntityType(entityType2).getId().getValue()).next();
-
-            assertEquals(6L, (long) v1.value(Schema.ConceptProperty.INSTANCE_COUNT.name()));
-            assertEquals(3L, (long) v2.value(Schema.ConceptProperty.INSTANCE_COUNT.name()));
-        }
 
         // Check cache in redis has been updated
         RedisConnection redis = RedisConnection.getConnection();

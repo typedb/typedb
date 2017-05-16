@@ -59,11 +59,6 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
         Map<TypeLabel, Long> jobs = getJobsFromConfiguration(configuration);
         String keyspace = getKeyspace(configuration);
 
-        GraphMutators.runGraphMutationWithRetry(configuration, (graph) -> {
-            graph.admin().updateTypeShards(jobs);
-            graph.admin().commitNoLogs();
-        });
-
         //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
         //The graph cannot be used because each engine can have it's own snapshot of the graph with caching which makes
         //values only approximately correct
@@ -122,7 +117,7 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
      * @param label The label of the type to shard
      */
     private static void shardType(String keyspace, TypeLabel label){
-        Lock engineLock = LockProvider.getLock(getLockingKey(keyspace, label));
+        Lock engineLock = LockProvider.getLock(getLockingKey());
         engineLock.lock(); //Try to get the lock
 
         //Check if sharding is still needed. Another engine could have sharded whilst waiting for lock
@@ -140,8 +135,9 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
 
         engineLock.unlock();
     }
-    private static String getLockingKey(String keyspace, TypeLabel label){
-        return "/updating-instance-count-lock-" + keyspace + "-" + label.getValue();
+    //TODO: Add parameters keyspace and label to locking
+    public static String getLockingKey(){
+        return "/updating-instance-count-lock";
     }
 
     @Override
