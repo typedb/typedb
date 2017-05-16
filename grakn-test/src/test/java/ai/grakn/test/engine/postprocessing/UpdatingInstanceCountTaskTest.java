@@ -1,5 +1,10 @@
 package ai.grakn.test.engine.postprocessing;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
@@ -7,9 +12,12 @@ import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.Schema;
 import mjson.Json;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.UUID;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
@@ -27,14 +35,29 @@ public class UpdatingInstanceCountTaskTest {
 
     @Test
     public void whenUpdatingInstanceCounts_EnsureRedisIsUpdated() throws InterruptedException {
-        String keyspace = "mysimplekeyspace";
+        RedisConnection redis = RedisConnection.getConnection();
+        String keyspace = UUID.randomUUID().toString();
         String entityType1 = "e1";
         String entityType2 = "e2";
 
         //Create Artificial configuration
+        createAndExecuteCountTask(keyspace, TypeLabel.of(entityType1), 6L);
+        createAndExecuteCountTask(keyspace, TypeLabel.of(entityType2), 3L);
+        // Check cache in redis has been updated
+        assertEquals(6L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, TypeLabel.of(entityType1))));
+        assertEquals(3L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, TypeLabel.of(entityType2))));
+
+        //Create Artificial configuration
+        createAndExecuteCountTask(keyspace, TypeLabel.of(entityType1), 1L);
+        createAndExecuteCountTask(keyspace, TypeLabel.of(entityType2), -1L);
+        // Check cache in redis has been updated
+        assertEquals(7L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, TypeLabel.of(entityType1))));
+        assertEquals(2L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, TypeLabel.of(entityType2))));
+    }
+
+    private void createAndExecuteCountTask(String keyspace, TypeLabel label, long count){
         Json instanceCounts = Json.array();
-        instanceCounts.add(Json.object(COMMIT_LOG_TYPE_NAME, entityType1, COMMIT_LOG_INSTANCE_COUNT, 6));
-        instanceCounts.add(Json.object(COMMIT_LOG_TYPE_NAME, entityType2, COMMIT_LOG_INSTANCE_COUNT, 3));
+        instanceCounts.add(Json.object(COMMIT_LOG_TYPE_NAME, label.getValue(), COMMIT_LOG_INSTANCE_COUNT, count));
         Json configuration = Json.object(
                 KEYSPACE, keyspace,
                 COMMIT_LOG_COUNTING, instanceCounts
@@ -50,11 +73,46 @@ public class UpdatingInstanceCountTaskTest {
         // Check that task has ran
         // STOPPED because it is a recurring task
         assertEquals(COMPLETED, engine.getTaskManager().storage().getState(task.getId()).status());
+    }
 
-        // Check cache in redis has been updated
-        RedisConnection redis = RedisConnection.getConnection();
-        assertEquals(6L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, TypeLabel.of(entityType1))));
-        assertEquals(3L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, TypeLabel.of(entityType2))));
+    @Test
+    public void whenShardingThresholdIsBreached_ShardTypes(){
+        String keyspace = UUID.randomUUID().toString();
+        EntityType et1;
+        EntityType et2;
+
+        //Create Simple Graph
+        try(GraknGraph graknGraph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)){
+            et1 = graknGraph.putEntityType("et1");
+            et2 = graknGraph.putEntityType("et2");
+            graknGraph.admin().commitNoLogs();
+        }
+
+        checkShardCount(keyspace, et1, 1);
+        checkShardCount(keyspace, et2, 1);
+
+        //Add new counts
+        createAndExecuteCountTask(keyspace, et1.getLabel(), 99_999L);
+        createAndExecuteCountTask(keyspace, et2.getLabel(), 99_999L);
+
+        checkShardCount(keyspace, et1, 1);
+        checkShardCount(keyspace, et2, 1);
+
+        //Add new counts
+        createAndExecuteCountTask(keyspace, et1.getLabel(), 2L);
+        createAndExecuteCountTask(keyspace, et2.getLabel(), 1L);
+
+        checkShardCount(keyspace, et1, 2);
+        checkShardCount(keyspace, et2, 1);
+    }
+    private void checkShardCount(String keyspace, Concept concept, int expectedValue){
+        try(GraknGraph graknGraph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)){
+            int shards = graknGraph.admin().getTinkerTraversal().
+                    has(Schema.ConceptProperty.ID.name(), concept.getId().getValue()).
+                    in(Schema.EdgeLabel.SHARD.getLabel()).toList().size();
+
+            assertEquals(expectedValue, shards);
+        }
     }
 
 }

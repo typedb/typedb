@@ -87,7 +87,7 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
         long numShards = redis.getCount(RedisConnection.getKeyNumShards(keyspace, label));
         if(numShards == 0) numShards = 1;
         long numInstances = redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace, label), value);
-        return numInstances - (numShards * SHARDING_THRESHOLD) > SHARDING_THRESHOLD;
+        return numInstances > SHARDING_THRESHOLD * numShards;
     }
 
     /**
