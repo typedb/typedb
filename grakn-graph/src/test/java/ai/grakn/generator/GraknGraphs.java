@@ -257,7 +257,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 RuleType ruleType = ruleType();
-                Rule rule = ruleType.putRule(var("x"), var("x"));// TODO: generate more complicated rules
+                Rule rule = ruleType.putRule(var("x").pattern(), var("x").pattern());// TODO: generate more complicated rules
                 summaryAssign(rule, ruleType, "putRule", "var(\"x\")", "var(\"y\")");
             },
             () -> {

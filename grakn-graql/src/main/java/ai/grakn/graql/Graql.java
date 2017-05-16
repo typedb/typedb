@@ -62,7 +62,7 @@ public class Graql {
      * @param patterns an array of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
-    public static MatchQuery match(Pattern... patterns) {
+    public static MatchQuery match(PatternBuilder... patterns) {
         return withoutGraph().match(patterns);
     }
 
@@ -70,7 +70,7 @@ public class Graql {
      * @param patterns a collection of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
-    public static MatchQuery match(Collection<? extends Pattern> patterns) {
+    public static MatchQuery match(Collection<? extends PatternBuilder> patterns) {
         return withoutGraph().match(patterns);
     }
 
@@ -78,7 +78,7 @@ public class Graql {
      * @param vars an array of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
-    public static InsertQuery insert(VarPattern... vars) {
+    public static InsertQuery insert(VarPatternBuilder... vars) {
         return withoutGraph().insert(vars);
     }
 
@@ -86,7 +86,7 @@ public class Graql {
      * @param vars a collection of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
-    public static InsertQuery insert(Collection<? extends VarPattern> vars) {
+    public static InsertQuery insert(Collection<? extends VarPatternBuilder> vars) {
         return withoutGraph().insert(vars);
     }
 
@@ -169,7 +169,7 @@ public class Graql {
      * @param patterns an array of patterns to match
      * @return a pattern that will match only when all contained patterns match
      */
-    public static Pattern and(Pattern... patterns) {
+    public static Pattern and(PatternBuilder... patterns) {
         return and(Arrays.asList(patterns));
     }
 
@@ -177,7 +177,7 @@ public class Graql {
      * @param patterns a collection of patterns to match
      * @return a pattern that will match only when all contained patterns match
      */
-    public static Pattern and(Collection<? extends Pattern> patterns) {
+    public static Pattern and(Collection<? extends PatternBuilder> patterns) {
         Collection<PatternAdmin> patternAdmins = AdminConverter.getPatternAdmins(patterns);
         return Patterns.conjunction(Sets.newHashSet(patternAdmins));
     }
@@ -186,7 +186,7 @@ public class Graql {
      * @param patterns an array of patterns to match
      * @return a pattern that will match when any contained pattern matches
      */
-    public static Pattern or(Pattern... patterns) {
+    public static Pattern or(PatternBuilder... patterns) {
         return or(Arrays.asList(patterns));
     }
 
@@ -194,7 +194,7 @@ public class Graql {
      * @param patterns a collection of patterns to match
      * @return a pattern that will match when any contained pattern matches
      */
-    public static Pattern or(Collection<? extends Pattern> patterns) {
+    public static Pattern or(Collection<? extends PatternBuilder> patterns) {
         Collection<PatternAdmin> patternAdmins = AdminConverter.getPatternAdmins(patterns);
         return Patterns.disjunction(Sets.newHashSet(patternAdmins));
     }

@@ -33,7 +33,7 @@ import ai.grakn.graql.admin.PatternAdmin;
  *
  * @author Felix Chapman
  */
-public interface Pattern {
+public interface Pattern extends PatternBuilder {
 
     /**
      * @return an Admin class that allows inspecting or manipulating this pattern
