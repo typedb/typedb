@@ -39,6 +39,7 @@ public abstract class GraknTestEnv {
     private static String CONFIG = System.getProperty("grakn.test-profile");
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
     private static AtomicInteger KAFKA_COUNTER = new AtomicInteger(0);
+    private static AtomicInteger REDIS_COUNTER = new AtomicInteger(0);
 
     private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
     private static RedisServer redisServer;
@@ -78,8 +79,12 @@ public abstract class GraknTestEnv {
     }
 
     static void startRedis() throws IOException {
-        redisServer = new RedisServer(properties.getPropertyAsInt(REDIS_SERVER_PORT));
-        redisServer.start();
+        if(REDIS_COUNTER.getAndIncrement() == 0) {
+            LOG.info("Starting redis...");
+            redisServer = new RedisServer(properties.getPropertyAsInt(REDIS_SERVER_PORT));
+            redisServer.start();
+            LOG.info("Redis started.");
+        }
     }
 
     static void startKafka() throws Exception {
@@ -88,27 +93,29 @@ public abstract class GraknTestEnv {
 
         // Clean-up ironically uses a lot of memory
         if (KAFKA_COUNTER.getAndIncrement() == 0) {
-            LOG.info("starting kafka...");
-
+            LOG.info("Starting kafka...");
             kafkaUnit.setKafkaBrokerConfig("log.cleaner.enable", "false");
             kafkaUnit.startup();
             kafkaUnit.createTopic(HIGH_PRIORITY_TASKS_TOPIC, properties.getAvailableThreads() * 2);
             kafkaUnit.createTopic(LOW_PRIORITY_TASKS_TOPIC, properties.getAvailableThreads() * 2);
-
-            LOG.info("kafka started.");
+            LOG.info("Kafka started.");
         }
     }
 
     static void stopKafka() throws Exception {
         if (KAFKA_COUNTER.decrementAndGet() == 0) {
-            LOG.info("stopping kafka...");
+            LOG.info("Stopping kafka...");
             kafkaUnit.shutdown();
-            LOG.info("kafka stopped.");
+            LOG.info("Kafka stopped.");
         }
     }
 
     static void stopRedis(){
-        redisServer.stop();
+        if (REDIS_COUNTER.decrementAndGet() == 0) {
+            LOG.info("Stopping Redis...");
+            redisServer.stop();
+            LOG.info("Redis stopped.");
+        }
     }
 
     static void stopEngine(GraknEngineServer server) throws Exception {
