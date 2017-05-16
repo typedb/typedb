@@ -59,8 +59,9 @@ public class VariableAndPatternTest {
     public void setUp() {
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
-    public void testVarName() {
+    public void testValidVarNames() {
         var("123");
         var("___");
         var("---");
@@ -173,14 +174,16 @@ public class VariableAndPatternTest {
     }
 
     @Test(expected = Exception.class)
-    public void testConjunctionNull() {
+    public void whenConjunctionPassedNull_Throw() {
         Set<VarPattern> varSet = null;
+        //noinspection ResultOfMethodCallIgnored,ConstantConditions
         and(varSet);
     }
 
     @Test(expected = Exception.class)
-    public void testConjunctionContainsNull() {
+    public void whenConjunctionPassedVarAndNull_Throw() {
         VarPattern var = null;
+        //noinspection ResultOfMethodCallIgnored,ConstantConditions
         and(var(), var);
     }
 
@@ -228,14 +231,16 @@ public class VariableAndPatternTest {
     }
 
     @Test(expected = Exception.class)
-    public void testDisjunctionNull() {
+    public void whenDisjunctionPassedNull_Throw() {
         Set<VarPattern> varSet = null;
+        //noinspection ResultOfMethodCallIgnored,ConstantConditions
         or(varSet);
     }
 
     @Test(expected = Exception.class)
-    public void testDisjunctionContainsNull() {
+    public void whenDisjunctionPassedVarAndNull_Throw() {
         VarPattern var = null;
+        //noinspection ResultOfMethodCallIgnored,ConstantConditions
         or(var(), var);
     }
 
@@ -263,8 +268,9 @@ public class VariableAndPatternTest {
     }
 
     @Test(expected = Exception.class)
-    public void testNegationNull() {
+    public void whenNegationPassedNull_Throw() {
         VarPattern var = null;
+        //noinspection ConstantConditions,ResultOfMethodCallIgnored
         neq(var);
     }
 

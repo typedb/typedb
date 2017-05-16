@@ -169,6 +169,7 @@ public class MatchQueryModifierTest {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(VarName.of("y")));
 
+        //noinspection ResultOfMethodCallIgnored
         query.select("y");
     }
 

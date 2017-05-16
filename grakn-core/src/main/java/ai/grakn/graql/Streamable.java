@@ -18,6 +18,7 @@
 
 package ai.grakn.graql;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
@@ -31,6 +32,7 @@ import java.util.stream.Stream;
 public interface Streamable<T> extends Iterable<T> {
 
     @Override
+    @CheckReturnValue
     default Iterator<T> iterator() {
         return stream().iterator();
     }
@@ -38,11 +40,13 @@ public interface Streamable<T> extends Iterable<T> {
     /**
      * @return a stream of elements
      */
+    @CheckReturnValue
     Stream<T> stream();
 
     /**
      * @return a parallel stream of elements
      */
+    @CheckReturnValue
     default Stream<T> parallelStream() {
         return stream().parallel();
     }

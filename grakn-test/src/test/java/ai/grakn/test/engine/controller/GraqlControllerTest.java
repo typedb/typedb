@@ -30,7 +30,6 @@ import ai.grakn.test.engine.controller.TasksControllerTest.JsonMapper;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
-import java.util.Collections;
 import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -38,9 +37,10 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
-
 import org.junit.runners.MethodSorters;
 import spark.Service;
+
+import java.util.Collections;
 
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
@@ -53,10 +53,10 @@ import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.EXCEPTION;
 import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
 import static ai.grakn.util.REST.Response.Graql.RESPONSE;
@@ -73,7 +73,6 @@ import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.booleanThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
@@ -139,6 +138,7 @@ public class GraqlControllerTest {
         String query = "match $x isa person;";
         sendGET(query, APPLICATION_TEXT);
 
+        //noinspection ResultOfMethodCallIgnored
         verify(mockGraph.graql().materialise(anyBoolean()).infer(anyBoolean()))
                 .parse(argThat(argument -> argument.equals(query)));
     }
@@ -217,14 +217,16 @@ public class GraqlControllerTest {
     public void GETGraqlMatchWithReasonerTrue_ReasonerIsOnWhenExecuting(){
         sendGET("match $x isa person;", APPLICATION_TEXT, true, true, 0);
 
-        verify(mockQueryBuilder).infer(booleanThat(arg -> arg));
+        //noinspection ResultOfMethodCallIgnored
+        verify(mockQueryBuilder).infer(true);
     }
 
     @Test
     public void GETGraqlMatchWithReasonerFalse_ReasonerIsOffWhenExecuting(){
         sendGET("match $x isa person;", APPLICATION_TEXT, false, true, 0);
 
-        verify(mockQueryBuilder).infer(booleanThat(arg -> !arg));
+        //noinspection ResultOfMethodCallIgnored
+        verify(mockQueryBuilder).infer(false);
     }
 
     @Test
@@ -242,14 +244,16 @@ public class GraqlControllerTest {
     public void GETGraqlMatchWithMaterialiseFalse_MaterialiseIsOffWhenExecuting(){
         sendGET("match $x isa person;", APPLICATION_TEXT, false, false, 0);
 
-        verify(mockQueryBuilder).materialise(booleanThat(arg -> !arg));
+        //noinspection ResultOfMethodCallIgnored
+        verify(mockQueryBuilder).materialise(false);
     }
 
     @Test
     public void GETGraqlMatchWithMaterialiseTrue_MaterialiseIsOnWhenExecuting(){
         sendGET("match $x isa person;", APPLICATION_TEXT, false, true, 0);
 
-        verify(mockQueryBuilder).materialise(booleanThat(arg -> arg));
+        //noinspection ResultOfMethodCallIgnored
+        verify(mockQueryBuilder).materialise(true);
     }
 
     @Test

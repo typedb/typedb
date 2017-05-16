@@ -320,5 +320,6 @@ public interface VarPattern extends Pattern {
     /**
      * @return an Admin class to allow inspection of this {@link VarPattern}
      */
+    @CheckReturnValue
     VarPatternAdmin admin();
 }

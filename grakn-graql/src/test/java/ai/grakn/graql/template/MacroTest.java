@@ -68,6 +68,7 @@ public class MacroTest {
     @Test(expected = IllegalArgumentException.class)
     public void noescpMacroBreaksWithWrongNumberArguments(){
         String template = "@noescp(<value>, <otherValue>)";
+        //noinspection ResultOfMethodCallIgnored
         Graql.parseTemplate(template, new HashMap<>());
     }
 
@@ -236,6 +237,7 @@ public class MacroTest {
 
         exception.expect(IllegalArgumentException.class);
 
+        //noinspection ResultOfMethodCallIgnored
         Graql.parseTemplate(template, Collections.singletonMap("date", "10/09/1993"));
     }
 
