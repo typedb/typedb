@@ -167,6 +167,7 @@ public enum ErrorMessage {
     FAILED_VALIDATION("Caught exception during validation: %s"),
     NO_PARAMETER_PROVIDED("Required Parameter [%s] is missing for this [%s] operation"),
     NO_CONCEPT_IN_KEYSPACE("No concept with ID [%s] exists in keyspace [%s]"),
+    READ_ONLY_QUERY("Invalid query: [%s]. LoaderClient only accepts queries that mutate the graph."),
 
     //Server Errors
     UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
