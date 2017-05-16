@@ -182,4 +182,9 @@ public class QueryErrorTest {
         //noinspection ResultOfMethodCallIgnored
         concepts.count();
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void whenUsingInvalidResourceValue_Throw() {
+        qb.match(var("x").val(qb));
+    }
 }

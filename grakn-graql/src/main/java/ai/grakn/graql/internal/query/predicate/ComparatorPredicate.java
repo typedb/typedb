@@ -69,6 +69,10 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
             // Convert values to how they are stored in the graph
             ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getName());
 
+            if (dataType == null) {
+                throw new IllegalArgumentException("Unsupported type " + value.getClass());
+            }
+
             // We can trust the `SUPPORTED_TYPES` map to store things with the right type
             //noinspection unchecked
             value = dataType.getPersistenceValue(value);
