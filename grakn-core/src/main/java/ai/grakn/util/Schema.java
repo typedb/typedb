@@ -110,7 +110,7 @@ public final class Schema {
             return label;
         }
 
-        CheckReturnValue
+        @CheckReturnValue
         public TypeId getId(){
             return id;
         }
