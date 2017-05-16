@@ -111,7 +111,7 @@ public abstract class AtomBase implements Atomic {
     public Atomic unify(Unifier unifier){
         VarName var = getVarName();
         if (unifier.containsKey(var)) {
-            setVarName(unifier.get(var));
+            setVarName(unifier.get(var).iterator().next());
         } else if (unifier.containsValue(var)) {
             setVarName(capture(var));
         }

@@ -20,7 +20,10 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Unifier;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,18 +41,17 @@ import java.util.stream.Collectors;
  */
 public class UnifierImpl implements Unifier {
 
-    //TODO turn it to multimap to accommodate all cases
-    private final Map<VarName, VarName> unifier = new HashMap<>();
+    private final Multimap<VarName, VarName> unifier = ArrayListMultimap.create();
 
     /**
      * Identity unifier.
      */
     public UnifierImpl(){}
     public UnifierImpl(Map<VarName, VarName> map){
-        unifier.putAll(map);
+        map.entrySet().forEach(m -> unifier.put(m.getKey(), m.getValue()));
     }
     public UnifierImpl(Unifier u){
-        unifier.putAll(u.map());
+        merge(u);
     }
 
     @Override
@@ -76,8 +78,8 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Map<VarName, VarName> map() {
-        return Maps.newHashMap(unifier);
+    public Map<VarName, Collection<VarName>> map() {
+        return unifier.asMap();
     }
 
     @Override
@@ -91,14 +93,14 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Set<Map.Entry<VarName, VarName>> mappings(){ return unifier.entrySet();}
+    public Collection<Map.Entry<VarName, VarName>> mappings(){ return unifier.entries();}
 
-    public VarName addMapping(VarName key, VarName value){
+    public boolean addMapping(VarName key, VarName value){
         return unifier.put(key, value);
     }
 
     @Override
-    public VarName get(VarName key) {
+    public Collection<VarName> get(VarName key) {
         return unifier.get(key);
     }
 
@@ -117,26 +119,25 @@ public class UnifierImpl implements Unifier {
 
     @Override
     public Unifier merge(Unifier d) {
-        unifier.putAll(d.map());
+        d.mappings().forEach(m -> unifier.put(m.getKey(), m.getValue()));
         return this;
     }
 
     @Override
     public Unifier removeTrivialMappings() {
-        Set<VarName> toRemove = unifier.entrySet().stream()
+        Set<VarName> toRemove = unifier.entries().stream()
                 .filter(e -> e.getKey() == e.getValue())
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
-        toRemove.forEach(unifier::remove);
+        toRemove.forEach(unifier::removeAll);
         return this;
     }
 
     @Override
     public Unifier inverse() {
-        return new UnifierImpl(
-                unifier.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey))
-        );
+        Unifier inverse = new UnifierImpl();
+        unifier.entries().forEach(e -> inverse.addMapping(e.getValue(), e.getKey()));
+        return inverse;
     }
 
     @Override

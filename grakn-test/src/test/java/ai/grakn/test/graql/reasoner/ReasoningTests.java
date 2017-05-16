@@ -127,7 +127,6 @@ public class ReasoningTests {
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
     //as specified in the respective comments below.
 
-    @Ignore
     @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
     public void unificationWithVarDuplicates() {
         QueryBuilder qb = testSet1.graph().graql().infer(true);
@@ -137,9 +136,9 @@ public class ReasoningTests {
         QueryAnswers answers2 = queryAnswers(qb.parse(query2String));
 
         assertNotEquals(answers1.size() * answers2.size(), 0);
-        answers1.forEach(x -> assertTrue(x.keySet().size() ==1));
+        answers1.forEach(x -> assertEquals(x.keySet().size(), 1));
         answers2.forEach(x -> answers1.forEach(y -> assertTrue(x.values().containsAll(y.values()))));
-        answers2.forEach(x -> assertTrue(x.keySet().size() ==2));
+        answers2.forEach(x -> assertEquals(x.keySet().size(), 2));
 
     }
 

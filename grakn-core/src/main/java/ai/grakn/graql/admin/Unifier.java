@@ -42,9 +42,9 @@ public interface Unifier{
 
     /**
      * @param key specific variable
-     * @return corresponding term
+     * @return corresponding terms
      */
-    VarName get(VarName key);
+    Collection<VarName> get(VarName key);
 
     /**
      * add a new mapping
@@ -52,15 +52,14 @@ public interface Unifier{
      * @param value term
      * @return previous value associated with key, or null if there was no mapping for key
      */
-    VarName addMapping(VarName key, VarName value);
-
+    boolean addMapping(VarName key, VarName value);
 
     /**
      * @return true if the set of mappings is empty
      */
     boolean isEmpty();
 
-    Map<VarName, VarName> map();
+    Map<VarName, Collection<VarName>> map();
 
     /**
      * @return variables present in this unifier
@@ -73,10 +72,9 @@ public interface Unifier{
     Collection<VarName> values();
 
     /**
-     *
      * @return set of mappings constituting this unifier
      */
-    Set<Map.Entry<VarName, VarName>> mappings();
+    Collection<Map.Entry<VarName, VarName>> mappings();
 
     /**
      * @param key variable to be inspected for presence

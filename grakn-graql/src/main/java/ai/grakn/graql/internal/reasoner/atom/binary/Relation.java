@@ -284,7 +284,7 @@ public class Relation extends TypeAtom {
     //rule head atom is applicable if it is unifiable
     private boolean isRuleApplicableViaAtom(Relation headAtom) {
         return headAtom.getRelationPlayers().size() >= this.getRelationPlayers().size()
-            && headAtom.getRelationPlayerMappings(this).size() == this.getRolePlayers().size();
+            && headAtom.getRelationPlayerMappings(this).size() == this.getRelationPlayers().size();
     }
 
     @Override
@@ -387,7 +387,7 @@ public class Relation extends TypeAtom {
         modifyRelationPlayers(c -> {
             VarName var = c.getRolePlayer().getVarName();
             if (u.containsKey(var)) {
-                VarName target = u.get(var);
+                VarName target = u.get(var).iterator().next();
                 return c.setRolePlayer(c.getRolePlayer().setVarName(target));
             } else if (u.containsValue(var)) {
                 return c.setRolePlayer(c.getRolePlayer().setVarName(capture(var)));

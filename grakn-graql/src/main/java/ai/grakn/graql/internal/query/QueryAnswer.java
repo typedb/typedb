@@ -25,9 +25,12 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.explanation.Explanation;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -165,14 +168,24 @@ public class QueryAnswer implements Answer {
     @Override
     public Answer unify(Unifier unifier){
         if (unifier.isEmpty()) return this;
-        return new QueryAnswer(
-                this.entrySet().stream()
-                        .collect(Collectors.toMap(e -> {
-                            VarName var = e.getKey();
-                            VarName uvar = unifier.get(var);
-                            return uvar == null? var : uvar;
-                        }, Map.Entry::getValue))
-        ).setExplanation(this.getExplanation());
+        Answer unified = new QueryAnswer();
+        Multimap<VarName, Concept> answerMultimap = HashMultimap.create();
+
+        this.entrySet()
+                .forEach(e -> {
+                    VarName var = e.getKey();
+                    Collection<VarName> uvars = unifier.get(var);
+                    if (uvars.isEmpty())
+                        answerMultimap.put(var, e.getValue());
+                    else
+                        uvars.forEach(uv -> answerMultimap.put(uv, e.getValue()));
+                });
+        //non-ambiguous mapping
+        if (answerMultimap.keySet().size() == answerMultimap.entries().size()) {
+            answerMultimap.entries().forEach(e -> unified.put(e.getKey(), e.getValue()));
+        }
+
+        return unified.setExplanation(this.getExplanation());
     }
 
     @Override

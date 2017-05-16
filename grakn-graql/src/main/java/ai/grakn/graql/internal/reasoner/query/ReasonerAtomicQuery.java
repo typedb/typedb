@@ -292,7 +292,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         answers = answers
                 .map(a -> a.filterVars(queryVars))
                 .map(a -> a.unify(u))
-                .map(a -> a.unify(pu));
+                .map(a -> a.unify(pu))
+                .filter(a -> !a.isEmpty());
 
         //if query not exactly equal to the rule head, do some conversion
         return  isHeadEquivalent? dCache.record(this, answers) : dCache.record(this, getFilteredAnswerStream(answers));
@@ -335,7 +336,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             }
         }
 
-        return dCache.record(this, answerStream);
+        return dCache.record(this, answerStream).filter(a -> !a.isEmpty());
     }
 
     @Override

@@ -113,8 +113,9 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
         Set<VarName> headVars = rule.getHead().getVarNames();
         Iterator<Answer> baseIterator = rule.getBody().iterator(partialSubPrime, subGoals, cache);
+        Iterator<Answer> filteredIterator = Iterators.filter(baseIterator, a -> a != null && !a.isEmpty());
         return Iterators.transform(
-                baseIterator,
+                filteredIterator,
                 a -> {
                     if (a == null) return null;
                     else {
