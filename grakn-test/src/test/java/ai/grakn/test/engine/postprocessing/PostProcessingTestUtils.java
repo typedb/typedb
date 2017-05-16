@@ -52,6 +52,8 @@ public class PostProcessingTestUtils {
         resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceTypeShard);
+        // This is done to push the concept into the cache
+        //noinspection ResultOfMethodCallIgnored
         graknGraph.admin().buildConcept(resourceVertex);
         return Sets.newHashSet(originalResource, resourceVertex);
     }

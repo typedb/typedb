@@ -23,6 +23,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 
 /**
@@ -40,6 +41,7 @@ public interface ValuePredicateAdmin extends ValuePredicate {
     /**
      * @return whether this predicate is specific (e.g. "eq" is specific, "regex" is not)
      */
+    @CheckReturnValue
     default boolean isSpecific() {
         return false;
     }
@@ -48,11 +50,13 @@ public interface ValuePredicateAdmin extends ValuePredicate {
      * @param predicate to be compared in terms of compatibility
      * @return true if compatible
      */
+    @CheckReturnValue
     boolean isCompatibleWith(ValuePredicateAdmin predicate);
 
     /**
      * @return the value comparing against, if this is an "equality" predicate, otherwise nothing
      */
+    @CheckReturnValue
     default Optional<Object> equalsValue() {
         return Optional.empty();
     }
@@ -60,12 +64,14 @@ public interface ValuePredicateAdmin extends ValuePredicate {
     /**
      * @return the gremlin predicate object this ValuePredicate wraps
      */
+    @CheckReturnValue
     Optional<P<Object>> getPredicate();
 
     /**
      * Get the inner variable that this predicate refers to, if one is present
      * @return the inner variable that this predicate refers to, if one is present
      */
+    @CheckReturnValue
     Optional<VarAdmin> getInnerVar();
 
     /**

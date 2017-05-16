@@ -24,6 +24,7 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 
+import javax.annotation.CheckReturnValue;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -57,6 +58,7 @@ public interface ResourceType<D> extends Type {
      *
      * @return The ResourceType itself.
      */
+    @Override
     ResourceType<D> setAbstract(Boolean isAbstract);
 
     /**
@@ -81,6 +83,7 @@ public interface ResourceType<D> extends Type {
      * @param roleType The Role Type which the instances of this ResourceType are allowed to play.
      * @return The ResourceType itself.
      */
+    @Override
     ResourceType<D> plays(RoleType roleType);
 
     /**
@@ -89,6 +92,7 @@ public interface ResourceType<D> extends Type {
      * @param roleType The Role Type which the instances of this ResourceType should no longer be allowed to play.
      * @return The ResourceType itself.
      */
+    @Override
     ResourceType<D> deletePlays(RoleType roleType);
 
     /**
@@ -113,6 +117,7 @@ public interface ResourceType<D> extends Type {
      * @param scope The category of this Type
      * @return The Type itself.
      */
+    @Override
     ResourceType<D> scope(Instance scope);
 
     /**
@@ -121,6 +126,7 @@ public interface ResourceType<D> extends Type {
      * @param scope The Instances that is currently scoping this Type.
      * @return The Type itself
      */
+    @Override
     ResourceType<D> deleteScope(Instance scope);
 
     /**
@@ -129,6 +135,7 @@ public interface ResourceType<D> extends Type {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
+    @Override
     ResourceType<D> key(ResourceType resourceType);
 
     /**
@@ -137,6 +144,7 @@ public interface ResourceType<D> extends Type {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
+    @Override
     ResourceType<D> resource(ResourceType resourceType);
 
     //------------------------------------- Accessors ---------------------------------
@@ -145,6 +153,7 @@ public interface ResourceType<D> extends Type {
      *
      * @return The supertype of this ResourceType,
      */
+    @Override
     ResourceType<D> superType();
 
     /**
@@ -155,6 +164,7 @@ public interface ResourceType<D> extends Type {
      * @param value A value which a Resource in the graph may be holding
      * @return The Resource with the provided value and type or null if no such Resource exists.
      */
+    @CheckReturnValue
     <V> Resource<V> getResource(V value);
 
     /**
@@ -162,6 +172,7 @@ public interface ResourceType<D> extends Type {
      *
      * @return The subtypes of this ResourceType
      */
+    @Override
     Collection<ResourceType<D>> subTypes();
 
     /**
@@ -169,6 +180,7 @@ public interface ResourceType<D> extends Type {
      *
      * @return The resource instances of this ResourceType
      */
+    @Override
     Collection<Resource<D>> instances();
 
     /**
@@ -176,6 +188,7 @@ public interface ResourceType<D> extends Type {
      *
      * @return The data type to which instances of this resource must conform.
      */
+    @CheckReturnValue
     DataType<D> getDataType();
 
     /**
@@ -186,12 +199,14 @@ public interface ResourceType<D> extends Type {
      *
      * @return The regular expression to which instances of this ResourceType must conform.
      */
+    @CheckReturnValue
     String getRegex();
 
     /**
      *
      * @return a deep copy of this concept.
      */
+    @Override
     ResourceType<D> copy();
 
     /**
@@ -282,10 +297,12 @@ public interface ResourceType<D> extends Type {
             }
         }
 
+        @CheckReturnValue
         public String getName(){
             return dataType;
         }
 
+        @CheckReturnValue
         public Schema.ConceptProperty getConceptProperty(){
             return conceptProperty;
         }
@@ -301,6 +318,7 @@ public interface ResourceType<D> extends Type {
          * @param value The value to be converted
          * @return The String representation of the value
          */
+        @CheckReturnValue
         public Object getPersistenceValue(D value){
             return persistenceValueSupplier.apply(value);
         }
@@ -311,6 +329,7 @@ public interface ResourceType<D> extends Type {
          * @param object The object to be converted into the value
          * @return The value of the string
          */
+        @CheckReturnValue
         public D getValue(Object object){
             return valueSupplier.apply(object);
         }

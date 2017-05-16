@@ -31,6 +31,8 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * A type enum which restricts the types of links/concepts which can be created
  *
@@ -64,10 +66,12 @@ public final class Schema {
             label = l;
         }
 
+        @CheckReturnValue
         public String getLabel() {
             return label;
         }
 
+        @CheckReturnValue
         public static EdgeLabel getEdgeLabel(String label) {
             for (EdgeLabel edgeLabel : EdgeLabel.values()) {
                 if (edgeLabel.getLabel().equals(label)) {
@@ -100,14 +104,17 @@ public final class Schema {
             this.id = id;
         }
 
+        @CheckReturnValue
         public TypeLabel getLabel() {
             return label;
         }
 
+        @CheckReturnValue
         public int getId(){
             return id;
         }
 
+        @CheckReturnValue
         public static boolean isMetaLabel(TypeLabel label) {
             for (MetaSchema metaSchema : MetaSchema.values()) {
                 if (metaSchema.getLabel().equals(label)) return true;
@@ -141,6 +148,7 @@ public final class Schema {
             this.classType = classType;
         }
 
+        @CheckReturnValue
         public Class getClassType(){
             return classType;
         }
@@ -170,6 +178,7 @@ public final class Schema {
             this.dataType = dataType;
         }
 
+        @CheckReturnValue
         public Class getDataType() {
             return dataType;
         }
@@ -189,6 +198,7 @@ public final class Schema {
             this.dataType = dataType;
         }
 
+        @CheckReturnValue
         public Class getDataType() {
             return dataType;
         }
@@ -234,10 +244,12 @@ public final class Schema {
             this.label = label;
         }
 
+        @CheckReturnValue
         public TypeLabel getLabel(TypeLabel resourceType) {
             return resourceType.map(resource -> String.format(label, resource));
         }
 
+        @CheckReturnValue
         public TypeLabel getLabel(String resourceType) {
             return TypeLabel.of(String.format(label, resourceType));
         }
@@ -257,6 +269,7 @@ public final class Schema {
             this.label = label;
         }
 
+        @CheckReturnValue
         public TypeLabel getLabel() {
             return TypeLabel.of(label);
         }
@@ -268,6 +281,7 @@ public final class Schema {
      * @param value The value of the resource
      * @return A unique id for the resource
      */
+    @CheckReturnValue
     public static String generateResourceIndex(TypeLabel typeLabel, String value){
         return Schema.BaseType.RESOURCE.name() + "-" + typeLabel + "-" + value;
     }

@@ -106,6 +106,7 @@ public class ConceptTest extends GraphTestBase{
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(INVALID_OBJECT_TYPE.getMessage(thing, Type.class));
 
+        //noinspection ResultOfMethodCallIgnored
         thing.asType();
     }
 }

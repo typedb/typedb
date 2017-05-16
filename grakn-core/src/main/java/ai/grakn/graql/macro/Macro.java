@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.macro;
 
+import javax.annotation.CheckReturnValue;
 import java.util.List;
 
 /**
@@ -34,11 +35,13 @@ public interface Macro<T> {
      * @param values Values on which to operate the macro
      * @return result of the function
      */
+    @CheckReturnValue
     T apply(List<Object> values);
 
     /**
      * The name of the macro
      * @return the name of the macro
      */
+    @CheckReturnValue
     String name();
 }

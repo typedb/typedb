@@ -20,6 +20,8 @@ package ai.grakn.graql;
 
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * a atom on a value in a query.
  * <p>
@@ -34,6 +36,7 @@ public interface ValuePredicate {
     /**
      * @return an Admin class allowing inspection of this atom
      */
+    @CheckReturnValue
     ValuePredicateAdmin admin();
 
 }
