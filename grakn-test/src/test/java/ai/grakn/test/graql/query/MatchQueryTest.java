@@ -188,13 +188,13 @@ public class MatchQueryTest {
 
     @Test
     public void testMovieQuery() {
-        MatchQuery query = qb.match(var("x").isa("movie"));
+        MatchQuery query = qb.match(x.isa("movie"));
         assertThat(query, variable("x", containsAllMovies));
     }
 
     @Test
     public void testProductionQuery() {
-        MatchQuery query = qb.match(var("x").isa("production"));
+        MatchQuery query = qb.match(x.isa("production"));
         assertThat(query, variable("x", containsAllMovies));
     }
 

@@ -80,44 +80,9 @@ class VarPatternImpl implements VarPatternAdmin {
 
     private final Set<VarProperty> properties;
 
-    private VarPatternImpl(Var name, Set<VarProperty> properties) {
+    VarPatternImpl(Var name, Set<VarProperty> properties) {
         this.name = name;
         this.properties = properties;
-    }
-
-    /**
-     * Create a variable with a random variable name
-     */
-    static VarPatternImpl anon() {
-        return new VarPatternImpl(Graql.var(), ImmutableSet.of());
-    }
-
-    /**
-     * Create a variable with a specified name
-     * @param name the name of the variable
-     */
-    static VarPatternImpl named(Var name) {
-        return new VarPatternImpl(name, ImmutableSet.of());
-    }
-
-    /**
-     * Create a variable by combining a collection of other variables
-     * @param vars a collection of variables to combine
-     */
-    static VarPatternImpl merge(Collection<VarPatternAdmin> vars) {
-        VarPatternAdmin first = vars.iterator().next();
-        Var name = first.getVarName();
-        ImmutableSet.Builder<VarProperty> properties = ImmutableSet.builder();
-
-        for (VarPatternAdmin var : vars) {
-            if (var.isUserDefinedName()) {
-                name = var.getVarName();
-            }
-
-            properties.addAll(var.getProperties().iterator());
-        }
-
-        return new VarPatternImpl(name, properties.build());
     }
 
     @Override

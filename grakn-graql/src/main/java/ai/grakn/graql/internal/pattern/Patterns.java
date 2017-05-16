@@ -24,6 +24,8 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Set;
@@ -48,23 +50,27 @@ public class Patterns {
         return new DisjunctionImpl<>(patterns);
     }
 
-    public static VarPatternAdmin var() {
-        return VarPatternImpl.anon();
-    }
-
-    public static VarPatternAdmin var(Var name) {
-        return VarPatternImpl.named(name);
-    }
-
     public static VarPatternAdmin mergeVars(Collection<VarPatternAdmin> vars) {
-        return VarPatternImpl.merge(vars);
+        VarPatternAdmin first = vars.iterator().next();
+        Var name = first.getVarName();
+        ImmutableSet.Builder<VarProperty> properties = ImmutableSet.builder();
+
+        for (VarPatternAdmin var : vars) {
+            if (var.isUserDefinedName()) {
+                name = var.getVarName();
+            }
+
+            properties.addAll(var.getProperties().iterator());
+        }
+
+        return new VarPatternImpl(name, properties.build());
     }
 
-    public static Var varName() {
+    public static Var var() {
         return new VarImpl(UUID.randomUUID().toString(), false);
     }
 
-    public static Var varName(String value) {
+    public static Var var(String value) {
         return new VarImpl(value, true);
     }
 

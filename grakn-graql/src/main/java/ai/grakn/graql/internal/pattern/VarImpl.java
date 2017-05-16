@@ -28,6 +28,7 @@ import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.VarPatternBuilder;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.function.Function;
@@ -64,7 +65,7 @@ final class VarImpl implements Var {
 
     @Override
     public VarPattern pattern() {
-        return Patterns.var(this);
+        return new VarPatternImpl(this, ImmutableSet.of());
     }
 
     @Override

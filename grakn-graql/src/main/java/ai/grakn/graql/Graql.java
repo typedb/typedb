@@ -139,14 +139,14 @@ public class Graql {
      * @return a new query variable
      */
     public static Var var(String name) {
-        return Patterns.varName(name);
+        return Patterns.var(name);
     }
 
     /**
      * @return a new, anonymous query variable
      */
     public static Var var() {
-        return Patterns.varName();
+        return Patterns.var();
     }
 
     /**
