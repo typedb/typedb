@@ -25,6 +25,7 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.VarPatternBuilder;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
@@ -158,14 +159,14 @@ public class Relation extends TypeAtom {
      * @return corresponding {@link VarPatternAdmin}
      */
     private static VarPatternAdmin constructRelationVar(Var varName, Var typeVariable, List<Pair<Var, VarPattern>> rolePlayerMappings) {
-        VarPattern var = !varName.getValue().isEmpty()? varName.pattern() : Graql.var().pattern();
+        VarPatternBuilder var = !varName.getValue().isEmpty()? varName : Graql.var();
         for (Pair<Var, VarPattern> mapping : rolePlayerMappings) {
             Var rp = mapping.getKey();
             VarPattern role = mapping.getValue();
             var = role == null? var.rel(rp) : var.rel(role, rp);
         }
         var = var.isa(typeVariable);
-        return var.admin().asVar();
+        return var.pattern().admin();
     }
 
     @Override

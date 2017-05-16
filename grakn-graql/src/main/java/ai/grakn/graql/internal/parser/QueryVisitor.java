@@ -459,7 +459,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     public UnaryOperator<VarPattern> visitPropHas(GraqlParser.PropHasContext ctx) {
         TypeLabel type = visitLabel(ctx.label());
 
-        VarPattern resource = ctx.VARIABLE() != null ? getVariable(ctx.VARIABLE()).pattern() : var().pattern();
+        Var resourceVar = ctx.VARIABLE() != null ? getVariable(ctx.VARIABLE()) : var();
+        VarPattern resource = resourceVar.pattern();
 
         if (ctx.predicate() != null) {
             resource = resource.val(visitPredicate(ctx.predicate()));

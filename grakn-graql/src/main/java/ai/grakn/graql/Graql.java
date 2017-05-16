@@ -314,7 +314,7 @@ public class Graql {
      */
     public static ValuePredicate eq(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.eq(var.pattern().admin());
+        return Predicates.eq(var);
     }
 
     /**
@@ -332,7 +332,7 @@ public class Graql {
      */
     public static ValuePredicate neq(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.neq(var.pattern().admin());
+        return Predicates.neq(var);
     }
 
     /**
@@ -350,7 +350,7 @@ public class Graql {
      */
     public static ValuePredicate gt(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.gt(var.pattern().admin());
+        return Predicates.gt(var);
     }
 
     /**
@@ -368,7 +368,7 @@ public class Graql {
      */
     public static ValuePredicate gte(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.gte(var.pattern().admin());
+        return Predicates.gte(var);
     }
 
     /**
@@ -386,7 +386,7 @@ public class Graql {
      */
     public static ValuePredicate lt(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.lt(var.pattern().admin());
+        return Predicates.lt(var);
     }
 
     /**
@@ -404,7 +404,7 @@ public class Graql {
      */
     public static ValuePredicate lte(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.lte(var.pattern().admin());
+        return Predicates.lte(var);
     }
 
     /**
@@ -431,6 +431,6 @@ public class Graql {
      */
     public static ValuePredicate contains(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.contains(var.pattern().admin());
+        return Predicates.contains(var);
     }
 }
