@@ -70,22 +70,22 @@ import static org.junit.Assume.assumeTrue;
 public class AtomicQueryTest {
 
     @ClassRule
-    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get());
+    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get());
+    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get());
+    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql");
+    public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext unificationWithTypesSet = GraphContext.preLoad("unificationWithTypesTest.gql");
+    public static final GraphContext unificationWithTypesSet = GraphContext.preLoad("unificationWithTypesTest.gql").assumeTrue(usingTinker());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

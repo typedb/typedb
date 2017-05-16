@@ -96,7 +96,7 @@ public class REST {
         public static final String TASK_CREATOR_PARAMETER = "creator";
         public static final String TASK_RUN_AT_PARAMETER = "runAt";
         public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
-        public static final String TASK_LOADER_INSERTS = "inserts";
+        public static final String TASK_LOADER_MUTATIONS = "mutations";
         public static final String LIMIT_PARAM = "limit";
         public static final String OFFSET_PARAM = "offset";
         public static final String KEYSPACE = "keyspace";

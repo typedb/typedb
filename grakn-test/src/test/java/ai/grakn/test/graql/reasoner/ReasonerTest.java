@@ -68,34 +68,34 @@ import static org.junit.Assume.assumeTrue;
 public class ReasonerTest {
 
     @ClassRule
-    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get());
+    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext snbGraph2 = GraphContext.preLoad(SNBGraph.get());
+    public static final GraphContext snbGraph2 = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext snbGraph3 = GraphContext.preLoad(SNBGraph.get());
+    public static final GraphContext snbGraph3 = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext testSnbGraph = GraphContext.preLoad(SNBGraph.get());
+    public static final GraphContext testSnbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext testGeoGraph = GraphContext.preLoad(GeoGraph.get());
+    public static final GraphContext testGeoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext nonMaterialisedGeoGraph = GraphContext.preLoad(GeoGraph.get());
+    public static final GraphContext nonMaterialisedGeoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext nonMaterialisedSnbGraph = GraphContext.preLoad(SNBGraph.get());
+    public static final GraphContext nonMaterialisedSnbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext geoGraph2 = GraphContext.preLoad(GeoGraph.get());
+    public static final GraphContext geoGraph2 = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext geoGraph3 = GraphContext.preLoad(GeoGraph.get());
+    public static final GraphContext geoGraph3 = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
 
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();
