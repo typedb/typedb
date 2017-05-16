@@ -125,7 +125,7 @@ public class MatchQueryTest {
     @Test
     public void whenSelectingVarNotInQuery_Throw() {
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.varName("x")));
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("x")));
         graph.graql().match(var()).select("x").execute();
     }
 

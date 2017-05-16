@@ -72,15 +72,15 @@ import static org.mockito.Mockito.mock;
 
 public class GraqlTraversalTest {
 
-    private static final Var a = Graql.varName("a");
-    private static final Var b = Graql.varName("b");
-    private static final Var c = Graql.varName("c");
-    private static final Var x = Graql.varName("x");
-    private static final Var y = Graql.varName("y");
-    private static final Var z = Graql.varName("z");
-    private static final Var xx = Graql.varName("xx");
-    private static final Var yy = Graql.varName("yy");
-    private static final Var zz = Graql.varName("zz");
+    private static final Var a = Graql.var("a");
+    private static final Var b = Graql.var("b");
+    private static final Var c = Graql.var("c");
+    private static final Var x = Graql.var("x");
+    private static final Var y = Graql.var("y");
+    private static final Var z = Graql.var("z");
+    private static final Var xx = Graql.var("xx");
+    private static final Var yy = Graql.var("yy");
+    private static final Var zz = Graql.var("zz");
     private static final Fragment xId = id(x, ConceptId.of("Titanic"));
     private static final Fragment xValue = value(x, eq("hello").admin());
     private static final Fragment yId = id(y, ConceptId.of("movie"));
@@ -147,9 +147,9 @@ public class GraqlTraversalTest {
 
     @Test
     public void testCheckDistinctCastingEarlyFaster() {
-        Var c1 = Graql.varName("c1");
-        Var c2 = Graql.varName("c2");
-        Var r = Graql.varName("r");
+        Var c1 = Graql.var("c1");
+        Var c2 = Graql.var("c2");
+        Var r = Graql.var("r");
 
         Fragment neq = Fragments.neq(c2, c1);
         Fragment inRolePlayer = inRolePlayer(x, c1);

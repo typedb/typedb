@@ -54,7 +54,7 @@ public class DeleteAndInsertTest {
     @Test
     public void whenDeletingAVariableNotInTheQuery_Throw() {
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.varName("y")));
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("y")));
         graph.graql().match(var("x").isa("movie")).delete("y").execute();
     }
 

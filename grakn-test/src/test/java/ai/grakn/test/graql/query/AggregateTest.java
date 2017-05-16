@@ -82,8 +82,8 @@ public class AggregateTest {
 
         groups.forEach((movie, results) -> {
             results.forEach(result -> {
-                assertEquals(movie, result.get(Graql.varName("x")));
-                assertEquals(rule.graph().getEntityType("person"), result.get(Graql.varName("y")).asInstance().type());
+                assertEquals(movie, result.get(Graql.var("x")));
+                assertEquals(rule.graph().getEntityType("person"), result.get(Graql.var("y")).asInstance().type());
             });
         });
     }

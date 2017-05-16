@@ -15,8 +15,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class InPlaysFragmentTest {
 
-    private final Var start = Graql.anonVarName();
-    private final Var end = Graql.anonVarName();
+    private final Var start = Graql.var();
+    private final Var end = Graql.var();
     private final InPlaysFragment fragment = new InPlaysFragment(start, end, false);
 
     @Test

@@ -270,9 +270,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     private void exchangeRelVarNames(Var from, Var to) {
-        unify(to, Graql.varName("temp"));
+        unify(to, Graql.var("temp"));
         unify(from, to);
-        unify(Graql.varName("temp"), from);
+        unify(Graql.var("temp"), from);
     }
 
     @Override
@@ -354,7 +354,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         getVarNames().stream().filter(ReasonerUtils::isCaptured)
                 .forEach(cap -> {
                     Var old = uncapture(cap);
-                    Var fresh = Graql.anonVarName();
+                    Var fresh = Graql.var();
                     unify(cap, fresh);
                     newMappings.addMapping(old, fresh);
                 });

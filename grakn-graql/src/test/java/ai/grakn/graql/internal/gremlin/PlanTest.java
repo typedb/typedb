@@ -38,16 +38,16 @@ public class PlanTest {
 
     @Test
     public void planComplexityShouldAlwaysEqualCostFromGraqlTraversal() {
-        Var a = Graql.varName("a");
-        Var x = Graql.varName("x");
-        Var y = Graql.varName("y");
-        Var z = Graql.varName("z");
+        Var a = Graql.var("a");
+        Var x = Graql.var("x");
+        Var y = Graql.var("y");
+        Var z = Graql.var("z");
 
         Fragment outIsa = outIsa(y, a);
         outIsa.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
 
-        Fragment inShortcut = Fragments.inShortcut(y, Graql.anonVarName(), x, Optional.empty(), Optional.empty());
-        Fragment outShortcut = Fragments.outShortcut(x, Graql.anonVarName(), z, Optional.empty(), Optional.empty());
+        Fragment inShortcut = Fragments.inShortcut(y, Graql.var(), x, Optional.empty(), Optional.empty());
+        Fragment outShortcut = Fragments.outShortcut(x, Graql.var(), z, Optional.empty(), Optional.empty());
         inShortcut.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
         outShortcut.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
 

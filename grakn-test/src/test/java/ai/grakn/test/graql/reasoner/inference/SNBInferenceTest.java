@@ -370,7 +370,7 @@ public class SNBInferenceTest {
         String queryString2 = "match $x isa person; $y isa person;$y has name 'Miguel Gonzalez';" +
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; select $x, $z;";
         Unifier unifier = new UnifierImpl();
-        unifier.addMapping(Graql.varName("z"), Graql.varName("y"));
+        unifier.addMapping(Graql.var("z"), Graql.var("y"));
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 =  queryAnswers(iqb.materialise(false).parse(queryString2)).unify(unifier);

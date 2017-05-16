@@ -81,7 +81,7 @@ public class TestReasoning extends TestOwlGraknBase {
         QueryAnswers OWLanswers = new QueryAnswers();
         owlResult.forEach(result -> {
             Answer resultMap = new QueryAnswer();
-            resultMap.put(Graql.varName("x"), migrator.entity(result));
+            resultMap.put(Graql.var("x"), migrator.entity(result));
             OWLanswers.add(resultMap);
         });
 

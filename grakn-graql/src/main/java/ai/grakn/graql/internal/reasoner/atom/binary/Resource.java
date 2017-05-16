@@ -141,7 +141,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     protected Var extractValueVariableName(VarPatternAdmin var){
         HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         VarPatternAdmin resVar = prop.getResource();
-        return resVar.isUserDefinedName()? resVar.getVarName() : Graql.varName("");
+        return resVar.isUserDefinedName()? resVar.getVarName() : Graql.var("");
     }
 
     @Override
@@ -205,7 +205,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
         Unifier unifier = new UnifierImpl();
         unifier.addMapping(this.getValueVariable(), parentAtom.getVarName());
-        if (parentAtom.containsVar(this.getVarName())) unifier.addMapping(this.getVarName(), Graql.anonVarName());
+        if (parentAtom.containsVar(this.getVarName())) unifier.addMapping(this.getVarName(), Graql.var());
         return unifier;
     }
 

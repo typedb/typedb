@@ -91,7 +91,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
         ImmutableSet<EquivalentFragmentSet> traversals = relationPlayers.stream().flatMap(relationPlayer -> {
 
-            Var castingName = Graql.anonVarName();
+            Var castingName = Graql.var();
             castingNames.add(castingName);
 
             return equivalentFragmentSetFromCasting(start, castingName, relationPlayer);
@@ -252,7 +252,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         if (isaProp != null) {
             VarPatternAdmin isaVar = isaProp.getType();
             TypeLabel typeLabel = isaVar.getTypeLabel().orElse(null);
-            Var typeVariable = typeLabel == null ? isaVar.getVarName() : Graql.varName("rel-" + UUID.randomUUID().toString());
+            Var typeVariable = typeLabel == null ? isaVar.getVarName() : Graql.var("rel-" + UUID.randomUUID().toString());
             relVar = relVar.isa(Graql.var(typeVariable));
             if (typeLabel != null) {
                 GraknGraph graph = parent.graph();

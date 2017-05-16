@@ -89,7 +89,7 @@ class VarPatternImpl implements VarPatternAdmin {
      * Create a variable with a random variable name
      */
     static VarPatternImpl anon() {
-        return new VarPatternImpl(Graql.anonVarName(), ImmutableSet.of());
+        return new VarPatternImpl(Graql.var(), ImmutableSet.of());
     }
 
     /**

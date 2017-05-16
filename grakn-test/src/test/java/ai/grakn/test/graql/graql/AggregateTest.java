@@ -76,7 +76,7 @@ public class AggregateTest {
     @Test
     public void whenGroupVarIsNotInQuery_Throw() {
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.varName("z")));
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("z")));
         graph.graql().match(var("x").isa("movie").has("title", var("y"))).aggregate(group("z", count())).execute();
     }
 }

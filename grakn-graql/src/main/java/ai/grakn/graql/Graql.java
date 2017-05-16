@@ -221,7 +221,7 @@ public class Graql {
      * Create an aggregate that will sum the values of a variable.
      */
     public static Aggregate<Answer, Number> sum(String name) {
-        return Aggregates.sum(varName(name));
+        return Aggregates.sum(Graql.var(name));
     }
 
     /**
@@ -229,7 +229,7 @@ public class Graql {
      * @param name the variable to find the maximum of
      */
     public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> max(String name) {
-        return Aggregates.max(varName(name));
+        return Aggregates.max(Graql.var(name));
     }
 
     /**
@@ -237,7 +237,7 @@ public class Graql {
      * @param name the variable to find the maximum of
      */
     public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> min(String name) {
-        return Aggregates.min(varName(name));
+        return Aggregates.min(Graql.var(name));
     }
 
     /**
@@ -245,7 +245,7 @@ public class Graql {
      * @param name the variable to find the mean of
      */
     public static Aggregate<Answer, Optional<Double>> mean(String name) {
-        return Aggregates.mean(varName(name));
+        return Aggregates.mean(Graql.var(name));
     }
 
     /**
@@ -253,7 +253,7 @@ public class Graql {
      * @param name the variable to find the median of
      */
     public static Aggregate<Answer, Optional<Number>> median(String name) {
-        return Aggregates.median(varName(name));
+        return Aggregates.median(Graql.var(name));
     }
 
     /**
@@ -261,7 +261,7 @@ public class Graql {
      * @param name the variable to find the standard deviation of
      */
     public static Aggregate<Answer, Optional<Double>> std(String name) {
-        return Aggregates.std(varName(name));
+        return Aggregates.std(Graql.var(name));
     }
 
     /**
@@ -280,7 +280,7 @@ public class Graql {
      */
     public static <T> Aggregate<Answer, Map<Concept, T>> group(
             String varName, Aggregate<? super Answer, T> aggregate) {
-        return Aggregates.group(varName(varName), aggregate);
+        return Aggregates.group(Graql.var(varName), aggregate);
     }
 
     /**
@@ -440,13 +440,5 @@ public class Graql {
     public static ValuePredicate contains(VarPatternBuilder var) {
         Objects.requireNonNull(var);
         return Predicates.contains(var.pattern().admin());
-    }
-
-    public static Var varName(String value) {
-        return Graql.var(value);
-    }
-
-    public static Var anonVarName() {
-        return Graql.var();
     }
 }

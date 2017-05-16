@@ -499,7 +499,7 @@ public class GenealogyTest {
         boolean isOk = true;
         Iterator<Answer> it =  answers.iterator();
         while (it.hasNext() && isOk){
-            Concept c = it.next().get(Graql.varName(var));
+            Concept c = it.next().get(Graql.var(var));
             isOk = c.asResource().getValue().equals(value);
         }
         return isOk;

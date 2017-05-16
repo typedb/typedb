@@ -118,9 +118,9 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        Var relation = Graql.anonVarName();
-        Var edge1 = Graql.anonVarName();
-        Var edge2 = Graql.anonVarName();
+        Var relation = Graql.var();
+        Var edge1 = Graql.var();
+        Var edge2 = Graql.var();
 
         return ImmutableSet.of(
                 shortcut(relation, edge1, start),

@@ -167,7 +167,7 @@ public class MatchQueryModifierTest {
         MatchQuery query = qb.match(var("x").isa("movie"));
 
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.varName("y")));
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("y")));
 
         query.select("y");
     }

@@ -120,7 +120,7 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
 
-        atomicQuery.unify(Graql.varName("y"), Graql.varName("z"));
+        atomicQuery.unify(Graql.var("y"), Graql.var("z"));
         MatchQuery q1 = atomicQuery.getMatchQuery();
         MatchQuery q2 = copy.getMatchQuery();
         assertNotEquals(q1, q2);
@@ -134,7 +134,7 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
 
-        atomicQuery.unify(Graql.varName("y"), Graql.varName("z"));
+        atomicQuery.unify(Graql.var("y"), Graql.var("z"));
         assertEquals(ReasonerQueries.atomic(conjunction(patternString, graph), snbGraph.graph()).getAtom().getRoleVarTypeMap(), copy.getAtom().getRoleVarTypeMap());
     }
 
@@ -151,8 +151,8 @@ public class AtomicQueryTest {
 
         answers.add(new QueryAnswer(
                 ImmutableMap.of(
-                        Graql.varName("x"), getConcept("Bob"),
-                        Graql.varName("y"), getConcept("Colour of Magic")))
+                        Graql.var("x"), getConcept("Bob"),
+                        Graql.var("y"), getConcept("Colour of Magic")))
         );
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
 
@@ -239,7 +239,7 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern, graph);
         Unifier unifier = childQuery.getUnifier(parentQuery);
-        assertTrue(Sets.intersection(unifier.keySet(), Sets.newHashSet(Graql.varName("x"), Graql.varName("y"))).isEmpty());
+        assertTrue(Sets.intersection(unifier.keySet(), Sets.newHashSet(Graql.var("x"), Graql.var("y"))).isEmpty());
     }
 
     @Test
@@ -253,8 +253,8 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
         Unifier unifier = childQuery.getUnifier(parentQuery);
         Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
-                Graql.varName("y1"), Graql.varName("x1"),
-                Graql.varName("y2"), Graql.varName("x2")
+                Graql.var("y1"), Graql.var("x1"),
+                Graql.var("y2"), Graql.var("x2")
         ));
         assertTrue(unifier.containsAll(correctUnifier));
     }
@@ -270,8 +270,8 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
         Unifier unifier = childQuery.getUnifier(parentQuery);
         Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
-                Graql.varName("y1"), Graql.varName("x1"),
-                Graql.varName("y2"), Graql.varName("x2")
+                Graql.var("y1"), Graql.var("x1"),
+                Graql.var("y2"), Graql.var("x2")
         ));
         assertTrue(unifier.containsAll(correctUnifier));
     }
@@ -291,9 +291,9 @@ public class AtomicQueryTest {
         Unifier unifier = childQuery.getUnifier(parentQuery);
         Unifier unifier2 = childQuery2.getUnifier(parentQuery);
         Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
-                Graql.varName("y1"), Graql.varName("x1"),
-                Graql.varName("y2"), Graql.varName("x2"),
-                Graql.varName("y3"), Graql.varName("x3")
+                Graql.var("y1"), Graql.var("x1"),
+                Graql.var("y2"), Graql.var("x2"),
+                Graql.var("y3"), Graql.var("x3")
         ));
         assertTrue(unifier.containsAll(correctUnifier));
         assertTrue(unifier2.containsAll(correctUnifier));
@@ -314,9 +314,9 @@ public class AtomicQueryTest {
         Unifier unifier = childQuery.getUnifier(parentQuery);
         Unifier unifier2 = childQuery2.getUnifier(parentQuery);
         Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
-                Graql.varName("y1"), Graql.varName("x1"),
-                Graql.varName("y2"), Graql.varName("x2"),
-                Graql.varName("y3"), Graql.varName("x3")
+                Graql.var("y1"), Graql.var("x1"),
+                Graql.var("y2"), Graql.var("x2"),
+                Graql.var("y3"), Graql.var("x3")
         ));
         assertTrue(unifier.containsAll(correctUnifier));
         assertTrue(unifier2.containsAll(correctUnifier));
@@ -337,9 +337,9 @@ public class AtomicQueryTest {
         Unifier unifier = childQuery.getUnifier(parentQuery);
         Unifier unifier2 = childQuery2.getUnifier(parentQuery);
         Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
-                Graql.varName("y1"), Graql.varName("x1"),
-                Graql.varName("y2"), Graql.varName("x2"),
-                Graql.varName("y3"), Graql.varName("x3")
+                Graql.var("y1"), Graql.var("x1"),
+                Graql.var("y2"), Graql.var("x2"),
+                Graql.var("y3"), Graql.var("x3")
         ));
         assertTrue(unifier.containsAll(correctUnifier));
         assertTrue(unifier2.containsAll(correctUnifier));

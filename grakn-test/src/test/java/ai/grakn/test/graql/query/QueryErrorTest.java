@@ -177,7 +177,7 @@ public class QueryErrorTest {
         Stream<Concept> concepts = query.get("y");
 
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(Graql.varName("y")));
+        exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("y")));
 
         //noinspection ResultOfMethodCallIgnored
         concepts.count();

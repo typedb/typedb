@@ -92,7 +92,7 @@ public class QueryAnswer implements Answer {
 
     @Override
     public Concept get(String var) {
-        return map.get(Graql.varName(var));
+        return map.get(Graql.var(var));
     }
 
     @Override

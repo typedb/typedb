@@ -15,8 +15,8 @@ import static org.junit.Assert.assertThat;
 
 public class OutPlaysFragmentTest {
 
-    private final Var start = Graql.anonVarName();
-    private final Var end = Graql.anonVarName();
+    private final Var start = Graql.var();
+    private final Var end = Graql.var();
     private final OutPlaysFragment fragment = new OutPlaysFragment(start, end, false);
 
     @Test

@@ -113,7 +113,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final MatchQuery select(String... names) {
-        return select(Stream.of(names).map(Graql::varName).collect(toSet()));
+        return select(Stream.of(names).map((value) -> Graql.var(value)).collect(toSet()));
     }
 
     @Override
@@ -123,10 +123,10 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final Stream<Concept> get(String name) {
-        Var var = Graql.varName(name);
+        Var var = Graql.var(name);
         return stream().map(result -> {
             if (!result.containsKey(var)) {
-                throw new IllegalArgumentException(VARIABLE_NOT_IN_QUERY.getMessage(Graql.varName(name)));
+                throw new IllegalArgumentException(VARIABLE_NOT_IN_QUERY.getMessage(Graql.var(name)));
             }
             return result.get(var);
         });
@@ -176,7 +176,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final MatchQuery orderBy(String varName, Order order) {
-        return orderBy(Graql.varName(varName), order);
+        return orderBy(Graql.var(varName), order);
     }
 
     @Override

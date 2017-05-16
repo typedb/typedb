@@ -81,10 +81,10 @@ public class ExplanationTest {
     public void testExplanationTreeCorrect_TransitiveClosure() {
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
 
-        Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.varName("x"), polibuda, Graql.varName("y"), warsaw));
-        Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.varName("x"), polibuda, Graql.varName("y"), masovia));
-        Answer answer3 = new QueryAnswer(ImmutableMap.of(Graql.varName("x"), polibuda, Graql.varName("y"), poland));
-        Answer answer4 = new QueryAnswer(ImmutableMap.of(Graql.varName("x"), polibuda, Graql.varName("y"), europe));
+        Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), warsaw));
+        Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), masovia));
+        Answer answer3 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), poland));
+        Answer answer4 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), europe));
 
         List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
         answers.stream()
@@ -131,8 +131,8 @@ public class ExplanationTest {
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$y isa country;$y has name 'Poland';";
 
-        Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.varName("x"), polibuda, Graql.varName("y"), poland));
-        Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.varName("x"), uw, Graql.varName("y"), poland));
+        Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), poland));
+        Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), uw, Graql.var("y"), poland));
 
         List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
         answers.stream()

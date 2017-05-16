@@ -37,7 +37,7 @@ public class AggregateQueryImplTest {
     private final MatchQueryAdmin match2 = Graql.match(var("y").isa("movie")).admin();
 
     private final Aggregate<Object, Long> aggregate1 = Aggregates.count();
-    private final Aggregate<Answer, Number> aggregate2 = Aggregates.sum(Graql.varName("x"));
+    private final Aggregate<Answer, Number> aggregate2 = Aggregates.sum(Graql.var("x"));
 
     @Test
     public void aggregateQueriesWithTheSameMatchQueryAndAggregatesAreEqual() {

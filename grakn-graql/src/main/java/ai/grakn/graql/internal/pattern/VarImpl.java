@@ -54,7 +54,7 @@ final class VarImpl implements Var {
 
     @Override
     public Var map(Function<String, String> mapper) {
-        return Graql.varName(mapper.apply(value));
+        return Graql.var(mapper.apply(value));
     }
 
     @Override

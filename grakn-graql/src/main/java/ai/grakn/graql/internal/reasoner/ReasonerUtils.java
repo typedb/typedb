@@ -405,7 +405,7 @@ public class ReasonerUtils {
         VarPattern childVar = var().isa(Graql.label(child.getLabel()));
 
         for (Map.Entry<TypeLabel, TypeLabel> entry : roleMappings.entrySet()) {
-            Var varName = Graql.anonVarName();
+            Var varName = Graql.var();
             parentVar = parentVar.rel(Graql.label(entry.getKey()), var(varName));
             childVar = childVar.rel(Graql.label(entry.getValue()), var(varName));
         }
@@ -424,10 +424,10 @@ public class ReasonerUtils {
     public static Rule createPropertyChainRule(RelationType relation, TypeLabel fromRoleLabel, TypeLabel toRoleLabel,
                                                LinkedHashMap<RelationType, Pair<TypeLabel, TypeLabel>> chain, GraknGraph graph){
         Stack<Var> varNames = new Stack<>();
-        varNames.push(Graql.varName("x"));
+        varNames.push(Graql.var("x"));
         Set<VarPatternAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
-            Var varName = Graql.anonVarName();
+            Var varName = Graql.var();
             VarPatternAdmin var = var().isa(Graql.label(relType.getLabel()))
                     .rel(Graql.label(rolePair.getKey()), var(varNames.peek()))
                     .rel(Graql.label(rolePair.getValue()), var(varName)).admin();
