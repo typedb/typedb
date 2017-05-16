@@ -40,7 +40,7 @@ import java.util.function.Function;
  */
 public class RedisConnection {
     private static final GraknEngineConfig config = GraknEngineConfig.getInstance();
-    private static RedisConnection redis;
+    private static final RedisConnection redis = new RedisConnection();
 
     private JedisPool jedisPool;
 
@@ -57,7 +57,6 @@ public class RedisConnection {
      * @return a connction to the redis server.
      */
     public static RedisConnection getConnection(){
-        if(redis == null) redis = new RedisConnection();
         return redis;
     }
 
