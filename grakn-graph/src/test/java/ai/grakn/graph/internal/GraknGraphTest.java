@@ -386,7 +386,7 @@ public class GraknGraphTest extends GraphTestBase {
         Entity s1_e1 = entityType.addEntity();
         Entity s1_e2 = entityType.addEntity();
         Entity s1_e3 = entityType.addEntity();
-        graknGraph.admin().shard(entityType.getLabel());
+        graknGraph.admin().shard(entityType.getId());
 
         EntityType s2 = entityType.currentShard();
 
@@ -397,7 +397,7 @@ public class GraknGraphTest extends GraphTestBase {
         Entity s2_e4 = entityType.addEntity();
         Entity s2_e5 = entityType.addEntity();
 
-        graknGraph.admin().shard(entityType.getLabel());
+        graknGraph.admin().shard(entityType.getId());
         EntityType s3 = entityType.currentShard();
 
         //Add 2 instances to 3rd shard

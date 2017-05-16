@@ -1032,20 +1032,20 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public void updateTypeCounts(Map<TypeLabel, Long> typeCounts){
+    public void updateTypeCounts(Map<ConceptId, Long> typeCounts){
        typeCounts.entrySet().forEach(entry -> {
            if(entry.getValue() != 0) {
-               TypeImpl type = getType(entry.getKey());
-               type.setInstanceCount(type.getInstanceCount() + entry.getValue());
+               ConceptImpl type = getConcept(entry.getKey());
+               type.setShardCount(type.getShardCount() + entry.getValue());
            }
        });
     }
 
     @Override
-    public void shard(TypeLabel label){
-        TypeImpl type = getType(label);
+    public void shard(ConceptId conceptId){
+        ConceptImpl type = getConcept(conceptId);
         if(type == null) {
-            LOG.warn("Cannot shard concept [" + label + "] due to it not existing in the graph");
+            LOG.warn("Cannot shard concept [" + conceptId + "] due to it not existing in the graph");
         } else {
             type.createShard();
         }

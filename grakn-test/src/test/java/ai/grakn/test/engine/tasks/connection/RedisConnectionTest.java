@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.tasks.connection;
 
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.test.EngineContext;
 import org.junit.BeforeClass;
@@ -55,30 +55,30 @@ public class RedisConnectionTest {
     @Test
     public void whenIncreasingCountOnRedisConcurrently_EnsureAllThreadCountsArePersisted() throws ExecutionException, InterruptedException {
         String keyspace = "k";
-        TypeLabel label = TypeLabel.of("Roach");
+        ConceptId conceptId = ConceptId.of("Roach");
         int[] counts = {5, 5, 10, 10, -8, -2, 5, 5, -7};
         ExecutorService pool = Executors.newCachedThreadPool();
         Set<Future> futures = new HashSet<>();
 
-        assertEquals(0, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, label)));
+        assertEquals(0, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, conceptId)));
 
         for(int i =0; i < counts.length; i ++) {
             int finalI = i;
-            futures.add(pool.submit(() -> redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace, label), counts[finalI])));
+            futures.add(pool.submit(() -> redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace, conceptId), counts[finalI])));
         }
         for (Future future : futures) {
             future.get();
         }
 
-        assertEquals(23, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, label)));
+        assertEquals(23, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, conceptId)));
     }
 
     @Test
     public void whenChangingCountsOnRedis_EnsureValueIsChanges(){
         String keyspace1 = "k1";
         String keyspace2 = "k2";
-        TypeLabel roach = TypeLabel.of("Roach");
-        TypeLabel ciri = TypeLabel.of("Ciri");
+        ConceptId roach = ConceptId.of("Roach");
+        ConceptId ciri = ConceptId.of("Ciri");
 
         assertEquals(0, redis.getCount(RedisConnection.getKeyNumInstances(keyspace1, roach)));
         assertEquals(0, redis.getCount(RedisConnection.getKeyNumInstances(keyspace2, roach)));

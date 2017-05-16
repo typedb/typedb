@@ -714,14 +714,4 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             throw new ConceptException(ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE.getMessage(getLabel(), resourceType.getLabel()));
         }
     }
-
-    long getInstanceCount(){
-        Long value = getProperty(Schema.ConceptProperty.INSTANCE_COUNT);
-        if(value == null) return 0L;
-        return value;
-    }
-
-    void setInstanceCount(Long instanceCount){
-        setProperty(Schema.ConceptProperty.INSTANCE_COUNT, instanceCount);
-    }
 }

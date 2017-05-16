@@ -613,4 +613,14 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         if(isShard) setProperty(Schema.ConceptProperty.IS_SHARD, isShard);
         cachedIsShard.set(isShard);
     }
+
+    long getShardCount(){
+        Long value = getProperty(Schema.ConceptProperty.SHARD_COUNT);
+        if(value == null) return 0L;
+        return value;
+    }
+
+    void setShardCount(Long instanceCount){
+        setProperty(Schema.ConceptProperty.SHARD_COUNT, instanceCount);
+    }
 }

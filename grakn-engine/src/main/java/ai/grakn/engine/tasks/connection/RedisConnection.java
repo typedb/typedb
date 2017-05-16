@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.tasks.connection;
 
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -109,10 +109,10 @@ public class RedisConnection {
     /**
      * All the valid keys which map to values in the redis cache
      */
-    public static String getKeyNumInstances(String keyspace, TypeLabel label){
-        return "NI_"+ keyspace + "_" + label.getValue();
+    public static String getKeyNumInstances(String keyspace, ConceptId conceptId){
+        return "NI_"+ keyspace + "_" + conceptId.getValue();
     }
-    public static String getKeyNumShards(String keyspace, TypeLabel label){
-        return "NS_" + keyspace + "_" + label.getValue();
+    public static String getKeyNumShards(String keyspace, ConceptId conceptId){
+        return "NS_" + keyspace + "_" + conceptId.getValue();
     }
 }

@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.lock.LockProvider;
@@ -51,21 +52,21 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
 
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
-        Map<TypeLabel, Long> jobs = TaskConfigReader.getCountUpdatingJobs(configuration);
+        Map<ConceptId, Long> jobs = TaskConfigReader.getCountUpdatingJobs(configuration);
         String keyspace = TaskConfigReader.getKeyspace(configuration);
 
         //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
         //The graph cannot be used because each engine can have it's own snapshot of the graph with caching which makes
         //values only approximately correct
-        Set<TypeLabel> typesToShard = new HashSet<>();
+        Set<ConceptId> conceptToShard = new HashSet<>();
 
         //Update counts
         jobs.forEach((key, value) -> {
-            if(updateTypeCounts(keyspace, key, value)) typesToShard.add(key);
+            if(updateShardCounts(keyspace, key, value)) conceptToShard.add(key);
         });
 
         //Shard anything which requires sharding
-        typesToShard.forEach(type -> shardType(keyspace, type));
+        conceptToShard.forEach(type -> shardConcept(keyspace, type));
 
         return true;
     }
@@ -74,14 +75,14 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
      * Updates the type counts in redis and checks if sharding is needed.
      *
      * @param keyspace The keyspace of the graph which the type comes from
-     * @param label The label of the type with counts to update
+     * @param conceptId The id of the concept with counts to update
      * @param value The number of instances which the type has gained/lost
      * @return true if sharding is needed.
      */
-    private static boolean updateTypeCounts(String keyspace, TypeLabel label, long value){
-        long numShards = redis.getCount(RedisConnection.getKeyNumShards(keyspace, label));
+    private static boolean updateShardCounts(String keyspace, ConceptId conceptId, long value){
+        long numShards = redis.getCount(RedisConnection.getKeyNumShards(keyspace, conceptId));
         if(numShards == 0) numShards = 1;
-        long numInstances = redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace, label), value);
+        long numInstances = redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace, conceptId), value);
         return numInstances > SHARDING_THRESHOLD * numShards;
     }
 
@@ -93,23 +94,23 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
      * - Incrementing the number of shards on each type
      *
      * @param keyspace The graph containing the type to shard
-     * @param label The label of the type to shard
+     * @param conceptId The id of the concept to shard
      */
-    private static void shardType(String keyspace, TypeLabel label){
+    private static void shardConcept(String keyspace, ConceptId conceptId){
         Lock engineLock = LockProvider.getLock(getLockingKey());
         engineLock.lock(); //Try to get the lock
 
         //Check if sharding is still needed. Another engine could have sharded whilst waiting for lock
-        if(updateTypeCounts(keyspace, label, 0)) {
+        if(updateShardCounts(keyspace, conceptId, 0)) {
 
             //Shard
             GraphMutators.runGraphMutationWithRetry(keyspace, graph -> {
-                graph.admin().shard(label);
+                graph.admin().shard(conceptId);
                 graph.admin().commitNoLogs();
             });
 
             //Update number of shards
-            redis.adjustCount(RedisConnection.getKeyNumShards(keyspace, label), 1);
+            redis.adjustCount(RedisConnection.getKeyNumShards(keyspace, conceptId), 1);
         }
 
         engineLock.unlock();

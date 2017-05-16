@@ -160,16 +160,15 @@ public interface GraknAdmin {
     /**
      * Updates the counts of all the types
      *
-     * @param typeCounts The types and the changes to put on their counts
+     * @param conceptCounts The concepts and the changes to put on their counts
      */
-    void updateTypeCounts(Map<TypeLabel, Long> typeCounts);
+    void updateTypeCounts(Map<ConceptId, Long> conceptCounts);
 
-    //TODO: Change this to use ConceptId
     /**
      * Creates a new shard for the concept
-     * @param label the label of the type to shard
+     * @param conceptId the id of the concept to shard
      */
-    void shard(TypeLabel label);
+    void shard(ConceptId conceptId);
 
     /**
      *

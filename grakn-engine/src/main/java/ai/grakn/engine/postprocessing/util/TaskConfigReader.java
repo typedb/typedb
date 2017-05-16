@@ -19,7 +19,6 @@
 package ai.grakn.engine.postprocessing.util;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -37,7 +36,7 @@ import java.util.stream.Collectors;
  *     This class is used to extract information from Task configs which is needed by
  *     {@link ai.grakn.engine.postprocessing.PostProcessingTask},
  *     {@link ai.grakn.engine.postprocessing.UpdatingInstanceCountTask} and
- *     {@link ai.grakn.engine.loader.LoaderTask}
+ *     {@link ai.grakn.engine.loader.MutatorTask}
  * </p>
  *
  * @author fppt
@@ -59,10 +58,10 @@ public class TaskConfigReader {
      * @param configuration The configuration which contains types counts
      * @return A map indicating the number of instances each type has gained or lost
      */
-    public static Map<TypeLabel, Long> getCountUpdatingJobs(TaskConfiguration configuration){
+    public static Map<ConceptId, Long> getCountUpdatingJobs(TaskConfiguration configuration){
         return  configuration.json().at(REST.Request.COMMIT_LOG_COUNTING).asJsonList().stream()
                 .collect(Collectors.toMap(
-                        e -> TypeLabel.of(e.at(REST.Request.COMMIT_LOG_CONCEPT_ID).asString()),
+                        e -> ConceptId.of(e.at(REST.Request.COMMIT_LOG_CONCEPT_ID).asString()),
                         e -> e.at(REST.Request.COMMIT_LOG_SHARDING_COUNT).asLong()));
     }
 
