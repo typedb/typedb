@@ -28,17 +28,18 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.VarPatternBuilder;
 import ai.grakn.util.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,7 +127,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         final Set<TypeLabel> resourcesToDettach = new HashSet<>();
         
         // New resources to add
-        VarPattern resources = var(TASK_VAR);
+        VarPatternBuilder resources = var(TASK_VAR);
 
         resourcesToDettach.add(SERIALISED_TASK);
         resources = resources.has(SERIALISED_TASK, var().val(serializeToString(task)));
@@ -157,7 +158,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
             resources = resources.has(TASK_CHECKPOINT, var().val(task.checkpoint()));
         }
 
-        VarPattern finalResources = resources;
+        VarPatternBuilder finalResources = resources;
         Optional<Boolean> result = attemptCommitToSystemGraph((graph) -> {
             Instance taskConcept = graph.getResourcesByValue(task.getId().getValue()).iterator().next().owner();
             // Remove relations to any resources we want to currently update

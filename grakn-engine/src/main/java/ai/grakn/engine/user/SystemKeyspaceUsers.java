@@ -27,6 +27,7 @@ import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import mjson.Json;
@@ -111,7 +112,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
     @Override
     public Json getUser(String username) {
         VarPattern lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
-        VarPattern resource = var("property");
+        Var resource = var("property");
         try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             MatchQuery query = graph.graql().match(lookup.has(RESOURCE.getLabel(), resource));
             List<Answer> L = query.execute();
