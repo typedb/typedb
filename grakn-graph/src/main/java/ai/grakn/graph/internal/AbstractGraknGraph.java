@@ -102,7 +102,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final boolean batchLoadingEnabled;
     private final G graph;
     private final ElementFactory elementFactory;
-    private final long shardingFactor;
     private final GraphCache graphCache;
 
     //----------------------------- Transaction Specific
@@ -113,7 +112,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         this.keyspace = keyspace;
         this.engine = engine;
         this.properties = properties;
-        shardingFactor = Long.parseLong(properties.get(SHARDING_THRESHOLD).toString());
         elementFactory = new ElementFactory(this);
 
         //Initialise Graph Caches
@@ -1038,15 +1036,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
        typeCounts.entrySet().forEach(entry -> {
            if(entry.getValue() != 0) {
                TypeImpl type = getType(entry.getKey());
-
-               long newValue = type.getInstanceCount() + entry.getValue();
-               if(newValue < shardingFactor) {
-                   type.setInstanceCount(type.getInstanceCount() + entry.getValue());
-               } else {
-                   //TODO: Maintain the count properly. We reset so we can split with simpler logic
-                   type.setInstanceCount(0L);
-                   type.createShard();
-               }
+               type.setInstanceCount(type.getInstanceCount() + entry.getValue());
            }
        });
     }
