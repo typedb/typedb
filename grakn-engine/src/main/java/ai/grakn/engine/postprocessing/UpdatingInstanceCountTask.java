@@ -21,23 +21,18 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.postprocessing.util.TaskConfigReader;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.util.REST;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
-import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_INSTANCE_COUNT;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE_NAME;
 
 /**
  * <p>
@@ -56,8 +51,8 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
 
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
-        Map<TypeLabel, Long> jobs = getJobsFromConfiguration(configuration);
-        String keyspace = getKeyspace(configuration);
+        Map<TypeLabel, Long> jobs = TaskConfigReader.getCountUpdatingJobs(configuration);
+        String keyspace = TaskConfigReader.getKeyspace(configuration);
 
         //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
         //The graph cannot be used because each engine can have it's own snapshot of the graph with caching which makes
@@ -88,22 +83,6 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
         if(numShards == 0) numShards = 1;
         long numInstances = redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace, label), value);
         return numInstances > SHARDING_THRESHOLD * numShards;
-    }
-
-    /**
-     * Extracts the type labels and count from the Json configuration
-     * @param configuration The configuration which contains types counts
-     * @return A map indicating the number of instances each type has gained or lost
-     */
-    private static Map<TypeLabel, Long> getJobsFromConfiguration(TaskConfiguration configuration){
-        return  configuration.json().at(COMMIT_LOG_COUNTING).asJsonList().stream()
-                .collect(Collectors.toMap(
-                        e -> TypeLabel.of(e.at(COMMIT_LOG_TYPE_NAME).asString()),
-                        e -> e.at(COMMIT_LOG_INSTANCE_COUNT).asLong()));
-    }
-
-    private static String getKeyspace(TaskConfiguration configuration){
-        return configuration.json().at(REST.Request.KEYSPACE).asString();
     }
 
     /**

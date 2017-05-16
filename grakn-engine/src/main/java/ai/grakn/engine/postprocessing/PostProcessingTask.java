@@ -20,22 +20,19 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.postprocessing.util.TaskConfigReader;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.util.Schema;
-import java.util.Optional;
 import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-
-import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
-import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * <p>
@@ -46,7 +43,7 @@ import static java.util.stream.Collectors.toSet;
  *     This task begins only if enough time has passed (configurable) since the last time a job was added.
  * </p>
  *
- * @author alexandraorth
+ * @author alexandraorth, fppt
  */
 public class PostProcessingTask implements BackgroundTask {
 
@@ -85,20 +82,6 @@ public class PostProcessingTask implements BackgroundTask {
     }
 
     /**
-     * Extract a map of concept indices to concept ids from the provided configuration
-     *
-     * @param type Type of concept to extract. This correlates to the key in the provided configuration.
-     * @param configuration Configuration from which to extract the configuration.
-     * @return Map of concept indices to ids that has been extracted from the provided configuration.
-     */
-    private Map<String,Set<ConceptId>> conceptFromConfig(Schema.BaseType type, TaskConfiguration configuration) {
-        return configuration.json().at(COMMIT_LOG_FIXING).at(type.name()).asJsonMap().entrySet().stream().collect(toMap(
-                Map.Entry::getKey,
-                e -> e.getValue().asList().stream().map(ConceptId::of).collect(toSet())
-        ));
-    }
-
-    /**
      * Main method which attempts to run all post processing jobs.
      *
      * @param postProcessingMethod The post processing job.
@@ -110,13 +93,13 @@ public class PostProcessingTask implements BackgroundTask {
     private void runPostProcessingMethod(TaskConfiguration configuration, Schema.BaseType baseType,
                                          TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> postProcessingMethod){
 
-        Map<String, Set<ConceptId>> allToPostProcess = conceptFromConfig(baseType, configuration);
+        Map<String, Set<ConceptId>> allToPostProcess = TaskConfigReader.getPostProcessingJobs(baseType, configuration);
 
         allToPostProcess.entrySet().forEach(e -> {
             String conceptIndex = e.getKey();
             Set<ConceptId> conceptIds = e.getValue();
 
-            GraphMutators.runGraphMutationWithRetry(configuration,
+            GraphMutators.runGraphMutationWithRetry(TaskConfigReader.getKeyspace(configuration),
                     (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds, postProcessingMethod));
         });
 
