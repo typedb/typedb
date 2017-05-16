@@ -255,7 +255,7 @@ public class Relation extends TypeAtom {
         if (roleConceptIdMap != null) return roleConceptIdMap;
         roleConceptIdMap =  ArrayListMultimap.create();
         Map<VarName, IdPredicate> varSubMap = getIdPredicates().stream()
-                .collect(Collectors.toMap(AtomicBase::getVarName, pred -> pred));
+                .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
         Multimap<RoleType, VarName> roleMap = getRoleMap();
 
         roleMap.entries().forEach(e -> {
