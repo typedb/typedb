@@ -252,6 +252,14 @@ class TxCache {
 
     /**
      *
+     * @return All the concepts which have been accessed in this transaction
+     */
+    Map<ConceptId, ConceptImpl> getConceptCache() {
+        return conceptCache;
+    }
+
+    /**
+     *
      * @param concept The concept to nio longer track
      */
     @SuppressWarnings("SuspiciousMethodCalls")
@@ -406,6 +414,8 @@ class TxCache {
         modifiedConcepts.clear();
         modifiedCastings.clear();
         modifiedResources.clear();
+        modifiedRelations.clear();
+        shardingCount.clear();
         conceptCache.clear();
         typeCache.clear();
         labelCache.clear();

@@ -24,13 +24,16 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
+import ai.grakn.concept.ResourceType;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -150,5 +153,48 @@ public class TxCacheTest extends GraphTestBase{
         e2.delete();
         assertFalse(txCache.getShardingCount().containsKey(entityType.getId()));
         assertEquals(1, (long) txCache.getShardingCount().get(relationType.getId()));
+    }
+
+    @Test
+    public void whenClosingTransaction_EnsureTransactionCacheIsEmpty(){
+        AbstractGraknGraph<?> graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, "something").open(GraknTxType.WRITE);
+
+        TxCache cache = graknGraph.getTxCache();
+
+        //Load some sample data
+        ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+        RoleType roleType1 = graknGraph.putRoleType("role 1");
+        RoleType roleType2 = graknGraph.putRoleType("role 2");
+        EntityType entityType = graknGraph.putEntityType("My Type").plays(roleType1).plays(roleType2).resource(resourceType);
+        RelationType relationType = graknGraph.putRelationType("My Relation Type").relates(roleType1).relates(roleType2);
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
+        Resource<String> r1 = resourceType.putResource("test");
+
+        e1.resource(r1);
+        relationType.addRelation().addRolePlayer(roleType1, e1).addRolePlayer(roleType2, e2);
+
+        //Check the caches are not empty
+        assertThat(cache.getConceptCache().keySet(), not(empty()));
+        assertThat(cache.getModifiedConcepts(), not(empty()));
+        assertThat(cache.getModifiedCastings(), not(empty()));
+        assertThat(cache.getTypeCache().keySet(), not(empty()));
+        assertThat(cache.getLabelCache().keySet(), not(empty()));
+        assertThat(cache.getModifiedRelations().keySet(), not(empty()));
+        assertThat(cache.getModifiedResources(), not(empty()));
+        assertThat(cache.getShardingCount().keySet(), not(empty()));
+
+        //Close the transaction
+        graknGraph.commit();
+
+        //Check the caches are empty
+        assertThat(cache.getConceptCache().keySet(), empty());
+        assertThat(cache.getModifiedConcepts(), empty());
+        assertThat(cache.getModifiedCastings(), empty());
+        assertThat(cache.getTypeCache().keySet(), empty());
+        assertThat(cache.getLabelCache().keySet(), empty());
+        assertThat(cache.getModifiedRelations().keySet(), empty());
+        assertThat(cache.getModifiedResources(), empty());
+        assertThat(cache.getShardingCount().keySet(), empty());
     }
 }
