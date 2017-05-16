@@ -79,17 +79,11 @@ public interface ReasonerQuery{
     boolean isRuleResolvable();
 
     /**
-     * change each variable occurrence in the query (apply unifier [from/to])
-     * @param from variable name to be changed
-     * @param to new variable name
-     */
-    void unify(VarName from, VarName to);
-
-    /**
      * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
      * @param unifier (variable mappings) to be applied
+     * @return union of the entry unifier and the unifier used to resolve potential captures
      */
-    void unify(Unifier unifier);
+    Unifier unify(Unifier unifier);
 
     /**
      * @param parent query to unify wth

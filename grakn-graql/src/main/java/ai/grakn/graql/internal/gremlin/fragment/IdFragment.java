@@ -72,4 +72,9 @@ class IdFragment extends AbstractFragment {
     public double fragmentCost(double previousCost) {
         return 1;
     }
+
+    @Override
+    public boolean hasFixedFragmentCost() {
+        return true;
+    }
 }

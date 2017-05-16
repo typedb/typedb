@@ -101,4 +101,12 @@ public interface Fragment {
     }
 
     double fragmentCost(double previousCost);
+
+    /**
+     * If a fragment has fixed cost, the traversal is done using index. This makes the fragment a good starting point.
+     * A plan should always start with these fragments when possible.
+     */
+    default boolean hasFixedFragmentCost() {
+        return false;
+    }
 }

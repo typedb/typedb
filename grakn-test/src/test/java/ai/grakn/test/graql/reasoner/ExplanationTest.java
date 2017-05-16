@@ -49,13 +49,13 @@ public class ExplanationTest {
 
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get());
+    public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext explanationGraph = GraphContext.preLoad("explanationTest.gql");
+    public static final GraphContext explanationGraph = GraphContext.preLoad("explanationTest.gql").assumeTrue(usingTinker());
 
     private static Concept polibuda, uw;
     private static Concept warsaw;

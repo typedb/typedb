@@ -24,7 +24,7 @@ import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 
 import java.util.Collection;
@@ -33,24 +33,26 @@ import java.util.stream.Collectors;
 import mjson.Json;
 
 import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
-import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
 
 /**
- * Task that will load data into a graph. It uses the engine running on the
+ * Task that will mutate data in a graph. It uses the engine running on the
  * engine executing the task.
  *
  * The task will then submit all modified concepts for post processing.
  *
  * @author Alexandra Orth
  */
-public class LoaderTask implements BackgroundTask {
+public class MutatorTask implements BackgroundTask {
 
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
+        Collection<Query> inserts = getInserts(configuration);
         GraphMutators.runBatchMutationWithRetry(configuration, (graph) ->
-                insertQueriesInOneTransaction(graph, getInserts(configuration))
+                insertQueriesInOneTransaction(graph, inserts)
         );
 
         return true;
@@ -72,12 +74,12 @@ public class LoaderTask implements BackgroundTask {
     }
 
     /**
-     * Insert the given queries into the given graph. Return if the operation was successfully completed.
+     * Execute the given queries against the given graph. Return if the operation was successfully completed.
      * @param graph grakn graph in which to insert the data
      * @param inserts graql queries to insert into the graph
      * @return true if the data was inserted, false otherwise
      */
-    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<InsertQuery> inserts) {
+    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts) {
         graph.showImplicitConcepts(true);
 
         inserts.forEach(q -> q.withGraph(graph).execute());
@@ -91,15 +93,21 @@ public class LoaderTask implements BackgroundTask {
 
 
     /**
-     * Extract insert queries from a configuration object
+     * Extract mutate queries from a configuration object
      * @param configuration JSONObject containing configuration
-     * @return insert queries from the configuration
+     * @return graql queries from the configuration
      */
-    private Collection<InsertQuery> getInserts(TaskConfiguration configuration){
-        if(configuration.json().has(TASK_LOADER_INSERTS)){
-            return configuration.json().at(TASK_LOADER_INSERTS).asJsonList().stream()
+    private Collection<Query> getInserts(TaskConfiguration configuration){
+        if(configuration.json().has(TASK_LOADER_MUTATIONS)){
+            return configuration.json().at(TASK_LOADER_MUTATIONS).asJsonList().stream()
                     .map(Json::asString)
-                    .map(builder::<InsertQuery>parse)
+                    .map(builder::<Query<?>>parse)
+                    .map(query -> {
+                        if (query.isReadOnly()) {
+                            throw new IllegalArgumentException(READ_ONLY_QUERY.getMessage(query.toString()));
+                        }
+                        return query;
+                    })
                     .collect(Collectors.toList());
         }
 
