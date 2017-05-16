@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * Main class containing static methods for creating Graql queries.
@@ -139,23 +138,23 @@ public class Graql {
      * @param name the name of the variable
      * @return a new query variable
      */
-    public static VarPattern var(String name) {
-        return var(varName(name));
+    public static Var var(String name) {
+        return Patterns.varName(name);
     }
 
     /**
      * @param name the name of the variable
      * @return a new query variable
      */
-    public static VarPattern var(Var name) {
-        return Patterns.var(Objects.requireNonNull(name));
+    public static Var var(Var name) {
+        return name;
     }
 
     /**
      * @return a new, anonymous query variable
      */
-    public static VarPattern var() {
-        return Patterns.var();
+    public static Var var() {
+        return Patterns.varName();
     }
 
     /**
@@ -321,9 +320,9 @@ public class Graql {
      * @param var the variable representing a resource
      * @return a predicate that is true when a value equals the specified value
      */
-    public static ValuePredicate eq(VarPattern var) {
+    public static ValuePredicate eq(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.eq(var.admin());
+        return Predicates.eq(var.pattern().admin());
     }
 
     /**
@@ -339,9 +338,9 @@ public class Graql {
      * @param var the variable representing a resource
      * @return a predicate that is true when a value does not equal the specified value
      */
-    public static ValuePredicate neq(VarPattern var) {
+    public static ValuePredicate neq(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.neq(var.admin());
+        return Predicates.neq(var.pattern().admin());
     }
 
     /**
@@ -357,9 +356,9 @@ public class Graql {
      * @param var the variable representing a resource
      * @return a predicate that is true when a value is strictly greater than the specified value
      */
-    public static ValuePredicate gt(VarPattern var) {
+    public static ValuePredicate gt(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.gt(var.admin());
+        return Predicates.gt(var.pattern().admin());
     }
 
     /**
@@ -375,9 +374,9 @@ public class Graql {
      * @param var the variable representing a resource
      * @return a predicate that is true when a value is greater or equal to the specified value
      */
-    public static ValuePredicate gte(VarPattern var) {
+    public static ValuePredicate gte(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.gte(var.admin());
+        return Predicates.gte(var.pattern().admin());
     }
 
     /**
@@ -393,9 +392,9 @@ public class Graql {
      * @param var the variable representing a resource
      * @return a predicate that is true when a value is strictly less than the specified value
      */
-    public static ValuePredicate lt(VarPattern var) {
+    public static ValuePredicate lt(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.lt(var.admin());
+        return Predicates.lt(var.pattern().admin());
     }
 
     /**
@@ -411,9 +410,9 @@ public class Graql {
      * @param var the variable representing a resource
      * @return a predicate that is true when a value is less or equal to the specified value
      */
-    public static ValuePredicate lte(VarPattern var) {
+    public static ValuePredicate lte(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.lte(var.admin());
+        return Predicates.lte(var.pattern().admin());
     }
 
     /**
@@ -438,16 +437,16 @@ public class Graql {
      * @param var the variable representing a resource
      * @return a predicate that returns true when a value contains the given substring
      */
-    public static ValuePredicate contains(VarPattern var) {
+    public static ValuePredicate contains(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.contains(var.admin());
+        return Predicates.contains(var.pattern().admin());
     }
 
     public static Var varName(String value) {
-        return Patterns.varName(value);
+        return Graql.var(value);
     }
 
     public static Var anonVarName() {
-        return Patterns.varName(UUID.randomUUID().toString());
+        return Graql.var();
     }
 }

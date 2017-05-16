@@ -27,6 +27,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.VarPatternBuilder;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.function.Function;
@@ -36,10 +37,14 @@ import java.util.function.Function;
  * @author Felix Chapman
  */
 final class VarImpl implements Var {
+
     private final String value;
 
-    VarImpl(String value) {
+    private final boolean userDefinedName;
+
+    VarImpl(String value, boolean userDefinedName) {
         this.value = value;
+        this.userDefinedName = userDefinedName;
     }
 
     @Override
@@ -50,6 +55,11 @@ final class VarImpl implements Var {
     @Override
     public Var map(Function<String, String> mapper) {
         return Graql.varName(mapper.apply(value));
+    }
+
+    @Override
+    public boolean isUserDefinedName() {
+        return userDefinedName;
     }
 
     @Override
@@ -118,12 +128,12 @@ final class VarImpl implements Var {
     }
 
     @Override
-    public VarPattern has(String type, VarPattern var) {
+    public VarPattern has(String type, VarPatternBuilder var) {
         return pattern().has(type, var);
     }
 
     @Override
-    public VarPattern has(TypeLabel type, VarPattern var) {
+    public VarPattern has(TypeLabel type, VarPatternBuilder var) {
         return pattern().has(type, var);
     }
 
@@ -133,7 +143,7 @@ final class VarImpl implements Var {
     }
 
     @Override
-    public VarPattern isa(VarPattern type) {
+    public VarPattern isa(VarPatternBuilder type) {
         return pattern().isa(type);
     }
 
@@ -143,7 +153,7 @@ final class VarImpl implements Var {
     }
 
     @Override
-    public VarPattern sub(VarPattern type) {
+    public VarPattern sub(VarPatternBuilder type) {
         return pattern().sub(type);
     }
 
@@ -153,7 +163,7 @@ final class VarImpl implements Var {
     }
 
     @Override
-    public VarPattern relates(VarPattern type) {
+    public VarPattern relates(VarPatternBuilder type) {
         return pattern().relates(type);
     }
 
@@ -163,12 +173,12 @@ final class VarImpl implements Var {
     }
 
     @Override
-    public VarPattern plays(VarPattern type) {
+    public VarPattern plays(VarPatternBuilder type) {
         return pattern().plays(type);
     }
 
     @Override
-    public VarPattern hasScope(VarPattern type) {
+    public VarPattern hasScope(VarPatternBuilder type) {
         return pattern().hasScope(type);
     }
 
@@ -178,7 +188,7 @@ final class VarImpl implements Var {
     }
 
     @Override
-    public VarPattern has(VarPattern type) {
+    public VarPattern has(VarPatternBuilder type) {
         return pattern().has(type);
     }
 
@@ -188,7 +198,7 @@ final class VarImpl implements Var {
     }
 
     @Override
-    public VarPattern key(VarPattern type) {
+    public VarPattern key(VarPatternBuilder type) {
         return pattern().key(type);
     }
 
@@ -198,7 +208,7 @@ final class VarImpl implements Var {
     }
 
     @Override
-    public VarPattern rel(VarPattern roleplayer) {
+    public VarPattern rel(VarPatternBuilder roleplayer) {
         return pattern().rel(roleplayer);
     }
 
@@ -208,17 +218,17 @@ final class VarImpl implements Var {
     }
 
     @Override
-    public VarPattern rel(VarPattern roletype, String roleplayer) {
+    public VarPattern rel(VarPatternBuilder roletype, String roleplayer) {
         return pattern().rel(roletype, roleplayer);
     }
 
     @Override
-    public VarPattern rel(String roletype, VarPattern roleplayer) {
+    public VarPattern rel(String roletype, VarPatternBuilder roleplayer) {
         return pattern().rel(roletype, roleplayer);
     }
 
     @Override
-    public VarPattern rel(VarPattern roletype, VarPattern roleplayer) {
+    public VarPattern rel(VarPatternBuilder roletype, VarPatternBuilder roleplayer) {
         return pattern().rel(roletype, roleplayer);
     }
 
@@ -253,7 +263,7 @@ final class VarImpl implements Var {
     }
 
     @Override
-    public VarPattern neq(VarPattern var) {
+    public VarPattern neq(VarPatternBuilder var) {
         return pattern().neq(var);
     }
 }

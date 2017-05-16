@@ -92,7 +92,7 @@ public interface VarPatternBuilder {
      * @return this
      */
     @CheckReturnValue
-    VarPattern has(String type, VarPattern var);
+    VarPattern has(String type, VarPatternBuilder var);
 
     /**
      * the variable must have a resource of the given type that matches the given atom
@@ -102,7 +102,7 @@ public interface VarPatternBuilder {
      * @return this
      */
     @CheckReturnValue
-    VarPattern has(TypeLabel type, VarPattern var);
+    VarPattern has(TypeLabel type, VarPatternBuilder var);
 
     /**
      * @param type a concept type id that the variable must be of this type
@@ -116,7 +116,7 @@ public interface VarPatternBuilder {
      * @return this
      */
     @CheckReturnValue
-    VarPattern isa(VarPattern type);
+    VarPattern isa(VarPatternBuilder type);
 
     /**
      * @param type a concept type id that this variable must be a kind of
@@ -130,7 +130,7 @@ public interface VarPatternBuilder {
      * @return this
      */
     @CheckReturnValue
-    VarPattern sub(VarPattern type);
+    VarPattern sub(VarPatternBuilder type);
 
     /**
      * @param type a role type id that this relation type variable must have
@@ -144,7 +144,7 @@ public interface VarPatternBuilder {
      * @return this
      */
     @CheckReturnValue
-    VarPattern relates(VarPattern type);
+    VarPattern relates(VarPatternBuilder type);
 
     /**
      * @param type a role type id that this concept type variable must play
@@ -158,14 +158,14 @@ public interface VarPatternBuilder {
      * @return this
      */
     @CheckReturnValue
-    VarPattern plays(VarPattern type);
+    VarPattern plays(VarPatternBuilder type);
 
     /**
      * @param type a scope that this variable must have
      * @return this
      */
     @CheckReturnValue
-    VarPattern hasScope(VarPattern type);
+    VarPattern hasScope(VarPatternBuilder type);
 
     /**
      * @param type a resource type that this type variable can be related to
@@ -179,7 +179,7 @@ public interface VarPatternBuilder {
      * @return this
      */
     @CheckReturnValue
-    VarPattern has(VarPattern type);
+    VarPattern has(VarPatternBuilder type);
 
     /**
      * @param type a resource type that this type variable can be one-to-one related to
@@ -193,7 +193,7 @@ public interface VarPatternBuilder {
      * @return this
      */
     @CheckReturnValue
-    VarPattern key(VarPattern type);
+    VarPattern key(VarPatternBuilder type);
 
     /**
      * the variable must be a relation with the given roleplayer
@@ -211,7 +211,7 @@ public interface VarPatternBuilder {
      * @return this
      */
     @CheckReturnValue
-    VarPattern rel(VarPattern roleplayer);
+    VarPattern rel(VarPatternBuilder roleplayer);
 
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
@@ -231,7 +231,7 @@ public interface VarPatternBuilder {
      * @return this
      */
     @CheckReturnValue
-    VarPattern rel(VarPattern roletype, String roleplayer);
+    VarPattern rel(VarPatternBuilder roletype, String roleplayer);
 
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
@@ -241,7 +241,7 @@ public interface VarPatternBuilder {
      * @return this
      */
     @CheckReturnValue
-    VarPattern rel(String roletype, VarPattern roleplayer);
+    VarPattern rel(String roletype, VarPatternBuilder roleplayer);
 
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
@@ -251,7 +251,7 @@ public interface VarPatternBuilder {
      * @return this
      */
     @CheckReturnValue
-    VarPattern rel(VarPattern roletype, VarPattern roleplayer);
+    VarPattern rel(VarPatternBuilder roletype, VarPatternBuilder roleplayer);
 
     /**
      * set this concept type variable as abstract, meaning it cannot have direct instances
@@ -303,5 +303,8 @@ public interface VarPatternBuilder {
      * @return this
      */
     @CheckReturnValue
-    VarPattern neq(VarPattern var);
+    VarPattern neq(VarPatternBuilder var);
+
+    @CheckReturnValue
+    VarPattern pattern();
 }

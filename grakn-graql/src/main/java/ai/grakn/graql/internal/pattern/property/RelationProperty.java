@@ -235,7 +235,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
                 .filter(prop -> !IsaProperty.class.isInstance(prop))
                 .count() > 0;
-        VarPattern relVar = (var.isUserDefinedName() || isReified)? Graql.var(var.getVarName()) : Graql.var();
+        VarPattern relVar = (var.isUserDefinedName() || isReified)? Graql.var(var.getVarName()).pattern() : Graql.var().pattern();
         Set<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(toSet());
 
         for (RelationPlayer rp : relationPlayers) {

@@ -49,11 +49,11 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import java.util.Collection;
-import java.util.Comparator;
 import javafx.util.Pair;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -158,7 +158,7 @@ public class Relation extends TypeAtom {
      * @return corresponding {@link VarPatternAdmin}
      */
     private static VarPatternAdmin constructRelationVar(Var varName, Var typeVariable, List<Pair<Var, VarPattern>> rolePlayerMappings) {
-        VarPattern var = !varName.getValue().isEmpty()? Graql.var(varName) : Graql.var();
+        VarPattern var = !varName.getValue().isEmpty()? Graql.var(varName).pattern() : Graql.var().pattern();
         for (Pair<Var, VarPattern> mapping : rolePlayerMappings) {
             Var rp = mapping.getKey();
             VarPattern role = mapping.getValue();
@@ -698,7 +698,7 @@ public class Relation extends TypeAtom {
 
     @Override
     public Atom rewriteToUserDefined(){
-        VarPattern newVar = Graql.var(Graql.anonVarName());
+        VarPattern newVar = Graql.var(Graql.anonVarName()).pattern();
         VarPattern relVar = getPattern().asVar().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.getType()))
                 .orElse(newVar);
@@ -722,7 +722,7 @@ public class Relation extends TypeAtom {
     @Override
     public Pair<Atom, Unifier> rewriteToUserDefinedWithUnifiers() {
         Unifier unifier = new UnifierImpl();
-        VarPattern newVar = Graql.var(Graql.anonVarName());
+        VarPattern newVar = Graql.var(Graql.anonVarName()).pattern();
         VarPattern relVar = getPattern().asVar().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.getType()))
                 .orElse(newVar);

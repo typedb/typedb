@@ -27,6 +27,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Factory for instances of {@link ai.grakn.graql.Pattern}.
@@ -59,8 +60,12 @@ public class Patterns {
         return VarPatternImpl.merge(vars);
     }
 
+    public static Var varName() {
+        return new VarImpl(UUID.randomUUID().toString(), false);
+    }
+
     public static Var varName(String value) {
-        return new VarImpl(value);
+        return new VarImpl(value, true);
     }
 
 }

@@ -40,7 +40,7 @@ public interface Var extends VarPatternBuilder {
      */
     Var map(Function<String, String> mapper);
 
-    VarPattern pattern();
+    boolean isUserDefinedName();
 
     /**
      * Get a shorter representation of the variable (with prefixed "$")
