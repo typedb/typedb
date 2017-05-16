@@ -113,34 +113,6 @@ public class AtomicQueryTest {
         assertEquals(atomicQuery.hashCode(), copy.hashCode());
     }
 
-    /*
-    @Test
-    public void testWhenModifyingAQuery_TheCopyDoesNotChange(){
-        GraknGraph graph = snbGraph.graph();
-        String patternString = "{(recommended-product: $x, recommended-customer: $y) isa recommendation;}";
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
-        ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
-        ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
-
-        atomicQuery.unify(new UnifierImpl(ImmutableMap.of(VarName.of("y"), VarName.of("z"))));
-        MatchQuery q1 = atomicQuery.getMatchQuery();
-        MatchQuery q2 = copy.getMatchQuery();
-        assertNotEquals(q1, q2);
-    }
-
-    @Test
-    public void testWhenCopyingAQuery_TheyHaveTheSameRoleVarTypeMaps(){
-        GraknGraph graph = snbGraph.graph();
-        String patternString = "{(recommended-product: $x, recommended-customer: $y) isa recommendation;}";
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
-        ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
-        ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
-
-        atomicQuery.unify(new UnifierImpl(ImmutableMap.of(VarName.of("y"), VarName.of("z"))));
-        assertEquals(ReasonerQueries.atomic(conjunction(patternString, graph), snbGraph.graph()).getAtom().getRoleVarTypeMap(), copy.getAtom().getRoleVarTypeMap());
-    }
-    */
-
     @Test
     public void testWhenMaterialising_MaterialisedInformationIsPresentInGraph(){
         GraknGraph graph = snbGraph.graph();
@@ -213,28 +185,6 @@ public class AtomicQueryTest {
         assertEquals(query.getAtoms().size(), 1);
         assertEquals(query2.getAtoms().size(), 2);
     }
-
-    /*
-    @Test //basic unification test based on mapping variables to corresponding roles together with checking copied atom is not affected
-    public void testWhenUnifiying_CopyIsNotAffected(){
-        GraknGraph graph = geoGraph.graph();
-        String parentString = "{(entity-location: $y, geo-entity: $y1), isa is-located-in;}";
-        String childString = "{(geo-entity: $y1, entity-location: $y2), isa is-located-in;}";
-
-        ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction(parentString, graph), graph);
-        ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction(childString, graph), graph);
-
-        Atomic childAtom = childQuery.getAtom();
-        Atomic parentAtom = parentQuery.getAtom();
-
-        Unifier unifiers = childAtom.getUnifier(parentAtom);
-
-        ReasonerAtomicQuery childCopy = ReasonerQueries.atomic(childQuery);
-        childCopy.unify(unifiers);
-        Atomic childAtomCopy = childCopy.getAtom();
-        assertNotEquals(childAtomCopy, childAtom);
-    }
-    */
 
     @Test
     public void testWhenUnifiyingAtomWithItself_UnifierIsTrivial(){

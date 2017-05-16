@@ -34,7 +34,6 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
@@ -63,9 +62,6 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getListPermutations
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilterWithInverse;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.subFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
 /**
  *
@@ -234,16 +230,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private Stream<Answer> getFilteredAnswerStream(Stream<Answer> answers){
         Set<VarName> vars = getVarNames();
-        Set<Unifier> permutationUnifiers = getPermutationUnifiers(atom);
-        Set<IdPredicate> unmappedIdPredicates = atom.getUnmappedIdPredicates();
         Set<TypeAtom> mappedTypeConstraints = atom.getMappedTypeConstraints();
-        Set<TypeAtom> unmappedTypeConstraints = atom.getUnmappedTypeConstraints();
         return getIdPredicateAnswerStream(answers)
                 .filter(a -> entityTypeFilter(a, mappedTypeConstraints))
-                .flatMap(a -> varFilterFunction.apply(a, vars))
-                .flatMap(a -> permuteFunction.apply(a, permutationUnifiers))
-                .filter(a -> subFilter(a, unmappedIdPredicates))
-                .filter(a -> entityTypeFilter(a, unmappedTypeConstraints));
+                .map(a -> a. filterVars(vars));
     }
 
     /**
@@ -265,8 +255,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                           boolean differentialJoin){
         Atom atom = this.getAtom();
 
-        LOG.debug("Applying rule to: " + this + rule + rule.getRuleId());
-        LOG.debug("delta: " + u);
+        LOG.trace("Applying rule to: " + this + rule);
+        LOG.trace("t: " + u);
+        LOG.trace("tp: " + pu);
 
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
@@ -295,15 +286,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
 
         //unify answers
-        Set<VarName> queryVars = u.keySet();
+        boolean isHeadEquivalent = this.isEquivalent(ruleHead);
+        Set<VarName> queryVars = this.getVarNames().size() < ruleHead.getVarNames().size()? u.keySet() : ruleHead.getVarNames();
         answers = answers
                 .map(a -> a.filterVars(queryVars))
                 .map(a -> a.unify(u))
                 .map(a -> a.unify(pu));
 
+
         //if query not exactly equal to the rule head, do some conversion
-        //return atom.isEquivalent(ruleHead.getAtom())? dCache.record(this, answers) : dCache.record(this, getFilteredAnswerStream(answers));
-        return dCache.record(this, answers);
+        return  isHeadEquivalent? dCache.record(this, answers) : dCache.record(this, getFilteredAnswerStream(answers));
     }
 
     /**
@@ -322,11 +314,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                        boolean differentialJoin){
         boolean queryAdmissible = !subGoals.contains(this);
 
-        LOG.debug("AQ: " + this);
+        LOG.trace("AQ: " + this);
 
         Stream<Answer> answerStream = cache.contains(this) ? Stream.empty() : dCache.record(this, lookup(cache));
         if(queryAdmissible) {
-            Answer sub = this.getSubstitution();
+
             Iterator<Pair<InferenceRule, Pair<Unifier, Unifier>>> ruleIterator = getRuleIterator();
             while(ruleIterator.hasNext()) {
                 Pair<InferenceRule, Pair<Unifier, Unifier>> rulePair = ruleIterator.next();
@@ -334,6 +326,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 Unifier u = rulePair.getValue().getKey();
                 Unifier pu = rulePair.getValue().getValue();
 
+                Answer sub = this.getSubstitution().unify(u.inverse());
                 rule.getHead().addSubstitution(sub);
                 rule.getBody().addSubstitution(sub);
 

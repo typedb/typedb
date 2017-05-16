@@ -23,7 +23,6 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -36,7 +35,6 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -222,9 +220,9 @@ public class InferenceRule {
     }
 
     /**
-     *
-     * @param parentAtom
-     * @return
+     * rewrite the rule to a form with user defined variables
+     * @param parentAtom reference parent atom
+     * @return rewritten rule
      */
     public InferenceRule rewriteToUserDefined(Atom parentAtom){
         return parentAtom.isUserDefinedName()? this.rewriteHead().rewriteBody() : this;

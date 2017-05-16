@@ -728,7 +728,7 @@ public class AtomicTest {
         Atom parentAtom = ReasonerQueries.atomic(conjunction(parentRelation, graph), graph).getAtom();
 
         Unifier unifiers = childAtom.getUnifier(parentAtom);
-        Unifier correctUnifiers = new UnifierImpl(
+        Unifier correctUnifier = new UnifierImpl(
                 ImmutableMap.of(
                     VarName.of("x1"), VarName.of("x"),
                     VarName.of("x2"), VarName.of("y"),
@@ -736,12 +736,11 @@ public class AtomicTest {
                     VarName.of("r2"), VarName.of("R2"))
         );
         assertTrue(
-                "Unifiers not in subset relation:\n" + correctUnifiers.toString() + "\n" + unifiers.toString(),
-                unifiers.mappings().containsAll(correctUnifiers.mappings())
+                "Unifiers not in subset relation:\n" + correctUnifier.toString() + "\n" + unifiers.toString(),
+                unifiers.mappings().containsAll(correctUnifier.mappings())
         );
     }
 
-    /*
     @Test
     public void testUnification_WithMatchAllAtom(){
         GraknGraph graph = snbGraph.graph();
@@ -752,16 +751,15 @@ public class AtomicTest {
         PatternAdmin head = graph.graql().parsePattern("(recommended-customer: $z, recommended-product: $b) isa recommendation").admin();
         InferenceRule rule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
 
-        rule.unify(parent);
+        Unifier unifier = rule.getUnifier(parent);
         Set<VarName> vars = rule.getHead().getAtom().getVarNames();
         Set<VarName> correctVars = Sets.newHashSet(VarName.of("r"), VarName.of("a"), VarName.of("x"));
         assertTrue(!vars.contains(VarName.of("")));
         assertTrue(
                 "Variables not in subset relation:\n" + correctVars.toString() + "\n" + vars.toString(),
-                vars.containsAll(correctVars)
+                unifier.values().containsAll(correctVars)
         );
     }
-    */
 
     @Test
     public void testWhenCreatingQueryWithNonexistentType_ExceptionIsThrown(){

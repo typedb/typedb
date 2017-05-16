@@ -22,12 +22,10 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Unifier;
 import com.google.common.collect.Maps;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javafx.util.Pair;
 
 /**
  *

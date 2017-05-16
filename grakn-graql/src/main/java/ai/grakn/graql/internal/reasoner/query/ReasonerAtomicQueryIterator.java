@@ -20,20 +20,14 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import com.google.common.collect.Iterators;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.util.Pair;
 import org.slf4j.Logger;
@@ -116,8 +110,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
                 LOG.trace("Applying rule to: " + query +
                         currentRule + "\n" +
                         "t = " + currentRuleUnifier + "\n" +
-                        "tp = " + currentPermutationUnifier + "\n" +
-                        "id: " + currentRule.getRuleId());
+                        "tp = " + currentPermutationUnifier);
 
                 //delta' = theta . thetaP . delta
                 Answer partialSubPrime = query.getSubstitution()

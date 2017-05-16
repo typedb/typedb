@@ -193,6 +193,8 @@ public class QueryAnswerStream {
             Stream<Answer> answerStream = l2.stream();
             answerStream = answerStream.filter(ans -> {
                 for(VarName v: joinVars) {
+                    if(ans.get(v) == null)
+                        System.out.println();
                     if (!ans.get(v).equals(a1.get(v))) {
                         return false;
                     }
