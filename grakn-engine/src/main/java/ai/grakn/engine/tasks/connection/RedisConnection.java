@@ -56,7 +56,7 @@ public class RedisConnection {
      *
      * @return a connction to the redis server.
      */
-    public static synchronized RedisConnection getConnection(){
+    public static RedisConnection getConnection(){
         if(redis == null) redis = new RedisConnection();
         return redis;
     }

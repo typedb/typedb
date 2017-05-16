@@ -162,7 +162,7 @@ public interface GraknAdmin {
      *
      * @param conceptCounts The concepts and the changes to put on their counts
      */
-    void updateTypeCounts(Map<ConceptId, Long> conceptCounts);
+    void updateConceptCounts(Map<ConceptId, Long> conceptCounts);
 
     /**
      * Creates a new shard for the concept

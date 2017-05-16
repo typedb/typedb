@@ -20,10 +20,10 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.postprocessing.util.TaskConfigReader;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 import org.slf4j.Logger;
@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -93,17 +94,31 @@ public class PostProcessingTask implements BackgroundTask {
     private void runPostProcessingMethod(TaskConfiguration configuration, Schema.BaseType baseType,
                                          TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> postProcessingMethod){
 
-        Map<String, Set<ConceptId>> allToPostProcess = TaskConfigReader.getPostProcessingJobs(baseType, configuration);
+        Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(baseType, configuration);
 
         allToPostProcess.entrySet().forEach(e -> {
             String conceptIndex = e.getKey();
             Set<ConceptId> conceptIds = e.getValue();
 
-            GraphMutators.runGraphMutationWithRetry(TaskConfigReader.getKeyspace(configuration),
+            GraphMutators.runGraphMutationWithRetry(configuration.json().at(REST.Request.KEYSPACE).asString(),
                     (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds, postProcessingMethod));
         });
 
         LOG.debug(JOB_FINISHED, baseType.name(), allToPostProcess);
+    }
+
+    /**
+     * Extract a map of concept indices to concept ids from the provided configuration
+     *
+     * @param type Type of concept to extract. This correlates to the key in the provided configuration.
+     * @param configuration Configuration from which to extract the configuration.
+     * @return Map of concept indices to ids that has been extracted from the provided configuration.
+     */
+    public static Map<String,Set<ConceptId>> getPostProcessingJobs(Schema.BaseType type, TaskConfiguration configuration) {
+        return configuration.json().at(REST.Request.COMMIT_LOG_FIXING).at(type.name()).asJsonMap().entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getKey,
+                e -> e.getValue().asList().stream().map(ConceptId::of).collect(Collectors.toSet())
+        ));
     }
 
     /**

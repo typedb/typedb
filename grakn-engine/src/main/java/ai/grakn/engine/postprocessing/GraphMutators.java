@@ -62,7 +62,7 @@ public abstract class GraphMutators {
      * @param keyspace keyspace of the graph to mutate
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
-    public static void runGraphMutationWithRetry(String keyspace, Consumer<GraknGraph> mutatingFunction){
+    static void runGraphMutationWithRetry(String keyspace, Consumer<GraknGraph> mutatingFunction){
         runGraphMutationWithRetry(keyspace, GraknTxType.WRITE, mutatingFunction);
     }
 

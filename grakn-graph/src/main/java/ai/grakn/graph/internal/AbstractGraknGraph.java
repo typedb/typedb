@@ -1032,11 +1032,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public void updateTypeCounts(Map<ConceptId, Long> typeCounts){
+    public void updateConceptCounts(Map<ConceptId, Long> typeCounts){
        typeCounts.entrySet().forEach(entry -> {
            if(entry.getValue() != 0) {
-               ConceptImpl type = getConcept(entry.getKey());
-               type.setShardCount(type.getShardCount() + entry.getValue());
+               ConceptImpl concept = getConcept(entry.getKey());
+               concept.setShardCount(concept.getShardCount() + entry.getValue());
            }
        });
     }

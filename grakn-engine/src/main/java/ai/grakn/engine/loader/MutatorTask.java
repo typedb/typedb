@@ -20,13 +20,13 @@ package ai.grakn.engine.loader;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.postprocessing.GraphMutators;
-import ai.grakn.engine.postprocessing.util.TaskConfigReader;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.util.REST;
 import mjson.Json;
 
 import java.util.Collection;
@@ -52,7 +52,7 @@ public class MutatorTask implements BackgroundTask {
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
         Collection<Query> inserts = getInserts(configuration);
-        GraphMutators.runBatchMutationWithRetry(TaskConfigReader.getKeyspace(configuration), (graph) ->
+        GraphMutators.runBatchMutationWithRetry(configuration.json().at(REST.Request.KEYSPACE).asString(), (graph) ->
                 insertQueriesInOneTransaction(graph, inserts)
         );
 

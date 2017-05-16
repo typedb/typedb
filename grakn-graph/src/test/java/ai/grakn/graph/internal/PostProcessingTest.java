@@ -236,7 +236,7 @@ public class PostProcessingTest extends GraphTestBase{
         types.put(t2.getId(), 6L);
         types.put(t3.getId(), 2L);
 
-        graknGraph.admin().updateTypeCounts(types);
+        graknGraph.admin().updateConceptCounts(types);
         types.entrySet().forEach(entry ->
                 assertEquals((long) entry.getValue(), ((ConceptImpl) graknGraph.getConcept(entry.getKey())).getShardCount()));
 
@@ -244,7 +244,7 @@ public class PostProcessingTest extends GraphTestBase{
         types.put(t1.getId(), -5L);
         types.put(t2.getId(), -2L);
         types.put(t3.getId(), 3L);
-        graknGraph.admin().updateTypeCounts(types);
+        graknGraph.admin().updateConceptCounts(types);
 
         assertEquals(0L, t1.getShardCount());
         assertEquals(4L, t2.getShardCount());

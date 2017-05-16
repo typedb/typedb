@@ -21,18 +21,19 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.postprocessing.util.TaskConfigReader;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.util.REST;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -51,8 +52,8 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
 
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
-        Map<ConceptId, Long> jobs = TaskConfigReader.getCountUpdatingJobs(configuration);
-        String keyspace = TaskConfigReader.getKeyspace(configuration);
+        Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration);
+        String keyspace = configuration.json().at(REST.Request.KEYSPACE).asString();
 
         //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
         //The graph cannot be used because each engine can have it's own snapshot of the graph with caching which makes
@@ -68,6 +69,18 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
         conceptToShard.forEach(type -> shardConcept(keyspace, type));
 
         return true;
+    }
+
+    /**
+     * Extracts the type labels and count from the Json configuration
+     * @param configuration The configuration which contains types counts
+     * @return A map indicating the number of instances each type has gained or lost
+     */
+    private static Map<ConceptId, Long> getCountUpdatingJobs(TaskConfiguration configuration){
+        return  configuration.json().at(REST.Request.COMMIT_LOG_COUNTING).asJsonList().stream()
+                .collect(Collectors.toMap(
+                        e -> ConceptId.of(e.at(REST.Request.COMMIT_LOG_CONCEPT_ID).asString()),
+                        e -> e.at(REST.Request.COMMIT_LOG_SHARDING_COUNT).asLong()));
     }
 
     /**
