@@ -71,7 +71,6 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.uncapture;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
 /**
  *
@@ -260,7 +259,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param atom in question
      * @return true if query contains an equivalent atom
      */
-    public boolean containsEquivalentAtom(Atomic atom) {
+    private boolean containsEquivalentAtom(Atomic atom) {
         return !getEquivalentAtoms(atom).isEmpty();
     }
 
@@ -274,19 +273,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         unify(VarName.of("temp"), from);
     }
 
-    @Override
-    public Unifier getUnifier(ReasonerQuery parent) {
-        throw new IllegalStateException("Attempted to obtain unifiers on non-atomic queries.");
-    }
-
     /**
      * change each variable occurrence in the query (apply unifier [from/to])
-     *
      * @param from variable name to be changed
      * @param to   new variable name
      */
-    @Override
-    public void unify(VarName from, VarName to) {
+    private void unify(VarName from, VarName to) {
         Set<Atomic> toRemove = new HashSet<>();
         Set<Atomic> toAdd = new HashSet<>();
 
@@ -297,13 +289,19 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         toAdd.forEach(this::addAtomic);
     }
 
+    @Override
+    public Unifier getUnifier(ReasonerQuery parent) {
+        throw new IllegalStateException("Attempted to obtain unifiers on non-atomic queries.");
+    }
+
     /**
      * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
      * @param unifier (variable mappings) to be applied
+     * @return union of the entry unifier and the unifier used to resolve potential captures
      */
     @Override
-    public void unify(Unifier unifier) {
-        if (unifier.size() == 0) return;
+    public Unifier unify(Unifier unifier) {
+        if (unifier.size() == 0) return new UnifierImpl();
         Unifier mappings = new UnifierImpl(unifier);
         Unifier appliedMappings = new UnifierImpl();
         //do bidirectional mappings if any
@@ -338,7 +336,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         toAdd.forEach(this::addAtomic);
 
         //NB:captures not resolved in place as resolution in-place alters respective atom hash
-        mappings.merge(resolveCaptures());
+        return new UnifierImpl(unifier).merge(resolveCaptures());
     }
 
     /**
@@ -664,7 +662,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<VarName> vars = this.getVarNames();
         return answerStream
                 .filter(a -> nonEqualsFilter(a, filters))
-                .flatMap(a -> varFilterFunction.apply(a, vars));
+                .map(a -> a.filterVars(vars));
     }
 
     public ReasonerQueryIterator iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){

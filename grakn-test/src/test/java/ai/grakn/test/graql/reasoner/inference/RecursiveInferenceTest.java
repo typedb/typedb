@@ -50,34 +50,34 @@ public class RecursiveInferenceTest {
 
     // The recursivity graph is loaded to test if possible, but is unused elsewhere
     @ClassRule
-    public static final GraphContext recursivityContext = GraphContext.preLoad("recursivity-test.gql");
+    public static final GraphContext recursivityContext = GraphContext.preLoad("recursivity-test.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext recursivitySGContext = GraphContext.preLoad("recursivity-sg-test.gql");
+    public static final GraphContext recursivitySGContext = GraphContext.preLoad("recursivity-sg-test.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext recursivityTCContext = GraphContext.preLoad("recursivity-tc-test.gql");
+    public static final GraphContext recursivityTCContext = GraphContext.preLoad("recursivity-tc-test.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext recursivityRSGContext = GraphContext.preLoad("recursivity-rsg-test.gql");
+    public static final GraphContext recursivityRSGContext = GraphContext.preLoad("recursivity-rsg-test.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext ancestorFriendContext = GraphContext.preLoad("ancestor-friend-test.gql");
+    public static final GraphContext ancestorFriendContext = GraphContext.preLoad("ancestor-friend-test.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext transitivityContext = GraphContext.preLoad("transitivity-test.gql");
+    public static final GraphContext transitivityContext = GraphContext.preLoad("transitivity-test.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext ancestorContext = GraphContext.preLoad("ancestor-test.gql");
+    public static final GraphContext ancestorContext = GraphContext.preLoad("ancestor-test.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext reachabilityContext = GraphContext.preLoad("reachability-test.gql");
+    public static final GraphContext reachabilityContext = GraphContext.preLoad("reachability-test.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext sameGenerationContext = GraphContext.preLoad("same-generation-test.gql");
+    public static final GraphContext sameGenerationContext = GraphContext.preLoad("same-generation-test.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext reachabilitySymmetricContext = GraphContext.preLoad("reachability-test-symmetric.gql");
+    public static final GraphContext reachabilitySymmetricContext = GraphContext.preLoad("reachability-test-symmetric.gql").assumeTrue(usingTinker());
 
     @Rule
     public final GraphContext graphContext = GraphContext.empty();

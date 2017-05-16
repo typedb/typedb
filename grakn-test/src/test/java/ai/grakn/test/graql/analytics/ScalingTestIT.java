@@ -21,7 +21,7 @@ package ai.grakn.test.graql.analytics;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.client.LoaderClient;
+import ai.grakn.client.BatchMutatorClient;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
@@ -267,7 +267,7 @@ public class ScalingTestIT {
         // create the ontology
         simpleOntology(keyspace);
 
-        LoaderClient loader = new LoaderClient(Grakn.DEFAULT_URI, keyspace);
+        BatchMutatorClient loader = new BatchMutatorClient(Grakn.DEFAULT_URI, keyspace);
 
         for (int g=1; g<totalSteps+1; g++) {
             LOGGER.info("starting step: " + g);
@@ -402,7 +402,7 @@ public class ScalingTestIT {
 
     private void addNodesToSuperNodes(String keyspace, Set<String> superNodes, int startRange, int endRange) {
         // batch in the nodes
-        LoaderClient loader = new LoaderClient(Grakn.DEFAULT_URI, keyspace);
+        BatchMutatorClient loader = new BatchMutatorClient(Grakn.DEFAULT_URI, keyspace);
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
             List<VarPattern> insertQuery = new ArrayList<>();
