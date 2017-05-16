@@ -26,7 +26,7 @@ import java.util.function.Function;
  *
  * @author Felix Chapman
  */
-public interface Var {
+public interface Var extends VarPatternBuilder {
 
     /**
      * Get the string name of the variable (without prefixed "$")
@@ -39,6 +39,8 @@ public interface Var {
      * @return the new variable name
      */
     Var map(Function<String, String> mapper);
+
+    VarPattern pattern();
 
     /**
      * Get a shorter representation of the variable (with prefixed "$")
