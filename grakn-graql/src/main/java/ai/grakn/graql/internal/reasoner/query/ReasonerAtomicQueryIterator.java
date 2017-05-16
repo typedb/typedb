@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
@@ -25,6 +26,7 @@ import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import com.google.common.collect.Iterators;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
@@ -58,11 +60,6 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
     private Iterator<Answer> queryIterator = Collections.emptyIterator();
 
     private Unifier cacheUnifier = new UnifierImpl();
-    private Unifier currentRuleUnifier = new UnifierImpl();
-    private Unifier currentPermutationUnifier = new UnifierImpl();
-
-
-    private InferenceRule currentRule = null;
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
@@ -78,7 +75,12 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         LOG.trace("AQ delta: " + partialSub);
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
-        this.queryIterator = streamUnifierPair.getKey().iterator();
+        this.queryIterator = streamUnifierPair.getKey()
+                .map(a -> {
+                    if (!a.getExplanation().isLookupExplanation()) return a;
+                    else return a.explain(new LookupExplanation(query));
+                })
+                .iterator();
         this.cacheUnifier = streamUnifierPair.getValue().inverse();
 
         //if this already has full substitution and exists in the db then do not resolve further
@@ -96,47 +98,56 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         if (ruleIterator.hasNext()) subGoals.add(query);
     }
 
+    private Iterator<Answer> getRuleQueryIterator(InferenceRule rule, Unifier u, Unifier pu){
+        LOG.trace("Applying rule to: " + query +
+                rule + "\n" +
+                "t = " + u + "\n" +
+                "tp = " + pu);
+
+        //delta' = theta . thetaP . delta
+        Unifier uInv = u.inverse();
+        Answer partialSubPrime = query.getSubstitution()
+                .unify(pu)
+                .unify(uInv);
+
+        Set<VarName> headVars = rule.getHead().getVarNames();
+        Iterator<Answer> baseIterator = rule.getBody().iterator(partialSubPrime, subGoals, cache);
+        return Iterators.transform(
+                baseIterator,
+                a -> {
+                    if (a == null) return null;
+                    else {
+                        return a
+                                .filterVars(headVars)
+                                .unify(u)
+                                .unify(pu)
+                                .merge(query.getSubstitution())
+                                .filterVars(query.getVarNames())
+                                .explain(new RuleExplanation(rule));
+                    }
+                });
+    }
+
     @Override
     public boolean hasNext() {
         if (queryIterator.hasNext()) return true;
         else{
             if (ruleIterator.hasNext()) {
                 Pair<InferenceRule, Pair<Unifier, Unifier>> rule = ruleIterator.next();
-
-                currentRule = rule.getKey();
-                currentRuleUnifier = rule.getValue().getKey();
-                currentPermutationUnifier = rule.getValue().getValue();
-
-                LOG.trace("Applying rule to: " + query +
-                        currentRule + "\n" +
-                        "t = " + currentRuleUnifier + "\n" +
-                        "tp = " + currentPermutationUnifier);
-
-                //delta' = theta . thetaP . delta
-                Answer partialSubPrime = query.getSubstitution()
-                        .unify(currentPermutationUnifier)
-                        .unify(currentRuleUnifier.inverse());
-                queryIterator = currentRule.getBody().iterator(partialSubPrime, subGoals, cache);
+                queryIterator = getRuleQueryIterator(
+                        rule.getKey(),
+                        rule.getValue().getKey(),
+                        rule.getValue().getValue()
+                );
                 return hasNext();
             }
             else return false;
         }
     }
-
+    
     @Override
     public Answer next() {
         Answer sub = queryIterator.next();
-        sub = sub
-                .filterVars(currentRule != null? currentRule.getHead().getVarNames() : sub.keySet())
-                .unify(currentRuleUnifier)
-                .unify(currentPermutationUnifier)
-                .merge(query.getSubstitution())
-                .filterVars(query.getVarNames());
-
-        //assign appropriate explanation
-        if (sub.getExplanation().isLookupExplanation()) sub = sub.explain(new LookupExplanation(query));
-        else sub = sub.explain(new RuleExplanation(currentRule));
-
         return cache.recordAnswerWithUnifier(query, sub, cacheUnifier);
     }
 
