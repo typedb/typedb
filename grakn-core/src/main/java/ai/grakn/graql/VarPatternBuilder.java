@@ -88,21 +88,21 @@ public interface VarPatternBuilder extends PatternBuilder {
      * the variable must have a resource of the given type that matches the given atom
      *
      * @param type a resource type in the ontology
-     * @param var a variable representing a resource
+     * @param varPattern a variable pattern representing a resource
      * @return this
      */
     @CheckReturnValue
-    VarPattern has(String type, VarPatternBuilder var);
+    VarPattern has(String type, VarPatternBuilder varPattern);
 
     /**
      * the variable must have a resource of the given type that matches the given atom
      *
      * @param type a resource type in the ontology
-     * @param var a variable representing a resource
+     * @param varPattern a variable pattern representing a resource
      * @return this
      */
     @CheckReturnValue
-    VarPattern has(TypeLabel type, VarPatternBuilder var);
+    VarPattern has(TypeLabel type, VarPatternBuilder varPattern);
 
     /**
      * @param type a concept type id that the variable must be of this type
@@ -207,7 +207,7 @@ public interface VarPatternBuilder extends PatternBuilder {
     /**
      * the variable must be a relation with the given roleplayer
      *
-     * @param roleplayer a variable representing a roleplayer
+     * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */
     @CheckReturnValue
@@ -226,7 +226,7 @@ public interface VarPatternBuilder extends PatternBuilder {
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
      *
-     * @param roletype   a variable representing a roletype
+     * @param roletype   a variable pattern representing a roletype
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
@@ -237,7 +237,7 @@ public interface VarPatternBuilder extends PatternBuilder {
      * the variable must be a relation with the given roleplayer playing the given roletype
      *
      * @param roletype   a role type in the ontology
-     * @param roleplayer a variable representing a roleplayer
+     * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */
     @CheckReturnValue
@@ -246,8 +246,8 @@ public interface VarPatternBuilder extends PatternBuilder {
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
      *
-     * @param roletype   a variable representing a roletype
-     * @param roleplayer a variable representing a roleplayer
+     * @param roletype   a variable pattern representing a roletype
+     * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */
     @CheckReturnValue
@@ -291,19 +291,19 @@ public interface VarPatternBuilder extends PatternBuilder {
 
     /**
      * Specify that the variable is different to another variable
-     * @param varName the variable name that this variable should not be equal to
-     * @return this
-     */
-    @CheckReturnValue
-    VarPattern neq(String varName);
-
-    /**
-     * Specify that the variable is different to another variable
      * @param var the variable that this variable should not be equal to
      * @return this
      */
     @CheckReturnValue
-    VarPattern neq(VarPatternBuilder var);
+    VarPattern neq(String var);
+
+    /**
+     * Specify that the variable is different to another variable
+     * @param varPattern the variable pattern that this variable should not be equal to
+     * @return this
+     */
+    @CheckReturnValue
+    VarPattern neq(VarPatternBuilder varPattern);
 
     @Override
     VarPattern pattern();

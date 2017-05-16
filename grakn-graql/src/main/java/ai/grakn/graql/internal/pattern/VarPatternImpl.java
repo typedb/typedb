@@ -121,13 +121,13 @@ class VarPatternImpl implements VarPatternAdmin {
     }
 
     @Override
-    public VarPattern has(String type, VarPatternBuilder var) {
-        return has(TypeLabel.of(type), var);
+    public VarPattern has(String type, VarPatternBuilder varPattern) {
+        return has(TypeLabel.of(type), varPattern);
     }
 
     @Override
-    public VarPattern has(TypeLabel type, VarPatternBuilder var) {
-        return addProperty(HasResourceProperty.of(type, var.pattern().admin()));
+    public VarPattern has(TypeLabel type, VarPatternBuilder varPattern) {
+        return addProperty(HasResourceProperty.of(type, varPattern.pattern().admin()));
     }
 
     @Override
@@ -251,13 +251,13 @@ class VarPatternImpl implements VarPatternAdmin {
     }
 
     @Override
-    public VarPattern neq(String varName) {
-        return neq(Graql.var(varName));
+    public VarPattern neq(String var) {
+        return neq(Graql.var(var));
     }
 
     @Override
-    public VarPattern neq(VarPatternBuilder var) {
-        return addProperty(new NeqProperty(var.pattern().admin()));
+    public VarPattern neq(VarPatternBuilder varPattern) {
+        return addProperty(new NeqProperty(varPattern.pattern().admin()));
     }
 
     @Override

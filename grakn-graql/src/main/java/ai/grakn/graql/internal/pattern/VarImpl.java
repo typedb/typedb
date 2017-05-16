@@ -129,13 +129,13 @@ final class VarImpl implements Var {
     }
 
     @Override
-    public VarPattern has(String type, VarPatternBuilder var) {
-        return pattern().has(type, var);
+    public VarPattern has(String type, VarPatternBuilder varPattern) {
+        return pattern().has(type, varPattern);
     }
 
     @Override
-    public VarPattern has(TypeLabel type, VarPatternBuilder var) {
-        return pattern().has(type, var);
+    public VarPattern has(TypeLabel type, VarPatternBuilder varPattern) {
+        return pattern().has(type, varPattern);
     }
 
     @Override
@@ -259,12 +259,12 @@ final class VarImpl implements Var {
     }
 
     @Override
-    public VarPattern neq(String varName) {
-        return pattern().neq(varName);
+    public VarPattern neq(String var) {
+        return pattern().neq(var);
     }
 
     @Override
-    public VarPattern neq(VarPatternBuilder var) {
-        return pattern().neq(var);
+    public VarPattern neq(VarPatternBuilder varPattern) {
+        return pattern().neq(varPattern);
     }
 }

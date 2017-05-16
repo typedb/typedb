@@ -22,7 +22,7 @@ package ai.grakn.graql;
 import java.util.function.Function;
 
 /**
- * A variable name in a Graql query
+ * A variable in a Graql query
  *
  * @author Felix Chapman
  */

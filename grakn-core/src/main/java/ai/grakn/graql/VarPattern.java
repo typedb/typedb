@@ -21,9 +21,9 @@ package ai.grakn.graql;
 import ai.grakn.graql.admin.VarPatternAdmin;
 
 /**
- * A wildcard variable to refers to a concept in a query.
+ * A variable together with its properties.
  * <p>
- * A {@link VarPattern} may be given a variable name, or left as an "anonymous" variable. {@code Graql} provides
+ * A {@link VarPattern} may be given a variable, or use an "anonymous" variable. {@code Graql} provides
  * static methods for constructing {@link VarPattern} objects.
  * <p>
  * The methods on {@link VarPattern} are used to set its properties. A {@link VarPattern} behaves differently depending
