@@ -28,13 +28,11 @@ import ai.grakn.graql.internal.reasoner.explanation.Explanation;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 
 /**
  *

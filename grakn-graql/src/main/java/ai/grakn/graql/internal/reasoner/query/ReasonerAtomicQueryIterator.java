@@ -144,7 +144,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
             else return false;
         }
     }
-    
+
     @Override
     public Answer next() {
         Answer sub = queryIterator.next();
