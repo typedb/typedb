@@ -140,4 +140,25 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         return (ClusterQuery<T>) super.withGraph(graph);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        ClusterQueryImpl<?> that = (ClusterQueryImpl<?>) o;
+
+        if (members != that.members) return false;
+        if (anySize != that.anySize) return false;
+        return clusterSize == that.clusterSize;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (members ? 1 : 0);
+        result = 31 * result + (anySize ? 1 : 0);
+        result = 31 * result + (int) (clusterSize ^ (clusterSize >>> 32));
+        return result;
+    }
 }
