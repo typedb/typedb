@@ -1050,4 +1050,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
            }
        });
     }
+
+    @Override
+    public void shard(TypeLabel label){
+        TypeImpl type = getType(label);
+        if(type == null) {
+            LOG.warn("Cannot shard concept [" + label + "] due to it not existing in the graph");
+        } else {
+            type.createShard();
+        }
+    }
 }

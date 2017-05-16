@@ -164,6 +164,13 @@ public interface GraknAdmin {
      */
     void updateTypeShards(Map<TypeLabel, Long> typeCounts);
 
+    //TODO: Change this to use ConceptId
+    /**
+     * Creates a new shard for the concept
+     * @param label the label of the type to shard
+     */
+    void shard(TypeLabel label);
+
     /**
      *
      * @param key The concept property tp search by.
