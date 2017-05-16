@@ -22,8 +22,8 @@ import java.util.UUID;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_INSTANCE_COUNT;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE_NAME;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_SHARDING_COUNT;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_CONCEPT_ID;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
@@ -57,7 +57,7 @@ public class UpdatingInstanceCountTaskTest {
 
     private void createAndExecuteCountTask(String keyspace, TypeLabel label, long count){
         Json instanceCounts = Json.array();
-        instanceCounts.add(Json.object(COMMIT_LOG_TYPE_NAME, label.getValue(), COMMIT_LOG_INSTANCE_COUNT, count));
+        instanceCounts.add(Json.object(COMMIT_LOG_CONCEPT_ID, label.getValue(), COMMIT_LOG_SHARDING_COUNT, count));
         Json configuration = Json.object(
                 KEYSPACE, keyspace,
                 COMMIT_LOG_COUNTING, instanceCounts

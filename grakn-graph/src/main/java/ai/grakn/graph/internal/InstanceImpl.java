@@ -91,7 +91,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     public void delete() {
         InstanceImpl<?, ?> parent = this;
         Set<CastingImpl> castings = parent.castings();
-        getGraknGraph().getTxCache().removedInstance(type().getLabel());
+        getGraknGraph().getTxCache().removedInstance(type().getId());
         deleteNode();
         for(CastingImpl casting: castings){
             Set<Relation> relations = casting.getRelations();

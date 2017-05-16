@@ -51,8 +51,8 @@ import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_INSTANCE_COUNT;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE_NAME;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_SHARDING_COUNT;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_CONCEPT_ID;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static com.jayway.restassured.RestAssured.baseURI;
 import static com.jayway.restassured.RestAssured.delete;
@@ -246,11 +246,11 @@ public class CommitLogControllerTest {
         commitLogFixing.set(Schema.BaseType.RESOURCE.name(), commitLogFixResource);
 
         Json commitLogCounting = array();
-        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Alpha", COMMIT_LOG_INSTANCE_COUNT, -3));
-        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Bravo", COMMIT_LOG_INSTANCE_COUNT, -2));
-        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Delta", COMMIT_LOG_INSTANCE_COUNT, -1));
-        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Charlie", COMMIT_LOG_INSTANCE_COUNT,1));
-        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Foxtrot", COMMIT_LOG_INSTANCE_COUNT, 2));
+        commitLogCounting.add(object(COMMIT_LOG_CONCEPT_ID, "Alpha", COMMIT_LOG_SHARDING_COUNT, -3));
+        commitLogCounting.add(object(COMMIT_LOG_CONCEPT_ID, "Bravo", COMMIT_LOG_SHARDING_COUNT, -2));
+        commitLogCounting.add(object(COMMIT_LOG_CONCEPT_ID, "Delta", COMMIT_LOG_SHARDING_COUNT, -1));
+        commitLogCounting.add(object(COMMIT_LOG_CONCEPT_ID, "Charlie", COMMIT_LOG_SHARDING_COUNT,1));
+        commitLogCounting.add(object(COMMIT_LOG_CONCEPT_ID, "Foxtrot", COMMIT_LOG_SHARDING_COUNT, 2));
 
         commitLog = object(
                 COMMIT_LOG_FIXING, commitLogFixing,

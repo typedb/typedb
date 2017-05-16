@@ -808,7 +808,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private Optional<String> commitWithLogs() throws GraknValidationException {
         validateGraph();
 
-        boolean submissionNeeded = !getTxCache().getInstanceCount().isEmpty() ||
+        boolean submissionNeeded = !getTxCache().getShardingCount().isEmpty() ||
                 !getTxCache().getModifiedCastings().isEmpty() ||
                 !getTxCache().getModifiedResources().isEmpty();
         JSONObject conceptLog = getTxCache().getFormattedLog();

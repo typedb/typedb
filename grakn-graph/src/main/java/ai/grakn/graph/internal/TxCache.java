@@ -75,8 +75,8 @@ class TxCache {
     //We Track Relations so that we can look them up before they are completely defined and indexed on commit
     private final Map<String, RelationImpl> modifiedRelations = new HashMap<>();
 
-    //We Track the number of instances each type has lost or gained
-    private final Map<TypeLabel, Long> instanceCount = new HashMap<>();
+    //We Track the number of concept connections which have been made which may result in a new shard
+    private final Map<ConceptId, Long> shardingCount = new HashMap<>();
 
     //Transaction Specific Meta Data
     private boolean isTxOpen = false;
@@ -230,8 +230,8 @@ class TxCache {
      *
      * @return All the types that have gained or lost instances and by how much
      */
-    Map<TypeLabel, Long> getInstanceCount(){
-        return instanceCount;
+    Map<ConceptId, Long> getShardingCount(){
+        return shardingCount;
     }
 
     /**
@@ -357,16 +357,16 @@ class TxCache {
         return labelCache.get(label);
     }
 
-    void addedInstance(TypeLabel name){
-        instanceCount.compute(name, (key, value) -> value == null ? 1 : value + 1);
-        cleanupInstanceCount(name);
+    void addedInstance(ConceptId conceptId){
+        shardingCount.compute(conceptId, (key, value) -> value == null ? 1 : value + 1);
+        cleanupShardingCount(conceptId);
     }
-    void removedInstance(TypeLabel name){
-        instanceCount.compute(name, (key, value) -> value == null ? -1 : value - 1);
-        cleanupInstanceCount(name);
+    void removedInstance(ConceptId conceptId){
+        shardingCount.compute(conceptId, (key, value) -> value == null ? -1 : value - 1);
+        cleanupShardingCount(conceptId);
     }
-    private void cleanupInstanceCount(TypeLabel name){
-        if(instanceCount.get(name) == 0) instanceCount.remove(name);
+    private void cleanupShardingCount(ConceptId conceptId){
+        if(shardingCount.get(conceptId) == 0) shardingCount.remove(conceptId);
     }
 
     JSONObject getFormattedLog(){
@@ -378,10 +378,10 @@ class TxCache {
         //Types with instance changes
         JSONArray typesWithInstanceChanges = new JSONArray();
 
-        getInstanceCount().forEach((key, value) -> {
+        getShardingCount().forEach((key, value) -> {
             JSONObject jsonObject = new JSONObject();
-            jsonObject.put(REST.Request.COMMIT_LOG_TYPE_NAME, key.getValue());
-            jsonObject.put(REST.Request.COMMIT_LOG_INSTANCE_COUNT, value);
+            jsonObject.put(REST.Request.COMMIT_LOG_CONCEPT_ID, key.getValue());
+            jsonObject.put(REST.Request.COMMIT_LOG_SHARDING_COUNT, value);
             typesWithInstanceChanges.put(jsonObject);
         });
 

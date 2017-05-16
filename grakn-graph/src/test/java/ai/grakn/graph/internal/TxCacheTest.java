@@ -132,23 +132,23 @@ public class TxCacheTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("My Relation Type");
 
         TxCache txCache = graknGraph.getTxCache();
-        assertThat(txCache.getInstanceCount().keySet(), empty());
+        assertThat(txCache.getShardingCount().keySet(), empty());
 
         //Add some instances
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
         relationType.addRelation();
-        assertEquals(2, (long) txCache.getInstanceCount().get(entityType.getLabel()));
-        assertEquals(1, (long) txCache.getInstanceCount().get(relationType.getLabel()));
+        assertEquals(2, (long) txCache.getShardingCount().get(entityType.getId()));
+        assertEquals(1, (long) txCache.getShardingCount().get(relationType.getId()));
 
         //Remove an entity
         e1.delete();
-        assertEquals(1, (long) txCache.getInstanceCount().get(entityType.getLabel()));
-        assertEquals(1, (long) txCache.getInstanceCount().get(relationType.getLabel()));
+        assertEquals(1, (long) txCache.getShardingCount().get(entityType.getId()));
+        assertEquals(1, (long) txCache.getShardingCount().get(relationType.getId()));
 
         //Remove another entity
         e2.delete();
-        assertFalse(txCache.getInstanceCount().containsKey(entityType.getLabel()));
-        assertEquals(1, (long) txCache.getInstanceCount().get(relationType.getLabel()));
+        assertFalse(txCache.getShardingCount().containsKey(entityType.getId()));
+        assertEquals(1, (long) txCache.getShardingCount().get(relationType.getId()));
     }
 }

@@ -62,8 +62,8 @@ public class TaskConfigReader {
     public static Map<TypeLabel, Long> getCountUpdatingJobs(TaskConfiguration configuration){
         return  configuration.json().at(REST.Request.COMMIT_LOG_COUNTING).asJsonList().stream()
                 .collect(Collectors.toMap(
-                        e -> TypeLabel.of(e.at(REST.Request.COMMIT_LOG_TYPE_NAME).asString()),
-                        e -> e.at(REST.Request.COMMIT_LOG_INSTANCE_COUNT).asLong()));
+                        e -> TypeLabel.of(e.at(REST.Request.COMMIT_LOG_CONCEPT_ID).asString()),
+                        e -> e.at(REST.Request.COMMIT_LOG_SHARDING_COUNT).asLong()));
     }
 
     /**
