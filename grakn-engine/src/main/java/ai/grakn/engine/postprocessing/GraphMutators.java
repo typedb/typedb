@@ -78,6 +78,9 @@ public abstract class GraphMutators {
     public static void runGraphMutationWithRetry(TaskConfiguration configuration, Consumer<GraknGraph> mutatingFunction){
         runGraphMutationWithRetry(configuration, GraknTxType.WRITE, mutatingFunction);
     }
+    public static void runGraphMutationWithRetry(String keyspace, Consumer<GraknGraph> mutatingFunction){
+        runGraphMutationWithRetry(keyspace, GraknTxType.WRITE, mutatingFunction);
+    }
 
     /**
      *
@@ -87,7 +90,9 @@ public abstract class GraphMutators {
      */
     private static void runGraphMutationWithRetry(TaskConfiguration configuration, GraknTxType txType, Consumer<GraknGraph> mutatingFunction){
         String keyspace = getKeyspace(configuration);
-
+        runGraphMutationWithRetry(keyspace, txType, mutatingFunction);
+    }
+    private static void runGraphMutationWithRetry(String keyspace, GraknTxType txType, Consumer<GraknGraph> mutatingFunction){
         for(int retry = 0; retry < MAX_RETRY; retry++) {
             try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, txType))  {
 
