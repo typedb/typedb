@@ -47,7 +47,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -56,7 +55,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.subFilter;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
@@ -153,7 +151,7 @@ public class AtomicQueryTest {
         Set<IdPredicate> unmappedIdPredicates = mappedAtom.getUnmappedIdPredicates();
         Set<TypeAtom> unmappedTypeConstraints = mappedAtom.getUnmappedTypeConstraints();
         Set<Answer> permutedAnswers = answers.stream()
-                .flatMap(a -> permuteFunction.apply(a, permutationUnifiers))
+                .flatMap(a -> a.permute(permutationUnifiers))
                 .filter(a -> subFilter(a, unmappedIdPredicates))
                 .filter(a -> entityTypeFilter(a, unmappedTypeConstraints))
                 .collect(Collectors.toSet());
@@ -162,7 +160,7 @@ public class AtomicQueryTest {
         Set<IdPredicate> unmappedIdPredicates2 = unmappedAtom.getUnmappedIdPredicates();
         Set<TypeAtom> unmappedTypeConstraints2 = unmappedAtom.getUnmappedTypeConstraints();
         Set<Answer> permutedAnswers2 = answers.stream()
-                .flatMap(a -> permuteFunction.apply(a, permutationUnifiers2))
+                .flatMap(a -> a.permute(permutationUnifiers2))
                 .filter(a -> subFilter(a, unmappedIdPredicates2))
                 .filter(a -> entityTypeFilter(a, unmappedTypeConstraints2))
                 .collect(Collectors.toSet());

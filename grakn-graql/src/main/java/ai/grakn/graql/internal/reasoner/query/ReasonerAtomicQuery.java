@@ -293,7 +293,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .map(a -> a.unify(u))
                 .map(a -> a.unify(pu));
 
-
         //if query not exactly equal to the rule head, do some conversion
         return  isHeadEquivalent? dCache.record(this, answers) : dCache.record(this, getFilteredAnswerStream(answers));
     }
