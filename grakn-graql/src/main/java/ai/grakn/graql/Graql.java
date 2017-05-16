@@ -431,6 +431,6 @@ public class Graql {
      */
     public static ValuePredicate contains(VarPatternBuilder var) {
         Objects.requireNonNull(var);
-        return Predicates.contains(var);
+        return Predicates.contains(var.pattern().admin());
     }
 }
