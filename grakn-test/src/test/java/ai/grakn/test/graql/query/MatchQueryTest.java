@@ -431,7 +431,7 @@ public class MatchQueryTest {
     public void testVariablesEverywhere() {
         MatchQuery query = qb.match(
                 var()
-                        .rel(label("production-with-genre"), var(x).isa(var(y).sub(label("production"))))
+                        .rel(label("production-with-genre"), x.isa(y.sub(label("production"))))
                         .rel(var().has("name", "crime"))
         );
 

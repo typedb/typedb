@@ -23,7 +23,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -118,7 +117,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
         IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent);
 
         //isa part
-        VarPatternAdmin scVar = Graql.var(varName).hasScope(Graql.var(scopeVariable)).admin();
+        VarPatternAdmin scVar = varName.hasScope(scopeVariable).admin();
         return new TypeAtom(scVar, predicate, parent);
     }
 }

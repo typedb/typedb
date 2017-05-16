@@ -158,13 +158,13 @@ public class Relation extends TypeAtom {
      * @return corresponding {@link VarPatternAdmin}
      */
     private static VarPatternAdmin constructRelationVar(Var varName, Var typeVariable, List<Pair<Var, VarPattern>> rolePlayerMappings) {
-        VarPattern var = !varName.getValue().isEmpty()? Graql.var(varName).pattern() : Graql.var().pattern();
+        VarPattern var = !varName.getValue().isEmpty()? varName.pattern() : Graql.var().pattern();
         for (Pair<Var, VarPattern> mapping : rolePlayerMappings) {
             Var rp = mapping.getKey();
             VarPattern role = mapping.getValue();
-            var = role == null? var.rel(Graql.var(rp)) : var.rel(role, Graql.var(rp));
+            var = role == null? var.rel(rp) : var.rel(role, rp);
         }
-        var = var.isa(Graql.var(typeVariable));
+        var = var.isa(typeVariable);
         return var.admin().asVar();
     }
 
@@ -345,8 +345,8 @@ public class Relation extends TypeAtom {
         typeId = type.getId();
         Var typeVariable = getValueVariable().getValue().isEmpty() ?
                 Graql.var("rel-" + UUID.randomUUID().toString()) : getValueVariable();
-        setPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin(), getParentQuery()));
-        atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
+        setPredicate(new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery()));
+        atomPattern = atomPattern.asVar().isa(typeVariable).admin();
         setValueVariable(typeVariable);
         return this;
     }
@@ -698,7 +698,7 @@ public class Relation extends TypeAtom {
 
     @Override
     public Atom rewriteToUserDefined(){
-        VarPattern newVar = Graql.var(Graql.var()).pattern();
+        VarPattern newVar = Graql.var().pattern();
         VarPattern relVar = getPattern().asVar().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.getType()))
                 .orElse(newVar);
@@ -722,7 +722,7 @@ public class Relation extends TypeAtom {
     @Override
     public Pair<Atom, Unifier> rewriteToUserDefinedWithUnifiers() {
         Unifier unifier = new UnifierImpl();
-        VarPattern newVar = Graql.var(Graql.var()).pattern();
+        VarPattern newVar = Graql.var().pattern();
         VarPattern relVar = getPattern().asVar().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.getType()))
                 .orElse(newVar);
@@ -733,9 +733,9 @@ public class Relation extends TypeAtom {
             unifier.addMapping(rolePlayer.getVarName(), rolePlayerVarName);
             VarPatternAdmin roleType = c.getRoleType().orElse(null);
             if (roleType != null) {
-                relVar = relVar.rel(roleType, Graql.var(rolePlayerVarName));
+                relVar = relVar.rel(roleType, rolePlayerVarName);
             } else {
-                relVar = relVar.rel(Graql.var(rolePlayerVarName));
+                relVar = relVar.rel(rolePlayerVarName);
             }
         }
         return new Pair<>(new Relation(relVar.admin(), getPredicate(), getParentQuery()), unifier);

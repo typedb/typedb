@@ -24,7 +24,6 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -124,7 +123,7 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
         Var roleVariable = roleVar.getVarName();
         IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent);
 
-        VarPatternAdmin hrVar = Graql.var(varName).relates(Graql.var(roleVariable)).admin();
+        VarPatternAdmin hrVar = varName.relates(roleVariable).admin();
         return new TypeAtom(hrVar, rolePredicate, parent);
     }
 }

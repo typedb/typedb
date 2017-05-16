@@ -143,14 +143,6 @@ public class Graql {
     }
 
     /**
-     * @param name the name of the variable
-     * @return a new query variable
-     */
-    public static Var var(Var name) {
-        return name;
-    }
-
-    /**
      * @return a new, anonymous query variable
      */
     public static Var var() {

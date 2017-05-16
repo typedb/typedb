@@ -203,8 +203,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Set<ValuePredicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);
 
         //add resource atom
-        VarPatternBuilder resource = Graql.var(valueVariable);
-        VarPatternAdmin resVar = Graql.var(varName).has(type, resource).admin();
+        VarPatternBuilder resource = valueVariable;
+        VarPatternAdmin resVar = varName.has(type, resource).admin();
         return new ai.grakn.graql.internal.reasoner.atom.binary.Resource(resVar, predicates, parent);
     }
 }

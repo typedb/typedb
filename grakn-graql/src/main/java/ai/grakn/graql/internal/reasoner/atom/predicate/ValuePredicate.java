@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
@@ -52,7 +51,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     }
 
     public static VarPatternAdmin createValueVar(Var name, ValuePredicateAdmin pred) {
-        return Graql.var(name).val(pred).admin();
+        return name.val(pred).admin();
     }
 
     @Override

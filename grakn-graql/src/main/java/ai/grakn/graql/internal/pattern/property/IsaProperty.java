@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -126,7 +125,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         //isa part
-        VarPatternAdmin resVar = Graql.var(varName).isa(Graql.var(typeVariable)).admin();
+        VarPatternAdmin resVar = varName.isa(typeVariable).admin();
         return new TypeAtom(resVar, predicate, parent);
     }
 }

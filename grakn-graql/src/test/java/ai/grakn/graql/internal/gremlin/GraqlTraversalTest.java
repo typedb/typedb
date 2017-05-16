@@ -192,34 +192,34 @@ public class GraqlTraversalTest {
 
     @Test
     public void testOptimalShortQuery() {
-        assertNearlyOptimal(var(x).isa(var(y).id(ConceptId.of("movie"))));
+        assertNearlyOptimal(x.isa(y.id(ConceptId.of("movie"))));
     }
 
     @Test
     public void testOptimalBothId() {
-        assertNearlyOptimal(var(x).id(ConceptId.of("Titanic")).isa(var(y).id(ConceptId.of("movie"))));
+        assertNearlyOptimal(x.id(ConceptId.of("Titanic")).isa(y.id(ConceptId.of("movie"))));
     }
 
     @Test
     public void testOptimalByValue() {
-        assertNearlyOptimal(var(x).val("hello").isa(var(y).id(ConceptId.of("movie"))));
+        assertNearlyOptimal(x.val("hello").isa(y.id(ConceptId.of("movie"))));
     }
 
     @Test
     public void testOptimalAttachedResource() {
         assertNearlyOptimal(var()
-                .rel(var(x).isa(var(y).id(ConceptId.of("movie"))))
-                .rel(var(z).val("Titanic").isa(var("a").id(ConceptId.of("title")))));
+                .rel(x.isa(y.id(ConceptId.of("movie"))))
+                .rel(z.val("Titanic").isa(var("a").id(ConceptId.of("title")))));
     }
 
     @Ignore // TODO: This is now super-slow
     @Test
     public void makeSureTypeIsCheckedBeforeFollowingAShortcut() {
         assertNearlyOptimal(and(
-                var(x).id(ConceptId.of("xid")),
-                var().rel(var(x)).rel(var(y)),
-                var(y).isa(var(b).label("person")),
-                var().rel(var(y)).rel(var(z))
+                x.id(ConceptId.of("xid")),
+                var().rel(x).rel(y),
+                y.isa(b.label("person")),
+                var().rel(y).rel(z)
         ));
     }
 

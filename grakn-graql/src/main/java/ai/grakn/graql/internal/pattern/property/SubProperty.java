@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -127,7 +126,7 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
         Var typeVariable = typeVar.getVarName();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
-        VarPatternAdmin resVar = Graql.var(varName).sub(Graql.var(typeVariable)).admin();
+        VarPatternAdmin resVar = varName.sub(typeVariable).admin();
         return new TypeAtom(resVar, predicate, parent);
     }
 }

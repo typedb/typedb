@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -125,7 +124,7 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
         Var typeVariable = typeVar.getVarName();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
-        VarPatternAdmin resVar = Graql.var(varName).plays(Graql.var(typeVariable)).admin();
+        VarPatternAdmin resVar = varName.plays(typeVariable).admin();
         return new TypeAtom(resVar, predicate, parent);
     }
 }

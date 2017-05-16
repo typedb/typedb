@@ -423,7 +423,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     public VarPattern visitVarPattern(GraqlParser.VarPatternContext ctx) {
         VarPattern var;
         if (ctx.VARIABLE() != null) {
-            var = var(getVariable(ctx.VARIABLE())).pattern();
+            var = getVariable(ctx.VARIABLE()).pattern();
         } else {
             var = visitVariable(ctx.variable());
         }
@@ -459,7 +459,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     public UnaryOperator<VarPattern> visitPropHas(GraqlParser.PropHasContext ctx) {
         TypeLabel type = visitLabel(ctx.label());
 
-        VarPattern resource = ctx.VARIABLE() != null ? var(getVariable(ctx.VARIABLE())).pattern() : var().pattern();
+        VarPattern resource = ctx.VARIABLE() != null ? getVariable(ctx.VARIABLE()).pattern() : var().pattern();
 
         if (ctx.predicate() != null) {
             resource = resource.val(visitPredicate(ctx.predicate()));
@@ -510,7 +510,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         if (ctx.VARIABLE() == null) {
             return var -> var.rel(visitVariable(ctx.variable()));
         } else {
-            return var -> var.rel(visitVariable(ctx.variable()), var(getVariable(ctx.VARIABLE())));
+            return var -> var.rel(visitVariable(ctx.variable()), getVariable(ctx.VARIABLE()));
         }
     }
 
@@ -536,7 +536,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<VarPattern> visitHasScope(GraqlParser.HasScopeContext ctx) {
-        return var -> var.hasScope(var(getVariable(ctx.VARIABLE())));
+        return var -> var.hasScope(getVariable(ctx.VARIABLE()));
     }
 
     @Override
@@ -565,7 +565,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         } else if (ctx.label() != null) {
             return Graql.label(visitLabel(ctx.label()));
         } else {
-            return var(getVariable(ctx.VARIABLE())).pattern();
+            return getVariable(ctx.VARIABLE()).pattern();
         }
     }
 
@@ -576,7 +576,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public ValuePredicate visitPredicateVariable(GraqlParser.PredicateVariableContext ctx) {
-        return eq(var(getVariable(ctx.VARIABLE())));
+        return eq(getVariable(ctx.VARIABLE()));
     }
 
     @Override
@@ -616,7 +616,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public VarPattern visitValueVariable(GraqlParser.ValueVariableContext ctx) {
-        return var(getVariable(ctx.VARIABLE())).pattern();
+        return getVariable(ctx.VARIABLE()).pattern();
     }
 
     @Override

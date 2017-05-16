@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.Var;
@@ -59,13 +58,13 @@ public class IdPredicate extends Predicate<ConceptId>{
     }
 
     public static VarPatternAdmin createIdVar(Var varName, ConceptId typeId){
-        return Graql.var(varName).id(typeId).admin();
+        return varName.id(typeId).admin();
     }
 
     private static VarPatternAdmin createIdVar(Var varName, LabelProperty prop, GraknGraph graph){
         Type type = graph.getType(prop.getLabelValue());
         if (type == null) throw new IllegalArgumentException(ErrorMessage.CANNOT_CREATE_IDPREDICATE.getMessage(prop.getLabelValue()));
-        return Graql.var(varName).id(type.getId()).admin();
+        return varName.id(type.getId()).admin();
     }
 
     @Override

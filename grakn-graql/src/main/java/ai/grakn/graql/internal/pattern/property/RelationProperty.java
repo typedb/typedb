@@ -235,7 +235,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
                 .filter(prop -> !IsaProperty.class.isInstance(prop))
                 .count() > 0;
-        VarPattern relVar = (var.isUserDefinedName() || isReified)? Graql.var(var.getVarName()).pattern() : Graql.var().pattern();
+        VarPattern relVar = (var.isUserDefinedName() || isReified)? var.getVarName().pattern() : Graql.var().pattern();
         Set<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(toSet());
 
         for (RelationPlayer rp : relationPlayers) {
@@ -253,10 +253,10 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             VarPatternAdmin isaVar = isaProp.getType();
             TypeLabel typeLabel = isaVar.getTypeLabel().orElse(null);
             Var typeVariable = typeLabel == null ? isaVar.getVarName() : Graql.var("rel-" + UUID.randomUUID().toString());
-            relVar = relVar.isa(Graql.var(typeVariable));
+            relVar = relVar.isa(typeVariable);
             if (typeLabel != null) {
                 GraknGraph graph = parent.graph();
-                VarPatternAdmin idVar = Graql.var(typeVariable).id(graph.getType(typeLabel).getId()).admin();
+                VarPatternAdmin idVar = typeVariable.id(graph.getType(typeLabel).getId()).admin();
                 predicate = new IdPredicate(idVar, parent);
             } else {
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);

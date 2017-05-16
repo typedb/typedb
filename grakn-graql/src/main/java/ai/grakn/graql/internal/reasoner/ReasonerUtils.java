@@ -406,8 +406,8 @@ public class ReasonerUtils {
 
         for (Map.Entry<TypeLabel, TypeLabel> entry : roleMappings.entrySet()) {
             Var varName = Graql.var();
-            parentVar = parentVar.rel(Graql.label(entry.getKey()), var(varName));
-            childVar = childVar.rel(Graql.label(entry.getValue()), var(varName));
+            parentVar = parentVar.rel(Graql.label(entry.getKey()), varName);
+            childVar = childVar.rel(Graql.label(entry.getValue()), varName);
         }
         return graph.admin().getMetaRuleInference().putRule(childVar, parentVar);
     }
@@ -429,13 +429,13 @@ public class ReasonerUtils {
         chain.forEach( (relType, rolePair) ->{
             Var varName = Graql.var();
             VarPatternAdmin var = var().isa(Graql.label(relType.getLabel()))
-                    .rel(Graql.label(rolePair.getKey()), var(varNames.peek()))
-                    .rel(Graql.label(rolePair.getValue()), var(varName)).admin();
+                    .rel(Graql.label(rolePair.getKey()), varNames.peek())
+                    .rel(Graql.label(rolePair.getValue()), varName).admin();
             varNames.push(varName);
             bodyVars.add(var);
         });
 
-        VarPattern headVar = var().isa(Graql.label(relation.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), var(varNames.peek()));
+        VarPattern headVar = var().isa(Graql.label(relation.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), varNames.peek());
         return graph.admin().getMetaRuleInference().putRule(Patterns.conjunction(bodyVars), headVar);
     }
     

@@ -96,7 +96,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         this.ownerRole = ownerRole.admin();
         this.valueRole = valueRole.admin();
         this.relationOwner = relationType.relates(this.ownerRole).admin();
-        this.relationValue = var(relationType.admin().getVarName()).relates(this.valueRole).admin();
+        this.relationValue = relationType.admin().getVarName().relates(this.valueRole).admin();
 
     }
 
@@ -175,7 +175,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         Var varName = var.getVarName();
         TypeLabel typeLabel = this.getResourceType().getTypeLabel().orElse(null);
         //isa part
-        VarPatternAdmin resVar = var(varName).has(Graql.label(typeLabel)).admin();
+        VarPatternAdmin resVar = varName.has(Graql.label(typeLabel)).admin();
         return new TypeAtom(resVar, parent);
     }
 }
