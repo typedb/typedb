@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
@@ -70,9 +71,9 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
             ofTypeLabels.addAll(subTypeLabels);
         }
 
-        Set<Integer> withResourceRelationTypeIds =
+        Set<TypeId> withResourceRelationTypeIds =
                 withResourceRelationTypes.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
-        Set<Integer> ofTypeIds =
+        Set<TypeId> ofTypeIds =
                 ofTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
 
         result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationTypeIds, ofTypeIds),

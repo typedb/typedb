@@ -23,7 +23,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
-import ai.grakn.graql.internal.reasoner.atom.AtomBase;
+import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.admin.Atomic;
 
 /**
@@ -35,7 +35,7 @@ import ai.grakn.graql.admin.Atomic;
  * @author Kasper Piskorski
  *
  */
-public class DataTypeAtom extends AtomBase {
+public class DataTypeAtom extends AtomicBase {
 
     private final ResourceType.DataType<?> datatype;
 

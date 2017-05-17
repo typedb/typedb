@@ -68,9 +68,9 @@ public class CountTest {
         String nameAnotherThing = "another";
         EntityType thing = graph.putEntityType(nameThing);
         EntityType anotherThing = graph.putEntityType(nameAnotherThing);
-        thing.addEntity().getId();
-        thing.addEntity().getId();
-        anotherThing.addEntity().getId();
+        thing.addEntity();
+        thing.addEntity();
+        anotherThing.addEntity();
         graph.commit();
         graph = factory.open(GraknTxType.WRITE);
 

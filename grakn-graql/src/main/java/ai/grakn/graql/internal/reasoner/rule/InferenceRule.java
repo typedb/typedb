@@ -30,7 +30,6 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
@@ -182,7 +181,7 @@ public class InferenceRule {
 
         //remove less specific types if present
         Map<VarName, Type> unifiedVarTypeMap = unifiedTypes.stream()
-                .collect(Collectors.toMap(AtomBase::getVarName, TypeAtom::getType));
+                .collect(Collectors.toMap(Atomic::getVarName, TypeAtom::getType));
         Set<VarName> unifiedTypeVars = unifiedTypes.stream()
                 .map(Atom::getVarName)
                 .collect(toSet());

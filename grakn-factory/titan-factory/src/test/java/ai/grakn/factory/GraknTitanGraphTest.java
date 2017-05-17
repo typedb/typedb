@@ -118,6 +118,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         graph.clear();
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(CLOSED_CLEAR.getMessage());
+        //noinspection ResultOfMethodCallIgnored
         graph.getEntityType("thing");
     }
 
@@ -135,6 +136,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
 
+        //noinspection ResultOfMethodCallIgnored
         graph.getEntityType(entityTypeLabel);
     }
 

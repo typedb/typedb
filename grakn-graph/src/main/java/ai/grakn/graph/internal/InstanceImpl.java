@@ -263,7 +263,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     private T setInternalType(Type type){
         cachedInternalType.set(type.getLabel());
-        return setProperty(Schema.ConceptProperty.INSTANCE_TYPE_ID, type.getTypeId());
+        return setProperty(Schema.ConceptProperty.INSTANCE_TYPE_ID, type.getTypeId().getValue());
     }
 
     /**

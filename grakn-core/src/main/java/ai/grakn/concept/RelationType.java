@@ -20,6 +20,7 @@ package ai.grakn.concept;
 
 import ai.grakn.exception.ConceptException;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
 /**
@@ -69,6 +70,7 @@ public interface RelationType extends Type {
      * @param scope The category of this Type
      * @return The Type itself.
      */
+    @Override
     RelationType scope(Instance scope);
 
     /**
@@ -77,6 +79,7 @@ public interface RelationType extends Type {
      * @param scope The Instances that is currently scoping this Type.
      * @return The Type itself
      */
+    @Override
     RelationType deleteScope(Instance scope);
 
     /**
@@ -85,6 +88,7 @@ public interface RelationType extends Type {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
+    @Override
     RelationType key(ResourceType resourceType);
 
     /**
@@ -93,6 +97,7 @@ public interface RelationType extends Type {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
+    @Override
     RelationType resource(ResourceType resourceType);
 
     //------------------------------------- Accessors ----------------------------------
@@ -102,6 +107,7 @@ public interface RelationType extends Type {
      *
      * @return A list of the RoleTypes which make up this RelationType.
      */
+    @CheckReturnValue
     Collection<RoleType> relates();
 
     //------------------------------------- Edge Handling ----------------------------------
@@ -133,12 +139,14 @@ public interface RelationType extends Type {
      * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
      * @return The RelationType itself.
      */
+    @Override
     RelationType setAbstract(Boolean isAbstract);
 
     /**
      * Returns the direct supertype of this RelationType.
      * @return The direct supertype of this RelationType
      */
+    @Override
     RelationType superType();
 
     /**
@@ -146,6 +154,7 @@ public interface RelationType extends Type {
      *
      * @return All the sub types of this RelationType
      */
+    @Override
     Collection<RelationType> subTypes();
 
     /**
@@ -154,6 +163,7 @@ public interface RelationType extends Type {
      * @param roleType The RoleType which the instances of this Type are allowed to play.
      * @return  The RelationType itself.
      */
+    @Override
     RelationType plays(RoleType roleType);
 
     /**
@@ -162,6 +172,7 @@ public interface RelationType extends Type {
      * @param roleType The RoleType which the instances of this Type should no longer be allowed to play.
      * @return The RelationType itself.
      */
+    @Override
     RelationType deletePlays(RoleType roleType);
 
     /**
@@ -170,11 +181,13 @@ public interface RelationType extends Type {
      *
      * @return All the Relation instances of this relation type
      */
+    @Override
     Collection<Relation> instances();
 
     /**
      *
      * @return a deep copy of this concept.
      */
+    @Override
     RelationType copy();
 }
