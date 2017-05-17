@@ -106,11 +106,6 @@ public interface Unifier{
     boolean containsAll(Unifier u);
 
     /**
-     * @return true if the mappings correspond to a surjective function
-     */
-    boolean isSurjective();
-
-    /**
      * @param d unifier to be merged with this unifier
      * @return this
      */
