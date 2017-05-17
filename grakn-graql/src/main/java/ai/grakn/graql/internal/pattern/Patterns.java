@@ -19,10 +19,11 @@
 package ai.grakn.graql.internal.pattern;
 
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 
 import java.util.Collection;
 import java.util.Set;
@@ -30,7 +31,7 @@ import java.util.Set;
 /**
  * Factory for instances of {@link ai.grakn.graql.Pattern}.
  *
- * Also includes helper methods to operate on a {@link ai.grakn.graql.Pattern} or {@link ai.grakn.graql.Var}.
+ * Also includes helper methods to operate on a {@link ai.grakn.graql.Pattern} or {@link VarPattern}.
  *
  * @author Felix Chapman
  */
@@ -46,16 +47,16 @@ public class Patterns {
         return new DisjunctionImpl<>(patterns);
     }
 
-    public static VarAdmin var() {
-        return VarImpl.anon();
+    public static VarPatternAdmin var() {
+        return VarPatternImpl.anon();
     }
 
-    public static VarAdmin var(VarName name) {
-        return VarImpl.named(name);
+    public static VarPatternAdmin var(VarName name) {
+        return VarPatternImpl.named(name);
     }
 
-    public static VarAdmin mergeVars(Collection<VarAdmin> vars) {
-        return VarImpl.merge(vars);
+    public static VarPatternAdmin mergeVars(Collection<VarPatternAdmin> vars) {
+        return VarPatternImpl.merge(vars);
     }
 
 }

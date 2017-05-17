@@ -22,10 +22,11 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
-import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
+import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -40,10 +41,14 @@ import java.util.stream.IntStream;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.tasks.TaskSchedule.at;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class TaskStateGraphStoreTest {
@@ -162,10 +167,23 @@ public class TaskStateGraphStoreTest {
             stateStorage.newState(task());
         }
 
-        Set<TaskState> setA = stateStorage.getTasks(null, null, null, null, 5, 0);
-        Set<TaskState> setB = stateStorage.getTasks(null, null, null, null, 5, 5);
+        Set<TaskId> setA =
+                stateStorage.getTasks(null, null, null, null, 5, 0).stream().map(TaskState::getId).collect(toSet());
+        Set<TaskId> setB =
+                stateStorage.getTasks(null, null, null, null, 5, 5).stream().map(TaskState::getId).collect(toSet());
 
-        setA.forEach(x -> assertFalse(setB.contains(x)));
+        assertThat(Sets.intersection(setA, setB), empty());
+    }
+
+    @Test
+    public void whenGettingTasks_ResultsAreLimited() {
+        for (int i = 0; i < 10; i++) {
+            stateStorage.newState(task());
+        }
+
+        Set<TaskState> tasks = stateStorage.getTasks(null, null, null, null, 5, 0);
+
+        assertThat(tasks, hasSize(5));
     }
 
     @Test

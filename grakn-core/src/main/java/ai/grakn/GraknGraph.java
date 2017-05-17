@@ -35,6 +35,7 @@ import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
 /**
@@ -198,6 +199,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphRuntimeException if the graph is closed
      * @throws ClassCastException if the concept is not an instance of {@link T}
      */
+    @CheckReturnValue
     <T extends Concept> T getConcept(ConceptId id);
 
     /**
@@ -209,6 +211,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphRuntimeException if the graph is closed
      * @throws ClassCastException if the type is not an instance of {@link T}
      */
+    @CheckReturnValue
     <T extends Type> T getType(TypeLabel label);
 
     /**
@@ -220,6 +223,7 @@ public interface GraknGraph extends AutoCloseable{
      *
      * @throws GraphRuntimeException if the graph is closed
      */
+    @CheckReturnValue
     <V> Collection<Resource<V>> getResourcesByValue(V value);
 
     /**
@@ -230,6 +234,7 @@ public interface GraknGraph extends AutoCloseable{
      *
      * @throws GraphRuntimeException if the graph is closed
      */
+    @CheckReturnValue
     EntityType getEntityType(String label);
 
     /**
@@ -240,6 +245,7 @@ public interface GraknGraph extends AutoCloseable{
      *
      * @throws GraphRuntimeException if the graph is closed
      */
+    @CheckReturnValue
     RelationType getRelationType(String label);
 
     /**
@@ -251,6 +257,7 @@ public interface GraknGraph extends AutoCloseable{
      *
      * @throws GraphRuntimeException if the graph is closed
      */
+    @CheckReturnValue
     <V> ResourceType<V> getResourceType(String label);
 
     /**
@@ -261,6 +268,7 @@ public interface GraknGraph extends AutoCloseable{
      *
      * @throws GraphRuntimeException if the graph is closed
      */
+    @CheckReturnValue
     RoleType getRoleType(String label);
 
     /**
@@ -271,6 +279,7 @@ public interface GraknGraph extends AutoCloseable{
      *
      * @throws GraphRuntimeException if the graph is closed
      */
+    @CheckReturnValue
     RuleType getRuleType(String label);
 
     //------------------------------------- Utilities ----------------------------------
@@ -281,6 +290,7 @@ public interface GraknGraph extends AutoCloseable{
      *
      * @return The admin interface which allows you to access more low level details of the graph.
      */
+    @CheckReturnValue
     GraknAdmin admin();
 
     /**
@@ -288,6 +298,7 @@ public interface GraknGraph extends AutoCloseable{
      *
      * @return true if the current transaction is read only
      */
+    @CheckReturnValue
     boolean isReadOnly();
 
     // TODO: what does this do when the graph is closed?
@@ -303,6 +314,7 @@ public interface GraknGraph extends AutoCloseable{
      *
      * @return true if implicit concepts are exposed.
      */
+    @CheckReturnValue
     boolean implicitConceptsVisible();
 
     /**
@@ -318,6 +330,7 @@ public interface GraknGraph extends AutoCloseable{
      *
      * @return The name of the keyspace where the graph is persisted
      */
+    @CheckReturnValue
     String getKeyspace();
 
     /**
@@ -325,6 +338,7 @@ public interface GraknGraph extends AutoCloseable{
      *
      * @return True if the graph has been closed
      */
+    @CheckReturnValue
     boolean isClosed();
 
     // TODO: what does this do when the graph is closed?
@@ -334,6 +348,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return returns a query builder to allow for the creation of graql queries
      * @see QueryBuilder
      */
+    @CheckReturnValue
     QueryBuilder graql();
 
     // TODO: what does this do when the graph is closed?

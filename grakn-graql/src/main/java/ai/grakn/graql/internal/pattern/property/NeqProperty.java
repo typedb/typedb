@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
@@ -42,13 +42,13 @@ import java.util.stream.Stream;
  */
 public class NeqProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final VarAdmin var;
+    private final VarPatternAdmin var;
 
-    public NeqProperty(VarAdmin var) {
+    public NeqProperty(VarPatternAdmin var) {
         this.var = var;
     }
 
-    public VarAdmin getVar() {
+    public VarPatternAdmin getVar() {
         return var;
     }
 
@@ -72,7 +72,7 @@ public class NeqProperty extends AbstractVarProperty implements NamedProperty {
     }
 
     @Override
-    public Stream<VarAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> getInnerVars() {
         return Stream.of(var);
     }
 
@@ -92,7 +92,7 @@ public class NeqProperty extends AbstractVarProperty implements NamedProperty {
     }
 
     @Override
-    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         return new NotEquals(var.getVarName(), this, parent);
     }
 }

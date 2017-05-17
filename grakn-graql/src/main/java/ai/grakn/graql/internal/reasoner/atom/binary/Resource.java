@@ -22,7 +22,7 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
@@ -34,7 +34,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 import java.util.Collections;
@@ -56,8 +56,8 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
  */
 public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
-    public Resource(VarAdmin pattern, ReasonerQuery par) { this(pattern, Collections.emptySet(), par);}
-    public Resource(VarAdmin pattern, Set<ValuePredicate> p, ReasonerQuery par){ super(pattern, p, par);}
+    public Resource(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, Collections.emptySet(), par);}
+    public Resource(VarPatternAdmin pattern, Set<ValuePredicate> p, ReasonerQuery par){ super(pattern, p, par);}
     private Resource(Resource a) {
         super(a);
         Set<ValuePredicate> multiPredicate = getMultiPredicate();
@@ -130,16 +130,16 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
-    protected ConceptId extractTypeId(VarAdmin var) {
+    protected ConceptId extractTypeId(VarPatternAdmin var) {
         HasResourceProperty resProp = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         TypeLabel typeLabel = resProp != null? resProp.getType() : null;
         return typeLabel != null ? getParentQuery().graph().getType(typeLabel).getId() : null;
     }
 
     @Override
-    protected VarName extractValueVariableName(VarAdmin var){
+    protected VarName extractValueVariableName(VarPatternAdmin var){
         HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
-        VarAdmin resVar = prop.getResource();
+        VarPatternAdmin resVar = prop.getResource();
         return resVar.isUserDefinedName()? resVar.getVarName() : VarName.of("");
     }
 
@@ -186,7 +186,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
                 if (vp.isSpecific()) {
                     priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
                 } else if (vp.getInnerVar().isPresent()) {
-                    VarAdmin innerVar = vp.getInnerVar().orElse(null);
+                    VarPatternAdmin innerVar = vp.getInnerVar().orElse(null);
                     if (parent.getIdPredicate(innerVar.getVarName()) != null) priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
                     else priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
                 } else {

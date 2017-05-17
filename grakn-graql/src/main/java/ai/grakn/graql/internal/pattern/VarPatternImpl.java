@@ -24,13 +24,13 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
@@ -71,16 +71,16 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Implementation of Var interface
+ * Implementation of {@link VarPattern} interface
  */
-class VarImpl implements VarAdmin {
+class VarPatternImpl implements VarPatternAdmin {
 
     private final VarName name;
     private final boolean userDefinedName;
 
     private final Set<VarProperty> properties;
 
-    private VarImpl(VarName name, boolean userDefinedName, Set<VarProperty> properties) {
+    private VarPatternImpl(VarName name, boolean userDefinedName, Set<VarProperty> properties) {
         this.name = name;
         this.userDefinedName = userDefinedName;
         this.properties = properties;
@@ -89,29 +89,29 @@ class VarImpl implements VarAdmin {
     /**
      * Create a variable with a random variable name
      */
-    static VarImpl anon() {
-        return new VarImpl(VarName.anon(), false, ImmutableSet.of());
+    static VarPatternImpl anon() {
+        return new VarPatternImpl(VarName.anon(), false, ImmutableSet.of());
     }
 
     /**
      * Create a variable with a specified name
      * @param name the name of the variable
      */
-    static VarImpl named(VarName name) {
-        return new VarImpl(name, true, ImmutableSet.of());
+    static VarPatternImpl named(VarName name) {
+        return new VarPatternImpl(name, true, ImmutableSet.of());
     }
 
     /**
      * Create a variable by combining a collection of other variables
      * @param vars a collection of variables to combine
      */
-    static VarImpl merge(Collection<VarAdmin> vars) {
-        VarAdmin first = vars.iterator().next();
+    static VarPatternImpl merge(Collection<VarPatternAdmin> vars) {
+        VarPatternAdmin first = vars.iterator().next();
         VarName name = first.getVarName();
         boolean userDefinedName = first.isUserDefinedName();
         ImmutableSet.Builder<VarProperty> properties = ImmutableSet.builder();
 
-        for (VarAdmin var : vars) {
+        for (VarPatternAdmin var : vars) {
             if (var.isUserDefinedName()) {
                 name = var.getVarName();
             }
@@ -119,186 +119,186 @@ class VarImpl implements VarAdmin {
             properties.addAll(var.getProperties().iterator());
         }
 
-        return new VarImpl(name, userDefinedName, properties.build());
+        return new VarPatternImpl(name, userDefinedName, properties.build());
     }
 
     @Override
-    public Var id(ConceptId id) {
+    public VarPattern id(ConceptId id) {
         return addProperty(new IdProperty(id));
     }
 
     @Override
-    public Var label(String label) {
+    public VarPattern label(String label) {
         return label(TypeLabel.of(label));
     }
 
     @Override
-    public Var label(TypeLabel label) {
+    public VarPattern label(TypeLabel label) {
         return addProperty(new LabelProperty(label));
     }
 
     @Override
-    public Var val(Object value) {
+    public VarPattern val(Object value) {
         return val(Graql.eq(value));
     }
 
     @Override
-    public Var val(ValuePredicate predicate) {
+    public VarPattern val(ValuePredicate predicate) {
         return addProperty(new ValueProperty(predicate.admin()));
     }
 
     @Override
-    public Var has(String type, Object value) {
+    public VarPattern has(String type, Object value) {
         return has(type, Graql.eq(value));
     }
 
     @Override
-    public Var has(String type, ValuePredicate predicate) {
+    public VarPattern has(String type, ValuePredicate predicate) {
         return has(type, Graql.var().val(predicate));
     }
 
     @Override
-    public Var has(String type, Var var) {
+    public VarPattern has(String type, VarPattern var) {
         return has(TypeLabel.of(type), var);
     }
 
     @Override
-    public Var has(TypeLabel type, Var var) {
+    public VarPattern has(TypeLabel type, VarPattern var) {
         return addProperty(HasResourceProperty.of(type, var.admin()));
     }
 
     @Override
-    public Var isa(String type) {
+    public VarPattern isa(String type) {
         return isa(Graql.label(type));
     }
 
     @Override
-    public Var isa(Var type) {
+    public VarPattern isa(VarPattern type) {
         return addProperty(new IsaProperty(type.admin()));
     }
 
     @Override
-    public Var sub(String type) {
+    public VarPattern sub(String type) {
         return sub(Graql.label(type));
     }
 
     @Override
-    public Var sub(Var type) {
+    public VarPattern sub(VarPattern type) {
         return addProperty(new SubProperty(type.admin()));
     }
 
     @Override
-    public Var relates(String type) {
+    public VarPattern relates(String type) {
         return relates(Graql.label(type));
     }
 
     @Override
-    public Var relates(Var type) {
+    public VarPattern relates(VarPattern type) {
         return addProperty(new RelatesProperty(type.admin()));
     }
 
     @Override
-    public Var plays(String type) {
+    public VarPattern plays(String type) {
         return plays(Graql.label(type));
     }
 
     @Override
-    public Var plays(Var type) {
+    public VarPattern plays(VarPattern type) {
         return addProperty(new PlaysProperty(type.admin(), false));
     }
 
     @Override
-    public Var hasScope(Var type) {
+    public VarPattern hasScope(VarPattern type) {
         return addProperty(new HasScopeProperty(type.admin()));
     }
 
     @Override
-    public Var has(String type) {
+    public VarPattern has(String type) {
         return has(Graql.label(type));
     }
 
     @Override
-    public Var has(Var type) {
+    public VarPattern has(VarPattern type) {
         return addProperty(new HasResourceTypeProperty(type.admin(), false));
     }
 
     @Override
-    public Var key(String type) {
+    public VarPattern key(String type) {
         return key(Graql.var().label(type));
     }
 
     @Override
-    public Var key(Var type) {
+    public VarPattern key(VarPattern type) {
         return addProperty(new HasResourceTypeProperty(type.admin(), true));
     }
 
     @Override
-    public Var rel(String roleplayer) {
+    public VarPattern rel(String roleplayer) {
         return rel(Graql.var(roleplayer));
     }
 
     @Override
-    public Var rel(Var roleplayer) {
+    public VarPattern rel(VarPattern roleplayer) {
         return addCasting(RelationPlayerImpl.of(roleplayer.admin()));
     }
 
     @Override
-    public Var rel(String roletype, String roleplayer) {
+    public VarPattern rel(String roletype, String roleplayer) {
         return rel(Graql.label(roletype), Graql.var(roleplayer));
     }
 
     @Override
-    public Var rel(Var roletype, String roleplayer) {
+    public VarPattern rel(VarPattern roletype, String roleplayer) {
         return rel(roletype, Graql.var(roleplayer));
     }
 
     @Override
-    public Var rel(String roletype, Var roleplayer) {
+    public VarPattern rel(String roletype, VarPattern roleplayer) {
         return rel(Graql.label(roletype), roleplayer);
     }
 
     @Override
-    public Var rel(Var roletype, Var roleplayer) {
+    public VarPattern rel(VarPattern roletype, VarPattern roleplayer) {
         return addCasting(RelationPlayerImpl.of(roletype.admin(), roleplayer.admin()));
     }
 
     @Override
-    public Var isAbstract() {
+    public VarPattern isAbstract() {
         return addProperty(new IsAbstractProperty());
     }
 
     @Override
-    public Var datatype(ResourceType.DataType<?> datatype) {
+    public VarPattern datatype(ResourceType.DataType<?> datatype) {
         return addProperty(new DataTypeProperty(requireNonNull(datatype)));
     }
 
     @Override
-    public Var regex(String regex) {
+    public VarPattern regex(String regex) {
         return addProperty(new RegexProperty(regex));
     }
 
     @Override
-    public Var lhs(Pattern lhs) {
+    public VarPattern lhs(Pattern lhs) {
         return addProperty(new LhsProperty(lhs));
     }
 
     @Override
-    public Var rhs(Pattern rhs) {
+    public VarPattern rhs(Pattern rhs) {
         return addProperty(new RhsProperty(rhs));
     }
 
     @Override
-    public Var neq(String varName) {
+    public VarPattern neq(String varName) {
         return neq(Graql.var(varName));
     }
 
     @Override
-    public Var neq(Var var) {
+    public VarPattern neq(VarPattern var) {
         return addProperty(new NeqProperty(var.admin()));
     }
 
     @Override
-    public VarAdmin admin() {
+    public VarPatternAdmin admin() {
         return this;
     }
 
@@ -323,9 +323,9 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public VarAdmin setVarName(VarName name) {
+    public VarPatternAdmin setVarName(VarName name) {
         if (!userDefinedName) throw new RuntimeException(ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
-        return new VarImpl(name, true, properties);
+        return new VarPatternImpl(name, true, properties);
     }
 
     @Override
@@ -358,7 +358,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public <T extends VarProperty> VarAdmin mapProperty(Class<T> type, UnaryOperator<T> mapper) {
+    public <T extends VarProperty> VarPatternAdmin mapProperty(Class<T> type, UnaryOperator<T> mapper) {
         ImmutableSet<VarProperty> newProperties = getProperties().map(property -> {
             if (type.isInstance(property)) {
                 return mapper.apply(type.cast(property));
@@ -367,18 +367,18 @@ class VarImpl implements VarAdmin {
             }
         }).collect(toImmutableSet());
 
-        return new VarImpl(name, userDefinedName, newProperties);
+        return new VarPatternImpl(name, userDefinedName, newProperties);
     }
 
     @Override
-    public Collection<VarAdmin> getInnerVars() {
-        Stack<VarAdmin> newVars = new Stack<>();
-        List<VarAdmin> vars = new ArrayList<>();
+    public Collection<VarPatternAdmin> getInnerVars() {
+        Stack<VarPatternAdmin> newVars = new Stack<>();
+        List<VarPatternAdmin> vars = new ArrayList<>();
 
         newVars.add(this);
 
         while (!newVars.isEmpty()) {
-            VarAdmin var = newVars.pop();
+            VarPatternAdmin var = newVars.pop();
             vars.add(var);
             var.getProperties().flatMap(VarProperty::getInnerVars).forEach(newVars::add);
         }
@@ -387,14 +387,14 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Collection<VarAdmin> getImplicitInnerVars() {
-        Stack<VarAdmin> newVars = new Stack<>();
-        List<VarAdmin> vars = new ArrayList<>();
+    public Collection<VarPatternAdmin> getImplicitInnerVars() {
+        Stack<VarPatternAdmin> newVars = new Stack<>();
+        List<VarPatternAdmin> vars = new ArrayList<>();
 
         newVars.add(this);
 
         while (!newVars.isEmpty()) {
-            VarAdmin var = newVars.pop();
+            VarPatternAdmin var = newVars.pop();
             vars.add(var);
             var.getProperties().flatMap(VarProperty::getImplicitInnerVars).forEach(newVars::add);
         }
@@ -406,20 +406,20 @@ class VarImpl implements VarAdmin {
     public Set<TypeLabel> getTypeLabels() {
         return getProperties()
                 .flatMap(VarProperty::getTypes)
-                .map(VarAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
+                .map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
     }
 
     @Override
     public String toString() {
-        Collection<VarAdmin> innerVars = getInnerVars();
+        Collection<VarPatternAdmin> innerVars = getInnerVars();
         innerVars.remove(this);
         getProperties(HasResourceProperty.class)
                 .map(HasResourceProperty::getResource)
                 .flatMap(r -> r.getInnerVars().stream())
                 .forEach(innerVars::remove);
 
-        if (innerVars.stream().anyMatch(VarImpl::invalidInnerVariable)) {
+        if (innerVars.stream().anyMatch(VarPatternImpl::invalidInnerVariable)) {
             throw new UnsupportedOperationException("Graql strings cannot represent a query with inner variables");
         }
 
@@ -447,7 +447,7 @@ class VarImpl implements VarAdmin {
         return builder.toString();
     }
 
-    private Var addCasting(RelationPlayer relationPlayer) {
+    private VarPattern addCasting(RelationPlayer relationPlayer) {
         Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
 
         Stream<RelationPlayer> oldCastings = relationProperty
@@ -462,19 +462,19 @@ class VarImpl implements VarAdmin {
         return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }
 
-    private static boolean invalidInnerVariable(VarAdmin var) {
+    private static boolean invalidInnerVariable(VarPatternAdmin var) {
         return var.getProperties().anyMatch(p -> !(p instanceof LabelProperty));
     }
 
-    private VarImpl addProperty(VarProperty property) {
+    private VarPatternImpl addProperty(VarProperty property) {
         if (property.isUnique()) {
             testUniqueProperty((UniqueVarProperty) property);
         }
-        return new VarImpl(name, userDefinedName, Sets.union(properties, ImmutableSet.of(property)));
+        return new VarPatternImpl(name, userDefinedName, Sets.union(properties, ImmutableSet.of(property)));
     }
 
-    private VarImpl removeProperty(VarProperty property) {
-        return new VarImpl(name, userDefinedName, Sets.difference(properties, ImmutableSet.of(property)));
+    private VarPatternImpl removeProperty(VarProperty property) {
+        return new VarPatternImpl(name, userDefinedName, Sets.difference(properties, ImmutableSet.of(property)));
     }
 
     /**
@@ -490,15 +490,15 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm() {
+    public Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm() {
         // a disjunction containing only one option
-        Conjunction<VarAdmin> conjunction = Patterns.conjunction(Collections.singleton(this));
+        Conjunction<VarPatternAdmin> conjunction = Patterns.conjunction(Collections.singleton(this));
         return Patterns.disjunction(Collections.singleton(conjunction));
     }
 
     @Override
     public Set<VarName> commonVarNames() {
-        return getInnerVars().stream().filter(VarAdmin::isUserDefinedName).map(VarAdmin::getVarName).collect(toSet());
+        return getInnerVars().stream().filter(VarPatternAdmin::isUserDefinedName).map(VarPatternAdmin::getVarName).collect(toSet());
     }
 
     @Override
@@ -506,7 +506,7 @@ class VarImpl implements VarAdmin {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        VarImpl var = (VarImpl) o;
+        VarPatternImpl var = (VarPatternImpl) o;
 
         if (userDefinedName != var.userDefinedName) return false;
 

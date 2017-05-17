@@ -27,7 +27,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
@@ -85,7 +85,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
 
-        for (VarAdmin var : pattern.getVars()) {
+        for (VarPatternAdmin var : pattern.getVars()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
 
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, graph);
@@ -150,7 +150,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
     private ImmutableSet<TypeLabel> getAllTypeLabels() {
         return pattern.getVars().stream()
                 .flatMap(var -> var.getInnerVars().stream())
-                .map(VarAdmin::getTypeLabel)
+                .map(VarPatternAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
                 .collect(toImmutableSet());
     }

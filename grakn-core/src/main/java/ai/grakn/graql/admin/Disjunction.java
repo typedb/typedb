@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.admin;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Set;
 
 /**
@@ -31,8 +32,9 @@ public interface Disjunction<T extends PatternAdmin> extends PatternAdmin {
     /**
      * @return the patterns within this disjunction
      */
+    @CheckReturnValue
     Set<T> getPatterns();
 
     @Override
-    Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm();
+    Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm();
 }

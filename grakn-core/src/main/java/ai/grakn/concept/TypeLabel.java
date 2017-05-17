@@ -18,6 +18,7 @@
 
 package ai.grakn.concept;
 
+import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 import java.util.function.Function;
 
@@ -41,6 +42,7 @@ public class TypeLabel implements Comparable<TypeLabel>, Serializable {
         this.label = label;
     }
 
+    @CheckReturnValue
     public String getValue(){
         return label;
     }
@@ -50,6 +52,7 @@ public class TypeLabel implements Comparable<TypeLabel>, Serializable {
      * @param mapper a function to apply to the underlying type label
      * @return the new type label
      */
+    @CheckReturnValue
     public TypeLabel map(Function<String, String> mapper) {
         return TypeLabel.of(mapper.apply(label));
     }
@@ -84,6 +87,7 @@ public class TypeLabel implements Comparable<TypeLabel>, Serializable {
      * @param value The string which potentially represents a Type
      * @return The matching Type Label
      */
+    @CheckReturnValue
     public static TypeLabel of(String value){
         return new TypeLabel(value);
     }

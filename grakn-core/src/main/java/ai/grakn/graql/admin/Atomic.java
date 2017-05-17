@@ -19,6 +19,8 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.graql.VarName;
+
+import javax.annotation.CheckReturnValue;
 import java.util.Set;
 
 /**
@@ -32,59 +34,73 @@ import java.util.Set;
  */
 public interface Atomic {
 
+    @CheckReturnValue
     Atomic copy();
 
+    @CheckReturnValue
     default boolean isAtom(){ return false;}
+
+    @CheckReturnValue
     default boolean isPredicate(){ return false;}
 
     /**
      * @return true if atom alpha-equivalent
      */
+    @CheckReturnValue
     boolean isEquivalent(Object obj);
 
     /**
      * @return equivalence hash code
      */
+    @CheckReturnValue
     int equivalenceHashCode();
 
     /**
      * @return true if the variable name is user defined
      */
+    @CheckReturnValue
     default boolean isUserDefinedName(){ return false;}
 
     /**
      * @return true if the atom can be resolved by a rule (atom exists in one of the rule's head)
      */
+    @CheckReturnValue
     default boolean isRuleResolvable(){ return false;}
     /**
      * @return true if the atom can form an atomic query
      */
+    @CheckReturnValue
     default boolean isSelectable(){ return false;}
 
     /**
      * @return true if atom is recursive
      */
+    @CheckReturnValue
     default boolean isRecursive(){ return false;}
 
     /**
      * @param name variable name
      * @return true if atom contains an occurrence of the variable name
      */
+    @CheckReturnValue
     default boolean containsVar(VarName name){ return false;}
 
     /**
      * @return the corresponding base pattern
      * */
+    @CheckReturnValue
     PatternAdmin getPattern();
 
     /**
      * @return the base pattern combined with possible predicate patterns
      */
+    @CheckReturnValue
     PatternAdmin getCombinedPattern();
 
     /**
      * @return the query the atom is contained in
      */
+    @CheckReturnValue
     ReasonerQuery getParentQuery();
 
     /**
@@ -92,19 +108,23 @@ public interface Atomic {
      */
     void setParentQuery(ReasonerQuery q);
 
+    @CheckReturnValue
     Unifier getUnifier(Atomic parentAtom);
 
     /**
      * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
      * if capture occurs it is marked with a "capture-><name of the captured occurrence>" name
      * @param unifier contain variable mappings to be applied
+     * @return unified atomic
      */
-    void unify(Unifier unifier);
+    Atomic unify(Unifier unifier);
 
+    @CheckReturnValue
     VarName getVarName();
 
     /**
      * @return all addressable variable names in the atom
      */
+    @CheckReturnValue
     Set<VarName> getVarNames();
 }

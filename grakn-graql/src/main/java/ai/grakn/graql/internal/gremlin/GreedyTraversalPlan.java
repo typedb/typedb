@@ -22,7 +22,7 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import com.google.common.collect.Lists;
 
@@ -78,7 +78,7 @@ public class GreedyTraversalPlan {
      */
     public static GraqlTraversal createTraversal(
             PatternAdmin pattern, GraknGraph graph, long maxTraversalAttempts) {
-        Collection<Conjunction<VarAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
+        Collection<Conjunction<VarPatternAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         // Find a semi-optimal way to execute each conjunction
         Set<? extends List<Fragment>> fragments = patterns.stream()

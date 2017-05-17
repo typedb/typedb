@@ -26,7 +26,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -54,13 +54,13 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getIdPredicate;
  */
 public class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
-    private final VarAdmin type;
+    private final VarPatternAdmin type;
 
-    public IsaProperty(VarAdmin type) {
+    public IsaProperty(VarPatternAdmin type) {
         this.type = type;
     }
 
-    public VarAdmin getType() {
+    public VarPatternAdmin getType() {
         return type;
     }
 
@@ -80,17 +80,17 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
-    public Stream<VarAdmin> getTypes() {
+    public Stream<VarPatternAdmin> getTypes() {
         return Stream.of(type);
     }
 
     @Override
-    public Stream<VarAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> getInnerVars() {
         return Stream.of(type);
     }
 
     @Override
-    public void checkValidProperty(GraknGraph graph, VarAdmin var) throws IllegalStateException {
+    public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws IllegalStateException {
         type.getTypeLabel().ifPresent(typeLabel -> {
             Type theType = graph.getType(typeLabel);
             if (theType != null && theType.isRoleType()) {
@@ -116,17 +116,17 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
-    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //IsaProperty is unique within a var, so skip if this is a relation
         if (var.hasProperty(RelationProperty.class)) return null;
 
         VarName varName = var.getVarName();
-        VarAdmin typeVar = this.getType();
+        VarPatternAdmin typeVar = this.getType();
         VarName typeVariable = typeVar.getVarName();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         //isa part
-        VarAdmin resVar = Graql.var(varName).isa(Graql.var(typeVariable)).admin();
+        VarPatternAdmin resVar = Graql.var(varName).isa(Graql.var(typeVariable)).admin();
         return new TypeAtom(resVar, predicate, parent);
     }
 }

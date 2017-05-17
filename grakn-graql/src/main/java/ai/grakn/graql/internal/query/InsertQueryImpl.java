@@ -26,7 +26,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
@@ -49,8 +49,8 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     private final Optional<MatchQueryAdmin> matchQuery;
     private final Optional<GraknGraph> graph;
-    private final ImmutableCollection<VarAdmin> originalVars;
-    private final ImmutableCollection<VarAdmin> vars;
+    private final ImmutableCollection<VarPatternAdmin> originalVars;
+    private final ImmutableCollection<VarPatternAdmin> vars;
 
     /**
      * At least one of graph and matchQuery must be absent.
@@ -59,7 +59,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
      * @param matchQuery the match query to insert for each result
      * @param graph the graph to execute on
      */
-    InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MatchQueryAdmin> matchQuery, Optional<GraknGraph> graph) {
+    InsertQueryImpl(ImmutableCollection<VarPatternAdmin> vars, Optional<MatchQueryAdmin> matchQuery, Optional<GraknGraph> graph) {
         // match query and graph should never both be present (should get graph from inner match query)
         assert(!matchQuery.isPresent() || !graph.isPresent());
 
@@ -75,7 +75,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
         // Get all variables, including ones nested in other variables
         this.vars = vars.stream().flatMap(v -> v.getInnerVars().stream()).collect(toImmutableList());
 
-        for (VarAdmin var : this.vars) {
+        for (VarPatternAdmin var : this.vars) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkInsertable(var));
         }
     }
@@ -135,7 +135,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
         Set<Type> types = vars.stream()
                 .flatMap(v -> v.getInnerVars().stream())
-                .map(VarAdmin::getTypeLabel)
+                .map(VarPatternAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(theGraph::<Type>getType)
                 .collect(Collectors.toSet());
@@ -146,7 +146,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Collection<VarAdmin> getVars() {
+    public Collection<VarPatternAdmin> getVars() {
         return originalVars;
     }
 

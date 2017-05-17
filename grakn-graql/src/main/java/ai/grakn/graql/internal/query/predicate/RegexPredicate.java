@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.predicate;
 
 import ai.grakn.graql.admin.ValuePredicateAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -52,7 +52,7 @@ class RegexPredicate implements ValuePredicateAdmin {
     }
 
     @Override
-    public Optional<VarAdmin> getInnerVar() {
+    public Optional<VarPatternAdmin> getInnerVar() {
         return Optional.empty();
     }
 

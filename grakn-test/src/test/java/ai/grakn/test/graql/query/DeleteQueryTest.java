@@ -24,7 +24,7 @@ import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import org.junit.After;
@@ -117,8 +117,8 @@ public class DeleteQueryTest {
 
     @Test
     public void testDeleteSpecificEdge() {
-        Var actor = label("has-cast").relates("actor");
-        Var productionWithCast = label("has-cast").relates("production-with-cast");
+        VarPattern actor = label("has-cast").relates("actor");
+        VarPattern productionWithCast = label("has-cast").relates("production-with-cast");
 
         assertTrue(qb.match(actor).ask().execute());
         assertTrue(qb.match(productionWithCast).ask().execute());

@@ -21,13 +21,15 @@ package ai.grakn.graql;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * A query for deleting concepts from a match query.
  * <p>
  * A {@code DeleteQuery} is built from a {@code MatchQuery} and will perform a delete operation for every result of
  * the @{code MatchQuery}.
  * <p>
- * The delete operation to perform is based on what {@code Var} objects are provided to it. If only variable names
+ * The delete operation to perform is based on what {@link VarPattern} objects are provided to it. If only variable names
  * are provided, then the delete query will delete the concept bound to each given variable name. If property flags
  * are provided, e.g. {@code var("x").has("name")} then only those properties are deleted.
  *
@@ -39,10 +41,12 @@ public interface DeleteQuery extends Query<Void> {
      * @param graph the graph to execute the query on
      * @return a new DeleteQuery with the graph set
      */
+    @Override
     DeleteQuery withGraph(GraknGraph graph);
 
     /**
      * @return admin instance for inspecting and manipulating this query
      */
+    @CheckReturnValue
     DeleteQueryAdmin admin();
 }

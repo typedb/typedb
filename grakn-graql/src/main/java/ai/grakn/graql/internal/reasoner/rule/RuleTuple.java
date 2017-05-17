@@ -16,27 +16,33 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.internal.reasoner.rule;
 
-import ai.grakn.graql.admin.ValuePredicateAdmin;
-
-import javax.annotation.CheckReturnValue;
+import ai.grakn.graql.admin.Unifier;
 
 /**
- * a atom on a value in a query.
- * <p>
- * A atom describes a atom (true/false) function that can be tested against some value in the graph.
- * <p>
- * Predicates can be combined together using the methods {@code and}, {@code or}, {@code any} and {@code all}.
  *
- * @author Felix Chapman
+ * <p>
+ * Wrapper for (rule, unifier, unifier) tuple.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
  */
-public interface ValuePredicate {
+public class RuleTuple {
 
-    /**
-     * @return an Admin class allowing inspection of this atom
-     */
-    @CheckReturnValue
-    ValuePredicateAdmin admin();
+    private final InferenceRule rule;
+    private final Unifier ruleUnifier;
+    private final Unifier permutationUnifier;
+
+    public RuleTuple(InferenceRule rule, Unifier u, Unifier pu){
+        this.rule = rule;
+        this.ruleUnifier = u;
+        this.permutationUnifier = pu;
+    }
+
+    public InferenceRule getRule(){ return rule;}
+    public Unifier getRuleUnifier(){ return ruleUnifier;}
+    public Unifier getPermutationUnifier(){ return permutationUnifier;}
 
 }

@@ -27,7 +27,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -52,13 +52,13 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getIdPredicate;
  */
 public class HasScopeProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final VarAdmin scope;
+    private final VarPatternAdmin scope;
 
-    public HasScopeProperty(VarAdmin scope) {
+    public HasScopeProperty(VarPatternAdmin scope) {
         this.scope = scope;
     }
 
-    public VarAdmin getScope() {
+    public VarPatternAdmin getScope() {
         return scope;
     }
 
@@ -78,7 +78,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     }
 
     @Override
-    public Stream<VarAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> getInnerVars() {
         return Stream.of(scope);
     }
 
@@ -111,14 +111,14 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     }
 
     @Override
-    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         VarName varName = var.getVarName();
-        VarAdmin scopeVar = this.getScope();
+        VarPatternAdmin scopeVar = this.getScope();
         VarName scopeVariable = scopeVar.getVarName();
         IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent);
 
         //isa part
-        VarAdmin scVar = Graql.var(varName).hasScope(Graql.var(scopeVariable)).admin();
+        VarPatternAdmin scVar = Graql.var(varName).hasScope(Graql.var(scopeVariable)).admin();
         return new TypeAtom(scVar, predicate, parent);
     }
 }
