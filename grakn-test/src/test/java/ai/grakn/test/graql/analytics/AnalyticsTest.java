@@ -148,7 +148,8 @@ public class AnalyticsTest {
 
         queryList.parallelStream().forEach(query -> {
             try (GraknGraph graph = factory.open(GraknTxType.READ)) {
-                graph.graql().parse(query).execute();
+                System.out.println("query = " + query + "\n" +
+                        "result = " + graph.graql().parse(query).execute());
             }
         });
     }
