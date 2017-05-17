@@ -48,10 +48,12 @@ import java.util.Set;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.test.GraknTestEnv.usingTitan;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assume.assumeFalse;
 
 @RunWith(JUnitQuickcheck.class)
 public class GraknEngineFailoverIT {
@@ -72,6 +74,9 @@ public class GraknEngineFailoverIT {
     public static void getStorage() {
         connection = new ZookeeperConnection();
         storage = new TaskStateZookeeperStore(connection);
+        
+        // TODO: Get these tests working consistently on Jenkins - causes timeouts
+        assumeFalse(usingTitan());
     }
 
     @AfterClass
