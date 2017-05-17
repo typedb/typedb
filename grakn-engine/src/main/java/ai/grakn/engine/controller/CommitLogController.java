@@ -29,6 +29,8 @@ import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import mjson.Json;
 import spark.Request;
 import spark.Response;
@@ -90,7 +92,7 @@ public class CommitLogController {
 
         // TODO Make interval configurable
         TaskState postProcessingTask = TaskState.of(
-                PostProcessingTask.class, this.getClass().getName(), TaskSchedule.now());
+                PostProcessingTask.class, this.getClass().getName(), TaskSchedule.at(Instant.now().plus(1, ChronoUnit.MINUTES)));
 
         //Instances to count
         Json countingConfiguration = Json.object();
