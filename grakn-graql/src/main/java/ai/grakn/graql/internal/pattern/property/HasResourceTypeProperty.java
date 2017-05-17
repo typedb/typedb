@@ -25,11 +25,11 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -63,16 +63,16 @@ import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
  */
 public class HasResourceTypeProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final VarAdmin resourceType;
+    private final VarPatternAdmin resourceType;
 
-    private final VarAdmin ownerRole;
-    private final VarAdmin valueRole;
-    private final VarAdmin relationOwner;
-    private final VarAdmin relationValue;
+    private final VarPatternAdmin ownerRole;
+    private final VarPatternAdmin valueRole;
+    private final VarPatternAdmin relationOwner;
+    private final VarPatternAdmin relationValue;
 
     private final boolean required;
 
-    public HasResourceTypeProperty(VarAdmin resourceType, boolean required) {
+    public HasResourceTypeProperty(VarPatternAdmin resourceType, boolean required) {
         this.resourceType = resourceType;
         this.required = required;
 
@@ -80,11 +80,11 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
                 () -> new IllegalStateException(ErrorMessage.NO_LABEL_SPECIFIED_FOR_HAS.getMessage())
         );
 
-        Var role = Graql.label(Schema.MetaSchema.ROLE.getLabel());
+        VarPattern role = Graql.label(Schema.MetaSchema.ROLE.getLabel());
 
-        Var ownerRole = var().sub(role);
-        Var valueRole = var().sub(role);
-        Var relationType = var().sub(Graql.label(Schema.MetaSchema.RELATION.getLabel()));
+        VarPattern ownerRole = var().sub(role);
+        VarPattern valueRole = var().sub(role);
+        VarPattern relationType = var().sub(Graql.label(Schema.MetaSchema.RELATION.getLabel()));
 
         // If a key, limit only to the implicit key type
         if(required){
@@ -100,7 +100,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
     }
 
-    public VarAdmin getResourceType() {
+    public VarPatternAdmin getResourceType() {
         return resourceType;
     }
 
@@ -127,17 +127,17 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
-    public Stream<VarAdmin> getTypes() {
+    public Stream<VarPatternAdmin> getTypes() {
         return Stream.of(resourceType);
     }
 
     @Override
-    public Stream<VarAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> getInnerVars() {
         return Stream.of(resourceType);
     }
 
     @Override
-    public Stream<VarAdmin> getImplicitInnerVars() {
+    public Stream<VarPatternAdmin> getImplicitInnerVars() {
         return Stream.of(resourceType, ownerRole, valueRole, relationOwner, relationValue);
     }
 
@@ -170,12 +170,12 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
-    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
         VarName varName = var.getVarName();
         TypeLabel typeLabel = this.getResourceType().getTypeLabel().orElse(null);
         //isa part
-        VarAdmin resVar = var(varName).has(Graql.label(typeLabel)).admin();
+        VarPatternAdmin resVar = var(varName).has(Graql.label(typeLabel)).admin();
         return new TypeAtom(resVar, parent);
     }
 }

@@ -31,7 +31,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
@@ -772,8 +772,8 @@ public class AtomicTest {
     }
 
 
-    private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){
-        Set<VarAdmin> vars = graph.graql().parsePattern(patternString).admin()
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknGraph graph){
+        Set<VarPatternAdmin> vars = graph.graql().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

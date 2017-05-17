@@ -21,60 +21,60 @@ package ai.grakn.graql;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 
 import javax.annotation.CheckReturnValue;
 
 /**
  * A wildcard variable to refers to a concept in a query.
  * <p>
- * A {@code Var} may be given a variable name, or left as an "anonymous" variable. {@code Graql} provides
- * static methods for constructing {@code Var} objects.
+ * A {@link VarPattern} may be given a variable name, or left as an "anonymous" variable. {@code Graql} provides
+ * static methods for constructing {@link VarPattern} objects.
  * <p>
- * The methods on {@code Var} are used to set its properties. A {@code Var} behaves differently depending on the type of
- * query its used in. In a {@code MatchQuery}, a {@code Var} describes the properties any matching concept must have. In
- * an {@code InsertQuery}, it describes the properties that should be set on the inserted concept. In a
- * {@code DeleteQuery}, it describes the properties that should be deleted.
+ * The methods on {@link VarPattern} are used to set its properties. A {@link VarPattern} behaves differently depending
+ * on the type of query its used in. In a {@link MatchQuery}, a {@link VarPattern} describes the properties any matching
+ * concept must have. In an {@link InsertQuery}, it describes the properties that should be set on the inserted concept.
+ * In a {@link DeleteQuery}, it describes the properties that should be deleted.
  *
  * @author Felix Chapman
  */
 @SuppressWarnings("UnusedReturnValue")
-public interface Var extends Pattern {
+public interface VarPattern extends Pattern {
 
     /**
      * @param id a ConceptId that this variable's ID must match
      * @return this
      */
     @CheckReturnValue
-    Var id(ConceptId id);
+    VarPattern id(ConceptId id);
 
     /**
      * @param label a string that this variable's label must match
      * @return this
      */
     @CheckReturnValue
-    Var label(String label);
+    VarPattern label(String label);
 
     /**
      * @param label a type label that this variable's label must match
      * @return this
      */
     @CheckReturnValue
-    Var label(TypeLabel label);
+    VarPattern label(TypeLabel label);
 
     /**
      * @param value a value that this variable's value must exactly match
      * @return this
      */
     @CheckReturnValue
-    Var val(Object value);
+    VarPattern val(Object value);
 
     /**
      * @param predicate a atom this variable's value must match
      * @return this
      */
     @CheckReturnValue
-    Var val(ValuePredicate predicate);
+    VarPattern val(ValuePredicate predicate);
 
     /**
      * the variable must have a resource of the given type with an exact matching value
@@ -84,7 +84,7 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var has(String type, Object value);
+    VarPattern has(String type, Object value);
 
     /**
      * the variable must have a resource of the given type that matches the given atom
@@ -94,7 +94,7 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var has(String type, ValuePredicate predicate);
+    VarPattern has(String type, ValuePredicate predicate);
 
     /**
      * the variable must have a resource of the given type that matches the given atom
@@ -104,7 +104,7 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var has(String type, Var var);
+    VarPattern has(String type, VarPattern var);
 
     /**
      * the variable must have a resource of the given type that matches the given atom
@@ -114,98 +114,98 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var has(TypeLabel type, Var var);
+    VarPattern has(TypeLabel type, VarPattern var);
 
     /**
      * @param type a concept type id that the variable must be of this type
      * @return this
      */
     @CheckReturnValue
-    Var isa(String type);
+    VarPattern isa(String type);
 
     /**
      * @param type a concept type that this variable must be an instance of
      * @return this
      */
     @CheckReturnValue
-    Var isa(Var type);
+    VarPattern isa(VarPattern type);
 
     /**
      * @param type a concept type id that this variable must be a kind of
      * @return this
      */
     @CheckReturnValue
-    Var sub(String type);
+    VarPattern sub(String type);
 
     /**
      * @param type a concept type that this variable must be a kind of
      * @return this
      */
     @CheckReturnValue
-    Var sub(Var type);
+    VarPattern sub(VarPattern type);
 
     /**
      * @param type a role type id that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
-    Var relates(String type);
+    VarPattern relates(String type);
 
     /**
      * @param type a role type that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
-    Var relates(Var type);
+    VarPattern relates(VarPattern type);
 
     /**
      * @param type a role type id that this concept type variable must play
      * @return this
      */
     @CheckReturnValue
-    Var plays(String type);
+    VarPattern plays(String type);
 
     /**
      * @param type a role type that this concept type variable must play
      * @return this
      */
     @CheckReturnValue
-    Var plays(Var type);
+    VarPattern plays(VarPattern type);
 
     /**
      * @param type a scope that this variable must have
      * @return this
      */
     @CheckReturnValue
-    Var hasScope(Var type);
+    VarPattern hasScope(VarPattern type);
 
     /**
      * @param type a resource type that this type variable can be related to
      * @return this
      */
     @CheckReturnValue
-    Var has(String type);
+    VarPattern has(String type);
 
     /**
      * @param type a resource type that this type variable can be related to
      * @return this
      */
     @CheckReturnValue
-    Var has(Var type);
+    VarPattern has(VarPattern type);
 
     /**
      * @param type a resource type that this type variable can be one-to-one related to
      * @return this
      */
     @CheckReturnValue
-    Var key(String type);
+    VarPattern key(String type);
 
     /**
      * @param type a resource type that this type variable can be one-to-one related to
      * @return this
      */
     @CheckReturnValue
-    Var key(Var type);
+    VarPattern key(VarPattern type);
 
     /**
      * the variable must be a relation with the given roleplayer
@@ -214,7 +214,7 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var rel(String roleplayer);
+    VarPattern rel(String roleplayer);
 
     /**
      * the variable must be a relation with the given roleplayer
@@ -223,7 +223,7 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var rel(Var roleplayer);
+    VarPattern rel(VarPattern roleplayer);
 
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
@@ -233,7 +233,7 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var rel(String roletype, String roleplayer);
+    VarPattern rel(String roletype, String roleplayer);
 
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
@@ -243,7 +243,7 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var rel(Var roletype, String roleplayer);
+    VarPattern rel(VarPattern roletype, String roleplayer);
 
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
@@ -253,7 +253,7 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var rel(String roletype, Var roleplayer);
+    VarPattern rel(String roletype, VarPattern roleplayer);
 
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
@@ -263,21 +263,21 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var rel(Var roletype, Var roleplayer);
+    VarPattern rel(VarPattern roletype, VarPattern roleplayer);
 
     /**
      * set this concept type variable as abstract, meaning it cannot have direct instances
      * @return this
      */
     @CheckReturnValue
-    Var isAbstract();
+    VarPattern isAbstract();
 
     /**
      * @param datatype the datatype to set for this resource type variable
      * @return this
      */
     @CheckReturnValue
-    Var datatype(ResourceType.DataType<?> datatype);
+    VarPattern datatype(ResourceType.DataType<?> datatype);
 
     /**
      * Specify the regular expression instances of this resource type must match
@@ -285,21 +285,21 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var regex(String regex);
+    VarPattern regex(String regex);
 
     /**
      * @param lhs the left-hand side of this rule
      * @return this
      */
     @CheckReturnValue
-    Var lhs(Pattern lhs);
+    VarPattern lhs(Pattern lhs);
 
     /**
      * @param rhs the right-hand side of this rule
      * @return this
      */
     @CheckReturnValue
-    Var rhs(Pattern rhs);
+    VarPattern rhs(Pattern rhs);
 
     /**
      * Specify that the variable is different to another variable
@@ -307,7 +307,7 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var neq(String varName);
+    VarPattern neq(String varName);
 
     /**
      * Specify that the variable is different to another variable
@@ -315,11 +315,11 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var neq(Var var);
+    VarPattern neq(VarPattern var);
 
     /**
-     * @return an Admin class to allow inspection of this Var
+     * @return an Admin class to allow inspection of this {@link VarPattern}
      */
     @CheckReturnValue
-    VarAdmin admin();
+    VarPatternAdmin admin();
 }

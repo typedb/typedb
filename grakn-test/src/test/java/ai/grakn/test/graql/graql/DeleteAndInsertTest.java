@@ -20,7 +20,7 @@ package ai.grakn.test.graql.graql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graphs.MovieGraph;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.VarName;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
@@ -67,7 +67,7 @@ public class DeleteAndInsertTest {
 
     @Test(expected = Exception.class)
     public void deleteVarNameNullSet() {
-        graph.graql().match(var()).delete((Set<Var>) null).execute();
+        graph.graql().match(var()).delete((Set<VarPattern>) null).execute();
     }
 
     @Test(expected = Exception.class)
@@ -77,12 +77,12 @@ public class DeleteAndInsertTest {
 
     @Test(expected = Exception.class)
     public void matchInsertNullVar() {
-        graph.graql().match(var("x").isa("movie")).insert((Var) null).execute();
+        graph.graql().match(var("x").isa("movie")).insert((VarPattern) null).execute();
     }
 
     @Test(expected = Exception.class)
     public void matchInsertNullCollection() {
-        graph.graql().match(var("x").isa("movie")).insert((Collection<? extends Var>) null).execute();
+        graph.graql().match(var("x").isa("movie")).insert((Collection<? extends VarPattern>) null).execute();
     }
 
     @Test
@@ -94,12 +94,12 @@ public class DeleteAndInsertTest {
 
     @Test(expected = Exception.class)
     public void insertNullVar() {
-        graph.graql().insert((Var) null).execute();
+        graph.graql().insert((VarPattern) null).execute();
     }
 
     @Test(expected = Exception.class)
     public void insertNullCollection() {
-        graph.graql().insert((Collection<? extends Var>) null).execute();
+        graph.graql().insert((Collection<? extends VarPattern>) null).execute();
     }
 
     @Test

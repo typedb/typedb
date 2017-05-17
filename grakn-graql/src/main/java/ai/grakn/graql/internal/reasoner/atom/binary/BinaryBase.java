@@ -22,7 +22,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
@@ -46,7 +46,7 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
 public abstract class BinaryBase extends Atom {
     private VarName valueVariable;
 
-    protected BinaryBase(VarAdmin pattern, ReasonerQuery par) {
+    protected BinaryBase(VarPatternAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
         this.valueVariable = extractValueVariableName(pattern);
     }
@@ -56,7 +56,7 @@ public abstract class BinaryBase extends Atom {
         this.valueVariable = a.getValueVariable();
     }
 
-    protected abstract VarName extractValueVariableName(VarAdmin var);
+    protected abstract VarName extractValueVariableName(VarPatternAdmin var);
     protected abstract boolean hasEquivalentPredicatesWith(BinaryBase atom);
 
     public VarName getValueVariable() {

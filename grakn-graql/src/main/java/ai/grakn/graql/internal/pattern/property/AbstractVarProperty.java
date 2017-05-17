@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
@@ -31,17 +31,17 @@ import java.util.stream.Stream;
 abstract class AbstractVarProperty implements VarPropertyInternal {
 
     @Override
-    public final void checkValid(GraknGraph graph, VarAdmin var) throws IllegalStateException {
+    public final void checkValid(GraknGraph graph, VarPatternAdmin var) throws IllegalStateException {
         checkValidProperty(graph, var);
 
-        getInnerVars().map(VarAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
+        getInnerVars().map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
             if (graph.getType(label) == null) {
                 throw new IllegalStateException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
             }
         });
     }
 
-    void checkValidProperty(GraknGraph graph, VarAdmin var) {
+    void checkValidProperty(GraknGraph graph, VarPatternAdmin var) {
 
     }
 
@@ -55,12 +55,12 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     }
 
     @Override
-    public Stream<VarAdmin> getTypes() {
+    public Stream<VarPatternAdmin> getTypes() {
         return Stream.empty();
     }
 
     @Override
-    public Stream<VarAdmin> getImplicitInnerVars() {
+    public Stream<VarPatternAdmin> getImplicitInnerVars() {
         return getInnerVars();
     }
 

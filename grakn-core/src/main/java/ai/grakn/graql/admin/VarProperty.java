@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * A property of a {@link VarAdmin}, such as "isa movie" or "has name 'Jim'"
+ * A property of a {@link VarPatternAdmin}, such as "isa movie" or "has name 'Jim'"
  *
  * @author Felix Chapman
  */
@@ -46,26 +46,26 @@ public interface VarProperty {
     }
 
     /**
-     * Get a stream of {@link VarAdmin} that must be types.
+     * Get a stream of {@link VarPatternAdmin} that must be types.
      */
     @CheckReturnValue
-    Stream<VarAdmin> getTypes();
+    Stream<VarPatternAdmin> getTypes();
 
     /**
-     * Get a stream of any inner {@link VarAdmin} within this `VarProperty`.
+     * Get a stream of any inner {@link VarPatternAdmin} within this `VarProperty`.
      */
     @CheckReturnValue
-    Stream<VarAdmin> getInnerVars();
+    Stream<VarPatternAdmin> getInnerVars();
 
     /**
-     * Get a stream of any inner {@link VarAdmin} within this `VarProperty`, including any that may have been
+     * Get a stream of any inner {@link VarPatternAdmin} within this `VarProperty`, including any that may have been
      * implicitly created (such as with "has").
      */
     @CheckReturnValue
-    Stream<VarAdmin> getImplicitInnerVars();
+    Stream<VarPatternAdmin> getImplicitInnerVars();
 
     /**
-     * True if there is at most one of these properties for each {@link VarAdmin}
+     * True if there is at most one of these properties for each {@link VarPatternAdmin}
      */
     @CheckReturnValue
     default boolean isUnique() {
@@ -74,11 +74,11 @@ public interface VarProperty {
 
     /**
      * maps this var property to a reasoner atom
-     * @param var VarAdmin this property belongs to
+     * @param var {@link VarPatternAdmin} this property belongs to
      * @param vars VarAdmins constituting the pattern this property belongs to
      * @param parent reasoner query this atom should belong to
      * @return created atom
      */
     @CheckReturnValue
-    Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent);
+    Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent);
 }

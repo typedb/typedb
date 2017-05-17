@@ -38,7 +38,7 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.util.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +89,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
     @Override
     public TaskId newState(TaskState task) throws EngineStorageException {
         TaskSchedule schedule = task.schedule();
-        Var state = var(TASK_VAR).isa(Graql.label(SCHEDULED_TASK))
+        VarPattern state = var(TASK_VAR).isa(Graql.label(SCHEDULED_TASK))
                 .has(TASK_ID.getValue(), task.getId().getValue())
                 .has(STATUS, var().val(CREATED.toString()))
                 .has(TASK_CLASS_NAME, var().val(task.taskClass().getName()))
@@ -107,7 +107,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
             state = state.has(ENGINE_ID, var().val(task.engineID().value()));
         }
 
-        Var finalState = state;
+        VarPattern finalState = state;
         Optional<Boolean> result = attemptCommitToSystemGraph((graph) -> {
             graph.graql().insert(finalState).execute();
             return true;
@@ -126,7 +126,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         final Set<TypeLabel> resourcesToDettach = new HashSet<>();
         
         // New resources to add
-        Var resources = var(TASK_VAR);
+        VarPattern resources = var(TASK_VAR);
 
         resourcesToDettach.add(SERIALISED_TASK);
         resources = resources.has(SERIALISED_TASK, var().val(serializeToString(task)));
@@ -157,7 +157,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
             resources = resources.has(TASK_CHECKPOINT, var().val(task.checkpoint()));
         }
 
-        Var finalResources = resources;
+        VarPattern finalResources = resources;
         Optional<Boolean> result = attemptCommitToSystemGraph((graph) -> {
             Instance taskConcept = graph.getResourcesByValue(task.getId().getValue()).iterator().next().owner();
             // Remove relations to any resources we want to currently update
@@ -235,7 +235,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
 
     public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, EngineID engineRunningOn,
                                                  int limit, int offset, Boolean recurring) {
-        Var matchVar = var(TASK_VAR).isa(Graql.label(SCHEDULED_TASK));
+        VarPattern matchVar = var(TASK_VAR).isa(Graql.label(SCHEDULED_TASK));
 
         if(taskStatus != null) {
             matchVar = matchVar.has(STATUS, var().val(taskStatus.toString()));
@@ -253,7 +253,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
             matchVar = matchVar.has(RECURRING, var().val(recurring));
         }
 
-        Var finalMatchVar = matchVar;
+        VarPattern finalMatchVar = matchVar;
         Optional<Set<TaskState>> result = attemptCommitToSystemGraph((graph) -> {
             MatchQuery q = graph.graql().match(finalMatchVar);
 

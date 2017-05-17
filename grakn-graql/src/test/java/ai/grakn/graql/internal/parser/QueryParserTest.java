@@ -31,7 +31,7 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
 import ai.grakn.util.ErrorMessage;
@@ -621,7 +621,7 @@ public class QueryParserTest {
     public void testParseBooleanType() {
         MatchQuery query = parse("match $x datatype boolean;");
 
-        VarAdmin var = query.admin().getPattern().getVars().iterator().next();
+        VarPatternAdmin var = query.admin().getPattern().getVars().iterator().next();
 
         //noinspection OptionalGetWithoutIsPresent
         DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
