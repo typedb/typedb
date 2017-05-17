@@ -49,13 +49,13 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesCompatibl
 /**
  *
  * <p>
- * {@link AtomBase} extension defining specialised functionalities.
+ * {@link AtomicBase} extension defining specialised functionalities.
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-public abstract class Atom extends AtomBase {
+public abstract class Atom extends AtomicBase {
 
     protected Type type = null;
     protected ConceptId typeId = null;

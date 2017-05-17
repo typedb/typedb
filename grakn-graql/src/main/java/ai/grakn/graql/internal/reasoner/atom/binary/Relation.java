@@ -34,7 +34,6 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -255,7 +254,7 @@ public class Relation extends TypeAtom {
         if (roleConceptIdMap != null) return roleConceptIdMap;
         roleConceptIdMap =  ArrayListMultimap.create();
         Map<VarName, IdPredicate> varSubMap = getIdPredicates().stream()
-                .collect(Collectors.toMap(AtomBase::getVarName, pred -> pred));
+                .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
         Multimap<RoleType, VarName> roleMap = getRoleMap();
 
         roleMap.entries().forEach(e -> {
