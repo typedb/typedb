@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeId;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -50,12 +51,12 @@ public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
     public ClusterMemberMapReduce() {
     }
 
-    public ClusterMemberMapReduce(Set<Integer> selectedTypeIds, String clusterLabel) {
+    public ClusterMemberMapReduce(Set<TypeId> selectedTypeIds, String clusterLabel) {
         super(selectedTypeIds);
         this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
     }
 
-    public ClusterMemberMapReduce(Set<Integer> selectedTypeIds, String clusterLabel, Long clusterSize) {
+    public ClusterMemberMapReduce(Set<TypeId> selectedTypeIds, String clusterLabel, Long clusterSize) {
         this(selectedTypeIds, clusterLabel);
         this.persistentProperties.put(CLUSTER_SIZE, clusterSize);
     }

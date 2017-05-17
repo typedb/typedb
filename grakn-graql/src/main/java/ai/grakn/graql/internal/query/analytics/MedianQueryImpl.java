@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.internal.analytics.MedianVertexProgram;
@@ -42,8 +43,8 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
-        Set<Integer> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<Integer> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
+        Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
+        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
 
         ComputerResult result = getGraphComputer().compute(
                 new MedianVertexProgram(allSubTypeIds, statisticsResourceTypeIds, dataType));

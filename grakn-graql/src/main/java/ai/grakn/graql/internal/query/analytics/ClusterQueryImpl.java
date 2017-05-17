@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
@@ -57,9 +58,9 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
 
         String randomId = Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
 
-        Set<Integer> withResourceRelationTypeIds =
+        Set<TypeId> withResourceRelationTypeIds =
                 withResourceRelationTypes.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
-        Set<Integer> subTypeIds =
+        Set<TypeId> subTypeIds =
                 subTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
 
         if (members) {

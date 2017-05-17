@@ -32,6 +32,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
@@ -131,11 +132,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public Integer convertToId(TypeLabel label){
+    public TypeId convertToId(TypeLabel label){
         if(getTxCache().isLabelCached(label)){
             return getTxCache().convertLabelToId(label);
         }
-        return -1;
+        return TypeId.invalid();
     }
 
     /**
@@ -143,7 +144,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      *
      * @return the current available Grakn id which can be used for types
      */
-    private int getNextTypeId(){
+    private TypeId getNextId(){
         TypeImpl<?, ?> metaConcept = (TypeImpl<?, ?>) getMetaConcept();
         Integer currentValue = metaConcept.getProperty(Schema.ConceptProperty.CURRENT_TYPE_ID);
         if(currentValue == null){
@@ -153,7 +154,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
         //Vertex is used directly here to bypass meta type mutation check
         metaConcept.getVertex().property(Schema.ConceptProperty.CURRENT_TYPE_ID.name(), currentValue);
-        return currentValue;
+        return TypeId.of(currentValue);
     }
 
     /**
@@ -367,11 +368,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private Vertex putVertex(TypeLabel label, Schema.BaseType baseType){
         Vertex vertex;
-        Integer id = convertToId(label);
-        ConceptImpl concept = null;
-        if(id != -1) concept = getConcept(Schema.ConceptProperty.TYPE_ID, id);
+        ConceptImpl concept = getType(convertToId(label));
         if(concept == null) {
-            vertex = addTypeVertex(getNextTypeId(), label, baseType);
+            vertex = addTypeVertex(getNextId(), label, baseType);
         } else {
             if(!baseType.equals(concept.getBaseType())) {
                 throw new ConceptNotUniqueException(concept, label.getValue());
@@ -389,10 +388,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param baseType The base type of the new type
      * @return The new type vertex
      */
-    private Vertex addTypeVertex(Integer id, TypeLabel label, Schema.BaseType baseType){
+    private Vertex addTypeVertex(TypeId id, TypeLabel label, Schema.BaseType baseType){
         Vertex vertex = addVertex(baseType);
         vertex.property(Schema.ConceptProperty.TYPE_LABEL.name(), label.getValue());
-        vertex.property(Schema.ConceptProperty.TYPE_ID.name(), id);
+        vertex.property(Schema.ConceptProperty.TYPE_ID.name(), id.getValue());
         return vertex;
     }
 
@@ -562,18 +561,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private <T extends Type> T getType(TypeLabel label, Schema.BaseType baseType){
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
-        Type type = buildType(label, ()-> {
-            Integer id = convertToId(label);
-            if (id != -1) {
-                return getType(id);
-            } else {
-                return null;
-            }
-        });
+        Type type = buildType(label, ()-> getType(convertToId(label)));
         return validateConceptType(type, baseType, () -> null);
     }
-    private <T extends Type> T getType(int id){
-        return getConcept(Schema.ConceptProperty.TYPE_ID, id);
+    private <T extends Type> T getType(TypeId id){
+        if(!id.isValid()) return null;
+        return getConcept(Schema.ConceptProperty.TYPE_ID, id.getValue());
     }
 
     @Override
@@ -676,7 +669,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         CastingImpl casting = getElementFactory().buildCasting(addVertex(Schema.BaseType.CASTING), role.currentShard()).setHash(role, rolePlayer);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
-            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId());
+            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId().getValue());
         }
         return casting;
     }
@@ -692,7 +685,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         // Relation To Casting
         EdgeImpl relationToCasting = relation.putEdge(foundCasting, Schema.EdgeLabel.CASTING);
-        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId());
+        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId().getValue());
         getTxCache().trackConceptForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
 
         //TODO: Only execute this if we need to. I.e if the above relation.putEdge() actually added a new edge.
@@ -708,14 +701,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private void putShortcutEdge(Instance toInstance, Relation fromRelation, RoleType roleType){
         boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getTypeId()).
-                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), roleType.getTypeId()).inV().
+                has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getTypeId().getValue()).
+                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), roleType.getTypeId().getValue()).inV().
                 hasId(toInstance.getId().getRawValue()).hasNext();
 
         if(!exists){
             EdgeImpl edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.SHORTCUT);
-            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getTypeId());
-            edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getTypeId());
+            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getTypeId().getValue());
+            edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getTypeId().getValue());
         }
     }
 
@@ -932,7 +925,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                     //Delete index so we can reset it when things are finalised.
                     otherRelation.setProperty(Schema.ConceptProperty.INDEX, null);
                     EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
-                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId());
+                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId().getValue());
                     relations = mainCasting.getRelations();
                     relationsRequiringReIndexing.add(otherRelation);
                 }
@@ -1016,9 +1009,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //Gets the other resource index and replaces all occurrences of the other resource id with the main resource id
         //This allows us to find relations far more quickly.
         String newIndex = otherRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
-        RelationImpl foundRelation = getTxCache().getModifiedRelations().get(newIndex);
-        // TODO: Probable bug, the result should be assigned to `foundRelation`
-        if(foundRelation == null) getConcept(Schema.ConceptProperty.INDEX, newIndex);
+        RelationImpl foundRelation = getTxCache().getCachedRelation(newIndex);
+        if(foundRelation == null) foundRelation = getConcept(Schema.ConceptProperty.INDEX, newIndex);
 
         if (foundRelation != null) {//If it exists delete the other one
             otherRelation.deleteNode(); //Raw deletion because the castings should remain
