@@ -765,7 +765,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("committed", getKeyspace());
                 logs = commitWithLogs();
                 if(logs.isPresent() && submitLogs) {
-                    LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, logs.get()) + "]");
+                    String logsToUpload = logs.get();
+                    new Thread(() -> LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, logsToUpload) + "]")).start();
                 }
                 getTxCache().writeToGraphCache(true);
             } else {
