@@ -328,7 +328,7 @@ public class ReasonerUtils {
      * @param roleMaps output set containing possible role mappings complementing the roleMap configuration
      */
     public static void computeRoleCombinations(Set<Var> vars, Set<RoleType> roles, Map<Var, VarPattern> roleMap,
-                                               Set<Map<Var, VarPattern>> roleMaps){
+                                        Set<Map<Var, VarPattern>> roleMaps){
         Set<Var> tempVars = Sets.newHashSet(vars);
         Set<RoleType> tempRoles = Sets.newHashSet(roles);
         Var var = vars.iterator().next();

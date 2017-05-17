@@ -20,8 +20,8 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;

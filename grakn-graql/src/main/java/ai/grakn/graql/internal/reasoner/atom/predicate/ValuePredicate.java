@@ -20,11 +20,11 @@ package ai.grakn.graql.internal.reasoner.atom.predicate;
 
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.graql.admin.Atomic;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Iterator;
