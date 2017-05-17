@@ -67,8 +67,6 @@ public class GraqlControllerDELETETest {
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknGraphFactory mockFactory;
 
-    private static final TasksControllerTest.JsonMapper jsonMapper = new TasksControllerTest.JsonMapper();
-
     @ClassRule
     public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
 
@@ -212,18 +210,18 @@ public class GraqlControllerDELETETest {
             return null;
         }).when(mockGraph).commit();
 
-        String query = "match $x has name \"Martin Sheen\"; limit 1; delete $x;";
+        String query = "match $x has title \"Godfather\"; delete $x;";
 
-        int personCountBefore = graphContext.graph().getEntityType("person").instances().size();
+        int movieCountBefore = graphContext.graph().getEntityType("movie").instances().size();
 
         sendDELETE(query);
 
         // refresh graph
         graphContext.graph().close();
 
-        int personCountAfter = graphContext.graph().getEntityType("person").instances().size();
+        int movieCountAfter = graphContext.graph().getEntityType("movie").instances().size();
 
-        assertEquals(personCountBefore - 1, personCountAfter);
+        assertEquals(movieCountBefore - 1, movieCountAfter);
     }
 
     @Test

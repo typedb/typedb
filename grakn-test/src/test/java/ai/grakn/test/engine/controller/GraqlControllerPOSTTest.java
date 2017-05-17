@@ -59,7 +59,6 @@ import static org.mockito.Mockito.when;
 
 public class GraqlControllerPOSTTest {
 
-
     private static final String HOST = "localhost";
     private static final int PORT = 4567;
     private static Service spark;
@@ -67,8 +66,6 @@ public class GraqlControllerPOSTTest {
     private static GraknGraph mockGraph;
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknGraphFactory mockFactory;
-
-    private static final TasksControllerTest.JsonMapper jsonMapper = new TasksControllerTest.JsonMapper();
 
     @ClassRule
     public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
@@ -115,18 +112,18 @@ public class GraqlControllerPOSTTest {
             return null;
         }).when(mockGraph).commit();
 
-        String query = "insert $x isa person;";
+        String query = "insert $x isa movie;";
 
-        int personCountBefore = graphContext.graph().getEntityType("person").instances().size();
+        int genreCountBefore = graphContext.graph().getEntityType("movie").instances().size();
 
         sendPOST(query);
 
         // refresh graph
         graphContext.graph().close();
 
-        int personCountAfter = graphContext.graph().getEntityType("person").instances().size();
+        int genreCountAfter = graphContext.graph().getEntityType("movie").instances().size();
 
-        assertEquals(personCountBefore + 1, personCountAfter);
+        assertEquals(genreCountBefore + 1, genreCountAfter);
     }
 
     @Test
