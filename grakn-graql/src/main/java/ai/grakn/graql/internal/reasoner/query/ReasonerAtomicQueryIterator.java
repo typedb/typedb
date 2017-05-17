@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 import com.google.common.collect.Iterators;
 import java.util.Collections;
 import java.util.Iterator;
@@ -51,13 +52,11 @@ import org.slf4j.LoggerFactory;
  */
 class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
-
-    private final Answer partialSub;
     private final ReasonerAtomicQuery query;
 
     private final QueryCache<ReasonerAtomicQuery> cache;
     private final Set<ReasonerAtomicQuery> subGoals;
-    private final Iterator<Pair<InferenceRule, Pair<Unifier, Unifier>>> ruleIterator;
+    private final Iterator<RuleTuple> ruleIterator;
     private Iterator<Answer> queryIterator = Collections.emptyIterator();
 
     private Unifier cacheUnifier = new UnifierImpl();
@@ -68,12 +67,11 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         this.subGoals = subGoals;
         this.cache = qc;
         this.query = new ReasonerAtomicQuery(q);
-        this.partialSub = sub;
 
-        query.addSubstitution(partialSub);
+        query.addSubstitution(sub);
 
         LOG.trace("AQ: " + query);
-        LOG.trace("AQ delta: " + partialSub);
+        LOG.trace("AQ delta: " + sub);
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
         this.queryIterator = streamUnifierPair.getKey()
@@ -99,20 +97,26 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         if (ruleIterator.hasNext()) subGoals.add(query);
     }
 
-    private Iterator<Answer> getRuleQueryIterator(InferenceRule rule, Unifier u, Unifier pu){
+    private Iterator<Answer> getRuleQueryIterator(RuleTuple rc){
+
+        InferenceRule rule = rc.getRule();
+        Unifier ruleUnifier = rc.getRuleUnifier();
+        Unifier permutationUnifier = rc.getPermutationUnifier();
         LOG.trace("Applying rule to: " + query +
                 rule + "\n" +
-                "t = " + u + "\n" +
-                "tp = " + pu);
+                "t = " + ruleUnifier + "\n" +
+                "tp = " + permutationUnifier);
 
         //delta' = theta . thetaP . delta
-        Unifier uInv = u.inverse();
+        Unifier uInv = ruleUnifier.inverse();
         Answer partialSubPrime = query.getSubstitution()
-                .unify(pu)
+                .unify(permutationUnifier)
                 .unify(uInv);
 
         Set<VarName> headVars = rule.getHead().getVarNames();
         Iterator<Answer> baseIterator = rule.getBody().iterator(partialSubPrime, subGoals, cache);
+
+        //transform the rule answer to the answer to the query
         return Iterators.transform(
                 baseIterator,
                 a -> {
@@ -120,8 +124,8 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
                     else {
                         return a
                                 .filterVars(headVars)
-                                .unify(u)
-                                .unify(pu)
+                                .unify(ruleUnifier)
+                                .unify(permutationUnifier)
                                 .merge(query.getSubstitution())
                                 .filterVars(query.getVarNames())
                                 .explain(new RuleExplanation(rule));
@@ -134,12 +138,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         if (queryIterator.hasNext()) return true;
         else{
             if (ruleIterator.hasNext()) {
-                Pair<InferenceRule, Pair<Unifier, Unifier>> rule = ruleIterator.next();
-                queryIterator = getRuleQueryIterator(
-                        rule.getKey(),
-                        rule.getValue().getKey(),
-                        rule.getValue().getValue()
-                );
+                queryIterator = getRuleQueryIterator(ruleIterator.next());
                 return hasNext();
             }
             else return false;
