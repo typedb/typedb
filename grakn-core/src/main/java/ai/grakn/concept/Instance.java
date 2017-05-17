@@ -18,6 +18,7 @@
 
 package ai.grakn.concept;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
 /**
@@ -46,6 +47,7 @@ public interface Instance extends Concept{
      *
      * @return A Type which is the type of this concept. This concept is an instance of that type.
      */
+    @CheckReturnValue
     Type type();
 
     /**
@@ -57,6 +59,7 @@ public interface Instance extends Concept{
      * @param roleTypes An optional parameter which allows you to specify the role of the relations you wish to retrieve.
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
      */
+    @CheckReturnValue
     Collection<Relation> relations(RoleType... roleTypes);
 
     /**
@@ -65,6 +68,7 @@ public interface Instance extends Concept{
      *
      * @return A set of all the Role Types which this instance plays.
      */
+    @CheckReturnValue
     Collection<RoleType> plays();
 
     /**
@@ -82,5 +86,6 @@ public interface Instance extends Concept{
      * @param resourceTypes Resource Types of the resources attached to this entity
      * @return A collection of resources attached to this Instance.
      */
+    @CheckReturnValue
     Collection<Resource<?>> resources(ResourceType ... resourceTypes);
 }

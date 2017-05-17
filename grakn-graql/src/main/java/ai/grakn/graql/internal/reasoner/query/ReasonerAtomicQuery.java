@@ -62,9 +62,7 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getListPermutations
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilterWithInverse;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.subFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
 /**
  *
@@ -133,9 +131,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public void unify(Unifier unifier) {
-        super.unify(unifier);
+    public Unifier unify(Unifier unifier) {
+        Unifier u = super.unify(unifier);
         atom = selectAtoms().iterator().next();
+        return u;
     }
 
     @Override
@@ -200,21 +199,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return Graql.insert(getPattern().getVars()).withGraph(graph()).stream();
     }
 
-    private Stream<Answer> materialiseDirect() {
-        //check if unambiguous
-        if (atom.isRelation()) {
-            Relation relationAtom = (Relation) atom;
-            if (relationAtom.hasMetaRoles()) {
-                throw new IllegalStateException(ErrorMessage.MATERIALIZATION_ERROR.getMessage(this));
-            }
-        }
-        return insert();
-    }
-
     public Stream<Answer> materialise(Answer answer) {
         ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
         queryToMaterialise.addSubstitution(answer);
-        return queryToMaterialise.materialiseDirect()
+        return queryToMaterialise.insert()
                 .map(ans -> ans.setExplanation(answer.getExplanation()));
     }
 
@@ -248,8 +236,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Set<TypeAtom> unmappedTypeConstraints = atom.getUnmappedTypeConstraints();
         return getIdPredicateAnswerStream(answers)
                 .filter(a -> entityTypeFilter(a, mappedTypeConstraints))
-                .flatMap(a -> varFilterFunction.apply(a, vars))
-                .flatMap(a -> permuteFunction.apply(a, permutationUnifiers))
+                .map(a -> a.filterVars(vars))
+                .flatMap(a -> a.permute(permutationUnifiers))
                 .filter(a -> subFilter(a, unmappedIdPredicates))
                 .filter(a -> entityTypeFilter(a, unmappedTypeConstraints));
     }
@@ -279,7 +267,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         subGoals.add(this);
         Stream<Answer> answers = ruleBody
                 .computeJoin(subGoals, cache, dCache, materialise, explanation, differentialJoin)
-                .flatMap(a -> varFilterFunction.apply(a, varsToRetain))
+                .map(a -> a.filterVars(varsToRetain))
                 .distinct()
                 .map(ans -> ans.explain(new RuleExplanation(rule)));
 

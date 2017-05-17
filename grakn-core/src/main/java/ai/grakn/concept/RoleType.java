@@ -18,6 +18,7 @@
 
 package ai.grakn.concept;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
 /**
@@ -45,6 +46,7 @@ public interface RoleType extends Type {
      *
      * @return The RoleType itself
      */
+    @Override
     RoleType setAbstract(Boolean isAbstract);
 
     /**
@@ -69,6 +71,7 @@ public interface RoleType extends Type {
      * @param roleType The RoleType which the instances of this Type are allowed to play.
      * @return The RoleType itself
      */
+    @Override
     RoleType plays(RoleType roleType);
 
     /**
@@ -77,6 +80,7 @@ public interface RoleType extends Type {
      * @param roleType The RoleType which the instances of this Type should no longer be allowed to play.
      * @return The RoleType itself
      */
+    @Override
     RoleType deletePlays(RoleType roleType);
 
 
@@ -86,6 +90,7 @@ public interface RoleType extends Type {
      * @param scope The category of this Type
      * @return The Type itself.
      */
+    @Override
     RoleType scope(Instance scope);
 
     /**
@@ -94,6 +99,7 @@ public interface RoleType extends Type {
      * @param scope The Instances that is currently scoping this Type.
      * @return The Type itself
      */
+    @Override
     RoleType deleteScope(Instance scope);
 
     /**
@@ -102,6 +108,7 @@ public interface RoleType extends Type {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
+    @Override
     RoleType key(ResourceType resourceType);
 
     /**
@@ -110,6 +117,7 @@ public interface RoleType extends Type {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
+    @Override
     RoleType resource(ResourceType resourceType);
 
     //------------------------------------- Accessors ----------------------------------
@@ -118,6 +126,7 @@ public interface RoleType extends Type {
      *
      * @return The supertype of this RoleType
      */
+    @Override
     RoleType superType();
 
     /**
@@ -125,6 +134,7 @@ public interface RoleType extends Type {
      *
      * @return The sub types of this RoleType
      */
+    @Override
     Collection<RoleType> subTypes();
 
     /**
@@ -133,6 +143,7 @@ public interface RoleType extends Type {
      *
      * @return The RelationTypes which this role takes part in.
      */
+    @CheckReturnValue
     Collection<RelationType> relationTypes();
 
     /**
@@ -141,12 +152,14 @@ public interface RoleType extends Type {
      *
      * @return A list of all the Types which can play this role.
      */
+    @CheckReturnValue
     Collection<Type> playedByTypes();
 
     /**
      *
      * @return a deep copy of this concept.
      */
+    @Override
     RoleType copy();
 }
 

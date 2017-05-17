@@ -34,10 +34,10 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -55,13 +55,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.subFilter;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
-
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -69,22 +67,22 @@ import static org.junit.Assume.assumeTrue;
 public class AtomicQueryTest {
 
     @ClassRule
-    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get());
+    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get());
+    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get());
+    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql");
+    public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext unificationWithTypesSet = GraphContext.preLoad("unificationWithTypesTest.gql");
+    public static final GraphContext unificationWithTypesSet = GraphContext.preLoad("unificationWithTypesTest.gql").assumeTrue(usingTinker());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -120,7 +118,7 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
 
-        atomicQuery.unify(Var.of("y"), Var.of("z"));
+        atomicQuery.unify(new UnifierImpl(ImmutableMap.of(Var.of("y"), Var.of("z"))));
         MatchQuery q1 = atomicQuery.getMatchQuery();
         MatchQuery q2 = copy.getMatchQuery();
         assertNotEquals(q1, q2);
@@ -134,7 +132,7 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
 
-        atomicQuery.unify(Var.of("y"), Var.of("z"));
+        atomicQuery.unify(new UnifierImpl(ImmutableMap.of(Var.of("y"), Var.of("z"))));
         assertEquals(ReasonerQueries.atomic(conjunction(patternString, graph), snbGraph.graph()).getAtom().getRoleVarTypeMap(), copy.getAtom().getRoleVarTypeMap());
     }
 
@@ -157,7 +155,7 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
 
         assertFalse(qb.<MatchQuery>parse(explicitQuery).ask().execute());
-        answers.stream().flatMap(atomicQuery::materialise).collect(Collectors.toList());
+        answers.stream().forEach(atomicQuery::materialise);
         assertTrue(qb.<MatchQuery>parse(explicitQuery).ask().execute());
     }
 
@@ -178,7 +176,7 @@ public class AtomicQueryTest {
         Set<IdPredicate> unmappedIdPredicates = mappedAtom.getUnmappedIdPredicates();
         Set<TypeAtom> unmappedTypeConstraints = mappedAtom.getUnmappedTypeConstraints();
         Set<Answer> permutedAnswers = answers.stream()
-                .flatMap(a -> permuteFunction.apply(a, permutationUnifiers))
+                .flatMap(a -> a.permute(permutationUnifiers))
                 .filter(a -> subFilter(a, unmappedIdPredicates))
                 .filter(a -> entityTypeFilter(a, unmappedTypeConstraints))
                 .collect(Collectors.toSet());
@@ -187,7 +185,7 @@ public class AtomicQueryTest {
         Set<IdPredicate> unmappedIdPredicates2 = unmappedAtom.getUnmappedIdPredicates();
         Set<TypeAtom> unmappedTypeConstraints2 = unmappedAtom.getUnmappedTypeConstraints();
         Set<Answer> permutedAnswers2 = answers.stream()
-                .flatMap(a -> permuteFunction.apply(a, permutationUnifiers2))
+                .flatMap(a -> a.permute(permutationUnifiers2))
                 .filter(a -> subFilter(a, unmappedIdPredicates2))
                 .filter(a -> entityTypeFilter(a, unmappedTypeConstraints2))
                 .collect(Collectors.toSet());

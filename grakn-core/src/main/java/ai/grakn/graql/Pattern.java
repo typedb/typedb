@@ -20,6 +20,8 @@ package ai.grakn.graql;
 
 import ai.grakn.graql.admin.PatternAdmin;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * A pattern describing a subgraph.
  * <p>
@@ -38,6 +40,7 @@ public interface Pattern {
     /**
      * @return an Admin class that allows inspecting or manipulating this pattern
      */
+    @CheckReturnValue
     PatternAdmin admin();
 
 }

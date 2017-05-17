@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.admin;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Set;
 
 /**
@@ -31,11 +32,13 @@ import java.util.Set;
  */
 public interface AnswerExplanation {
 
+    @CheckReturnValue
     AnswerExplanation copy();
 
     /**
      * @return query associated with this explanation
      */
+    @CheckReturnValue
     ReasonerQuery getQuery();
 
     /**
@@ -53,35 +56,41 @@ public interface AnswerExplanation {
     /**
      * @return answers this explanation is dependent on
      */
+    @CheckReturnValue
     Set<Answer> getAnswers();
 
     /**
      * @param a2 explanation to be merged with
      * @return merged explanation
      */
+    @CheckReturnValue
     AnswerExplanation merge(AnswerExplanation a2);
 
     /**
      *
      * @return true if this explanation explains the answer on the basis of database lookup
      */
+    @CheckReturnValue
     boolean isLookupExplanation();
 
     /**
      *
      * @return true if this explanation explains the answer on the basis of rule application
      */
+    @CheckReturnValue
     boolean isRuleExplanation();
 
     /**
      *
      * @return true if this explanation explains an intermediate answer being a product of a join operation
      */
+    @CheckReturnValue
     boolean isJoinExplanation();
 
     /**
      *
      * @return true if this is an empty explanation (explanation wasn't recorded)
      */
+    @CheckReturnValue
     boolean isEmpty();
 }

@@ -20,6 +20,8 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.graql.VarPattern;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * A unique property of a {@link VarPattern}.
  *
@@ -30,6 +32,7 @@ import ai.grakn.graql.VarPattern;
  */
 public interface UniqueVarProperty extends VarProperty {
 
+    @CheckReturnValue
     default boolean isUnique() {
         return true;
     }

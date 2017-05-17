@@ -20,6 +20,7 @@ package ai.grakn.concept;
 
 
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
 /**
@@ -45,6 +46,7 @@ public interface Resource<D> extends Instance{
      *
      * @return The Resource itself
      */
+    @CheckReturnValue
     D getValue();
 
     /**
@@ -52,6 +54,7 @@ public interface Resource<D> extends Instance{
      *
      * @return The ResourceType of which this resource is an Instance.
      */
+    @Override
     ResourceType<D> type();
 
     /**
@@ -59,6 +62,7 @@ public interface Resource<D> extends Instance{
      *
      * @return The data type of this Resource's type.
      */
+    @CheckReturnValue
     ResourceType.DataType<D> dataType();
 
     /**
@@ -66,6 +70,7 @@ public interface Resource<D> extends Instance{
      *
      * @return The list of all Instances that possess this Resource.
      */
+    @CheckReturnValue
     Collection<Instance> ownerInstances();
 
     /**
@@ -73,6 +78,7 @@ public interface Resource<D> extends Instance{
      *
      * @return The Instance which is connected to a unique Resource.
      */
+    @CheckReturnValue
     Instance owner();
 
     /**
@@ -81,6 +87,7 @@ public interface Resource<D> extends Instance{
      * @param resource The resource to which a relationship is created
      * @return The instance itself
      */
+    @Override
     Resource resource(Resource resource);
 
 }

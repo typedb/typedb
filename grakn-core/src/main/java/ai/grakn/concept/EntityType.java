@@ -44,6 +44,7 @@ public interface EntityType extends Type{
      *
      * @return The EntityType itself
      */
+    @Override
     EntityType setAbstract(Boolean isAbstract);
 
     /**
@@ -74,6 +75,7 @@ public interface EntityType extends Type{
      * @param roleType The Role Type which the instances of this EntityType are allowed to play.
      * @return The EntityType itself
      */
+    @Override
     EntityType plays(RoleType roleType);
 
     /**
@@ -82,6 +84,7 @@ public interface EntityType extends Type{
      * @param roleType The Role Type which the instances of this EntityType should no longer be allowed to play.
      * @return The EntityType itself
      */
+    @Override
     EntityType deletePlays(RoleType roleType);
 
     /**
@@ -100,6 +103,7 @@ public interface EntityType extends Type{
      * @param scope The category of this Type
      * @return The Type itself.
      */
+    @Override
     EntityType scope(Instance scope);
 
     /**
@@ -108,6 +112,7 @@ public interface EntityType extends Type{
      * @param scope The Instances that is currently scoping this Type.
      * @return The Type itself
      */
+    @Override
     EntityType deleteScope(Instance scope);
 
     /**
@@ -116,6 +121,7 @@ public interface EntityType extends Type{
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
+    @Override
     EntityType key(ResourceType resourceType);
 
     /**
@@ -124,6 +130,7 @@ public interface EntityType extends Type{
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
+    @Override
     EntityType resource(ResourceType resourceType);
 
     //------------------------------------- Accessors ----------------------------------
@@ -132,6 +139,7 @@ public interface EntityType extends Type{
      *
      * @return The supertype of this EntityType
      */
+    @Override
     EntityType superType();
 
     /**
@@ -139,6 +147,7 @@ public interface EntityType extends Type{
      *
      * @return All the sub classes of this EntityType
      */
+    @Override
     Collection<EntityType> subTypes();
 
     /**
@@ -148,11 +157,13 @@ public interface EntityType extends Type{
      *
      * @return All the instances of this EntityType.
      */
+    @Override
     Collection<Entity> instances();
 
     /**
      *
      * @return a deep copy of this concept.
      */
+    @Override
     EntityType copy();
 }

@@ -30,11 +30,13 @@ public interface RelationPlayer {
     /**
      * @return the role type, if specified
      */
+    @CheckReturnValue
     Optional<VarPatternAdmin> getRoleType();
 
     /**
      * @return the role player
      */
+    @CheckReturnValue
     VarPatternAdmin getRolePlayer();
 
     // TODO: If `VarPatternAdmin#setVarName` is removed, this may no longer be necessary

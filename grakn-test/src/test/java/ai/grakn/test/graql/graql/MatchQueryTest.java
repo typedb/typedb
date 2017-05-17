@@ -61,6 +61,7 @@ public class MatchQueryTest {
     public void whenQueryIsLimitedToANegativeNumber_Throw() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(NON_POSITIVE_LIMIT.getMessage(Long.MIN_VALUE));
+        //noinspection ResultOfMethodCallIgnored
         graph.graql().match(var()).limit(Long.MIN_VALUE);
     }
 
@@ -68,6 +69,7 @@ public class MatchQueryTest {
     public void whenQueryIsLimitedToZero_Throw() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(NON_POSITIVE_LIMIT.getMessage(0L));
+        //noinspection ResultOfMethodCallIgnored
         graph.graql().match(var()).limit(0L);
     }
 
@@ -75,6 +77,7 @@ public class MatchQueryTest {
     public void whenQueryIsOffsetByANegativeNumber_Throw() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(NEGATIVE_OFFSET.getMessage(Long.MIN_VALUE));
+        //noinspection ResultOfMethodCallIgnored
         graph.graql().match(var()).offset(Long.MIN_VALUE);
     }
 

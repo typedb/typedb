@@ -41,13 +41,13 @@ import static org.junit.Assume.assumeTrue;
 
 public class GeoInferenceTest {
 
+    @Rule
+    public final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
     }
-
-    @Rule
-    public final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
 
     @Test
     public void testTransitiveQueryWithTypes() {

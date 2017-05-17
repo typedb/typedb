@@ -21,6 +21,8 @@ package ai.grakn.concept;
 import ai.grakn.exception.ConceptException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.CheckReturnValue;
+
 
 /**
  * <p>
@@ -45,6 +47,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return A value the concept's unique id.
      */
+    @CheckReturnValue
     ConceptId getId();
 
     //------------------------------------- Other ---------------------------------
@@ -54,6 +57,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return A Type if the concept is a Type
      */
+    @CheckReturnValue
     Type asType();
 
     /**
@@ -61,6 +65,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return An Instance if the concept is an Instance
      */
+    @CheckReturnValue
     Instance asInstance();
 
     /**
@@ -68,6 +73,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return A Entity Type if the concept is an Entity Type
      */
+    @CheckReturnValue
     EntityType asEntityType();
 
     /**
@@ -75,6 +81,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return A Role Type if the concept is a Role Type
      */
+    @CheckReturnValue
     RoleType asRoleType();
 
     /**
@@ -82,6 +89,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return A Relation Type if the concept is a Relation Type
      */
+    @CheckReturnValue
     RelationType asRelationType();
 
     /**
@@ -89,6 +97,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return A Resource Type if the concept is a Resource Type
      */
+    @CheckReturnValue
     <D> ResourceType<D> asResourceType();
 
     /**
@@ -96,12 +105,14 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return A Rule Type if the concept is a Rule Type
      */
+    @CheckReturnValue
     RuleType asRuleType();
 
     /**
      * Return as an Entity, if the Concept is an Entity Instance.
      * @return An Entity if the concept is an Instance
      */
+    @CheckReturnValue
     Entity asEntity();
 
     /**
@@ -109,6 +120,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return A Relation if the concept is a Relation
      */
+    @CheckReturnValue
     Relation asRelation();
 
     /**
@@ -116,6 +128,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return A Resource if the concept is a Resource
      */
+    @CheckReturnValue
     <D> Resource<D> asResource();
 
     /**
@@ -123,6 +136,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return A Rule if the concept is a Rule
      */
+    @CheckReturnValue
     Rule asRule();
 
     /**
@@ -130,6 +144,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return true if the concept is a Type
      */
+    @CheckReturnValue
     boolean isType();
 
     /**
@@ -137,6 +152,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return true if the concept is an Instance
      */
+    @CheckReturnValue
     boolean isInstance();
 
     /**
@@ -144,6 +160,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return true if the concept is an Entity Type
      */
+    @CheckReturnValue
     boolean isEntityType();
 
     /**
@@ -151,6 +168,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return true if the concept is a Role Type
      */
+    @CheckReturnValue
     boolean isRoleType();
 
     /**
@@ -158,6 +176,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return true if the concept is a Relation Type
      */
+    @CheckReturnValue
     boolean isRelationType();
 
     /**
@@ -165,6 +184,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return true if the concept is a Resource Type
      */
+    @CheckReturnValue
     boolean isResourceType();
 
     /**
@@ -172,6 +192,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return true if the concept is a Rule Type
      */
+    @CheckReturnValue
     boolean isRuleType();
 
     /**
@@ -179,6 +200,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return true if the concept is a Entity
      */
+    @CheckReturnValue
     boolean isEntity();
 
     /**
@@ -186,6 +208,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return true if the concept is a Relation
      */
+    @CheckReturnValue
     boolean isRelation();
 
     /**
@@ -193,6 +216,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return true if the concept is a Resource
      */
+    @CheckReturnValue
     boolean isResource();
 
     /**
@@ -200,6 +224,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return true if the concept is a Rule
      */
+    @CheckReturnValue
     boolean isRule();
 
     /**

@@ -104,31 +104,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public MatchQuery visitMatchEOF(GraqlParser.MatchEOFContext ctx) {
-        return visitMatchQuery(ctx.matchQuery());
-    }
-
-    @Override
-    public AskQuery visitAskEOF(GraqlParser.AskEOFContext ctx) {
-        return visitAskQuery(ctx.askQuery());
-    }
-
-    @Override
-    public InsertQuery visitInsertEOF(GraqlParser.InsertEOFContext ctx) {
-        return visitInsertQuery(ctx.insertQuery());
-    }
-
-    @Override
-    public DeleteQuery visitDeleteEOF(GraqlParser.DeleteEOFContext ctx) {
-        return visitDeleteQuery(ctx.deleteQuery());
-    }
-
-    @Override
-    public ComputeQuery visitComputeEOF(GraqlParser.ComputeEOFContext ctx) {
-        return visitComputeQuery(ctx.computeQuery());
-    }
-
-    @Override
     public Query<?> visitQuery(GraqlParser.QueryContext ctx) {
         return (Query<?>) super.visitQuery(ctx);
     }
@@ -171,11 +146,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public MatchQuery visitMatchDistinct(GraqlParser.MatchDistinctContext ctx) {
         return visitMatchQuery(ctx.matchQuery()).distinct();
-    }
-
-    @Override
-    public AggregateQuery<?> visitAggregateEOF(GraqlParser.AggregateEOFContext ctx) {
-        return visitAggregateQuery(ctx.aggregateQuery());
     }
 
     @Override

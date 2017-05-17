@@ -18,6 +18,7 @@
 
 package ai.grakn.graql;
 
+import javax.annotation.CheckReturnValue;
 import java.util.stream.Stream;
 
 /**
@@ -33,6 +34,7 @@ public interface Aggregate<T, S> {
      * @param stream a stream of query results
      * @return the result of the aggregate operation
      */
+    @CheckReturnValue
     S apply(Stream<? extends T> stream);
 
     /**
@@ -40,5 +42,6 @@ public interface Aggregate<T, S> {
      * @param name the name of the aggregate
      * @return a new named aggregate
      */
+    @CheckReturnValue
     NamedAggregate<T, S> as(String name);
 }

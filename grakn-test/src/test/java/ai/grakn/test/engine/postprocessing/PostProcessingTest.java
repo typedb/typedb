@@ -172,7 +172,7 @@ public class PostProcessingTest {
 
         //Get Needed Vertices
         Vertex mainRoleTypeVertexShard = rawGraph.traversal().V().
-                has(Schema.ConceptProperty.TYPE_ID.name(), mainRoleType.getTypeId()).in(Schema.EdgeLabel.SHARD.getLabel()).next();
+                has(Schema.ConceptProperty.TYPE_ID.name(), mainRoleType.getTypeId().getValue()).in(Schema.EdgeLabel.SHARD.getLabel()).next();
 
         Vertex relationVertex = rawGraph.traversal().V().
                 hasId(relationId.getValue()).next();

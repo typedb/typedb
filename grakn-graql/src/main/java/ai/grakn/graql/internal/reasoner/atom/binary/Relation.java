@@ -34,7 +34,6 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -97,9 +96,7 @@ public class Relation extends TypeAtom {
         super(constructRelationVar(name, typeVariable, roleMap), pred, par);
     }
 
-    private Relation(Relation a) {
-        super(a);
-    }
+    private Relation(Relation a) { super(a);}
 
     @Override
     public String toString(){
@@ -109,7 +106,7 @@ public class Relation extends TypeAtom {
         return relationString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
     }
 
-    public Set<RelationPlayer> getRelationPlayers() {
+    private Set<RelationPlayer> getRelationPlayers() {
         if (relationPlayers == null) {
             relationPlayers = new HashSet<>();
             this.atomPattern.asVar().getProperty(RelationProperty.class)
@@ -257,7 +254,7 @@ public class Relation extends TypeAtom {
         if (roleConceptIdMap != null) return roleConceptIdMap;
         roleConceptIdMap =  ArrayListMultimap.create();
         Map<Var, IdPredicate> varSubMap = getIdPredicates().stream()
-                .collect(Collectors.toMap(AtomBase::getVarName, pred -> pred));
+                .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
         Multimap<RoleType, Var> roleMap = getRoleMap();
 
         roleMap.entries().forEach(e -> {
@@ -305,7 +302,7 @@ public class Relation extends TypeAtom {
     /**
      * @return true if any of the relation's role types are meta role types
      */
-    public boolean hasMetaRoles(){
+    private boolean hasMetaRoles(){
         Set<RoleType> parentRoles = getRoleVarTypeMap().keySet();
         for(RoleType role : parentRoles) {
             if (Schema.MetaSchema.isMetaLabel(role.getLabel())) return true;
@@ -377,7 +374,6 @@ public class Relation extends TypeAtom {
         }
         if (type != null) addType(type);
     }
-
 
     @Override
     public void inferTypes() {

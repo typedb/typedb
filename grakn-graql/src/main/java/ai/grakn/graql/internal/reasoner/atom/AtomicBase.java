@@ -43,19 +43,19 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
  * @author Kasper Piskorski
  *
  */
-public abstract class AtomBase implements Atomic {
+public abstract class AtomicBase implements Atomic {
 
     protected Var varName;
     protected PatternAdmin atomPattern;
     private ReasonerQuery parent = null;
 
-    protected AtomBase(VarPatternAdmin pattern, ReasonerQuery par) {
+    protected AtomicBase(VarPatternAdmin pattern, ReasonerQuery par) {
         this.atomPattern = pattern;
         this.varName = pattern.getVarName();
         this.parent = par;
     }
 
-    protected AtomBase(AtomBase a) {
+    protected AtomicBase(AtomicBase a) {
         this.atomPattern = a.atomPattern;
         this.varName = atomPattern.asVar().getVarName();
         this.parent = a.getParentQuery();

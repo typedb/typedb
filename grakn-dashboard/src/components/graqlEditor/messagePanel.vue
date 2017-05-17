@@ -19,7 +19,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <template>
 <transition name="slideInDown" appear>
     <div class="z-depth-1 message-panel" v-if="showMessagePanel">
-        <div style="word-break: break-all">{{message}}</div><div><button @click="$emit('close-message')" class="btn">X</button></div>
+        <div style="word-break: break-all">{{message}}</div><button @click="$emit('close-message')" class="btn">X</button>
     </div>
 </transition>
 </template>
@@ -36,10 +36,14 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     color: white;
     background-color: rgba(214, 4, 56, 1);
     margin-top: 10px;
+    white-space: pre;
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    font-size: 90%;
 }
 
 button{
-  margin: 0px;
+  margin-left: auto;
+  margin-right: 0px;
   padding: 1px 3px;
   background-color: #cb0032;
 }
