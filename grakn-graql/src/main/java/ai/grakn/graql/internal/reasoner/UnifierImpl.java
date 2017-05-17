@@ -113,7 +113,7 @@ public class UnifierImpl implements Unifier {
 
     @Override
     public boolean containsAll(Unifier u) { return mappings().containsAll(u.mappings());}
-    
+
     @Override
     public Unifier merge(Unifier d) {
         d.mappings().forEach(m -> unifier.put(m.getKey(), m.getValue()));

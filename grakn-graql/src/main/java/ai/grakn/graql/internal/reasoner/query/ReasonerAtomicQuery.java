@@ -42,6 +42,7 @@ import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import java.util.Collections;
@@ -320,12 +321,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Stream<Answer> answerStream = cache.contains(this) ? Stream.empty() : dCache.record(this, lookup(cache));
         if(queryAdmissible) {
 
-            Iterator<Pair<InferenceRule, Pair<Unifier, Unifier>>> ruleIterator = getRuleIterator();
+            Iterator<RuleTuple> ruleIterator = getRuleIterator();
             while(ruleIterator.hasNext()) {
-                Pair<InferenceRule, Pair<Unifier, Unifier>> rulePair = ruleIterator.next();
-                InferenceRule rule = rulePair.getKey();
-                Unifier u = rulePair.getValue().getKey();
-                Unifier pu = rulePair.getValue().getValue();
+                RuleTuple ruleContext = ruleIterator.next();
+                InferenceRule rule = ruleContext.getRule();
+                Unifier u = ruleContext.getRuleUnifier();
+                Unifier pu = ruleContext.getPermutationUnifier();
 
                 Answer sub = this.getSubstitution().unify(u.inverse());
                 rule.getHead().addSubstitution(sub);
@@ -353,13 +354,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return new ReasonerAtomicQueryIterator(this, sub, subGoals, cache);
     }
 
-    Iterator<Pair<InferenceRule, Pair<Unifier, Unifier>>> getRuleIterator(){
+    Iterator<RuleTuple> getRuleIterator(){
         return getAtom().getApplicableRules().stream()
                 .flatMap(r -> {
                     r.rewriteToUserDefined(getAtom());
                     Unifier ruleUnifier = r.getUnifier(getAtom());
                     return getPermutationUnifiers(r.getHead().getAtom()).stream()
-                            .map(pu -> new Pair<>(new InferenceRule(r).propagateConstraints(getAtom(), ruleUnifier.inverse(), pu), new Pair<>(ruleUnifier, pu)));
+                            .map(pu -> new RuleTuple(new InferenceRule(r).propagateConstraints(getAtom(), ruleUnifier.inverse(), pu), ruleUnifier, pu));
                 }).iterator();
     }
     /**

@@ -117,13 +117,13 @@ public interface Unifier{
     Unifier removeTrivialMappings();
 
     /**
-     * @return new unifier with inverted mappings
+     * @return unifier inverse - new unifier with inverted mappings
      */
     @CheckReturnValue
     Unifier inverse();
 
     /**
-     * @return number of mappings that consittute this unifier
+     * @return number of mappings that constitute this unifier
      */
     @CheckReturnValue
     int size();
