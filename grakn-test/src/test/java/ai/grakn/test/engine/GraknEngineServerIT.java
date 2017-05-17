@@ -31,7 +31,6 @@ import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -43,9 +42,9 @@ import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
@@ -98,8 +97,7 @@ public class GraknEngineServerIT {
         assertEquals(completableTasks(allTasks), completedTasks());
     }
 
-    @Ignore  // TODO: Fix this test - may be a race condition
-    @Property(trials=10)
+    @Property
     public void whenEngine1StopsATaskBeforeExecution_TheTaskIsStopped(TaskState task) {
         assertTrue(TaskClient.of("localhost", PORT1).stopTask(task.getId()));
 
@@ -110,8 +108,7 @@ public class GraknEngineServerIT {
         assertThat(completedTasks(), empty());
     }
 
-    @Ignore  // TODO: Fix this test - may be a race condition
-    @Property(trials=10)
+    @Property
     public void whenEngine2StopsATaskBeforeExecution_TheTaskIsStopped(TaskState task) {
         assertTrue(TaskClient.of("localhost", PORT2).stopTask(task.getId()));
 
