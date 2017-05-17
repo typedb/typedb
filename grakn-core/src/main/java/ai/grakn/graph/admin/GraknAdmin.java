@@ -27,12 +27,14 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -50,6 +52,7 @@ public interface GraknAdmin {
      * @param <T> The type of the concept being built
      * @return A concept built using the provided vertex
      */
+    @CheckReturnValue
     <T extends Concept> T buildConcept(Vertex vertex);
 
     /**
@@ -57,6 +60,7 @@ public interface GraknAdmin {
      *
      * @return A read-only Tinkerpop traversal for manually traversing the graph
      */
+    @CheckReturnValue
     GraphTraversal<Vertex, Vertex> getTinkerTraversal();
 
     /**
@@ -64,6 +68,7 @@ public interface GraknAdmin {
      *
      * @return true if batch loading is enabled
      */
+    @CheckReturnValue
     boolean isBatchLoadingEnabled();
 
     //------------------------------------- Meta Types ----------------------------------
@@ -72,6 +77,7 @@ public interface GraknAdmin {
      *
      * @return The meta type -> type.
      */
+    @CheckReturnValue
     Type getMetaConcept();
 
     /**
@@ -79,6 +85,7 @@ public interface GraknAdmin {
      *
      * @return The meta relation type -> relation-type.
      */
+    @CheckReturnValue
     RelationType getMetaRelationType();
 
     /**
@@ -86,6 +93,7 @@ public interface GraknAdmin {
      *
      * @return The meta role type -> role-type.
      */
+    @CheckReturnValue
     RoleType getMetaRoleType();
 
     /**
@@ -93,6 +101,7 @@ public interface GraknAdmin {
      *
      * @return The meta resource type -> resource-type.
      */
+    @CheckReturnValue
     ResourceType getMetaResourceType();
 
     /**
@@ -100,6 +109,7 @@ public interface GraknAdmin {
      *
      * @return The meta entity type -> entity-type.
      */
+    @CheckReturnValue
     EntityType getMetaEntityType();
 
     /**
@@ -107,6 +117,7 @@ public interface GraknAdmin {
      *
      * @return The meta rule type -> rule-type.
      */
+    @CheckReturnValue
     RuleType getMetaRuleType();
 
     /**
@@ -114,6 +125,7 @@ public interface GraknAdmin {
      *
      * @return The meta rule -> inference-rule.
      */
+    @CheckReturnValue
     RuleType getMetaRuleInference();
 
     /**
@@ -121,9 +133,20 @@ public interface GraknAdmin {
      *
      * @return The meta rule -> constraint-rule.
      */
+    @CheckReturnValue
     RuleType getMetaRuleConstraint();
 
     //------------------------------------- Admin Specific Operations ----------------------------------
+
+    /**
+     * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
+     * so be sure to use the correct graph when performing the mapping.
+     *
+     * @param label The label to be converted to the id
+     * @return The matching type id
+     */
+    @CheckReturnValue
+    TypeId convertToId(TypeLabel label);
 
     /**
      * Commits to the graph without submitting any commit logs.
@@ -161,7 +184,8 @@ public interface GraknAdmin {
      * @param value The value of the concept
      * @return A concept with the matching key and value
      */
-    <T extends Concept> T  getConcept(Schema.ConceptProperty key, String value);
+    @CheckReturnValue
+    <T extends Concept> T  getConcept(Schema.ConceptProperty key, Object value);
 
     /**
      * Closes the root session this graph stems from. This will automatically rollback any pending transactions.

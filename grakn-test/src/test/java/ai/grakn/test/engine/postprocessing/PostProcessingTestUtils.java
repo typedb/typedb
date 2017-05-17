@@ -3,23 +3,17 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
-import java.util.Set;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Set;
 
 public class PostProcessingTestUtils {
 
     static boolean checkUnique(GraknGraph graph, String key) {
-        try {
-            graph.admin().getConcept(Schema.ConceptProperty.INDEX, key);
-            return true;
-        }
-        catch (MoreThanOneConceptException ex) {
-            return false;
-        }
+        return graph.admin().getTinkerTraversal().has(Schema.ConceptProperty.INDEX.name(), key).toList().size() < 2;
     }
     
     static <T> String indexOf(GraknGraph graph, Resource<T> resource) {
@@ -58,6 +52,8 @@ public class PostProcessingTestUtils {
         resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceTypeShard);
+        // This is done to push the concept into the cache
+        //noinspection ResultOfMethodCallIgnored
         graknGraph.admin().buildConcept(resourceVertex);
         return Sets.newHashSet(originalResource, resourceVertex);
     }

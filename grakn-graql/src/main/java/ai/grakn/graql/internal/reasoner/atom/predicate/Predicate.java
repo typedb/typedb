@@ -21,7 +21,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.reasoner.atom.AtomBase;
+import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 
@@ -29,7 +29,7 @@ import ai.grakn.util.ErrorMessage;
 /**
  *
  * <p>
- * Atom implementation serving as base class for predicate implementations.
+ * {@link AtomicBase} extension serving as base class for predicate implementations.
  * </p>
  *
  * @param <T> the type of the predicate on a concept
@@ -37,7 +37,7 @@ import ai.grakn.util.ErrorMessage;
  * @author Kasper Piskorski
  *
  */
-public abstract class Predicate<T> extends AtomBase {
+public abstract class Predicate<T> extends AtomicBase {
 
     protected T predicate;
 

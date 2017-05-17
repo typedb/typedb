@@ -42,10 +42,10 @@ public class CWInferenceTest {
     private static QueryBuilder iqb;
 
     @ClassRule
-    public static GraphContext cwGraph = GraphContext.preLoad(CWGraph.get());
+    public static GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static GraphContext cwGraph2 = GraphContext.preLoad(CWGraph.get());
+    public static GraphContext cwGraph2 = GraphContext.preLoad(CWGraph.get()).assumeTrue(usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {
@@ -216,7 +216,7 @@ public class CWInferenceTest {
         Pattern R6_LHS = and(localGraph.graql().parsePatterns("$x isa region;"));
         Pattern R6_RHS = and(localGraph.graql().parsePatterns("$x isa country;"));
         inferenceRule.putRule(R6_LHS, R6_RHS);
-        localGraph.commit();
+        localGraph.admin().commitNoLogs();
 
         String queryString = "match $x isa criminal;";
         String explicitQuery = "match " +

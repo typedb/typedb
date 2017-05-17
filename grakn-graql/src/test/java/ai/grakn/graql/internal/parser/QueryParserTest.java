@@ -45,10 +45,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -193,21 +193,52 @@ public class QueryParserTest {
 
     @Test
     public void testTypesQuery() throws ParseException {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
-
-        long date = dateFormat.parse("Mon Mar 03 00:00:00 BST 1986").getTime();
-
         MatchQuery expected = match(
                 var("x")
-                        .has("release-date", lt(date))
+                        .has("release-date", lt(LocalDate.of(1986, 3, 3).atStartOfDay()))
                         .has("tmdb-vote-count", 100)
                         .has("tmdb-vote-average", lte(9.0))
         );
 
         MatchQuery parsed = parse(
-                "match $x has release-date < " + date + ", has tmdb-vote-count 100 has tmdb-vote-average<=9.0;"
+                "match $x has release-date < 1986-03-03, has tmdb-vote-count 100 has tmdb-vote-average<=9.0;"
         );
 
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void whenParsingDate_HandleTime() {
+        MatchQuery expected = match(var("x").has("release-date", LocalDateTime.of(1000, 11, 12, 13, 14, 15)));
+        MatchQuery parsed = parse("match $x has release-date 1000-11-12T13:14:15;");
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void whenParsingDate_HandleBigYears() {
+        MatchQuery expected = match(var("x").has("release-date", LocalDate.of(12345, 12, 25).atStartOfDay()));
+        MatchQuery parsed = parse("match $x has release-date +12345-12-25;");
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void whenParsingDate_HandleSmallYears() {
+        MatchQuery expected = match(var("x").has("release-date", LocalDate.of(867, 1, 1).atStartOfDay()));
+        MatchQuery parsed = parse("match $x has release-date 0867-01-01;");
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void whenParsingDate_HandleNegativeYears() {
+        MatchQuery expected = match(var("x").has("release-date", LocalDate.of(-3200, 1, 1).atStartOfDay()));
+        MatchQuery parsed = parse("match $x has release-date -3200-01-01;");
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void whenParsingDate_HandleTimeWithDecimalSeconds() {
+        MatchQuery expected = match(var("x").has("release-date", LocalDateTime.of(1000, 11, 12, 13, 14, 15, 123_456)));
+        MatchQuery parsed = parse("match $x has release-date 1000-11-12T13:14:15.000123456;");
         assertEquals(expected, parsed);
     }
 
@@ -378,6 +409,14 @@ public class QueryParserTest {
     }
 
     @Test
+    public void whenParsingDateKeyword_ParseAsTheCorrectDataType() {
+        MatchQuery expected = match(var("x").datatype(ResourceType.DataType.DATE));
+        MatchQuery parsed = parse("match $x datatype date;");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
     public void testInsertDataTypeQuery() {
         InsertQuery expected = insert(label("my-type").sub("resource").datatype(ResourceType.DataType.LONG));
         InsertQuery parsed = parse("insert my-type sub resource, datatype long;");
@@ -536,6 +575,7 @@ public class QueryParserTest {
                 containsString("\nmatch $x isa "),
                 containsString("\n             ^")
         ));
+        //noinspection ResultOfMethodCallIgnored
         parse("match $x isa ");
     }
 
@@ -543,6 +583,7 @@ public class QueryParserTest {
     public void whenParseIncorrectSyntax_ErrorMessageShouldRetainWhitespace() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(not(containsString("match$xisa")));
+        //noinspection ResultOfMethodCallIgnored
         parse("match $x isa ");
     }
 
@@ -553,6 +594,7 @@ public class QueryParserTest {
                 containsString("\nmatch $x is"),
                 containsString("\n         ^")
         ));
+        //noinspection ResultOfMethodCallIgnored
         parse("match $x is");
     }
 
@@ -679,6 +721,7 @@ public class QueryParserTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testMultipleQueriesThrowsIllegalArgumentException() {
+        //noinspection ResultOfMethodCallIgnored
         parse("insert $x isa movie; insert $y isa movie");
     }
 
@@ -686,6 +729,7 @@ public class QueryParserTest {
     public void testMissingColon() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage("':'");
+        //noinspection ResultOfMethodCallIgnored
         parse("match (actor $x, $y) isa has-cast;");
     }
 
@@ -693,6 +737,7 @@ public class QueryParserTest {
     public void testMissingComma() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage("','");
+        //noinspection ResultOfMethodCallIgnored
         parse("match ($x $y) isa has-cast;");
     }
 
@@ -700,6 +745,7 @@ public class QueryParserTest {
     public void testLimitMistake() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage("limit1");
+        //noinspection ResultOfMethodCallIgnored
         parse("match ($x, $y); limit1;");
     }
 
@@ -707,6 +753,7 @@ public class QueryParserTest {
     public void whenParsingAggregateWithWrongArgumentNumber_Throw() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("count", 0, 1));
+        //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate count $x;");
     }
 
@@ -714,6 +761,7 @@ public class QueryParserTest {
     public void whenParsingAggregateWithWrongVariableArgumentNumber_Throw() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("group", "1-2", 0));
+        //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate group;");
     }
 
@@ -721,6 +769,7 @@ public class QueryParserTest {
     public void whenParsingAggregateWithWrongName_Throw() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(ErrorMessage.UNKNOWN_AGGREGATE.getMessage("hello"));
+        //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate hello $x;");
     }
 

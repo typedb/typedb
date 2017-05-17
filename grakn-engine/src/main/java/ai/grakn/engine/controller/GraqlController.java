@@ -27,6 +27,7 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
@@ -43,6 +44,8 @@ import java.util.stream.Collectors;
 import javax.ws.rs.POST;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -58,7 +61,7 @@ import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
-import static ai.grakn.util.ErrorMessage.MISSING_POST_REQUEST_BODY;
+import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
@@ -85,13 +88,15 @@ import static java.lang.Boolean.parseBoolean;
 @Produces({"application/json", "text/plain"})
 public class GraqlController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private final EngineGraknGraphFactory factory;
 
     public GraqlController(EngineGraknGraphFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.get(REST.WebPath.Graph.GRAQL,  this::executeGraqlGET);
-        spark.post(REST.WebPath.Graph.GRAQL, this::executeGraqlPOST);
+        spark.get(REST.WebPath.Graph.GRAQL,    this::executeGraqlGET);
+        spark.post(REST.WebPath.Graph.GRAQL,   this::executeGraqlPOST);
+        spark.delete(REST.WebPath.Graph.GRAQL, this::executeGraqlDELETE);
 
         //TODO The below exceptions are very broad. They should be revised after we improve exception
         //TODO hierarchies in Graql and Graph
@@ -159,9 +164,38 @@ public class GraqlController {
 
             Json responseBody = executeInsertQuery((InsertQuery) query);
 
+            // Persist the transaction results TODO This should use a within-engine commit
             graph.commit();
 
             return respond(response, query, APPLICATION_JSON, responseBody);
+        }
+    }
+
+    @POST
+    @Path("/")
+    @ApiOperation(value = "Executes graql delete query on the server.")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QUERY,       value = "Insert query to execute", required = true, dataType = "string", paramType = "body"),
+    })
+    private Json executeGraqlDELETE(Request request, Response response){
+        String queryString = mandatoryBody(request);
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+
+        try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
+            Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
+
+            if(!(query instanceof DeleteQuery)){
+                throw new GraknEngineServerException(405, "Only DELETE queries are allowed.");
+            }
+
+            // Execute the query
+            ((DeleteQuery) query).execute();
+
+            // Persist the transaction results TODO This should use a within-engine commit
+            graph.commit();
+
+            return respond(response, query, APPLICATION_JSON, Json.object());
         }
     }
 
@@ -197,7 +231,7 @@ public class GraqlController {
      */
     static String mandatoryBody(Request request){
         return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(() ->
-                new GraknEngineServerException(400, MISSING_POST_REQUEST_BODY));
+                new GraknEngineServerException(400, MISSING_REQUEST_BODY));
     }
 
     /**
@@ -208,6 +242,7 @@ public class GraqlController {
      * @param response response to the client
      */
     private static void handleError(int status, Exception exception, Response response){
+        LOG.error("REST error", exception);
         response.status(status);
         response.body(Json.object("exception", exception.getMessage()).toString());
         response.type(ContentType.APPLICATION_JSON.getMimeType());

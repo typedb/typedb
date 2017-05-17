@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.admin;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -37,6 +38,7 @@ public interface VarProperty {
     /**
      * Get the Graql string representation of this property
      */
+    @CheckReturnValue
     default String graqlString() {
         StringBuilder builder = new StringBuilder();
         buildString(builder);
@@ -46,22 +48,26 @@ public interface VarProperty {
     /**
      * Get a stream of {@link VarAdmin} that must be types.
      */
+    @CheckReturnValue
     Stream<VarAdmin> getTypes();
 
     /**
      * Get a stream of any inner {@link VarAdmin} within this `VarProperty`.
      */
+    @CheckReturnValue
     Stream<VarAdmin> getInnerVars();
 
     /**
      * Get a stream of any inner {@link VarAdmin} within this `VarProperty`, including any that may have been
      * implicitly created (such as with "has").
      */
+    @CheckReturnValue
     Stream<VarAdmin> getImplicitInnerVars();
 
     /**
      * True if there is at most one of these properties for each {@link VarAdmin}
      */
+    @CheckReturnValue
     default boolean isUnique() {
         return false;
     }
@@ -73,5 +79,6 @@ public interface VarProperty {
      * @param parent reasoner query this atom should belong to
      * @return created atom
      */
+    @CheckReturnValue
     Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent);
 }

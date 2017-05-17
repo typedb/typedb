@@ -219,6 +219,13 @@ public class QueryToStringTest {
         qb.match(var("x").isa(var().val("abc"))).toString();
     }
 
+    @Test
+    public void whenCallingToStringOnDeleteQuery_ItLooksLikeOriginalQuery(){
+        String query = "match $x isa movie; delete $x;";
+
+        assertEquals(query, qb.parse(query).toString());
+    }
+
     private void assertSameResults(MatchQuery query) {
         assertEquals(query.execute(), qb.parse(query.toString()).execute());
     }

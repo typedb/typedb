@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.TypeId;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -40,15 +40,15 @@ public class CountMapReduce extends GraknMapReduce<Long> {
     public CountMapReduce() {
     }
 
-    public CountMapReduce(Set<TypeLabel> types) {
-        super(types);
+    public CountMapReduce(Set<TypeId> typeIds) {
+        super(typeIds);
     }
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
         // use the ghost node detector here again
         if (!selectedTypes.isEmpty()) {
-            if (selectedTypes.contains(Utility.getVertexType(vertex))) {
+            if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
                 emitter.emit(NullObject.instance(), 1L);
                 return;
             }

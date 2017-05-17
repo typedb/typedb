@@ -62,7 +62,7 @@ class Validator {
     public boolean validate(){
         boolean originalValue = graknGraph.implicitConceptsVisible();
         graknGraph.showImplicitConcepts(true);
-        Set<ConceptImpl> validationList = new HashSet<>(graknGraph.getConceptLog().getModifiedConcepts());
+        Set<ConceptImpl> validationList = new HashSet<>(graknGraph.getTxCache().getModifiedConcepts());
         for(ConceptImpl nextToValidate: validationList){
             if (nextToValidate.isInstance() && !nextToValidate.isCasting()) {
                 validateInstance((InstanceImpl) nextToValidate);

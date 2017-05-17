@@ -51,8 +51,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -73,7 +71,6 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.uncapture;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
 /**
  *
@@ -88,15 +85,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
-    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
-    public ReasonerQueryImpl(Conjunction<VarAdmin> pattern, GraknGraph graph) {
+    protected ReasonerQueryImpl(Conjunction<VarAdmin> pattern, GraknGraph graph) {
         this.graph = graph;
         atomSet.addAll(AtomicFactory.createAtomSet(pattern, this));
         inferTypes();
     }
 
-    public ReasonerQueryImpl(ReasonerQueryImpl q) {
+    ReasonerQueryImpl(ReasonerQueryImpl q) {
         this.graph = q.graph;
         q.getAtoms().forEach(at -> addAtomic(AtomicFactory.create(at, this)));
         inferTypes();
@@ -178,7 +174,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     boolean isAtomic() {
-        return selectAtoms().size() == 1;
+        return getAtoms().stream().filter(Atomic::isSelectable).count() == 1;
     }
 
     /**
@@ -263,7 +259,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param atom in question
      * @return true if query contains an equivalent atom
      */
-    public boolean containsEquivalentAtom(Atomic atom) {
+    private boolean containsEquivalentAtom(Atomic atom) {
         return !getEquivalentAtoms(atom).isEmpty();
     }
 
@@ -277,19 +273,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         unify(VarName.of("temp"), from);
     }
 
-    @Override
-    public Unifier getUnifier(ReasonerQuery parent) {
-        throw new IllegalStateException("Attempted to obtain unifiers on non-atomic queries.");
-    }
-
     /**
      * change each variable occurrence in the query (apply unifier [from/to])
-     *
      * @param from variable name to be changed
      * @param to   new variable name
      */
-    @Override
-    public void unify(VarName from, VarName to) {
+    private void unify(VarName from, VarName to) {
         Set<Atomic> toRemove = new HashSet<>();
         Set<Atomic> toAdd = new HashSet<>();
 
@@ -300,13 +289,19 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         toAdd.forEach(this::addAtomic);
     }
 
+    @Override
+    public Unifier getUnifier(ReasonerQuery parent) {
+        throw new IllegalStateException("Attempted to obtain unifiers on non-atomic queries.");
+    }
+
     /**
      * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
      * @param unifier (variable mappings) to be applied
+     * @return union of the entry unifier and the unifier used to resolve potential captures
      */
     @Override
-    public void unify(Unifier unifier) {
-        if (unifier.size() == 0) return;
+    public Unifier unify(Unifier unifier) {
+        if (unifier.size() == 0) return new UnifierImpl();
         Unifier mappings = new UnifierImpl(unifier);
         Unifier appliedMappings = new UnifierImpl();
         //do bidirectional mappings if any
@@ -341,7 +336,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         toAdd.forEach(this::addAtomic);
 
         //NB:captures not resolved in place as resolution in-place alters respective atom hash
-        mappings.merge(resolveCaptures());
+        return new UnifierImpl(unifier).merge(resolveCaptures());
     }
 
     /**
@@ -526,7 +521,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return true;
     }
 
-    private Answer getSubstitution(){
+    Answer getSubstitution(){
         Set<IdPredicate> predicates = this.getTypeConstraints().stream()
                 .map(TypeAtom::getPredicate)
                 .filter(Objects::nonNull)
@@ -559,7 +554,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getSubstitution().keySet().containsAll(getVarNames());
     }
 
-    private boolean requiresMaterialisation(){
+    boolean requiresMaterialisation(){
         for(Atom atom : selectAtoms()){
             for (InferenceRule rule : atom.getApplicableRules())
                 if (rule.requiresMaterialisation(atom)){
@@ -640,7 +635,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         if (materialise || requiresMaterialisation()) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
-            return new QueryAnswerIterator().hasStream();
+            return new QueryAnswerIterator(this).hasStream();
         }
     }
 
@@ -667,57 +662,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<VarName> vars = this.getVarNames();
         return answerStream
                 .filter(a -> nonEqualsFilter(a, filters))
-                .flatMap(a -> varFilterFunction.apply(a, vars));
+                .map(a -> a.filterVars(vars));
     }
 
     public ReasonerQueryIterator iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return new ReasonerQueryImplIterator(this, sub, subGoals, cache);
-    }
-
-    private class QueryAnswerIterator extends ReasonerQueryIterator {
-
-        private int iter = 0;
-        private long oldAns = 0;
-        private final Set<Answer> answers = new HashSet<>();
-
-        private final QueryCache<ReasonerAtomicQuery> cache;
-        private Iterator<Answer> answerIterator;
-
-        QueryAnswerIterator(){
-            this.cache = new QueryCache<>();
-            LOG.trace(ReasonerQueryImpl.this.getResolutionPlan());
-            this.answerIterator = new ReasonerQueryImplIterator(ReasonerQueryImpl.this, new QueryAnswer(), new HashSet<>(), cache);
-        }
-
-        /**
-         * check whether answers available, if answers not fully computed compute more answers
-         * @return true if answers available
-         */
-        @Override
-        public boolean hasNext() {
-            if (answerIterator.hasNext()) return true;
-                //iter finished
-            else {
-                long dAns = answers.size() - oldAns;
-                if (dAns != 0 || iter == 0) {
-                    LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
-                    iter++;
-                    answerIterator = new ReasonerQueryImplIterator(ReasonerQueryImpl.this, new QueryAnswer(), new HashSet<>(), cache);
-                    oldAns = answers.size();
-                    return answerIterator.hasNext();
-                }
-                else return false;
-            }
-        }
-
-        /**
-         * @return single answer to the query
-         */
-        @Override
-        public Answer next() {
-            Answer ans = answerIterator.next();
-            answers.add(ans);
-            return ans;
-        }
     }
 }

@@ -49,6 +49,7 @@ public interface VarAdmin extends PatternAdmin, Var {
     /**
      * @return the variable name of this variable
      */
+    @CheckReturnValue
     VarName getVarName();
 
     /**
@@ -60,11 +61,13 @@ public interface VarAdmin extends PatternAdmin, Var {
     /**
      * @return whether the user specified a name for this variable
      */
+    @CheckReturnValue
     boolean isUserDefinedName();
 
     /**
      * Get a stream of all properties on this variable
      */
+    @CheckReturnValue
     Stream<VarProperty> getProperties();
 
     /**
@@ -72,6 +75,7 @@ public interface VarAdmin extends PatternAdmin, Var {
      * @param type the class of {@link VarProperty} to return
      * @param <T> the type of {@link VarProperty} to return
      */
+    @CheckReturnValue
     <T extends VarProperty> Stream<T> getProperties(Class<T> type);
 
     /**
@@ -79,6 +83,7 @@ public interface VarAdmin extends PatternAdmin, Var {
      * @param type the class of {@link VarProperty} to return
      * @param <T> the type of {@link VarProperty} to return
      */
+    @CheckReturnValue
     <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type);
 
     /**
@@ -87,6 +92,7 @@ public interface VarAdmin extends PatternAdmin, Var {
      * @param <T> the type of the {@link VarProperty}
      * @return whether this {@link Var} has a {@link VarProperty} of the given type
      */
+    @CheckReturnValue
     <T extends VarProperty> boolean hasProperty(Class<T> type);
 
     // TODO: If `VarAdmin#setVarName` is removed, this may no longer be necessary
@@ -102,32 +108,37 @@ public interface VarAdmin extends PatternAdmin, Var {
     /**
      * @return the ID this variable represents, if it represents something with a specific ID
      */
+    @CheckReturnValue
     Optional<ConceptId> getId();
 
     /**
      * @return the name this variable represents, if it represents something with a specific name
      */
+    @CheckReturnValue
     Optional<TypeLabel> getTypeLabel();
 
     /**
      * @return all variables that this variable references
      */
-
+    @CheckReturnValue
     Collection<VarAdmin> getInnerVars();
 
     /**
      * Get all inner variables, including implicit variables such as in a has property
      */
+    @CheckReturnValue
     Collection<VarAdmin> getImplicitInnerVars();
 
     /**
      * @return all type names that this variable refers to
      */
+    @CheckReturnValue
     Set<TypeLabel> getTypeLabels();
 
     /**
      * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')
      */
+    @CheckReturnValue
     String getPrintableName();
 
 }

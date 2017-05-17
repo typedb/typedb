@@ -19,12 +19,12 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
 import java.util.HashSet;
@@ -66,7 +66,7 @@ public abstract class MultiPredicateBinary<T extends Predicate> extends BinaryBa
     @Override
     public PatternAdmin getCombinedPattern() {
         Set<VarAdmin> vars = getMultiPredicate().stream()
-                .map(AtomBase::getPattern)
+                .map(Atomic::getPattern)
                 .map(PatternAdmin::asVar)
                 .collect(Collectors.toSet());
         vars.add(super.getPattern().asVar());

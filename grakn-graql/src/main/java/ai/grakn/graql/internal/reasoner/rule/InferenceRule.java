@@ -37,12 +37,12 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import java.util.Map;
-import javafx.util.Pair;
 
 import java.util.Objects;
 import java.util.Set;
@@ -52,7 +52,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  *
  * <p>
- * Class providing resolution and higher level facilities for rule objects.
+ * Class providing resolution and higher level facilities for {@link Rule} objects.
  * </p>
  *
  * @author Kasper Piskorski
@@ -67,8 +67,8 @@ public class InferenceRule {
     public InferenceRule(Rule rule, GraknGraph graph){
         ruleId = rule.getId();
         //TODO simplify once changes propagated to rule objects
-        body = new ReasonerQueryImpl(conjunction(rule.getLHS().admin()), graph);
-        head = new ReasonerAtomicQuery(conjunction(rule.getRHS().admin()), graph);
+        body = ReasonerQueries.create(conjunction(rule.getLHS().admin()), graph);
+        head = ReasonerQueries.atomic(conjunction(rule.getRHS().admin()), graph);
 
         //run time check for head atom validity
         if (!getHead().getAtom().isAllowedToFormRuleHead()){
@@ -78,8 +78,8 @@ public class InferenceRule {
 
     public InferenceRule(InferenceRule r){
         this.ruleId = r.getRuleId();
-        this.body = new ReasonerQueryImpl(r.getBody());
-        this.head = new ReasonerAtomicQuery(r.getHead());
+        this.body = ReasonerQueries.create(r.getBody());
+        this.head = ReasonerQueries.atomic(r.getHead());
     }
 
     @Override
@@ -144,8 +144,8 @@ public class InferenceRule {
      * @return a conclusion atom which parent contains all atoms in the rule
      */
     public Atom getRuleConclusionAtom() {
-        ReasonerQueryImpl ruleQuery = new ReasonerQueryImpl(head);
-        Atom atom = ruleQuery.selectAtoms().iterator().next();
+        ReasonerAtomicQuery ruleQuery = ReasonerQueries.atomic(head);
+        Atom atom = ruleQuery.getAtom();
         body.getAtoms().forEach(at -> ruleQuery.addAtomic(at.copy()));
         return atom;
     }
@@ -185,24 +185,15 @@ public class InferenceRule {
         return this;
     }
 
-    private void rewriteHead(Atom parentAtom){
+    private InferenceRule rewriteHead(){
         Atom childAtom = head.getAtom();
-        Pair<Atom, Unifier> rewrite = childAtom.rewriteToUserDefinedWithUnifiers();
-        Unifier rewriteUnifiers = rewrite.getValue();
-        Atom newAtom = rewrite.getKey();
-        if (newAtom != childAtom){
-            head.removeAtomic(childAtom);
-            head.addAtomic(newAtom);
-            body.unify(rewriteUnifiers);
-
-            //resolve captures
-            Set<VarName> varIntersection = Sets.intersection(body.getVarNames(), parentAtom.getVarNames());
-            varIntersection = Sets.difference(varIntersection, rewriteUnifiers.keySet());
-            varIntersection.forEach(var -> body.unify(var, VarName.anon()));
-        }
+        Atom newAtom = childAtom.rewriteToUserDefined();
+        head.removeAtomic(childAtom);
+        head.addAtomic(newAtom);
+        return this;
     }
 
-    private void rewriteBody(){
+    private InferenceRule rewriteBody(){
         body.getAtoms().stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .filter(Atom::isRelation)
@@ -214,9 +205,18 @@ public class InferenceRule {
                     body.removeAtomic(at);
                     body.addAtomic(rewrite);
                     });
+        return this;
     }
 
-    private InferenceRule unifyViaAtom(Atom parentAtom) {
+    private InferenceRule rewriteToUserDefined(){
+        return this.rewriteHead().rewriteBody();
+    }
+
+    /**
+     * @param parentAtom atom to unify the rule with
+     * @return corresponding unifier
+     */
+    public Unifier getUnifier(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
         Unifier unifier = new UnifierImpl();
         if (parentAtom.getType() != null){
@@ -229,17 +229,18 @@ public class InferenceRule {
                     .addType(childAtom.getType());
             unifier.merge(childAtom.getUnifier(extendedParent));
         }
-        return this.unify(unifier);
+        return unifier;
     }
 
     /**
+     *
      * @param unifier to be applied on this rule
      * @return unified rule
      */
     public InferenceRule unify(Unifier unifier){
-        //do alpha-conversion
-        head.unify(unifier);
-        body.unify(unifier);
+        //NB: captures of bound variables have to be resolved to the same variable hence using head unifier
+        Unifier headUnifier = head.unify(unifier);
+        body.unify(headUnifier);
         return this;
     }
 
@@ -248,9 +249,8 @@ public class InferenceRule {
      * @param parentAtom atom the rule should be unified with
      */
     public InferenceRule unify(Atom parentAtom) {
-        if (parentAtom.isUserDefinedName()) rewriteHead(parentAtom);
-        unifyViaAtom(parentAtom);
-        if (head.getAtom().isUserDefinedName()) rewriteBody();
+        if (parentAtom.isUserDefinedName()) rewriteToUserDefined();
+        this.unify(getUnifier(parentAtom));
         return this;
     }
 }

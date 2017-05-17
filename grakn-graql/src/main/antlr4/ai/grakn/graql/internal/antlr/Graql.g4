@@ -11,13 +11,6 @@ queryEOF       : query EOF ;
 query          : matchQuery | insertQuery | simpleQuery ;
 simpleQuery    : askQuery | deleteQuery | aggregateQuery | computeQuery ;
 
-matchEOF       : matchQuery EOF ;
-askEOF         : askQuery EOF ;
-insertEOF      : insertQuery EOF ;
-deleteEOF      : deleteQuery EOF ;
-aggregateEOF   : aggregateQuery EOF ;
-computeEOF     : computeQuery EOF ;
-
 matchQuery     : 'match' patterns                                 # matchBase
                | matchQuery 'select' VARIABLE (',' VARIABLE)* ';' # matchSelect
                | matchQuery 'limit' INTEGER                   ';' # matchLimit
@@ -110,6 +103,8 @@ value          : STRING   # valueString
                | INTEGER  # valueInteger
                | REAL     # valueReal
                | BOOLEAN  # valueBoolean
+               | DATE     # valueDate
+               | DATETIME # valueDateTime
                ;
 
 label          : identifier ;
@@ -135,7 +130,7 @@ DEGREES        : 'degrees' ;
 MEMBERS        : 'members' ;
 SIZE           : 'size' ;
 
-DATATYPE       : 'long' | 'double' | 'string' | 'boolean' ;
+DATATYPE       : 'long' | 'double' | 'string' | 'boolean' | 'date' ;
 ORDER          : 'asc' | 'desc' ;
 BOOLEAN        : 'true' | 'false' ;
 VARIABLE       : '$' [a-zA-Z0-9_-]+ ;
@@ -144,6 +139,17 @@ STRING         : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\
 REGEX          : '/' (~'/' | '\\/')* '/' ;
 INTEGER        : ('+' | '-')? [0-9]+ ;
 REAL           : ('+' | '-')? [0-9]+ '.' [0-9]+ ;
+DATE           : DATE_FRAGMENT ;
+DATETIME       : DATE_FRAGMENT 'T' TIME ;
+
+fragment DATE_FRAGMENT : YEAR '-' MONTH '-' DAY ;
+fragment MONTH         : [0-1][0-9] ;
+fragment DAY           : [0-3][0-9] ;
+fragment YEAR          : [0-9][0-9][0-9][0-9] | ('+' | '-') [0-9]+ ;
+fragment TIME          : HOUR ':' MINUTE (':' SECOND)? ;
+fragment HOUR          : [0-2][0-9] ;
+fragment MINUTE        : [0-6][0-9] ;
+fragment SECOND        : [0-6][0-9] ('.' [0-9]+)? ;
 
 fragment ESCAPE_SEQ : '\\' . ;
 

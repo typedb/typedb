@@ -21,10 +21,12 @@ package ai.grakn.graql.admin;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 /**
  *
@@ -37,34 +39,45 @@ import java.util.function.BiConsumer;
  */
 public interface Answer {
 
+    @CheckReturnValue
     Answer copy();
 
+    @CheckReturnValue
     Set<VarName> keySet();
 
+    @CheckReturnValue
     Collection<Concept> values();
 
+    @CheckReturnValue
     Set<Concept> concepts();
 
+    @CheckReturnValue
     Set<Map.Entry<VarName, Concept>> entrySet();
 
+    @CheckReturnValue
     Concept get(String var);
 
+    @CheckReturnValue
     Concept get(VarName var);
 
     Concept put(VarName var, Concept con);
 
     Concept remove(VarName var);
 
+    @CheckReturnValue
     Map<VarName, Concept> map();
 
     void putAll(Answer a);
 
     void putAll(Map<VarName, Concept> m2);
 
+    @CheckReturnValue
     boolean containsKey(VarName var);
 
+    @CheckReturnValue
     boolean isEmpty();
 
+    @CheckReturnValue
     int size();
 
     void forEach(BiConsumer<? super VarName, ? super Concept> consumer);
@@ -76,6 +89,7 @@ public interface Answer {
      * @param a2 answer to be merged with
      * @return merged answer
      */
+    @CheckReturnValue
     Answer merge(Answer a2);
 
 
@@ -87,6 +101,7 @@ public interface Answer {
      * @param explanation flag for providing explanation
      * @return merged answer
      */
+    @CheckReturnValue
     Answer merge(Answer a2, boolean explanation);
 
     /**
@@ -97,10 +112,27 @@ public interface Answer {
      */
     Answer explain(AnswerExplanation exp);
 
+    /**
+     * @param vars variables to be retained
+     * @return answer with filtered variables
+     */
+    @CheckReturnValue
     Answer filterVars(Set<VarName> vars);
 
+    /**
+     * @param unifier set of mappings between variables
+     * @return unified answer
+     */
+    @CheckReturnValue
     Answer unify(Unifier unifier);
 
+    /**
+     * @param unifierSet set of permutation mappings
+     * @return stream of permuted answers
+     */
+    Stream<Answer> permute(Set<Unifier> unifierSet);
+
+    @CheckReturnValue
     AnswerExplanation getExplanation();
 
     /**
@@ -112,15 +144,18 @@ public interface Answer {
     /**
      * @return set of answers corresponding to the explicit path
      */
+    @CheckReturnValue
     Set<Answer> getExplicitPath();
 
     /**
      * @return set of all answers taking part in the derivation of this answer
      */
+    @CheckReturnValue
     Set<Answer> getAnswers();
 
     /**
      * @return all explanations taking part in the derivation of this answer
      */
+    @CheckReturnValue
     Set<AnswerExplanation> getExplanations();
 }

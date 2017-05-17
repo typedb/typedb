@@ -22,12 +22,15 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.GraknTitanGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -100,7 +103,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
     }
 
     @Test
-    public void testCaseSensitiveKeyspaces(){
+    public void whenCreatingGraphsWithDifferentKeyspace_EnsureCaseIsIgnored(){
         TitanInternalFactory factory1 =  new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES);
         TitanInternalFactory factory2 = new TitanInternalFactory("Case", Grakn.IN_MEMORY, TEST_PROPERTIES);
         GraknTitanGraph case1 = factory1.open(GraknTxType.WRITE);
@@ -110,16 +113,17 @@ public class GraknTitanGraphTest extends TitanTestBase{
     }
 
     @Test
-    public void testClearTitanGraph(){
+    public void whenClearingTheGraph_AllNonMetaConceptsAreRemoved(){
         GraknTitanGraph graph = new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
         graph.clear();
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(CLOSED_CLEAR.getMessage());
+        //noinspection ResultOfMethodCallIgnored
         graph.getEntityType("thing");
     }
 
     @Test
-    public void testPermanentlyClosedGraph(){
+    public void whenClosingTheGraph_EnsureTheTransactionIsClosed(){
         GraknTitanGraph graph = new TitanInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
 
         String entityTypeLabel = "Hello";
@@ -132,6 +136,16 @@ public class GraknTitanGraphTest extends TitanTestBase{
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
 
+        //noinspection ResultOfMethodCallIgnored
         graph.getEntityType(entityTypeLabel);
+    }
+
+    @Test
+    public void whenCreatingDateResource_EnsureDateCanBeRetrieved(){
+        GraknTitanGraph graph = new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        ResourceType<LocalDateTime> dateType = graph.putResourceType("date", ResourceType.DataType.DATE);
+        LocalDateTime now = LocalDateTime.now();
+        Resource<LocalDateTime> date = dateType.putResource(now);
+        assertEquals(now, date.getValue());
     }
 }

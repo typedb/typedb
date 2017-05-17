@@ -26,19 +26,22 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.MatchQuery;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
+import org.junit.contrib.java.lang.system.SystemOutRule;
+import org.junit.rules.ExpectedException;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static ai.grakn.graql.Graql.insert;
+import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -47,10 +50,17 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static java.util.stream.Stream.generate;
 import static org.mockito.Mockito.*;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 
-public class LoaderClientTest {
+public class BatchMutatorClientTest {
 
     private GraknSession session;
+
+    @Rule
+    public final SystemOutRule systemOut = new SystemOutRule().enableLog();
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -58,18 +68,12 @@ public class LoaderClientTest {
     @Before
     public void setupSession(){
         this.session = engine.factoryWithNewKeyspace();
-
     }
 
     @Test
     public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged(){
-        // Mock the Logger
-        Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(LoaderClient.class);
-        Appender<ILoggingEvent> mockAppender = mock(Appender.class);
-        root.addAppender(mockAppender);
-
-        // Create a LoaderClient with a callback that will fail
-        LoaderClient loader = loader();
+        // Create a BatchMutatorClient with a callback that will fail
+        BatchMutatorClient loader = loader();
         loader.setTaskCompletionConsumer((json) -> assertTrue("Testing Log failure",false));
 
         // Load some queries
@@ -79,15 +83,15 @@ public class LoaderClientTest {
         loader.waitToFinish();
 
         // Verify that the logger received the failed log message
-        verify(mockAppender).doAppend(argThat(argument -> argument.getFormattedMessage().contains("error in callback")));
+        assertThat(systemOut.getLog(), containsString("error in callback"));
     }
 
     @Test
     public void whenSingleQueryLoaded_TaskCompletionExecutesExactlyOnce(){
         AtomicInteger tasksCompleted = new AtomicInteger(0);
 
-        // Create a LoaderClient with a callback that will fail
-        LoaderClient loader = loader();
+        // Create a BatchMutatorClient with a callback that will fail
+        BatchMutatorClient loader = loader();
         loader.setTaskCompletionConsumer((json) -> tasksCompleted.incrementAndGet());
 
         // Load some queries
@@ -102,7 +106,7 @@ public class LoaderClientTest {
 
     @Test
     public void whenSending50InsertQueries_50EntitiesAreLoadedIntoGraph() {
-        LoaderClient loader = loader();
+        BatchMutatorClient loader = loader();
 
         generate(this::query).limit(100).forEach(loader::add);
         loader.waitToFinish();
@@ -114,7 +118,7 @@ public class LoaderClientTest {
 
     @Test
     public void whenSending100QueriesWithBatchSize20_EachBatchHas20Queries() {
-        LoaderClient loader = loader();
+        BatchMutatorClient loader = loader();
 
         loader.setBatchSize(20);
         generate(this::query).limit(100).forEach(loader::add);
@@ -125,7 +129,7 @@ public class LoaderClientTest {
 
     @Test
     public void whenSending90QueriesWithBatchSize20_TheLastBatchHas10Queries(){
-        LoaderClient loader = loader();
+        BatchMutatorClient loader = loader();
         loader.setBatchSize(20);
 
         generate(this::query).limit(90).forEach(loader::add);
@@ -138,7 +142,7 @@ public class LoaderClientTest {
 
     @Test
     public void whenSending20QueriesWith1ActiveTask_OnlyOneBatchIsActiveAtOnce() throws Exception {
-        LoaderClient loader = loader();
+        BatchMutatorClient loader = loader();
         loader.setNumberActiveTasks(1);
         loader.setBatchSize(5);
 
@@ -155,7 +159,7 @@ public class LoaderClientTest {
     public void whenEngineRESTFailsWhileLoadingWithRetryTrue_LoaderRetriesAndWaits() throws Exception {
         AtomicInteger tasksCompletedWithoutError = new AtomicInteger(0);
 
-        LoaderClient loader = loader();
+        BatchMutatorClient loader = loader();
         loader.setRetryPolicy(true);
         loader.setBatchSize(5);
         loader.setTaskCompletionConsumer((json) -> {
@@ -184,7 +188,7 @@ public class LoaderClientTest {
         AtomicInteger tasksCompletedWithoutError = new AtomicInteger(0);
         AtomicInteger tasksCompletedWithError = new AtomicInteger(0);
 
-        LoaderClient loader = loader();
+        BatchMutatorClient loader = loader();
         loader.setRetryPolicy(false);
         loader.setBatchSize(5);
         loader.setTaskCompletionConsumer((json) -> {
@@ -211,7 +215,26 @@ public class LoaderClientTest {
         assertThat(tasksCompletedWithoutError.get() + tasksCompletedWithError.get(), equalTo(4));
     }
 
-    private LoaderClient loader(){
+    @Test
+    public void whenAddingReadOnlyQueriesThrowError() {
+        BatchMutatorClient loader = loader();
+        MatchQuery matchQuery = match(var("x").isa("y"));
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(READ_ONLY_QUERY.getMessage(matchQuery.toString()));
+        loader.add(matchQuery);
+    }
+
+    @Test
+    public void whenInsertingIdenticalQueriesMakeSureTheyAreAllSuccessful() {
+        BatchMutatorClient mutatorClient = loader();
+        InsertQuery insertQuery = insert(var("x").isa("person"));
+        mutatorClient.add(insertQuery);
+        mutatorClient.add(insertQuery);
+        mutatorClient.waitToFinish();
+        verify(mutatorClient, times(1)).sendQueriesToLoader(argThat(insertQueries -> insertQueries.size() == 2));
+    }
+
+    private BatchMutatorClient loader(){
         // load ontology
         try(GraknGraph graph = session.open(GraknTxType.WRITE)){
             EntityType nameTag = graph.putEntityType("name_tag");
@@ -222,7 +245,7 @@ public class LoaderClientTest {
             nameTag.resource(nameTagId);
             graph.admin().commitNoLogs();
 
-            return spy(new LoaderClient(graph.getKeyspace(), Grakn.DEFAULT_URI));
+            return spy(new BatchMutatorClient(graph.getKeyspace(), Grakn.DEFAULT_URI));
         }
     }
 

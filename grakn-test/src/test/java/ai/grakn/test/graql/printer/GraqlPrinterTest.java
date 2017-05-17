@@ -80,6 +80,17 @@ public class GraqlPrinterTest {
     }
 
     @Test
+    public void whenGettingOutputForResource_IncludesValueOfResource() {
+        Printer printer = Printers.graql(false);
+
+        MatchQuery query = rule.graph().graql().match(var("x").isa("title").val("Godfather"));
+
+        String result = printer.graqlString(query.iterator().next());
+
+        assertEquals("$x val \"Godfather\" isa title;", result.trim());
+    }
+
+    @Test
     public void testResourceOutputNoResources() {
         Printer printer = Printers.graql(true);
 

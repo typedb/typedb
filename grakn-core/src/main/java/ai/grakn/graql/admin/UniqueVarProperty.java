@@ -18,6 +18,8 @@
 
 package ai.grakn.graql.admin;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * A unique property of a {@link ai.grakn.graql.Var}.
  *
@@ -28,6 +30,7 @@ package ai.grakn.graql.admin;
  */
 public interface UniqueVarProperty extends VarProperty {
 
+    @CheckReturnValue
     default boolean isUnique() {
         return true;
     }

@@ -107,6 +107,7 @@ public class QueryBuilderTest {
         MatchQuery query = match(var("x").isa("movie"));
         exception.expect(IllegalStateException.class);
         exception.expectMessage("graph");
+        //noinspection ResultOfMethodCallIgnored
         query.iterator();
     }
 
@@ -136,6 +137,7 @@ public class QueryBuilderTest {
     public void testValidationWhenGraphProvided() {
         MatchQuery query = match(var("x").isa("not-a-thing"));
         exception.expect(IllegalStateException.class);
+        //noinspection ResultOfMethodCallIgnored
         query.withGraph(movieGraph.graph()).stream();
     }
 
@@ -143,6 +145,7 @@ public class QueryBuilderTest {
     public void testErrorWhenSpecifyGraphTwice() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("graph");
+        //noinspection ResultOfMethodCallIgnored
         movieGraph.graph().graql().match(var("x").isa("movie")).withGraph(movieGraph.graph()).stream();
     }
 }

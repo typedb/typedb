@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
@@ -46,11 +47,12 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
-        Set<TypeLabel> allSubTypes = getCombinedSubTypes();
+        Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
+        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeLabels),
-                new MinMapReduce(statisticsResourceTypeLabels, dataType));
+                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds),
+                new MinMapReduce(statisticsResourceTypeIds, dataType));
         Map<Serializable, Number> min = result.memory().get(MinMapReduce.class.getName());
 
         LOGGER.debug("Min = " + min.get(MapReduce.NullObject.instance()));

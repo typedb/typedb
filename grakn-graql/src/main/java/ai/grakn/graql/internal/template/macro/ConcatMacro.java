@@ -41,18 +41,11 @@ public class ConcatMacro implements Macro<String> {
             throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
         }
 
-        return values.stream().map(this::toString).collect(joining());
+        return values.stream().map(Object::toString).collect(joining());
     }
 
     @Override
     public String name() {
         return "concat";
-    }
-
-    public String toString(Object object){
-        if(object instanceof UnescapedString){
-            return ((UnescapedString) object).get();
-        }
-        return object.toString();
     }
 }

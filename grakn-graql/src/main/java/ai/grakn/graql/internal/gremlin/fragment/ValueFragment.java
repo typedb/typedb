@@ -18,9 +18,10 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.GraknGraph;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -39,7 +40,7 @@ class ValueFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
         predicate.applyPredicate(traversal);
     }
 
@@ -56,6 +57,11 @@ class ValueFragment extends AbstractFragment {
             // Assume approximately half of values will satisfy a filter
             return previousCost / 2.0;
         }
+    }
+
+    @Override
+    public boolean hasFixedFragmentCost() {
+        return predicate.isSpecific();
     }
 
     @Override

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -62,8 +63,9 @@ public interface Fragment {
 
     /**
      * @param traversal the traversal to extend with this Fragment
+     * @param graph the graph to execute the traversal on
      */
-    void applyTraversal(GraphTraversal<Vertex, Vertex> traversal);
+    void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph);
 
     /**
      * The name of the fragment
@@ -99,4 +101,12 @@ public interface Fragment {
     }
 
     double fragmentCost(double previousCost);
+
+    /**
+     * If a fragment has fixed cost, the traversal is done using index. This makes the fragment a good starting point.
+     * A plan should always start with these fragments when possible.
+     */
+    default boolean hasFixedFragmentCost() {
+        return false;
+    }
 }

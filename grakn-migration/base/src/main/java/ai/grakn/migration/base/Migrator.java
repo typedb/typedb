@@ -18,7 +18,7 @@
 
 package ai.grakn.migration.base;
 
-import ai.grakn.client.LoaderClient;
+import ai.grakn.client.BatchMutatorClient;
 import ai.grakn.exception.GraqlTemplateParsingException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -122,7 +122,7 @@ public class Migrator {
         this.startTime = System.currentTimeMillis();
         this.batchSize = batchSize;
 
-        LoaderClient loader = new LoaderClient(keyspace, uri, recordMigrationStates());
+        BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates());
         loader.setBatchSize(batchSize);
         loader.setNumberActiveTasks(numberActiveTasks);
         loader.setRetryPolicy(retry);

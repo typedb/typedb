@@ -29,9 +29,10 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 
-import java.util.Date;
+import javax.annotation.CheckReturnValue;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created
@@ -66,10 +67,12 @@ public final class Schema {
             label = l;
         }
 
+        @CheckReturnValue
         public String getLabel() {
             return label;
         }
 
+        @CheckReturnValue
         public static EdgeLabel getEdgeLabel(String label) {
             for (EdgeLabel edgeLabel : EdgeLabel.values()) {
                 if (edgeLabel.getLabel().equals(label)) {
@@ -84,26 +87,35 @@ public final class Schema {
      * The concepts which represent our internal schema
      */
     public enum MetaSchema {
-        CONCEPT("concept"),
-        ENTITY("entity"),
-        ROLE("role"),
-        RESOURCE("resource"),
-        RELATION("relation"),
-        RULE("rule"),
-        INFERENCE_RULE("inference-rule"),
-        CONSTRAINT_RULE("constraint-rule");
+        CONCEPT("concept", 1),
+        ENTITY("entity", 2),
+        ROLE("role", 3),
+        RESOURCE("resource", 4),
+        RELATION("relation", 5),
+        RULE("rule", 6),
+        INFERENCE_RULE("inference-rule", 7),
+        CONSTRAINT_RULE("constraint-rule", 8);
 
 
         private final TypeLabel label;
+        private final TypeId id;
 
-        MetaSchema(String i) {
-            label = TypeLabel.of(i);
+        MetaSchema(String s, int i) {
+            label = TypeLabel.of(s);
+            id = TypeId.of(i);
         }
 
+        @CheckReturnValue
         public TypeLabel getLabel() {
             return label;
         }
 
+        @CheckReturnValue
+        public TypeId getId(){
+            return id;
+        }
+
+        @CheckReturnValue
         public static boolean isMetaLabel(TypeLabel label) {
             for (MetaSchema metaSchema : MetaSchema.values()) {
                 if (metaSchema.getLabel().equals(label)) return true;
@@ -137,6 +149,7 @@ public final class Schema {
             this.classType = classType;
         }
 
+        @CheckReturnValue
         public Class getClassType(){
             return classType;
         }
@@ -147,18 +160,18 @@ public final class Schema {
      */
     public enum ConceptProperty {
         //Unique Properties
-        TYPE_LABEL(String.class), INDEX(String.class), ID(String.class),
+        TYPE_LABEL(String.class), INDEX(String.class), ID(String.class), TYPE_ID(Integer.class),
 
         //Other Properties
-        TYPE(String.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_SHARD(Boolean.class),
-        REGEX(String.class), DATA_TYPE(String.class), INSTANCE_COUNT(Long.class),
+        INSTANCE_TYPE_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_SHARD(Boolean.class),
+        REGEX(String.class), DATA_TYPE(String.class), INSTANCE_COUNT(Long.class), CURRENT_TYPE_ID(Integer.class),
         RULE_LHS(String.class), RULE_RHS(String.class), CURRENT_SHARD(String.class),
 
         //Supported Data Types
         VALUE_STRING(String.class), VALUE_LONG(Long.class),
         VALUE_DOUBLE(Double.class), VALUE_BOOLEAN(Boolean.class),
         VALUE_INTEGER(Integer.class), VALUE_FLOAT(Float.class),
-        VALUE_DATE(Date.class);
+        VALUE_DATE(Long.class);
 
         private final Class dataType;
 
@@ -166,6 +179,7 @@ public final class Schema {
             this.dataType = dataType;
         }
 
+        @CheckReturnValue
         public Class getDataType() {
             return dataType;
         }
@@ -175,8 +189,8 @@ public final class Schema {
      * A property enum defining the possible labels that can go on the edge label.
      */
     public enum EdgeProperty {
-        ROLE_TYPE_LABEL(String.class),
-        RELATION_TYPE_LABEL(String.class),
+        ROLE_TYPE_ID(Integer.class),
+        RELATION_TYPE_ID(Integer.class),
         REQUIRED(Boolean.class);
 
         private final Class dataType;
@@ -185,6 +199,7 @@ public final class Schema {
             this.dataType = dataType;
         }
 
+        @CheckReturnValue
         public Class getDataType() {
             return dataType;
         }
@@ -230,10 +245,12 @@ public final class Schema {
             this.label = label;
         }
 
+        @CheckReturnValue
         public TypeLabel getLabel(TypeLabel resourceType) {
             return resourceType.map(resource -> String.format(label, resource));
         }
 
+        @CheckReturnValue
         public TypeLabel getLabel(String resourceType) {
             return TypeLabel.of(String.format(label, resourceType));
         }
@@ -253,6 +270,7 @@ public final class Schema {
             this.label = label;
         }
 
+        @CheckReturnValue
         public TypeLabel getLabel() {
             return TypeLabel.of(label);
         }
@@ -264,6 +282,7 @@ public final class Schema {
      * @param value The value of the resource
      * @return A unique id for the resource
      */
+    @CheckReturnValue
     public static String generateResourceIndex(TypeLabel typeLabel, String value){
         return Schema.BaseType.RESOURCE.name() + "-" + typeLabel + "-" + value;
     }

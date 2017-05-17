@@ -20,6 +20,7 @@ package ai.grakn.graql;
 
 import ai.grakn.GraknGraph;
 
+import javax.annotation.CheckReturnValue;
 import java.util.stream.Stream;
 
 /**
@@ -35,6 +36,7 @@ public interface Query<T> {
      * @param graph the graph to execute the query on
      * @return a new query with the graph set
      */
+    @CheckReturnValue
     Query<T> withGraph(GraknGraph graph);
 
     /**
@@ -46,10 +48,12 @@ public interface Query<T> {
     /**
      * Execute the query and return a human-readable stream of results
      */
+    @CheckReturnValue
     Stream<String> resultsString(Printer printer);
 
     /**
      * Whether this query will modify the graph
      */
+    @CheckReturnValue
     boolean isReadOnly();
 }

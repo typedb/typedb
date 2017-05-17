@@ -203,7 +203,7 @@ public class StandaloneTaskManager implements TaskManager {
                     task.markStopped();
                 }
             } catch (Throwable throwable) {
-                LOG.error(throwable.getMessage());
+                LOG.error("{} failed with {}", task.getId(), throwable.getMessage());
                 task.markFailed(throwable);
             } finally {
                 saveState(task);

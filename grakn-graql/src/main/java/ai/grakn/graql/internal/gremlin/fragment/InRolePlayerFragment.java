@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.VarName;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -30,7 +31,7 @@ class InRolePlayerFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
         traversal.in(Schema.EdgeLabel.ROLE_PLAYER.getLabel());
     }
 

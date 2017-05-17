@@ -30,7 +30,7 @@ import java.util.Set;
 /**
  *
  * <p>
- * Factory class for creating atoms out of graql variables and patterns.
+ * Factory class for creating {@link Atomic} objects.
  * </p>
  *
  * @author Kasper Piskorski
@@ -63,4 +63,5 @@ public class AtomicFactory {
                 .forEach(atoms::add);
         return atoms;
     }
+
 }

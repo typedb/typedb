@@ -55,6 +55,9 @@ import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -101,31 +104,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public MatchQuery visitMatchEOF(GraqlParser.MatchEOFContext ctx) {
-        return visitMatchQuery(ctx.matchQuery());
-    }
-
-    @Override
-    public AskQuery visitAskEOF(GraqlParser.AskEOFContext ctx) {
-        return visitAskQuery(ctx.askQuery());
-    }
-
-    @Override
-    public InsertQuery visitInsertEOF(GraqlParser.InsertEOFContext ctx) {
-        return visitInsertQuery(ctx.insertQuery());
-    }
-
-    @Override
-    public DeleteQuery visitDeleteEOF(GraqlParser.DeleteEOFContext ctx) {
-        return visitDeleteQuery(ctx.deleteQuery());
-    }
-
-    @Override
-    public ComputeQuery visitComputeEOF(GraqlParser.ComputeEOFContext ctx) {
-        return visitComputeQuery(ctx.computeQuery());
-    }
-
-    @Override
     public Query<?> visitQuery(GraqlParser.QueryContext ctx) {
         return (Query<?>) super.visitQuery(ctx);
     }
@@ -168,11 +146,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public MatchQuery visitMatchDistinct(GraqlParser.MatchDistinctContext ctx) {
         return visitMatchQuery(ctx.matchQuery()).distinct();
-    }
-
-    @Override
-    public AggregateQuery<?> visitAggregateEOF(GraqlParser.AggregateEOFContext ctx) {
-        return visitAggregateQuery(ctx.aggregateQuery());
     }
 
     @Override
@@ -636,6 +609,16 @@ class QueryVisitor extends GraqlBaseVisitor {
         return Boolean.valueOf(ctx.BOOLEAN().getText());
     }
 
+    @Override
+    public LocalDateTime visitValueDate(GraqlParser.ValueDateContext ctx) {
+        return LocalDate.parse(ctx.DATE().getText(), DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
+    }
+
+    @Override
+    public Object visitValueDateTime(GraqlParser.ValueDateTimeContext ctx) {
+        return LocalDateTime.parse(ctx.DATETIME().getText(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+    }
+
     private MatchQuery visitMatchQuery(GraqlParser.MatchQueryContext ctx) {
         return (MatchQuery) visit(ctx);
     }
@@ -717,17 +700,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     private ResourceType.DataType getDatatype(TerminalNode datatype) {
-        switch (datatype.getText()) {
-            case "long":
-                return ResourceType.DataType.LONG;
-            case "double":
-                return ResourceType.DataType.DOUBLE;
-            case "string":
-                return ResourceType.DataType.STRING;
-            case "boolean":
-                return ResourceType.DataType.BOOLEAN;
-            default:
-                throw new RuntimeException("Unrecognized datatype " + datatype.getText());
-        }
+        return QueryParser.DATA_TYPES.get(datatype.getText());
     }
 }

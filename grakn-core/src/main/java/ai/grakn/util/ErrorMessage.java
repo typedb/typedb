@@ -18,6 +18,8 @@
 
 package ai.grakn.util;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * Enum containing error messages.
  *
@@ -154,6 +156,9 @@ public enum ErrorMessage {
 
     NO_ANALYTICS_METHOD("No compute method exists with the name [%s]"),
 
+    //Templating
+    TEMPLATE_MISSING_KEY("Key [%s] not present in data: [%s]"),
+
     //--------------------------------------------- Engine Errors -----------------------------------------------
     NO_CONFIG_FILE("Cannot find config file [%s]"),
     NO_LOG_CONFIG_FILE("It was not possible to find the Logback configuration file [%s]. Default configurations for logging will be used."),
@@ -164,11 +169,12 @@ public enum ErrorMessage {
     FAILED_VALIDATION("Caught exception during validation: %s"),
     NO_PARAMETER_PROVIDED("Required Parameter [%s] is missing for this [%s] operation"),
     NO_CONCEPT_IN_KEYSPACE("No concept with ID [%s] exists in keyspace [%s]"),
+    READ_ONLY_QUERY("Invalid query: [%s]. LoaderClient only accepts queries that mutate the graph."),
 
     //Server Errors
     UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
     MISSING_MANDATORY_REQUEST_PARAMETERS("Missing mandatory query parameter [%s]"),
-    MISSING_POST_REQUEST_BODY("Empty POST body- it should contain the Graql query to be executed."),
+    MISSING_REQUEST_BODY("Empty body- it should contain the Graql query to be executed."),
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
     INVALID_CONTENT_TYPE("Invalid combination of query [%s] and content type [%s]"),
     EXPLAIN_ONLY_MATCH("Cannot get explanation for non-match query, given: [%s]"),
@@ -223,6 +229,7 @@ public enum ErrorMessage {
         this.message = message;
     }
 
+    @CheckReturnValue
     public String getMessage(Object... args) {
         return String.format(message, args);
     }

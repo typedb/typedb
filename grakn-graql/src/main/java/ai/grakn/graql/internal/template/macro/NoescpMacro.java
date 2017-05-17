@@ -32,17 +32,17 @@ import java.util.List;
  *
  * @author alexandraorth
  */
-public class NoescpMacro implements Macro<UnescapedString> {
+public class NoescpMacro implements Macro<Unescaped> {
 
     private static final int numberArguments = 1;
 
     @Override
-    public UnescapedString apply(List<Object> values) {
+    public Unescaped apply(List<Object> values) {
         if(values.size() != numberArguments){
             throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
         }
 
-        return new UnescapedString(values.get(0).toString());
+        return Unescaped.of(values.get(0).toString());
     }
 
     @Override

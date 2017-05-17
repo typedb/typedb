@@ -28,7 +28,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
-import java.util.UUID;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
@@ -38,6 +37,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -92,10 +92,12 @@ public class PostProcessingTest extends GraphTestBase{
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
-        edge.property(Schema.EdgeProperty.ROLE_TYPE_LABEL.name(), mainRoleType.getId());
+        edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleType.getTypeId().getValue());
 
         edge = relation.getVertex().addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
-        edge.property(Schema.EdgeProperty.ROLE_TYPE_LABEL.name(), mainRoleType.getId());
+        edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleType.getTypeId().getValue());
+
+        relation.setHash();
 
         return graknGraph.admin().buildConcept(castingVertex);
     }
@@ -163,11 +165,22 @@ public class PostProcessingTest extends GraphTestBase{
         resourceIds.add(r111.getId());
 
         //Give resources some relationships
-        relationType.addRelation().addRolePlayer(roleResource, r1).addRolePlayer(roleEntity, e1);
-        relationType.addRelation().addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e1); //When merging this relation should not be absorbed
-        relationType.addRelation().addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e2); //Absorb
-        relationType.addRelation().addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e2); //Don't Absorb
-        relationType.addRelation().addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e3); //Absorb
+        RelationImpl rel1 = ((RelationImpl) relationType.addRelation().
+                addRolePlayer(roleResource, r1).addRolePlayer(roleEntity, e1));
+        RelationImpl rel2 = ((RelationImpl) relationType.addRelation().
+                addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e1)); //When merging this relation should not be absorbed
+        RelationImpl rel3 = ((RelationImpl) relationType.addRelation().
+                addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e2)); //Absorb
+        RelationImpl rel4 = ((RelationImpl) relationType.addRelation().
+                addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e2)); //Don't Absorb
+        RelationImpl rel5 = ((RelationImpl) relationType.addRelation().
+                addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e3)); //Absorb
+
+        rel1.setHash();
+        rel2.setHash();
+        rel3.setHash();
+        rel4.setHash();
+        rel5.setHash();
 
         //Check everything is broken
         assertEquals(3, resourceType.instances().size());

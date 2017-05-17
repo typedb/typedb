@@ -70,7 +70,6 @@ public class ClusteringTest {
     private ConceptId entityId2;
     private ConceptId entityId3;
     private ConceptId entityId4;
-    private List<ConceptId> instanceIds;
 
     @ClassRule
     public static final EngineContext context = EngineContext.startInMemoryServer();
@@ -196,9 +195,7 @@ public class ClusteringTest {
         addResourceRelations();
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            long start = System.currentTimeMillis();
             sizeMap = graph.graql().compute().cluster().execute();
-            System.out.println(System.currentTimeMillis() - start + " ms");
             Map<Long, Integer> populationCount00 = new HashMap<>();
             sizeMap.values().forEach(value -> populationCount00.put(value,
                     populationCount00.containsKey(value) ? populationCount00.get(value) + 1 : 1));
@@ -286,7 +283,7 @@ public class ClusteringTest {
             ConceptId relationId24 = relationType.addRelation()
                     .addRolePlayer(role1, entity2)
                     .addRolePlayer(role2, entity4).getId();
-            instanceIds = Lists.newArrayList(entityId1, entityId2, entityId3, entityId4,
+            List<ConceptId> instanceIds = Lists.newArrayList(entityId1, entityId2, entityId3, entityId4,
                     relationId12, relationId23, relationId24);
 
             List<ResourceType> resourceTypeList = new ArrayList<>();

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.client.LoaderClient;
+import ai.grakn.client.BatchMutatorClient;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
@@ -63,7 +63,7 @@ class GraqlClient {
         }
     }
 
-    public LoaderClient loaderClient(String keyspace, String uriString) {
-        return new LoaderClient(keyspace, uriString).setRetryPolicy(true);
+    public BatchMutatorClient loaderClient(String keyspace, String uriString) {
+        return new BatchMutatorClient(keyspace, uriString).setRetryPolicy(true);
     }
 }

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.VarName;
 import ai.grakn.util.Schema;
@@ -38,7 +39,7 @@ class IdFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
         // Whenever looking up by ID, we have to confirm this is not a casting
         traversal.has(Schema.ConceptProperty.ID.name(), id.getValue()).not(__.hasLabel(CASTING.name()));
     }
@@ -70,5 +71,10 @@ class IdFragment extends AbstractFragment {
     @Override
     public double fragmentCost(double previousCost) {
         return 1;
+    }
+
+    @Override
+    public boolean hasFixedFragmentCost() {
+        return true;
     }
 }

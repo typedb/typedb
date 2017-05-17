@@ -34,13 +34,10 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -79,7 +76,8 @@ import static java.util.stream.Collectors.toSet;
 /**
  *
  * <p>
- * Atom implementation defining a relation atom.
+ * Atom implementation defining a relation atom corresponding to a combined {@link RelationProperty}
+ * and (optional) {@link IsaProperty}.
  * </p>
  *
  * @author Kasper Piskorski
@@ -92,16 +90,13 @@ public class Relation extends TypeAtom {
     private Multimap<RoleType, String> roleConceptIdMap = null;
     private Set<RelationPlayer> relationPlayers = null;
 
-
     public Relation(VarAdmin pattern, IdPredicate predicate, ReasonerQuery par) { super(pattern, predicate, par);}
 
     public Relation(VarName name, VarName typeVariable, Map<VarName, Var> roleMap, IdPredicate pred, ReasonerQuery par) {
         super(constructRelationVar(name, typeVariable, roleMap), pred, par);
     }
 
-    private Relation(Relation a) {
-        super(a);
-    }
+    private Relation(Relation a) { super(a);}
 
     @Override
     public String toString(){
@@ -111,7 +106,7 @@ public class Relation extends TypeAtom {
         return relationString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
     }
 
-    public Set<RelationPlayer> getRelationPlayers() {
+    private Set<RelationPlayer> getRelationPlayers() {
         if (relationPlayers == null) {
             relationPlayers = new HashSet<>();
             this.atomPattern.asVar().getProperty(RelationProperty.class)
@@ -259,7 +254,7 @@ public class Relation extends TypeAtom {
         if (roleConceptIdMap != null) return roleConceptIdMap;
         roleConceptIdMap =  ArrayListMultimap.create();
         Map<VarName, IdPredicate> varSubMap = getIdPredicates().stream()
-                .collect(Collectors.toMap(AtomBase::getVarName, pred -> pred));
+                .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
         Multimap<RoleType, VarName> roleMap = getRoleMap();
 
         roleMap.entries().forEach(e -> {
@@ -307,7 +302,7 @@ public class Relation extends TypeAtom {
     /**
      * @return true if any of the relation's role types are meta role types
      */
-    public boolean hasMetaRoles(){
+    private boolean hasMetaRoles(){
         Set<RoleType> parentRoles = getRoleVarTypeMap().keySet();
         for(RoleType role : parentRoles) {
             if (Schema.MetaSchema.isMetaLabel(role.getLabel())) return true;
@@ -380,35 +375,9 @@ public class Relation extends TypeAtom {
         if (type != null) addType(type);
     }
 
-    private void inferRelationTypeFromRelates() {
-        ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-        VarName valueVariable = getValueVariable();
-        TypeAtom hrAtom = parent.getAtoms().stream()
-                .filter(at -> at.getVarName().equals(valueVariable))
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .filter(Atom::isType).map(at -> (TypeAtom) at)
-                .findFirst().orElse(null);
-        if (hrAtom != null) {
-            ReasonerAtomicQuery hrQuery = new ReasonerAtomicQuery(hrAtom);
-            QueryAnswers answers = new QueryAnswers(hrQuery.getMatchQuery().execute());
-            if (answers.size() == 1) {
-                IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
-                        answers.stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
-
-                Relation newRelation = new Relation(getPattern().asVar(), newPredicate, parent);
-                parent.removeAtomic(hrAtom.getPredicate());
-                parent.removeAtomic(hrAtom);
-                parent.removeAtomic(this);
-                parent.addAtomic(newRelation);
-                parent.addAtomic(newPredicate);
-            }
-        }
-    }
-
     @Override
     public void inferTypes() {
         if (getPredicate() == null) inferRelationTypeFromTypes();
-        if (getPredicate() == null) inferRelationTypeFromRelates();
     }
 
     @Override
@@ -659,7 +628,7 @@ public class Relation extends TypeAtom {
                             Set<RoleType> typeRoles = isMetaType? childRoles : new HashSet<>(parentType.plays());
 
                             //incompatible type
-                            if (Sets.intersection(relationRoles, typeRoles).isEmpty()) compatibleChildRoles.clear();
+                            if (Sets.intersection(relationRoles, typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
                             else {
                                 compatibleChildRoles = compatibleChildRoles.stream()
                                         .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || typeRoles.contains(rc))

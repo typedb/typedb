@@ -20,37 +20,38 @@ package ai.grakn.graql.internal.template.macro;
 
 import ai.grakn.graql.macro.Macro;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAccessor;
 import java.util.List;
 
 /**
  * <p>
- * Parse the given value (arg1) using the format (arg2) into another format (arg3).
- * If no second format (arg3) is provided, converts the given value (arg1) into epoch time.
- * Returns a String with the value.
+ * Parse the given value (arg1) using the format (arg2).
+ * Returns a String with the value of the date parsed into {@link DateTimeFormatter#ISO_LOCAL_DATE_TIME} which
+ * is the date format that Graql accepts.
  *
  * Usage:
- *      {@literal @}date("01/30/2017", "mm/dd/yyyy", "dd/mm/yyyy")
  *      {@literal @}date("01/30/2017", "mm/dd/yyyy")
  * </p>
  *
  * @author alexandraorth
  */
-public class DateMacro implements Macro<String> {
+public class DateMacro implements Macro<Unescaped<String>> {
 
     @Override
-    public String apply(List<Object> values) {
-        if(values.size() != 2 && values.size() != 3){
+    public Unescaped<String> apply(List<Object> values) {
+        if(values.size() != 2){
             throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
         }
 
         String originalDate = values.get(0).toString();
         String originalFormat = values.get(1).toString();
-        String newFormat = values.size() == 3 ? values.get(2).toString() : null;
 
-        return convertDateFormat(originalDate, originalFormat, newFormat);
+        return Unescaped.of(convertDateFormat(originalDate, originalFormat));
     }
 
     @Override
@@ -58,22 +59,38 @@ public class DateMacro implements Macro<String> {
         return "date";
     }
 
-    private String convertDateFormat(String originalDate, String originalFormat, String newFormat){
+    private String convertDateFormat(String originalDate, String originalFormat){
         originalFormat = removeQuotes(originalFormat);
 
-        SimpleDateFormat originalDateFormat = new SimpleDateFormat(originalFormat);
-
         try {
-            Date date = originalDateFormat.parse(originalDate);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(originalFormat);
 
-            if (newFormat == null) {
-                return Long.toString(date.getTime());
-            } else {
-                SimpleDateFormat newDateFormat = new SimpleDateFormat(removeQuotes(newFormat));
-                return newDateFormat.format(date);
-            }
-        } catch (ParseException e){
-            throw new IllegalArgumentException("Could not parse date " + originalDate + " using " + originalDateFormat.toPattern());
+            TemporalAccessor parsedDate = formatter.parseBest(
+                    originalDate, LocalDateTime::from, LocalDate::from, LocalTime::from);
+
+            return extractLocalDateTime(parsedDate).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        } catch (IllegalArgumentException e){
+            throw new IllegalArgumentException("Cannot parse date format " + originalFormat + ". See DateTimeFormatter#ofPattern");
+        } catch (DateTimeParseException e){
+            throw new DateTimeParseException("Cannot parse date value " + originalDate + " with format " + originalFormat, e.getParsedString(), e.getErrorIndex());
+        }
+    }
+
+    /**
+     * Extract a {@link LocalDateTime} object from a {@link TemporalAccessor}.
+     * If the given date is a {@link LocalDate}, sets the response to the start of that day.
+     * If the given date is a {@link LocalTime}, sets the response to the current day.
+     *
+     * @param parsedDate The parsed date to convert.
+     * @return A {@link LocalDateTime} object containing a formatted date.
+     */
+    private LocalDateTime extractLocalDateTime(TemporalAccessor parsedDate){
+        if(parsedDate instanceof LocalDate){
+            return ((LocalDate) parsedDate).atStartOfDay();
+        } else if(parsedDate instanceof LocalTime){
+            return ((LocalTime) parsedDate).atDate(LocalDate.now());
+        } else {
+            return LocalDateTime.from(parsedDate);
         }
     }
 
