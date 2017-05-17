@@ -115,8 +115,9 @@ public interface Atomic {
      * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
      * if capture occurs it is marked with a "capture-><name of the captured occurrence>" name
      * @param unifier contain variable mappings to be applied
+     * @return unified atomic
      */
-    void unify(Unifier unifier);
+    Atomic unify(Unifier unifier);
 
     @CheckReturnValue
     Var getVarName();

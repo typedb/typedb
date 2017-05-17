@@ -28,7 +28,6 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
@@ -41,7 +40,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -108,32 +107,6 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
         assertEquals(atomicQuery, copy);
         assertEquals(atomicQuery.hashCode(), copy.hashCode());
-    }
-
-    @Test
-    public void testWhenModifyingAQuery_TheCopyDoesNotChange(){
-        GraknGraph graph = snbGraph.graph();
-        String patternString = "{(recommended-product: $x, recommended-customer: $y) isa recommendation;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
-        ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
-
-        atomicQuery.unify(new UnifierImpl(ImmutableMap.of(Var.of("y"), Var.of("z"))));
-        MatchQuery q1 = atomicQuery.getMatchQuery();
-        MatchQuery q2 = copy.getMatchQuery();
-        assertNotEquals(q1, q2);
-    }
-
-    @Test
-    public void testWhenCopyingAQuery_TheyHaveTheSameRoleVarTypeMaps(){
-        GraknGraph graph = snbGraph.graph();
-        String patternString = "{(recommended-product: $x, recommended-customer: $y) isa recommendation;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
-        ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
-
-        atomicQuery.unify(new UnifierImpl(ImmutableMap.of(Var.of("y"), Var.of("z"))));
-        assertEquals(ReasonerQueries.atomic(conjunction(patternString, graph), snbGraph.graph()).getAtom().getRoleVarTypeMap(), copy.getAtom().getRoleVarTypeMap());
     }
 
     @Test
@@ -207,26 +180,6 @@ public class AtomicQueryTest {
         assertEquals(query2.getAtom().isUserDefinedName(), true);
         assertEquals(query.getAtoms().size(), 1);
         assertEquals(query2.getAtoms().size(), 2);
-    }
-
-    @Test //basic unification test based on mapping variables to corresponding roles together with checking copied atom is not affected
-    public void testWhenUnifiying_CopyIsNotAffected(){
-        GraknGraph graph = geoGraph.graph();
-        String parentString = "{(entity-location: $y, geo-entity: $y1), isa is-located-in;}";
-        String childString = "{(geo-entity: $y1, entity-location: $y2), isa is-located-in;}";
-
-        ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction(parentString, graph), graph);
-        ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction(childString, graph), graph);
-
-        Atomic childAtom = childQuery.getAtom();
-        Atomic parentAtom = parentQuery.getAtom();
-
-        Unifier unifiers = childAtom.getUnifier(parentAtom);
-
-        ReasonerAtomicQuery childCopy = ReasonerQueries.atomic(childQuery);
-        childCopy.unify(unifiers);
-        Atomic childAtomCopy = childCopy.getAtom();
-        assertNotEquals(childAtomCopy, childAtom);
     }
 
     @Test

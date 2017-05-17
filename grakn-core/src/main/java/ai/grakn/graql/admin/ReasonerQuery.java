@@ -79,13 +79,6 @@ public interface ReasonerQuery{
     boolean isRuleResolvable();
 
     /**
-     * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
-     * @param unifier (variable mappings) to be applied
-     * @return union of the entry unifier and the unifier used to resolve potential captures
-     */
-    Unifier unify(Unifier unifier);
-
-    /**
      * @param parent query to unify wth
      * @return unifier such that this and parent are equal
      */

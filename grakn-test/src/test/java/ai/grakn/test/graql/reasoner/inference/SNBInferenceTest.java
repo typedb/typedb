@@ -24,7 +24,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
 import org.junit.Rule;
