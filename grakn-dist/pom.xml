@@ -185,13 +185,24 @@
                         <goals>
                             <goal>exec</goal>
                         </goals>
+                        <configuration>
+                            <skip>${grakn.skip-bash-tests}</skip>
+                            <workingDirectory>${main.basedir}/grakn-dist/src/test/bash</workingDirectory>
+                            <executable>${main.basedir}/grakn-dist/src/test/bash/bash-startup-test.sh</executable>
+                        </configuration>
+                    </execution>
+                    <execution><!-- Get redis, compile it and package into the distribution -->
+                        <id>redis-packager</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${main.basedir}/grakn-dist/src/main/bash/get-redis.sh</executable>
+                            <workingDirectory>${main.basedir}/grakn-dist/target/redis</workingDirectory>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <skip>${grakn.skip-bash-tests}</skip>
-                    <workingDirectory>${main.basedir}/grakn-dist/src/test/bash</workingDirectory>
-                    <executable>${main.basedir}/grakn-dist/src/test/bash/bash-startup-test.sh</executable>
-                </configuration>
             </plugin>
         </plugins>
     </build>
