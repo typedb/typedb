@@ -92,7 +92,6 @@ public interface Answer {
     @CheckReturnValue
     Answer merge(Answer a2);
 
-
     /**
      * perform an answer merge with optional explanation
      * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
@@ -132,6 +131,9 @@ public interface Answer {
      */
     Stream<Answer> permute(Set<Unifier> unifierSet);
 
+    /**
+     * @return an explanation object indicating how this answer was obtained
+     */
     @CheckReturnValue
     AnswerExplanation getExplanation();
 

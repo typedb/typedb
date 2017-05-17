@@ -69,7 +69,7 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         LOG.trace("CQ: " + query);
         LOG.trace("CQ delta: " + sub);
         LOG.trace("CQ plan: " + query.getResolutionPlan());
-        
+
         this.atomicQueryIterator = new ReasonerAtomicQuery(topAtom).iterator(new QueryAnswer(), subGoals, cache);
         this.queryPrime = ReasonerQueries.prime(query, topAtom);
     }

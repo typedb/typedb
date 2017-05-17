@@ -88,8 +88,9 @@ public abstract class MultiPredicateBinary<T extends Predicate> extends BinaryBa
     }
 
     @Override
-    public void unify (Unifier unifier) {
+    public Atomic unify (Unifier unifier) {
         super.unify(unifier);
         multiPredicate.forEach(predicate -> predicate.unify(unifier));
+        return this;
     }
 }

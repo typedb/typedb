@@ -39,7 +39,7 @@ import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
@@ -100,7 +100,7 @@ public class Relation extends TypeAtom {
 
     @Override
     public String toString(){
-        String relationString = (isUserDefinedName()? getVarName() + " ": " ") +
+        String relationString = (isUserDefinedName()? getVarName() + " ": "") +
                         (getType() != null? getType().getLabel() : "") +
                         getRelationPlayers().toString();
         return relationString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
@@ -381,19 +381,20 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public void unify(Unifier mappings) {
-        super.unify(mappings);
+    public Atomic unify(Unifier u) {
+        super.unify(u);
         modifyRelationPlayers(c -> {
             VarName var = c.getRolePlayer().getVarName();
-            if (mappings.containsKey(var)) {
-                VarName target = mappings.get(var);
+            if (u.containsKey(var)) {
+                VarName target = u.get(var);
                 return c.setRolePlayer(c.getRolePlayer().setVarName(target));
-            } else if (mappings.containsValue(var)) {
+            } else if (u.containsValue(var)) {
                 return c.setRolePlayer(c.getRolePlayer().setVarName(capture(var)));
             } else {
                 return c;
             }
         });
+        return this;
     }
 
     @Override

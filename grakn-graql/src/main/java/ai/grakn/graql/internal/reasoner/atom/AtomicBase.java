@@ -25,7 +25,8 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
@@ -108,13 +109,14 @@ public abstract class AtomicBase implements Atomic {
      * @param unifier contain variable mappings to be applied
      */
     @Override
-    public void unify(Unifier unifier){
+    public Atomic unify(Unifier unifier){
         VarName var = getVarName();
         if (unifier.containsKey(var)) {
             setVarName(unifier.get(var));
         } else if (unifier.containsValue(var)) {
             setVarName(capture(var));
         }
+        return this;
     }
 
     /**

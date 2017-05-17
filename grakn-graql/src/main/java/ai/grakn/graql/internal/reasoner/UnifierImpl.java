@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.query;
+package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Unifier;
@@ -41,6 +41,9 @@ public class UnifierImpl implements Unifier {
     //TODO turn it to multimap to accommodate all cases
     private final Map<VarName, VarName> unifier = new HashMap<>();
 
+    /**
+     * Identity unifier.
+     */
     public UnifierImpl(){}
     public UnifierImpl(Map<VarName, VarName> map){
         unifier.putAll(map);
@@ -88,7 +91,7 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Set<Map.Entry<VarName, VarName>> getMappings(){ return unifier.entrySet();}
+    public Set<Map.Entry<VarName, VarName>> mappings(){ return unifier.entrySet();}
 
     public VarName addMapping(VarName key, VarName value){
         return unifier.put(key, value);
@@ -110,7 +113,7 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public boolean containsAll(Unifier u) { return getMappings().containsAll(u.getMappings());}
+    public boolean containsAll(Unifier u) { return mappings().containsAll(u.mappings());}
 
     @Override
     public Unifier merge(Unifier d) {
@@ -129,7 +132,7 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Unifier invert() {
+    public Unifier inverse() {
         return new UnifierImpl(
                 unifier.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey))
