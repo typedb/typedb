@@ -29,9 +29,11 @@ import org.apache.curator.framework.CuratorFramework;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.junit.rules.ExpectedException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,6 +45,9 @@ import static org.mockito.Mockito.when;
 public class LockProviderTest {
 
     private final String LOCK_NAME = "lock";
+
+    @Rule
+    public final SystemOutRule systemOut = new SystemOutRule().enableLog();
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -73,10 +78,9 @@ public class LockProviderTest {
     public void whenInstantiatedTwice_ThrowsRuntimeException(){
         LockProvider.instantiate((string) -> new NonReentrantLock());
 
-        exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(ErrorMessage.LOCK_ALREADY_INSTANTIATED.getMessage());
-
         LockProvider.instantiate((string) -> new NonReentrantLock());
+
+        assertThat(systemOut.getLog(), containsString(ErrorMessage.LOCK_ALREADY_INSTANTIATED.getMessage()));
     }
 
     @Test

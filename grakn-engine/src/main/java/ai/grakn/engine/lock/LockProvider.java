@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -38,6 +40,8 @@ import java.util.function.Function;
  */
 public class LockProvider {
 
+    private final static Logger LOG = LoggerFactory.getLogger(LockProvider.class);
+
     private static Function<String, Lock> lockProvider;
     private static Map<String, Lock> locks = new ConcurrentHashMap<>();
 
@@ -49,7 +53,7 @@ public class LockProvider {
             return;
         }
 
-        throw new IllegalArgumentException(ErrorMessage.LOCK_ALREADY_INSTANTIATED.getMessage());
+        LOG.warn(ErrorMessage.LOCK_ALREADY_INSTANTIATED.getMessage());
     }
 
     /**
