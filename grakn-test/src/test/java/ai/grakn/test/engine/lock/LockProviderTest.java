@@ -22,7 +22,9 @@ import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.lock.ZookeeperLock;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.util.ErrorMessage;
 import java.util.concurrent.locks.Lock;
+import java.util.function.Function;
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.After;
 import org.junit.Rule;
@@ -31,7 +33,11 @@ import org.junit.rules.ExpectedException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class LockProviderTest {
@@ -47,23 +53,65 @@ public class LockProviderTest {
     }
 
     @Test
-    public void whenGivenReentrantLock_ReturnsReentrantLock(){
-        Lock lock = new NonReentrantLock();
+    public void whenGivenLock_ReturnsLockWithSameClass(){
+        LockProvider.instantiate((string) -> new NonReentrantLock());
 
-        LockProvider.add(LOCK_NAME, () -> lock);
-
-        assertThat(LockProvider.getLock(LOCK_NAME), equalTo(lock));
+        assertThat(LockProvider.getLock(LOCK_NAME).getClass(), equalTo(NonReentrantLock.class));
     }
 
     @Test
-    public void whenGivenZKReentrantLock_ReturnsZKReentrantLock(){
+    public void whenGivenZKReentrantLock_ReturnsLockWithZkReentrantClass(){
         ZookeeperConnection zookeeperConnection = mock(ZookeeperConnection.class);
         when(zookeeperConnection.connection()).thenReturn(mock(CuratorFramework.class));
 
-        Lock lock = new ZookeeperLock(zookeeperConnection, "/lock");
+        LockProvider.instantiate((lockPath) -> new ZookeeperLock(zookeeperConnection, lockPath));
 
-        LockProvider.add(LOCK_NAME, () -> lock);
+        assertThat(LockProvider.getLock("/" + LOCK_NAME).getClass(), equalTo(ZookeeperLock.class));
+    }
 
-        assertThat(LockProvider.getLock(LOCK_NAME), equalTo(lock));
+    @Test
+    public void whenInstantiatedTwice_ThrowsRuntimeException(){
+        LockProvider.instantiate((string) -> new NonReentrantLock());
+
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(ErrorMessage.LOCK_ALREADY_INSTANTIATED.getMessage());
+
+        LockProvider.instantiate((string) -> new NonReentrantLock());
+    }
+
+    @Test
+    public void whenInstantiatedTwiceWithClear_ReturnsLock(){
+        LockProvider.instantiate((String string) -> new NonReentrantLock());
+
+        LockProvider.clear();
+
+        LockProvider.instantiate((string) -> new NonReentrantLock());
+
+        assertNotNull(LockProvider.getLock(LOCK_NAME));
+    }
+
+    @Test
+    public void whenGettingLockWithDifferentKeys_LockProviderFunctionCalledTwice(){
+        Function<String, Lock> lockProviderFunction = mock(Function.class);
+        LockProvider.instantiate((string) -> lockProviderFunction.apply(string));
+        when(lockProviderFunction.apply(any())).thenReturn(new NonReentrantLock());
+
+        LockProvider.getLock(LOCK_NAME + "1");
+        LockProvider.getLock(LOCK_NAME + "2");
+
+        verify(lockProviderFunction, times(2)).apply(any());
+    }
+
+    @Test
+    public void whenGettingLockWithSameKey_LockProviderFunctionCalledOnce(){
+        Function<String, Lock> lockProviderFunction = mock(Function.class);
+        when(lockProviderFunction.apply(any())).thenReturn(new NonReentrantLock());
+
+        LockProvider.instantiate((string) -> lockProviderFunction.apply(string));
+
+        LockProvider.getLock(LOCK_NAME + "1");
+        LockProvider.getLock(LOCK_NAME + "1");
+
+        verify(lockProviderFunction, times(1)).apply(any());
     }
 }
