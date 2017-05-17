@@ -125,25 +125,22 @@ public class StandaloneTaskManager implements TaskManager {
 
         try {
 
-            // Task has not been run- Mark the task as stopped and it will not run when picked up by the executor
             if (taskShouldRun(state)) {
+                // Task has not been run- Mark the task as stopped and it will not run when picked up by the executor
                 LOG.info("Stopping a currently scheduled task {}", id);
 
                 state.markStopped();
-            }
+            } else if (state.status() == TaskStatus.RUNNING && runningTasks.containsKey(id)) {
+                // Kill the currently running task if it is running
 
-            // Kill the currently running task if it is running
-            else if (state.status() == TaskStatus.RUNNING && runningTasks.containsKey(id)) {
                 LOG.info("Stopping running task {}", id);
 
                 // Stop the task
                 runningTasks.get(id).stop();
 
                 state.markStopped();
-            }
-
-            // Nothing was stopped, warn the user
-            else {
+            } else {
+                // Nothing was stopped, warn the user
                 LOG.warn("Task not running {}, was not stopped", id);
             }
         } finally {
