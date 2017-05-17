@@ -175,10 +175,11 @@ public class QueryAnswer implements Answer {
                 .forEach(e -> {
                     VarName var = e.getKey();
                     Collection<VarName> uvars = unifier.get(var);
-                    if (uvars.isEmpty())
+                    if (uvars.isEmpty()) {
                         answerMultimap.put(var, e.getValue());
-                    else
+                    } else {
                         uvars.forEach(uv -> answerMultimap.put(uv, e.getValue()));
+                    }
                 });
         //non-ambiguous mapping
         if ( answerMultimap.keySet().size() == answerMultimap.values().size()) {
