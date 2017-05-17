@@ -243,7 +243,7 @@ public class ClusteringTest {
         for (long i = 0L; i < 4L; i++) {
             list.add(i);
         }
-        GraknSparkComputer.clear();
+
         list.parallelStream().forEach(i -> {
             try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
                 Map<String, Long> sizeMap1 = Graql.compute().withGraph(graph).cluster().execute();

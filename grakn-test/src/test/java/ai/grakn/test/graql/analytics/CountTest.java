@@ -44,7 +44,6 @@ public class CountTest {
     public static final EngineContext rule = EngineContext.startInMemoryServer();
 
     private GraknSession factory;
-    private GraknGraph graph;
 
     @Before
     public void setUp() {
@@ -52,53 +51,56 @@ public class CountTest {
         assumeFalse(usingOrientDB());
 
         factory = rule.factoryWithNewKeyspace();
-        graph = factory.open(GraknTxType.WRITE);
     }
 
     @Test
-    public void testCount() throws Exception {
-        // assert the graph is empty
-        long startTime = System.currentTimeMillis();
-        Assert.assertEquals(0L, Graql.compute().count().withGraph(graph).execute().longValue());
-        System.out.println(System.currentTimeMillis() - startTime + " ms");
-        Assert.assertEquals(0L, graph.graql().compute().count().execute().longValue());
-
-        // create 3 instances
+    public void testCountAfterCommit() throws Exception {
         String nameThing = "thing";
         String nameAnotherThing = "another";
-        EntityType thing = graph.putEntityType(nameThing);
-        EntityType anotherThing = graph.putEntityType(nameAnotherThing);
-        thing.addEntity();
-        thing.addEntity();
-        anotherThing.addEntity();
-        graph.commit();
-        graph = factory.open(GraknTxType.WRITE);
 
-        // assert computer returns the correct count of instances
-        startTime = System.currentTimeMillis();
-        Assert.assertEquals(2L,
-                graph.graql().compute().count().in(Collections.singleton(TypeLabel.of(nameThing))).execute().longValue());
-        System.out.println(System.currentTimeMillis() - startTime + " ms");
-        startTime = System.currentTimeMillis();
-        Assert.assertEquals(2L,
-                Graql.compute().withGraph(graph).count().in(nameThing).execute().longValue());
-        System.out.println(System.currentTimeMillis() - startTime + " ms");
+        // assert the graph is empty
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            long startTime = System.currentTimeMillis();
+            Assert.assertEquals(0L, Graql.compute().count().withGraph(graph).execute().longValue());
+            System.out.println(System.currentTimeMillis() - startTime + " ms");
+            Assert.assertEquals(0L, graph.graql().compute().count().execute().longValue());
+        }
 
-        startTime = System.currentTimeMillis();
-        Assert.assertEquals(3L, graph.graql().compute().count().execute().longValue());
-        System.out.println(System.currentTimeMillis() - startTime + " ms");
+        // add 2 instances
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+            EntityType thing = graph.putEntityType(nameThing);
+            thing.addEntity().getId();
+            thing.addEntity().getId();
+            graph.commit();
+        }
+
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            Assert.assertEquals(2L,
+                    Graql.compute().withGraph(graph).count().in(nameThing).execute().longValue());
+        }
+
+        // create 1 more, rdd is refreshed
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+            EntityType anotherThing = graph.putEntityType(nameAnotherThing);
+            anotherThing.addEntity().getId();
+            graph.commit();
+        }
+
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            // assert computer returns the correct count of instances
+            Assert.assertEquals(2L,
+                    Graql.compute().withGraph(graph).count().in(nameThing).execute().longValue());
+            Assert.assertEquals(3L, graph.graql().compute().count().execute().longValue());
+            GraknSparkComputer.clear();
+            Assert.assertEquals(3L, Graql.compute().count().withGraph(graph).execute().longValue());
+        }
+
         GraknSparkComputer.clear();
-        startTime = System.currentTimeMillis();
-        Assert.assertEquals(3L, Graql.compute().count().withGraph(graph).execute().longValue());
-        System.out.println(System.currentTimeMillis() - startTime + " ms");
-
         List<Long> list = new ArrayList<>(4);
         for (long i = 0L; i < 4L; i++) {
             list.add(i);
         }
-        GraknSparkComputer.clear();
 
-        graph.close();
         // running 4 jobs at the same time
         list.parallelStream()
                 .map(i -> executeCount(factory))
@@ -106,11 +108,12 @@ public class CountTest {
         list.parallelStream()
                 .map(i -> executeCount(factory))
                 .forEach(i -> Assert.assertEquals(3L, i.longValue()));
+
     }
-    private Long executeCount(GraknSession factory){
-        GraknGraph graph = factory.open(GraknTxType.READ);
-        Long result = graph.graql().compute().count().execute();
-        graph.close();
-        return result;
+
+    private Long executeCount(GraknSession factory) {
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            return graph.graql().compute().count().execute();
+        }
     }
 }
