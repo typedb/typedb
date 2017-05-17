@@ -39,10 +39,14 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class ZookeeperLock implements Lock {
 
     private final String[] illegalZKCharacters = {
-            "\u0000","[\u0001-\u0019]","[\u007F-\u009F]",
-            "[\ud800-\uF8FF]","[\uFFF0-\uFFFF]",
-            "\\.","\\..",
-            Pattern.quote("zookeeper")};
+            "\u0000",
+            "[\u0001-\u0019]",
+            "[\u007F-\u009F]",
+            "[\ud800-\uF8FF]",
+            "[\uFFF0-\uFFFF]",
+            "\\.",
+            "\\..",
+            Pattern.quote("zookeeper")}; //remove these characters
 
     private final String lockPath;
     private final InterProcessSemaphoreMutex mutex;
