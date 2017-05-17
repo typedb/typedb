@@ -61,7 +61,7 @@ public class UnifierImpl implements Unifier {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         UnifierImpl u2 = (UnifierImpl) obj;
-        return unifier.equals(u2.map());
+        return this.map().equals(u2.map());
     }
 
     @Override
