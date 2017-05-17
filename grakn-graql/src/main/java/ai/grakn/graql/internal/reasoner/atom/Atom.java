@@ -24,7 +24,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -61,7 +61,7 @@ public abstract class Atom extends AtomicBase {
     protected ConceptId typeId = null;
     protected int priority = Integer.MAX_VALUE;
 
-    protected Atom(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
+    protected Atom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
         super(a);
         this.type = a.type;

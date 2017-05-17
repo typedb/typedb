@@ -22,7 +22,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
@@ -50,8 +50,8 @@ import java.util.stream.Collectors;
  */
 public class TypeAtom extends Binary{
 
-    public TypeAtom(VarAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
-    public TypeAtom(VarAdmin pattern, IdPredicate p, ReasonerQuery par) { super(pattern, p, par);}
+    public TypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
+    public TypeAtom(VarPatternAdmin pattern, IdPredicate p, ReasonerQuery par) { super(pattern, p, par);}
     protected TypeAtom(TypeAtom a) { super(a);}
 
     @Override
@@ -66,7 +66,7 @@ public class TypeAtom extends Binary{
     }
 
     @Override
-    protected VarName extractValueVariableName(VarAdmin var) {
+    protected VarName extractValueVariableName(VarPatternAdmin var) {
         return var.getProperties().findFirst().get().getInnerVars().findFirst().get().getVarName();
     }
 

@@ -19,10 +19,10 @@
 package ai.grakn.graql.internal.query.predicate;
 
 import ai.grakn.concept.ResourceType;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -41,7 +41,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
     private final Optional<Object> originalValue;
     private final Optional<Object> value;
-    private final Optional<VarAdmin> var;
+    private final Optional<VarPatternAdmin> var;
 
     private static final String[] VALUE_PROPERTIES =
             SUPPORTED_TYPES.values().stream()
@@ -54,10 +54,10 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
      * @param value the value that this predicate is testing against
      */
     ComparatorPredicate(Object value) {
-        if (value instanceof VarAdmin) {
+        if (value instanceof VarPatternAdmin) {
             this.originalValue = Optional.empty();
             this.value = Optional.empty();
-            this.var = Optional.of((VarAdmin) value);
+            this.var = Optional.of((VarPatternAdmin) value);
         } else {
             // Convert integers to longs for consistency
             if (value instanceof Integer) {
@@ -81,7 +81,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
     /**
      * @param var the variable that this predicate is testing against
      */
-    ComparatorPredicate(Var var) {
+    ComparatorPredicate(VarPattern var) {
         this.originalValue = Optional.empty();
         this.value = Optional.empty();
         this.var = Optional.of(var.admin());
@@ -132,7 +132,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
     }
 
     @Override
-    public Optional<VarAdmin> getInnerVar() {
+    public Optional<VarPatternAdmin> getInnerVar() {
         return var;
     }
 

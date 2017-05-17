@@ -31,7 +31,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -94,7 +94,7 @@ public class AtomicQueryTest {
     @Test
     public void testWhenConstructingNonAtomicQuery_ExceptionIsThrown() {
         String patternString = "{$x isa person;$y isa product;($x, $y) isa recommendation;($y, $t) isa typing;}";
-        Conjunction<VarAdmin> pattern = conjunction(patternString, snbGraph.graph());
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, snbGraph.graph());
         exception.expect(IllegalStateException.class);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, snbGraph.graph());
     }
@@ -102,7 +102,7 @@ public class AtomicQueryTest {
     @Test
     public void testWhenCopying_TheCopyIsAlphaEquivalent(){
         String patternString = "{($x, $y) isa recommendation;}";
-        Conjunction<VarAdmin> pattern = conjunction(patternString, snbGraph.graph());
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, snbGraph.graph());
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, snbGraph.graph());
         ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
         assertEquals(atomicQuery, copy);
@@ -117,7 +117,7 @@ public class AtomicQueryTest {
         assertTrue(!qb.<MatchQuery>parse(explicitQuery).ask().execute());
 
         String patternString = "{(recommended-customer: $x, recommended-product: $y) isa recommendation;}";
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         QueryAnswers answers = new QueryAnswers();
 
         answers.add(new QueryAnswer(
@@ -172,8 +172,8 @@ public class AtomicQueryTest {
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{($x, $y) relates geo-entity;}";
         GraknGraph graph = geoGraph.graph();
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
         ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
         assertEquals(query.getAtom().isUserDefinedName(), false);
@@ -186,7 +186,7 @@ public class AtomicQueryTest {
     public void testWhenUnifiyingAtomWithItself_UnifierIsTrivial(){
         String patternString = "{$x isa country;($x, $y) isa is-enemy-of;$y isa country;}";
         GraknGraph graph = cwGraph.graph();
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern, graph);
         Unifier unifier = childQuery.getUnifier(parentQuery);
@@ -198,8 +198,8 @@ public class AtomicQueryTest {
         GraknGraph graph =  unificationWithTypesSet.graph();
         String patternString = "{$x1 isa entity1;($x1, $x2) isa binary;}";
         String patternString2 = "{$y1 isa entity1;($y1, $y2) isa binary;}";
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
         Unifier unifier = childQuery.getUnifier(parentQuery);
@@ -215,8 +215,8 @@ public class AtomicQueryTest {
         GraknGraph graph =  unificationWithTypesSet.graph();
         String patternString = "{$x1 isa entity1;$x2 isa entity2;($x1, $x2) isa binary;}";
         String patternString2 = "{$y1 isa entity1;$y2 isa entity2;($y1, $y2) isa binary;}";
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
         Unifier unifier = childQuery.getUnifier(parentQuery);
@@ -233,9 +233,9 @@ public class AtomicQueryTest {
         String patternString = "{$x1 isa entity3;$x3 isa entity5;($x1, $x2, $x3) isa ternary;}";
         String patternString2 = "{$y3 isa entity5;$y1 isa entity3;($y2, $y3, $y1) isa ternary;}";
         String patternString3 = "{$y3 isa entity5;$y2 isa entity4;$y1 isa entity3;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
-        Conjunction<VarAdmin> pattern3 = conjunction(patternString3, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
         ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(pattern3, graph);
@@ -256,9 +256,9 @@ public class AtomicQueryTest {
         String patternString = "{$x1 isa entity3;$x2 isa entity4; $x3 isa entity5;($x1, $x2, $x3) isa ternary;}";
         String patternString2 = "{$y3 isa entity5;$y2 isa entity4;$y1 isa entity3;($y2, $y3, $y1) isa ternary;}";
         String patternString3 = "{$y3 isa entity5;$y2 isa entity4;$y1 isa entity3;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
-        Conjunction<VarAdmin> pattern3 = conjunction(patternString3, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
         ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(pattern3, graph);
@@ -279,9 +279,9 @@ public class AtomicQueryTest {
         String patternString = "{$x1 isa entity5;$x2 isa entity6; $x3 isa entity7;($x1, $x2, $x3) isa ternary;}";
         String patternString2 = "{$y3 isa entity7;$y2 isa entity6;$y1 isa entity5;($y2, $y3, $y1) isa ternary;}";
         String patternString3 = "{$y3 isa entity7;$y2 isa entity6;$y1 isa entity5;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
-        Conjunction<VarAdmin> pattern3 = conjunction(patternString3, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
         ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(pattern3, graph);
@@ -296,15 +296,15 @@ public class AtomicQueryTest {
         assertTrue(unifier2.containsAll(correctUnifier));
     }
 
-    private Conjunction<VarAdmin> conjunction(PatternAdmin pattern){
-        Set<VarAdmin> vars = pattern
+    private Conjunction<VarPatternAdmin> conjunction(PatternAdmin pattern){
+        Set<VarPatternAdmin> vars = pattern
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);
     }
 
-    private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){
-        Set<VarAdmin> vars = graph.graql().parsePattern(patternString).admin()
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknGraph graph){
+        Set<VarPatternAdmin> vars = graph.graql().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

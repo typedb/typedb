@@ -26,7 +26,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
@@ -51,15 +51,15 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getIdPredicate;
  */
 public class PlaysProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final VarAdmin role;
+    private final VarPatternAdmin role;
     private final boolean required;
 
-    public PlaysProperty(VarAdmin role, boolean required) {
+    public PlaysProperty(VarPatternAdmin role, boolean required) {
         this.role = role;
         this.required = required;
     }
 
-    public VarAdmin getRole() {
+    public VarPatternAdmin getRole() {
         return role;
     }
 
@@ -79,12 +79,12 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
     }
 
     @Override
-    public Stream<VarAdmin> getTypes() {
+    public Stream<VarPatternAdmin> getTypes() {
         return Stream.of(role);
     }
 
     @Override
-    public Stream<VarAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> getInnerVars() {
         return Stream.of(role);
     }
 
@@ -119,13 +119,13 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
     }
 
     @Override
-    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         VarName varName = var.getVarName();
-        VarAdmin typeVar = this.getRole();
+        VarPatternAdmin typeVar = this.getRole();
         VarName typeVariable = typeVar.getVarName();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
-        VarAdmin resVar = Graql.var(varName).plays(Graql.var(typeVariable)).admin();
+        VarPatternAdmin resVar = Graql.var(varName).plays(Graql.var(typeVariable)).admin();
         return new TypeAtom(resVar, predicate, parent);
     }
 }

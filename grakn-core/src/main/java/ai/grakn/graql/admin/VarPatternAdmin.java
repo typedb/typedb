@@ -20,7 +20,7 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.VarName;
 
 import javax.annotation.CheckReturnValue;
@@ -31,18 +31,18 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 /**
- * Admin class for inspecting a Var
+ * Admin class for inspecting a {@link VarPattern}
  *
  * @author Felix Chapman
  */
-public interface VarAdmin extends PatternAdmin, Var {
+public interface VarPatternAdmin extends PatternAdmin, VarPattern {
     @Override
     default boolean isVar() {
         return true;
     }
 
     @Override
-    default VarAdmin asVar() {
+    default VarPatternAdmin asVar() {
         return this;
     }
 
@@ -56,7 +56,7 @@ public interface VarAdmin extends PatternAdmin, Var {
      * @param name the new variable name of this variable
      */
     @CheckReturnValue
-    VarAdmin setVarName(VarName name);
+    VarPatternAdmin setVarName(VarName name);
 
     /**
      * @return whether the user specified a name for this variable
@@ -87,23 +87,23 @@ public interface VarAdmin extends PatternAdmin, Var {
     <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type);
 
     /**
-     * Get whether this {@link Var} has a {@link VarProperty} of the given type
+     * Get whether this {@link VarPattern} has a {@link VarProperty} of the given type
      * @param type the type of the {@link VarProperty}
      * @param <T> the type of the {@link VarProperty}
-     * @return whether this {@link Var} has a {@link VarProperty} of the given type
+     * @return whether this {@link VarPattern} has a {@link VarProperty} of the given type
      */
     @CheckReturnValue
     <T extends VarProperty> boolean hasProperty(Class<T> type);
 
-    // TODO: If `VarAdmin#setVarName` is removed, this may no longer be necessary
+    // TODO: If `VarPatternAdmin#setVarName` is removed, this may no longer be necessary
     /**
-     * Return this {@link Var} with instances of the given {@link VarProperty} modified.
+     * Return this {@link VarPattern} with instances of the given {@link VarProperty} modified.
      * @param type the type of the {@link VarProperty}
      * @param <T> the type of the {@link VarProperty}
-     * @return whether this {@link Var} has a {@link VarProperty} of the given type
+     * @return whether this {@link VarPattern} has a {@link VarProperty} of the given type
      */
     @CheckReturnValue
-    <T extends VarProperty> VarAdmin mapProperty(Class<T> type, UnaryOperator<T> mapper);
+    <T extends VarProperty> VarPatternAdmin mapProperty(Class<T> type, UnaryOperator<T> mapper);
 
     /**
      * @return the ID this variable represents, if it represents something with a specific ID
@@ -121,13 +121,13 @@ public interface VarAdmin extends PatternAdmin, Var {
      * @return all variables that this variable references
      */
     @CheckReturnValue
-    Collection<VarAdmin> getInnerVars();
+    Collection<VarPatternAdmin> getInnerVars();
 
     /**
      * Get all inner variables, including implicit variables such as in a has property
      */
     @CheckReturnValue
-    Collection<VarAdmin> getImplicitInnerVars();
+    Collection<VarPatternAdmin> getImplicitInnerVars();
 
     /**
      * @return all type names that this variable refers to
