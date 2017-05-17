@@ -201,7 +201,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
         LOG.info("Starting ResourceDeduplicationTask : " + configuration.json());
         
-        String keyspace = configuration.json().at("keyspace", KEYSPACE_DEFAULT).asString();
+        String keyspace = configuration.json().at(KEYSPACE_CONFIG, KEYSPACE_DEFAULT).asString();
         GraknComputer computer = Grakn.session(Grakn.DEFAULT_URI, keyspace).getGraphComputer();
         Job job = new Job().keyspace(keyspace)
                            .deleteUnattached(configuration.json().at("deletedUnattached", DELETE_UNATTACHED_DEFAULT ).asBoolean());
