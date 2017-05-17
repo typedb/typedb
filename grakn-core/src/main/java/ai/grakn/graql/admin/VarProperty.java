@@ -18,11 +18,12 @@
 
 package ai.grakn.graql.admin;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * A property of a {@link VarAdmin}, such as "isa movie" or "has name 'Jim'"
+ * A property of a {@link VarPatternAdmin}, such as "isa movie" or "has name 'Jim'"
  *
  * @author Felix Chapman
  */
@@ -37,6 +38,7 @@ public interface VarProperty {
     /**
      * Get the Graql string representation of this property
      */
+    @CheckReturnValue
     default String graqlString() {
         StringBuilder builder = new StringBuilder();
         buildString(builder);
@@ -44,34 +46,39 @@ public interface VarProperty {
     }
 
     /**
-     * Get a stream of {@link VarAdmin} that must be types.
+     * Get a stream of {@link VarPatternAdmin} that must be types.
      */
-    Stream<VarAdmin> getTypes();
+    @CheckReturnValue
+    Stream<VarPatternAdmin> getTypes();
 
     /**
-     * Get a stream of any inner {@link VarAdmin} within this `VarProperty`.
+     * Get a stream of any inner {@link VarPatternAdmin} within this `VarProperty`.
      */
-    Stream<VarAdmin> getInnerVars();
+    @CheckReturnValue
+    Stream<VarPatternAdmin> getInnerVars();
 
     /**
-     * Get a stream of any inner {@link VarAdmin} within this `VarProperty`, including any that may have been
+     * Get a stream of any inner {@link VarPatternAdmin} within this `VarProperty`, including any that may have been
      * implicitly created (such as with "has").
      */
-    Stream<VarAdmin> getImplicitInnerVars();
+    @CheckReturnValue
+    Stream<VarPatternAdmin> getImplicitInnerVars();
 
     /**
-     * True if there is at most one of these properties for each {@link VarAdmin}
+     * True if there is at most one of these properties for each {@link VarPatternAdmin}
      */
+    @CheckReturnValue
     default boolean isUnique() {
         return false;
     }
 
     /**
      * maps this var property to a reasoner atom
-     * @param var VarAdmin this property belongs to
+     * @param var {@link VarPatternAdmin} this property belongs to
      * @param vars VarAdmins constituting the pattern this property belongs to
      * @param parent reasoner query this atom should belong to
      * @return created atom
      */
-    Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent);
+    @CheckReturnValue
+    Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent);
 }

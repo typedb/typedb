@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeId;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
@@ -61,7 +62,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public ConnectedComponentVertexProgram() {
     }
 
-    public ConnectedComponentVertexProgram(Set<Integer> selectedTypes, String randomId) {
+    public ConnectedComponentVertexProgram(Set<TypeId> selectedTypes, String randomId) {
         this.selectedTypes = selectedTypes;
 
         isActiveCasting = IS_ACTIVE_CASTING + randomId;

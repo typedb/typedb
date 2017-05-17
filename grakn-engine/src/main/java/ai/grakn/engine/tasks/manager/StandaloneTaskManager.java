@@ -183,7 +183,7 @@ public class StandaloneTaskManager implements TaskManager {
                 }
             }
             catch (Throwable throwable) {
-                LOG.error("error", throwable);
+                LOG.error("{} failed with {}", task.getId(), throwable.getMessage());
                 task.markFailed(throwable);
             } finally {
                 saveState(task);

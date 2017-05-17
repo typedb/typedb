@@ -24,6 +24,7 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.Token;
 
+import javax.annotation.CheckReturnValue;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -49,6 +50,7 @@ public class Autocomplete {
      * @param cursorPosition the cursor position in the query
      * @return an autocomplete object containing potential candidates and cursor position to autocomplete from
      */
+    @CheckReturnValue
     public static Autocomplete create(Set<String> types, String query, int cursorPosition) {
         return new Autocomplete(types, query, cursorPosition);
     }
@@ -56,6 +58,7 @@ public class Autocomplete {
     /**
      * @return all candidate autocomplete words
      */
+    @CheckReturnValue
     public Set<String> getCandidates() {
         return candidates;
     }
@@ -63,6 +66,7 @@ public class Autocomplete {
     /**
      * @return the cursor position that autocompletions should start from
      */
+    @CheckReturnValue
     public int getCursorPosition() {
         return cursorPosition;
     }

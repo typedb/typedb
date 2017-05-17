@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.predicate;
 
 import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 
 /**
  * Factory method for {@link ValuePredicate} implementations.
@@ -42,7 +42,7 @@ public class Predicates {
         return new LtPredicate(value);
     }
 
-    public static ValuePredicate lt(VarAdmin var) {
+    public static ValuePredicate lt(VarPatternAdmin var) {
         return new LtPredicate(var);
     }
 
@@ -50,7 +50,7 @@ public class Predicates {
         return new LtePredicate(value);
     }
 
-    public static ValuePredicate lte(VarAdmin var) {
+    public static ValuePredicate lte(VarPatternAdmin var) {
         return new LtePredicate(var);
     }
 
@@ -58,7 +58,7 @@ public class Predicates {
         return new GtPredicate(value);
     }
 
-    public static ValuePredicate gt(VarAdmin var) {
+    public static ValuePredicate gt(VarPatternAdmin var) {
         return new GtPredicate(var);
     }
 
@@ -66,7 +66,7 @@ public class Predicates {
         return new GtePredicate(value);
     }
 
-    public static ValuePredicate gte(VarAdmin var) {
+    public static ValuePredicate gte(VarPatternAdmin var) {
         return new GtePredicate(var);
     }
 
@@ -78,7 +78,7 @@ public class Predicates {
         return new ContainsPredicate(substring);
     }
 
-    public static ValuePredicate contains(VarAdmin var) {
+    public static ValuePredicate contains(VarPatternAdmin var) {
         return new ContainsPredicate(var);
     }
 }

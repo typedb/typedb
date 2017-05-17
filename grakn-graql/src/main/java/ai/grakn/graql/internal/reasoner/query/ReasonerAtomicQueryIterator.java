@@ -27,7 +27,6 @@ import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import com.google.common.collect.Iterators;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;

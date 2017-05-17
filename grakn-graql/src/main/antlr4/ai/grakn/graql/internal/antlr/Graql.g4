@@ -11,13 +11,6 @@ queryEOF       : query EOF ;
 query          : matchQuery | insertQuery | simpleQuery ;
 simpleQuery    : askQuery | deleteQuery | aggregateQuery | computeQuery ;
 
-matchEOF       : matchQuery EOF ;
-askEOF         : askQuery EOF ;
-insertEOF      : insertQuery EOF ;
-deleteEOF      : deleteQuery EOF ;
-aggregateEOF   : aggregateQuery EOF ;
-computeEOF     : computeQuery EOF ;
-
 matchQuery     : 'match' patterns                                 # matchBase
                | matchQuery 'select' VARIABLE (',' VARIABLE)* ';' # matchSelect
                | matchQuery 'limit' INTEGER                   ';' # matchLimit

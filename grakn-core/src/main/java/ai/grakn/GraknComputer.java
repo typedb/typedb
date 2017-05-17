@@ -23,6 +23,8 @@ import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * <p>
  *     Graph Computer Used For Analytics Algorithms
@@ -53,6 +55,7 @@ public interface GraknComputer {
      * @return          the result of the computation
      * @see ComputerResult
      */
+    @CheckReturnValue
     ComputerResult compute(VertexProgram program, MapReduce... mapReduce);
 
     /**
@@ -62,6 +65,7 @@ public interface GraknComputer {
      * @return          the result of the computation
      * @see ComputerResult
      */
+    @CheckReturnValue
     ComputerResult compute(MapReduce mapReduce);
 
     /**

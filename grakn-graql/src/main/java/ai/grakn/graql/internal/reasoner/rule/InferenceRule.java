@@ -27,10 +27,9 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
@@ -104,8 +103,8 @@ public class InferenceRule {
         return hashCode;
     }
 
-    private static Conjunction<VarAdmin> conjunction(PatternAdmin pattern){
-        Set<VarAdmin> vars = pattern
+    private static Conjunction<VarPatternAdmin> conjunction(PatternAdmin pattern){
+        Set<VarPatternAdmin> vars = pattern
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);
@@ -182,7 +181,7 @@ public class InferenceRule {
 
         //remove less specific types if present
         Map<VarName, Type> unifiedVarTypeMap = unifiedTypes.stream()
-                .collect(Collectors.toMap(AtomBase::getVarName, TypeAtom::getType));
+                .collect(Collectors.toMap(Atomic::getVarName, TypeAtom::getType));
         Set<VarName> unifiedTypeVars = unifiedTypes.stream()
                 .map(Atom::getVarName)
                 .collect(toSet());

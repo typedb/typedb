@@ -18,6 +18,8 @@
 
 package ai.grakn.util;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * Enum containing error messages.
  *
@@ -227,6 +229,7 @@ public enum ErrorMessage {
         this.message = message;
     }
 
+    @CheckReturnValue
     public String getMessage(Object... args) {
         return String.format(message, args);
     }

@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
@@ -39,12 +39,12 @@ public interface VarPropertyInternal extends VarProperty {
     /**
      * Check if the given property can be used in a match query
      */
-    void checkValid(GraknGraph graph, VarAdmin var) throws IllegalStateException;
+    void checkValid(GraknGraph graph, VarPatternAdmin var) throws IllegalStateException;
 
     /**
      * Check if the given property can be inserted
      */
-    default void checkInsertable(VarAdmin var) throws IllegalStateException {
+    default void checkInsertable(VarPatternAdmin var) throws IllegalStateException {
     }
 
     /**
@@ -67,7 +67,7 @@ public interface VarPropertyInternal extends VarProperty {
     void delete(GraknGraph graph, Concept concept) throws IllegalStateException;
 
     @Override
-    default Stream<VarAdmin> getInnerVars() {
+    default Stream<VarPatternAdmin> getInnerVars() {
         return Stream.empty();
     }
 }

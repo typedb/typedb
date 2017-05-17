@@ -25,7 +25,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.util.ErrorMessage;
@@ -86,7 +86,7 @@ public abstract class RuleProperty extends AbstractVarProperty implements Unique
     }
 
     @Override
-    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         return null;
     }
 }

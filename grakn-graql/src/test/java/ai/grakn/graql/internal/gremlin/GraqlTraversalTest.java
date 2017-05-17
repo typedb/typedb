@@ -21,10 +21,10 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -166,7 +166,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void testAllTraversalsSimpleQuery() {
-        Var pattern = Patterns.var(x).id(ConceptId.of("Titanic")).isa(Patterns.var(y).id(ConceptId.of("movie")));
+        VarPattern pattern = Patterns.var(x).id(ConceptId.of("Titanic")).isa(Patterns.var(y).id(ConceptId.of("movie")));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());
@@ -224,7 +224,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void whenPlanningSimpleUnaryRelation_ApplyShortcutOptimisation() {
-        Var rel = var("x").rel("y");
+        VarPattern rel = var("x").rel("y");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
@@ -241,7 +241,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void whenPlanningSimpleBinaryRelationQuery_ApplyShortcutOptimisation() {
-        Var rel = var("x").rel("y").rel("z");
+        VarPattern rel = var("x").rel("y").rel("z");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
@@ -253,7 +253,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void whenPlanningBinaryRelationQueryWithType_ApplyShortcutOptimisation() {
-        Var rel = var("x").rel("y").rel("z").isa("marriage");
+        VarPattern rel = var("x").rel("y").rel("z").isa("marriage");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
@@ -265,7 +265,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void testShortcutOptimisationWithRoles() {
-        Var rel = var("x").rel("y").rel("wife", "z");
+        VarPattern rel = var("x").rel("y").rel("wife", "z");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
@@ -290,7 +290,7 @@ public class GraqlTraversalTest {
     }
 
     private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
-        Collection<Conjunction<VarAdmin>> patterns = pattern.admin().getDisjunctiveNormalForm().getPatterns();
+        Collection<Conjunction<VarPatternAdmin>> patterns = pattern.admin().getDisjunctiveNormalForm().getPatterns();
 
         List<Set<List<Fragment>>> collect = patterns.stream()
                 .map(conjunction -> new ConjunctionQuery(conjunction, graph))

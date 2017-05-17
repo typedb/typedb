@@ -23,7 +23,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -44,7 +44,7 @@ import java.util.Set;
 public abstract class Binary extends BinaryBase {
     private IdPredicate predicate = null;
 
-    protected Binary(VarAdmin pattern, IdPredicate p, ReasonerQuery par) {
+    protected Binary(VarPatternAdmin pattern, IdPredicate p, ReasonerQuery par) {
         super(pattern, par);
         this.predicate = p;
         this.typeId = extractTypeId();
@@ -60,7 +60,7 @@ public abstract class Binary extends BinaryBase {
 
     @Override
     public PatternAdmin getCombinedPattern() {
-        Set<VarAdmin> vars = Sets.newHashSet(super.getPattern().asVar());
+        Set<VarPatternAdmin> vars = Sets.newHashSet(super.getPattern().asVar());
         if (getPredicate() != null) vars.add(getPredicate().getPattern().asVar());
         return Patterns.conjunction(vars);
     }

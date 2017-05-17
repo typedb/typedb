@@ -21,6 +21,8 @@ package ai.grakn;
 
 import ai.grakn.exception.GraphRuntimeException;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * <p>
  *     Builds a Grakn Graph Session
@@ -46,6 +48,7 @@ public interface GraknSession extends AutoCloseable {
      * @return A new Grakn graph transaction
      * @see GraknGraph
      */
+    @CheckReturnValue
     GraknGraph open(GraknTxType transactionType);
 
     /**
@@ -54,6 +57,7 @@ public interface GraknSession extends AutoCloseable {
      * @return A new or existing Grakn graph computer
      * @see GraknComputer
      */
+    @CheckReturnValue
     GraknComputer getGraphComputer();
 
     /**
