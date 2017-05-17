@@ -97,7 +97,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         if (ruleIterator.hasNext()) subGoals.add(query);
     }
 
-    private Iterator<Answer> getRuleQueryIterator(RuleTuple rc) {
+    private Iterator<Answer> getRuleQueryIterator(RuleTuple rc){
 
         InferenceRule rule = rc.getRule();
         Unifier ruleUnifier = rc.getRuleUnifier();
