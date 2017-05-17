@@ -179,6 +179,7 @@ public class GenealogyTest {
         assertEquals(answers.size(), 4);
     }
 
+    //@Ignore
     @Test
     public void testMarriedToThemselves(){
         String queryString = "match (spouse2: $x, spouse1: $x) isa marriage;";
@@ -194,6 +195,7 @@ public class GenealogyTest {
         MatchQuery query2 = iqb.parse(queryString2);
 
         QueryAnswers answers = queryAnswers(query);
+        assertEquals(answers.size(), 66);
         QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers2.size(), answers.size());
         assertEquals(answers2.size(), 66);

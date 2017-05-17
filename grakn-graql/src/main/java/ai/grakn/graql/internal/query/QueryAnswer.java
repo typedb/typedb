@@ -181,7 +181,7 @@ public class QueryAnswer implements Answer {
                         uvars.forEach(uv -> answerMultimap.put(uv, e.getValue()));
                 });
         //non-ambiguous mapping
-        if (answerMultimap.keySet().size() == answerMultimap.entries().size()) {
+        if ( answerMultimap.keySet().size() == answerMultimap.values().size()) {
             answerMultimap.entries().forEach(e -> unified.put(e.getKey(), e.getValue()));
         }
 

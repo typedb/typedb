@@ -37,5 +37,6 @@ isa inference-rule
 
 #Data
 
-isa entity1;
-isa entity2;
+$x isa entity1;
+$y isa entity2;
+(role1:$x, role2:$y) isa relation1;

@@ -135,6 +135,8 @@ public class ReasoningTests {
         QueryAnswers answers1 = queryAnswers(qb.parse(query1String));
         QueryAnswers answers2 = queryAnswers(qb.parse(query2String));
 
+        assertEquals(1, answers1.size());
+        assertEquals(2, answers2.size());
         assertNotEquals(answers1.size() * answers2.size(), 0);
         answers1.forEach(x -> assertEquals(x.keySet().size(), 1));
         answers2.forEach(x -> answers1.forEach(y -> assertTrue(x.values().containsAll(y.values()))));

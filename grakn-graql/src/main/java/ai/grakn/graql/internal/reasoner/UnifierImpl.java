@@ -118,6 +118,9 @@ public class UnifierImpl implements Unifier {
     public boolean containsAll(Unifier u) { return mappings().containsAll(u.mappings());}
 
     @Override
+    public boolean isSurjective(){ return keySet().size() < values().size();}
+
+    @Override
     public Unifier merge(Unifier d) {
         d.mappings().forEach(m -> unifier.put(m.getKey(), m.getValue()));
         return this;

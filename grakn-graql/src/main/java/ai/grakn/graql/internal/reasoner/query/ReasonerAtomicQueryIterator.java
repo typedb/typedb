@@ -107,27 +107,23 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
         //delta' = theta . thetaP . delta
         Unifier uInv = u.inverse();
-        Answer partialSubPrime = query.getSubstitution()
+        Answer sub = query.getSubstitution();
+        Answer partialSubPrime = sub
                 .unify(pu)
                 .unify(uInv);
 
+        Set<VarName> queryVars = query.getVarNames();
         Set<VarName> headVars = rule.getHead().getVarNames();
-        Iterator<Answer> baseIterator = rule.getBody().iterator(partialSubPrime, subGoals, cache);
-        Iterator<Answer> filteredIterator = Iterators.filter(baseIterator, a -> a != null && !a.isEmpty());
-        return Iterators.transform(
-                filteredIterator,
-                a -> {
-                    if (a == null) return null;
-                    else {
-                        return a
-                                .filterVars(headVars)
-                                .unify(u)
-                                .unify(pu)
-                                .merge(query.getSubstitution())
-                                .filterVars(query.getVarNames())
-                                .explain(new RuleExplanation(rule));
-                    }
-                });
+        ReasonerQueryIterator baseIterator = rule.getBody().iterator(partialSubPrime, subGoals, cache);
+        return baseIterator.hasStream()
+                .map(a -> a.filterVars(headVars))
+                .map(a -> a.unify(u))
+                .map(a -> a.unify(pu))
+                .filter(a -> !a.isEmpty())
+                .map(a -> a.merge(sub))
+                .map(a -> a.filterVars(queryVars))
+                .map(a -> a.explain(new RuleExplanation(rule)))
+                .iterator();
     }
 
     @Override

@@ -111,6 +111,19 @@ public class AtomicQueryTest {
     }
 
     @Test
+    public void testAlphaEquivalence_RepeatingVariables(){
+        GraknGraph graph = snbGraph.graph();
+        String patternString = "{(recommended-customer: $x, recommended-product: $y);}";
+        String patternString2 = "{(recommended-customer: $x, recommended-product: $x);}";
+        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
+
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
+        assertNotEquals(query, query2);
+    }
+
+    @Test
     public void testWhenMaterialising_MaterialisedInformationIsPresentInGraph(){
         GraknGraph graph = snbGraph.graph();
         QueryBuilder qb = graph.graql().infer(false);

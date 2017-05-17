@@ -95,11 +95,10 @@ public class QueryAnswers implements Iterable<Answer>{
     public QueryAnswers unify(Unifier unifier){
         if (unifier.isEmpty()) return new QueryAnswers(this);
         QueryAnswers unifiedAnswers = new QueryAnswers();
-        this.forEach(answer -> {
-            Answer unifiedAnswer = answer.unify(unifier);
-            unifiedAnswers.add(unifiedAnswer);
-        });
-
+        this.stream()
+            .map(a -> a.unify(unifier))
+            .filter(a -> !a.isEmpty())
+            .forEach(unifiedAnswers::add);
         return unifiedAnswers;
     }
 

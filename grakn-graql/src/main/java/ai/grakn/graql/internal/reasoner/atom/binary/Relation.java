@@ -194,7 +194,8 @@ public class Relation extends TypeAtom {
         return (isUserDefinedName() == a2.isUserDefinedName())
                 && Objects.equals(this.typeId, a2.getTypeId())
                 && getRoleConceptIdMap().equals(a2.getRoleConceptIdMap())
-                && getRoleTypeMap().equals(a2.getRoleTypeMap());
+                && getRoleTypeMap().equals(a2.getRoleTypeMap())
+                && getRolePlayers().size() == a2.getRolePlayers().size();
     }
 
     @Override

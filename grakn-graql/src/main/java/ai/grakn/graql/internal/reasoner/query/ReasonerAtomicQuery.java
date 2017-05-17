@@ -336,7 +336,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             }
         }
 
-        return dCache.record(this, answerStream).filter(a -> !a.isEmpty());
+        return dCache.record(this, answerStream);
     }
 
     @Override
