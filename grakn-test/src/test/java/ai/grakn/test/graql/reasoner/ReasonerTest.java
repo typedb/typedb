@@ -937,8 +937,8 @@ public class ReasonerTest {
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
         QueryAnswers answers = queryAnswers(q1);
-        //QueryAnswers answers2 = queryAnswers(q2);
-        //assertEquals(answers, answers2);
+        QueryAnswers answers2 = queryAnswers(q2);
+        assertEquals(answers, answers2);
     }
 }
 
