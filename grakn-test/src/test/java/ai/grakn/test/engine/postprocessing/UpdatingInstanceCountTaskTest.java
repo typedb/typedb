@@ -77,7 +77,7 @@ public class UpdatingInstanceCountTaskTest {
 
     @Test
     public void whenShardingThresholdIsBreached_ShardTypes(){
-        String keyspace = UUID.randomUUID().toString();
+        String keyspace = "anotherwonderfulkeyspace";
         EntityType et1;
         EntityType et2;
 
