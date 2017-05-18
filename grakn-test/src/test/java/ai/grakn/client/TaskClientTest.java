@@ -25,11 +25,9 @@ import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.EngineUnavailableException;
-import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import java.time.Duration;
-import java.time.Instant;
 import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -37,6 +35,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import spark.Service;
+
+import java.time.Duration;
+import java.time.Instant;
 
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.engine.TaskStatus.CREATED;
@@ -104,7 +105,7 @@ public class TaskClientTest {
 
         TaskId identifier = client.sendTask(taskClass, creator, runAt, interval, configuration);
 
-        verify(manager).addLowPriorityTask(argThat(argument ->
+        verify(manager).addTask(argThat(argument ->
                 argument.getId().equals(identifier)
                 && argument.taskClass().equals(taskClass)
                 && argument.schedule().runAt().equals(runAt)

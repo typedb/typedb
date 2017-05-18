@@ -34,13 +34,6 @@ import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -49,6 +42,14 @@ import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.tasks.TaskSchedule.now;
@@ -103,7 +104,7 @@ public class TaskManagerTest {
     @Property(trials=10)
     public void afterRunning_AllNonFailingTasksAreRecordedAsCompleted(List<TaskState> tasks, TaskManager manager) {
         // Schedule tasks
-        tasks.forEach((taskState) -> manager.addLowPriorityTask(taskState, configuration(taskState)));
+        tasks.forEach((taskState) -> manager.addTask(taskState, configuration(taskState)));
 
         waitForDoneStatus(manager.storage(), tasks);
 
@@ -115,7 +116,7 @@ public class TaskManagerTest {
     @Property(trials=10)
     public void afterRunning_AllFailingTasksAreRecordedAsFailed(List<TaskState> tasks, TaskManager manager) {
         // Schedule tasks
-        tasks.forEach((taskState) -> manager.addLowPriorityTask(taskState, configuration(taskState)));
+        tasks.forEach((taskState) -> manager.addTask(taskState, configuration(taskState)));
 
         waitForDoneStatus(manager.storage(), tasks);
 
@@ -129,7 +130,7 @@ public class TaskManagerTest {
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(TaskState task, TaskManager manager) {
         manager.stopTask(task.getId());
 
-        manager.addLowPriorityTask(task, configuration(task));
+        manager.addTask(task, configuration(task));
 
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 
@@ -141,7 +142,7 @@ public class TaskManagerTest {
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(TaskState task, TaskManager manager) {
         manager.stopTask(task.getId());
 
-        manager.addLowPriorityTask(task, configuration(task));
+        manager.addTask(task, configuration(task));
 
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 
@@ -153,7 +154,7 @@ public class TaskManagerTest {
             @TaskStates.WithClass(EndlessExecutionMockTask.class) TaskState task, TaskManager manager) {
         whenTaskStarts(manager::stopTask);
 
-        manager.addLowPriorityTask(task, configuration(task));
+        manager.addTask(task, configuration(task));
 
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 
@@ -166,7 +167,7 @@ public class TaskManagerTest {
             @TaskStates.WithClass(EndlessExecutionMockTask.class) TaskState task, TaskManager manager) {
         whenTaskStarts(manager::stopTask);
 
-        manager.addLowPriorityTask(task, configuration(task));
+        manager.addTask(task, configuration(task));
 
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 
@@ -177,7 +178,7 @@ public class TaskManagerTest {
     public void whenStoppingATaskAfterExecution_TheTaskIsNotCancelled(TaskState task, TaskManager manager) {
         whenTaskFinishes(manager::stopTask);
 
-        manager.addLowPriorityTask(task, configuration(task));
+        manager.addTask(task, configuration(task));
 
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 
@@ -188,7 +189,7 @@ public class TaskManagerTest {
     public void whenStoppingATaskAfterExecution_TheTaskIsMarkedAsCompleted(TaskState task, TaskManager manager) {
         whenTaskFinishes(manager::stopTask);
 
-        manager.addLowPriorityTask(task, configuration(task));
+        manager.addTask(task, configuration(task));
 
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 
@@ -201,10 +202,11 @@ public class TaskManagerTest {
             throws InterruptedException {
         List<TaskState> manyTasks = Stream.generate(BackgroundTaskTestUtils::createTask).limit(100).collect(toList());
 
+        //TODO: When no longer ingnoring create actual high priority task
         TaskState highPriorityTask = createTask(ShortExecutionMockTask.class, now());
 
-        manyTasks.forEach((taskState) -> manager.addLowPriorityTask(taskState, configuration(taskState)));
-        manager.addHighPriorityTask(highPriorityTask, configuration(highPriorityTask));
+        manyTasks.forEach((taskState) -> manager.addTask(taskState, configuration(taskState)));
+        manager.addTask(highPriorityTask, configuration(highPriorityTask));
 
         waitForDoneStatus(manager.storage(), ImmutableList.of(highPriorityTask));
         waitForDoneStatus(manager.storage(), manyTasks);
@@ -238,8 +240,8 @@ public class TaskManagerTest {
             }
         });
 
-        manyTasks.forEach((taskState) -> manager.addLowPriorityTask(taskState, configuration(taskState)));
-        manager.addHighPriorityTask(recurringTask, configuration(recurringTask));
+        manyTasks.forEach((taskState) -> manager.addTask(taskState, configuration(taskState)));
+        manager.addTask(recurringTask, configuration(recurringTask));
 
         Thread.sleep(sleepDur.toMillis());
 
@@ -265,7 +267,7 @@ public class TaskManagerTest {
         task.schedule(TaskSchedule.recurring(Instant.now(), Duration.ofMillis(100)));
 
         // Execute task and wait for it to complete
-        manager.addLowPriorityTask(task, configuration(task));
+        manager.addTask(task, configuration(task));
         waitForStatus(manager.storage(), ImmutableList.of(task), TaskStatus.STOPPED);
 
         // Assert correct results
@@ -300,7 +302,7 @@ public class TaskManagerTest {
         task.schedule(TaskSchedule.recurring(interval));
 
         // Execute task and wait for it to complete
-        manager.addLowPriorityTask(task, configuration(task));
+        manager.addTask(task, configuration(task));
         waitForStatus(manager.storage(), ImmutableList.of(task), TaskStatus.STOPPED, TaskStatus.FAILED);
 
         // Assert correct results
@@ -324,7 +326,7 @@ public class TaskManagerTest {
         task.schedule(TaskSchedule.recurring(Instant.now(), Duration.ofSeconds(10)));
 
         // Execute task and wait for it to complete
-        manager.addLowPriorityTask(task, configuration(task));
+        manager.addTask(task, configuration(task));
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 
         // Assert correct state
@@ -340,7 +342,7 @@ public class TaskManagerTest {
         TaskCheckpoint checkpoint = TaskCheckpoint.of(Json.object("checkpoint", true));
         task.markRunning(EngineID.me()).checkpoint(checkpoint);
 
-        manager.addLowPriorityTask(task, configuration(task));
+        manager.addTask(task, configuration(task));
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 
         assertEquals(1, ShortExecutionMockTask.resumedCounter.get());
@@ -355,7 +357,7 @@ public class TaskManagerTest {
         whenTaskResumes((c) -> assertThat(c, equalTo(checkpoint)));
 
         // Execute task and wait for it to complete
-        manager.addLowPriorityTask(task, configuration(task));
+        manager.addTask(task, configuration(task));
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 
         // Assert that status is not FAILED
@@ -367,7 +369,7 @@ public class TaskManagerTest {
             @TaskStates.WithClass(EndlessExecutionMockTask.class) TaskState task, TaskManager manager) {
         whenTaskStarts(manager::stopTask);
 
-        manager.addLowPriorityTask(task, configuration(task));
+        manager.addTask(task, configuration(task));
 
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 

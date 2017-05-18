@@ -18,14 +18,13 @@
 
 package ai.grakn.engine.tasks;
 
+import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
-import ai.grakn.engine.GraknEngineConfig;
 
 import static ai.grakn.engine.GraknEngineConfig.USE_ZOOKEEPER_STORAGE;
-
-import ai.grakn.engine.TaskId;
 
 /**
  * <p>
@@ -39,17 +38,12 @@ import ai.grakn.engine.TaskId;
  * @author Denis Lobanov, alexandraorth
  */
 public interface TaskManager {
-    /**
-     * Schedule a {@link BackgroundTask} for execution, giving it priority to run after all other tasks
-     * @param taskState Task to execute
-     */
-    void addLowPriorityTask(TaskState taskState, TaskConfiguration configuration);
 
     /**
-     * Schedule a {@link BackgroundTask} for execution, giving it priority to run before all other tasks
+     * Schedule a {@link BackgroundTask} for execution.
      * @param taskState Task to execute
      */
-    void addHighPriorityTask(TaskState taskState, TaskConfiguration configuration);
+    void addTask(TaskState taskState, TaskConfiguration configuration);
 
     /**
      * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the

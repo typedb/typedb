@@ -41,7 +41,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.engine.tasks.config.KafkaTerms.HIGH_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.time.Duration.between;
 import static java.time.Instant.now;
@@ -162,7 +161,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             TaskState task = record.key();
             TaskConfiguration configuration = record.value();
 
-            boolean handled = handleTask(task, configuration, record.topic());
+            boolean handled = handleTask(task, configuration);
             if (handled) {
                 timeTaskLastHandled = now();
             }
@@ -176,7 +175,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     /**
      * Returns whether the task was succesfully handled, or was just re-submitted.
      */
-    private boolean handleTask(TaskState taskFromkafka, TaskConfiguration configuration, String priority) {
+    private boolean handleTask(TaskState taskFromkafka, TaskConfiguration configuration) {
         LOG.debug("{}\treceived", taskFromkafka);
 
         TaskState latestState = getLatestState(taskFromkafka);
@@ -185,14 +184,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             stopTask(latestState);
             return true;
         } else if(shouldDelayTask(latestState)){
-            resubmitTask(latestState, configuration, priority);
+            resubmitTask(latestState, configuration);
             return false;
         } else {
             // Need updated state to reflect task state changes in the execute method
             TaskState updatedState = executeTask(latestState, configuration);
 
             if(taskShouldRecur(updatedState)){
-                resubmitTask(updatedState, configuration, priority);
+                resubmitTask(updatedState, configuration);
             }
 
             return true;
@@ -265,13 +264,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * to be executed
      * @param task Task to be delayed
      */
-    private void resubmitTask(TaskState task, TaskConfiguration configuration, String priority){
-        if(priority.equals(HIGH_PRIORITY_TASKS_TOPIC)){
-            manager.addHighPriorityTask(task, configuration);
-        } else {
-            manager.addLowPriorityTask(task, configuration);
-        }
-        LOG.debug("{}\tresubmitted with {}", task, priority);
+    private void resubmitTask(TaskState task, TaskConfiguration configuration){
+        manager.addTask(task, configuration);
+        LOG.debug("{}\tresubmitted with {}", task, task.priority().queue());
     }
 
     private void stopTask(TaskState task) {

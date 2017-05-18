@@ -21,7 +21,6 @@ package ai.grakn.test.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
-import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
@@ -39,7 +38,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multiset;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import mjson.Json;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
@@ -55,23 +53,19 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.TaskSchedule.at;
-import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskResumes;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createRunningTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
 import static java.time.Duration.between;
@@ -80,7 +74,6 @@ import static java.time.Instant.now;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
@@ -135,7 +128,7 @@ public class SingleQueueTaskRunnerTest {
         doAnswer(invocation -> {
             addTask(invocation.getArgument(0));
             return null;
-        }).when(mockedTM).addLowPriorityTask(Mockito.any(), Mockito.any());
+        }).when(mockedTM).addTask(Mockito.any(), Mockito.any());
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
