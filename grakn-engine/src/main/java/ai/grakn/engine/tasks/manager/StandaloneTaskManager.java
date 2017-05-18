@@ -33,8 +33,6 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +43,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 
@@ -112,6 +112,12 @@ public class StandaloneTaskManager implements TaskManager {
     @Override
     public void addHighPriorityTask(TaskState taskState, TaskConfiguration configuration){
         LOG.info("Standalone mode only has a single priority.");
+        addTask(taskState, configuration);
+    }
+
+    @Override
+    public void sendTask(TaskState taskState, TaskConfiguration configuration){
+        if(!taskState.priority().equals(TaskState.Priority.LOW)) LOG.info("Standalone mode only has a single priority.");
         addTask(taskState, configuration);
     }
 

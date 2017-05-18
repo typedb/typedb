@@ -101,11 +101,13 @@ public class CommitLogController {
         countingConfiguration.set(COMMIT_LOG_COUNTING, Json.read(req.body()).at(COMMIT_LOG_COUNTING));
 
         TaskState countingTask = TaskState.of(
-                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now(), TaskState.Priority.LOW);
+                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now(), TaskState.Priority.HIGH);
 
         // Send two tasks to the pipeline
-        manager.addLowPriorityTask(postProcessingTask, TaskConfiguration.of(postProcessingConfiguration));
-        manager.addHighPriorityTask(countingTask, TaskConfiguration.of(countingConfiguration));
+        manager.sendTask(postProcessingTask, TaskConfiguration.of(postProcessingConfiguration));
+        manager.sendTask(countingTask, TaskConfiguration.of(countingConfiguration));
+
+
 
         return "PP Task [ " + postProcessingTask.getId().getValue() + " ] and Counting task [" + countingTask.getId().getValue() + "] created for graph [" + keyspace + "]";
     }

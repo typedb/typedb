@@ -169,7 +169,7 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     @Override
     public void addLowPriorityTask(TaskState taskState, TaskConfiguration configuration){
-        sendTask(taskState, configuration, TaskState.Priority.LOW.queue());
+        sendTask(taskState, configuration);
     }
 
     /**
@@ -178,8 +178,9 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     @Override
     public void addHighPriorityTask(TaskState taskState, TaskConfiguration configuration){
-        sendTask(taskState, configuration, TaskState.Priority.HIGH.queue());
+        sendTask(taskState, configuration);
     }
+
 
     /**
      * Stop a task from running.
@@ -227,10 +228,10 @@ public class SingleQueueTaskManager implements TaskManager {
      * Serialize and send the given task to the given kafka queue
      * @param taskState Task to send to kafka
      * @param configuration Configuration of the given task
-     * @param topic Queue to which to send the task
      */
-    private void sendTask(TaskState taskState, TaskConfiguration configuration, String topic){
-        producer.send(new ProducerRecord<>(topic, taskState, configuration));
+    @Override
+    public void sendTask(TaskState taskState, TaskConfiguration configuration){
+        producer.send(new ProducerRecord<>(taskState.priority().queue(), taskState, configuration));
         producer.flush();
     }
 
