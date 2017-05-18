@@ -18,6 +18,10 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.InvalidConceptValueException;
@@ -26,6 +30,8 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.LocalDateTime;
+import java.util.TimeZone;
 import java.util.regex.PatternSyntaxException;
 
 import static junit.framework.TestCase.assertNull;
@@ -136,5 +142,35 @@ public class ResourceTypeTest extends GraphTestBase{
         expectedException.expect(InvalidConceptValueException.class);
         expectedException.expectMessage(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[b]", resource.getId(), resource.getValue(), t1.getLabel()));
         t1.setRegex("[b]");
+    }
+
+    @Test
+    public void whenCreatingAResourceTypeOfTypeDate_EnsureTheTimeZoneIsSetTOADefaultAndDoesNotAffectRetreival() {
+
+        // offset the time to GMT-8
+        TimeZone.setDefault(TimeZone.getTimeZone("GMT-8"));
+        // get the local time (without timezone)
+        LocalDateTime rightNow = LocalDateTime.now();
+        // now add the timezone to the graph
+        try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "default")) {
+            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+                ResourceType<LocalDateTime> aTime = graph.putResourceType("aTime", ResourceType.DataType.DATE);
+                aTime.putResource(rightNow);
+                graph.commit();
+            }
+        }
+
+        // offset the time to GMT where the colleague is working
+        TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
+        // the colleague extracts the LocalTime which should be the same
+        try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "default")) {
+            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+                ResourceType aTime = graph.getResourceType("aTime");
+                LocalDateTime databaseTime = (LocalDateTime) ((Resource) aTime.instances().iterator().next()).getValue();
+
+                // localTime should not have changed as it should not be sensitive to timezone
+                assertEquals(rightNow, databaseTime);
+            }
+        }
     }
 }

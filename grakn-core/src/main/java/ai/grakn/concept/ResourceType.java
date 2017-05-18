@@ -254,13 +254,13 @@ public interface ResourceType<D> extends Type {
         public static final DataType<LocalDateTime> DATE = new DataType<>(
                 LocalDateTime.class.getName(),
                 Schema.ConceptProperty.VALUE_DATE,
-                (d) -> d.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                (d) -> d.atZone(ZoneId.of("Z")).toInstant().toEpochMilli(),
                 (o) -> {
                     if (o == null) return null;
                     if (!(o instanceof Long)) {
                         throw new InvalidConceptValueException(ErrorMessage.INVALID_DATATYPE.getMessage(o, Long.class.getName()));
                     }
-                    return LocalDateTime.ofInstant(Instant.ofEpochMilli((long) o), ZoneId.systemDefault());
+                    return LocalDateTime.ofInstant(Instant.ofEpochMilli((long) o), ZoneId.of("Z"));
                 });
 
         public static final ImmutableMap<String, DataType<?>> SUPPORTED_TYPES = ImmutableMap.<String, DataType<?>>builder()
