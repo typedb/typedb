@@ -141,7 +141,6 @@ public class ReasoningTests {
         answers1.forEach(x -> assertEquals(x.keySet().size(), 1));
         answers2.forEach(x -> answers1.forEach(y -> assertTrue(x.values().containsAll(y.values()))));
         answers2.forEach(x -> assertEquals(x.keySet().size(), 2));
-
     }
 
     @Test //Expected result: The query should return a unique match.
