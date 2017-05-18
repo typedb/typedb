@@ -277,15 +277,27 @@ class QueryVisitor extends GraqlBaseVisitor {
     public ClusterQuery<?> visitCluster(GraqlParser.ClusterContext ctx) {
         ClusterQuery<?> cluster = queryBuilder.compute().cluster();
 
-        if (ctx.MEMBERS() != null) cluster = cluster.members();
-
-        if (ctx.SIZE() != null) cluster = cluster.clusterSize(getInteger(ctx.INTEGER()));
-
         if (ctx.inList() != null) {
             cluster = cluster.in(visitInList(ctx.inList()));
         }
 
+        cluster = chainOperators(ctx.clusterParam().stream().map(this::visitClusterParam)).apply(cluster);
+
         return cluster;
+    }
+
+    private UnaryOperator<ClusterQuery<?>> visitClusterParam(GraqlParser.ClusterParamContext ctx) {
+        return (UnaryOperator<ClusterQuery<?>>) visit(ctx);
+    }
+
+    @Override
+    public UnaryOperator<ClusterQuery<?>> visitClusterMembers(GraqlParser.ClusterMembersContext ctx) {
+        return ClusterQuery::members;
+    }
+
+    @Override
+    public UnaryOperator<ClusterQuery<?>> visitClusterSize(GraqlParser.ClusterSizeContext ctx) {
+        return query -> query.clusterSize(getInteger(ctx.INTEGER()));
     }
 
     @Override
