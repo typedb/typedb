@@ -34,13 +34,6 @@ import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -49,6 +42,14 @@ import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.tasks.TaskSchedule.now;
@@ -201,10 +202,11 @@ public class TaskManagerTest {
             throws InterruptedException {
         List<TaskState> manyTasks = Stream.generate(BackgroundTaskTestUtils::createTask).limit(100).collect(toList());
 
+        //TODO: When no longer ingnoring create actual high priority task
         TaskState highPriorityTask = createTask(ShortExecutionMockTask.class, now());
 
         manyTasks.forEach((taskState) -> manager.addLowPriorityTask(taskState, configuration(taskState)));
-        manager.addHighPriorityTask(highPriorityTask, configuration(highPriorityTask));
+        manager.sendTask(highPriorityTask, configuration(highPriorityTask));
 
         waitForDoneStatus(manager.storage(), ImmutableList.of(highPriorityTask));
         waitForDoneStatus(manager.storage(), manyTasks);
@@ -239,7 +241,7 @@ public class TaskManagerTest {
         });
 
         manyTasks.forEach((taskState) -> manager.addLowPriorityTask(taskState, configuration(taskState)));
-        manager.addHighPriorityTask(recurringTask, configuration(recurringTask));
+        manager.sendTask(recurringTask, configuration(recurringTask));
 
         Thread.sleep(sleepDur.toMillis());
 

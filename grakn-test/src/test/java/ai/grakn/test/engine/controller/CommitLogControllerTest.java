@@ -230,7 +230,7 @@ public class CommitLogControllerTest {
         graph1.commit();
 
         verify(manager, never()).addLowPriorityTask(any(), any());
-        verify(manager, never()).addHighPriorityTask(any(), any());
+        verify(manager, never()).sendTask(any(), any());
     }
 
     private void sendFakeCommitLog() {

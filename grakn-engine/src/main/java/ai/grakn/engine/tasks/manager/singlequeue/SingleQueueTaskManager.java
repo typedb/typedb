@@ -173,16 +173,6 @@ public class SingleQueueTaskManager implements TaskManager {
     }
 
     /**
-     * Create an instance of a task based on the given parameters and submit it a Kafka queue.
-     * @param taskState Task to execute
-     */
-    @Override
-    public void addHighPriorityTask(TaskState taskState, TaskConfiguration configuration){
-        sendTask(taskState, configuration);
-    }
-
-
-    /**
      * Stop a task from running.
      */
     @Override
