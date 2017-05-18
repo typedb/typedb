@@ -29,9 +29,9 @@ import static ai.grakn.graql.internal.template.MacroTest.assertParseEquals;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 
-public class LowerMacroTest {
+public class UpperMacroTest {
 
-    private final LowerMacro lowerMacro = new LowerMacro();
+    private final UpperMacro upperMacro = new UpperMacro();
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -41,7 +41,7 @@ public class LowerMacroTest {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage("Wrong number of arguments");
 
-        lowerMacro.apply(Collections.emptyList());
+        upperMacro.apply(Collections.emptyList());
     }
 
     @Test
@@ -49,32 +49,32 @@ public class LowerMacroTest {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage("Wrong number of arguments");
 
-        lowerMacro.apply(ImmutableList.of("1.0", "2.0"));
+        upperMacro.apply(ImmutableList.of("1.0", "2.0"));
     }
 
     @Test
     public void applyLowerMacroToOneArgument_ItReturnsNonNull(){
-        assertNotNull(lowerMacro.apply(ImmutableList.of("string")));
+        assertNotNull(upperMacro.apply(ImmutableList.of("string")));
     }
 
     @Test
     public void applyLowerMacroToNumber_ItReturnsNumberAsString(){
         Number number = 0L;
-        String numberLower = lowerMacro.apply(ImmutableList.of(number));
+        String numberLower = upperMacro.apply(ImmutableList.of(number));
         assertEquals(number.toString(), numberLower);
     }
 
     @Test
     public void applyLowerMacroToUpperCaseString_ItReturnsStringInLowerCase(){
-        String upperOriginal = "WHALE";
-        String lower = lowerMacro.apply(ImmutableList.of(upperOriginal));
-        assertEquals(upperOriginal.toLowerCase(), lower);
+        String upperOriginal = "whale";
+        String lower = upperMacro.apply(ImmutableList.of(upperOriginal));
+        assertEquals(upperOriginal.toUpperCase(), lower);
     }
 
     @Test
-    public void whenUsingLowerMacroInTemplate_ResultIsAsExpected(){
-        String template = "insert $this has something @lower(<value>);";
-        String expected = "insert $this0 has something \"camelcasevalue\";";
+    public void whenUsingUpperMacroInTemplate_ResultIsAsExpected(){
+        String template = "insert $this has something @upper(<value>);";
+        String expected = "insert $this0 has something \"CAMELCASEVALUE\";";
 
         Map<String, Object> data = Collections.singletonMap("value", "camelCaseValue");
         assertParseEquals(template, data, expected);

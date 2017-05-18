@@ -56,14 +56,7 @@ public class MacroTest {
         assertParseEquals(template, data, expected);
     }
 
-    @Test
-    public void stringToUpperCaseTest(){
-        String template = "insert $this has something @upper(<value>);";
-        String expected = "insert $this0 has something \"CAMELCASEVALUE\";";
 
-        Map<String, Object> data = Collections.singletonMap("value", "camelCaseValue");
-        assertParseEquals(template, data, expected);
-    }
 
 
     @Test

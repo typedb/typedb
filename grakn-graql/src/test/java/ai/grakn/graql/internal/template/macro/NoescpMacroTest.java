@@ -63,7 +63,7 @@ public class NoescpMacroTest {
     }
 
     @Test
-    public void noescpMacroOneVarTest(){
+    public void whenUsingNoescpMacroInTemplate_ResultIsAsExpected(){
         String template = "insert $this isa @noescp(<value>);";
         String expected = "insert $this0 isa whale;";
 
@@ -73,7 +73,7 @@ public class NoescpMacroTest {
     }
 
     @Test
-    public void noescpMacroMultiVarTest(){
+    public void whenUsingNoescpMacroInTemplateMultiple_ResultIsAsExpected(){
         String template = "insert $x has fn @noescp(<firstname>) has ln @noescp(<lastname>);";
         String expected = "insert $x0 has fn 4 has ln 5;";
 
