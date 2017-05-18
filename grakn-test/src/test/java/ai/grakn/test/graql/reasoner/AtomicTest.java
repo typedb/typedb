@@ -39,7 +39,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
@@ -48,7 +48,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import java.util.Collection;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -69,28 +68,28 @@ import static org.junit.Assume.assumeTrue;
 public class AtomicTest {
 
     @ClassRule
-    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get());
+    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get());
+    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext genealogyOntology = GraphContext.preLoad("genealogy/ontology.gql");
+    public static final GraphContext genealogyOntology = GraphContext.preLoad("genealogy/ontology.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilitySet = GraphContext.preLoad("ruleApplicabilityTest.gql");
+    public static final GraphContext ruleApplicabilitySet = GraphContext.preLoad("ruleApplicabilityTest.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext resourceApplicabilitySet = GraphContext.preLoad("resourceApplicabilityTest.gql");
+    public static final GraphContext resourceApplicabilitySet = GraphContext.preLoad("resourceApplicabilityTest.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilitySetWithTypes = GraphContext.preLoad("ruleApplicabilityTestWithTypes.gql");
+    public static final GraphContext ruleApplicabilitySetWithTypes = GraphContext.preLoad("ruleApplicabilityTestWithTypes.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilityInstanceTypesSet = GraphContext.preLoad("testSet19.gql");
+    public static final GraphContext ruleApplicabilityInstanceTypesSet = GraphContext.preLoad("testSet19.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilitySingleRoleSet = GraphContext.preLoad("testSet22.gql");
+    public static final GraphContext ruleApplicabilitySingleRoleSet = GraphContext.preLoad("testSet22.gql").assumeTrue(usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {
@@ -486,6 +485,7 @@ public class AtomicTest {
         Resource resource6 = (Resource) ReasonerQueries.atomic(conjunction(resourceString6, graph), graph).getAtom();
         Resource resource7 = (Resource) ReasonerQueries.atomic(conjunction(resourceString7, graph), graph).getAtom();
         Resource resource8 = (Resource) ReasonerQueries.atomic(conjunction(resourceString8, graph), graph).getAtom();
+
         assertEquals(resource.getApplicableRules().size(), 1);
         assertThat(resource2.getApplicableRules(), empty());
         assertThat(resource3.getApplicableRules(), empty());
@@ -516,8 +516,10 @@ public class AtomicTest {
         Resource resource6 = (Resource) ReasonerQueries.atomic(conjunction(resourceString6, graph), graph).getAtom();
         Resource resource7 = (Resource) ReasonerQueries.atomic(conjunction(resourceString7, graph), graph).getAtom();
         Resource resource8 = (Resource) ReasonerQueries.atomic(conjunction(resourceString8, graph), graph).getAtom();
-        assertEquals(resource.getApplicableRules().size(), 1);
 
+        assertEquals(resource.getApplicableRules().size(), 1);
+        assertThat(resource2.getApplicableRules(), empty());
+        assertThat(resource3.getApplicableRules(), empty());
         assertEquals(resource4.getApplicableRules().size(), 1);
         assertThat(resource5.getApplicableRules(), empty());
         assertEquals(resource6.getApplicableRules().size(), 1);
@@ -537,6 +539,7 @@ public class AtomicTest {
         Resource resource2 = (Resource) ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
         Resource resource3 = (Resource) ReasonerQueries.atomic(conjunction(resourceString3, graph), graph).getAtom();
         Resource resource4 = (Resource) ReasonerQueries.atomic(conjunction(resourceString4, graph), graph).getAtom();
+
         assertEquals(resource.getApplicableRules().size(), 1);
         assertThat(resource2.getApplicableRules(), empty());
         assertEquals(resource3.getApplicableRules().size(), 1);
@@ -619,8 +622,8 @@ public class AtomicTest {
                         Graql.var("p"), Graql.var("x"),
                         Graql.var("c"), Graql.var("y"))
         );
-        assertTrue(unifier.toString(), unifier.getMappings().containsAll(correctUnifier.getMappings()));
-        assertTrue(unifier2.toString(), unifier2.getMappings().containsAll(correctUnifier2.getMappings()));
+        assertTrue(unifier.toString(), unifier.mappings().containsAll(correctUnifier.mappings()));
+        assertTrue(unifier2.toString(), unifier2.mappings().containsAll(correctUnifier2.mappings()));
     }
 
     @Test
@@ -635,7 +638,7 @@ public class AtomicTest {
         Unifier correctUnifiers = new UnifierImpl(
                 ImmutableMap.of(Graql.var("5b7a70db-2256-4d03-8fa4-2621a354899e"), Graql.var("x"))
         );
-        assertTrue(unifiers.getMappings().containsAll(correctUnifiers.getMappings()));
+        assertTrue(unifiers.mappings().containsAll(correctUnifiers.mappings()));
 
         Unifier reverseUnifiers = parentAtom.getUnifier(childAtom);
         Unifier correctReverseUnifiers = new UnifierImpl(
@@ -643,10 +646,11 @@ public class AtomicTest {
         );
         assertTrue(
                 "Unifiers not in subset relation:\n" + correctReverseUnifiers.toString() + "\n" + reverseUnifiers.toString(),
-                reverseUnifiers.getMappings().containsAll(correctReverseUnifiers.getMappings())
+                reverseUnifiers.mappings().containsAll(correctReverseUnifiers.mappings())
         );
     }
 
+    /*
     @Test
     public void testRewriteAndUnification(){
         GraknGraph graph = genealogyOntology.graph();
@@ -665,6 +669,7 @@ public class AtomicTest {
         assertEquals(wifeEntry.size(), 1);
         assertEquals(wifeEntry.iterator().next(), Graql.var("x"));
     }
+    */
 
     @Test
     public void testRewritingAtomToAtomWithUserDefinedName(){
@@ -704,7 +709,7 @@ public class AtomicTest {
         );
         assertTrue(
                 "Unifiers not in subset relation:\n" + correctUnifiers.toString() + "\n" + unifiers.toString(),
-                unifiers.getMappings().containsAll(correctUnifiers.getMappings())
+                unifiers.mappings().containsAll(correctUnifiers.mappings())
         );
     }
 
@@ -719,7 +724,7 @@ public class AtomicTest {
         Atom parentAtom = ReasonerQueries.atomic(conjunction(parentRelation, graph), graph).getAtom();
 
         Unifier unifiers = childAtom.getUnifier(parentAtom);
-        Unifier correctUnifiers = new UnifierImpl(
+        Unifier correctUnifier = new UnifierImpl(
                 ImmutableMap.of(
                         Graql.var("x1"), Graql.var("x"),
                         Graql.var("x2"), Graql.var("y"),
@@ -727,8 +732,8 @@ public class AtomicTest {
                         Graql.var("r2"), Graql.var("R2"))
         );
         assertTrue(
-                "Unifiers not in subset relation:\n" + correctUnifiers.toString() + "\n" + unifiers.toString(),
-                unifiers.getMappings().containsAll(correctUnifiers.getMappings())
+                "Unifiers not in subset relation:\n" + correctUnifier.toString() + "\n" + unifiers.toString(),
+                unifiers.mappings().containsAll(correctUnifier.mappings())
         );
     }
 
@@ -742,13 +747,13 @@ public class AtomicTest {
         PatternAdmin head = graph.graql().parsePattern("(recommended-customer: $z, recommended-product: $b) isa recommendation").admin();
         InferenceRule rule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
 
-        rule.unify(parent);
+        Unifier unifier = rule.getUnifier(parent);
         Set<Var> vars = rule.getHead().getAtom().getVarNames();
         Set<Var> correctVars = Sets.newHashSet(Graql.var("r"), Graql.var("a"), Graql.var("x"));
         assertTrue(!vars.contains(Graql.var("")));
         assertTrue(
                 "Variables not in subset relation:\n" + correctVars.toString() + "\n" + vars.toString(),
-                vars.containsAll(correctVars)
+                unifier.values().containsAll(correctVars)
         );
     }
 

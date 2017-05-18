@@ -203,6 +203,7 @@ public class GraknGraphPropertyTest {
         String supported = ResourceType.DataType.SUPPORTED_TYPES.keySet().stream().collect(Collectors.joining(","));
         exception.expect(InvalidConceptValueException.class);
         exception.expectMessage(ErrorMessage.INVALID_DATATYPE.getMessage(value.getClass().getName(), supported));
+        //noinspection ResultOfMethodCallIgnored
         graph.getResourcesByValue(value);
     }
 
@@ -322,6 +323,7 @@ public class GraknGraphPropertyTest {
         // TODO: Test for a better error message
         exception.expect(GraphRuntimeException.class);
 
+        //noinspection ResultOfMethodCallIgnored
         resource.superType();
     }
 

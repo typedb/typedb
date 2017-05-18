@@ -20,6 +20,8 @@ package ai.grakn.graql;
 
 import ai.grakn.graql.admin.VarPatternAdmin;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * A variable together with its properties.
  * <p>
@@ -39,5 +41,6 @@ public interface VarPattern extends Pattern, VarPatternBuilder {
     /**
      * @return an Admin class to allow inspection of this {@link VarPattern}
      */
+    @CheckReturnValue
     VarPatternAdmin admin();
 }

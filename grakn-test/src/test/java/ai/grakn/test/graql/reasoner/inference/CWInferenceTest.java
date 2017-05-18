@@ -42,10 +42,10 @@ public class CWInferenceTest {
     private static QueryBuilder iqb;
 
     @ClassRule
-    public static GraphContext cwGraph = GraphContext.preLoad(CWGraph.get());
+    public static GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static GraphContext cwGraph2 = GraphContext.preLoad(CWGraph.get());
+    public static GraphContext cwGraph2 = GraphContext.preLoad(CWGraph.get()).assumeTrue(usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {

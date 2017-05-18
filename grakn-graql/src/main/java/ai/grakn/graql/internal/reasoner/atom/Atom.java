@@ -32,30 +32,30 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import javafx.util.Pair;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesCompatible;
 
 /**
  *
  * <p>
- * {@link AtomBase} extension defining specialised functionalities.
+ * {@link AtomicBase} extension defining specialised functionalities.
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-public abstract class Atom extends AtomBase {
+public abstract class Atom extends AtomicBase {
 
     protected Type type = null;
     protected ConceptId typeId = null;

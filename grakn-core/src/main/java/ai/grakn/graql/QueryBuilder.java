@@ -20,6 +20,7 @@ package ai.grakn.graql;
 
 import ai.grakn.graql.macro.Macro;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -36,53 +37,62 @@ public interface QueryBuilder {
      * @param patterns an array of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
+    @CheckReturnValue
     MatchQuery match(PatternBuilder... patterns);
 
     /**
      * @param patterns a collection of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
+    @CheckReturnValue
     MatchQuery match(Collection<? extends PatternBuilder> patterns);
 
     /**
      * @param vars an array of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
+    @CheckReturnValue
     InsertQuery insert(VarPatternBuilder... vars);
 
     /**
      * @param vars a collection of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
+    @CheckReturnValue
     InsertQuery insert(Collection<? extends VarPatternBuilder> vars);
 
     /**
      * @return a compute query builder for building analytics query
      */
+    @CheckReturnValue
     ComputeQueryBuilder compute();
 
     /**
      * @param patternsString a string representing a list of patterns
      * @return a list of patterns
      */
+    @CheckReturnValue
     List<Pattern> parsePatterns(String patternsString);
 
     /**
      * @param patternString a string representing a pattern
      * @return a pattern
      */
+    @CheckReturnValue
     Pattern parsePattern(String patternString);
 
     /**
      * @param queryString a string representing a query
      * @return a query, the type will depend on the type of query.
      */
+    @CheckReturnValue
     <T extends Query<?>> T parse(String queryString);
 
     /**
      * @param queryString a string representing several queries
      * @return a list of queries
      */
+    @CheckReturnValue
     <T extends Query<?>> List<T> parseList(String queryString);
 
     /**
@@ -90,6 +100,7 @@ public interface QueryBuilder {
      * @param data data to use in template
      * @return a query, the type will depend on the type of template.
      */
+    @CheckReturnValue
     <T extends Query<?>> List<T> parseTemplate(String template, Map<String, Object> data);
 
     /**
@@ -108,10 +119,12 @@ public interface QueryBuilder {
     /**
      * Enable or disable inference
      */
+    @CheckReturnValue
     QueryBuilder infer(boolean infer);
 
     /**
      * Enable or disable materialisation
      */
+    @CheckReturnValue
     QueryBuilder materialise(boolean materialise);
 }

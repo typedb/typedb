@@ -58,6 +58,7 @@ public class ConjunctionQueryTest {
     private Var x = Graql.var("x");
     private Var y = Graql.var("y");
 
+    @SuppressWarnings("ResultOfMethodCallIgnored") // Mockito confuses IntelliJ
     @Before
     public void setUp() {
         graph = mock(GraknGraph.class);

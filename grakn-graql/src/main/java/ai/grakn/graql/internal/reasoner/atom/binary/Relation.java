@@ -34,14 +34,13 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.ReasonerUtils;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
@@ -98,19 +97,17 @@ public class Relation extends TypeAtom {
         super(constructRelationVar(name, typeVariable, roleMap), pred, par);
     }
 
-    private Relation(Relation a) {
-        super(a);
-    }
+    private Relation(Relation a) { super(a);}
 
     @Override
     public String toString(){
-        String relationString = (isUserDefinedName()? getVarName() + " ": " ") +
+        String relationString = (isUserDefinedName()? getVarName() + " ": "") +
                         (getType() != null? getType().getLabel() : "") +
                         getRelationPlayers().toString();
         return relationString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
     }
 
-    public Set<RelationPlayer> getRelationPlayers() {
+    private Set<RelationPlayer> getRelationPlayers() {
         if (relationPlayers == null) {
             relationPlayers = new HashSet<>();
             this.atomPattern.asVar().getProperty(RelationProperty.class)
@@ -258,7 +255,7 @@ public class Relation extends TypeAtom {
         if (roleConceptIdMap != null) return roleConceptIdMap;
         roleConceptIdMap =  ArrayListMultimap.create();
         Map<Var, IdPredicate> varSubMap = getIdPredicates().stream()
-                .collect(Collectors.toMap(AtomBase::getVarName, pred -> pred));
+                .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
         Multimap<RoleType, Var> roleMap = getRoleMap();
 
         roleMap.entries().forEach(e -> {
@@ -306,7 +303,7 @@ public class Relation extends TypeAtom {
     /**
      * @return true if any of the relation's role types are meta role types
      */
-    public boolean hasMetaRoles(){
+    private boolean hasMetaRoles(){
         Set<RoleType> parentRoles = getRoleVarTypeMap().keySet();
         for(RoleType role : parentRoles) {
             if (Schema.MetaSchema.isMetaLabel(role.getLabel())) return true;
@@ -379,26 +376,26 @@ public class Relation extends TypeAtom {
         if (type != null) addType(type);
     }
 
-
     @Override
     public void inferTypes() {
         if (getPredicate() == null) inferRelationTypeFromTypes();
     }
 
     @Override
-    public void unify(Unifier mappings) {
-        super.unify(mappings);
+    public Atomic unify(Unifier u) {
+        super.unify(u);
         modifyRelationPlayers(c -> {
             Var var = c.getRolePlayer().getVarName();
-            if (mappings.containsKey(var)) {
-                Var target = mappings.get(var);
+            if (u.containsKey(var)) {
+                Var target = u.get(var);
                 return c.setRolePlayer(c.getRolePlayer().setVarName(target));
-            } else if (mappings.containsValue(var)) {
+            } else if (u.containsValue(var)) {
                 return c.setRolePlayer(c.getRolePlayer().setVarName(capture(var)));
             } else {
                 return c;
             }
         });
+        return this;
     }
 
     @Override

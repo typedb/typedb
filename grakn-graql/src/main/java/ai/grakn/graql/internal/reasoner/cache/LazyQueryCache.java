@@ -24,8 +24,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import javafx.util.Pair;
 
 import java.util.HashMap;
@@ -79,7 +78,8 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match!= null) {
             Q equivalentQuery = match.getKey();
-            Stream<Answer> unifiedStream = QueryAnswerStream.unify(answers, query.getUnifier(equivalentQuery));
+            Unifier u = query.getUnifier(equivalentQuery);
+            Stream<Answer> unifiedStream = answers.map(a -> a.unify(u));
             cache.put(match.getKey(), new Pair<>(match.getKey(), match.getValue().merge(unifiedStream)));
         } else {
             cache.put(query, new Pair<>(query, new LazyAnswerIterator(answers)));

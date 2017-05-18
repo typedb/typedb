@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeId;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
@@ -75,14 +76,14 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
             INDEX_START, INDEX_END, INDEX_MEDIAN, PIVOT, PIVOT_POSITIVE, PIVOT_NEGATIVE,
             POSITIVE_COUNT, NEGATIVE_COUNT, LABEL_SELECTED);
 
-    private Set<Integer> statisticsResourceTypeIds = new HashSet<>();
+    private Set<TypeId> statisticsResourceTypeIds = new HashSet<>();
 
     // Needed internally for OLAP tasks
     public MedianVertexProgram() {
     }
 
-    public MedianVertexProgram(Set<Integer> selectedTypeId,
-                               Set<Integer> statisticsResourceTypeIds, String resourceDataType) {
+    public MedianVertexProgram(Set<TypeId> selectedTypeId,
+                               Set<TypeId> statisticsResourceTypeIds, String resourceDataType) {
         this.selectedTypes = selectedTypeId;
         this.statisticsResourceTypeIds = statisticsResourceTypeIds;
 
@@ -128,7 +129,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(RESOURCE_TYPE).getKeys().forEachRemaining(key ->
-                statisticsResourceTypeIds.add(configuration.getInt(RESOURCE_TYPE + "." + key)));
+                statisticsResourceTypeIds.add(TypeId.of(configuration.getInt(RESOURCE_TYPE + "." + key))));
     }
 
     @Override

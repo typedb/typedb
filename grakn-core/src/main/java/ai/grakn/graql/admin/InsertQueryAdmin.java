@@ -23,6 +23,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -37,20 +38,24 @@ public interface InsertQueryAdmin extends InsertQuery {
     /**
      * @return the match query that this insert query is using, if it was provided one
      */
+    @CheckReturnValue
     Optional<? extends MatchQuery> getMatchQuery();
 
     /**
      * @return all concept types referred to explicitly in the query
      */
+    @CheckReturnValue
     Set<Type> getTypes();
 
     /**
      * @return the variables to insert in the insert query
      */
+    @CheckReturnValue
     Collection<VarPatternAdmin> getVars();
 
     /**
      * @return the graph set on this query, if it was provided one
      */
+    @CheckReturnValue
     Optional<GraknGraph> getGraph();
 }

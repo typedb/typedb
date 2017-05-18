@@ -39,6 +39,7 @@ public interface Entity extends Instance{
      * @return The EntityType of this Entity
      * @see EntityType
      */
+    @Override
     EntityType type();
 
     /**
@@ -47,5 +48,6 @@ public interface Entity extends Instance{
      * @param resource The resource to which a relationship is created
      * @return The instance itself
      */
+    @Override
     Entity resource(Resource resource);
 }

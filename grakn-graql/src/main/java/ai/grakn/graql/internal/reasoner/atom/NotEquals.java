@@ -40,7 +40,7 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
  * @author Kasper Piskorski
  *
  */
-public class NotEquals extends AtomBase {
+public class NotEquals extends AtomicBase {
 
     private Var refVarName;
 
@@ -84,7 +84,7 @@ public class NotEquals extends AtomBase {
     }
 
     @Override
-    public void unify(Unifier unifier){
+    public Atomic unify(Unifier unifier){
         super.unify(unifier);
         Var var = getReferenceVarName();
         if (unifier.containsKey(var)) {
@@ -92,9 +92,10 @@ public class NotEquals extends AtomBase {
         } else if (unifier.containsValue(var)) {
             setRefVarName(capture(var));
         }
+        return this;
     }
 
-    public Var getReferenceVarName(){ return refVarName;}
+    private Var getReferenceVarName(){ return refVarName;}
 
     public static boolean notEqualsOperator(Answer answer, NotEquals atom) {
         return !answer.get(atom.varName).equals(answer.get(atom.refVarName));

@@ -259,10 +259,10 @@ public class TaskStateGraphStore implements TaskStateStorage {
             MatchQuery q = graph.graql().match(finalMatchVar);
 
             if (limit > 0) {
-                q.limit(limit);
+                q = q.limit(limit);
             }
             if (offset > 0) {
-                q.offset(offset);
+                q = q.offset(offset);
             }
 
             return q.execute().stream()

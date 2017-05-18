@@ -33,7 +33,7 @@ public class PatternTest {
 
     @Test
     public void testVarPattern() {
-        Pattern x = var("x");
+        Pattern x = var("x").pattern();
 
         assertTrue(x.admin().isVar());
         assertFalse(x.admin().isDisjunction());
@@ -68,16 +68,19 @@ public class PatternTest {
 
     @Test(expected = UnsupportedOperationException.class)
     public void testConjunctionAsVar() {
+        //noinspection ResultOfMethodCallIgnored
         Graql.and(var("x").isa("movie"), var("x").isa("person")).admin().asVar();
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testDisjunctionAsConjunction() {
+        //noinspection ResultOfMethodCallIgnored
         Graql.or(var("x").isa("movie"), var("x").isa("person")).admin().asConjunction();
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testVarAsDisjunction() {
+        //noinspection ResultOfMethodCallIgnored
         var("x").isa("movie").admin().asDisjunction();
     }
 }

@@ -20,6 +20,7 @@ package ai.grakn.concept;
 
 import ai.grakn.graql.Pattern;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
 /**
@@ -44,6 +45,7 @@ public interface Rule extends Instance{
      * @param resource The resource to which a relationship is created
      * @return The instance itself
      */
+    @Override
     Rule resource(Resource resource);
 
     //------------------------------------- Accessors ----------------------------------
@@ -52,6 +54,7 @@ public interface Rule extends Instance{
      *
      * @return A string representing the left hand side Graql query.
      */
+    @CheckReturnValue
     Pattern getLHS();
 
     /**
@@ -59,6 +62,7 @@ public interface Rule extends Instance{
      *
      * @return A string representing the right hand side Graql query.
      */
+    @CheckReturnValue
     Pattern getRHS();
 
     //------------------------------------- Edge Handling ----------------------------------
@@ -67,6 +71,7 @@ public interface Rule extends Instance{
      *
      * @return A collection of Concept Types that constitute a part of the hypothesis of the Rule
      */
+    @CheckReturnValue
     Collection<Type> getHypothesisTypes();
 
     /**
@@ -74,6 +79,7 @@ public interface Rule extends Instance{
      *
      * @return A collection of Concept Types that constitute a part of the conclusion of the Rule
      */
+    @CheckReturnValue
     Collection<Type> getConclusionTypes();
 
     //---- Inherited Methods
@@ -81,5 +87,6 @@ public interface Rule extends Instance{
      *
      * @return The type of this Graql
      */
+    @Override
     RuleType type();
 }

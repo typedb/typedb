@@ -21,15 +21,14 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.reasoner.atom.AtomBase;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.util.ErrorMessage;
 
 
 /**
  *
  * <p>
- * {@link AtomBase} extension serving as base class for predicate implementations.
+ * {@link AtomicBase} extension serving as base class for predicate implementations.
  * </p>
  *
  * @param <T> the type of the predicate on a concept
@@ -37,7 +36,7 @@ import ai.grakn.util.ErrorMessage;
  * @author Kasper Piskorski
  *
  */
-public abstract class Predicate<T> extends AtomBase {
+public abstract class Predicate<T> extends AtomicBase {
 
     protected T predicate;
 
@@ -100,14 +99,7 @@ public abstract class Predicate<T> extends AtomBase {
 
     @Override
     public Unifier getUnifier(Atomic parentAtom) {
-        if (!(parentAtom instanceof Predicate)) {
-            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
-        }
-        Unifier unifier = new UnifierImpl();
-        if (!this.getVarName().equals(parentAtom.getVarName())) {
-            unifier.addMapping(this.getVarName(), parentAtom.getVarName());
-        }
-        return unifier;
+        throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
     }
 
     public T getPredicate(){ return predicate;}

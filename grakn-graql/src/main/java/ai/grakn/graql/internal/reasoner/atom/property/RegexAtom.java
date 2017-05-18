@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.atom.property;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
-import ai.grakn.graql.internal.reasoner.atom.AtomBase;
+import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.admin.Atomic;
 
 /**
@@ -33,7 +33,7 @@ import ai.grakn.graql.admin.Atomic;
  * @author Kasper Piskorski
  *
  */
-public class RegexAtom extends AtomBase {
+public class RegexAtom extends AtomicBase {
 
     private final String regex;
 

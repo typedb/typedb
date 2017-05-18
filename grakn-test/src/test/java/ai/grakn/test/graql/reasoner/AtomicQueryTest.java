@@ -28,20 +28,19 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -55,13 +54,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.subFilter;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
-
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -69,22 +66,22 @@ import static org.junit.Assume.assumeTrue;
 public class AtomicQueryTest {
 
     @ClassRule
-    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get());
+    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get());
+    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get());
+    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql");
+    public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql").assumeTrue(usingTinker());
 
     @ClassRule
-    public static final GraphContext unificationWithTypesSet = GraphContext.preLoad("unificationWithTypesTest.gql");
+    public static final GraphContext unificationWithTypesSet = GraphContext.preLoad("unificationWithTypesTest.gql").assumeTrue(usingTinker());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -113,32 +110,6 @@ public class AtomicQueryTest {
     }
 
     @Test
-    public void testWhenModifyingAQuery_TheCopyDoesNotChange(){
-        GraknGraph graph = snbGraph.graph();
-        String patternString = "{(recommended-product: $x, recommended-customer: $y) isa recommendation;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
-        ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
-
-        atomicQuery.unify(Graql.var("y"), Graql.var("z"));
-        MatchQuery q1 = atomicQuery.getMatchQuery();
-        MatchQuery q2 = copy.getMatchQuery();
-        assertNotEquals(q1, q2);
-    }
-
-    @Test
-    public void testWhenCopyingAQuery_TheyHaveTheSameRoleVarTypeMaps(){
-        GraknGraph graph = snbGraph.graph();
-        String patternString = "{(recommended-product: $x, recommended-customer: $y) isa recommendation;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
-        ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
-
-        atomicQuery.unify(Graql.var("y"), Graql.var("z"));
-        assertEquals(ReasonerQueries.atomic(conjunction(patternString, graph), snbGraph.graph()).getAtom().getRoleVarTypeMap(), copy.getAtom().getRoleVarTypeMap());
-    }
-
-    @Test
     public void testWhenMaterialising_MaterialisedInformationIsPresentInGraph(){
         GraknGraph graph = snbGraph.graph();
         QueryBuilder qb = graph.graql().infer(false);
@@ -157,7 +128,7 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
 
         assertFalse(qb.<MatchQuery>parse(explicitQuery).ask().execute());
-        answers.stream().flatMap(atomicQuery::materialise).collect(Collectors.toList());
+        answers.stream().forEach(atomicQuery::materialise);
         assertTrue(qb.<MatchQuery>parse(explicitQuery).ask().execute());
     }
 
@@ -178,7 +149,7 @@ public class AtomicQueryTest {
         Set<IdPredicate> unmappedIdPredicates = mappedAtom.getUnmappedIdPredicates();
         Set<TypeAtom> unmappedTypeConstraints = mappedAtom.getUnmappedTypeConstraints();
         Set<Answer> permutedAnswers = answers.stream()
-                .flatMap(a -> permuteFunction.apply(a, permutationUnifiers))
+                .flatMap(a -> a.permute(permutationUnifiers))
                 .filter(a -> subFilter(a, unmappedIdPredicates))
                 .filter(a -> entityTypeFilter(a, unmappedTypeConstraints))
                 .collect(Collectors.toSet());
@@ -187,7 +158,7 @@ public class AtomicQueryTest {
         Set<IdPredicate> unmappedIdPredicates2 = unmappedAtom.getUnmappedIdPredicates();
         Set<TypeAtom> unmappedTypeConstraints2 = unmappedAtom.getUnmappedTypeConstraints();
         Set<Answer> permutedAnswers2 = answers.stream()
-                .flatMap(a -> permuteFunction.apply(a, permutationUnifiers2))
+                .flatMap(a -> a.permute(permutationUnifiers2))
                 .filter(a -> subFilter(a, unmappedIdPredicates2))
                 .filter(a -> entityTypeFilter(a, unmappedTypeConstraints2))
                 .collect(Collectors.toSet());
@@ -209,26 +180,6 @@ public class AtomicQueryTest {
         assertEquals(query2.getAtom().isUserDefinedName(), true);
         assertEquals(query.getAtoms().size(), 1);
         assertEquals(query2.getAtoms().size(), 2);
-    }
-
-    @Test //basic unification test based on mapping variables to corresponding roles together with checking copied atom is not affected
-    public void testWhenUnifiying_CopyIsNotAffected(){
-        GraknGraph graph = geoGraph.graph();
-        String parentString = "{(entity-location: $y, geo-entity: $y1), isa is-located-in;}";
-        String childString = "{(geo-entity: $y1, entity-location: $y2), isa is-located-in;}";
-
-        ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction(parentString, graph), graph);
-        ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction(childString, graph), graph);
-
-        Atomic childAtom = childQuery.getAtom();
-        Atomic parentAtom = parentQuery.getAtom();
-
-        Unifier unifiers = childAtom.getUnifier(parentAtom);
-
-        ReasonerAtomicQuery childCopy = ReasonerQueries.atomic(childQuery);
-        childCopy.unify(unifiers);
-        Atomic childAtomCopy = childCopy.getAtom();
-        assertNotEquals(childAtomCopy, childAtom);
     }
 
     @Test

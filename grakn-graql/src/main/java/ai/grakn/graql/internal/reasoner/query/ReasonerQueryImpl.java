@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -33,7 +32,6 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
@@ -48,7 +46,6 @@ import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -68,11 +65,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.uncapture;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
 /**
  *
@@ -261,7 +256,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param atom in question
      * @return true if query contains an equivalent atom
      */
-    public boolean containsEquivalentAtom(Atomic atom) {
+    private boolean containsEquivalentAtom(Atomic atom) {
         return !getEquivalentAtoms(atom).isEmpty();
     }
 
@@ -269,96 +264,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return atomSet.stream().filter(at -> at.isEquivalent(atom)).collect(Collectors.toSet());
     }
 
-    private void exchangeRelVarNames(Var from, Var to) {
-        unify(to, Graql.var("temp"));
-        unify(from, to);
-        unify(Graql.var("temp"), from);
-    }
-
     @Override
     public Unifier getUnifier(ReasonerQuery parent) {
         throw new IllegalStateException("Attempted to obtain unifiers on non-atomic queries.");
-    }
-
-    /**
-     * change each variable occurrence in the query (apply unifier [from/to])
-     *
-     * @param from variable name to be changed
-     * @param to   new variable name
-     */
-    @Override
-    public void unify(Var from, Var to) {
-        Set<Atomic> toRemove = new HashSet<>();
-        Set<Atomic> toAdd = new HashSet<>();
-
-        atomSet.stream().filter(atom -> atom.getVarNames().contains(from)).forEach(toRemove::add);
-        toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom, this)));
-        toRemove.forEach(this::removeAtomic);
-        toAdd.forEach(atom -> atom.unify(new UnifierImpl(ImmutableMap.of(from, to))));
-        toAdd.forEach(this::addAtomic);
-    }
-
-    /**
-     * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
-     * @param unifier (variable mappings) to be applied
-     */
-    @Override
-    public void unify(Unifier unifier) {
-        if (unifier.size() == 0) return;
-        Unifier mappings = new UnifierImpl(unifier);
-        Unifier appliedMappings = new UnifierImpl();
-        //do bidirectional mappings if any
-        for (Map.Entry<Var, Var> mapping: mappings.getMappings()) {
-            Var varToReplace = mapping.getKey();
-            Var replacementVar = mapping.getValue();
-            //bidirectional mapping
-            if (!replacementVar.equals(appliedMappings.get(varToReplace)) && varToReplace.equals(mappings.get(replacementVar))) {
-                exchangeRelVarNames(varToReplace, replacementVar);
-                appliedMappings.addMapping(varToReplace, replacementVar);
-                appliedMappings.addMapping(replacementVar, varToReplace);
-            }
-        }
-        mappings.getMappings().removeIf(e ->
-                appliedMappings.containsKey(e.getKey()) && appliedMappings.get(e.getKey()).equals(e.getValue()));
-
-        Set<Atomic> toRemove = new HashSet<>();
-        Set<Atomic> toAdd = new HashSet<>();
-
-        atomSet.stream()
-                .filter(atom -> {
-                    Set<Var> keyIntersection = atom.getVarNames();
-                    Set<Var> valIntersection = atom.getVarNames();
-                    keyIntersection.retainAll(mappings.keySet());
-                    valIntersection.retainAll(mappings.values());
-                    return (!keyIntersection.isEmpty() || !valIntersection.isEmpty());
-                })
-                .forEach(toRemove::add);
-        toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom, this)));
-        toRemove.forEach(this::removeAtomic);
-        toAdd.forEach(atom -> atom.unify(mappings));
-        toAdd.forEach(this::addAtomic);
-
-        //NB:captures not resolved in place as resolution in-place alters respective atom hash
-        mappings.merge(resolveCaptures());
-    }
-
-    /**
-     * finds captured variable occurrences in a query and replaces them with fresh variables
-     *
-     * @return new mappings resulting from capture resolution
-     */
-    private Unifier resolveCaptures() {
-        Unifier newMappings = new UnifierImpl();
-        //find and resolve captures
-        // TODO: This could cause bugs if a user has a variable including the word "capture"
-        getVarNames().stream().filter(ReasonerUtils::isCaptured)
-                .forEach(cap -> {
-                    Var old = uncapture(cap);
-                    Var fresh = Graql.var();
-                    unify(cap, fresh);
-                    newMappings.addMapping(old, fresh);
-                });
-        return newMappings;
     }
 
     /**
@@ -557,7 +465,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getSubstitution().keySet().containsAll(getVarNames());
     }
 
-    boolean requiresMaterialisation(){
+    private boolean requiresMaterialisation(){
         for(Atom atom : selectAtoms()){
             for (InferenceRule rule : atom.getApplicableRules())
                 if (rule.requiresMaterialisation(atom)){
@@ -665,7 +573,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<Var> vars = this.getVarNames();
         return answerStream
                 .filter(a -> nonEqualsFilter(a, filters))
-                .flatMap(a -> varFilterFunction.apply(a, vars));
+                .map(a -> a.filterVars(vars));
     }
 
     public ReasonerQueryIterator iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){

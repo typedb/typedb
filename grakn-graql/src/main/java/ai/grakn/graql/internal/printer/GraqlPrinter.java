@@ -62,7 +62,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
         return sb -> {
             // Display values for resources and ids for everything else
             if (concept.isResource()) {
-                sb.append(colorKeyword("value ")).append(valueToString(concept.asResource().getValue()));
+                sb.append(colorKeyword("val ")).append(valueToString(concept.asResource().getValue()));
             } else if (concept.isType()) {
                 Type type = concept.asType();
                 sb.append(colorKeyword("label ")).append(colorType(type));

@@ -24,7 +24,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.HashSet;
@@ -122,7 +122,7 @@ public abstract class BinaryBase extends Atom {
     }
 
     @Override
-    public void unify (Unifier unifier) {
+    public Atomic unify (Unifier unifier) {
         super.unify(unifier);
         Var var = valueVariable;
         if (unifier.containsKey(var)) {
@@ -130,6 +130,7 @@ public abstract class BinaryBase extends Atom {
         } else if (unifier.containsValue(var)) {
             setValueVariable(capture(var));
         }
+        return this;
     }
 
     @Override

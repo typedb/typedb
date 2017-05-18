@@ -38,7 +38,6 @@ import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
@@ -328,7 +327,7 @@ public class ReasonerUtils {
      * @param roleMaps output set containing possible role mappings complementing the roleMap configuration
      */
     public static void computeRoleCombinations(Set<Var> vars, Set<RoleType> roles, Map<Var, VarPattern> roleMap,
-                                               Set<Map<Var, VarPattern>> roleMaps){
+                                        Set<Map<Var, VarPattern>> roleMaps){
         Set<Var> tempVars = Sets.newHashSet(vars);
         Set<RoleType> tempRoles = Sets.newHashSet(roles);
         Var var = vars.iterator().next();
@@ -405,7 +404,7 @@ public class ReasonerUtils {
         VarPattern childVar = var().isa(Graql.label(child.getLabel()));
 
         for (Map.Entry<TypeLabel, TypeLabel> entry : roleMappings.entrySet()) {
-            Var varName = Graql.var();
+            Var varName = var();
             parentVar = parentVar.rel(Graql.label(entry.getKey()), varName);
             childVar = childVar.rel(Graql.label(entry.getValue()), varName);
         }
@@ -424,10 +423,10 @@ public class ReasonerUtils {
     public static Rule createPropertyChainRule(RelationType relation, TypeLabel fromRoleLabel, TypeLabel toRoleLabel,
                                                LinkedHashMap<RelationType, Pair<TypeLabel, TypeLabel>> chain, GraknGraph graph){
         Stack<Var> varNames = new Stack<>();
-        varNames.push(Graql.var("x"));
+        varNames.push(var("x"));
         Set<VarPatternAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
-            Var varName = Graql.var();
+            Var varName = var();
             VarPatternAdmin var = var().isa(Graql.label(relType.getLabel()))
                     .rel(Graql.label(rolePair.getKey()), varNames.peek())
                     .rel(Graql.label(rolePair.getValue()), varName).admin();

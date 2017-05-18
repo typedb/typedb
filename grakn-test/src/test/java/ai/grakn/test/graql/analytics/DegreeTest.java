@@ -210,7 +210,7 @@ public class DegreeTest {
         graph.putEntityType("person").plays(owner);
         EntityType animal = graph.putEntityType("animal").plays(pet);
         EntityType dog = graph.putEntityType("dog").superType(animal);
-        dog.addEntity().getId();
+        dog.addEntity();
         graph.commit();
 
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {

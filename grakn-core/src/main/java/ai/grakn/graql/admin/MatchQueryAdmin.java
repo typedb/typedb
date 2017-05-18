@@ -23,6 +23,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 import java.util.Set;
 
@@ -37,25 +38,30 @@ public interface MatchQueryAdmin extends MatchQuery {
      * @param graph the graph to use to get types from
      * @return all concept types referred to explicitly in the query
      */
+    @CheckReturnValue
     Set<Type> getTypes(GraknGraph graph);
 
     /**
      * @return all concept types referred to explicitly in the query
      */
+    @CheckReturnValue
     Set<Type> getTypes();
 
     /**
      * @return the pattern to match in the graph
      */
+    @CheckReturnValue
     Conjunction<PatternAdmin> getPattern();
 
     /**
      * @return the graph the query operates on, if one was provided
      */
+    @CheckReturnValue
     Optional<GraknGraph> getGraph();
 
     /**
      * @return all selected variable names in the query
      */
+    @CheckReturnValue
     Set<Var> getSelectedNames();
 }
