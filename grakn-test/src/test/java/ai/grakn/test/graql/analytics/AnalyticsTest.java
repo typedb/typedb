@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -146,12 +147,12 @@ public class AnalyticsTest {
         queryList.add("compute degrees;");
         queryList.add("compute path from \"" + entityId1 + "\" to \"" + entityId4 + "\";");
 
-        queryList.parallelStream().forEach(query -> {
+        Set<?> result = queryList.parallelStream().map(query -> {
             try (GraknGraph graph = factory.open(GraknTxType.READ)) {
-                System.out.println("query = " + query + "\n" +
-                        "result = " + graph.graql().parse(query).execute());
+                return graph.graql().parse(query).execute();
             }
-        });
+        }).collect(Collectors.toSet());
+        assertEquals(queryList.size(), result.size());
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {
