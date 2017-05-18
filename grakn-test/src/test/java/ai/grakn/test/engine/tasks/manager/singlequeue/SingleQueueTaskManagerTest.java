@@ -31,7 +31,6 @@ import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import java.util.List;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -42,6 +41,7 @@ import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
@@ -104,7 +104,6 @@ public class SingleQueueTaskManagerTest {
         assertEquals(completableTasks(tasks), completedTasks());
     }
 
-    @Ignore// Failing randomly - may be a race condition
     @Property(trials=10)
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(TaskState task) {
         taskManager.stopTask(task.getId());
@@ -116,7 +115,6 @@ public class SingleQueueTaskManagerTest {
         assertThat(completedTasks(), empty());
     }
 
-    @Ignore// Failing randomly - may be a race condition
     @Property(trials=10)
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(TaskState task) {
         taskManager.stopTask(task.getId());
