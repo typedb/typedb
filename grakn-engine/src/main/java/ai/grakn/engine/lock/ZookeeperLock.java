@@ -20,6 +20,7 @@ package ai.grakn.engine.lock;
 
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
+import java.util.regex.Pattern;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 
 import java.util.concurrent.TimeUnit;
@@ -37,12 +38,22 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class ZookeeperLock implements Lock {
 
+    private final String[] illegalZKCharacters = {
+            "\u0000",
+            "[\u0001-\u0019]",
+            "[\u007F-\u009F]",
+            "[\ud800-\uF8FF]",
+            "[\uFFF0-\uFFFF]",
+            "\\.",
+            "\\..",
+            Pattern.quote("zookeeper")}; //remove these characters
+
     private final String lockPath;
     private final InterProcessSemaphoreMutex mutex;
 
     public ZookeeperLock(ZookeeperConnection zookeeper, String lockPath){
-        this.lockPath = lockPath;
-        this.mutex = new InterProcessSemaphoreMutex(zookeeper.connection(), lockPath);
+        this.lockPath = sanitizePath(lockPath);
+        this.mutex = new InterProcessSemaphoreMutex(zookeeper.connection(), sanitizePath(lockPath));
     }
 
     /**
@@ -127,6 +138,31 @@ public class ZookeeperLock implements Lock {
     }
 
     public String getLockPath() {
+        return lockPath;
+    }
+
+    /**
+     * Sanitize the provided path such that it is a valid Zookeeper path.
+     *
+     * According to the ZK docs (https://zookeeper.apache.org/doc/r3.1.2/zookeeperProgrammers.html), the following in paths is invalid:
+     *
+     * 1. The null character (\u0000) cannot be part of a path name. (This causes problems with the C binding.)
+     * 2. The following characters can't be used because they don't display well, or render in confusing ways: \u0001 - \u0019 and \u007F - \u009F.
+     * 3. The following characters are not allowed: \ud800 -uF8FFF, \uFFF0 - uFFFF.
+     * 4. The "." character can be used as part of another name, but "." and ".." cannot alone be used to indicate a node along a path, because ZooKeeper doesn't use relative paths. The following would be invalid: "/a/b/./c" or "/a/b/../c".
+     * 5. The token "zookeeper" is reserved.
+     *
+     *
+     * @param lockPath Path potentially containing characters ZK considers illegal
+     * @return Path will all illegal characters replaced
+     */
+    private String sanitizePath(String lockPath){
+        for(String illegalCharRange:illegalZKCharacters){
+            lockPath = lockPath.replaceAll(illegalCharRange, "*");
+        }
+
+        lockPath = lockPath.replaceAll("//", "/");
+
         return lockPath;
     }
 }

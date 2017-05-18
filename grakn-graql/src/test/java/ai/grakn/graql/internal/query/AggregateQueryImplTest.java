@@ -22,7 +22,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
@@ -38,7 +38,7 @@ public class AggregateQueryImplTest {
     private final MatchQueryAdmin match2 = Graql.match(var("y").isa("movie")).admin();
 
     private final Aggregate<Object, Long> aggregate1 = Aggregates.count();
-    private final Aggregate<Answer, Number> aggregate2 = Aggregates.sum(VarName.of("x"));
+    private final Aggregate<Answer, Number> aggregate2 = Aggregates.sum(Var.of("x"));
 
     @Test
     public void aggregateQueriesWithTheSameMatchQueryAndAggregatesAreEqual() {

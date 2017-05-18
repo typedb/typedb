@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
@@ -74,19 +74,19 @@ class ConjunctionQuery {
                 vars.stream().flatMap(ConjunctionQuery::equivalentFragmentSetsRecursive).collect(toImmutableSet());
 
         // Get all variable names mentioned in non-starting fragments
-        Set<VarName> names = fragmentSets.stream()
+        Set<Var> names = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::stream)
                 .filter(fragment -> !fragment.isStartingFragment())
                 .flatMap(fragment -> fragment.getVariableNames().stream())
                 .collect(toImmutableSet());
 
         // Get all dependencies fragments have on certain variables existing
-        Set<VarName> dependencies = fragmentSets.stream()
+        Set<Var> dependencies = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::stream)
                 .flatMap(fragment -> fragment.getDependencies().stream())
                 .collect(toImmutableSet());
 
-        Set<VarName> validNames = Sets.difference(names, dependencies);
+        Set<Var> validNames = Sets.difference(names, dependencies);
 
         // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
         Set<EquivalentFragmentSet> initialEquivalentFragmentSets = fragmentSets.stream()
@@ -137,7 +137,7 @@ class ConjunctionQuery {
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(VarPatternAdmin var) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
-        VarName start = var.getVarName();
+        Var start = var.getVarName();
 
         var.getProperties().forEach(property -> {
             VarPropertyInternal propertyInternal = (VarPropertyInternal) property;

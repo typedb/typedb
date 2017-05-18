@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
@@ -29,13 +29,14 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 
+import javafx.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
-import javafx.util.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -115,8 +116,8 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
                 .unify(permutationUnifier)
                 .unify(uInv);
 
-        Set<VarName> queryVars = query.getVarNames();
-        Set<VarName> headVars = rule.getHead().getVarNames();
+        Set<Var> queryVars = query.getVarNames();
+        Set<Var> headVars = rule.getHead().getVarNames();
         ReasonerQueryIterator baseIterator = rule.getBody().iterator(partialSubPrime, subGoals, cache);
         //transform the rule answer to the answer to the query
         return baseIterator.hasStream()

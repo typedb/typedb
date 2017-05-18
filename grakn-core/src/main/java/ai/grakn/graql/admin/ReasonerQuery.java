@@ -21,7 +21,7 @@ package ai.grakn.graql.admin;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Map;
@@ -58,7 +58,7 @@ public interface ReasonerQuery{
      * @return set of variable names present in this reasoner query
      */
     @CheckReturnValue
-    Set<VarName> getVarNames();
+    Set<Var> getVarNames();
 
     /**
      * @return atom set constituting this reasoner query
@@ -98,5 +98,5 @@ public interface ReasonerQuery{
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    Map<VarName, Type> getVarTypeMap();
+    Map<Var, Type> getVarTypeMap();
 }

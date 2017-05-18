@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 
@@ -63,7 +63,7 @@ abstract class MatchQueryModifier extends AbstractMatchQuery {
     }
 
     @Override
-    public Set<VarName> getSelectedNames() {
+    public Set<Var> getSelectedNames() {
         return inner.getSelectedNames();
     }
 

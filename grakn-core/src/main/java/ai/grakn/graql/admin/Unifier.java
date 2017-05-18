@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -32,7 +32,7 @@ import java.util.Set;
  *
  * θ = {x1/t1, x2/t2, ..., xi/ti}.
  *
- * Both variables and terms are defined in terms of graql VarNames.
+ * Both variables and terms are defined in terms of graql Vars.
  *
  * For a set of expressions Γ, the unifier θ maps elements from Γ to a single expression φ : Γθ = {φ}.
  * </p>
@@ -47,7 +47,7 @@ public interface Unifier{
      * @return corresponding terms
      */
     @CheckReturnValue
-    Collection<VarName> get(VarName key);
+    Collection<Var> get(Var key);
 
     /**
      * add a new mapping
@@ -55,7 +55,7 @@ public interface Unifier{
      * @param value term
      * @return previous value associated with key, or null if there was no mapping for key
      */
-    boolean addMapping(VarName key, VarName value);
+    boolean addMapping(Var key, Var value);
 
     /**
      * @return true if the set of mappings is empty
@@ -64,39 +64,39 @@ public interface Unifier{
     boolean isEmpty();
 
     @CheckReturnValue
-    Map<VarName, Collection<VarName>> map();
+    Map<Var, Collection<Var>> map();
 
     /**
      * @return variables present in this unifier
      */
     @CheckReturnValue
-    Set<VarName> keySet();
+    Set<Var> keySet();
 
     /**
      * @return terms present in this unifier
      */
     @CheckReturnValue
-    Collection<VarName> values();
+    Collection<Var> values();
 
     /**
      * @return set of mappings constituting this unifier
      */
     @CheckReturnValue
-    Collection<Map.Entry<VarName, VarName>> mappings();
+    Collection<Map.Entry<Var, Var>> mappings();
 
     /**
      * @param key variable to be inspected for presence
      * @return true if specified key is part of a mapping
      */
     @CheckReturnValue
-    boolean containsKey(VarName key);
+    boolean containsKey(Var key);
 
     /**
      * @param value term to be checked for presence
      * @return true if specified value is part of a mapping
      */
     @CheckReturnValue
-    boolean containsValue(VarName value);
+    boolean containsValue(Var value);
 
     /**
      * @param u unifier to compare with

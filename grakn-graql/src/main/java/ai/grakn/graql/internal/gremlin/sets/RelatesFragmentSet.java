@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
@@ -28,7 +28,7 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
  */
 class RelatesFragmentSet extends EquivalentFragmentSet {
 
-    RelatesFragmentSet(VarName relationType, VarName roleType) {
+    RelatesFragmentSet(Var relationType, Var roleType) {
         super(Fragments.outRelates(relationType, roleType), Fragments.inRelates(roleType, relationType));
     }
 }

@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -74,7 +74,7 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(VarName start) {
+    public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(EquivalentFragmentSets.plays(start, role.getVarName(), required));
     }
 
@@ -120,9 +120,9 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        VarName varName = var.getVarName();
+        Var varName = var.getVarName();
         VarPatternAdmin typeVar = this.getRole();
-        VarName typeVariable = typeVar.getVarName();
+        Var typeVariable = typeVar.getVarName();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarPatternAdmin resVar = Graql.var(varName).plays(Graql.var(typeVariable)).admin();

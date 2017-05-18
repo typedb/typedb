@@ -20,7 +20,7 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
@@ -288,13 +288,13 @@ public class ReasoningTests {
         String queryString2 = "match $x isa res2;";
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
         assertEquals(answers2.size(), 1);
-        assertTrue(answers2.iterator().next().get(VarName.of("x")).isResource());
+        assertTrue(answers2.iterator().next().get(Var.of("x")).isResource());
         String queryString3 = "match $x isa res1; $y isa res2;";
         QueryAnswers answers3 = queryAnswers(qb.parse(queryString3));
         assertEquals(answers3.size(), 1);
 
-        assertTrue(answers3.iterator().next().get(VarName.of("x")).isResource());
-        assertTrue(answers3.iterator().next().get(VarName.of("y")).isResource());
+        assertTrue(answers3.iterator().next().get(Var.of("x")).isResource());
+        assertTrue(answers3.iterator().next().get(Var.of("y")).isResource());
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
@@ -305,9 +305,9 @@ public class ReasoningTests {
         assertEquals(answers1.size(), 1);
         answers1.forEach(ans ->
                 {
-                    assertTrue(ans.get(VarName.of("x")).isEntity());
-                    assertTrue(ans.get(VarName.of("y")).isResource());
-                    assertTrue(ans.get(VarName.of("z")).isRelation());
+                    assertTrue(ans.get(Var.of("x")).isEntity());
+                    assertTrue(ans.get(Var.of("y")).isResource());
+                    assertTrue(ans.get(Var.of("z")).isRelation());
                 }
         );
         String queryString2 = "match $x isa relation1, has res1 $y;";
@@ -315,8 +315,8 @@ public class ReasoningTests {
         assertEquals(answers2.size(), 1);
         answers2.forEach(ans ->
                 {
-                    assertTrue(ans.get(VarName.of("x")).isRelation());
-                    assertTrue(ans.get(VarName.of("y")).isResource());
+                    assertTrue(ans.get(Var.of("x")).isRelation());
+                    assertTrue(ans.get(Var.of("y")).isResource());
                 }
         );
     }

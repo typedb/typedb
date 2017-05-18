@@ -18,33 +18,42 @@
 
 package ai.grakn.engine.lock;
 
+import ai.grakn.util.ErrorMessage;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Supplier;
+import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
+ *
  * <p>
- *     This class provides the correct {@link Lock} based the supplier that was provided when it was
- *     initialized.
+ *     Provide the correct locking functionality based on how the {@link LockProvider} was created.
+ * </p>
+ *
+ * <p>
+ *     Instantiate a {@link LockProvider} with a function that will create a lock to lock on the provided key.
  * </p>
  *
  * @author alexandraorth
  */
 public class LockProvider {
 
-    private static final Map<String, Supplier<Lock>> locks = new ConcurrentHashMap<>();
+    private final static Logger LOG = LoggerFactory.getLogger(LockProvider.class);
+
+    private static Function<String, Lock> lockProvider;
+    private static Map<String, Lock> locks = new ConcurrentHashMap<>();
 
     private LockProvider(){}
 
-    /**
-     * Instantiates a lock supplier with a name.
-     *
-     * @param lockName Name of the lock to supply
-     * @param instantiateLock Supplier of the lock
-     */
-    public static void add(String lockName, Supplier<Lock> instantiateLock){
-        locks.put(lockName, instantiateLock);
+    public static void instantiate(Function<String, Lock> provider){
+        if(lockProvider == null){
+            lockProvider = provider;
+            return;
+        }
+
+        LOG.warn(ErrorMessage.LOCK_ALREADY_INSTANTIATED.getMessage());
     }
 
     /**
@@ -54,15 +63,11 @@ public class LockProvider {
      * @return An initialized lock
      */
     public static Lock getLock(String lockToObtain){
-        if(!locks.containsKey(lockToObtain)){
-            throw new RuntimeException("Lock is not available with name " + lockToObtain);
-        }
-
-        // Instantiate a new lock
-        return locks.get(lockToObtain).get();
+        return locks.computeIfAbsent(lockToObtain, (lockName) -> lockProvider.apply(lockName));
     }
 
     public static void clear(){
         locks.clear();
+        lockProvider = null;
     }
 }
