@@ -43,22 +43,6 @@ public class MacroTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-
-
-
-    @Test
-    public void stringMacroTest(){
-        String template = "insert $this val @string(<value>);";
-        String expected = "insert $this0 val \"1000\";";
-
-        Map<String, Object> data = Collections.singletonMap("value", 1000);
-
-        assertParseEquals(template, data, expected);
-    }
-
-
-
-
     public static void assertParseEquals(String template, Map<String, Object> data, String expected){
         List<Query> result = Graql.parseTemplate(template, data);
         assertEquals(parse(expected), result.get(0));
