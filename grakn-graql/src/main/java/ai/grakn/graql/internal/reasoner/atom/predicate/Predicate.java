@@ -17,12 +17,9 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
-import ai.grakn.util.ErrorMessage;
 
 
 /**
