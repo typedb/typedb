@@ -5,6 +5,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.factory.SystemKeyspace;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
@@ -17,8 +18,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
-import static ai.grakn.engine.tasks.config.KafkaTerms.HIGH_PRIORITY_TASKS_TOPIC;
-import static ai.grakn.engine.tasks.config.KafkaTerms.LOW_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.graql.Graql.var;
 
 /**
@@ -96,8 +95,8 @@ public abstract class GraknTestEnv {
             LOG.info("Starting kafka...");
             kafkaUnit.setKafkaBrokerConfig("log.cleaner.enable", "false");
             kafkaUnit.startup();
-            kafkaUnit.createTopic(HIGH_PRIORITY_TASKS_TOPIC, properties.getAvailableThreads() * 2);
-            kafkaUnit.createTopic(LOW_PRIORITY_TASKS_TOPIC, properties.getAvailableThreads() * 2);
+            kafkaUnit.createTopic(TaskState.Priority.HIGH.queue(), properties.getAvailableThreads() * 2);
+            kafkaUnit.createTopic(TaskState.Priority.LOW.queue(), properties.getAvailableThreads() * 2);
             LOG.info("Kafka started.");
         }
     }

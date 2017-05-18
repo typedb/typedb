@@ -49,9 +49,6 @@ import java.util.stream.Stream;
 
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
-import static ai.grakn.engine.tasks.config.KafkaTerms.HIGH_PRIORITY_TASKS_TOPIC;
-import static ai.grakn.engine.tasks.config.KafkaTerms.LOW_PRIORITY_TASKS_TOPIC;
-import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.concurrent.Executors.newFixedThreadPool;
@@ -110,8 +107,8 @@ public class SingleQueueTaskManager implements TaskManager {
         this.taskRunnerThreadPool = newFixedThreadPool(CAPACITY * 2, taskRunnerPoolFactory);
 
         // Create and start the task runners
-        Set<SingleQueueTaskRunner> highPriorityTaskRunners = generate(() -> newTaskRunner(engineId, HIGH_PRIORITY_TASKS_TOPIC)).limit(CAPACITY).collect(toSet());
-        Set<SingleQueueTaskRunner> lowPriorityTaskRunners = generate(() -> newTaskRunner(engineId, LOW_PRIORITY_TASKS_TOPIC)).limit(CAPACITY).collect(toSet());
+        Set<SingleQueueTaskRunner> highPriorityTaskRunners = generate(() -> newTaskRunner(engineId, TaskState.Priority.HIGH.queue())).limit(CAPACITY).collect(toSet());
+        Set<SingleQueueTaskRunner> lowPriorityTaskRunners = generate(() -> newTaskRunner(engineId, TaskState.Priority.LOW.queue())).limit(CAPACITY).collect(toSet());
 
         this.taskRunners = Stream.concat(highPriorityTaskRunners.stream(), lowPriorityTaskRunners.stream()).collect(toSet());
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
@@ -172,7 +169,7 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     @Override
     public void addLowPriorityTask(TaskState taskState, TaskConfiguration configuration){
-        sendTask(taskState, configuration, LOW_PRIORITY_TASKS_TOPIC);
+        sendTask(taskState, configuration, TaskState.Priority.LOW.queue());
     }
 
     /**
@@ -181,7 +178,7 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     @Override
     public void addHighPriorityTask(TaskState taskState, TaskConfiguration configuration){
-        sendTask(taskState, configuration, HIGH_PRIORITY_TASKS_TOPIC);
+        sendTask(taskState, configuration, TaskState.Priority.HIGH.queue());
     }
 
     /**
@@ -212,7 +209,7 @@ public class SingleQueueTaskManager implements TaskManager {
      * Get a new kafka consumer listening on the given topic
      */
     private Consumer<TaskState, TaskConfiguration> newConsumer(String topic){
-        Consumer<TaskState, TaskConfiguration> consumer = kafkaConsumer(TASK_RUNNER_GROUP + "-" + topic);
+        Consumer<TaskState, TaskConfiguration> consumer = kafkaConsumer("task-runners-" + topic);
         consumer.subscribe(ImmutableList.of(topic), rebalanceListener(consumer, offsetStorage));
         return consumer;
     }
