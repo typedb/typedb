@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.pattern;
 
 import ai.grakn.graql.admin.RelationPlayer;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 
 import java.util.Optional;
 
@@ -28,14 +28,14 @@ import java.util.Optional;
  */
 class RelationPlayerImpl implements RelationPlayer {
     private final int hashCode;
-    private final Optional<VarAdmin> roleType;
-    private final VarAdmin rolePlayer;
+    private final Optional<VarPatternAdmin> roleType;
+    private final VarPatternAdmin rolePlayer;
 
     /**
      * @param roletype the role type of the casting
      * @param rolePlayer the role player of the casting
      */
-    private RelationPlayerImpl(Optional<VarAdmin> roletype, VarAdmin rolePlayer) {
+    private RelationPlayerImpl(Optional<VarPatternAdmin> roletype, VarPatternAdmin rolePlayer) {
         this.roleType = roletype;
         this.rolePlayer = rolePlayer;
         hashCode = 31 * roleType.hashCode() + rolePlayer.hashCode();
@@ -45,7 +45,7 @@ class RelationPlayerImpl implements RelationPlayer {
      * A casting without a role type specified
      * @param rolePlayer the role player of the casting
      */
-    static RelationPlayerImpl of(VarAdmin rolePlayer) {
+    static RelationPlayerImpl of(VarPatternAdmin rolePlayer) {
         return new RelationPlayerImpl(Optional.empty(), rolePlayer);
     }
 
@@ -53,22 +53,22 @@ class RelationPlayerImpl implements RelationPlayer {
      * @param roleType the role type of the casting
      * @param rolePlayer the role player of the casting
      */
-    static RelationPlayerImpl of(VarAdmin roleType, VarAdmin rolePlayer) {
+    static RelationPlayerImpl of(VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
         return new RelationPlayerImpl(Optional.of(roleType), rolePlayer);
     }
 
     @Override
-    public Optional<VarAdmin> getRoleType() {
+    public Optional<VarPatternAdmin> getRoleType() {
         return roleType;
     }
 
     @Override
-    public VarAdmin getRolePlayer() {
+    public VarPatternAdmin getRolePlayer() {
         return rolePlayer;
     }
 
     @Override
-    public RelationPlayer setRolePlayer(VarAdmin rolePlayer) {
+    public RelationPlayer setRolePlayer(VarPatternAdmin rolePlayer) {
         return new RelationPlayerImpl(roleType, rolePlayer);
     }
 

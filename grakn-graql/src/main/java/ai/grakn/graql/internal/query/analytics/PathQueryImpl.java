@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
@@ -66,7 +67,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
         }
         ComputerResult result;
 
-        Set<Integer> subTypeIds =
+        Set<TypeId> subTypeIds =
                 subTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
 
         try {
@@ -133,5 +134,25 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     @Override
     public PathQuery withGraph(GraknGraph graph) {
         return (PathQuery) super.withGraph(graph);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        PathQueryImpl pathQuery = (PathQueryImpl) o;
+
+        if (!sourceId.equals(pathQuery.sourceId)) return false;
+        return destinationId.equals(pathQuery.destinationId);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + sourceId.hashCode();
+        result = 31 * result + destinationId.hashCode();
+        return result;
     }
 }

@@ -35,7 +35,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.CountQuery;
@@ -160,19 +160,19 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public Object visitInsertOnly(GraqlParser.InsertOnlyContext ctx) {
-        Collection<Var> vars = visitVarPatterns(ctx.varPatterns());
+        Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
         return queryBuilder.insert(vars);
     }
 
     @Override
     public Object visitMatchInsert(GraqlParser.MatchInsertContext ctx) {
-        Collection<Var> vars = visitVarPatterns(ctx.varPatterns());
+        Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
         return visitMatchQuery(ctx.matchQuery()).insert(vars);
     }
 
     @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
-        Collection<Var> getters = visitVarPatterns(ctx.varPatterns());
+        Collection<VarPattern> getters = visitVarPatterns(ctx.varPatterns());
         return visitMatchQuery(ctx.matchQuery()).delete(getters);
     }
 
@@ -277,15 +277,27 @@ class QueryVisitor extends GraqlBaseVisitor {
     public ClusterQuery<?> visitCluster(GraqlParser.ClusterContext ctx) {
         ClusterQuery<?> cluster = queryBuilder.compute().cluster();
 
-        if (ctx.MEMBERS() != null) cluster = cluster.members();
-
-        if (ctx.SIZE() != null) cluster = cluster.clusterSize(getInteger(ctx.INTEGER()));
-
         if (ctx.inList() != null) {
             cluster = cluster.in(visitInList(ctx.inList()));
         }
 
+        cluster = chainOperators(ctx.clusterParam().stream().map(this::visitClusterParam)).apply(cluster);
+
         return cluster;
+    }
+
+    private UnaryOperator<ClusterQuery<?>> visitClusterParam(GraqlParser.ClusterParamContext ctx) {
+        return (UnaryOperator<ClusterQuery<?>>) visit(ctx);
+    }
+
+    @Override
+    public UnaryOperator<ClusterQuery<?>> visitClusterMembers(GraqlParser.ClusterMembersContext ctx) {
+        return ClusterQuery::members;
+    }
+
+    @Override
+    public UnaryOperator<ClusterQuery<?>> visitClusterSize(GraqlParser.ClusterSizeContext ctx) {
+        return query -> query.clusterSize(getInteger(ctx.INTEGER()));
     }
 
     @Override
@@ -380,7 +392,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public List<Var> visitVarPatterns(GraqlParser.VarPatternsContext ctx) {
+    public List<VarPattern> visitVarPatterns(GraqlParser.VarPatternsContext ctx) {
         return ctx.varPattern().stream().map(this::visitVarPattern).collect(toList());
     }
 
@@ -390,8 +402,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Var visitVarPattern(GraqlParser.VarPatternContext ctx) {
-        Var var;
+    public VarPattern visitVarPattern(GraqlParser.VarPatternContext ctx) {
+        VarPattern var;
         if (ctx.VARIABLE() != null) {
             var = var(getVariable(ctx.VARIABLE()));
         } else {
@@ -401,82 +413,82 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<Var> visitPropId(GraqlParser.PropIdContext ctx) {
+    public UnaryOperator<VarPattern> visitPropId(GraqlParser.PropIdContext ctx) {
         return var -> var.id(visitId(ctx.id()));
     }
 
     @Override
-    public UnaryOperator<Var> visitPropLabel(GraqlParser.PropLabelContext ctx) {
+    public UnaryOperator<VarPattern> visitPropLabel(GraqlParser.PropLabelContext ctx) {
         return var -> var.label(visitLabel(ctx.label()));
     }
 
     @Override
-    public UnaryOperator<Var> visitPropValue(GraqlParser.PropValueContext ctx) {
+    public UnaryOperator<VarPattern> visitPropValue(GraqlParser.PropValueContext ctx) {
         return var -> var.val(visitPredicate(ctx.predicate()));
     }
 
     @Override
-    public UnaryOperator<Var> visitPropLhs(GraqlParser.PropLhsContext ctx) {
+    public UnaryOperator<VarPattern> visitPropLhs(GraqlParser.PropLhsContext ctx) {
         return var -> var.lhs(and(visitPatterns(ctx.patterns())));
     }
 
     @Override
-    public UnaryOperator<Var> visitPropRhs(GraqlParser.PropRhsContext ctx) {
+    public UnaryOperator<VarPattern> visitPropRhs(GraqlParser.PropRhsContext ctx) {
         return var -> var.rhs(and(visitVarPatterns(ctx.varPatterns())));
     }
 
     @Override
-    public UnaryOperator<Var> visitPropHas(GraqlParser.PropHasContext ctx) {
+    public UnaryOperator<VarPattern> visitPropHas(GraqlParser.PropHasContext ctx) {
         TypeLabel type = visitLabel(ctx.label());
 
-        Var resource = ctx.VARIABLE() != null ? var(getVariable(ctx.VARIABLE())) : var();
+        VarPattern resource = ctx.VARIABLE() != null ? var(getVariable(ctx.VARIABLE())) : var();
 
         if (ctx.predicate() != null) {
             resource = resource.val(visitPredicate(ctx.predicate()));
         }
 
-        Var finalResource = resource;
+        VarPattern finalResource = resource;
 
         return var -> var.has(type, finalResource);
     }
 
     @Override
-    public UnaryOperator<Var> visitPropResource(GraqlParser.PropResourceContext ctx) {
+    public UnaryOperator<VarPattern> visitPropResource(GraqlParser.PropResourceContext ctx) {
         return var -> var.has(visitVariable(ctx.variable()));
     }
 
     @Override
-    public UnaryOperator<Var> visitPropKey(GraqlParser.PropKeyContext ctx) {
+    public UnaryOperator<VarPattern> visitPropKey(GraqlParser.PropKeyContext ctx) {
         return var -> var.key(visitVariable(ctx.variable()));
     }
 
     @Override
-    public UnaryOperator<Var> visitIsAbstract(GraqlParser.IsAbstractContext ctx) {
-        return Var::isAbstract;
+    public UnaryOperator<VarPattern> visitIsAbstract(GraqlParser.IsAbstractContext ctx) {
+        return VarPattern::isAbstract;
     }
 
     @Override
-    public UnaryOperator<Var> visitPropDatatype(GraqlParser.PropDatatypeContext ctx) {
+    public UnaryOperator<VarPattern> visitPropDatatype(GraqlParser.PropDatatypeContext ctx) {
         return var -> var.datatype(getDatatype(ctx.DATATYPE()));
     }
 
     @Override
-    public UnaryOperator<Var> visitPropRegex(GraqlParser.PropRegexContext ctx) {
+    public UnaryOperator<VarPattern> visitPropRegex(GraqlParser.PropRegexContext ctx) {
         return var -> var.regex(getRegex(ctx.REGEX()));
     }
 
     @Override
-    public UnaryOperator<Var> visitPropRel(GraqlParser.PropRelContext ctx) {
+    public UnaryOperator<VarPattern> visitPropRel(GraqlParser.PropRelContext ctx) {
         return getVarProperties(ctx.casting());
     }
 
     @Override
-    public UnaryOperator<Var> visitPropNeq(GraqlParser.PropNeqContext ctx) {
+    public UnaryOperator<VarPattern> visitPropNeq(GraqlParser.PropNeqContext ctx) {
         return var -> var.neq(visitVariable(ctx.variable()));
     }
 
     @Override
-    public UnaryOperator<Var> visitCasting(GraqlParser.CastingContext ctx) {
+    public UnaryOperator<VarPattern> visitCasting(GraqlParser.CastingContext ctx) {
         if (ctx.VARIABLE() == null) {
             return var -> var.rel(visitVariable(ctx.variable()));
         } else {
@@ -485,27 +497,27 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<Var> visitIsa(GraqlParser.IsaContext ctx) {
+    public UnaryOperator<VarPattern> visitIsa(GraqlParser.IsaContext ctx) {
         return var -> var.isa(visitVariable(ctx.variable()));
     }
 
     @Override
-    public UnaryOperator<Var> visitSub(GraqlParser.SubContext ctx) {
+    public UnaryOperator<VarPattern> visitSub(GraqlParser.SubContext ctx) {
         return var -> var.sub(visitVariable(ctx.variable()));
     }
 
     @Override
-    public UnaryOperator<Var> visitRelates(GraqlParser.RelatesContext ctx) {
+    public UnaryOperator<VarPattern> visitRelates(GraqlParser.RelatesContext ctx) {
         return var -> var.relates(visitVariable(ctx.variable()));
     }
 
     @Override
-    public UnaryOperator<Var> visitPlays(GraqlParser.PlaysContext ctx) {
+    public UnaryOperator<VarPattern> visitPlays(GraqlParser.PlaysContext ctx) {
         return var -> var.plays(visitVariable(ctx.variable()));
     }
 
     @Override
-    public UnaryOperator<Var> visitHasScope(GraqlParser.HasScopeContext ctx) {
+    public UnaryOperator<VarPattern> visitHasScope(GraqlParser.HasScopeContext ctx) {
         return var -> var.hasScope(var(getVariable(ctx.VARIABLE())));
     }
 
@@ -529,7 +541,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Var visitVariable(GraqlParser.VariableContext ctx) {
+    public VarPattern visitVariable(GraqlParser.VariableContext ctx) {
         if (ctx == null) {
             return var();
         } else if (ctx.label() != null) {
@@ -585,7 +597,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Var visitValueVariable(GraqlParser.ValueVariableContext ctx) {
+    public VarPattern visitValueVariable(GraqlParser.ValueVariableContext ctx) {
         return var(getVariable(ctx.VARIABLE()));
     }
 
@@ -673,8 +685,8 @@ class QueryVisitor extends GraqlBaseVisitor {
         return operators.reduce(UnaryOperator.identity(), this::compose);
     }
 
-    private UnaryOperator<Var> getVarProperties(List<? extends ParserRuleContext> contexts) {
-        return chainOperators(contexts.stream().map(ctx -> (UnaryOperator<Var>) visit(ctx)));
+    private UnaryOperator<VarPattern> getVarProperties(List<? extends ParserRuleContext> contexts) {
+        return chainOperators(contexts.stream().map(ctx -> (UnaryOperator<VarPattern>) visit(ctx)));
     }
 
     private long getInteger(TerminalNode integer) {
@@ -690,10 +702,10 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     private <T> ValuePredicate applyPredicate(
-            Function<T, ValuePredicate> valPred, Function<Var, ValuePredicate> varPred, Object obj
+            Function<T, ValuePredicate> valPred, Function<VarPattern, ValuePredicate> varPred, Object obj
     ) {
-        if (obj instanceof Var) {
-            return varPred.apply((Var) obj);
+        if (obj instanceof VarPattern) {
+            return varPred.apply((VarPattern) obj);
         } else {
             return valPred.apply((T) obj);
         }

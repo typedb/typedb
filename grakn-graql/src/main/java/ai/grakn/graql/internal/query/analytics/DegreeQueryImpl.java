@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
@@ -70,9 +71,9 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
             ofTypeLabels.addAll(subTypeLabels);
         }
 
-        Set<Integer> withResourceRelationTypeIds =
+        Set<TypeId> withResourceRelationTypeIds =
                 withResourceRelationTypes.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
-        Set<Integer> ofTypeIds =
+        Set<TypeId> ofTypeIds =
                 ofTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
 
         result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationTypeIds, ofTypeIds),
@@ -130,5 +131,25 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     @Override
     public DegreeQuery withGraph(GraknGraph graph) {
         return (DegreeQuery) super.withGraph(graph);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        DegreeQueryImpl that = (DegreeQueryImpl) o;
+
+        if (ofTypeLabelsSet != that.ofTypeLabelsSet) return false;
+        return ofTypeLabels.equals(that.ofTypeLabels);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (ofTypeLabelsSet ? 1 : 0);
+        result = 31 * result + ofTypeLabels.hashCode();
+        return result;
     }
 }

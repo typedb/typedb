@@ -20,6 +20,7 @@ package ai.grakn.graql;
 
 import org.apache.commons.lang.StringUtils;
 
+import javax.annotation.CheckReturnValue;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -31,10 +32,12 @@ import java.util.function.Function;
 public final class VarName {
     private final String value;
 
+    @CheckReturnValue
     public static VarName of(String value) {
         return new VarName(value);
     }
 
+    @CheckReturnValue
     public static VarName anon() {
         return new VarName(UUID.randomUUID().toString());
     }
@@ -46,6 +49,7 @@ public final class VarName {
     /**
      * Get the string name of the variable (without prefixed "$")
      */
+    @CheckReturnValue
     public String getValue() {
         return value;
     }
@@ -55,6 +59,7 @@ public final class VarName {
      * @param mapper a function to apply to the underlying variable name
      * @return the new variable name
      */
+    @CheckReturnValue
     public VarName map(Function<String, String> mapper) {
         return VarName.of(mapper.apply(value));
     }
@@ -62,10 +67,12 @@ public final class VarName {
     /**
      * Get a shorter representation of the variable (with prefixed "$")
      */
+    @CheckReturnValue
     public String shortName() {
         return "$" + StringUtils.left(value, 3);
     }
 
+    @CheckReturnValue
     public String toString() {
         return "$" + value;
     }

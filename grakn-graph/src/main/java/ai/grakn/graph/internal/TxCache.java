@@ -22,6 +22,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -61,7 +62,7 @@ class TxCache {
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
     private final Map<TypeLabel, TypeImpl> typeCache = new HashMap<>();
-    private final Map<TypeLabel, Integer> labelCache = new HashMap<>();
+    private final Map<TypeLabel, TypeId> labelCache = new HashMap<>();
 
     //We Track Modified Concepts For Validation
     private final Set<ConceptImpl> modifiedConcepts = new HashSet<>();
@@ -118,7 +119,7 @@ class TxCache {
      */
     void refreshOntologyCache(){
         Map<TypeLabel, Type> cachedOntologySnapshot = graphCache.getCachedTypes();
-        Map<TypeLabel, Integer> cachedLabelsSnapshot = graphCache.getCachedLabels();
+        Map<TypeLabel, TypeId> cachedLabelsSnapshot = graphCache.getCachedLabels();
 
         //Read central cache into txCache cloning only base concepts. Sets clones later
         for (Type type : cachedOntologySnapshot.values()) {
@@ -246,7 +247,7 @@ class TxCache {
      *
      * @return All the types labels currently cached in the transaction.
      */
-    Map<TypeLabel, Integer> getLabelCache(){
+    Map<TypeLabel, TypeId> getLabelCache(){
         return labelCache;
     }
 
@@ -305,7 +306,7 @@ class TxCache {
      * @param label The type label to cache
      * @param id Its equivalent id which can be looked up quickly in the graph
      */
-    private void cacheLabel(TypeLabel label, Integer id){
+    private void cacheLabel(TypeLabel label, TypeId id){
         labelCache.put(label, id);
     }
 
@@ -361,7 +362,7 @@ class TxCache {
         return (X) typeCache.get(label);
     }
 
-    Integer convertLabelToId(TypeLabel label){
+    TypeId convertLabelToId(TypeLabel label){
         return labelCache.get(label);
     }
 

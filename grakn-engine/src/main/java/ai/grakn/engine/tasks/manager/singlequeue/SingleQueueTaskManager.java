@@ -23,8 +23,6 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.ZookeeperLock;
-import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
@@ -132,8 +130,7 @@ public class SingleQueueTaskManager implements TaskManager {
         this.taskRunners = Stream.concat(highPriorityTaskRunners.stream(), lowPriorityTaskRunners.stream()).collect(toSet());
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
 
-        LockProvider.add(PostProcessingTask.LOCK_KEY, () -> new ZookeeperLock(zookeeper, PostProcessingTask.LOCK_KEY));
-        LockProvider.add(UpdatingInstanceCountTask.getLockingKey(), () -> new ZookeeperLock(zookeeper, UpdatingInstanceCountTask.getLockingKey()));
+        LockProvider.instantiate((lockPath) -> new ZookeeperLock(zookeeper, lockPath));
 
         LOG.debug("TaskManager started");
     }

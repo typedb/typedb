@@ -21,6 +21,8 @@ package ai.grakn.graql;
 import ai.grakn.graql.admin.AskQueryAdmin;
 import ai.grakn.GraknGraph;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * A query that will return whether a match query can be found in the graph.
  * <p>
@@ -40,5 +42,6 @@ public interface AskQuery extends Query<Boolean> {
     /**
      * @return admin instance for inspecting and manipulating this query
      */
+    @CheckReturnValue
     AskQueryAdmin admin();
 }

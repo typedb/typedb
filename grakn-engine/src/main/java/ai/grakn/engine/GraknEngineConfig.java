@@ -52,7 +52,6 @@ public class GraknEngineConfig {
     public static final String SERVER_PORT_NUMBER = "server.port";
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
-    public static final String POST_PROCESSING_DELAY = "backgroundTasks.post-processing-delay";
 
     public static final String REDIS_SERVER_URL = "redis.url";
     public static final String REDIS_SERVER_PORT = "redis.port";

@@ -25,10 +25,10 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import com.google.common.collect.ImmutableList;
@@ -52,13 +52,14 @@ import static org.mockito.Mockito.when;
 public class ConjunctionQueryTest {
     private TypeLabel resourceTypeWithoutSubTypesLabel = TypeLabel.of("name");
     private TypeLabel resourceTypeWithSubTypesLabel = TypeLabel.of("resource");
-    private Var resourceTypeWithoutSubTypes = Graql.label(resourceTypeWithoutSubTypesLabel);
-    private Var resourceTypeWithSubTypes = Graql.label(resourceTypeWithSubTypesLabel);
+    private VarPattern resourceTypeWithoutSubTypes = Graql.label(resourceTypeWithoutSubTypesLabel);
+    private VarPattern resourceTypeWithSubTypes = Graql.label(resourceTypeWithSubTypesLabel);
     private String literalValue = "Bob";
     private GraknGraph graph;
     private VarName x = VarName.of("x");
     private VarName y = VarName.of("y");
 
+    @SuppressWarnings("ResultOfMethodCallIgnored") // Mockito confuses IntelliJ
     @Before
     public void setUp() {
         graph = mock(GraknGraph.class);
@@ -151,7 +152,7 @@ public class ConjunctionQueryTest {
         Fragment resourceIndexFragment = Fragments.resourceIndex(varName, resourceTypeWithoutSubTypesLabel, value);
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
-            Conjunction<VarAdmin> conjunction = pattern.admin().getDisjunctiveNormalForm().getPatterns().iterator().next();
+            Conjunction<VarPatternAdmin> conjunction = pattern.admin().getDisjunctiveNormalForm().getPatterns().iterator().next();
             return new ConjunctionQuery(conjunction, graph).getEquivalentFragmentSets();
         });
     }

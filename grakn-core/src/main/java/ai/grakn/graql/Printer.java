@@ -21,6 +21,7 @@ package ai.grakn.graql;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.Answer;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +44,7 @@ public interface Printer<T> {
      * @param object the object to convert to a string
      * @return the object as a string
      */
+    @CheckReturnValue
     default String graqlString(Object object) {
         T builder = graqlString(false, object);
         return build(builder);
@@ -54,6 +56,7 @@ public interface Printer<T> {
      * @param object the object to convert into a builder
      * @return the object as a builder
      */
+    @CheckReturnValue
     default T graqlString(boolean inner, Object object) {
         if (object instanceof Concept) {
             return graqlString(inner, (Concept) object);
@@ -79,6 +82,7 @@ public interface Printer<T> {
      * @param builder the builder to convert into a string
      * @return the builder as a string
      */
+    @CheckReturnValue
     String build(T builder);
 
     /**
@@ -87,6 +91,7 @@ public interface Printer<T> {
      * @param concept the concept to convert into a builder
      * @return the concept as a builder
      */
+    @CheckReturnValue
     T graqlString(boolean inner, Concept concept);
 
     /**
@@ -95,6 +100,7 @@ public interface Printer<T> {
      * @param bool the boolean to convert into a builder
      * @return the boolean as a builder
      */
+    @CheckReturnValue
     T graqlString(boolean inner, boolean bool);
 
     /**
@@ -103,6 +109,7 @@ public interface Printer<T> {
      * @param optional the optional to convert into a builder
      * @return the optional as a builder
      */
+    @CheckReturnValue
     T graqlString(boolean inner, Optional<?> optional);
 
     /**
@@ -111,6 +118,7 @@ public interface Printer<T> {
      * @param collection the collection to convert into a builder
      * @return the collection as a builder
      */
+    @CheckReturnValue
     T graqlString(boolean inner, Collection<?> collection);
 
     /**
@@ -119,6 +127,7 @@ public interface Printer<T> {
      * @param map the map to convert into a builder
      * @return the map as a builder
      */
+    @CheckReturnValue
     T graqlString(boolean inner, Map<?, ?> map);
 
     /**
@@ -127,6 +136,7 @@ public interface Printer<T> {
      * @param answer the answer to convert into a builder
      * @return the map as a builder
      */
+    @CheckReturnValue
     default T graqlString(boolean inner, Answer answer) {
         return graqlString(inner, answer.map());
     }
@@ -137,5 +147,6 @@ public interface Printer<T> {
      * @param object the object to convert into a builder
      * @return the object as a builder
      */
+    @CheckReturnValue
     T graqlStringDefault(boolean inner, Object object);
 }

@@ -20,7 +20,7 @@ package ai.grakn.migration.export;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.util.Schema;
 
 import java.util.stream.Stream;
@@ -67,7 +67,7 @@ public class GraphWriter {
      * @param stream stream of Graql patterns
      * @return Graql patterns as a string
      */
-    private String join(Stream<Var> stream){
+    private String join(Stream<VarPattern> stream){
         return stream
                 .map(Object::toString)
                 .filter(s -> !s.isEmpty())

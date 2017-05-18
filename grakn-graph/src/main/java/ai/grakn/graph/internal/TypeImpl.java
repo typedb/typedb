@@ -25,6 +25,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.util.ErrorMessage;
@@ -68,7 +69,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
-    private final Integer cachedTypeId;
+    private final TypeId cachedTypeId;
     private final TypeLabel cachedTypeLabel;
     private ConceptCache<Boolean> cachedIsImplicit = new ConceptCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
     private ConceptCache<Boolean> cachedIsAbstract = new ConceptCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
@@ -94,7 +95,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         VertexProperty<String> typeLabel = v.property(Schema.ConceptProperty.TYPE_LABEL.name());
         if(typeLabel.isPresent()) {
             cachedTypeLabel = TypeLabel.of(typeLabel.value());
-            cachedTypeId = v.value(Schema.ConceptProperty.TYPE_ID.name());
+            cachedTypeId = TypeId.of(v.value(Schema.ConceptProperty.TYPE_ID.name()));
             isShard(false);
         } else {
             cachedTypeLabel = TypeLabel.of("SHARDED TYPE-" + getId().getValue()); //This is just a place holder it is never actually committed
@@ -205,7 +206,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The internal type id which is used for fast lookups
      */
     @Override
-    public Integer getTypeId(){
+    public TypeId getTypeId(){
         return cachedTypeId;
     }
 
@@ -376,7 +377,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             instances.addAll(this.<V>getIncomingNeighbours(Schema.EdgeLabel.ISA).collect(Collectors.toSet()));
         } else {
             GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerPopGraph().traversal().V()
-                    .has(Schema.ConceptProperty.TYPE_ID.name(), getTypeId())
+                    .has(Schema.ConceptProperty.TYPE_ID.name(), getTypeId().getValue())
                     .union(__.identity(),
                             __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
                     ).unfold()

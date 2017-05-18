@@ -19,6 +19,7 @@
 
 package ai.grakn.engine;
 
+import javax.annotation.CheckReturnValue;
 import java.util.UUID;
 
 /**
@@ -29,10 +30,12 @@ import java.util.UUID;
 public final class TaskId {
     private final String value;
 
+    @CheckReturnValue
     public static TaskId of(String value) {
         return new TaskId(value);
     }
 
+    @CheckReturnValue
     public static TaskId generate() {
         return new TaskId(UUID.randomUUID().toString());
     }
@@ -44,6 +47,7 @@ public final class TaskId {
     /**
      * Get the string value of the task ID
      */
+    @CheckReturnValue
     public String getValue() {
         return value;
     }

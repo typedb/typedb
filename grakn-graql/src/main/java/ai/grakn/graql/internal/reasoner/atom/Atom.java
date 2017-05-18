@@ -24,7 +24,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -32,7 +32,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
@@ -49,19 +49,19 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesCompatibl
 /**
  *
  * <p>
- * {@link AtomBase} extension defining specialised functionalities.
+ * {@link AtomicBase} extension defining specialised functionalities.
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-public abstract class Atom extends AtomBase {
+public abstract class Atom extends AtomicBase {
 
     protected Type type = null;
     protected ConceptId typeId = null;
     protected int priority = Integer.MAX_VALUE;
 
-    protected Atom(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
+    protected Atom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
         super(a);
         this.type = a.type;

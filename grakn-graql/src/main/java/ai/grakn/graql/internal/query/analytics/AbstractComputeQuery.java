@@ -187,4 +187,22 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
                 .map(Schema.ImplicitType.HAS::getLabel)
                 .collect(Collectors.toSet());
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AbstractComputeQuery<?> that = (AbstractComputeQuery<?>) o;
+
+        if (!graph.equals(that.graph)) return false;
+        return subTypeLabels.equals(that.subTypeLabels);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = graph.hashCode();
+        result = 31 * result + subTypeLabels.hashCode();
+        return result;
+    }
 }

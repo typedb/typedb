@@ -22,7 +22,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import com.google.common.collect.Sets;
 import org.junit.Test;
@@ -35,12 +35,12 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("unchecked")
 public class PatternImplTest {
 
-    private final VarAdmin x = Graql.var("x").admin();
-    private final VarAdmin y = Graql.var("y").admin();
-    private final VarAdmin z = Graql.var("z").admin();
-    private final VarAdmin a = Graql.var("a").admin();
-    private final VarAdmin b = Graql.var("b").admin();
-    private final VarAdmin c = Graql.var("c").admin();
+    private final VarPatternAdmin x = Graql.var("x").admin();
+    private final VarPatternAdmin y = Graql.var("y").admin();
+    private final VarPatternAdmin z = Graql.var("z").admin();
+    private final VarPatternAdmin a = Graql.var("a").admin();
+    private final VarPatternAdmin b = Graql.var("b").admin();
+    private final VarPatternAdmin c = Graql.var("c").admin();
 
     @Test
     public void testVarDNF() {
@@ -96,7 +96,7 @@ public class PatternImplTest {
     @Test
     public void testCNFToDNF() {
         Conjunction cnf = conjunction(disjunction(x, y, z), disjunction(a, b, c));
-        Set<Conjunction<VarAdmin>> dnf = set(
+        Set<Conjunction<VarPatternAdmin>> dnf = set(
                 conjunction(x, a), conjunction(x, b), conjunction(x, c),
                 conjunction(y, a), conjunction(y, b), conjunction(y, c),
                 conjunction(z, a), conjunction(z, b), conjunction(z, c)
@@ -117,8 +117,8 @@ public class PatternImplTest {
         return Sets.newHashSet(patterns);
     }
 
-    private void assertHasDNF(Set<Conjunction<VarAdmin>> expected, PatternAdmin pattern) {
-        HashSet<Conjunction<VarAdmin>> dnf = new HashSet<>(pattern.getDisjunctiveNormalForm().getPatterns());
+    private void assertHasDNF(Set<Conjunction<VarPatternAdmin>> expected, PatternAdmin pattern) {
+        HashSet<Conjunction<VarPatternAdmin>> dnf = new HashSet<>(pattern.getDisjunctiveNormalForm().getPatterns());
         assertEquals(expected, dnf);
     }
 }

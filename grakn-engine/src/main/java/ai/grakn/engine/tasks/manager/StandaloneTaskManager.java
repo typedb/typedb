@@ -23,8 +23,6 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
-import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
@@ -88,10 +86,7 @@ public class StandaloneTaskManager implements TaskManager {
         schedulingService = Executors.newScheduledThreadPool(1);
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
 
-        Lock postProcessingLock = new NonReentrantLock();
-        Lock countUpdateLock = new NonReentrantLock();
-        LockProvider.add(PostProcessingTask.LOCK_KEY, () -> postProcessingLock);
-        LockProvider.add(UpdatingInstanceCountTask.getLockingKey(), () -> countUpdateLock);
+        LockProvider.instantiate((lockName) -> new NonReentrantLock());
     }
 
     @Override
@@ -183,7 +178,7 @@ public class StandaloneTaskManager implements TaskManager {
                 }
             }
             catch (Throwable throwable) {
-                LOG.error("error", throwable);
+                LOG.error("{} failed with {}", task.getId(), throwable.getMessage());
                 task.markFailed(throwable);
             } finally {
                 saveState(task);
