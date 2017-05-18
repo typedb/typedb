@@ -141,7 +141,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     protected Var extractValueVariableName(VarPatternAdmin var){
         HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         VarPatternAdmin resVar = prop.getResource();
-        return resVar.isUserDefinedName()? resVar.getVarName() : Graql.var("");
+        return resVar.getVarName().isUserDefinedName()? resVar.getVarName() : Graql.var("");
     }
 
     @Override

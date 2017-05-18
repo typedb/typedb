@@ -56,7 +56,7 @@ public class Patterns {
         ImmutableSet.Builder<VarProperty> properties = ImmutableSet.builder();
 
         for (VarPatternAdmin var : vars) {
-            if (var.isUserDefinedName()) {
+            if (var.getVarName().isUserDefinedName()) {
                 name = var.getVarName();
             }
 

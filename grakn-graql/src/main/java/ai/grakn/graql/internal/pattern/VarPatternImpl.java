@@ -271,11 +271,6 @@ class VarPatternImpl implements VarPatternAdmin {
     }
 
     @Override
-    public boolean isUserDefinedName() {
-        return name.isUserDefinedName();
-    }
-
-    @Override
     public Optional<ConceptId> getId() {
         return getProperty(IdProperty.class).map(IdProperty::getId);
     }
@@ -292,13 +287,13 @@ class VarPatternImpl implements VarPatternAdmin {
 
     @Override
     public VarPatternAdmin setVarName(Var name) {
-        if (!isUserDefinedName()) throw new RuntimeException(ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
+        if (!this.name.isUserDefinedName()) throw new RuntimeException(ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
         return new VarPatternImpl(name, properties);
     }
 
     @Override
     public String getPrintableName() {
-        if (isUserDefinedName()) {
+        if (name.isUserDefinedName()) {
             return name.toString();
         } else {
             return getTypeLabel().map(StringConverter::typeLabelToString).orElse("'" + toString() + "'");
@@ -393,11 +388,11 @@ class VarPatternImpl implements VarPatternAdmin {
 
         StringBuilder builder = new StringBuilder();
 
-        String name = isUserDefinedName() ? getPrintableName() : "";
+        String name = this.name.isUserDefinedName() ? getPrintableName() : "";
 
         builder.append(name);
 
-        if (isUserDefinedName() && !properties.isEmpty()) {
+        if (this.name.isUserDefinedName() && !properties.isEmpty()) {
             // Add a space after the var name
             builder.append(" ");
         }
@@ -466,7 +461,10 @@ class VarPatternImpl implements VarPatternAdmin {
 
     @Override
     public Set<Var> commonVarNames() {
-        return getInnerVars().stream().filter(VarPatternAdmin::isUserDefinedName).map(VarPatternAdmin::getVarName).collect(toSet());
+        return getInnerVars().stream()
+                .filter(v -> v.getVarName().isUserDefinedName())
+                .map(VarPatternAdmin::getVarName)
+                .collect(toSet());
     }
 
     @Override
@@ -476,21 +474,21 @@ class VarPatternImpl implements VarPatternAdmin {
 
         VarPatternImpl var = (VarPatternImpl) o;
 
-        if (isUserDefinedName() != var.isUserDefinedName()) return false;
+        if (name.isUserDefinedName() != var.name.isUserDefinedName()) return false;
 
         // "simplifying" this makes it harder to read
         //noinspection SimplifiableIfStatement
         if (!properties.equals(var.properties)) return false;
 
-        return !isUserDefinedName() || name.equals(var.name);
+        return !name.isUserDefinedName() || name.equals(var.name);
 
     }
 
     @Override
     public int hashCode() {
         int result = properties.hashCode();
-        if (isUserDefinedName()) result = 31 * result + name.hashCode();
-        result = 31 * result + (isUserDefinedName() ? 1 : 0);
+        if (name.isUserDefinedName()) result = 31 * result + name.hashCode();
+        result = 31 * result + (name.isUserDefinedName() ? 1 : 0);
         return result;
     }
 

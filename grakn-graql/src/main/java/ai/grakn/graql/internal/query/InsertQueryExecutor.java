@@ -158,7 +158,7 @@ public class InsertQueryExecutor {
         visitedVars.push(name);
         Concept concept = concepts.computeIfAbsent(name, n -> addConcept(var));
         assert concept != null : var ;
-        if (var.isUserDefinedName()) namedConcepts.put(name, concept);
+        if (var.getVarName().isUserDefinedName()) namedConcepts.put(name, concept);
         visitedVars.pop();
         return concept;
     }

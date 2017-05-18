@@ -59,12 +59,6 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
     VarPatternAdmin setVarName(Var name);
 
     /**
-     * @return whether the user specified a name for this variable
-     */
-    @CheckReturnValue
-    boolean isUserDefinedName();
-
-    /**
      * Get a stream of all properties on this variable
      */
     @CheckReturnValue

@@ -143,7 +143,7 @@ public class HALUtils {
         if (atom.isRelation()) {
             Optional<VarPatternAdmin> var = atom.getPattern().getVars().stream().filter(x -> x.hasProperty(RelationProperty.class)).findFirst();
             VarPatternAdmin varAdmin = atom.getPattern().asVar();
-            if (var.isPresent() && !var.get().isUserDefinedName()) {
+            if (var.isPresent() && !var.get().getVarName().isUserDefinedName()) {
                 roleTypes.put(varAdmin, pairVarNamesRelationType(atom));
             }
         }
@@ -152,7 +152,7 @@ public class HALUtils {
     private static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQueryNoReasoner(MatchQuery matchQuery) {
         final Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
         matchQuery.admin().getPattern().getVars().forEach(var -> {
-            if (var.getProperty(RelationProperty.class).isPresent() && !var.isUserDefinedName()) {
+            if (var.getProperty(RelationProperty.class).isPresent() && !var.getVarName().isUserDefinedName()) {
                 Map<Var, String> tempMap = new HashMap<>();
                 var.getProperty(RelationProperty.class).get()
                         .getRelationPlayers().forEach(x -> {

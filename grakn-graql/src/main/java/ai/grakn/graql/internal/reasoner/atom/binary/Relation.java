@@ -329,7 +329,7 @@ public class Relation extends TypeAtom {
 
         //try indirectly
         roleVars.stream()
-                .filter(VarPatternAdmin::isUserDefinedName)
+                .filter(v -> v.getVarName().isUserDefinedName())
                 .map(VarPatternAdmin::getVarName)
                 .map(parent::getIdPredicate)
                 .filter(Objects::nonNull)
@@ -406,7 +406,7 @@ public class Relation extends TypeAtom {
         getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
                 .flatMap(CommonUtil::optionalToStream)
-                .filter(VarPatternAdmin::isUserDefinedName)
+                .filter(v -> v.getVarName().isUserDefinedName())
                 .forEach(r -> vars.add(r.getVarName()));
         return vars;
     }
@@ -503,7 +503,7 @@ public class Relation extends TypeAtom {
                 TypeLabel typeLabel = role.getTypeLabel().orElse(null);
                 RoleType roleType = typeLabel != null ? graph.getType(typeLabel) : null;
                 //try indirectly
-                if (roleType == null && role.isUserDefinedName()) {
+                if (roleType == null && role.getVarName().isUserDefinedName()) {
                     IdPredicate rolePredicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(role.getVarName());
                     if (rolePredicate != null) roleType = graph.getConcept(rolePredicate.getPredicate());
                 }
