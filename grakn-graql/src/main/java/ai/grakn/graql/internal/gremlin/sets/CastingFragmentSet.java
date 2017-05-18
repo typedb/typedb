@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inCasting;
@@ -30,20 +30,20 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outCasting;
  */
 class CastingFragmentSet extends EquivalentFragmentSet {
 
-    private final VarName relation;
-    private final VarName casting;
+    private final Var relation;
+    private final Var casting;
 
-    CastingFragmentSet(VarName relation, VarName casting) {
+    CastingFragmentSet(Var relation, Var casting) {
         super(outCasting(relation, casting), inCasting(casting, relation));
         this.relation = relation;
         this.casting = casting;
     }
 
-    VarName relation() {
+    Var relation() {
         return relation;
     }
 
-    VarName casting() {
+    Var casting() {
         return casting;
     }
 }

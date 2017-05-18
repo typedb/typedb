@@ -20,11 +20,11 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
@@ -50,13 +50,13 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getIdPredicate;
  */
 public class SubProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
-    private final VarAdmin superType;
+    private final VarPatternAdmin superType;
 
-    public SubProperty(VarAdmin superType) {
+    public SubProperty(VarPatternAdmin superType) {
         this.superType = superType;
     }
 
-    public VarAdmin getSuperType() {
+    public VarPatternAdmin getSuperType() {
         return superType;
     }
 
@@ -71,17 +71,17 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(VarName start) {
+    public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(EquivalentFragmentSets.sub(start, superType.getVarName()));
     }
 
     @Override
-    public Stream<VarAdmin> getTypes() {
+    public Stream<VarPatternAdmin> getTypes() {
         return Stream.of(superType);
     }
 
     @Override
-    public Stream<VarAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> getInnerVars() {
         return Stream.of(superType);
     }
 
@@ -121,13 +121,13 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
     }
 
     @Override
-    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
-        VarName varName = var.getVarName();
-        VarAdmin typeVar = this.getSuperType();
-        VarName typeVariable = typeVar.getVarName();
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+        Var varName = var.getVarName();
+        VarPatternAdmin typeVar = this.getSuperType();
+        Var typeVariable = typeVar.getVarName();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
-        VarAdmin resVar = Graql.var(varName).sub(Graql.var(typeVariable)).admin();
+        VarPatternAdmin resVar = Graql.var(varName).sub(Graql.var(typeVariable)).admin();
         return new TypeAtom(resVar, predicate, parent);
     }
 }

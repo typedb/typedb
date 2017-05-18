@@ -18,16 +18,21 @@
 
 package ai.grakn.graql.admin;
 
+import ai.grakn.graql.VarPattern;
+
+import javax.annotation.CheckReturnValue;
+
 /**
- * A unique property of a {@link ai.grakn.graql.Var}.
+ * A unique property of a {@link VarPattern}.
  *
- * This property is unique in that each {@link ai.grakn.graql.Var} may have exactly zero or one of each
+ * This property is unique in that each {@link VarPattern} may have exactly zero or one of each
  * {@link UniqueVarProperty}.
  *
  * @author Felix Chapman
  */
 public interface UniqueVarProperty extends VarProperty {
 
+    @CheckReturnValue
     default boolean isUnique() {
         return true;
     }

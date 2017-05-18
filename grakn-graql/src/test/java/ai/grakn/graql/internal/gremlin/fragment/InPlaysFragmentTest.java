@@ -1,6 +1,6 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -14,8 +14,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class InPlaysFragmentTest {
 
-    private final VarName start = VarName.anon();
-    private final VarName end = VarName.anon();
+    private final Var start = Var.anon();
+    private final Var end = Var.anon();
     private final InPlaysFragment fragment = new InPlaysFragment(start, end, false);
 
     @Test

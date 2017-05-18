@@ -16,11 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.query;
+package ai.grakn.graql.internal.reasoner;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
 import com.google.common.collect.Maps;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,10 +40,13 @@ import java.util.stream.Collectors;
 public class UnifierImpl implements Unifier {
 
     //TODO turn it to multimap to accommodate all cases
-    private final Map<VarName, VarName> unifier = new HashMap<>();
+    private final Map<Var, Var> unifier = new HashMap<>();
 
+    /**
+     * Identity unifier.
+     */
     public UnifierImpl(){}
-    public UnifierImpl(Map<VarName, VarName> map){
+    public UnifierImpl(Map<Var, Var> map){
         unifier.putAll(map);
     }
     public UnifierImpl(Unifier u){
@@ -73,44 +77,44 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Map<VarName, VarName> map() {
+    public Map<Var, Var> map() {
         return Maps.newHashMap(unifier);
     }
 
     @Override
-    public Set<VarName> keySet() {
+    public Set<Var> keySet() {
         return unifier.keySet();
     }
 
     @Override
-    public Collection<VarName> values() {
+    public Collection<Var> values() {
         return unifier.values();
     }
 
     @Override
-    public Set<Map.Entry<VarName, VarName>> getMappings(){ return unifier.entrySet();}
+    public Set<Map.Entry<Var, Var>> mappings(){ return unifier.entrySet();}
 
-    public VarName addMapping(VarName key, VarName value){
+    public Var addMapping(Var key, Var value){
         return unifier.put(key, value);
     }
 
     @Override
-    public VarName get(VarName key) {
+    public Var get(Var key) {
         return unifier.get(key);
     }
 
     @Override
-    public boolean containsKey(VarName key) {
+    public boolean containsKey(Var key) {
         return unifier.containsKey(key);
     }
 
     @Override
-    public boolean containsValue(VarName value) {
+    public boolean containsValue(Var value) {
         return unifier.containsValue(value);
     }
 
     @Override
-    public boolean containsAll(Unifier u) { return getMappings().containsAll(u.getMappings());}
+    public boolean containsAll(Unifier u) { return mappings().containsAll(u.mappings());}
 
     @Override
     public Unifier merge(Unifier d) {
@@ -120,7 +124,7 @@ public class UnifierImpl implements Unifier {
 
     @Override
     public Unifier removeTrivialMappings() {
-        Set<VarName> toRemove = unifier.entrySet().stream()
+        Set<Var> toRemove = unifier.entrySet().stream()
                 .filter(e -> e.getKey() == e.getValue())
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
@@ -129,7 +133,7 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Unifier invert() {
+    public Unifier inverse() {
         return new UnifierImpl(
                 unifier.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey))

@@ -36,7 +36,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.ErrorMessage;
@@ -149,10 +149,10 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertRelation() {
-        Var rel = var("r").isa("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y");
-        Var x = var("x").has("title", "Godfather").isa("movie");
-        Var y = var("y").has("name", "comedy").isa("genre");
-        Var[] vars = new Var[] {rel, x, y};
+        VarPattern rel = var("r").isa("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y");
+        VarPattern x = var("x").has("title", "Godfather").isa("movie");
+        VarPattern y = var("y").has("name", "comedy").isa("genre");
+        VarPattern[] vars = new VarPattern[] {rel, x, y};
         Pattern[] patterns = new Pattern[] {rel, x, y};
 
         assertFalse(qb.match(patterns).ask().execute());
@@ -175,7 +175,7 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertRepeat() {
-        Var language = var("x").has("name", "123").isa("language");
+        VarPattern language = var("x").has("name", "123").isa("language");
         InsertQuery query = qb.insert(language);
 
         assertEquals(0, qb.match(language).stream().count());
@@ -192,8 +192,8 @@ public class InsertQueryTest {
 
     @Test
     public void testMatchInsertQuery() {
-        Var language1 = var().isa("language").has("name", "123");
-        Var language2 = var().isa("language").has("name", "456");
+        VarPattern language1 = var().isa("language").has("name", "123");
+        VarPattern language2 = var().isa("language").has("name", "456");
 
         qb.insert(language1, language2).execute();
         assertTrue(qb.match(language1).ask().execute());
@@ -323,14 +323,14 @@ public class InsertQueryTest {
         Set<Answer> results = insert.stream().collect(Collectors.toSet());
         assertEquals(1, results.size());
         Answer result = results.iterator().next();
-        assertEquals(ImmutableSet.of(VarName.of("x"), VarName.of("z")), result.keySet());
+        assertEquals(ImmutableSet.of(Var.of("x"), Var.of("z")), result.keySet());
         assertThat(result.values(), Matchers.everyItem(notNullValue(Concept.class)));
     }
 
     @Test
     public void testIterateMatchInsertResults() {
-        Var language1 = var().isa("language").has("name", "123");
-        Var language2 = var().isa("language").has("name", "456");
+        VarPattern language1 = var().isa("language").has("name", "123");
+        VarPattern language2 = var().isa("language").has("name", "456");
 
         qb.insert(language1, language2).execute();
         assertTrue(qb.match(language1).ask().execute());
@@ -343,7 +343,7 @@ public class InsertQueryTest {
         assertFalse(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
 
         Answer result1 = results.next();
-        assertEquals(ImmutableSet.of(VarName.of("x")), result1.keySet());
+        assertEquals(ImmutableSet.of(Var.of("x")), result1.keySet());
 
         AskQuery query123 = qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask();
         AskQuery query456 = qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask();
@@ -359,7 +359,7 @@ public class InsertQueryTest {
 
         //Check that both are inserted correctly
         Answer result2 = results.next();
-        assertEquals(ImmutableSet.of(VarName.of("x")), result1.keySet());
+        assertEquals(ImmutableSet.of(Var.of("x")), result1.keySet());
         assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
         assertTrue(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
         assertFalse(results.hasNext());
@@ -433,7 +433,7 @@ public class InsertQueryTest {
         String ruleTypeId = "a-rule-type";
         Pattern lhsPattern = qb.parsePattern("$x sub entity");
         Pattern rhsPattern = qb.parsePattern("$x sub entity");
-        Var vars = var("x").isa(ruleTypeId).lhs(lhsPattern).rhs(rhsPattern);
+        VarPattern vars = var("x").isa(ruleTypeId).lhs(lhsPattern).rhs(rhsPattern);
         qb.insert(vars).execute();
 
         RuleType ruleType = movieGraph.graph().getRuleType(ruleTypeId);
@@ -484,9 +484,9 @@ public class InsertQueryTest {
         assertFalse(qb.match(label("movie").has(resourceType)).ask().execute());
         assertFalse(qb.match(label("a-new-type").has("an-unconnected-resource-type")).ask().execute());
 
-        Var hasResource = Graql.label(HAS.getLabel(resourceType));
-        Var hasResourceOwner = Graql.label(HAS_OWNER.getLabel(resourceType));
-        Var hasResourceValue = Graql.label(HAS_VALUE.getLabel(resourceType));
+        VarPattern hasResource = Graql.label(HAS.getLabel(resourceType));
+        VarPattern hasResourceOwner = Graql.label(HAS_OWNER.getLabel(resourceType));
+        VarPattern hasResourceValue = Graql.label(HAS_VALUE.getLabel(resourceType));
 
         // Make sure the expected ontology elements are created
         assertTrue(qb.match(hasResource.sub("relation")).ask().execute());
@@ -513,9 +513,9 @@ public class InsertQueryTest {
         assertFalse(qb.match(label("a-new-type").sub("entity").key("title")).ask().execute());
         assertFalse(qb.match(label("movie").sub("entity").key(resourceType)).ask().execute());
 
-        Var key = Graql.label(KEY.getLabel(resourceType));
-        Var keyOwner = Graql.label(KEY_OWNER.getLabel(resourceType));
-        Var keyValue = Graql.label(KEY_VALUE.getLabel(resourceType));
+        VarPattern key = Graql.label(KEY.getLabel(resourceType));
+        VarPattern keyOwner = Graql.label(KEY_OWNER.getLabel(resourceType));
+        VarPattern keyValue = Graql.label(KEY_VALUE.getLabel(resourceType));
 
         // Make sure the expected ontology elements are created
         assertTrue(qb.match(key.sub("relation")).ask().execute());
@@ -598,7 +598,7 @@ public class InsertQueryTest {
         List<Answer> results = query.execute();
         assertEquals(1, results.size());
         Answer result = results.get(0);
-        assertEquals(Sets.newHashSet(VarName.of("x")), result.keySet());
+        assertEquals(Sets.newHashSet(Var.of("x")), result.keySet());
         Entity x = result.get("x").asEntity();
         assertEquals("movie", x.type().getLabel().getValue());
     }
@@ -782,9 +782,9 @@ public class InsertQueryTest {
         assertEquals(relation.rolePlayers(productionWithCluster), ImmutableSet.of(godfather, muppets));
     }
 
-    private void assertInsert(Var... vars) {
+    private void assertInsert(VarPattern... vars) {
         // Make sure vars don't exist
-        for (Var var : vars) {
+        for (VarPattern var : vars) {
             assertFalse(qb.match(var).ask().execute());
         }
 
@@ -792,17 +792,17 @@ public class InsertQueryTest {
         qb.insert(vars).execute();
 
         // Make sure all vars exist
-        for (Var var : vars) {
+        for (VarPattern var : vars) {
             assertTrue(qb.match(var).ask().execute());
         }
 
         // Delete all vars
-        for (Var var : vars) {
+        for (VarPattern var : vars) {
             qb.match(var).delete(var(var.admin().getVarName())).execute();
         }
 
         // Make sure vars don't exist
-        for (Var var : vars) {
+        for (VarPattern var : vars) {
             assertFalse(qb.match(var).ask().execute());
         }
     }

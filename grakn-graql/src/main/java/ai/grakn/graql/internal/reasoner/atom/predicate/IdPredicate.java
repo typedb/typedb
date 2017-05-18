@@ -24,8 +24,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import ai.grakn.graql.admin.Atomic;
@@ -42,27 +42,27 @@ import ai.grakn.util.ErrorMessage;
  */
 public class IdPredicate extends Predicate<ConceptId>{
 
-    public IdPredicate(VarAdmin pattern, ReasonerQuery par) {
+    public IdPredicate(VarPatternAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
     }
-    public IdPredicate(VarName varName, IdProperty prop, ReasonerQuery par){
+    public IdPredicate(Var varName, IdProperty prop, ReasonerQuery par){
         this(createIdVar(varName, prop.getId()), par);
     }
-    public IdPredicate(VarName varName, LabelProperty prop, ReasonerQuery par){
+    public IdPredicate(Var varName, LabelProperty prop, ReasonerQuery par){
         this(createIdVar(varName, prop, par.graph()), par);
     }
     private IdPredicate(IdPredicate a) { super(a);}
 
-    public IdPredicate(VarName varName, Concept con, ReasonerQuery par) {
+    public IdPredicate(Var varName, Concept con, ReasonerQuery par) {
         super(createIdVar(varName, con.getId()), par);
         this.predicate = con.getId();
     }
 
-    public static VarAdmin createIdVar(VarName varName, ConceptId typeId){
+    public static VarPatternAdmin createIdVar(Var varName, ConceptId typeId){
         return Graql.var(varName).id(typeId).admin();
     }
 
-    private static VarAdmin createIdVar(VarName varName, LabelProperty prop, GraknGraph graph){
+    private static VarPatternAdmin createIdVar(Var varName, LabelProperty prop, GraknGraph graph){
         Type type = graph.getType(prop.getLabelValue());
         if (type == null) throw new IllegalArgumentException(ErrorMessage.CANNOT_CREATE_IDPREDICATE.getMessage(prop.getLabelValue()));
         return Graql.var(varName).id(type.getId()).admin();
@@ -85,5 +85,5 @@ public class IdPredicate extends Predicate<ConceptId>{
     public String getPredicateValue() { return predicate.getValue();}
 
     @Override
-    protected ConceptId extractPredicate(VarAdmin var){ return var.admin().getId().orElse(null);}
+    protected ConceptId extractPredicate(VarPatternAdmin var){ return var.admin().getId().orElse(null);}
 }

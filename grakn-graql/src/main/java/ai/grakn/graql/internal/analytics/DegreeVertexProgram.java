@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeId;
 import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -42,31 +43,31 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     // element key
     static final String DEGREE = "degreeVertexProgram.degree";
-    private static final String OF_TYPE_LABELS = "degreeVertexProgram.ofTypeLabels";
+    private static final String OF_TYPE_LABELS = "degreeVertexProgram.ofTypeIds";
     private static final Set<String> ELEMENT_COMPUTE_KEYS = Collections.singleton(DEGREE);
 
-    Set<Integer> ofTypeLabels = new HashSet<>();
+    Set<TypeId> ofTypeIds = new HashSet<>();
 
     // Needed internally for OLAP tasks
     public DegreeVertexProgram() {
     }
 
-    public DegreeVertexProgram(Set<Integer> types, Set<Integer> ofTypeLabels) {
+    public DegreeVertexProgram(Set<TypeId> types, Set<TypeId> ofTypeIds) {
         selectedTypes = types;
-        this.ofTypeLabels = ofTypeLabels;
+        this.ofTypeIds = ofTypeIds;
     }
 
     @Override
     public void storeState(final Configuration configuration) {
         super.storeState(configuration);
-        ofTypeLabels.forEach(type -> configuration.addProperty(OF_TYPE_LABELS + "." + type, type));
+        ofTypeIds.forEach(type -> configuration.addProperty(OF_TYPE_LABELS + "." + type, type));
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(OF_TYPE_LABELS).getKeys().forEachRemaining(key ->
-                ofTypeLabels.add(Integer.parseInt(configuration.getProperty(OF_TYPE_LABELS + "." + key).toString())));
+                ofTypeIds.add(TypeId.of(configuration.getInt(OF_TYPE_LABELS + "." + key))));
     }
 
     @Override
@@ -103,8 +104,8 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
                 break;
 
             case 2:
-                Integer typeId = Utility.getVertexTypeId(vertex);
-                if (selectedTypes.contains(typeId) && ofTypeLabels.contains(typeId)) {
+                TypeId typeId = Utility.getVertexTypeId(vertex);
+                if (selectedTypes.contains(typeId) && ofTypeIds.contains(typeId)) {
                     vertex.property(DEGREE, getMessageCount(messenger));
                 }
                 break;

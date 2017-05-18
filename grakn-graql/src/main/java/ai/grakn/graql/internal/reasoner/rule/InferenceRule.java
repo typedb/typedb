@@ -22,30 +22,30 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import java.util.Map;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -84,7 +84,7 @@ public class InferenceRule {
 
     @Override
     public String toString(){
-        return  "\n" + this.body.toString() + "\n->\n" + this.head.toString() + "\n";
+        return  "\n" + this.body.toString() + "->" + this.head.toString() + "\n";
     }
 
     @Override
@@ -103,8 +103,8 @@ public class InferenceRule {
         return hashCode;
     }
 
-    private static Conjunction<VarAdmin> conjunction(PatternAdmin pattern){
-        Set<VarAdmin> vars = pattern
+    private static Conjunction<VarPatternAdmin> conjunction(PatternAdmin pattern){
+        Set<VarPatternAdmin> vars = pattern
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);
@@ -151,37 +151,47 @@ public class InferenceRule {
     }
 
     /**
-     * @param parentAtom from which constrained are propagated
-     * @return the inference rule with constraints
+     * @param parentAtom atom containing constraints (parent)
+     * @param ruleUnifier rule unifier
+     * @param permutationUnifier permutation unifier
+     * @return rule with propagated constraints from parent
      */
-    public  InferenceRule propagateConstraints(Atom parentAtom){
+    public InferenceRule propagateConstraints(Atom parentAtom, Unifier ruleUnifier, Unifier permutationUnifier){
         if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
-
-        Set<IdPredicate> idPredicates = parentAtom.getIdPredicates();
-        body.addAtomConstraints(idPredicates);
-        head.addAtomConstraints(idPredicates);
 
         //only transfer value predicates if head has a user specified value variable
         Atom headAtom = head.getAtom();
         if(headAtom.isResource() && ((Resource) headAtom).getMultiPredicate().isEmpty()){
-            Set<ValuePredicate> valuePredicates = parentAtom.getValuePredicates();
+            Set<ValuePredicate> valuePredicates = parentAtom.getValuePredicates().stream()
+                    .map(ValuePredicate::copy)
+                    .map(type -> type.unify(permutationUnifier))
+                    .map(type -> type.unify(ruleUnifier))
+                    .map(type -> (ValuePredicate) type)
+                    .collect(toSet());
             head.addAtomConstraints(valuePredicates);
             body.addAtomConstraints(valuePredicates);
         }
 
-        Set<TypeAtom> types = parentAtom.getTypeConstraints().stream()
+        Set<TypeAtom> unifiedTypes = parentAtom.getTypeConstraints().stream()
+                .map(TypeAtom::copy)
+                .map(type -> type.unify(permutationUnifier))
+                .map(type -> type.unify(ruleUnifier))
+                .map(type -> (TypeAtom) type)
                 .collect(toSet());
-        Set<VarName> typeVars = types.stream().map(Atom::getVarName).collect(toSet());
-        Map<VarName, Type> varTypeMap = parentAtom.getParentQuery().getVarTypeMap();
 
         //remove less specific types if present
+        Map<Var, Type> unifiedVarTypeMap = unifiedTypes.stream()
+                .collect(Collectors.toMap(Atomic::getVarName, TypeAtom::getType));
+        Set<Var> unifiedTypeVars = unifiedTypes.stream()
+                .map(Atom::getVarName)
+                .collect(toSet());
         body.getTypeConstraints().stream()
-                .filter(type -> typeVars.contains(type.getVarName()))
-                .filter(type -> !type.equals(varTypeMap.get(type.getVarName())))
-                .filter(type -> type.getType().subTypes().contains(varTypeMap.get(type.getVarName())))
+                .filter(type -> unifiedTypeVars.contains(type.getVarName()))
+                .filter(type -> !type.equals(unifiedVarTypeMap.get(type.getVarName())))
+                .filter(type -> type.getType().subTypes().contains(unifiedVarTypeMap.get(type.getVarName())))
                 .forEach(body::removeAtomic);
 
-        body.addAtomConstraints(types.stream().filter(type -> !body.getTypeConstraints().contains(type)).collect(toSet()));
+        body.addAtomConstraints(unifiedTypes.stream().filter(type -> !body.getTypeConstraints().contains(type)).collect(toSet()));
         return this;
     }
 
@@ -208,8 +218,13 @@ public class InferenceRule {
         return this;
     }
 
-    private InferenceRule rewriteToUserDefined(){
-        return this.rewriteHead().rewriteBody();
+    /**
+     * rewrite the rule to a form with user defined variables
+     * @param parentAtom reference parent atom
+     * @return rewritten rule
+     */
+    public InferenceRule rewriteToUserDefined(Atom parentAtom){
+        return parentAtom.isUserDefinedName()? this.rewriteHead().rewriteBody() : this;
     }
 
     /**
@@ -230,27 +245,5 @@ public class InferenceRule {
             unifier.merge(childAtom.getUnifier(extendedParent));
         }
         return unifier;
-    }
-
-    /**
-     *
-     * @param unifier to be applied on this rule
-     * @return unified rule
-     */
-    public InferenceRule unify(Unifier unifier){
-        //NB: captures of bound variables have to be resolved to the same variable hence using head unifier
-        Unifier headUnifier = head.unify(unifier);
-        body.unify(headUnifier);
-        return this;
-    }
-
-    /**
-     * make rule consistent variable-wise with the parent atom by means of unification
-     * @param parentAtom atom the rule should be unified with
-     */
-    public InferenceRule unify(Atom parentAtom) {
-        if (parentAtom.isUserDefinedName()) rewriteToUserDefined();
-        this.unify(getUnifier(parentAtom));
-        return this;
     }
 }

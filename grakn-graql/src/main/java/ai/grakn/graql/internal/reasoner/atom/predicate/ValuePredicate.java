@@ -19,12 +19,12 @@
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.graql.admin.Atomic;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Iterator;
@@ -41,8 +41,8 @@ import java.util.Set;
  */
 public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
 
-    public ValuePredicate(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
-    public ValuePredicate(VarName varName, ValuePredicateAdmin pred, ReasonerQuery par){
+    public ValuePredicate(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
+    public ValuePredicate(Var varName, ValuePredicateAdmin pred, ReasonerQuery par){
         this(createValueVar(varName, pred), par);}
     private ValuePredicate(ValuePredicate pred) { super(pred);}
 
@@ -51,7 +51,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
         return new ValuePredicate(this);
     }
 
-    public static VarAdmin createValueVar(VarName name, ValuePredicateAdmin pred) {
+    public static VarPatternAdmin createValueVar(Var name, ValuePredicateAdmin pred) {
         return Graql.var(name).val(pred).admin();
     }
 
@@ -98,7 +98,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     }
 
     @Override
-    protected ValuePredicateAdmin extractPredicate(VarAdmin pattern) {
+    protected ValuePredicateAdmin extractPredicate(VarPatternAdmin pattern) {
         Iterator<ValueProperty> properties = pattern.getProperties(ValueProperty.class).iterator();
         ValueProperty property = properties.next();
         if (properties.hasNext()) {
@@ -108,9 +108,9 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     }
 
     @Override
-    public Set<VarName> getVarNames(){
-        Set<VarName> vars = super.getVarNames();
-        VarAdmin innerVar = getPredicate().getInnerVar().orElse(null);
+    public Set<Var> getVarNames(){
+        Set<Var> vars = super.getVarNames();
+        VarPatternAdmin innerVar = getPredicate().getInnerVar().orElse(null);
         if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
         return vars;
     }

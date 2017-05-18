@@ -18,6 +18,8 @@
 
 package ai.grakn.graql;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * An aggregate operation with an associated name. Used when combining aggregates using the 'select' aggregate.
  * @param <T> the type of the query to perform the aggregate operation on
@@ -30,11 +32,13 @@ public interface NamedAggregate<T, S> {
      * Get the aggregate this named aggregate represents.
      * @return the aggregate this named aggregate represents
      */
+    @CheckReturnValue
     Aggregate<T, S> getAggregate();
 
     /**
      * Get the name of this aggregate.
      * @return the name of this aggregate
      */
+    @CheckReturnValue
     String getName();
 }

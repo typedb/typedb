@@ -54,6 +54,7 @@ public interface RuleType extends Type {
      * @param scope The category of this Type
      * @return The Type itself.
      */
+    @Override
     RuleType scope(Instance scope);
 
     /**
@@ -62,6 +63,7 @@ public interface RuleType extends Type {
      * @param scope The Instances that is currently scoping this Type.
      * @return The Type itself
      */
+    @Override
     RuleType deleteScope(Instance scope);
 
     /**
@@ -70,6 +72,7 @@ public interface RuleType extends Type {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
+    @Override
     RuleType key(ResourceType resourceType);
 
     /**
@@ -78,6 +81,7 @@ public interface RuleType extends Type {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
+    @Override
     RuleType resource(ResourceType resourceType);
 
     //---- Inherited Methods
@@ -87,12 +91,14 @@ public interface RuleType extends Type {
      *                    If the concept type is abstract it is not allowed to have any instances.
      * @return The Rule Type itself
      */
+    @Override
     RuleType setAbstract(Boolean isAbstract);
 
     /**
      *
      * @return The super type of this Rule Type
      */
+    @Override
     RuleType superType();
 
     /**
@@ -114,6 +120,7 @@ public interface RuleType extends Type {
      *
      * @return All the sub types of this rule type
      */
+    @Override
     Collection<RuleType> subTypes();
 
     /**
@@ -121,6 +128,7 @@ public interface RuleType extends Type {
      * @param roleType The Role Type which the instances of this Type are allowed to play.
      * @return The Rule Type itself
      */
+    @Override
     RuleType plays(RoleType roleType);
 
     /**
@@ -128,17 +136,20 @@ public interface RuleType extends Type {
      * @param roleType The Role Type which the instances of this Type should no longer be allowed to play.
      * @return The Rule Type itself
      */
+    @Override
     RuleType deletePlays(RoleType roleType);
 
     /**
      *
      * @return All the rule instances of this Rule Type.
      */
+    @Override
     Collection<Rule> instances();
 
     /**
      *
      * @return a deep copy of this concept.
      */
+    @Override
     RuleType copy();
 }

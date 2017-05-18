@@ -21,6 +21,7 @@ package ai.grakn.concept;
 
 import ai.grakn.exception.ConceptNotUniqueException;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -47,6 +48,7 @@ public interface Relation extends Instance {
      * @param resource The resource to which a relationship is created
      * @return The instance itself
      */
+    @Override
     Relation resource(Resource resource);
 
     //------------------------------------- Accessors ----------------------------------
@@ -57,6 +59,7 @@ public interface Relation extends Instance {
      *
      * @return The associated Relation Type for this Relation.
      */
+    @Override
     RelationType type();
 
     /**
@@ -65,6 +68,7 @@ public interface Relation extends Instance {
      *
      * @return A list of all the role types and the instances playing them in this relation.
      */
+    @CheckReturnValue
     Map<RoleType, Set<Instance>> allRolePlayers();
 
     /**
@@ -73,6 +77,7 @@ public interface Relation extends Instance {
      *                  If blank, returns all role players.
      * @return a list of every {@link Instance} involved in the {@link Relation}.
      */
+    @CheckReturnValue
     Collection<Instance> rolePlayers(RoleType... roleTypes);
 
     /**

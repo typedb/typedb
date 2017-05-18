@@ -25,7 +25,7 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
@@ -64,6 +64,7 @@ public class QueryErrorTest {
     public void testErrorNonExistentConceptType() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("film");
+        //noinspection ResultOfMethodCallIgnored
         qb.match(var("x").isa("film")).stream();
     }
 
@@ -71,6 +72,7 @@ public class QueryErrorTest {
     public void testErrorNotARole() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("role"), containsString("person"), containsString("isa person")));
+        //noinspection ResultOfMethodCallIgnored
         qb.match(var("x").isa("movie"), var().rel("person", "y").rel("x")).stream();
     }
 
@@ -86,6 +88,7 @@ public class QueryErrorTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(
                 containsString("relation"), containsString("movie"), containsString("separate"), containsString(";")));
+        //noinspection ResultOfMethodCallIgnored
         qb.match(var().isa("movie").rel("x").rel("y")).stream();
     }
 
@@ -93,6 +96,7 @@ public class QueryErrorTest {
     public void testErrorInvalidNonExistentRole() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(ErrorMessage.NOT_A_ROLE_TYPE.getMessage("character-in-production", "character-in-production"));
+        //noinspection ResultOfMethodCallIgnored
         qb.match(var().isa("has-cast").rel("character-in-production", "x")).stream();
     }
 
@@ -102,6 +106,7 @@ public class QueryErrorTest {
         exception.expectMessage(allOf(
                 containsString("abc"), containsString("isa"), containsString("person"), containsString("has-cast")
         ));
+        //noinspection ResultOfMethodCallIgnored
         qb.match(var("abc").isa("person").isa("has-cast"));
     }
 
@@ -110,6 +115,7 @@ public class QueryErrorTest {
         // 'has genre' is not allowed because genre is an entity type
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("genre"), containsString("resource")));
+        //noinspection ResultOfMethodCallIgnored
         qb.match(var("x").isa("movie").has("genre", "Drama")).stream();
     }
 
@@ -117,6 +123,7 @@ public class QueryErrorTest {
     public void testExceptionWhenNoSelectVariablesProvided() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage("select");
+        //noinspection ResultOfMethodCallIgnored
         qb.match(var("x").isa("movie")).select();
     }
 
@@ -124,12 +131,14 @@ public class QueryErrorTest {
     public void testExceptionWhenNoPatternsProvided() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
+        //noinspection ResultOfMethodCallIgnored
         qb.match();
     }
 
     @Test
     public void testExceptionWhenNullValue() {
         exception.expect(NullPointerException.class);
+        //noinspection ResultOfMethodCallIgnored
         var("x").val(null);
     }
 
@@ -157,6 +166,7 @@ public class QueryErrorTest {
                 containsString("actor"),
                 containsString("role")
         ));
+        //noinspection ResultOfMethodCallIgnored
         qb.match(var("x").isa("actor")).stream();
     }
 
@@ -178,7 +188,7 @@ public class QueryErrorTest {
         Stream<Concept> concepts = query.get("y");
 
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(VarName.of("y")));
+        exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(Var.of("y")));
 
         //noinspection ResultOfMethodCallIgnored
         concepts.count();

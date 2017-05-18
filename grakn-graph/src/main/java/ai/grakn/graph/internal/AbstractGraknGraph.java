@@ -32,6 +32,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
@@ -131,11 +132,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public Integer convertToId(TypeLabel label){
+    public TypeId convertToId(TypeLabel label){
         if(getTxCache().isLabelCached(label)){
             return getTxCache().convertLabelToId(label);
         }
-        return -1;
+        return TypeId.invalid();
     }
 
     /**
@@ -143,7 +144,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      *
      * @return the current available Grakn id which can be used for types
      */
-    private int getNextTypeId(){
+    private TypeId getNextId(){
         TypeImpl<?, ?> metaConcept = (TypeImpl<?, ?>) getMetaConcept();
         Integer currentValue = metaConcept.getProperty(Schema.ConceptProperty.CURRENT_TYPE_ID);
         if(currentValue == null){
@@ -153,7 +154,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
         //Vertex is used directly here to bypass meta type mutation check
         metaConcept.getVertex().property(Schema.ConceptProperty.CURRENT_TYPE_ID.name(), currentValue);
-        return currentValue;
+        return TypeId.of(currentValue);
     }
 
     /**
@@ -367,11 +368,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private Vertex putVertex(TypeLabel label, Schema.BaseType baseType){
         Vertex vertex;
-        Integer id = convertToId(label);
-        ConceptImpl concept = null;
-        if(id != -1) concept = getConcept(Schema.ConceptProperty.TYPE_ID, id);
+        ConceptImpl concept = getType(convertToId(label));
         if(concept == null) {
-            vertex = addTypeVertex(getNextTypeId(), label, baseType);
+            vertex = addTypeVertex(getNextId(), label, baseType);
         } else {
             if(!baseType.equals(concept.getBaseType())) {
                 throw new ConceptNotUniqueException(concept, label.getValue());
@@ -389,10 +388,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param baseType The base type of the new type
      * @return The new type vertex
      */
-    private Vertex addTypeVertex(Integer id, TypeLabel label, Schema.BaseType baseType){
+    private Vertex addTypeVertex(TypeId id, TypeLabel label, Schema.BaseType baseType){
         Vertex vertex = addVertex(baseType);
         vertex.property(Schema.ConceptProperty.TYPE_LABEL.name(), label.getValue());
-        vertex.property(Schema.ConceptProperty.TYPE_ID.name(), id);
+        vertex.property(Schema.ConceptProperty.TYPE_ID.name(), id.getValue());
         return vertex;
     }
 
@@ -562,18 +561,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private <T extends Type> T getType(TypeLabel label, Schema.BaseType baseType){
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
-        Type type = buildType(label, ()-> {
-            Integer id = convertToId(label);
-            if (id != -1) {
-                return getType(id);
-            } else {
-                return null;
-            }
-        });
+        Type type = buildType(label, ()-> getType(convertToId(label)));
         return validateConceptType(type, baseType, () -> null);
     }
-    private <T extends Type> T getType(int id){
-        return getConcept(Schema.ConceptProperty.TYPE_ID, id);
+    private <T extends Type> T getType(TypeId id){
+        if(!id.isValid()) return null;
+        return getConcept(Schema.ConceptProperty.TYPE_ID, id.getValue());
     }
 
     @Override
@@ -676,7 +669,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         CastingImpl casting = getElementFactory().buildCasting(addVertex(Schema.BaseType.CASTING), role.currentShard()).setHash(role, rolePlayer);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
-            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId());
+            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId().getValue());
         }
         return casting;
     }
@@ -692,7 +685,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         // Relation To Casting
         EdgeImpl relationToCasting = relation.putEdge(foundCasting, Schema.EdgeLabel.CASTING);
-        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId());
+        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId().getValue());
         getTxCache().trackConceptForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
 
         //TODO: Only execute this if we need to. I.e if the above relation.putEdge() actually added a new edge.
@@ -708,14 +701,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private void putShortcutEdge(Instance toInstance, Relation fromRelation, RoleType roleType){
         boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getTypeId()).
-                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), roleType.getTypeId()).inV().
+                has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getTypeId().getValue()).
+                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), roleType.getTypeId().getValue()).inV().
                 hasId(toInstance.getId().getRawValue()).hasNext();
 
         if(!exists){
             EdgeImpl edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.SHORTCUT);
-            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getTypeId());
-            edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getTypeId());
+            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getTypeId().getValue());
+            edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getTypeId().getValue());
         }
     }
 
@@ -772,7 +765,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("committed", getKeyspace());
                 logs = commitWithLogs();
                 if(logs.isPresent() && submitLogs) {
-                    LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, logs.get()) + "]");
+                    String logsToUpload = logs.get();
+                    new Thread(() -> LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, logsToUpload) + "]")).start();
                 }
                 getTxCache().writeToGraphCache(true);
             } else {
@@ -865,6 +859,42 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
+    @Override
+    public boolean duplicateCastingsExist(String index, Set<ConceptId> castingVertexIds){
+        CastingImpl mainCasting = (CastingImpl) getMainConcept(index);
+        return getDuplicates(mainCasting, castingVertexIds).size() > 0;
+    }
+
+    /**
+     * Returns the duplicates of the given concept
+     * @param mainConcept primary concept - this one is returned by the index and not considered a duplicate
+     * @param conceptVertexIds Set of Ids containing potential duplicates of the main concept
+     * @return a set containing the duplicates of the given concept
+     */
+    private Set<? extends ConceptImpl> getDuplicates(ConceptImpl mainConcept, Set<ConceptId> conceptVertexIds){
+        Set<ConceptImpl> duplicated = conceptVertexIds.stream()
+                .map(id -> this.<ConceptImpl>getConceptRawId(id.getValue()))
+                //filter non-null, will be null if previously deleted/merged
+                .filter(Objects::nonNull)
+                .collect(toSet());
+
+        duplicated.remove(mainConcept);
+
+        return duplicated;
+    }
+
+    /**
+     * Given an index, get the concept associated with it. The "main" concept is the one
+     * returned by the index after all of the duplicates have been created.
+     *
+     * @param index retrieve the concept associated with this index
+     * @return Concept representing the vertex at the given index
+     */
+    private ConceptImpl getMainConcept(String index){
+        //This is done to ensure we merge into the indexed casting.
+        return getConcept(Schema.ConceptProperty.INDEX, index);
+    }
+
     /**
      * Merges the provided duplicate castings.
      *
@@ -873,17 +903,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds){
-        Set<CastingImpl> duplicated = castingVertexIds.stream()
-                .map(id -> this.<CastingImpl>getConceptRawId(id.getValue()))
-                //filter non-null, will be null if previously deleted/merged
-                .filter(Objects::nonNull)
-                .collect(toSet());
+        CastingImpl mainCasting = (CastingImpl) getMainConcept(index);
+        Set<CastingImpl> duplicated = (Set<CastingImpl>) getDuplicates(mainCasting, castingVertexIds);
 
-        //This is done to ensure we merge into the indexed casting. Needs to be cleaned up though
-        CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX, index);
-        duplicated.remove(mainCasting);
-
-        if(duplicated.size() > 0){
+        if (duplicated.size() > 0) {
             //Fix the duplicates
             Set<Relation> duplicateRelations = mergeCastings(mainCasting, duplicated);
 
@@ -932,7 +955,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                     //Delete index so we can reset it when things are finalised.
                     otherRelation.setProperty(Schema.ConceptProperty.INDEX, null);
                     EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
-                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId());
+                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId().getValue());
                     relations = mainCasting.getRelations();
                     relationsRequiringReIndexing.add(otherRelation);
                 }
@@ -965,24 +988,29 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
+     * Check if the given index has duplicates to merge
+     * @param index Index of the potentially duplicated resource
+     * @param resourceVertexIds Set of vertex ids containing potential duplicates
+     * @return true if there are duplicate resources amongst the given set and PostProcessing should proceed
+     */
+    @Override
+    public boolean duplicateResourcesExist(String index, Set<ConceptId> resourceVertexIds){
+        ResourceImpl<?> mainResource = (ResourceImpl<?>) getMainConcept(index);
+        return getDuplicates(mainResource, resourceVertexIds).size() > 0;
+    }
+
+    /**
      *
      * @param resourceVertexIds The resource vertex ids which need to be merged.
      * @return True if a commit is required.
      */
     @Override
     public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds){
-        Set<ResourceImpl> duplicates = resourceVertexIds.stream()
-                .map(id -> this.<ResourceImpl>getConceptRawId(id.getValue()))
-                //filter non-null, will be null if previously deleted/merged
-                .filter(Objects::nonNull)
-                .collect(toSet());
+        ResourceImpl<?> mainResource = (ResourceImpl<?>) getMainConcept(index);
+        Set<ResourceImpl> duplicates = (Set<ResourceImpl>) getDuplicates(mainResource, resourceVertexIds);
 
-        //The "main resource" will be the one returned by the index
-        ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index);
-        duplicates.remove(mainResource);
-
-        //Remove any resources associated with this index that are not the main resource
-        if(duplicates.size() > 0){
+        if(duplicates.size() > 0) {
+            //Remove any resources associated with this index that are not the main resource
             for (ResourceImpl<?> otherResource : duplicates) {
                 Collection<Relation> otherRelations = otherResource.relations();
 
@@ -1016,8 +1044,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //Gets the other resource index and replaces all occurrences of the other resource id with the main resource id
         //This allows us to find relations far more quickly.
         String newIndex = otherRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
-        RelationImpl foundRelation = getTxCache().getModifiedRelations().get(newIndex);
-        if(foundRelation == null) getConcept(Schema.ConceptProperty.INDEX, newIndex);
+        RelationImpl foundRelation = getTxCache().getCachedRelation(newIndex);
+        if(foundRelation == null) foundRelation = getConcept(Schema.ConceptProperty.INDEX, newIndex);
 
         if (foundRelation != null) {//If it exists delete the other one
             otherRelation.deleteNode(); //Raw deletion because the castings should remain

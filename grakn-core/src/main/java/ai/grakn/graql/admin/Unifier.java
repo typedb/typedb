@@ -18,7 +18,9 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
+
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -44,7 +46,8 @@ public interface Unifier{
      * @param key specific variable
      * @return corresponding term
      */
-    VarName get(VarName key);
+    @CheckReturnValue
+    Var get(Var key);
 
     /**
      * add a new mapping
@@ -52,65 +55,78 @@ public interface Unifier{
      * @param value term
      * @return previous value associated with key, or null if there was no mapping for key
      */
-    VarName addMapping(VarName key, VarName value);
+    Var addMapping(Var key, Var value);
 
 
     /**
      * @return true if the set of mappings is empty
      */
+    @CheckReturnValue
     boolean isEmpty();
 
-    Map<VarName, VarName> map();
+    @CheckReturnValue
+    Map<Var, Var> map();
 
     /**
      * @return variables present in this unifier
      */
-    Set<VarName> keySet();
+    @CheckReturnValue
+    Set<Var> keySet();
 
     /**
      * @return terms present in this unifier
      */
-    Collection<VarName> values();
+    @CheckReturnValue
+    Collection<Var> values();
 
     /**
      *
      * @return set of mappings constituting this unifier
      */
-    Set<Map.Entry<VarName, VarName>> getMappings();
+    @CheckReturnValue
+    Set<Map.Entry<Var, Var>> mappings();
 
     /**
      * @param key variable to be inspected for presence
      * @return true if specified key is part of a mapping
      */
-    boolean containsKey(VarName key);
+    @CheckReturnValue
+    boolean containsKey(Var key);
 
     /**
      * @param value term to be checked for presence
      * @return true if specified value is part of a mapping
      */
-    boolean containsValue(VarName value);
+    @CheckReturnValue
+    boolean containsValue(Var value);
 
     /**
      * @param u unifier to compare with
      * @return true if this unifier contains all mappings of u
      */
+    @CheckReturnValue
     boolean containsAll(Unifier u);
 
     /**
      * @param d unifier to be merged with this unifier
-     * @return merged unifier
+     * @return this
      */
     Unifier merge(Unifier d);
 
+    /**
+     * @return this
+     */
     Unifier removeTrivialMappings();
 
     /**
-     * @return unifier with inverted mappings
+     * @return unifier inverse - new unifier with inverted mappings
      */
-    Unifier invert();
+    @CheckReturnValue
+    Unifier inverse();
 
     /**
-     * @return number of mappings that consittute this unifier
+     * @return number of mappings that constitute this unifier
      */
+    @CheckReturnValue
     int size();
 }

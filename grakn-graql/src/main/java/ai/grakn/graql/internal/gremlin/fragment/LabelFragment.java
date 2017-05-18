@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -31,14 +31,14 @@ class LabelFragment extends AbstractFragment {
 
     private final TypeLabel label;
 
-    LabelFragment(VarName start, TypeLabel label) {
+    LabelFragment(Var start, TypeLabel label) {
         super(start);
         this.label = label;
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.has(TYPE_ID.name(), graph.admin().convertToId(label));
+        traversal.has(TYPE_ID.name(), graph.admin().convertToId(label).getValue());
     }
 
     @Override

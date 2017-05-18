@@ -19,8 +19,9 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
@@ -41,16 +42,19 @@ public interface PatternAdmin extends Pattern {
      *
      * @return the pattern group in disjunctive normal form
      */
-    Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm();
+    @CheckReturnValue
+    Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm();
 
     /**
      * Get all common, user-defined variable names in the pattern.
      */
-    Set<VarName> commonVarNames();
+    @CheckReturnValue
+    Set<Var> commonVarNames();
 
     /**
      * @return true if this Pattern.Admin is a Conjunction
      */
+    @CheckReturnValue
     default boolean isDisjunction() {
         return false;
     }
@@ -58,13 +62,15 @@ public interface PatternAdmin extends Pattern {
     /**
      * @return true if this Pattern.Admin is a Disjunction
      */
+    @CheckReturnValue
     default boolean isConjunction() {
         return false;
     }
 
     /**
-     * @return true if this Pattern.Admin is a Var.Admin
+     * @return true if this {@link PatternAdmin} is a {@link VarPatternAdmin}
      */
+    @CheckReturnValue
     default boolean isVar() {
         return false;
     }
@@ -72,6 +78,7 @@ public interface PatternAdmin extends Pattern {
     /**
      * @return this Pattern.Admin as a Disjunction, if it is one.
      */
+    @CheckReturnValue
     default Disjunction<?> asDisjunction() {
         throw new UnsupportedOperationException();
     }
@@ -79,21 +86,24 @@ public interface PatternAdmin extends Pattern {
     /**
      * @return this Pattern.Admin as a Conjunction, if it is one.
      */
+    @CheckReturnValue
     default Conjunction<?> asConjunction() {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * @return this Pattern.Admin as a Var.Admin, if it is one.
+     * @return this {@link PatternAdmin} as a {@link VarPatternAdmin}, if it is one.
      */
-    default VarAdmin asVar() {
+    @CheckReturnValue
+    default VarPatternAdmin asVar() {
         throw new UnsupportedOperationException();
     }
 
     /**
      * @return all variables referenced in the pattern
      */
-    default Set<VarAdmin> getVars() {
+    @CheckReturnValue
+    default Set<VarPatternAdmin> getVars() {
         return getDisjunctiveNormalForm().getPatterns().stream()
                 .flatMap(conj -> conj.getPatterns().stream())
                 .collect(toSet());

@@ -18,11 +18,11 @@
 
 package ai.grakn.graql.internal.pattern;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -47,16 +47,16 @@ class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
     }
 
     @Override
-    public Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm() {
+    public Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm() {
         // Get all disjunctions in query
-        List<Set<Conjunction<VarAdmin>>> disjunctionsOfConjunctions = patterns.stream()
+        List<Set<Conjunction<VarPatternAdmin>>> disjunctionsOfConjunctions = patterns.stream()
                 .map(p -> p.getDisjunctiveNormalForm().getPatterns())
                 .collect(toList());
 
         // Get the cartesian product.
         // in other words, this puts the 'ands' on the inside and the 'ors' on the outside
         // e.g. (A or B) and (C or D)  <=>  (A and C) or (A and D) or (B and C) or (B and D)
-        Set<Conjunction<VarAdmin>> dnf = Sets.cartesianProduct(disjunctionsOfConjunctions).stream()
+        Set<Conjunction<VarPatternAdmin>> dnf = Sets.cartesianProduct(disjunctionsOfConjunctions).stream()
                 .map(ConjunctionImpl::fromConjunctions)
                 .collect(toSet());
 
@@ -67,7 +67,7 @@ class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
     }
 
     @Override
-    public Set<VarName> commonVarNames() {
+    public Set<Var> commonVarNames() {
         return patterns.stream().map(PatternAdmin::commonVarNames).reduce(ImmutableSet.of(), Sets::union);
     }
 

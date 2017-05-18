@@ -21,6 +21,7 @@ package ai.grakn.graql;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
 /**
@@ -43,12 +44,14 @@ public interface ComputeQuery<T> extends Query<T> {
      * @param subTypelabels an array of types to include in the subgraph
      * @return a ComputeQuery with the subTypelabels set
      */
+    @CheckReturnValue
     ComputeQuery<T> in(String... subTypelabels);
 
     /**
      * @param subTypeLabels a collection of types to include in the subgraph
      * @return a ComputeQuery with the subTypeLabels set
      */
+    @CheckReturnValue
     ComputeQuery<T> in(Collection<TypeLabel> subTypeLabels);
 
     /**

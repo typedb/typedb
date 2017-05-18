@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeId;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -45,8 +46,8 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     public DegreeStatisticsVertexProgram() {
     }
 
-    public DegreeStatisticsVertexProgram(Set<Integer> types, Set<Integer> ofTypeLabels) {
-        super(types, ofTypeLabels);
+    public DegreeStatisticsVertexProgram(Set<TypeId> types, Set<TypeId> ofTypeIDs) {
+        super(types, ofTypeIDs);
     }
 
     @Override
@@ -58,7 +59,7 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                degreeStatisticsStepInstance(vertex, messenger, selectedTypes, ofTypeLabels);
+                degreeStatisticsStepInstance(vertex, messenger, selectedTypes, ofTypeIds);
                 break;
             case 1:
                 degreeStatisticsStepCastingIn(vertex, messenger);
@@ -70,7 +71,7 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
                 degreeStatisticsStepCastingOut(vertex, messenger);
                 break;
             case 4:
-                degreeStatisticsStepResource(vertex, messenger, ofTypeLabels);
+                degreeStatisticsStepResource(vertex, messenger, ofTypeIds);
                 break;
             default:
                 throw new RuntimeException("unreachable");
@@ -100,8 +101,8 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     }
 
     static void degreeStatisticsStepInstance(Vertex vertex, Messenger<Long> messenger,
-                                             Set<Integer> selectedTypeIds, Set<Integer> ofTypeIds) {
-        Integer typeId = Utility.getVertexTypeId(vertex);
+                                             Set<TypeId> selectedTypeIds, Set<TypeId> ofTypeIds) {
+        TypeId typeId = Utility.getVertexTypeId(vertex);
         if (selectedTypeIds.contains(typeId) && !ofTypeIds.contains(typeId)) {
             messenger.sendMessage(messageScopeInRolePlayer, 1L);
         }
@@ -127,8 +128,8 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
         }
     }
 
-    static void degreeStatisticsStepResource(Vertex vertex, Messenger<Long> messenger, Set<Integer> ofTypeLabels) {
-        if (ofTypeLabels.contains(Utility.getVertexTypeId(vertex))) {
+    static void degreeStatisticsStepResource(Vertex vertex, Messenger<Long> messenger, Set<TypeId> ofTypeIds) {
+        if (ofTypeIds.contains(Utility.getVertexTypeId(vertex))) {
             vertex.property(DEGREE, getMessageCount(messenger));
         }
     }

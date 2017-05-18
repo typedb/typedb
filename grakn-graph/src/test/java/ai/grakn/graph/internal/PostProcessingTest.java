@@ -92,10 +92,10 @@ public class PostProcessingTest extends GraphTestBase{
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
-        edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleType.getTypeId());
+        edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleType.getTypeId().getValue());
 
         edge = relation.getVertex().addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
-        edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleType.getTypeId());
+        edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleType.getTypeId().getValue());
 
         relation.setHash();
 
@@ -253,19 +253,19 @@ public class PostProcessingTest extends GraphTestBase{
     }
 
     @Test
-    public void whenPostProcessingCastingThatDoesNotExist_FixDuplicateCastingsReturnsFalse(){
+    public void whenPostProcessingCastingThatDoesNotExist_DuplicateCastingsExistReturnFalse(){
         String invalidCastingIndex = UUID.randomUUID().toString();
 
         assertFalse("Fix duplicate castings returns false",
-                graknGraph.fixDuplicateCastings(invalidCastingIndex, ImmutableSet.of(ConceptId.of(invalidCastingIndex))));
+                graknGraph.duplicateCastingsExist(invalidCastingIndex, ImmutableSet.of(ConceptId.of(invalidCastingIndex))));
     }
 
     @Test
-    public void whenPostProcessingCastingThatExistsButNoDuplicate_FixDuplicateCastingsReturnsFalse(){
+    public void whenPostProcessingCastingThatExistsButNoDuplicate_DuplicateCastingsExistReturnFalse(){
         CastingImpl validCasting = (CastingImpl) instance1.castings().iterator().next();
 
         assertFalse("Fix duplicate castings returns false",
-                graknGraph.fixDuplicateCastings(validCasting.getIndex(), ImmutableSet.of(validCasting.getId())));
+                graknGraph.duplicateCastingsExist(validCasting.getIndex(), ImmutableSet.of(validCasting.getId())));
     }
 
     @Test

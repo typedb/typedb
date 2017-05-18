@@ -26,7 +26,7 @@ import ai.grakn.graql.admin.AskQueryAdmin;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.common.collect.ImmutableCollection;
 
 import java.util.Collection;
@@ -53,11 +53,11 @@ public class Queries {
      * @param vars       a collection of Vars to insert
      * @param matchQuery the match query to insert for each result
      */
-    public static InsertQueryAdmin insert(ImmutableCollection<VarAdmin> vars, MatchQueryAdmin matchQuery) {
+    public static InsertQueryAdmin insert(ImmutableCollection<VarPatternAdmin> vars, MatchQueryAdmin matchQuery) {
         return new InsertQueryImpl(vars, Optional.of(matchQuery), Optional.empty());
     }
 
-    public static DeleteQueryAdmin delete(Collection<VarAdmin> deleters, MatchQuery matchQuery) {
+    public static DeleteQueryAdmin delete(Collection<VarPatternAdmin> deleters, MatchQuery matchQuery) {
         return new DeleteQueryImpl(deleters, matchQuery);
     }
 

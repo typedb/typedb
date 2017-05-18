@@ -20,6 +20,7 @@ package ai.grakn.concept;
 
 import ai.grakn.exception.ConceptException;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
 /**
@@ -105,13 +106,15 @@ public interface Type extends Concept {
      *
      * @return The unique id of this type
      */
-    Integer getTypeId();
+    @CheckReturnValue
+    TypeId getTypeId();
 
     /**
      * Returns the unique label of this Type.
      *
      * @return The unique label of this type
      */
+    @CheckReturnValue
     TypeLabel getLabel();
 
     /**
@@ -124,18 +127,21 @@ public interface Type extends Concept {
      *
      * @return The resource types which this type is linked with.
      */
+    @CheckReturnValue
     Collection<ResourceType> resources();
 
     /**
      *
      * @return The resource types which this type is linked with as a key.
      */
+    @CheckReturnValue
     Collection<ResourceType> keys();
 
     /**
      *
      * @return The direct super of this Type
      */
+    @CheckReturnValue
     Type superType();
 
     /**
@@ -145,6 +151,7 @@ public interface Type extends Concept {
      *
      * @return All the indirect sub-types of this Type
      */
+    @CheckReturnValue
     Collection<? extends Type> subTypes();
 
     /**
@@ -154,6 +161,7 @@ public interface Type extends Concept {
      *
      * @return All the indirect instances of this type.
      */
+    @CheckReturnValue
     Collection<? extends Instance> instances();
 
     /**
@@ -163,6 +171,7 @@ public interface Type extends Concept {
      *
      * @return returns true if the type is set to be abstract.
      */
+    @CheckReturnValue
     Boolean isAbstract();
 
     /**
@@ -172,6 +181,7 @@ public interface Type extends Concept {
      *
      * @return returns true if the type was created implicitly through {@link #resource}
      */
+    @CheckReturnValue
     Boolean isImplicit();
 
     /**
@@ -180,6 +190,7 @@ public interface Type extends Concept {
      *
      * @return A collection of Rules for which this Type serves as a hypothesis
      */
+    @CheckReturnValue
     Collection<Rule> getRulesOfHypothesis();
 
     /**
@@ -188,6 +199,7 @@ public interface Type extends Concept {
      *
      * @return A collection of Rules for which this Type serves as a conclusion
      */
+    @CheckReturnValue
     Collection<Rule> getRulesOfConclusion();
 
     /**
@@ -195,6 +207,7 @@ public interface Type extends Concept {
      *
      * @return A list of the Instances that scope this Type.
      */
+    @CheckReturnValue
     Collection<Instance> scopes();
 
     //------------------------------------- Other ----------------------------------
@@ -209,5 +222,6 @@ public interface Type extends Concept {
      *
      * @return a deep copy of this concept.
      */
+    @CheckReturnValue
     Type copy();
 }

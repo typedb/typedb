@@ -38,8 +38,8 @@ import spark.Service;
 
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
-import static ai.grakn.test.engine.controller.GraqlControllerTest.exception;
-import static ai.grakn.test.engine.controller.GraqlControllerTest.stringResponse;
+import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
+import static ai.grakn.test.engine.controller.GraqlControllerGETTest.stringResponse;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.KEYSPACE;

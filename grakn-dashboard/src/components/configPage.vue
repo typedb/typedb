@@ -70,10 +70,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                         <td>{{configuration['backgroundTasks.time-lapse']}}</td>
                     </tr>
                     <tr>
-                        <td>Background Tasks post processing delay</td>
-                        <td>{{configuration['backgroundTasks.post-processing-delay']}}</td>
-                    </tr>
-                    <tr>
                         <td>Batch size</td>
                         <td>{{configuration['blockingLoader.batch-size']}}</td>
                     </tr>

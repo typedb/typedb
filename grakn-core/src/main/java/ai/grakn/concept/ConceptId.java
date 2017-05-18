@@ -18,6 +18,7 @@
 
 package ai.grakn.concept;
 
+import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
 /**
@@ -46,6 +47,7 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
      *
      * @return Used for indexing purposes and for graql traversals
      */
+    @CheckReturnValue
     public String getValue(){
         return conceptId.toString();
     }
@@ -54,6 +56,7 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
      *
      * @return the raw vertex id. This is used for traversing across vertices directly.
      */
+    @CheckReturnValue
     public Object getRawValue(){
         return conceptId;
     }
@@ -95,6 +98,7 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
      * @param value The string which potentially represents a Concept
      * @return The matching concept ID
      */
+    @CheckReturnValue
     public static ConceptId of(Object value){
         return new ConceptId(value);
     }

@@ -21,10 +21,10 @@ package ai.grakn.test.graql.reasoner.inference;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -370,7 +370,7 @@ public class SNBInferenceTest {
         String queryString2 = "match $x isa person; $y isa person;$y has name 'Miguel Gonzalez';" +
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; select $x, $z;";
         Unifier unifier = new UnifierImpl();
-        unifier.addMapping(VarName.of("z"), VarName.of("y"));
+        unifier.addMapping(Var.of("z"), Var.of("y"));
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 =  queryAnswers(iqb.materialise(false).parse(queryString2)).unify(unifier);

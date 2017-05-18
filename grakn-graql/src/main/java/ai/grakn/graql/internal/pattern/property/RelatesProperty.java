@@ -25,10 +25,10 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -54,13 +54,13 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getIdPredicate;
  */
 public class RelatesProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final VarAdmin role;
+    private final VarPatternAdmin role;
 
-    public RelatesProperty(VarAdmin role) {
+    public RelatesProperty(VarPatternAdmin role) {
         this.role = role;
     }
 
-    public VarAdmin getRole() {
+    public VarPatternAdmin getRole() {
         return role;
     }
 
@@ -75,17 +75,17 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(VarName start) {
+    public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(relates(start, role.getVarName()));
     }
 
     @Override
-    public Stream<VarAdmin> getTypes() {
+    public Stream<VarPatternAdmin> getTypes() {
         return Stream.of(role);
     }
 
     @Override
-    public Stream<VarAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> getInnerVars() {
         return Stream.of(role);
     }
 
@@ -118,13 +118,13 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
     }
 
     @Override
-    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
-        VarName varName = var.getVarName();
-        VarAdmin roleVar = this.getRole();
-        VarName roleVariable = roleVar.getVarName();
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+        Var varName = var.getVarName();
+        VarPatternAdmin roleVar = this.getRole();
+        Var roleVariable = roleVar.getVarName();
         IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent);
 
-        VarAdmin hrVar = Graql.var(varName).relates(Graql.var(roleVariable)).admin();
+        VarPatternAdmin hrVar = Graql.var(varName).relates(Graql.var(roleVariable)).admin();
         return new TypeAtom(hrVar, rolePredicate, parent);
     }
 }

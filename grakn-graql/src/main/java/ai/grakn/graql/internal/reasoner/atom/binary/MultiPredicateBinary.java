@@ -19,12 +19,12 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
 import java.util.HashSet;
@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 public abstract class MultiPredicateBinary<T extends Predicate> extends BinaryBase {
     private final Set<T> multiPredicate = new HashSet<>();
 
-    protected MultiPredicateBinary(VarAdmin pattern, Set<T> preds, ReasonerQuery par) {
+    protected MultiPredicateBinary(VarPatternAdmin pattern, Set<T> preds, ReasonerQuery par) {
         super(pattern, par);
         this.multiPredicate.addAll(preds);
         this.typeId = extractTypeId(atomPattern.asVar());
@@ -53,7 +53,7 @@ public abstract class MultiPredicateBinary<T extends Predicate> extends BinaryBa
 
     protected MultiPredicateBinary(MultiPredicateBinary<T> a) {super(a);}
 
-    protected abstract ConceptId extractTypeId(VarAdmin var);
+    protected abstract ConceptId extractTypeId(VarPatternAdmin var);
 
     @Override
     public void setParentQuery(ReasonerQuery q) {
@@ -65,8 +65,8 @@ public abstract class MultiPredicateBinary<T extends Predicate> extends BinaryBa
 
     @Override
     public PatternAdmin getCombinedPattern() {
-        Set<VarAdmin> vars = getMultiPredicate().stream()
-                .map(AtomBase::getPattern)
+        Set<VarPatternAdmin> vars = getMultiPredicate().stream()
+                .map(Atomic::getPattern)
                 .map(PatternAdmin::asVar)
                 .collect(Collectors.toSet());
         vars.add(super.getPattern().asVar());
@@ -88,8 +88,9 @@ public abstract class MultiPredicateBinary<T extends Predicate> extends BinaryBa
     }
 
     @Override
-    public void unify (Unifier unifier) {
+    public Atomic unify (Unifier unifier) {
         super.unify(unifier);
         multiPredicate.forEach(predicate -> predicate.unify(unifier));
+        return this;
     }
 }

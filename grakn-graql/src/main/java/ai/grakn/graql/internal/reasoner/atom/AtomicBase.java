@@ -19,13 +19,14 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import ai.grakn.graql.admin.VarPatternAdmin;
+
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
@@ -43,19 +44,19 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
  * @author Kasper Piskorski
  *
  */
-public abstract class AtomBase implements Atomic {
+public abstract class AtomicBase implements Atomic {
 
-    protected VarName varName;
+    protected Var varName;
     protected PatternAdmin atomPattern;
     private ReasonerQuery parent = null;
 
-    protected AtomBase(VarAdmin pattern, ReasonerQuery par) {
+    protected AtomicBase(VarPatternAdmin pattern, ReasonerQuery par) {
         this.atomPattern = pattern;
         this.varName = pattern.getVarName();
         this.parent = par;
     }
 
-    protected AtomBase(AtomBase a) {
+    protected AtomicBase(AtomicBase a) {
         this.atomPattern = a.atomPattern;
         this.varName = atomPattern.asVar().getVarName();
         this.parent = a.getParentQuery();
@@ -68,16 +69,16 @@ public abstract class AtomBase implements Atomic {
     public String toString(){ return atomPattern.toString(); }
 
     @Override
-    public boolean containsVar(VarName name){ return getVarNames().contains(name);}
+    public boolean containsVar(Var name){ return getVarNames().contains(name);}
 
     @Override
     public boolean isUserDefinedName(){ return atomPattern.asVar().isUserDefinedName();}
     
     @Override
-    public VarName getVarName(){ return varName;}
+    public Var getVarName(){ return varName;}
 
     @Override
-    public Set<VarName> getVarNames(){
+    public Set<Var> getVarNames(){
         return Sets.newHashSet(varName);
     }
 
@@ -98,7 +99,7 @@ public abstract class AtomBase implements Atomic {
     public void setParentQuery(ReasonerQuery q){ parent = q;}
     public GraknGraph graph(){ return getParentQuery().graph();}
 
-    private void setVarName(VarName var){
+    private void setVarName(Var var){
         varName = var;
         atomPattern = atomPattern.asVar().setVarName(var);
     }
@@ -108,13 +109,14 @@ public abstract class AtomBase implements Atomic {
      * @param unifier contain variable mappings to be applied
      */
     @Override
-    public void unify(Unifier unifier){
-        VarName var = getVarName();
+    public Atomic unify(Unifier unifier){
+        Var var = getVarName();
         if (unifier.containsKey(var)) {
             setVarName(unifier.get(var));
         } else if (unifier.containsValue(var)) {
             setVarName(capture(var));
         }
+        return this;
     }
 
     /**

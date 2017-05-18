@@ -18,6 +18,8 @@
 
 package ai.grakn.util;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * Enum containing error messages.
  *
@@ -177,12 +179,14 @@ public enum ErrorMessage {
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
     INVALID_CONTENT_TYPE("Invalid combination of query [%s] and content type [%s]"),
     EXPLAIN_ONLY_MATCH("Cannot get explanation for non-match query, given: [%s]"),
+    LOCK_ALREADY_INSTANTIATED("Lock provider can only be instantiated once"),
 
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),
     GRAPH_MUTATION_ERROR("Unexpected error during graph mutation due to [%s]"),
     UNABLE_TO_MUTATE_GRAPH("Unable to mutate graph [%s] due to several repeating errors"),
     BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
+
     //Distributed loading Errors
     ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host. Message:[%s] \n Transaction string: [%s] "),
     ERROR_COMMUNICATING_TO_HOST("Exception thrown while trying to communicate with host [%s]"),
@@ -228,6 +232,7 @@ public enum ErrorMessage {
         this.message = message;
     }
 
+    @CheckReturnValue
     public String getMessage(Object... args) {
         return String.format(message, args);
     }
