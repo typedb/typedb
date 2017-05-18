@@ -90,8 +90,9 @@ public class UsersHandler {
         else if (userExists(username)) {
             return getUser(username).is(USER_PASSWORD, hashedPassword);
         }
-        else
+        else {
             return false;
+        }
     }
 
     public Json getUser(String username) {
@@ -102,8 +103,9 @@ public class UsersHandler {
         if (superUsername().equals(username)) {
             return false;
         }
-        else
+        else {
             return usersMap.remove(username) != null;
+        }
     }
 
     public Json allUsers(int offset, int limit) {
