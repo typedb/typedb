@@ -25,7 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static ai.grakn.graql.internal.template.MacroTest.assertParseEquals;
+import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 

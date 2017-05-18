@@ -16,32 +16,18 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.template;
+package ai.grakn.graql.internal.template.macro;
 
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import static ai.grakn.graql.Graql.parse;
 import static junit.framework.TestCase.assertEquals;
 
-public class MacroTest {
-
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
+public class MacroTestUtilities {
 
     public static void assertParseEquals(String template, Map<String, Object> data, String expected){
         List<Query> result = Graql.parseTemplate(template, data);
