@@ -28,7 +28,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPatternBuilder;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
@@ -203,8 +202,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Set<ValuePredicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);
 
         //add resource atom
-        VarPatternBuilder resource = valueVariable;
-        VarPatternAdmin resVar = varName.has(type, resource).admin();
+        VarPatternAdmin resVar = varName.has(type, valueVariable).admin();
         return new ai.grakn.graql.internal.reasoner.atom.binary.Resource(resVar, predicates, parent);
     }
 }

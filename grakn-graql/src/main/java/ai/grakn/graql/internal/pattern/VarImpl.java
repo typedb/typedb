@@ -34,6 +34,7 @@ import org.apache.commons.lang.StringUtils;
 import java.util.function.Function;
 
 /**
+ * Default implementation of {@link Var}.
  *
  * @author Felix Chapman
  */

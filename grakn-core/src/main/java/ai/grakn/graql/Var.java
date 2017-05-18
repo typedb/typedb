@@ -40,6 +40,10 @@ public interface Var extends VarPatternBuilder {
      */
     Var map(Function<String, String> mapper);
 
+    /**
+     * Whether the variable has been manually defined or automatically generated.
+     * @return whether the variable has been manually defined or automatically generated.
+     */
     boolean isUserDefinedName();
 
     /**

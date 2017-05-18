@@ -22,9 +22,17 @@ package ai.grakn.graql;
 import javax.annotation.CheckReturnValue;
 
 /**
+ * An interface representing something that is or can be transformed into a {@link Pattern}.
+ *
  * @author Felix Chapman
  */
 public interface PatternBuilder {
+
+    /**
+     * Change this into a {@link Pattern}. Does not modify the existing object.
+     *
+     * @return a {@link Pattern} from this object.
+     */
     @CheckReturnValue
     Pattern pattern();
 }

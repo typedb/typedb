@@ -114,7 +114,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final MatchQuery select(String... names) {
-        return select(Stream.of(names).map((value) -> Graql.var(value)).collect(toSet()));
+        return select(Stream.of(names).map(Graql::var).collect(toSet()));
     }
 
     @Override

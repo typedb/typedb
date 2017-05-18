@@ -39,7 +39,6 @@ import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarPatternBuilder;
 import ai.grakn.util.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,7 +126,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         final Set<TypeLabel> resourcesToDettach = new HashSet<>();
         
         // New resources to add
-        VarPatternBuilder resources = var(TASK_VAR);
+        VarPattern resources = var(TASK_VAR).pattern();
 
         resourcesToDettach.add(SERIALISED_TASK);
         resources = resources.has(SERIALISED_TASK, var().val(serializeToString(task)));
@@ -158,7 +157,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
             resources = resources.has(TASK_CHECKPOINT, var().val(task.checkpoint()));
         }
 
-        VarPatternBuilder finalResources = resources;
+        VarPattern finalResources = resources;
         Optional<Boolean> result = attemptCommitToSystemGraph((graph) -> {
             Instance taskConcept = graph.getResourcesByValue(task.getId().getValue()).iterator().next().owner();
             // Remove relations to any resources we want to currently update

@@ -26,6 +26,8 @@ import ai.grakn.concept.TypeLabel;
 import javax.annotation.CheckReturnValue;
 
 /**
+ * An interface representing something that is or can be transformed into a {@link VarPattern}.
+ *
  * @author Felix Chapman
  */
 public interface VarPatternBuilder extends PatternBuilder {
@@ -305,6 +307,11 @@ public interface VarPatternBuilder extends PatternBuilder {
     @CheckReturnValue
     VarPattern neq(VarPatternBuilder varPattern);
 
+    /**
+     * Change this into a {@link VarPattern}. Does not modify the existing object.
+     *
+     * @return a {@link VarPattern} from this object.
+     */
     @Override
     VarPattern pattern();
 }
