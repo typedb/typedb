@@ -1,4 +1,3 @@
-
 insert 
 
 # Primary Scheduled task entity.
@@ -21,7 +20,6 @@ task-checkpoint sub resource, datatype string;
 task-configuration sub resource, datatype string;
 task-serialized sub resource, datatype string;
 task-id sub resource, datatype string;
-access-right sub resource, datatype string;
 
 scheduled-task has status,
                has status-change-time,
@@ -62,16 +60,6 @@ user has user-password,
      has user-last-name,
      has user-email,
      has user-is-admin;
-
-# Authorization
-authorized-user sub role;
-authorized-keyspace sub role;
-authorized-access-right sub role;
-
-user-authorization sub relation, 
-    relates authorized-user,
-    relates authorized-keyspace,
-    relates authorized-access-right; 
 
 # Meta System Information
 system-version sub resource, datatype string;

@@ -31,13 +31,6 @@
     <artifactId>grakn-dist</artifactId>
 
     <dependencies>
-    <!-- TEMP - for development -->
-            <dependency>
-            <groupId>org.cassandraunit</groupId>
-            <artifactId>cassandra-unit</artifactId>
-            <version>${cassandra-unit.version}</version>
-        </dependency>
-    
         <!--Logging dependencies: Compile scope needed to override parent test scope-->
         <dependency>
             <groupId>ch.qos.logback</groupId>
