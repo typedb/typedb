@@ -37,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.gremlin.GraqlMatchers.feature;
@@ -142,6 +143,11 @@ public class ConjunctionQueryTest {
     @Test
     public void whenVarDoesNotHaveAValue_DoNotUseResourceIndex() {
         assertThat(var(x).val(resourceTypeWithoutSubTypes), not(usesResourceIndex()));
+    }
+
+    @Test
+    public void whenVarHasAValuePredicateThatRefersToAVar_DoNotUseResourceIndex() {
+        assertThat(var(x).isa(resourceTypeWithoutSubTypes).val(eq(var(y))), not(usesResourceIndex(x, y)));
     }
 
     private Matcher<Pattern> usesResourceIndex() {
