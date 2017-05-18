@@ -77,11 +77,6 @@ public class DoubleMacroTest {
     }
 
     @Test
-    public void applyDoubleMacroToDoubleValueWithUnderscores_ReturnsCorrectDouble(){
-        assertEquals(new Double(15000.0), doubleMacro.apply(ImmutableList.of("15_000.0")));
-    }
-
-    @Test
     public void whenUsingDoubleMacroInTemplate_ResultIsAsExpected(){
         String template = "insert $x val @double(<value>);";
         String expected = "insert $x0 val 4.0;";
