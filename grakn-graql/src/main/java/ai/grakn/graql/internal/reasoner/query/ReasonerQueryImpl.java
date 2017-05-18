@@ -83,6 +83,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
 
+    private int priority = Integer.MAX_VALUE;
+
     protected ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
         this.graph = graph;
         atomSet.addAll(AtomicFactory.createAtomSet(pattern, this));
@@ -131,6 +133,17 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         atomSet.forEach(atom -> hashes.add(atom.equivalenceHashCode()));
         for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
         return hashCode;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public int resolutionPriority(){
+        if (priority == Integer.MAX_VALUE) {
+            priority = selectAtoms().stream().mapToInt(Atom::resolutionPriority).sum();
+        }
+        return priority;
     }
 
     private void inferTypes() {

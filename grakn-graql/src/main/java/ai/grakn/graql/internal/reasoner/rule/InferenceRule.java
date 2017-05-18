@@ -64,6 +64,8 @@ public class InferenceRule {
     private final ReasonerQueryImpl body;
     private final ReasonerAtomicQuery head;
 
+    private int priority = Integer.MAX_VALUE;
+
     public InferenceRule(Rule rule, GraknGraph graph){
         ruleId = rule.getId();
         //TODO simplify once changes propagated to rule objects
@@ -101,6 +103,17 @@ public class InferenceRule {
         hashCode = hashCode * 37 + getBody().hashCode();
         hashCode = hashCode * 37 + getHead().hashCode();
         return hashCode;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public int resolutionPriority(){
+        if (priority == Integer.MAX_VALUE) {
+            priority = getBody().resolutionPriority();
+        }
+        return priority;
     }
 
     private static Conjunction<VarPatternAdmin> conjunction(PatternAdmin pattern){

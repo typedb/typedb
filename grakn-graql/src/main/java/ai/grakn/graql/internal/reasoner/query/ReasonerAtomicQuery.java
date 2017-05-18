@@ -45,6 +45,7 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
+import java.util.Comparator;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -355,7 +356,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     Iterator<RuleTuple> getRuleIterator(){
         return getAtom().getApplicableRules().stream()
+                .sorted(Comparator.comparing(InferenceRule::resolutionPriority).reversed())
                 .flatMap(r -> {
+                    LOG.debug("Rule " + r.getRuleId() + "+ [" + r.resolutionPriority() + "]");
                     r.rewriteToUserDefined(getAtom());
                     Unifier ruleUnifier = r.getUnifier(getAtom());
                     return getPermutationUnifiers(r.getHead().getAtom()).stream()
