@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
@@ -64,7 +64,7 @@ public class IdProperty extends AbstractVarProperty implements NamedProperty, Un
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(VarName start) {
+    public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(EquivalentFragmentSets.id(start, id));
     }
 

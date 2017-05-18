@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.query.predicate;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -141,7 +141,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
         var.ifPresent(theVar -> {
             // Compare to another variable
             String thisVar = UUID.randomUUID().toString();
-            VarName otherVar = theVar.getVarName();
+            Var otherVar = theVar.getVarName();
             String otherValue = UUID.randomUUID().toString();
 
             Traversal[] traversals = Stream.of(VALUE_PROPERTIES)

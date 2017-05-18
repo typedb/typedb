@@ -19,13 +19,13 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 class InSubFragment extends AbstractFragment {
 
-    InSubFragment(VarName start, VarName end) {
+    InSubFragment(Var start, Var end) {
         super(start, end);
     }
 

@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableSet;
@@ -40,10 +40,10 @@ class Plan implements Comparable<Plan> {
     private final Stack<Fragment> fragments;
     private final Stack<Double> costs;
     private final Set<EquivalentFragmentSet> fragmentSets;
-    private final Multiset<VarName> names;
+    private final Multiset<Var> names;
     private double totalCost;
 
-    private Plan(Stack<Fragment> fragments, Stack<Double> costs, Set<EquivalentFragmentSet> fragmentSets, Multiset<VarName> names, double totalCost) {
+    private Plan(Stack<Fragment> fragments, Stack<Double> costs, Set<EquivalentFragmentSet> fragmentSets, Multiset<Var> names, double totalCost) {
         this.fragments = fragments;
         this.costs = costs;
         this.fragmentSets = fragmentSets;
@@ -109,7 +109,7 @@ class Plan implements Comparable<Plan> {
         return fragments.size();
     }
 
-    private boolean hasNames(Set<VarName> names) {
+    private boolean hasNames(Set<Var> names) {
         if (names.isEmpty()) {
             return true;
         }

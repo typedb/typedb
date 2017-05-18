@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.collect.ImmutableSet;
 
@@ -41,27 +41,27 @@ abstract class AbstractFragment implements Fragment{
     static final long NUM_ROLE_PLAYERS_PER_ROLE = 1;
     static final long NUM_RESOURCES_PER_VALUE = 2;
 
-    private final VarName start;
-    private final Optional<VarName> end;
-    private final ImmutableSet<VarName> varNames;
+    private final Var start;
+    private final Optional<Var> end;
+    private final ImmutableSet<Var> varNames;
     private EquivalentFragmentSet equivalentFragmentSet = null;
 
-    AbstractFragment(VarName start) {
+    AbstractFragment(Var start) {
         this.start = start;
         this.end = Optional.empty();
         this.varNames = ImmutableSet.of(start);
     }
 
-    AbstractFragment(VarName start, VarName end) {
+    AbstractFragment(Var start, Var end) {
         this.start = start;
         this.end = Optional.of(end);
         this.varNames = ImmutableSet.of(start, end);
     }
 
-    AbstractFragment(VarName start, VarName end, VarName... others) {
+    AbstractFragment(Var start, Var end, Var... others) {
         this.start = start;
         this.end = Optional.of(end);
-        this.varNames = ImmutableSet.<VarName>builder().add(start).add(end).add(others).build();
+        this.varNames = ImmutableSet.<Var>builder().add(start).add(end).add(others).build();
     }
 
     @Override
@@ -79,22 +79,22 @@ abstract class AbstractFragment implements Fragment{
     }
 
     @Override
-    public final VarName getStart() {
+    public final Var getStart() {
         return start;
     }
 
     @Override
-    public final Optional<VarName> getEnd() {
+    public final Optional<Var> getEnd() {
         return end;
     }
 
     @Override
-    public Set<VarName> getDependencies() {
+    public Set<Var> getDependencies() {
         return ImmutableSet.of();
     }
 
     @Override
-    public Set<VarName> getVariableNames() {
+    public Set<Var> getVariableNames() {
         return varNames;
     }
 

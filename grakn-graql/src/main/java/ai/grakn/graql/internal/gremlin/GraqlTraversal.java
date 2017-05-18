@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -90,10 +90,10 @@ public class GraqlTraversal {
     ) {
         GraphTraversal<Vertex, Vertex> traversal = graph.admin().getTinkerTraversal();
 
-        Set<VarName> foundNames = new HashSet<>();
+        Set<Var> foundNames = new HashSet<>();
 
         // Apply fragments in order into one single traversal
-        VarName currentName = null;
+        Var currentName = null;
 
         for (Fragment fragment : fragmentList) {
             applyFragment(fragment, traversal, currentName, foundNames, graph);
@@ -101,7 +101,7 @@ public class GraqlTraversal {
         }
 
         // Select all the variable names
-        String[] traversalNames = foundNames.stream().map(VarName::getValue).toArray(String[]::new);
+        String[] traversalNames = foundNames.stream().map(Var::getValue).toArray(String[]::new);
         return traversal.select(traversalNames[0], traversalNames[0], traversalNames);
     }
 
@@ -114,10 +114,10 @@ public class GraqlTraversal {
      * @param names a set of variable names so far encountered in the query
      */
     private void applyFragment(
-            Fragment fragment, GraphTraversal<Vertex, Vertex> traversal, VarName currentName, Set<VarName> names,
+            Fragment fragment, GraphTraversal<Vertex, Vertex> traversal, Var currentName, Set<Var> names,
             GraknGraph graph
     ) {
-        VarName start = fragment.getStart();
+        Var start = fragment.getStart();
 
         if (currentName != null) {
             if (!currentName.equals(start)) {
@@ -167,7 +167,7 @@ public class GraqlTraversal {
     }
 
     static double fragmentListCost(List<Fragment> fragments) {
-        Set<VarName> names = new HashSet<>();
+        Set<Var> names = new HashSet<>();
 
         double cost = 1;
         double listCost = 0;
@@ -181,7 +181,7 @@ public class GraqlTraversal {
         return listCost;
     }
 
-    static double fragmentCost(Fragment fragment, double previousCost, Collection<VarName> names) {
+    static double fragmentCost(Fragment fragment, double previousCost, Collection<Var> names) {
         if (names.contains(fragment.getStart())) {
             return fragment.fragmentCost(previousCost);
         } else {
@@ -194,7 +194,7 @@ public class GraqlTraversal {
     public String toString() {
         return "{" + fragments.stream().map(list -> {
             StringBuilder sb = new StringBuilder();
-            VarName currentName = null;
+            Var currentName = null;
 
             for (Fragment fragment : list) {
                 if (!fragment.getStart().equals(currentName)) {
@@ -206,7 +206,7 @@ public class GraqlTraversal {
 
                 sb.append(fragment.getName());
 
-                Optional<VarName> end = fragment.getEnd();
+                Optional<Var> end = fragment.getEnd();
                 if (end.isPresent()) {
                     sb.append(end.get().shortName());
                     currentName = end.get();

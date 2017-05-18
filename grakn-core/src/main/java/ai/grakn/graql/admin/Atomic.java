@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
@@ -83,7 +83,7 @@ public interface Atomic {
      * @return true if atom contains an occurrence of the variable name
      */
     @CheckReturnValue
-    default boolean containsVar(VarName name){ return false;}
+    default boolean containsVar(Var name){ return false;}
 
     /**
      * @return the corresponding base pattern
@@ -117,11 +117,11 @@ public interface Atomic {
     Atomic unify(Unifier unifier);
 
     @CheckReturnValue
-    VarName getVarName();
+    Var getVarName();
 
     /**
      * @return all addressable variable names in the atom
      */
     @CheckReturnValue
-    Set<VarName> getVarNames();
+    Set<Var> getVarNames();
 }

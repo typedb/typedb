@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
@@ -75,7 +75,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(VarName start) {
+    public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(EquivalentFragmentSets.isa(start, type.getVarName()));
     }
 
@@ -120,9 +120,9 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
         //IsaProperty is unique within a var, so skip if this is a relation
         if (var.hasProperty(RelationProperty.class)) return null;
 
-        VarName varName = var.getVarName();
+        Var varName = var.getVarName();
         VarPatternAdmin typeVar = this.getType();
-        VarName typeVariable = typeVar.getVarName();
+        Var typeVariable = typeVar.getVarName();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         //isa part

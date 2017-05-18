@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -32,7 +32,7 @@ class InIsaFragment extends AbstractFragment {
 
     private final boolean allowCastings;
 
-    InIsaFragment(VarName start, VarName end, boolean allowCastings) {
+    InIsaFragment(Var start, Var end, boolean allowCastings) {
         super(start, end);
         this.allowCastings = allowCastings;
     }

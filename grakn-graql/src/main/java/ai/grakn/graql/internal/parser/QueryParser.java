@@ -26,7 +26,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
@@ -216,18 +216,18 @@ public class QueryParser {
     @SuppressWarnings("unchecked")
     private void registerDefaultAggregates() {
         registerAggregate("count", 0, args -> Graql.count());
-        registerAggregate("sum", 1, args -> Aggregates.sum((VarName) args.get(0)));
-        registerAggregate("max", 1, args -> Aggregates.max((VarName) args.get(0)));
-        registerAggregate("min", 1, args -> Aggregates.min((VarName) args.get(0)));
-        registerAggregate("mean", 1, args -> Aggregates.mean((VarName) args.get(0)));
-        registerAggregate("median", 1, args -> Aggregates.median((VarName) args.get(0)));
-        registerAggregate("std", 1, args -> Aggregates.std((VarName) args.get(0)));
+        registerAggregate("sum", 1, args -> Aggregates.sum((Var) args.get(0)));
+        registerAggregate("max", 1, args -> Aggregates.max((Var) args.get(0)));
+        registerAggregate("min", 1, args -> Aggregates.min((Var) args.get(0)));
+        registerAggregate("mean", 1, args -> Aggregates.mean((Var) args.get(0)));
+        registerAggregate("median", 1, args -> Aggregates.median((Var) args.get(0)));
+        registerAggregate("std", 1, args -> Aggregates.std((Var) args.get(0)));
 
         registerAggregate("group", 1, 2, args -> {
             if (args.size() < 2) {
-                return Aggregates.group((VarName) args.get(0));
+                return Aggregates.group((Var) args.get(0));
             } else {
-                return Aggregates.group((VarName) args.get(0), (Aggregate) args.get(1));
+                return Aggregates.group((Var) args.get(0), (Aggregate) args.get(1));
             }
         });
     }

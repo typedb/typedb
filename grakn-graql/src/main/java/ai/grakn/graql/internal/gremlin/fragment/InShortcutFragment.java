@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -44,12 +44,12 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
  */
 class InShortcutFragment extends AbstractFragment {
 
-    private final VarName edge;
+    private final Var edge;
     private final Optional<TypeLabel> roleType;
     private final Optional<TypeLabel> relationType;
 
     InShortcutFragment(
-            VarName rolePlayer, VarName edge, VarName relation, Optional<TypeLabel> roleType,
+            Var rolePlayer, Var edge, Var relation, Optional<TypeLabel> roleType,
             Optional<TypeLabel> relationType) {
         super(rolePlayer, relation, edge);
         this.edge = edge;
