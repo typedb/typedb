@@ -65,7 +65,7 @@ public class TaskStates extends Generator<TaskState> {
         // A bit in the past, because Instant is not monotonic
         TaskSchedule schedule = TaskSchedule.at(Instant.now().minusSeconds(60));
 
-        return TaskState.of(taskClass, creator, schedule);
+        return TaskState.of(taskClass, creator, schedule, TaskState.Priority.LOW);
     }
 
     public void configure(WithClass withClass) {

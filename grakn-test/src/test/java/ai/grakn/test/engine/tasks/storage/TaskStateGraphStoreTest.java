@@ -212,6 +212,6 @@ public class TaskStateGraphStoreTest {
     }
 
     public TaskState task(TaskSchedule schedule, String creator){
-        return TaskState.of(ShortExecutionMockTask.class, creator, schedule);
+        return TaskState.of(ShortExecutionMockTask.class, creator, schedule, TaskState.Priority.LOW);
     }
 }

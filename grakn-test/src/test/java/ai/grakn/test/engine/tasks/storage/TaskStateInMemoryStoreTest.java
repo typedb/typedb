@@ -158,6 +158,6 @@ public class TaskStateInMemoryStoreTest {
     }
 
     public TaskState task(){
-        return TaskState.of(ShortExecutionMockTask.class, this.getClass().getName(), TaskSchedule.now());
+        return TaskState.of(ShortExecutionMockTask.class, this.getClass().getName(), TaskSchedule.now(), TaskState.Priority.LOW);
     }
 }
