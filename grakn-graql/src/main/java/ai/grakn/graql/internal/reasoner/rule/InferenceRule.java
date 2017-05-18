@@ -107,8 +107,7 @@ public class InferenceRule {
     }
 
     /**
-     *
-     * @return
+     * @return the priority with which the rule should be fired
      */
     public int resolutionPriority(){
         if (priority == Integer.MAX_VALUE) {
