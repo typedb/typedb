@@ -21,14 +21,21 @@ package ai.grakn.graql.internal.query.predicate;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.time.LocalDate;
+
+import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
 
 /**
  * @author Felix Chapman
  */
 public class ComparatorPredicateTest {
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     @Test
     public void whenPassedAString_DontThrow() {
@@ -65,9 +72,13 @@ public class ComparatorPredicateTest {
         new MyComparatorPredicate(null);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void whenPassedAnUnsupportedType_Throw() {
-        new MyComparatorPredicate(ImmutableList.of(1, 2, 3));
+        ImmutableList<Integer> value = ImmutableList.of(1, 2, 3);
+
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(INVALID_VALUE.getMessage(value.getClass()));
+        new MyComparatorPredicate(value);
     }
 }
 

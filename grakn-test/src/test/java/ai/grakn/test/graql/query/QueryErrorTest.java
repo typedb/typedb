@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
 import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
@@ -183,8 +184,10 @@ public class QueryErrorTest {
         concepts.count();
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void whenUsingInvalidResourceValue_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(INVALID_VALUE.getMessage(qb.getClass()));
         qb.match(var("x").val(qb));
     }
 }
