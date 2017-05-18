@@ -32,6 +32,8 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static org.junit.Assume.assumeFalse;
@@ -58,9 +60,7 @@ public class CountTest {
 
         // assert the graph is empty
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
-            long startTime = System.currentTimeMillis();
             Assert.assertEquals(0L, Graql.compute().count().withGraph(graph).execute().longValue());
-            System.out.println(System.currentTimeMillis() - startTime + " ms");
             Assert.assertEquals(0L, graph.graql().compute().count().execute().longValue());
         }
 
@@ -100,12 +100,19 @@ public class CountTest {
         }
 
         // running 4 jobs at the same time
-        list.parallelStream()
+        // collecting the result in the end so engine won't stop before the test finishes
+        Set<Long> result;
+        result = list.parallelStream()
                 .map(i -> executeCount(factory))
-                .forEach(i -> Assert.assertEquals(3L, i.longValue()));
-        list.parallelStream()
+                .collect(Collectors.toSet());
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(3L, result.iterator().next().longValue());
+
+        result = list.parallelStream()
                 .map(i -> executeCount(factory))
-                .forEach(i -> Assert.assertEquals(3L, i.longValue()));
+                .collect(Collectors.toSet());
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(3L, result.iterator().next().longValue());
 
     }
 
