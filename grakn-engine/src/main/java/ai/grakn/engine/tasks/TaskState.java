@@ -215,6 +215,10 @@ public class TaskState implements Serializable {
         return this;
     }
 
+    public Priority priority(){
+        return priority;
+    }
+
     public TaskCheckpoint checkpoint() {
         return taskCheckpoint;
     }
