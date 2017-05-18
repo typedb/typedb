@@ -130,17 +130,17 @@ public class ReasoningTests {
     @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
     public void unificationWithVarDuplicates() {
         QueryBuilder qb = testSet1.graph().graql().infer(true);
-        String query1String = "match (role1:$x, role2:$x);";
-        String query2String = "match (role1:$x, role2:$y);";
+        String query1String = "match (role1:$x, role2:$x) isa relation1;";
+        String query2String = "match (role1:$x, role2:$y) isa relation1;";
         QueryAnswers answers1 = queryAnswers(qb.parse(query1String));
         QueryAnswers answers2 = queryAnswers(qb.parse(query2String));
 
         assertEquals(1, answers1.size());
-        assertEquals(2, answers2.size());
+        assertEquals(4, answers2.size());
         assertNotEquals(answers1.size() * answers2.size(), 0);
-        answers1.forEach(x -> assertEquals(x.keySet().size(), 1));
-        answers2.forEach(x -> answers1.forEach(y -> assertTrue(x.values().containsAll(y.values()))));
-        answers2.forEach(x -> assertEquals(x.keySet().size(), 2));
+        answers1.forEach(x -> assertEquals(x.size(), 1));
+        answers2.forEach(x -> assertEquals(x.size(), 2));
+
     }
 
     @Test //Expected result: The query should return a unique match.
