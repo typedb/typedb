@@ -398,7 +398,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return selected atoms
      */
     public Set<Atom> selectAtoms() {
-        Set<Atom> atoms = getAtoms().stream()
+        Set<Atom> atoms = atomSet.stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .collect(Collectors.toSet());
         if (atoms.size() == 1) return atoms;
