@@ -123,7 +123,7 @@ public class CommitLogControllerTest {
     public void whenControllerReceivesLog_TaskManagerReceivesPPTask() {
         sendFakeCommitLog();
 
-        verify(manager, times(1)).sendTask(
+        verify(manager, times(1)).addTask(
                 argThat(argument -> argument.taskClass().equals(PostProcessingTask.class)),
                 argThat(argument -> argument.json().at(COMMIT_LOG_FIXING).equals(commitLog.at(COMMIT_LOG_FIXING)))
         );
@@ -140,7 +140,7 @@ public class CommitLogControllerTest {
 
         addSomeData(bob);
 
-        verify(manager, times(1)).sendTask(
+        verify(manager, times(1)).addTask(
                 argThat(argument ->
                         argument.taskClass().equals(PostProcessingTask.class)),
                 argThat(argument ->
@@ -148,12 +148,12 @@ public class CommitLogControllerTest {
                         argument.json().at(COMMIT_LOG_FIXING).at(Schema.BaseType.CASTING.name()).asJsonMap().size() == 2 &&
                         argument.json().at(COMMIT_LOG_FIXING).at(Schema.BaseType.RESOURCE.name()).asJsonMap().size() == 1));
 
-        verify(manager, never()).sendTask(
+        verify(manager, never()).addTask(
                 any(), argThat(arg -> arg.json().at(KEYSPACE).asString().equals(TIM)));
 
         addSomeData(tim);
 
-        verify(manager, times(1)).sendTask(
+        verify(manager, times(1)).addTask(
                 argThat(argument ->
                         argument.taskClass().equals(PostProcessingTask.class)),
                 argThat(argument ->
@@ -178,7 +178,7 @@ public class CommitLogControllerTest {
     public void whenSendingCommitLogs_TaskManagerReceivesCountTask(){
         sendFakeCommitLog();
 
-        verify(manager, atLeastOnce()).sendTask(
+        verify(manager, atLeastOnce()).addTask(
                 argThat(argument ->
                                 argument.taskClass().equals(UpdatingInstanceCountTask.class)),
                 argThat(argument ->
@@ -198,14 +198,14 @@ public class CommitLogControllerTest {
         addSomeData(tim);
 
         try {
-            verify(manager, atLeastOnce()).sendTask(
+            verify(manager, atLeastOnce()).addTask(
                     argThat(argument ->
                             argument.taskClass().equals(UpdatingInstanceCountTask.class)),
                     argThat(argument ->
                             argument.json().at(KEYSPACE).asString().equals(BOB) &&
                             argument.json().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
 
-            verify(manager, atLeastOnce()).sendTask(
+            verify(manager, atLeastOnce()).addTask(
                     argThat(argument ->
                             argument.taskClass().equals(UpdatingInstanceCountTask.class)),
                     argThat(argument ->
@@ -229,8 +229,8 @@ public class CommitLogControllerTest {
         resourceType.putResource("c");
         graph1.commit();
 
-        verify(manager, never()).addLowPriorityTask(any(), any());
-        verify(manager, never()).sendTask(any(), any());
+        verify(manager, never()).addTask(any(), any());
+        verify(manager, never()).addTask(any(), any());
     }
 
     private void sendFakeCommitLog() {
@@ -271,7 +271,7 @@ public class CommitLogControllerTest {
         Mockito.doAnswer((answer) -> {
             countDownLatch.countDown();
             return true;
-        }).when(manager).sendTask(any(), any());
+        }).when(manager).addTask(any(), any());
 
         RoleType role1 = graph.putRoleType("Role 1");
         RoleType role2 = graph.putRoleType("Role 2");

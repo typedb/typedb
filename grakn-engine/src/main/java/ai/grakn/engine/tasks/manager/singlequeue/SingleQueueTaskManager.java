@@ -164,15 +164,6 @@ public class SingleQueueTaskManager implements TaskManager {
     }
 
     /**
-     * Create an instance of a task based on the given parameters and submit it a Kafka queue.
-     * @param taskState Task to execute
-     */
-    @Override
-    public void addLowPriorityTask(TaskState taskState, TaskConfiguration configuration){
-        sendTask(taskState, configuration);
-    }
-
-    /**
      * Stop a task from running.
      */
     @Override
@@ -220,7 +211,7 @@ public class SingleQueueTaskManager implements TaskManager {
      * @param configuration Configuration of the given task
      */
     @Override
-    public void sendTask(TaskState taskState, TaskConfiguration configuration){
+    public void addTask(TaskState taskState, TaskConfiguration configuration){
         producer.send(new ProducerRecord<>(taskState.priority().queue(), taskState, configuration));
         producer.flush();
     }

@@ -104,8 +104,8 @@ public class CommitLogController {
                 UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now(), TaskState.Priority.HIGH);
 
         // Send two tasks to the pipeline
-        manager.sendTask(postProcessingTask, TaskConfiguration.of(postProcessingConfiguration));
-        manager.sendTask(countingTask, TaskConfiguration.of(countingConfiguration));
+        manager.addTask(postProcessingTask, TaskConfiguration.of(postProcessingConfiguration));
+        manager.addTask(countingTask, TaskConfiguration.of(countingConfiguration));
 
 
 

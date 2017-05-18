@@ -104,14 +104,27 @@ public class StandaloneTaskManager implements TaskManager {
     }
 
     @Override
-    public void addLowPriorityTask(TaskState taskState, TaskConfiguration configuration){
-        addTask(taskState, configuration);
-    }
-
-    @Override
-    public void sendTask(TaskState taskState, TaskConfiguration configuration){
+    public void addTask(TaskState taskState, TaskConfiguration configuration){
         if(!taskState.priority().equals(TaskState.Priority.LOW)) LOG.info("Standalone mode only has a single priority.");
-        addTask(taskState, configuration);
+        storage.newState(taskState);
+
+        // Schedule task to run.
+        Instant now = Instant.now();
+        TaskSchedule schedule = taskState.schedule();
+        long delay = Duration.between(now, taskState.schedule().runAt()).toMillis();
+
+        Runnable taskExecution = submitTaskForExecution(taskState, configuration);
+
+        ScheduledFuture future;
+        if(schedule.isRecurring()){
+            future = schedulingService.scheduleAtFixedRate(taskExecution, delay, schedule.interval().get().toMillis(), TimeUnit.MILLISECONDS);
+        } else {
+            future = schedulingService.schedule(taskExecution, delay, TimeUnit.MILLISECONDS);
+        }
+
+        scheduledTasks.put(taskState.getId(), future);
+
+        LOG.info("Added task " + taskState.getId());
     }
 
     public void stopTask(TaskId id) {
@@ -145,28 +158,6 @@ public class StandaloneTaskManager implements TaskManager {
 
     public TaskStateStorage storage() {
         return storage;
-    }
-
-    private void addTask(TaskState taskState, TaskConfiguration taskConfiguration){
-        storage.newState(taskState);
-
-        // Schedule task to run.
-        Instant now = Instant.now();
-        TaskSchedule schedule = taskState.schedule();
-        long delay = Duration.between(now, taskState.schedule().runAt()).toMillis();
-
-        Runnable taskExecution = submitTaskForExecution(taskState, taskConfiguration);
-
-        ScheduledFuture future;
-        if(schedule.isRecurring()){
-            future = schedulingService.scheduleAtFixedRate(taskExecution, delay, schedule.interval().get().toMillis(), TimeUnit.MILLISECONDS);
-        } else {
-            future = schedulingService.schedule(taskExecution, delay, TimeUnit.MILLISECONDS);
-        }
-
-        scheduledTasks.put(taskState.getId(), future);
-
-        LOG.info("Added task " + taskState.getId());
     }
 
     private Runnable executeTask(TaskState task, TaskConfiguration configuration) {

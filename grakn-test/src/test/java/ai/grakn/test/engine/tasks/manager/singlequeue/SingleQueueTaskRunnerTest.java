@@ -128,7 +128,7 @@ public class SingleQueueTaskRunnerTest {
         doAnswer(invocation -> {
             addTask(invocation.getArgument(0));
             return null;
-        }).when(mockedTM).sendTask(Mockito.any(), Mockito.any());
+        }).when(mockedTM).addTask(Mockito.any(), Mockito.any());
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {

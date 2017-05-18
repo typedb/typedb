@@ -265,7 +265,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param task Task to be delayed
      */
     private void resubmitTask(TaskState task, TaskConfiguration configuration){
-        manager.sendTask(task, configuration);
+        manager.addTask(task, configuration);
         LOG.debug("{}\tresubmitted with {}", task, task.priority().queue());
     }
 

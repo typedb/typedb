@@ -65,7 +65,7 @@ public class UpdatingInstanceCountTaskTest {
 
         //Start up the Job
         TaskState task = TaskState.of(UpdatingInstanceCountTask.class, getClass().getName(), TaskSchedule.now(), TaskState.Priority.HIGH);
-        engine.getTaskManager().addLowPriorityTask(task, TaskConfiguration.of(configuration));
+        engine.getTaskManager().addTask(task, TaskConfiguration.of(configuration));
 
         // Wait for task to complete
         waitForDoneStatus(engine.getTaskManager().storage(), singleton(task));
