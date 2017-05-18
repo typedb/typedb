@@ -48,7 +48,11 @@ public class TaskState implements Serializable {
      */
     public enum Priority{
         LOW,
-        HIGH
+        HIGH;
+
+        public String queue(){
+            return name() + "-priority-queue";
+        }
     }
 
     /**
