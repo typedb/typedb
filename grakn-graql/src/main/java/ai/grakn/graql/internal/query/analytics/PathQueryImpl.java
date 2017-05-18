@@ -135,4 +135,24 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     public PathQuery withGraph(GraknGraph graph) {
         return (PathQuery) super.withGraph(graph);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        PathQueryImpl pathQuery = (PathQueryImpl) o;
+
+        if (!sourceId.equals(pathQuery.sourceId)) return false;
+        return destinationId.equals(pathQuery.destinationId);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + sourceId.hashCode();
+        result = 31 * result + destinationId.hashCode();
+        return result;
+    }
 }

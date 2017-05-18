@@ -27,6 +27,7 @@ import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.explanation.Explanation;
 import com.google.common.collect.Sets;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;

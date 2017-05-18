@@ -43,9 +43,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 import spark.Service;
 
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
@@ -128,7 +130,8 @@ public class CommitLogControllerTest {
     }
 
     @Test
-    public void whenCommittingGraph_TaskManagerReceivesPPTask() throws GraknValidationException {
+    public void whenCommittingGraph_TaskManagerReceivesPPTask() throws InterruptedException {
+
         final String BOB = "bob";
         final String TIM = "tim";
 
@@ -184,7 +187,7 @@ public class CommitLogControllerTest {
     }
 
     @Test
-    public void whenCommittingGraph_TaskManagerReceivesCountTask(){
+    public void whenCommittingGraph_TaskManagerReceivesCountTask() throws InterruptedException {
         final String BOB = "bob";
         final String TIM = "tim";
 
@@ -262,7 +265,14 @@ public class CommitLogControllerTest {
                 then().statusCode(200).extract().response().andReturn();
     }
 
-    private void addSomeData(GraknGraph graph) throws GraknValidationException {
+    private void addSomeData(GraknGraph graph) throws GraknValidationException, InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+
+        Mockito.doAnswer((answer) -> {
+            countDownLatch.countDown();
+            return true;
+        }).when(manager).addLowPriorityTask(any(), any());
+
         RoleType role1 = graph.putRoleType("Role 1");
         RoleType role2 = graph.putRoleType("Role 2");
         RelationType relationType = graph.putRelationType("A Relation Type").relates(role1).relates(role2);
@@ -270,9 +280,10 @@ public class CommitLogControllerTest {
         ResourceType<String> resourceType = graph.putResourceType("A Resource Type Thing", ResourceType.DataType.STRING).plays(role1).plays(role2);
         Entity entity = type.addEntity();
         Resource resource = resourceType.putResource(UUID.randomUUID().toString());
-
         relationType.addRelation().addRolePlayer(role1, entity).addRolePlayer(role2, resource);
 
         graph.commit();
+
+        countDownLatch.await();
     }
 }

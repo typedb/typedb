@@ -24,6 +24,7 @@ import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.matcher.MovieMatchers;
