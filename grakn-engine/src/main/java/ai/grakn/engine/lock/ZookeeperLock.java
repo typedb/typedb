@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.lock;
 
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
 import java.util.regex.Pattern;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;

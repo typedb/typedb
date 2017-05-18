@@ -9,11 +9,14 @@ import ai.grakn.factory.SystemKeyspace;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
+import redis.embedded.RedisServer;
 
+import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
 import static ai.grakn.engine.tasks.config.KafkaTerms.HIGH_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.LOW_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.graql.Graql.var;
@@ -36,8 +39,10 @@ public abstract class GraknTestEnv {
     private static String CONFIG = System.getProperty("grakn.test-profile");
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
     private static AtomicInteger KAFKA_COUNTER = new AtomicInteger(0);
+    private static AtomicInteger REDIS_COUNTER = new AtomicInteger(0);
 
     private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
+    private static RedisServer redisServer;
 
     public static void ensureCassandraRunning() throws Exception {
         if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
@@ -73,28 +78,43 @@ public abstract class GraknTestEnv {
         return server;
     }
 
+    static void startRedis() throws IOException {
+        if(REDIS_COUNTER.getAndIncrement() == 0) {
+            LOG.info("Starting redis...");
+            redisServer = new RedisServer(properties.getPropertyAsInt(REDIS_SERVER_PORT));
+            redisServer.start();
+            LOG.info("Redis started.");
+        }
+    }
+
     static void startKafka() throws Exception {
         // Kafka is using log4j, which is super annoying. We make sure it only logs error here
         org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
 
         // Clean-up ironically uses a lot of memory
         if (KAFKA_COUNTER.getAndIncrement() == 0) {
-            LOG.info("starting kafka...");
-
+            LOG.info("Starting kafka...");
             kafkaUnit.setKafkaBrokerConfig("log.cleaner.enable", "false");
             kafkaUnit.startup();
             kafkaUnit.createTopic(HIGH_PRIORITY_TASKS_TOPIC, properties.getAvailableThreads() * 2);
             kafkaUnit.createTopic(LOW_PRIORITY_TASKS_TOPIC, properties.getAvailableThreads() * 2);
-
-            LOG.info("kafka started.");
+            LOG.info("Kafka started.");
         }
     }
 
     static void stopKafka() throws Exception {
         if (KAFKA_COUNTER.decrementAndGet() == 0) {
-            LOG.info("stopping kafka...");
+            LOG.info("Stopping kafka...");
             kafkaUnit.shutdown();
-            LOG.info("kafka stopped.");
+            LOG.info("Kafka stopped.");
+        }
+    }
+
+    static void stopRedis(){
+        if (REDIS_COUNTER.decrementAndGet() == 0) {
+            LOG.info("Stopping Redis...");
+            redisServer.stop();
+            LOG.info("Redis stopped.");
         }
     }
 

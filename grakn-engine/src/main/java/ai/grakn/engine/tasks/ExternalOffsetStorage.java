@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.tasks;
 
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.clients.consumer.Consumer;

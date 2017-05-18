@@ -20,7 +20,7 @@ package ai.grakn.test.engine.lock;
 
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.lock.ZookeeperLock;
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.test.EngineContext;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;

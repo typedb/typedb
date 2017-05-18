@@ -21,7 +21,7 @@ package ai.grakn.test.engine.lock;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.lock.ZookeeperLock;
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.util.ErrorMessage;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Function;

@@ -22,7 +22,7 @@ import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;

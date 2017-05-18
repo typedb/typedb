@@ -3,23 +3,27 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.EntityType;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import mjson.Json;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.UUID;
+
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_CONCEPT_ID;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_INSTANCE_COUNT;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE_NAME;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_SHARDING_COUNT;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
@@ -30,22 +34,30 @@ public class UpdatingInstanceCountTaskTest {
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Test
-    public void whenUpdatingInstanceCounts_EnsureTypesInGraphAreUpdated() throws InterruptedException {
-        String keyspace = "mysimplekeyspace";
+    public void whenUpdatingInstanceCounts_EnsureRedisIsUpdated() throws InterruptedException {
+        RedisConnection redis = RedisConnection.getConnection();
+        String keyspace = UUID.randomUUID().toString();
         String entityType1 = "e1";
         String entityType2 = "e2";
 
-        //Create Simple Graph
-        try(GraknGraph graknGraph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)){
-            graknGraph.putEntityType(entityType1);
-            graknGraph.putEntityType(entityType2);
-            graknGraph.admin().commitNoLogs();
-        }
+        //Create Artificial configuration
+        createAndExecuteCountTask(keyspace, ConceptId.of(entityType1), 6L);
+        createAndExecuteCountTask(keyspace, ConceptId.of(entityType2), 3L);
+        // Check cache in redis has been updated
+        assertEquals(6L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, ConceptId.of(entityType1))));
+        assertEquals(3L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, ConceptId.of(entityType2))));
 
         //Create Artificial configuration
+        createAndExecuteCountTask(keyspace, ConceptId.of(entityType1), 1L);
+        createAndExecuteCountTask(keyspace, ConceptId.of(entityType2), -1L);
+        // Check cache in redis has been updated
+        assertEquals(7L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, ConceptId.of(entityType1))));
+        assertEquals(2L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, ConceptId.of(entityType2))));
+    }
+
+    private void createAndExecuteCountTask(String keyspace, ConceptId conceptId, long count){
         Json instanceCounts = Json.array();
-        instanceCounts.add(Json.object(COMMIT_LOG_TYPE_NAME, entityType1, COMMIT_LOG_INSTANCE_COUNT, 6));
-        instanceCounts.add(Json.object(COMMIT_LOG_TYPE_NAME, entityType2, COMMIT_LOG_INSTANCE_COUNT, 3));
+        instanceCounts.add(Json.object(COMMIT_LOG_CONCEPT_ID, conceptId.getValue(), COMMIT_LOG_SHARDING_COUNT, count));
         Json configuration = Json.object(
                 KEYSPACE, keyspace,
                 COMMIT_LOG_COUNTING, instanceCounts
@@ -61,14 +73,45 @@ public class UpdatingInstanceCountTaskTest {
         // Check that task has ran
         // STOPPED because it is a recurring task
         assertEquals(COMPLETED, engine.getTaskManager().storage().getState(task.getId()).status());
+    }
 
-        // Check the results of the task
+    @Test
+    public void whenShardingThresholdIsBreached_ShardTypes(){
+        String keyspace = "anotherwonderfulkeyspace";
+        EntityType et1;
+        EntityType et2;
+
+        //Create Simple Graph
         try(GraknGraph graknGraph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)){
-            Vertex v1 = graknGraph.admin().getTinkerTraversal().has(Schema.ConceptProperty.ID.name(), graknGraph.getEntityType(entityType1).getId().getValue()).next();
-            Vertex v2 = graknGraph.admin().getTinkerTraversal().has(Schema.ConceptProperty.ID.name(), graknGraph.getEntityType(entityType2).getId().getValue()).next();
+            et1 = graknGraph.putEntityType("et1");
+            et2 = graknGraph.putEntityType("et2");
+            graknGraph.admin().commitNoLogs();
+        }
 
-            assertEquals(6L, (long) v1.value(Schema.ConceptProperty.INSTANCE_COUNT.name()));
-            assertEquals(3L, (long) v2.value(Schema.ConceptProperty.INSTANCE_COUNT.name()));
+        checkShardCount(keyspace, et1, 1);
+        checkShardCount(keyspace, et2, 1);
+
+        //Add new counts
+        createAndExecuteCountTask(keyspace, et1.getId(), 99_999L);
+        createAndExecuteCountTask(keyspace, et2.getId(), 99_999L);
+
+        checkShardCount(keyspace, et1, 1);
+        checkShardCount(keyspace, et2, 1);
+
+        //Add new counts
+        createAndExecuteCountTask(keyspace, et1.getId(), 2L);
+        createAndExecuteCountTask(keyspace, et2.getId(), 1L);
+
+        checkShardCount(keyspace, et1, 2);
+        checkShardCount(keyspace, et2, 1);
+    }
+    private void checkShardCount(String keyspace, Concept concept, int expectedValue){
+        try(GraknGraph graknGraph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)){
+            int shards = graknGraph.admin().getTinkerTraversal().
+                    has(Schema.ConceptProperty.ID.name(), concept.getId().getValue()).
+                    in(Schema.EdgeLabel.SHARD.getLabel()).toList().size();
+
+            assertEquals(expectedValue, shards);
         }
     }
 
