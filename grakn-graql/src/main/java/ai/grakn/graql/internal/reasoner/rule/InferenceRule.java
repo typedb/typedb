@@ -41,6 +41,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
+import java.util.HashSet;
 import java.util.Map;
 
 import java.util.Objects;
@@ -86,7 +87,7 @@ public class InferenceRule {
 
     @Override
     public String toString(){
-        return  "\n" + this.body.toString() + "->" + this.head.toString() + "\n";
+        return  "\n" + this.body.toString() + "->" + this.head.toString() + "[" + resolutionPriority() +"]";
     }
 
     @Override
@@ -217,7 +218,7 @@ public class InferenceRule {
     }
 
     private InferenceRule rewriteBody(){
-        body.getAtoms().stream()
+        new HashSet<>(body.getAtoms()).stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .filter(Atom::isRelation)
                 .filter(at -> !at.isUserDefinedName())

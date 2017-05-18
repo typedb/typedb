@@ -358,12 +358,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return getAtom().getApplicableRules().stream()
                 .sorted(Comparator.comparing(InferenceRule::resolutionPriority).reversed())
                 .flatMap(r -> {
-                    LOG.debug("Rule " + r.getRuleId() + "+ [" + r.resolutionPriority() + "]");
                     r.rewriteToUserDefined(getAtom());
                     Unifier ruleUnifier = r.getUnifier(getAtom());
                     return getPermutationUnifiers(r.getHead().getAtom()).stream()
                             .map(pu -> new RuleTuple(new InferenceRule(r).propagateConstraints(getAtom(), ruleUnifier.inverse(), pu), ruleUnifier, pu));
-                }).iterator();
+                })
+                .iterator();
     }
     /**
      *

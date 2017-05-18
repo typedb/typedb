@@ -233,8 +233,10 @@ public class Relation extends TypeAtom {
 
     @Override
     public int resolutionPriority() {
-        int priority = super.resolutionPriority();
-        priority += ResolutionStrategy.IS_RELATION_ATOM;
+        if (priority == Integer.MAX_VALUE) {
+            priority = super.resolutionPriority();
+            priority += ResolutionStrategy.IS_RELATION_ATOM;
+        }
         return priority;
     }
 

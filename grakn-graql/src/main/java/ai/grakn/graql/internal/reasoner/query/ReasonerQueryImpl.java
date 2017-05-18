@@ -141,7 +141,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public int resolutionPriority(){
         if (priority == Integer.MAX_VALUE) {
-            priority = selectAtoms().stream().mapToInt(Atom::resolutionPriority).sum();
+            Set<Atom> selectableAtoms = selectAtoms();
+            int totalPriority = selectableAtoms.stream().mapToInt(Atom::resolutionPriority).sum();
+            priority = totalPriority/selectableAtoms.size();
         }
         return priority;
     }
@@ -191,9 +193,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return atom set constituting this query
      */
     @Override
-    public Set<Atomic> getAtoms() {
-        return Sets.newHashSet(atomSet);
-    }
+    public Set<Atomic> getAtoms() { return atomSet;}
 
     private List<Atom> getPrioritisedAtoms(){
         return selectAtoms().stream()
@@ -399,7 +399,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return selected atoms
      */
     public Set<Atom> selectAtoms() {
-        Set<Atom> atoms = new HashSet<>(atomSet).stream()
+        Set<Atom> atoms = getAtoms().stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .collect(Collectors.toSet());
         if (atoms.size() == 1) return atoms;
