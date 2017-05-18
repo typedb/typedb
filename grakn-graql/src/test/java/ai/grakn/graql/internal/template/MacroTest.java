@@ -65,14 +65,6 @@ public class MacroTest {
         assertParseEquals(template, data, expected);
     }
 
-    @Test
-    public void stringToLowerCaseTest(){
-        String template = "insert $this has something @lower(<value>);";
-        String expected = "insert $this0 has something \"camelcasevalue\";";
-
-        Map<String, Object> data = Collections.singletonMap("value", "camelCaseValue");
-        assertParseEquals(template, data, expected);
-    }
 
     @Test
     public void splitMacroTest() {

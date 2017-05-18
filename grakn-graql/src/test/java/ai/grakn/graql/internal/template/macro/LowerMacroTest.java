@@ -20,67 +20,63 @@ package ai.grakn.graql.internal.template.macro;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static ai.grakn.graql.internal.template.MacroTest.assertParseEquals;
+import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 
-public class NoescpMacroTest {
+public class LowerMacroTest {
 
-    private final NoescpMacro noescpMacro = new NoescpMacro();
+    private final LowerMacro lowerMacro = new LowerMacro();
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void applyNoescpMacroToNoArguments_ExceptionIsThrown(){
+    public void applyLowerMacroToNoArguments_ExceptionIsThrown(){
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage("Wrong number of arguments");
 
-        noescpMacro.apply(Collections.emptyList());
+        lowerMacro.apply(Collections.emptyList());
     }
 
     @Test
-    public void applyNoescpMacroToMoreThanOneArgument_ExceptionIsThrown(){
+    public void applyLowerMacroToMoreThanOneArgument_ExceptionIsThrown(){
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage("Wrong number of arguments");
 
-        noescpMacro.apply(ImmutableList.of("1.0", "2.0"));
+        lowerMacro.apply(ImmutableList.of("1.0", "2.0"));
     }
 
     @Test
-    public void applyNoescpMacroToInt_UnescapedIsReturned(){
-        assertEquals(Unescaped.class, noescpMacro.apply(ImmutableList.of(10L)).getClass());
+    public void applyLowerMacroToOneArgument_ItReturnsNonNull(){
+        assertNotNull(lowerMacro.apply(ImmutableList.of("string")));
     }
 
     @Test
-    public void applyNoescpMacroToString_UnescapedIsReturned(){
-        assertEquals(Unescaped.class, noescpMacro.apply(ImmutableList.of("string")).getClass());
+    public void applyLowerMacroToNumber_ItReturnsNumberAsString(){
+        Number number = 0L;
+        String numberLower = lowerMacro.apply(ImmutableList.of(number));
+        assertEquals(number.toString(), numberLower);
     }
 
     @Test
-    public void noescpMacroOneVarTest(){
-        String template = "insert $this isa @noescp(<value>);";
-        String expected = "insert $this0 isa whale;";
-
-        Map<String, Object> data = Collections.singletonMap("value", "whale");
-
-        assertParseEquals(template, data, expected);
+    public void applyLowerMacroToUpperCaseString_ItReturnsStringInLowerCase(){
+        String upperOriginal = "WHALE";
+        String lower = lowerMacro.apply(ImmutableList.of(upperOriginal));
+        assertEquals(upperOriginal.toLowerCase(), lower);
     }
 
     @Test
-    public void noescpMacroMultiVarTest(){
-        String template = "insert $x has fn @noescp(<firstname>) has ln @noescp(<lastname>);";
-        String expected = "insert $x0 has fn 4 has ln 5;";
+    public void stringToLowerCaseTest(){
+        String template = "insert $this has something @lower(<value>);";
+        String expected = "insert $this0 has something \"camelcasevalue\";";
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("firstname", "4");
-        data.put("lastname", "5");
-
+        Map<String, Object> data = Collections.singletonMap("value", "camelCaseValue");
         assertParseEquals(template, data, expected);
     }
 }
