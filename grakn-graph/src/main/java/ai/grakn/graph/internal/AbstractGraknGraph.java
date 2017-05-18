@@ -868,7 +868,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * Returns the duplicates of the given concept
      * @param mainConcept primary concept - this one is returned by the index and not considered a duplicate
      * @param conceptVertexIds Set of Ids containing potential duplicates of the main concept
-     * @return a set containing the duplicates of the given concept 
+     * @return a set containing the duplicates of the given concept
      */
     private Set<? extends ConceptImpl> getDuplicates(ConceptImpl mainConcept, Set<ConceptId> conceptVertexIds){
         Set<ConceptImpl> duplicated = conceptVertexIds.stream()
@@ -905,17 +905,21 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         CastingImpl mainCasting = (CastingImpl) getMainConcept(index);
         Set<CastingImpl> duplicated = (Set<CastingImpl>) getDuplicates(mainCasting, castingVertexIds);
 
-        //Fix the duplicates
-        Set<Relation> duplicateRelations = mergeCastings(mainCasting, duplicated);
+        if (duplicated.size() > 0) {
+            //Fix the duplicates
+            Set<Relation> duplicateRelations = mergeCastings(mainCasting, duplicated);
 
-        //Remove Redundant Relations
-        duplicateRelations.forEach(relation -> ((ConceptImpl) relation).deleteNode());
+            //Remove Redundant Relations
+            duplicateRelations.forEach(relation -> ((ConceptImpl) relation).deleteNode());
 
-        //Restore the index
-        String newIndex = mainCasting.getIndex();
-        mainCasting.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
+            //Restore the index
+            String newIndex = mainCasting.getIndex();
+            mainCasting.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 
-        return true;
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -1004,25 +1008,29 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         ResourceImpl<?> mainResource = (ResourceImpl<?>) getMainConcept(index);
         Set<ResourceImpl> duplicates = (Set<ResourceImpl>) getDuplicates(mainResource, resourceVertexIds);
 
-        //Remove any resources associated with this index that are not the main resource
-        for (ResourceImpl<?> otherResource : duplicates) {
-            Collection<Relation> otherRelations = otherResource.relations();
+        if(duplicates.size() > 0) {
+            //Remove any resources associated with this index that are not the main resource
+            for (ResourceImpl<?> otherResource : duplicates) {
+                Collection<Relation> otherRelations = otherResource.relations();
 
-            //Copy the actual relation
-            for (Relation otherRelation : otherRelations) {
-                copyRelation(mainResource, otherResource, (RelationImpl) otherRelation);
+                //Copy the actual relation
+                for (Relation otherRelation : otherRelations) {
+                    copyRelation(mainResource, otherResource, (RelationImpl) otherRelation);
+                }
+
+                //Delete the node and it's castings directly so we don't accidentally delete copied relations
+                otherResource.castings().forEach(ConceptImpl::deleteNode);
+                otherResource.deleteNode();
             }
 
-            //Delete the node and it's castings directly so we don't accidentally delete copied relations
-            otherResource.castings().forEach(ConceptImpl::deleteNode);
-            otherResource.deleteNode();
+            //Restore the index
+            String newIndex = mainResource.getIndex();
+            mainResource.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
+
+            return true;
         }
 
-        //Restore the index
-        String newIndex = mainResource.getIndex();
-        mainResource.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
-
-        return true;
+        return false;
     }
 
     /**
