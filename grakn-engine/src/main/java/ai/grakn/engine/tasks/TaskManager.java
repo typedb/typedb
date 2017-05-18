@@ -42,12 +42,14 @@ public interface TaskManager {
      * Schedule a {@link BackgroundTask} for execution, giving it priority to run after all other tasks
      * @param taskState Task to execute
      */
+    @Deprecated
     void addLowPriorityTask(TaskState taskState, TaskConfiguration configuration);
 
     /**
      * Schedule a {@link BackgroundTask} for execution, giving it priority to run before all other tasks
      * @param taskState Task to execute
      */
+    @Deprecated
     void addHighPriorityTask(TaskState taskState, TaskConfiguration configuration);
 
     /**
