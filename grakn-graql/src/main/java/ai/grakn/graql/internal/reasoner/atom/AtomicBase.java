@@ -26,8 +26,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
 import java.util.Set;
@@ -117,23 +115,6 @@ public abstract class AtomicBase implements Atomic {
             setVarName(capture(var));
         }
         return this;
-    }
-
-    /**
-     * get unifiers by comparing this atom with parent
-     * @param parentAtom atom defining variable names
-     * @return unifier
-     */
-    @Override
-    public Unifier getUnifier(Atomic parentAtom) {
-        if (parentAtom.getClass() != this.getClass()) {
-            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
-        }
-        Unifier unifier = new UnifierImpl();
-        if (!this.getVarName().equals(parentAtom.getVarName())) {
-            unifier.addMapping(this.getVarName(), parentAtom.getVarName());
-        }
-        return unifier;
     }
 }
 

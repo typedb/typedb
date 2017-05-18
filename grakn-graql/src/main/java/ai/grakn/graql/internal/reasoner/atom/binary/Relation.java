@@ -33,7 +33,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.ReasonerUtils;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
@@ -709,32 +708,5 @@ public class Relation extends TypeAtom {
             }
         }
         return new Relation(relVar.admin(), getPredicate(), getParentQuery());
-    }
-
-    /**
-     * rewrites the atom to one with user defined name, need unifiers for cases when we have variable clashes
-     * between the relation variable and relation players
-     * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
-     */
-    @Override
-    public Pair<Atom, Unifier> rewriteToUserDefinedWithUnifiers() {
-        Unifier unifier = new UnifierImpl();
-        VarPattern newVar = Graql.var(Var.anon());
-        VarPattern relVar = getPattern().asVar().getProperty(IsaProperty.class)
-                .map(prop -> newVar.isa(prop.getType()))
-                .orElse(newVar);
-
-        for (RelationPlayer c: getRelationPlayers()) {
-            VarPatternAdmin rolePlayer = c.getRolePlayer();
-            Var rolePlayerVarName = Var.anon();
-            unifier.addMapping(rolePlayer.getVarName(), rolePlayerVarName);
-            VarPatternAdmin roleType = c.getRoleType().orElse(null);
-            if (roleType != null) {
-                relVar = relVar.rel(roleType, Graql.var(rolePlayerVarName));
-            } else {
-                relVar = relVar.rel(Graql.var(rolePlayerVarName));
-            }
-        }
-        return new Pair<>(new Relation(relVar.admin(), getPredicate(), getParentQuery()), unifier);
     }
 }
