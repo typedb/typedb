@@ -14,21 +14,35 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.graql.internal.gremlin.sets;
+package ai.grakn.graql.internal.reasoner.rule;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.admin.Unifier;
 
 /**
- * @author Felix Chapman
+ *
+ * <p>
+ * Wrapper for (rule, unifier, unifier) tuple.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
  */
-class RegexFragmentSet extends EquivalentFragmentSet {
+public class RuleTuple {
 
-    RegexFragmentSet(Var resourceType, String regex) {
-        super(Fragments.regex(resourceType, regex));
+    private final InferenceRule rule;
+    private final Unifier ruleUnifier;
+    private final Unifier permutationUnifier;
+
+    public RuleTuple(InferenceRule rule, Unifier u, Unifier pu){
+        this.rule = rule;
+        this.ruleUnifier = u;
+        this.permutationUnifier = pu;
     }
+
+    public InferenceRule getRule(){ return rule;}
+    public Unifier getRuleUnifier(){ return ruleUnifier;}
+    public Unifier getPermutationUnifier(){ return permutationUnifier;}
+
 }

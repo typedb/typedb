@@ -27,10 +27,10 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.parser.QueryParser;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.analytics.ComputeQueryBuilderImpl;
@@ -116,7 +116,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return an insert query that will insert the given variables into the graph
      */
     @Override
-    public InsertQuery insert(Var... vars) {
+    public InsertQuery insert(VarPattern... vars) {
         return insert(Arrays.asList(vars));
     }
 
@@ -125,8 +125,8 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return an insert query that will insert the given variables into the graph
      */
     @Override
-    public InsertQuery insert(Collection<? extends Var> vars) {
-        ImmutableList<VarAdmin> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
+    public InsertQuery insert(Collection<? extends VarPattern> vars) {
+        ImmutableList<VarPatternAdmin> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
         return new InsertQueryImpl(varAdmins, Optional.empty(), graph);
     }
 

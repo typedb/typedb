@@ -53,7 +53,7 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
      * @return a new MatchQuery that selects the given variables
      */
     @CheckReturnValue
-    MatchQuery select(Set<VarName> names);
+    MatchQuery select(Set<Var> names);
 
     /**
      * @param name a variable name to get
@@ -73,14 +73,14 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
      * @return an insert query that will insert the given variables for each result of this match query
      */
     @CheckReturnValue
-    InsertQuery insert(Var... vars);
+    InsertQuery insert(VarPattern... vars);
 
     /**
      * @param vars a collection of variables to insert for each result of this match query
      * @return an insert query that will insert the given variables for each result of this match query
      */
     @CheckReturnValue
-    InsertQuery insert(Collection<? extends Var> vars);
+    InsertQuery insert(Collection<? extends VarPattern> vars);
 
     /**
      * @param names an array of variable names to delete for each result of this match query
@@ -94,14 +94,14 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
      * @return a delete query that will delete the given properties for each result of this match query
      */
     @CheckReturnValue
-    DeleteQuery delete(Var... deleters);
+    DeleteQuery delete(VarPattern... deleters);
 
     /**
      * @param deleters a collection of variables stating what properties to delete for each result of this match query
      * @return a delete query that will delete the given properties for each result of this match query
      */
     @CheckReturnValue
-    DeleteQuery delete(Collection<? extends Var> deleters);
+    DeleteQuery delete(Collection<? extends VarPattern> deleters);
 
     /**
      * Order the results by degree in ascending order
@@ -117,7 +117,7 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
      * @return a new MatchQuery with the given ordering
      */
     @CheckReturnValue
-    MatchQuery orderBy(VarName varName);
+    MatchQuery orderBy(Var varName);
 
     /**
      * Order the results by degree
@@ -135,7 +135,7 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
      * @return a new MatchQuery with the given ordering
      */
     @CheckReturnValue
-    MatchQuery orderBy(VarName varName, Order order);
+    MatchQuery orderBy(Var varName, Order order);
 
     /**
      * @param graph the graph to execute the query on

@@ -29,7 +29,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilderImplMock;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.internal.query.ComputeQueryBuilderImplMock;
 import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MaxQueryImplMock;
@@ -405,7 +405,7 @@ public class ScalingTestIT {
         BatchMutatorClient loader = new BatchMutatorClient(Grakn.DEFAULT_URI, keyspace);
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
-            List<Var> insertQuery = new ArrayList<>();
+            List<VarPattern> insertQuery = new ArrayList<>();
             insertQuery.add(var("node"+String.valueOf(nodeIndex)).isa("thing"));
             for (String supernodeId : superNodes) {
                 insertQuery.add(var(supernodeId).id(ConceptId.of(supernodeId)));

@@ -20,7 +20,7 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
@@ -29,16 +29,16 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
  */
 class LabelFragmentSet extends EquivalentFragmentSet {
 
-    private final VarName type;
+    private final Var type;
     private TypeLabel label;
 
-    LabelFragmentSet(VarName type, TypeLabel label) {
+    LabelFragmentSet(Var type, TypeLabel label) {
         super(Fragments.label(type, label));
         this.type = type;
         this.label = label;
     }
 
-    VarName type() {
+    Var type() {
         return type;
     }
 

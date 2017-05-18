@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
 import java.util.stream.Stream;
@@ -28,9 +28,9 @@ import java.util.stream.Stream;
  */
 class SumAggregate extends AbstractAggregate<Answer, Number> {
 
-    private final VarName varName;
+    private final Var varName;
 
-    SumAggregate(VarName varName) {
+    SumAggregate(Var varName) {
         this.varName = varName;
     }
 

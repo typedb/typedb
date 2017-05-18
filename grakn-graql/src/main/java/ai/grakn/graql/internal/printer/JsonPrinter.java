@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.printer;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import mjson.Json;
 
 import java.util.Collection;
@@ -81,7 +81,7 @@ class JsonPrinter implements Printer<Json> {
         Json json = Json.object();
 
         map.forEach((Object key, Object value) -> {
-            if (key instanceof VarName) key = ((VarName) key).getValue();
+            if (key instanceof Var) key = ((Var) key).getValue();
             String keyString = key == null ? "" : key.toString();
             json.set(keyString, graqlString(true, value));
         });

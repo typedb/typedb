@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -42,9 +42,9 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
  */
 public class NotEquals extends AtomicBase {
 
-    private VarName refVarName;
+    private Var refVarName;
 
-    public NotEquals(VarName varName, NeqProperty prop, ReasonerQuery parent){
+    public NotEquals(Var varName, NeqProperty prop, ReasonerQuery parent){
         super(var(varName).neq(var(prop.getVar().getVarName())).admin(), parent);
         this.refVarName = prop.getVar().getVarName();
     }
@@ -78,23 +78,24 @@ public class NotEquals extends AtomicBase {
     @Override
     public Atomic copy() { return new NotEquals(this);}
 
-    private void setRefVarName(VarName var){
+    private void setRefVarName(Var var){
         refVarName = var;
         atomPattern = var(varName).neq(var(var)).admin();
     }
 
     @Override
-    public void unify(Unifier unifier){
+    public Atomic unify(Unifier unifier){
         super.unify(unifier);
-        VarName var = getReferenceVarName();
+        Var var = getReferenceVarName();
         if (unifier.containsKey(var)) {
             setRefVarName(unifier.get(var));
         } else if (unifier.containsValue(var)) {
             setRefVarName(capture(var));
         }
+        return this;
     }
 
-    public VarName getReferenceVarName(){ return refVarName;}
+    private Var getReferenceVarName(){ return refVarName;}
 
     public static boolean notEqualsOperator(Answer answer, NotEquals atom) {
         return !answer.get(atom.varName).equals(answer.get(atom.refVarName));

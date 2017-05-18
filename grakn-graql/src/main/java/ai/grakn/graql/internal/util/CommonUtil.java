@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.util;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
@@ -74,7 +74,7 @@ public class CommonUtil {
         return Stream.of(options).flatMap(CommonUtil::optionalToStream).findFirst();
     }
 
-    public static Map<String, Concept> resultVarNameToString(Map<VarName, Concept> result) {
+    public static Map<String, Concept> resultVarNameToString(Map<Var, Concept> result) {
         return result.entrySet().stream().collect(toMap(entry -> entry.getKey().getValue(), Map.Entry::getValue));
     }
 

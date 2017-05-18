@@ -52,14 +52,14 @@ public interface QueryBuilder {
      * @return an insert query that will insert the given variables into the graph
      */
     @CheckReturnValue
-    InsertQuery insert(Var... vars);
+    InsertQuery insert(VarPattern... vars);
 
     /**
      * @param vars a collection of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
     @CheckReturnValue
-    InsertQuery insert(Collection<? extends Var> vars);
+    InsertQuery insert(Collection<? extends VarPattern> vars);
 
     /**
      * @return a compute query builder for building analytics query

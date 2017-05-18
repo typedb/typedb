@@ -21,7 +21,7 @@ package ai.grakn.graql.admin;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Map;
@@ -58,7 +58,7 @@ public interface ReasonerQuery{
      * @return set of variable names present in this reasoner query
      */
     @CheckReturnValue
-    Set<VarName> getVarNames();
+    Set<Var> getVarNames();
 
     /**
      * @return atom set constituting this reasoner query
@@ -77,13 +77,6 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     boolean isRuleResolvable();
-
-    /**
-     * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
-     * @param unifier (variable mappings) to be applied
-     * @return union of the entry unifier and the unifier used to resolve potential captures
-     */
-    Unifier unify(Unifier unifier);
 
     /**
      * @param parent query to unify wth
@@ -105,5 +98,5 @@ public interface ReasonerQuery{
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    Map<VarName, Type> getVarTypeMap();
+    Map<Var, Type> getVarTypeMap();
 }

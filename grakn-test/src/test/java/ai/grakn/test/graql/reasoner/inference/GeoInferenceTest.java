@@ -24,7 +24,7 @@ import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
@@ -119,10 +119,16 @@ public class GeoInferenceTest {
     public void testTransitiveQueryWithTypes2_NoRoles() {
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
         QueryBuilder iqb = geoGraph.graph().graql().infer(true);
-        String queryString = "match $z1 isa university;$z1 has name $name;"+
-                "($z1, $z2) isa is-located-in;$z2 isa country;$z2 has name 'Poland'; select $z1, $name;";
-        String queryString2 = "match $z2 isa university;$z2 has name $name;"+
-                "($z1, $z2) isa is-located-in;$z1 isa country;$z1 has name 'Poland'; select $z2, $name;";
+        String queryString = "match " +
+                "$z1 isa university;$z1 has name $name;"+
+                "($z1, $z2) isa is-located-in;" +
+                "$z2 isa country;$z2 has name 'Poland';" +
+                "select $z1, $name;";
+        String queryString2 = "match " +
+                "$z2 isa university;$z2 has name $name;"+
+                "($z1, $z2) isa is-located-in;" +
+                "$z1 isa country;$z1 has name 'Poland';" +
+                "select $z2, $name;";
         String explicitQuery = "match " +
                 "$z1 isa university;$z1 has name $name;" +
                 "{$z1 has name 'University-of-Warsaw';} or {$z1 has name'Warsaw-Polytechnics';};";
@@ -150,12 +156,12 @@ public class GeoInferenceTest {
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), poland.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(Var.of("y")).getId().getValue(), poland.getId().getValue()));
         assertEquals(answers.size(), 6);
 
         QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
         answers2.forEach(ans -> assertEquals(ans.size(), 2));
-        answers2.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), europe.getId().getValue()));
+        answers2.forEach(ans -> assertEquals(ans.get(Var.of("y")).getId().getValue(), europe.getId().getValue()));
         assertEquals(answers2.size(), 21);
     }
 
@@ -175,12 +181,12 @@ public class GeoInferenceTest {
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), poland.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(Var.of("y")).getId().getValue(), poland.getId().getValue()));
         assertEquals(answers.size(), 6);
 
         QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
         answers2.forEach(ans -> assertEquals(ans.size(), 2));
-        answers2.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), europe.getId().getValue()));
+        answers2.forEach(ans -> assertEquals(ans.get(Var.of("y")).getId().getValue(), europe.getId().getValue()));
         assertEquals(answers2.size(), 21);
     }
 
@@ -200,7 +206,7 @@ public class GeoInferenceTest {
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         assertEquals(answers.size(), 5);
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), masovia.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(Var.of("y")).getId().getValue(), masovia.getId().getValue()));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
         assertEquals(answers.size(), answers2.size());
     }
@@ -221,7 +227,7 @@ public class GeoInferenceTest {
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), masovia.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(Var.of("y")).getId().getValue(), masovia.getId().getValue()));
         assertEquals(answers.size(), 5);
         QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
         assertEquals(answers.size(), answers2.size());
@@ -255,17 +261,6 @@ public class GeoInferenceTest {
         String queryString = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in;";
 
         QueryAnswers answers = new QueryAnswers(iqb.materialise(false).<MatchQuery>parse(queryString).admin().stream().collect(Collectors.toSet()));
-        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
-        assertEquals(answers.size(), 51);
-        assertEquals(answers, answers2);
-    }
-
-    @Test
-    public void testRelationTypeQuery() {
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
-        String queryString = "match $x isa is-located-in;";
-
-        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
         assertEquals(answers.size(), 51);
         assertEquals(answers, answers2);
