@@ -59,14 +59,6 @@ public class MacroTest {
 
 
 
-    @Test
-    public void splitMacroTest() {
-        String template = "insert $x for (val in @split(<list>, \",\") ) do { has description <val>};";
-        String expected = "insert $x0 has description \"orange\" has description \"cat\" has description \"dog\";";
-
-        assertParseEquals(template, Collections.singletonMap("list", "cat,dog,orange"), expected);
-    }
-
     public static void assertParseEquals(String template, Map<String, Object> data, String expected){
         List<Query> result = Graql.parseTemplate(template, data);
         assertEquals(parse(expected), result.get(0));
