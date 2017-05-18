@@ -43,34 +43,8 @@ public class MacroTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    @Test
-    public void noescpMacroOneVarTest(){
-        String template = "insert $this isa @noescp(<value>);";
-        String expected = "insert $this0 isa whale;";
 
-        Map<String, Object> data = Collections.singletonMap("value", "whale");
 
-        assertParseEquals(template, data, expected);
-    }
-
-    @Test
-    public void noescpMacroMultiVarTest(){
-        String template = "insert $x has fn @noescp(<firstname>) has ln @noescp(<lastname>);";
-        String expected = "insert $x0 has fn 4 has ln 5;";
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("firstname", "4");
-        data.put("lastname", "5");
-
-        assertParseEquals(template, data, expected);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void noescpMacroBreaksWithWrongNumberArguments(){
-        String template = "@noescp(<value>, <otherValue>)";
-        //noinspection ResultOfMethodCallIgnored
-        Graql.parseTemplate(template, new HashMap<>());
-    }
 
     @Test
     public void stringMacroTest(){
