@@ -20,17 +20,19 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import java.util.Optional;
+import java.util.concurrent.locks.Lock;
 import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -139,14 +141,26 @@ public class PostProcessingTask implements BackgroundTask {
 
         if(duplicatesExistMethod.apply(graph, conceptIndex, conceptIds)){
 
-            postProcessingMethod.apply(graph, conceptIndex, conceptIds);
+            // Acquire a lock when you post process on an index to prevent race conditions
+            // Lock is acquired after checking for duplicates to reduce runtime
+            Lock indexLock = LockProvider.getLock(PostProcessingTask.LOCK_KEY + "/" + conceptIndex);
+            indexLock.lock();
 
-            validateMerged(graph, conceptIndex, conceptIds).
-                    ifPresent(message -> {
-                        throw new RuntimeException(message);
-                    });
+            try {
+                // execute the provided post processing method
+                postProcessingMethod.apply(graph, conceptIndex, conceptIds);
 
-            graph.admin().commitNoLogs();
+                // ensure post processing was correctly executed
+                validateMerged(graph, conceptIndex, conceptIds).
+                        ifPresent(message -> {
+                            throw new RuntimeException(message);
+                        });
+
+                // persist merged concepts
+                graph.admin().commitNoLogs();
+            } finally {
+                indexLock.unlock();
+            }
         }
     }
 
