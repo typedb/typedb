@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
 import javax.annotation.Nonnull;
@@ -39,10 +39,10 @@ import static java.util.stream.Collectors.toList;
  */
 class GroupAggregate<T> extends AbstractAggregate<Answer, Map<Concept, T>> {
 
-    private final VarName varName;
+    private final Var varName;
     private final Aggregate<? super Answer, T> innerAggregate;
 
-    GroupAggregate(VarName varName, Aggregate<? super Answer, T> innerAggregate) {
+    GroupAggregate(Var varName, Aggregate<? super Answer, T> innerAggregate) {
         this.varName = varName;
         this.innerAggregate = innerAggregate;
     }

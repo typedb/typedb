@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -50,7 +50,7 @@ public interface VarPropertyInternal extends VarProperty {
     /**
      * Return a collection of {@link EquivalentFragmentSet} to match the given property in the graph
      */
-    Collection<EquivalentFragmentSet> match(VarName start);
+    Collection<EquivalentFragmentSet> match(Var start);
 
     /**
      * Insert the given property into the graph, if possible.

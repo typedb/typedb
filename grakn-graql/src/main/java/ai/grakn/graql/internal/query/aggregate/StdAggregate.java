@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
 import java.util.Optional;
@@ -32,9 +32,9 @@ import static java.lang.Math.sqrt;
  */
 class StdAggregate extends AbstractAggregate<Answer, Optional<Double>> {
 
-    private final VarName varName;
+    private final Var varName;
 
-    StdAggregate(VarName varName) {
+    StdAggregate(Var varName) {
         this.varName = varName;
     }
 

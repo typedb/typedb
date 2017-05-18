@@ -35,8 +35,8 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.ValuePredicate;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -116,7 +116,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public MatchQuery visitMatchSelect(GraqlParser.MatchSelectContext ctx) {
-        Set<VarName> names = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
+        Set<Var> names = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
         return visitMatchQuery(ctx.matchQuery()).select(names);
     }
 
@@ -130,7 +130,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery());
 
         // decide which ordering method to use
-        VarName var = getVariable(ctx.VARIABLE());
+        Var var = getVariable(ctx.VARIABLE());
         if (ctx.ORDER() != null) {
             return matchQuery.orderBy(var, getOrder(ctx.ORDER()));
         } else {
@@ -364,7 +364,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public VarName visitVariableArgument(GraqlParser.VariableArgumentContext ctx) {
+    public Var visitVariableArgument(GraqlParser.VariableArgumentContext ctx) {
         return getVariable(ctx.VARIABLE());
     }
 
@@ -655,9 +655,9 @@ class QueryVisitor extends GraqlBaseVisitor {
         return visit(ctx);
     }
 
-    private VarName getVariable(TerminalNode variable) {
+    private Var getVariable(TerminalNode variable) {
         // Remove '$' prefix
-        return VarName.of(variable.getText().substring(1));
+        return Var.of(variable.getText().substring(1));
     }
 
     private String getRegex(TerminalNode string) {

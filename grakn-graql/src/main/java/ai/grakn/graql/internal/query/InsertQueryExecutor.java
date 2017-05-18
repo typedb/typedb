@@ -25,7 +25,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -78,10 +78,10 @@ public class InsertQueryExecutor {
 
     private final GraknGraph graph;
     private final Collection<VarPatternAdmin> vars;
-    private final Map<VarName, Concept> concepts = new HashMap<>();
-    private final Map<VarName, Concept> namedConcepts = new HashMap<>();
-    private final Stack<VarName> visitedVars = new Stack<>();
-    private final ImmutableMap<VarName, List<VarPatternAdmin>> varsByVarName;
+    private final Map<Var, Concept> concepts = new HashMap<>();
+    private final Map<Var, Concept> namedConcepts = new HashMap<>();
+    private final Stack<Var> visitedVars = new Stack<>();
+    private final ImmutableMap<Var, List<VarPatternAdmin>> varsByVarName;
     private final ImmutableMap<TypeLabel, List<VarPatternAdmin>> varsByTypeLabel;
     private final ImmutableMap<ConceptId, List<VarPatternAdmin>> varsById;
 
@@ -150,7 +150,7 @@ public class InsertQueryExecutor {
      * @return the same as addConcept, but using an internal map to remember previous calls
      */
     public Concept getConcept(VarPatternAdmin var) {
-        VarName name = var.getVarName();
+        Var name = var.getVarName();
         if (visitedVars.contains(name)) {
             throw new IllegalStateException(INSERT_RECURSIVE.getMessage(var.getPrintableName()));
         }

@@ -20,7 +20,7 @@ package ai.grakn.test.graql.graql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graphs.MovieGraph;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -76,7 +76,7 @@ public class AggregateTest {
     @Test
     public void whenGroupVarIsNotInQuery_Throw() {
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(VarName.of("z")));
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Var.of("z")));
         graph.graql().match(var("x").isa("movie").has("title", var("y"))).aggregate(group("z", count())).execute();
     }
 }

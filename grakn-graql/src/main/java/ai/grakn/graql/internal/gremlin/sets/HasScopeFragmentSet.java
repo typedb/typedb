@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
@@ -28,7 +28,7 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
  */
 class HasScopeFragmentSet extends EquivalentFragmentSet {
 
-    HasScopeFragmentSet(VarName relation, VarName scope) {
+    HasScopeFragmentSet(Var relation, Var scope) {
         super(Fragments.outHasScope(relation, scope), Fragments.inHasScope(scope, relation));
     }
 }

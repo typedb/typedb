@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
@@ -35,14 +35,14 @@ import static java.util.stream.Collectors.joining;
  */
 class MatchQuerySelect extends MatchQueryModifier {
 
-    private final ImmutableSet<VarName> names;
+    private final ImmutableSet<Var> names;
 
-    MatchQuerySelect(AbstractMatchQuery inner, ImmutableSet<VarName> names) {
+    MatchQuerySelect(AbstractMatchQuery inner, ImmutableSet<Var> names) {
         super(inner);
 
-        Set<VarName> selectedNames = inner.getSelectedNames();
+        Set<Var> selectedNames = inner.getSelectedNames();
 
-        for (VarName name : names) {
+        for (Var name : names) {
             if (!selectedNames.contains(name)) {
                 throw new IllegalArgumentException(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(name));
             }
@@ -66,7 +66,7 @@ class MatchQuerySelect extends MatchQueryModifier {
     }
 
     @Override
-    public Set<VarName> getSelectedNames() {
+    public Set<Var> getSelectedNames() {
         return names;
     }
 }

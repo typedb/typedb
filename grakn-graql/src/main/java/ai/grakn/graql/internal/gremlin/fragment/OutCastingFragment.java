@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -27,7 +27,7 @@ import static ai.grakn.util.Schema.EdgeLabel.CASTING;
 
 class OutCastingFragment extends AbstractFragment {
 
-    OutCastingFragment(VarName start, VarName end) {
+    OutCastingFragment(Var start, Var end) {
         super(start, end);
     }
 

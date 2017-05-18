@@ -19,7 +19,7 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -66,12 +66,12 @@ public class TypeAtom extends Binary{
     }
 
     @Override
-    protected VarName extractValueVariableName(VarPatternAdmin var) {
+    protected Var extractValueVariableName(VarPatternAdmin var) {
         return var.getProperties().findFirst().get().getInnerVars().findFirst().get().getVarName();
     }
 
     @Override
-    protected void setValueVariable(VarName var) {
+    protected void setValueVariable(Var var) {
         super.setValueVariable(var);
         atomPattern = atomPattern.asVar().mapProperty(IsaProperty.class, prop -> new IsaProperty(prop.getType().setVarName(var)));
     }
