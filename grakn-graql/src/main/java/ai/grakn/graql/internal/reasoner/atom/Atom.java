@@ -34,6 +34,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -271,4 +272,11 @@ public abstract class Atom extends AtomicBase {
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
     public Pair<Atom, Unifier> rewriteToUserDefinedWithUnifiers(){ return new Pair<>(this, new UnifierImpl());}
+
+    /**
+     * find unifier with parent atom
+     * @param parentAtom atom to be unified with
+     * @return unifier
+     */
+    public abstract Unifier getUnifier(Atomic parentAtom);
 }

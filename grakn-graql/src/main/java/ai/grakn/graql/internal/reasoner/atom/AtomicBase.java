@@ -118,22 +118,5 @@ public abstract class AtomicBase implements Atomic {
         }
         return this;
     }
-
-    /**
-     * get unifiers by comparing this atom with parent
-     * @param parentAtom atom defining variable names
-     * @return unifier
-     */
-    @Override
-    public Unifier getUnifier(Atomic parentAtom) {
-        if (parentAtom.getClass() != this.getClass()) {
-            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
-        }
-        Unifier unifier = new UnifierImpl();
-        if (!this.getVarName().equals(parentAtom.getVarName())) {
-            unifier.addMapping(this.getVarName(), parentAtom.getVarName());
-        }
-        return unifier;
-    }
 }
 

@@ -97,11 +97,6 @@ public abstract class Predicate<T> extends AtomicBase {
     @Override
     public boolean isRuleResolvable(){ return false;}
 
-    @Override
-    public Unifier getUnifier(Atomic parentAtom) {
-        throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
-    }
-
     public T getPredicate(){ return predicate;}
     public abstract String getPredicateValue();
     protected abstract T extractPredicate(VarPatternAdmin pattern);
