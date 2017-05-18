@@ -65,6 +65,15 @@ final class VarImpl implements Var {
     }
 
     @Override
+    public Var asUserDefined() {
+        if (userDefinedName) {
+            return this;
+        } else {
+            return new VarImpl(value, true);
+        }
+    }
+
+    @Override
     public VarPattern pattern() {
         return new VarPatternImpl(this, ImmutableSet.of());
     }

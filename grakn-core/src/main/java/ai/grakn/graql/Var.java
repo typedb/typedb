@@ -47,6 +47,15 @@ public interface Var extends VarPatternBuilder {
     boolean isUserDefinedName();
 
     /**
+     * Transform the variable into a user-defined one, retaining the generated name.
+     *
+     * This is useful for "reifying" an existing variable.
+     *
+     * @return a new variable with the same name as the previous, but set as user-defined.
+     */
+    Var asUserDefined();
+
+    /**
      * Get a shorter representation of the variable (with prefixed "$")
      */
     String shortName();
