@@ -53,7 +53,7 @@ public class GraknEngineConfig {
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
 
-    public static final String REDIS_SERVER_URL = "redis.url";
+    public static final String REDIS_SERVER_URL = "redis.host";
     public static final String REDIS_SERVER_PORT = "redis.port";
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
