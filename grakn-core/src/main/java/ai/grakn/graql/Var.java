@@ -20,7 +20,6 @@ package ai.grakn.graql;
 
 import org.apache.commons.lang.StringUtils;
 
-import javax.annotation.CheckReturnValue;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -29,50 +28,44 @@ import java.util.function.Function;
  *
  * @author Felix Chapman
  */
-public final class VarName {
+public final class Var {
     private final String value;
 
-    @CheckReturnValue
-    public static VarName of(String value) {
-        return new VarName(value);
+    public static Var of(String value) {
+        return new Var(value);
     }
 
-    @CheckReturnValue
-    public static VarName anon() {
-        return new VarName(UUID.randomUUID().toString());
+    public static Var anon() {
+        return new Var(UUID.randomUUID().toString());
     }
 
-    private VarName(String value) {
+    private Var(String value) {
         this.value = value;
     }
 
     /**
      * Get the string name of the variable (without prefixed "$")
      */
-    @CheckReturnValue
     public String getValue() {
         return value;
     }
 
     /**
-     * Rename a variable (does not modify the original {@code VarName})
+     * Rename a variable (does not modify the original {@link Var})
      * @param mapper a function to apply to the underlying variable name
      * @return the new variable name
      */
-    @CheckReturnValue
-    public VarName map(Function<String, String> mapper) {
-        return VarName.of(mapper.apply(value));
+    public Var map(Function<String, String> mapper) {
+        return Var.of(mapper.apply(value));
     }
 
     /**
      * Get a shorter representation of the variable (with prefixed "$")
      */
-    @CheckReturnValue
     public String shortName() {
         return "$" + StringUtils.left(value, 3);
     }
 
-    @CheckReturnValue
     public String toString() {
         return "$" + value;
     }
@@ -82,7 +75,7 @@ public final class VarName {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        VarName varName = (VarName) o;
+        Var varName = (Var) o;
 
         return value.equals(varName.value);
     }

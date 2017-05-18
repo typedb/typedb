@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.Atomic;
@@ -45,12 +45,12 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
-import java.util.Collections;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -211,10 +211,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Relation relAtom = atom.getType() == null ?
                 ((Relation) AtomicFactory.create(atom, atom.getParentQuery())).addType(headAtom.getType()) :
                 (Relation) atom;
-        List<VarName> permuteVars = new ArrayList<>(relAtom.getUnmappedRolePlayers());
+        List<Var> permuteVars = new ArrayList<>(relAtom.getUnmappedRolePlayers());
         if (!(atom.isRelation() && headAtom.isRelation()) || permuteVars.isEmpty()) return Collections.singleton(new UnifierImpl());
 
-        List<List<VarName>> varPermutations = getListPermutations(
+        List<List<Var>> varPermutations = getListPermutations(
                 new ArrayList<>(permuteVars)).stream()
                 .filter(l -> !l.isEmpty())
                 .collect(Collectors.toList()
@@ -231,7 +231,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     private Stream<Answer> getFilteredAnswerStream(Stream<Answer> answers){
-        Set<VarName> vars = getVarNames();
+        Set<Var> vars = getVarNames();
         Set<TypeAtom> mappedTypeConstraints = atom.getMappedTypeConstraints();
         return getIdPredicateAnswerStream(answers)
                 .filter(a -> entityTypeFilter(a, mappedTypeConstraints))
@@ -263,7 +263,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
-        Set<VarName> varsToRetain = rule.hasDisconnectedHead()? ruleBody.getVarNames() : ruleHead.getVarNames();
+        Set<Var> varsToRetain = rule.hasDisconnectedHead()? ruleBody.getVarNames() : ruleHead.getVarNames();
 
         subGoals.add(this);
         Stream<Answer> answers = ruleBody
@@ -275,8 +275,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         if (materialise || rule.requiresMaterialisation(atom)) {
             if (!cache.contains(ruleHead)) dCache.record(ruleHead, ruleHead.lookup(cache));
             //filter known to make sure no duplicates are inserted (put behaviour)
-            Map<Pair<VarName, Concept>, Set<Answer>> known = cache.getInverseAnswerMap(ruleHead);
-            Map<Pair<VarName, Concept>, Set<Answer>> dknown = dCache.getInverseAnswerMap(ruleHead);
+            Map<Pair<Var, Concept>, Set<Answer>> known = cache.getInverseAnswerMap(ruleHead);
+            Map<Pair<Var, Concept>, Set<Answer>> dknown = dCache.getInverseAnswerMap(ruleHead);
 
             answers = answers
                     .filter(a -> knownFilterWithInverse(a, known))
@@ -289,7 +289,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         //unify answers
         boolean isHeadEquivalent = this.isEquivalent(ruleHead);
-        Set<VarName> queryVars = this.getVarNames().size() < ruleHead.getVarNames().size()? u.keySet() : ruleHead.getVarNames();
+        Set<Var> queryVars = this.getVarNames().size() < ruleHead.getVarNames().size()? u.keySet() : ruleHead.getVarNames();
         answers = answers
                 .map(a -> a.filterVars(queryVars))
                 .map(a -> a.unify(u))

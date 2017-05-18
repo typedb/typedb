@@ -27,8 +27,8 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
@@ -117,10 +117,10 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(VarName start) {
-        VarName relation = VarName.anon();
-        VarName edge1 = VarName.anon();
-        VarName edge2 = VarName.anon();
+    public Collection<EquivalentFragmentSet> match(Var start) {
+        Var relation = Var.anon();
+        Var edge1 = Var.anon();
+        Var edge2 = Var.anon();
 
         return ImmutableSet.of(
                 shortcut(relation, edge1, start),
@@ -196,10 +196,10 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        VarName varName = var.getVarName();
+        Var varName = var.getVarName();
         TypeLabel type = this.getType();
         VarPatternAdmin valueVar = this.getResource();
-        VarName valueVariable = valueVar.getVarName();
+        Var valueVariable = valueVar.getVarName();
         Set<ValuePredicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);
 
         //add resource atom

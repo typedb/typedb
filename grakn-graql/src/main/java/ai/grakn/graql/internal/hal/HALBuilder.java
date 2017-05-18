@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.hal;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -73,7 +73,7 @@ public class HALBuilder {
         String keyspace = matchQuery.admin().getGraph().get().getKeyspace();
 
         //For each VarPatterAdmin containing a relation we store a map containing varNames associated to RoleTypes
-        Map<VarPatternAdmin, Pair<Map<VarName, String>, String>> roleTypes = new HashMap<>();
+        Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
         if (results.iterator().hasNext()) {
             // Compute map on first answer in result, since it will be the same for all the answers
             roleTypes = computeRoleTypesFromQuery(matchQuery, results.iterator().next());
@@ -119,12 +119,12 @@ public class HALBuilder {
         return conceptsArray;
     }
 
-    private static Json buildHALRepresentations(Collection<Answer> graqlResultsList, Set<TypeLabel> typesAskedInQuery, Map<VarPatternAdmin, Pair<Map<VarName, String>, String>> roleTypes, String keyspace, int offset, int limit, boolean filterInstances) {
+    private static Json buildHALRepresentations(Collection<Answer> graqlResultsList, Set<TypeLabel> typesAskedInQuery, Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, String keyspace, int offset, int limit, boolean filterInstances) {
         final Json lines = Json.array();
         graqlResultsList.forEach(answer -> {
             Map<VarPatternAdmin, Boolean> inferredRelations = buildInferredRelationsMap(answer);
-            Map<VarName, Representation> mapFromVarNameToHALObject = new HashMap<>();
-            Stream<Map.Entry<VarName, Concept>> entriesStream = answer.map().entrySet().stream();
+            Map<Var, Representation> mapFromVarNameToHALObject = new HashMap<>();
+            Stream<Map.Entry<Var, Concept>> entriesStream = answer.map().entrySet().stream();
             // Filter to work only with Instances when building HAL for explanation tree from Reasoner
             if (filterInstances) entriesStream = entriesStream.filter(entry -> entry.getValue().isInstance());
             entriesStream.forEach(currentMapEntry -> {
@@ -148,12 +148,12 @@ public class HALBuilder {
         return lines;
     }
 
-    private static Collection<Representation> loopThroughRelations(Map<VarPatternAdmin, Pair<Map<VarName, String>, String>> roleTypes, Map<VarName, Representation> mapFromVarNameToHALObject, Map<VarName, Concept> resultLine, String keyspace, int limit, Map<VarPatternAdmin, Boolean> inferredRelations) {
+    private static Collection<Representation> loopThroughRelations(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Map<Var, Representation> mapFromVarNameToHALObject, Map<Var, Concept> resultLine, String keyspace, int limit, Map<VarPatternAdmin, Boolean> inferredRelations) {
 
         final Collection<Representation> generatedRelations = new ArrayList<>();
         // For each relation (VarPatternAdmin key in roleTypes) we fetch all the role-players representations and embed them in the generated-relation's HAL representation.
         roleTypes.entrySet().forEach(currentEntry -> {
-            Collection<VarName> varNamesInCurrentRelation = currentEntry.getValue().getKey().keySet();
+            Collection<Var> varNamesInCurrentRelation = currentEntry.getValue().getKey().keySet();
             // Chain Concept ids (sorted alphabetically) corresponding to varNames in current relation
             String idsList = varNamesInCurrentRelation.stream().map(key -> resultLine.get(key).getId().getValue()).sorted().collect(Collectors.joining(""));
             // Generated relation ID
@@ -173,12 +173,12 @@ public class HALBuilder {
         return generatedRelations;
     }
 
-    private static String computeRelationHref(String relationType, Collection<VarName> varNamesInCurrentRelation, Map<VarName, Concept> resultLine, Map<VarName, String> varNameToRole, String keyspace, int limit, boolean isInferred) {
+    private static String computeRelationHref(String relationType, Collection<Var> varNamesInCurrentRelation, Map<Var, Concept> resultLine, Map<Var, String> varNameToRole, String keyspace, int limit, boolean isInferred) {
         String isaString = (!relationType.equals("")) ? "isa " + relationType : "";
         StringBuilder stringBuilderVarsWithIds = new StringBuilder();
         StringBuilder stringBuilderParenthesis = new StringBuilder().append('(');
         char currentVarLetter = 'a';
-        for (VarName varName : varNamesInCurrentRelation) {
+        for (Var varName : varNamesInCurrentRelation) {
             String id = resultLine.get(varName).getId().getValue();
             stringBuilderVarsWithIds.append(" $").append(currentVarLetter).append(" id '").append(id).append("';");
             String role = (varNameToRole.get(varName).equals(HAS_EMPTY_ROLE_EDGE)) ? "" : varNameToRole.get(varName) + ":";

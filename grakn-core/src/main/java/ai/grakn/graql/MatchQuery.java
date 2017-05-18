@@ -53,7 +53,7 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
      * @return a new MatchQuery that selects the given variables
      */
     @CheckReturnValue
-    MatchQuery select(Set<VarName> names);
+    MatchQuery select(Set<Var> names);
 
     /**
      * @param name a variable name to get
@@ -117,7 +117,7 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
      * @return a new MatchQuery with the given ordering
      */
     @CheckReturnValue
-    MatchQuery orderBy(VarName varName);
+    MatchQuery orderBy(Var varName);
 
     /**
      * Order the results by degree
@@ -135,7 +135,7 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
      * @return a new MatchQuery with the given ordering
      */
     @CheckReturnValue
-    MatchQuery orderBy(VarName varName, Order order);
+    MatchQuery orderBy(Var varName, Order order);
 
     /**
      * @param graph the graph to execute the query on

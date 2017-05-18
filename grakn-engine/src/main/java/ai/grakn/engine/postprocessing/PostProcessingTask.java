@@ -61,8 +61,8 @@ public class PostProcessingTask implements BackgroundTask {
      */
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
-        runPostProcessingMethod(configuration, Schema.BaseType.CASTING, this::runCastingFix);
-        runPostProcessingMethod(configuration, Schema.BaseType.RESOURCE, this::runResourceFix);
+        runPostProcessingMethod(configuration, Schema.BaseType.CASTING, this::duplicateCastingsExist, this::runCastingFix);
+        runPostProcessingMethod(configuration, Schema.BaseType.RESOURCE, this::duplicateResourcesExist, this::runResourceFix);
 
         return true;
     }
@@ -85,13 +85,15 @@ public class PostProcessingTask implements BackgroundTask {
     /**
      * Main method which attempts to run all post processing jobs.
      *
-     * @param postProcessingMethod The post processing job.
+     * @param duplicatesExistMethod Method to determine if there are duplicates to be post processed.
+     *                      Either {@link ai.grakn.engine.postprocessing.PostProcessingTask#duplicateCastingsExist(GraknGraph, String, Set)} or
+     *                      {@link ai.grakn.engine.postprocessing.PostProcessingTask#duplicateResourcesExist(GraknGraph, String, Set)}
+     * @param postProcessingMethod The post processing job to be executed if duplicates exist
      *                      Either {@link ai.grakn.engine.postprocessing.PostProcessingTask#runResourceFix(GraknGraph, String, Set)} or
      *                      {@link ai.grakn.engine.postprocessing.PostProcessingTask#runCastingFix(GraknGraph, String, Set)}.
-     *                      This then returns a function which will complete the job after going through validation
-
      */
     private void runPostProcessingMethod(TaskConfiguration configuration, Schema.BaseType baseType,
+                                         TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> duplicatesExistMethod,
                                          TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> postProcessingMethod){
 
         Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(baseType, configuration);
@@ -101,7 +103,8 @@ public class PostProcessingTask implements BackgroundTask {
             Set<ConceptId> conceptIds = e.getValue();
 
             GraphMutators.runGraphMutationWithRetry(configuration.json().at(REST.Request.KEYSPACE).asString(),
-                    (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds, postProcessingMethod));
+                    (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds, duplicatesExistMethod, postProcessingMethod));
+
         });
 
         LOG.debug(JOB_FINISHED, baseType.name(), allToPostProcess);
@@ -127,12 +130,17 @@ public class PostProcessingTask implements BackgroundTask {
      * @param graph
      * @param conceptIndex
      * @param conceptIds
+     * @param duplicatesExistMethod
      * @param postProcessingMethod
      */
-    public void runPostProcessingMethod(GraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds,
+    private void runPostProcessingMethod(GraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds,
+                                         TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> duplicatesExistMethod,
                                          TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> postProcessingMethod){
 
-        if(postProcessingMethod.apply(graph, conceptIndex, conceptIds)) {
+        if(duplicatesExistMethod.apply(graph, conceptIndex, conceptIds)){
+
+            postProcessingMethod.apply(graph, conceptIndex, conceptIds);
+
             validateMerged(graph, conceptIndex, conceptIds).
                     ifPresent(message -> {
                         throw new RuntimeException(message);
@@ -194,5 +202,27 @@ public class PostProcessingTask implements BackgroundTask {
      */
     private boolean runCastingFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
         return graph.admin().fixDuplicateCastings(index, conceptIds);
+    }
+
+    /**
+     * Check if there are duplicate castings for the given index
+     * @param graph Graph on which to apply the fixes
+     * @param index The unique index of the concept that may have duplicates
+     * @param conceptIds The conceptIds which may be the duplicates
+     */
+    private boolean duplicateCastingsExist(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+        return graph.admin().duplicateCastingsExist(index, conceptIds);
+    }
+
+
+    /**
+     * Check if there are duplicate resources for the given index
+
+     * @param graph Graph on which to apply the fixes
+     * @param index The unique index of the concept that may have duplicates
+     * @param conceptIds The conceptIds which may be the duplicates
+     */
+    private boolean duplicateResourcesExist(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+        return graph.admin().duplicateResourcesExist(index, conceptIds);
     }
 }

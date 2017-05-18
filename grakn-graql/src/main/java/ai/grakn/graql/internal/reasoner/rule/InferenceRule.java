@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -180,9 +180,9 @@ public class InferenceRule {
                 .collect(toSet());
 
         //remove less specific types if present
-        Map<VarName, Type> unifiedVarTypeMap = unifiedTypes.stream()
+        Map<Var, Type> unifiedVarTypeMap = unifiedTypes.stream()
                 .collect(Collectors.toMap(Atomic::getVarName, TypeAtom::getType));
-        Set<VarName> unifiedTypeVars = unifiedTypes.stream()
+        Set<Var> unifiedTypeVars = unifiedTypes.stream()
                 .map(Atom::getVarName)
                 .collect(toSet());
         body.getTypeConstraints().stream()

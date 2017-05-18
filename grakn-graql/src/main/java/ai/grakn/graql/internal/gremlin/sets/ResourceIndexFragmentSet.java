@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
@@ -35,8 +35,8 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDir
 /**
  * A query can use a more-efficient resource index traversal when the following criteria are met:
  *
- * 1. There is an {@link IsaFragmentSet} and a {@link ValueFragmentSet} referring to the same instance {@link VarName}.
- * 2. The {@link IsaFragmentSet} refers to a type {@link VarName} with a {@link LabelFragmentSet}.
+ * 1. There is an {@link IsaFragmentSet} and a {@link ValueFragmentSet} referring to the same instance {@link Var}.
+ * 2. The {@link IsaFragmentSet} refers to a type {@link Var} with a {@link LabelFragmentSet}.
  * 3. The {@link LabelFragmentSet} refers to a type in the graph without direct sub-types.
  * 4. The {@link ValueFragmentSet} is an equality predicate referring to a literal value.
  *
@@ -48,7 +48,7 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDir
  */
 class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
-    private ResourceIndexFragmentSet(VarName start, TypeLabel typeLabel, Object value) {
+    private ResourceIndexFragmentSet(Var start, TypeLabel typeLabel, Object value) {
         super(Fragments.resourceIndex(start, typeLabel, value));
     }
 
@@ -58,12 +58,12 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         Iterable<ValueFragmentSet> valueSets = equalsValueFragments(fragmentSets)::iterator;
 
         for (ValueFragmentSet valueSet : valueSets) {
-            VarName resource = valueSet.resource();
+            Var resource = valueSet.resource();
 
             IsaFragmentSet isaSet = typeInformationOf(resource, fragmentSets);
             if (isaSet == null) continue;
 
-            VarName type = isaSet.type();
+            Var type = isaSet.type();
 
             LabelFragmentSet nameSet = typeLabelOf(type, fragmentSets);
             if (nameSet == null) continue;
@@ -88,7 +88,7 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         fragmentSets.remove(isaSet);
 
         // Add a new fragment set to replace the old ones
-        VarName resource = valueSet.resource();
+        Var resource = valueSet.resource();
         Object value = valueSet.predicate().equalsValue().get();
         ResourceIndexFragmentSet indexFragmentSet = new ResourceIndexFragmentSet(resource, typeLabel, value);
         fragmentSets.add(indexFragmentSet);
@@ -100,14 +100,14 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
     }
 
     @Nullable
-    private static IsaFragmentSet typeInformationOf(VarName resource, Collection<EquivalentFragmentSet> fragmentSets) {
+    private static IsaFragmentSet typeInformationOf(Var resource, Collection<EquivalentFragmentSet> fragmentSets) {
         return fragmentSetOfType(IsaFragmentSet.class, fragmentSets)
                 .filter(isaFragmentSet -> isaFragmentSet.instance().equals(resource))
                 .findAny()
                 .orElse(null);
     }
 
-    private static LabelFragmentSet typeLabelOf(VarName type, Collection<EquivalentFragmentSet> fragmentSets) {
+    private static LabelFragmentSet typeLabelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {
         return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
                 .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
                 .findAny()

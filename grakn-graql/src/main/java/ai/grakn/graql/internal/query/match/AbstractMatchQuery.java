@@ -29,8 +29,8 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Printer;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -113,20 +113,20 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final MatchQuery select(String... names) {
-        return select(Stream.of(names).map(VarName::of).collect(toSet()));
+        return select(Stream.of(names).map(Var::of).collect(toSet()));
     }
 
     @Override
-    public final MatchQuery select(Set<VarName> names) {
+    public final MatchQuery select(Set<Var> names) {
         return new MatchQuerySelect(this, ImmutableSet.copyOf(names));
     }
 
     @Override
     public final Stream<Concept> get(String name) {
-        VarName var = VarName.of(name);
+        Var var = Var.of(name);
         return stream().map(result -> {
             if (!result.containsKey(var)) {
-                throw new IllegalArgumentException(VARIABLE_NOT_IN_QUERY.getMessage(VarName.of(name)));
+                throw new IllegalArgumentException(VARIABLE_NOT_IN_QUERY.getMessage(Var.of(name)));
             }
             return result.get(var);
         });
@@ -170,17 +170,17 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final MatchQuery orderBy(VarName varName) {
+    public final MatchQuery orderBy(Var varName) {
         return orderBy(varName, asc);
     }
 
     @Override
     public final MatchQuery orderBy(String varName, Order order) {
-        return orderBy(VarName.of(varName), order);
+        return orderBy(Var.of(varName), order);
     }
 
     @Override
-    public final MatchQuery orderBy(VarName varName, Order order) {
+    public final MatchQuery orderBy(Var varName, Order order) {
         return new MatchQueryOrder(this, new MatchOrderImpl(varName, order));
     }
 }

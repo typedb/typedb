@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -47,7 +47,7 @@ public interface Unifier{
      * @return corresponding term
      */
     @CheckReturnValue
-    VarName get(VarName key);
+    Var get(Var key);
 
     /**
      * add a new mapping
@@ -55,7 +55,7 @@ public interface Unifier{
      * @param value term
      * @return previous value associated with key, or null if there was no mapping for key
      */
-    VarName addMapping(VarName key, VarName value);
+    Var addMapping(Var key, Var value);
 
 
     /**
@@ -65,40 +65,40 @@ public interface Unifier{
     boolean isEmpty();
 
     @CheckReturnValue
-    Map<VarName, VarName> map();
+    Map<Var, Var> map();
 
     /**
      * @return variables present in this unifier
      */
     @CheckReturnValue
-    Set<VarName> keySet();
+    Set<Var> keySet();
 
     /**
      * @return terms present in this unifier
      */
     @CheckReturnValue
-    Collection<VarName> values();
+    Collection<Var> values();
 
     /**
      *
      * @return set of mappings constituting this unifier
      */
     @CheckReturnValue
-    Set<Map.Entry<VarName, VarName>> mappings();
+    Set<Map.Entry<Var, Var>> mappings();
 
     /**
      * @param key variable to be inspected for presence
      * @return true if specified key is part of a mapping
      */
     @CheckReturnValue
-    boolean containsKey(VarName key);
+    boolean containsKey(Var key);
 
     /**
      * @param value term to be checked for presence
      * @return true if specified value is part of a mapping
      */
     @CheckReturnValue
-    boolean containsValue(VarName value);
+    boolean containsValue(Var value);
 
     /**
      * @param u unifier to compare with

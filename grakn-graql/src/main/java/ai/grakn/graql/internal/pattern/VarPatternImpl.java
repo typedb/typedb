@@ -24,8 +24,8 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.ValuePredicate;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.RelationPlayer;
@@ -35,16 +35,16 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty;
-import ai.grakn.graql.internal.pattern.property.RelatesProperty;
 import ai.grakn.graql.internal.pattern.property.HasScopeProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
+import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
+import ai.grakn.graql.internal.pattern.property.RelatesProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.pattern.property.RhsProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
@@ -75,12 +75,12 @@ import static java.util.stream.Collectors.toSet;
  */
 class VarPatternImpl implements VarPatternAdmin {
 
-    private final VarName name;
+    private final Var name;
     private final boolean userDefinedName;
 
     private final Set<VarProperty> properties;
 
-    private VarPatternImpl(VarName name, boolean userDefinedName, Set<VarProperty> properties) {
+    private VarPatternImpl(Var name, boolean userDefinedName, Set<VarProperty> properties) {
         this.name = name;
         this.userDefinedName = userDefinedName;
         this.properties = properties;
@@ -90,14 +90,14 @@ class VarPatternImpl implements VarPatternAdmin {
      * Create a variable with a random variable name
      */
     static VarPatternImpl anon() {
-        return new VarPatternImpl(VarName.anon(), false, ImmutableSet.of());
+        return new VarPatternImpl(Var.anon(), false, ImmutableSet.of());
     }
 
     /**
      * Create a variable with a specified name
      * @param name the name of the variable
      */
-    static VarPatternImpl named(VarName name) {
+    static VarPatternImpl named(Var name) {
         return new VarPatternImpl(name, true, ImmutableSet.of());
     }
 
@@ -107,7 +107,7 @@ class VarPatternImpl implements VarPatternAdmin {
      */
     static VarPatternImpl merge(Collection<VarPatternAdmin> vars) {
         VarPatternAdmin first = vars.iterator().next();
-        VarName name = first.getVarName();
+        Var name = first.getVarName();
         boolean userDefinedName = first.isUserDefinedName();
         ImmutableSet.Builder<VarProperty> properties = ImmutableSet.builder();
 
@@ -318,12 +318,12 @@ class VarPatternImpl implements VarPatternAdmin {
     }
 
     @Override
-    public VarName getVarName() {
+    public Var getVarName() {
         return name;
     }
 
     @Override
-    public VarPatternAdmin setVarName(VarName name) {
+    public VarPatternAdmin setVarName(Var name) {
         if (!userDefinedName) throw new RuntimeException(ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
         return new VarPatternImpl(name, true, properties);
     }
@@ -497,7 +497,7 @@ class VarPatternImpl implements VarPatternAdmin {
     }
 
     @Override
-    public Set<VarName> commonVarNames() {
+    public Set<Var> commonVarNames() {
         return getInnerVars().stream().filter(VarPatternAdmin::isUserDefinedName).map(VarPatternAdmin::getVarName).collect(toSet());
     }
 

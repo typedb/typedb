@@ -19,12 +19,12 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
@@ -123,8 +123,8 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
-    public Set<VarName> getVarNames() {
-        Set<VarName> vars = super.getVarNames();
+    public Set<Var> getVarNames() {
+        Set<Var> vars = super.getVarNames();
         getMultiPredicate().stream().flatMap(p -> p.getVarNames().stream()).forEach(vars::add);
         return vars;
     }
@@ -137,14 +137,14 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
-    protected VarName extractValueVariableName(VarPatternAdmin var){
+    protected Var extractValueVariableName(VarPatternAdmin var){
         HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         VarPatternAdmin resVar = prop.getResource();
-        return resVar.isUserDefinedName()? resVar.getVarName() : VarName.of("");
+        return resVar.isUserDefinedName()? resVar.getVarName() : Var.of("");
     }
 
     @Override
-    protected void setValueVariable(VarName var) {
+    protected void setValueVariable(Var var) {
         super.setValueVariable(var);
         atomPattern = atomPattern.asVar().mapProperty(HasResourceProperty.class, prop -> prop.setResource(prop.getResource().setVarName(var)));
     }
@@ -204,7 +204,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
         Unifier unifier = new UnifierImpl();
         unifier.addMapping(this.getValueVariable(), parentAtom.getVarName());
-        if (parentAtom.containsVar(this.getVarName())) unifier.addMapping(this.getVarName(), VarName.anon());
+        if (parentAtom.containsVar(this.getVarName())) unifier.addMapping(this.getVarName(), Var.anon());
         return unifier;
     }
 
