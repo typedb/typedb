@@ -868,7 +868,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * Returns the duplicates of the given concept
      * @param mainConcept primary concept - this one is returned by the index and not considered a duplicate
      * @param conceptVertexIds Set of Ids containing potential duplicates of the main concept
-     * @return true if the given set of Ids contains concepts that are duplicates of the main concept
+     * @return a set containing the duplicates of the given concept 
      */
     private Set<? extends ConceptImpl> getDuplicates(ConceptImpl mainConcept, Set<ConceptId> conceptVertexIds){
         Set<ConceptImpl> duplicated = conceptVertexIds.stream()
@@ -883,12 +883,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
-     * Given an index, get the concept associated with it
+     * Given an index, get the concept associated with it. The "main" concept is the one
+     * returned by the index after all of the duplicates have been created.
+     *
      * @param index retrieve the concept associated with this index
      * @return Concept representing the vertex at the given index
      */
     private ConceptImpl getMainConcept(String index){
-        //This is done to ensure we merge into the indexed casting. Needs to be cleaned up though
+        //This is done to ensure we merge into the indexed casting.
         return getConcept(Schema.ConceptProperty.INDEX, index);
     }
 
