@@ -22,14 +22,11 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Main task Mock class- keeps track of completed and failed tasks
@@ -37,8 +34,6 @@ import org.slf4j.LoggerFactory;
  * @author alexandraorth, Felix Chapman
  */
 public abstract class MockBackgroundTask implements BackgroundTask {
-
-    private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskManager.class);
 
     private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();
     private static final ConcurrentHashMultiset<TaskId> CANCELLED_TASKS = ConcurrentHashMultiset.create();
@@ -128,8 +123,6 @@ public abstract class MockBackgroundTask implements BackgroundTask {
 
     @Override
     public final boolean stop() {
-        LOG.debug("Stopping {}", id);
-
         cancelled.set(true);
         synchronized (sync) {
             sync.notifyAll();
