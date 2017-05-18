@@ -66,7 +66,7 @@ public class GraknEngineServer implements AutoCloseable {
             REST.WebPath.REMOTE_SHELL_URI,
             REST.WebPath.System.CONFIGURATION,
             REST.WebPath.IS_PASSWORD_PROTECTED_URI));
-    public static final boolean isPasswordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY);
+    public static final boolean isPasswordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
 
     private final EngineID engineId = EngineID.me();
     private final int port;
@@ -203,12 +203,17 @@ public class GraknEngineServer implements AutoCloseable {
             boolean authenticated;
             try {
                 if (request.headers("Authorization") == null || !request.headers("Authorization").startsWith("Bearer ")) {
-                    throw new GraknEngineServerException(400, "Authorization field in header corrupted or absent.");
+                    throw new GraknEngineServerException(401, "Authorization field in header corrupted or absent.");
                 }
 
                 String token = request.headers("Authorization").substring(7);
                 authenticated = JWTHandler.verifyJWT(token);
-            } catch (Exception e) {
+                request.attribute(REST.Request.USER_ATTR, JWTHandler.extractUserFromJWT(token));
+            } 
+            catch (GraknEngineServerException e) {
+                throw e;
+            }
+            catch (Exception e) {
                 //request is malformed, return 400
                 throw new GraknEngineServerException(400, e);
             }

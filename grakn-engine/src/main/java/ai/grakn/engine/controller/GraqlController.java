@@ -120,7 +120,7 @@ public class GraqlController {
             @ApiImplicitParam(name = INFER,       value = "Should reasoner with the current query.", required = true, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = MATERIALISE, value = "Should reasoner materialise results with the current query.", required = true, dataType = "boolean", paramType = "query")
     })
-    private Json executeGraqlGET(Request request, Response response){
+    private Json executeGraqlGET(Request request, Response response) {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         String queryString = mandatoryQueryParameter(request, QUERY);
         boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));

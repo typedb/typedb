@@ -46,8 +46,10 @@ public class GraknEngineConfig {
 
     public static final String NUM_THREADS_PROPERTY = "loader.threads";
     public static final String JWT_SECRET_PROPERTY = "JWT.secret";
-    public static final String PASSWORD_PROTECTED_PROPERTY="password.protected";
-
+    public static final String PASSWORD_PROTECTED_PROPERTY = "password.protected";
+    public static final String ADMIN_PASSWORD_PROPERTY = "admin.password";
+    public static final String AUTHORIZATION_ON = "authorization.enabled";
+    
     public static final String SERVER_HOST_NAME = "server.host";
     public static final String SERVER_PORT_NUMBER = "server.port";
 
@@ -247,14 +249,20 @@ public class GraknEngineConfig {
         return Integer.parseInt(prop.getProperty(property));
     }
 
-    public long getPropertyAsLong(String property) {
-        return Long.parseLong(prop.getProperty(property));
+    public int getPropertyAsInt(String property, int defaultValue) {
+        return prop.containsKey(property) ? Integer.parseInt(prop.getProperty(property))
+                                          : defaultValue;
+    }
+    
+    public long getPropertyAsLong(String property, long defaultValue) {
+        return prop.containsKey(property) ? Long.parseLong(prop.getProperty(property))
+                                          : defaultValue;
     }
 
-    public boolean getPropertyAsBool(String property) {
-        return Boolean.parseBoolean(prop.getProperty(property));
+    public boolean getPropertyAsBool(String property, boolean defaultValue) {
+        return prop.containsKey(property) ? Boolean.parseBoolean(prop.getProperty(property))
+                                          : defaultValue;
     }
-
 
     public static final String GRAKN_ASCII =
                       "     ___  ___  ___  _  __ _  _     ___  ___     %n" +

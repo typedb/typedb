@@ -67,7 +67,7 @@ public interface TaskManager extends AutoCloseable {
     // TODO: Add 'pause' and 'restart' methods
 
     default TaskStateStorage chooseStorage(GraknEngineConfig properties, ZookeeperConnection zookeeper){
-        if(properties.getPropertyAsBool(USE_ZOOKEEPER_STORAGE)){
+        if(properties.getPropertyAsBool(USE_ZOOKEEPER_STORAGE, true)){
             return new TaskStateZookeeperStore(zookeeper);
         } else {
             return new TaskStateGraphStore();

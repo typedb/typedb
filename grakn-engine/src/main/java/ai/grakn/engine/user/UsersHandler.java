@@ -23,6 +23,8 @@ import mjson.Json;
 import java.util.HashMap;
 import java.util.Map;
 
+import ai.grakn.engine.GraknEngineConfig;
+
 /**
  * <p>
  *     Class to interact with users stored in the graph.
@@ -31,6 +33,7 @@ import java.util.Map;
  * @author Marco Scoppetta
  */
 public class UsersHandler {
+    public static final String SUPERUSER = "admin";
     public static final String USER_ENTITY = "user";
     public static final String USER_NAME = "user-name";
     public static final String USER_PASSWORD = "user-password";
@@ -39,15 +42,9 @@ public class UsersHandler {
     public static final String USER_LAST_NAME = "user-last-name";
     public static final String USER_EMAIL = "user-email";
     public static final String USER_IS_ADMIN = "user-is-admin";
-    public static final String USER_AUTHORIZATION = "user-authorization";
-    public static final String ACCESS_RIGHT = "access-right";
-    public static final String AUTHORIZED_USER = "authorized-user";
-    public static final String AUTHORIZED_KEYSPACE = "authorized-keyspace";
-    public static final String AUTHORIZED_ACCESS_RIGHT = "authorized-access-right"; 
     
     private static UsersHandler instance = null;
     private final Map<String, Json> usersMap = new HashMap<>();
-    private final Json accessMap = Json.object();
     
     public synchronized static UsersHandler getInstance() {
         if (instance == null) {
@@ -59,16 +56,22 @@ public class UsersHandler {
     protected UsersHandler() {
     }
 
+    public String superUsername() {
+        return SUPERUSER;
+    }
+    
     public boolean addUser(Json user) {
-        if (usersMap.containsKey(user.at(USER_NAME).asString())) {
+        String username = user.at(USER_NAME).asString();
+        if (superUsername().equals(username) || usersMap.containsKey(username)) {
             return false;
         }
-        usersMap.put(user.at(USER_NAME).asString(), user);
+        usersMap.put(username, user);
         return true;
     }
 
     public boolean updateUser(Json user) {
-        if (usersMap.containsKey(user.at(USER_NAME).asString())) {
+        String username = user.at(USER_NAME).asString();
+        if (superUsername().equals(username) || !usersMap.containsKey(username)) {
             return false;
         }
         usersMap.put(user.at(USER_NAME).asString(), user);
@@ -76,72 +79,34 @@ public class UsersHandler {
     }
 
     public boolean userExists(String username) {
-        return usersMap.containsKey(username);
+        return superUsername().equals(username) || usersMap.containsKey(username);
     }
 
     public boolean validateUser(String username, String hashedPassword) {
-        if (userExists(username)) {
+        if (superUsername().equals(username)) {
+            return hashedPassword.equals(GraknEngineConfig.getInstance().getProperty(
+                    GraknEngineConfig.ADMIN_PASSWORD_PROPERTY));
+        }
+        else if (userExists(username)) {
             return getUser(username).is(USER_PASSWORD, hashedPassword);
         }
-        return false;
+        else
+            return false;
     }
 
     public Json getUser(String username) {
-        return usersMap.get(username);
+        return superUsername().equals(username) ? Json.object(USER_NAME, superUsername()) : usersMap.get(username);
     }
 
     public boolean removeUser(String username) {
-        return usersMap.remove(username) != null;
+        if (superUsername().equals(username)) {
+            return false;
+        }
+        else
+            return usersMap.remove(username) != null;
     }
 
     public Json allUsers(int offset, int limit) {
         return Json.make(usersMap.values());
-    }
-    
-    /**
-     * <p>
-     * Return a JSON object holding all access rights for all keyspaces for the given user.
-     * The object can be embedded in JWT to authorize various operations.
-     * </p>
-     * 
-     * @param username
-     * @return
-     */    
-    public Json allAccessRights(String username) {
-        return accessMap.at(username, Json.object());
-    }
- 
-    /**
-     * <p>
-     * Grant an access right for a keyspace to a user. If the user already has that
-     * right, this is a NOP.
-     * </p>
-     * 
-     * @param username The username of the user.
-     * @param keyspace The name of the keyspace.
-     * @param right The right being granted. An access right is an arbitrary string 
-     * that is recognized and enforced by various operations.
-     * @return
-     */
-    public UsersHandler grantAccess(String username, String keyspace, String right) {
-        accessMap.at(username, Json.object()).at(keyspace, Json.array()).set(right, true);
-        return this;
-    }
-    
-    /**
-     * <p>
-     * Revoke an access right for a keyspace from a user. If the user doesn't have
-     * the access right, this is a NOP. 
-     * </p>
-     * 
-     * @param username The username of the user.
-     * @param keyspace The name of the keyspace.
-     * @param right The right being granted. An access right is an arbitrary string 
-     * that is recognized and enforced by various operations.
-     * @return
-     */
-   public UsersHandler revokeAccess(String username, String keyspace, String right) {
-        accessMap.at(username, Json.object()).at(keyspace, Json.array()).set(right, false);
-        return this;
     }
 }

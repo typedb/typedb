@@ -22,14 +22,15 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
+import static ai.grakn.engine.util.ExceptionWrapper.rethrow;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,9 +58,12 @@ public class SystemKeyspaceUsers extends UsersHandler {
      */
     @Override
     public boolean addUser(Json userJson) {
-        VarPattern user = var().isa(USER_ENTITY);
+        final String username = userJson.at(USER_NAME).asString();        
+        if (userExists(username)) {
+            return false;
+        }            
         try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
-
+            VarPattern user = var().isa(USER_ENTITY);
             for (Map.Entry<String, Json> entry : userJson.asJsonMap().entrySet()) {
                 String property = entry.getKey();
                 Json value = entry.getValue();
@@ -92,8 +96,11 @@ public class SystemKeyspaceUsers extends UsersHandler {
      */
     @Override
     public boolean userExists(String username) {
-        VarPattern lookup = var().isa(USER_ENTITY).has(USER_NAME, username);
-        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        if (superUsername().equals(username)) {
+            return true;
+        }
+        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
+            VarPattern lookup = var().isa(USER_ENTITY).has(USER_NAME, username);
             AskQuery query = graph.graql().match(lookup).ask();
             return query.execute();
         }
@@ -110,9 +117,12 @@ public class SystemKeyspaceUsers extends UsersHandler {
      */
     @Override
     public Json getUser(String username) {
-        VarPattern lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
-        VarPattern resource = var("property");
-        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        if (superUsername().equals(username)) {
+            return Json.object(USER_NAME, username);
+        }
+        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
+            VarPattern lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
+            VarPattern resource = var("property");
             MatchQuery query = graph.graql().match(lookup.has(RESOURCE.getLabel(), resource));
             List<Answer> L = query.execute();
             if (L.isEmpty()) {
@@ -141,7 +151,11 @@ public class SystemKeyspaceUsers extends UsersHandler {
      */
     @Override
     public boolean validateUser(String username, String passwordClient) {
-        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        if (superUsername().equals(username)) {
+            return passwordClient.equals(GraknEngineConfig.getInstance().getProperty(
+                    GraknEngineConfig.ADMIN_PASSWORD_PROPERTY));
+        }
+        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
             List<Answer> results = graph.graql().match(
                     var("salt").isa(USER_SALT),
                     var("stored-password").isa(USER_PASSWORD),
@@ -150,7 +164,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
                             has(USER_PASSWORD, var("stored-password")).
                             has(USER_SALT, var("salt"))).execute();
 
-            if(!results.isEmpty()){
+            if(!results.isEmpty()) {
                 Concept saltConcept = results.get(0).get("salt");
                 Concept passwordConcept = results.get(0).get("stored-password");
 
@@ -173,8 +187,8 @@ public class SystemKeyspaceUsers extends UsersHandler {
      */
     @Override
     public Json allUsers(int offset, int limit) {
-        VarPattern lookup = var("entity").isa(USER_ENTITY);
-        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
+            VarPattern lookup = var("entity").isa(USER_ENTITY);
             MatchQuery query = graph.graql().match(lookup.has(USER_NAME, var("username"))).limit(limit).offset(offset);
             List<Answer> L = query.execute();
             Json all = Json.array();
@@ -230,73 +244,5 @@ public class SystemKeyspaceUsers extends UsersHandler {
      */
     public boolean updateUser(Json user) {
         throw new UnsupportedOperationException();
-    }
-
-    public Json allAccessRights(String username) {
-        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
-            QueryBuilder qb = graph.graql();
-            List<Answer> L = qb.match(var("user").isa(USER_ENTITY).has(USER_NAME, username),
-                     var("keyspace").isa(SystemKeyspace.KEYSPACE_ENTITY.getValue())
-                                    .has(SystemKeyspace.KEYSPACE_RESOURCE.getValue(), "keyspace-name"),
-                     var("right").isa(ACCESS_RIGHT),
-                     var("authorization").isa(USER_AUTHORIZATION)
-                         .rel(AUTHORIZED_USER, "user")
-                         .rel(AUTHORIZED_KEYSPACE, "keyspace")
-                         .rel(AUTHORIZED_ACCESS_RIGHT, "right")
-            ).execute();
-            final Json result = Json.object();
-            L.forEach(ans -> {
-                String keyspace = ans.get("keyspace-name").asResource().getValue().toString();
-                result.at(keyspace, Json.object())
-                      .at("rights", Json.array()).add(ans.get("right").asResource().getValue().toString());
-            });
-            return result;
-        }
-    }
-    
-    public SystemKeyspaceUsers revokeAccess(String username, String keyspace, String right) {
-        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
-            QueryBuilder qb = graph.graql();
-            qb.match(var("user").isa(USER_ENTITY).has(USER_NAME, username),
-                     var("keyspace").isa(SystemKeyspace.KEYSPACE_ENTITY.getValue())
-                                    .has(SystemKeyspace.KEYSPACE_RESOURCE.getValue(), keyspace))
-              .delete(var().isa(USER_AUTHORIZATION)
-                      .rel(AUTHORIZED_USER, "user")
-                      .rel(AUTHORIZED_KEYSPACE, "keyspace")
-                      .rel(AUTHORIZED_ACCESS_RIGHT, right));
-        }
-        catch (Throwable t) {
-            LOG.error("While granting access " + right + " to " + username + " for " + keyspace, t);
-            rethrow(t);
-        }        
-        return this;
-    }
-    
-    public SystemKeyspaceUsers grantAccess(String username, String keyspace, String right) {
-        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
-            QueryBuilder qb = graph.graql();
-            qb.match(var("user").isa(USER_ENTITY).has(USER_NAME, username),
-                     var("keyspace").isa(SystemKeyspace.KEYSPACE_ENTITY.getValue())
-                                    .has(SystemKeyspace.KEYSPACE_RESOURCE.getValue(), keyspace))
-              .insert(var().isa(USER_AUTHORIZATION)
-                      .rel(AUTHORIZED_USER, "user")
-                      .rel(AUTHORIZED_KEYSPACE, "keyspace")
-                      .rel(AUTHORIZED_ACCESS_RIGHT, right));
-        }
-        catch (Throwable t) {
-            LOG.error("While granting access " + right + " to " + username + " for " + keyspace, t);
-            rethrow(t);
-        }        
-        return this;
-    }
-    
-    private void rethrow(Throwable t) {
-        if (t instanceof Error) {
-            throw (Error) t;
-        } else if (t instanceof RuntimeException) {
-            throw (RuntimeException) t;
-        } else {
-            throw new RuntimeException(t);
-        }
-    }
+    }    
 }

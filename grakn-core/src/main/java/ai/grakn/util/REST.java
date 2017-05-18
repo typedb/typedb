@@ -87,6 +87,10 @@ public class REST {
      * Class containing request fields and content types.
      */
     public static class Request {
+        // Attributes set and used on the server-side
+        public static final String USER_ATTR = "user";
+        
+        // Request parameters
         public static final String QUERY_FIELD = "query";
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
