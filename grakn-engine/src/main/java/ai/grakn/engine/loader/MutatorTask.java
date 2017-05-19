@@ -55,7 +55,7 @@ public class MutatorTask implements BackgroundTask {
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, BiConsumer<TaskState, TaskConfiguration> taskSubmitter) {
         Collection<Query> inserts = getInserts(configuration);
         GraphMutators.runBatchMutationWithRetry(configuration.json().at(REST.Request.KEYSPACE).asString(), (graph) ->
-                insertQueriesInOneTransaction(graph, inserts)
+                insertQueriesInOneTransaction(graph, inserts, taskSubmitter)
         );
 
         return true;
@@ -80,9 +80,10 @@ public class MutatorTask implements BackgroundTask {
      * Execute the given queries against the given graph. Return if the operation was successfully completed.
      * @param graph grakn graph in which to insert the data
      * @param inserts graql queries to insert into the graph
+     * @param taskSubmitter a function which can be used to submit more tasks as a result of completing this task
      * @return true if the data was inserted, false otherwise
      */
-    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts) {
+    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts, BiConsumer<TaskState, TaskConfiguration> taskSubmitter) {
         graph.showImplicitConcepts(true);
 
         inserts.forEach(q -> q.withGraph(graph).execute());

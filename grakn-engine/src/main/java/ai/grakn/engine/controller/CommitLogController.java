@@ -37,7 +37,6 @@ import spark.Service;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import java.time.Instant;
 import java.util.Optional;
 
 import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
@@ -92,8 +91,7 @@ public class CommitLogController {
         postProcessingConfiguration.set(KEYSPACE, keyspace);
         postProcessingConfiguration.set(COMMIT_LOG_FIXING, Json.read(req.body()).at(COMMIT_LOG_FIXING));
 
-        TaskState postProcessingTask = TaskState.of(
-                PostProcessingTask.class, this.getClass().getName(), TaskSchedule.at(Instant.now().plusMillis(PP_TASK_DELAY_MS)), TaskState.Priority.LOW);
+        TaskState postProcessingTask = PostProcessingTask.createTask(this.getClass());
 
         //Instances to count
         Json countingConfiguration = Json.object();

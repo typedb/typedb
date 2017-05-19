@@ -20,10 +20,12 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -31,6 +33,7 @@ import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -38,6 +41,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_TASK_DELAY;
 
 /**
  * <p>
@@ -51,10 +56,10 @@ import java.util.stream.Collectors;
  * @author alexandraorth, fppt
  */
 public class PostProcessingTask implements BackgroundTask {
-
+    private static final int PP_TASK_DELAY_MS = GraknEngineConfig.getInstance().getPropertyAsInt(POST_PROCESSING_TASK_DELAY);
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
     private static final String JOB_FINISHED = "Post processing Job [{}] completed for indeces and ids: [{}]";
-    public static final String LOCK_KEY = "/post-processing-lock";
+    private static final String LOCK_KEY = "/post-processing-lock";
 
     /**
      * Apply CASTING and RESOURCE post processing jobs the concept ids in the provided configuration
@@ -121,7 +126,7 @@ public class PostProcessingTask implements BackgroundTask {
      * @param configuration Configuration from which to extract the configuration.
      * @return Map of concept indices to ids that has been extracted from the provided configuration.
      */
-    public static Map<String,Set<ConceptId>> getPostProcessingJobs(Schema.BaseType type, TaskConfiguration configuration) {
+    private static Map<String,Set<ConceptId>> getPostProcessingJobs(Schema.BaseType type, TaskConfiguration configuration) {
         return configuration.json().at(REST.Request.COMMIT_LOG_FIXING).at(type.name()).asJsonMap().entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey,
                 e -> e.getValue().asList().stream().map(ConceptId::of).collect(Collectors.toSet())
@@ -240,5 +245,18 @@ public class PostProcessingTask implements BackgroundTask {
      */
     private boolean duplicateResourcesExist(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
         return graph.admin().duplicateResourcesExist(index, conceptIds);
+    }
+
+    /**
+     * Helper method which creates PP Task States.
+     *
+     * @param creator The class which is creating the task
+     * @return The executable postprocessing task state
+     */
+    public static TaskState createTask(Class creator){
+        return TaskState.of(PostProcessingTask.class,
+                creator.getName(),
+                TaskSchedule.at(Instant.now().plusMillis(PP_TASK_DELAY_MS)),
+                TaskState.Priority.LOW);
     }
 }
