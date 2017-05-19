@@ -192,7 +192,8 @@ public class Relation extends TypeAtom {
         return (isUserDefinedName() == a2.isUserDefinedName())
                 && Objects.equals(this.typeId, a2.getTypeId())
                 && getRoleConceptIdMap().equals(a2.getRoleConceptIdMap())
-                && getRoleTypeMap().equals(a2.getRoleTypeMap());
+                && getRoleTypeMap().equals(a2.getRoleTypeMap())
+                && getRolePlayers().size() == a2.getRolePlayers().size();
     }
 
     @Override
@@ -282,7 +283,7 @@ public class Relation extends TypeAtom {
     //rule head atom is applicable if it is unifiable
     private boolean isRuleApplicableViaAtom(Relation headAtom) {
         return headAtom.getRelationPlayers().size() >= this.getRelationPlayers().size()
-            && headAtom.getRelationPlayerMappings(this).size() == this.getRolePlayers().size();
+            && headAtom.getRelationPlayerMappings(this).size() == this.getRelationPlayers().size();
     }
 
     @Override
@@ -385,7 +386,7 @@ public class Relation extends TypeAtom {
         modifyRelationPlayers(c -> {
             Var var = c.getRolePlayer().getVarName();
             if (u.containsKey(var)) {
-                Var target = u.get(var);
+                Var target = u.get(var).iterator().next();
                 return c.setRolePlayer(c.getRolePlayer().setVarName(target));
             } else if (u.containsValue(var)) {
                 return c.setRolePlayer(c.getRolePlayer().setVarName(capture(var)));

@@ -88,7 +88,7 @@ public class NotEquals extends AtomicBase {
         super.unify(unifier);
         Var var = getReferenceVarName();
         if (unifier.containsKey(var)) {
-            setRefVarName(unifier.get(var));
+            setRefVarName(unifier.get(var).iterator().next());
         } else if (unifier.containsValue(var)) {
             setRefVarName(capture(var));
         }

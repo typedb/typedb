@@ -21,7 +21,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 
-
 /**
  *
  * <p>

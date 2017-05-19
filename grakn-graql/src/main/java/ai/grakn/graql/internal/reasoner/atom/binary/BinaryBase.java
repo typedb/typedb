@@ -126,7 +126,7 @@ public abstract class BinaryBase extends Atom {
         super.unify(unifier);
         Var var = valueVariable;
         if (unifier.containsKey(var)) {
-            setValueVariable(unifier.get(var));
+            setValueVariable(unifier.get(var).iterator().next());
         } else if (unifier.containsValue(var)) {
             setValueVariable(capture(var));
         }

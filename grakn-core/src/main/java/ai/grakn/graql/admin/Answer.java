@@ -129,6 +129,7 @@ public interface Answer {
      * @param unifierSet set of permutation mappings
      * @return stream of permuted answers
      */
+    @CheckReturnValue
     Stream<Answer> permute(Set<Unifier> unifierSet);
 
     /**

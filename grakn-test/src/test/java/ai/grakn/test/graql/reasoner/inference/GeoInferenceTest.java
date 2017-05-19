@@ -50,6 +50,16 @@ public class GeoInferenceTest {
     }
 
     @Test
+    public void testEntitiesLocatedInThemselves(){
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        String queryString = "match (geo-entity: $x, entity-location: $x) isa is-located-in;";
+
+        MatchQuery query = iqb.materialise(false).parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
+        assertEquals(answers.size(), 0);
+    }
+
+    @Test
     public void testTransitiveQueryWithTypes() {
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
         QueryBuilder iqb = geoGraph.graph().graql().infer(true);
