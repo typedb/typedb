@@ -109,7 +109,7 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
      * @param conceptId The id of the concept to shard
      */
     private static void shardConcept(String keyspace, ConceptId conceptId){
-        Lock engineLock = LockProvider.getLock(getLockingKey());
+        Lock engineLock = LockProvider.getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
 
         //Check if sharding is still needed. Another engine could have sharded whilst waiting for lock
@@ -127,9 +127,9 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
 
         engineLock.unlock();
     }
-    //TODO: Add parameters keyspace and label to locking
-    public static String getLockingKey(){
-        return "/updating-instance-count-lock";
+
+    private static String getLockingKey(String keyspace, ConceptId conceptId){
+        return "/updating-instance-count-lock/" + keyspace + "/" + conceptId.getValue();
     }
 
     @Override
