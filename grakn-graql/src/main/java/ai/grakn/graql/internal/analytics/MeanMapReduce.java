@@ -36,7 +36,7 @@ import java.util.Set;
  * @author Sheldon Hall
  */
 
-public class MeanMapReduce extends GraknMapReduce<Map<String, Double>> {
+public class MeanMapReduce extends StatisticsMapReduce<Map<String, Double>> {
 
     public static final String COUNT = "C";
     public static final String SUM = "S";
@@ -45,15 +45,15 @@ public class MeanMapReduce extends GraknMapReduce<Map<String, Double>> {
     public MeanMapReduce() {
     }
 
-    public MeanMapReduce(Set<TypeId> selectedTypeIds, String resourceDataType) {
-        super(selectedTypeIds, resourceDataType);
+    public MeanMapReduce(Set<TypeId> selectedTypeIds, String resourceDataType, String degreeKey) {
+        super(selectedTypeIds, resourceDataType, degreeKey);
     }
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Map<String, Double>> emitter) {
         if (resourceIsValid(vertex)) {
             Map<String, Double> tuple = new HashMap<>(2);
-            Double degree = ((Long) vertex.value(DegreeVertexProgram.DEGREE)).doubleValue();
+            Double degree = ((Long) vertex.value(degreeKey)).doubleValue();
             tuple.put(SUM, degree * this.<Double>resourceValue(vertex).doubleValue());
             tuple.put(COUNT, degree);
             emitter.emit(NullObject.instance(), tuple);

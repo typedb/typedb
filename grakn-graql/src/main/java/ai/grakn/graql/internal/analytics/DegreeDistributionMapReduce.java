@@ -47,14 +47,16 @@ public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
     public DegreeDistributionMapReduce() {
     }
 
-    public DegreeDistributionMapReduce(Set<TypeId> selectedTypeIds) {
+    public DegreeDistributionMapReduce(Set<TypeId> selectedTypeIds, String degreeLabel) {
         super(selectedTypeIds);
+        this.persistentProperties.put(DegreeVertexProgram.DEGREE, degreeLabel);
     }
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<String>> emitter) {
         if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-            emitter.emit(vertex.value(DegreeVertexProgram.DEGREE), Collections.singleton(vertex.id().toString()));
+            emitter.emit(vertex.value((String) persistentProperties.get(DegreeVertexProgram.DEGREE)),
+                    Collections.singleton(vertex.id().toString()));
         } else {
             emitter.emit(NullObject.instance(), Collections.emptySet());
         }

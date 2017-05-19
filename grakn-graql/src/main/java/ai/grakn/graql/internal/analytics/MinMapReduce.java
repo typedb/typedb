@@ -34,14 +34,14 @@ import java.util.Set;
  * @author Sheldon Hall
  */
 
-public class MinMapReduce extends GraknMapReduce<Number> {
+public class MinMapReduce extends StatisticsMapReduce<Number> {
 
     // Needed internally for OLAP tasks
     public MinMapReduce() {
     }
 
-    public MinMapReduce(Set<TypeId> selectedTypeIds, String resourceDataType) {
-        super(selectedTypeIds, resourceDataType);
+    public MinMapReduce(Set<TypeId> selectedTypeIds, String resourceDataType, String degreeKey) {
+        super(selectedTypeIds, resourceDataType, degreeKey);
     }
 
     @Override

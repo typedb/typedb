@@ -28,6 +28,7 @@ import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MedianQuery {
 
@@ -46,8 +47,10 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
         Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
         Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
 
+        String randomId = Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
+
         ComputerResult result = getGraphComputer().compute(
-                new MedianVertexProgram(allSubTypeIds, statisticsResourceTypeIds, dataType));
+                new MedianVertexProgram(allSubTypeIds, statisticsResourceTypeIds, dataType, randomId));
 
         Number finalResult = result.memory().get(MedianVertexProgram.MEDIAN);
         LOGGER.debug("Median = " + finalResult);

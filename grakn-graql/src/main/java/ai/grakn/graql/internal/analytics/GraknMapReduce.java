@@ -122,11 +122,6 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
         return Utility.keyValuesToMap(iterator);
     }
 
-    final boolean resourceIsValid(Vertex vertex) {
-        boolean isSelected = selectedTypes.contains(Utility.getVertexTypeId(vertex));
-        return isSelected && vertex.<Long>value(DegreeVertexProgram.DEGREE) > 0;
-    }
-
     final Number resourceValue(Vertex vertex) {
         return usingLong() ? vertex.value(Schema.ConceptProperty.VALUE_LONG.name()) :
                 vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name());
