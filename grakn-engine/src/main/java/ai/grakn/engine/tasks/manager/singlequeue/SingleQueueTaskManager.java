@@ -66,7 +66,6 @@ import static org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent.
 public class SingleQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskManager.class);
-    private final static GraknEngineConfig properties = GraknEngineConfig.getInstance();
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
     private final static int CAPACITY = GraknEngineConfig.getInstance().getAvailableThreads();
     private final static int TIME_UNTIL_BACKOFF = 60_000;
