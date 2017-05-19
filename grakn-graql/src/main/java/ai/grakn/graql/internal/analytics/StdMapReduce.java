@@ -36,7 +36,7 @@ import java.util.Set;
  * @author Sheldon Hall
  */
 
-public class StdMapReduce extends GraknMapReduce<Map<String, Double>> {
+public class StdMapReduce extends StatisticsMapReduce<Map<String, Double>> {
 
     public static final String COUNT = "C";
     public static final String SUM = "S";
@@ -46,15 +46,16 @@ public class StdMapReduce extends GraknMapReduce<Map<String, Double>> {
     public StdMapReduce() {
     }
 
-    public StdMapReduce(Set<TypeId> selectedTypeIds, String resourceDataType) {
-        super(selectedTypeIds, resourceDataType);
+    public StdMapReduce(Set<TypeId> selectedTypeIds, String resourceDataType, String degreeKey) {
+        super(selectedTypeIds, resourceDataType, degreeKey);
     }
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Map<String, Double>> emitter) {
         if (resourceIsValid(vertex)) {
             Map<String, Double> tuple = new HashMap<>(3);
-            Double degree = ((Long) vertex.value(DegreeVertexProgram.DEGREE)).doubleValue();
+            Double degree =
+                    ((Long) vertex.value(degreeKey)).doubleValue();
             double value = resourceValue(vertex).doubleValue();
             tuple.put(SUM, value * degree);
             tuple.put(SQUARE_SUM, value * value * degree);
