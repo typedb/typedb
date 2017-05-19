@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -54,6 +55,7 @@ public abstract class BinaryBase extends Atom {
     protected BinaryBase(BinaryBase a) {
         super(a);
         this.valueVariable = a.getValueVariable();
+        this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
     }
 
     protected abstract Var extractValueVariableName(VarPatternAdmin var);
