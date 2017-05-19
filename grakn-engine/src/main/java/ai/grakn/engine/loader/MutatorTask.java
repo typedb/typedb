@@ -20,6 +20,8 @@ package ai.grakn.engine.loader;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.postprocessing.GraphMutators;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
@@ -31,6 +33,7 @@ import ai.grakn.util.REST;
 import mjson.Json;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -88,9 +91,14 @@ public class MutatorTask implements BackgroundTask {
 
         inserts.forEach(q -> q.withGraph(graph).execute());
 
-        // commit the transaction
-        //TODO This commit uses the rest API, it shouldn't
-        graph.commit();
+        Optional<String> result = graph.admin().commitNoLogs();
+        if(result.isPresent()){ //Submit more tasks if commit resulted in created commit logs
+            String logs = result.get();
+            taskSubmitter.accept(PostProcessingTask.createTask(this.getClass()),
+                    PostProcessingTask.createConfig(graph.getKeyspace(), logs));
+            taskSubmitter.accept(UpdatingInstanceCountTask.createTask(this.getClass()),
+                    UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));
+        }
 
         return true;
     }
