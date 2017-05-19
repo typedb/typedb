@@ -152,7 +152,7 @@ public class ResourceTypeTest extends GraphTestBase{
         // get the local time (without timezone)
         LocalDateTime rightNow = LocalDateTime.now();
         // now add the timezone to the graph
-        try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "default")) {
+        try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "somethingmorerandom")) {
             try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
                 ResourceType<LocalDateTime> aTime = graph.putResourceType("aTime", ResourceType.DataType.DATE);
                 aTime.putResource(rightNow);
@@ -163,7 +163,7 @@ public class ResourceTypeTest extends GraphTestBase{
         // offset the time to GMT where the colleague is working
         TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
         // the colleague extracts the LocalTime which should be the same
-        try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "default")) {
+        try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "somethingmorerandom")) {
             try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
                 ResourceType aTime = graph.getResourceType("aTime");
                 LocalDateTime databaseTime = (LocalDateTime) ((Resource) aTime.instances().iterator().next()).getValue();
