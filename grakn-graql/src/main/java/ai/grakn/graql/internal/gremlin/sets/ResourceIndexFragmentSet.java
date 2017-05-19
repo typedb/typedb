@@ -22,6 +22,7 @@ package ai.grakn.graql.internal.gremlin.sets;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
@@ -96,7 +97,10 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
     private static Stream<ValueFragmentSet> equalsValueFragments(Collection<EquivalentFragmentSet> fragmentSets) {
         return fragmentSetOfType(ValueFragmentSet.class, fragmentSets)
-                .filter(valueFragmentSet -> valueFragmentSet.predicate().equalsValue().isPresent());
+                .filter(valueFragmentSet -> {
+                    ValuePredicateAdmin predicate = valueFragmentSet.predicate();
+                    return predicate.equalsValue().isPresent() && !predicate.getInnerVar().isPresent();
+                });
     }
 
     @Nullable
