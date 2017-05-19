@@ -69,7 +69,6 @@ public class GraknEngineConfig {
 
     // Engine Config
     public static final String TASK_MANAGER_IMPLEMENTATION = "taskmanager.implementation";
-    public static final String USE_ZOOKEEPER_STORAGE = "taskmanager.storage.zk";
 
     // Delay for the post processing task in milliseconds
     public static final String POST_PROCESSING_TASK_DELAY = "tasks.postprocessing.delay";
