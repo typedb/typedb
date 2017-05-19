@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.query.predicate;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -36,6 +36,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static ai.grakn.concept.ResourceType.DataType.SUPPORTED_TYPES;
+import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
 
 abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
@@ -68,6 +69,10 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
             // Convert values to how they are stored in the graph
             ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getName());
+
+            if (dataType == null) {
+                throw new IllegalArgumentException(INVALID_VALUE.getMessage(value.getClass()));
+            }
 
             // We can trust the `SUPPORTED_TYPES` map to store things with the right type
             //noinspection unchecked
@@ -141,7 +146,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
         var.ifPresent(theVar -> {
             // Compare to another variable
             String thisVar = UUID.randomUUID().toString();
-            VarName otherVar = theVar.getVarName();
+            Var otherVar = theVar.getVarName();
             String otherValue = UUID.randomUUID().toString();
 
             Traversal[] traversals = Stream.of(VALUE_PROPERTIES)

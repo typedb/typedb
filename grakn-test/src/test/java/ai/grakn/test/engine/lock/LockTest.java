@@ -20,21 +20,20 @@ package ai.grakn.test.engine.lock;
 
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.lock.ZookeeperLock;
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.test.EngineContext;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -69,10 +68,10 @@ public class LockTest {
         ZOOKEEPER, NONREENTRANT;
     }
 
-    private Lock getLock(Locks lock){
+    private Lock getLock(Locks lock, String lockPath){
         switch (lock){
             case ZOOKEEPER:
-                return new ZookeeperLock(zookeeperConnection, LOCK_PATH + UUID.randomUUID());
+                return new ZookeeperLock(zookeeperConnection, lockPath);
             case NONREENTRANT:
                 return new NonReentrantLock();
         }
@@ -91,7 +90,7 @@ public class LockTest {
     // this is allowed in a Reentrant lock
     @Theory
     public void whenLockAcquired_ItCannotBeAcquiredAgain(Locks locks){
-        Lock lock = getLock(locks);
+        Lock lock = getLock(locks, LOCK_PATH);
 
         lock.lock();
 
@@ -102,7 +101,7 @@ public class LockTest {
 
     @Theory
     public void whenLockReleased_ItCanBeAcquiredAgain(Locks locks){
-        Lock lock = getLock(locks);
+        Lock lock = getLock(locks, LOCK_PATH);
 
         lock.lock();
         lock.unlock();
@@ -114,7 +113,7 @@ public class LockTest {
 
     @Theory
     public void whenMultipleOfSameLock_OnlyOneAtATimeCanBeAcquired(Locks locks){
-        Lock lock1 = getLock(locks);
+        Lock lock1 = getLock(locks, LOCK_PATH);
         Lock lock2 = copy(lock1);
 
         lock1.lock();
@@ -131,7 +130,7 @@ public class LockTest {
 
     @Theory
     public void whenMultipleLocks_TryLockSucceedsWhenFirstLockReleased(Locks locks) throws InterruptedException {
-        Lock lock1 = getLock(locks);
+        Lock lock1 = getLock(locks, LOCK_PATH);
         Lock lock2 = copy(lock1);
 
         lock1.lock();
@@ -152,8 +151,8 @@ public class LockTest {
 
     @Theory
     public void whenTwoLocksCreated_TheyCanBothBeAcquired(Locks locks){
-        Lock lock1 = getLock(locks);
-        Lock lock2 = getLock(locks);
+        Lock lock1 = getLock(locks, LOCK_PATH + UUID.randomUUID());
+        Lock lock2 = getLock(locks, LOCK_PATH + UUID.randomUUID());
 
         assertThat(lock1.tryLock(), is(true));
         assertThat(lock2.tryLock(), is(true));
@@ -162,12 +161,65 @@ public class LockTest {
         lock2.unlock();
     }
 
-    @Test
-    public void whenNewConditionCalled_UnsupportedOperationThrown(){
+    @Theory
+    public void whenNewConditionCalled_UnsupportedOperationThrown(Locks locks){
         exception.expect(UnsupportedOperationException.class);
 
         Lock lock = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
         lock.newCondition();
     }
 
+    @Theory
+    public void whenGettingLockWithNullInPath_LockIsAcquired(Locks locks){
+        String lockPath = "/\u0000";
+
+        Lock lock = getLock(locks, lockPath);
+
+        assertThat(lock.tryLock(), is(true));
+
+        lock.unlock();
+    }
+
+    @Theory
+    public void whenGettingLockWithIllegalCharactersInPath_LockIsAcquired(Locks locks){
+        String lockPath = "/\ud800";
+
+        Lock lock = getLock(locks, lockPath);
+
+        assertThat(lock.tryLock(), is(true));
+
+        lock.unlock();
+    }
+    @Theory
+    public void whenGettingLockWithManyIllegalCharactersInPath_LockIsAcquired(Locks locks){
+        String lockPath = "/RESOURCE-url-http://dbpedia.org/resource/Jorhat_College";
+
+        Lock lock = getLock(locks, lockPath);
+
+        assertThat(lock.tryLock(), is(true));
+
+        lock.unlock();
+    }
+
+    @Theory
+    public void whenGettingLockWithDotInPath_LockIsAcquired(Locks locks){
+        String lockPath = "/.";
+
+        Lock lock = getLock(locks, lockPath);
+
+        assertThat(lock.tryLock(), is(true));
+
+        lock.unlock();
+    }
+
+    @Theory
+    public void whenGettingLockWithDoubleDotInPath_LockIsAcquired(Locks locks){
+        String lockPath = "/..";
+
+        Lock lock = getLock(locks, lockPath);
+
+        assertThat(lock.tryLock(), is(true));
+
+        lock.unlock();
+    }
 }

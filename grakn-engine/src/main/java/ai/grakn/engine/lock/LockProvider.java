@@ -18,51 +18,60 @@
 
 package ai.grakn.engine.lock;
 
+import ai.grakn.util.ErrorMessage;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Supplier;
+import java.util.function.BiFunction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
+ *
  * <p>
- *     This class provides the correct {@link Lock} based the supplier that was provided when it was
- *     initialized.
+ *     Provide the correct locking functionality based on how the {@link LockProvider} was created.
+ * </p>
+ *
+ * <p>
+ *     Instantiate a {@link LockProvider} with a function that will create a lock to lock on the provided key. The provided
+ *     function is a {@link BiFunction}. THe first argument to the function is the name of the lock the user asked for,
+ *     the second argument is the existing lock from the {@link LockProvider} map.
  * </p>
  *
  * @author alexandraorth
  */
 public class LockProvider {
 
-    private static final Map<String, Supplier<Lock>> locks = new ConcurrentHashMap<>();
+    private final static Logger LOG = LoggerFactory.getLogger(LockProvider.class);
+
+    private static BiFunction<String, Lock, Lock> lockProvider;
+
+    //TODO THIS IS A POTENTIAL MASSIVE MEMORY LEAK MAP IS NEVER EMPTIED
+    private static Map<String, Lock> locks = new ConcurrentHashMap<>();
 
     private LockProvider(){}
 
-    /**
-     * Instantiates a lock supplier with a name.
-     *
-     * @param lockName Name of the lock to supply
-     * @param instantiateLock Supplier of the lock
-     */
-    public static void add(String lockName, Supplier<Lock> instantiateLock){
-        locks.put(lockName, instantiateLock);
+    public static void instantiate(BiFunction<String, Lock, Lock> provider){
+        if(lockProvider == null){
+            lockProvider = provider;
+            return;
+        }
+
+        LOG.warn(ErrorMessage.LOCK_ALREADY_INSTANTIATED.getMessage());
     }
 
     /**
-     * Uses the named lock supplier to retrieve the correct lock
+     * Uses the named lock function to retrieve the correct lock
      *
      * @param lockToObtain Name of the lock to obtain from the supplier
      * @return An initialized lock
      */
     public static Lock getLock(String lockToObtain){
-        if(!locks.containsKey(lockToObtain)){
-            throw new RuntimeException("Lock is not available with name " + lockToObtain);
-        }
-
-        // Instantiate a new lock
-        return locks.get(lockToObtain).get();
+        return locks.compute(lockToObtain, (existingLockName, existingLock) -> lockProvider.apply(lockToObtain, existingLock));
     }
 
     public static void clear(){
         locks.clear();
+        lockProvider = null;
     }
 }

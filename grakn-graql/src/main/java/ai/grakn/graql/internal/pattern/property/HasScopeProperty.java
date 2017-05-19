@@ -24,7 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -73,7 +73,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(VarName start) {
+    public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(hasScope(start, scope.getVarName()));
     }
 
@@ -112,9 +112,9 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        VarName varName = var.getVarName();
+        Var varName = var.getVarName();
         VarPatternAdmin scopeVar = this.getScope();
-        VarName scopeVariable = scopeVar.getVarName();
+        Var scopeVariable = scopeVar.getVarName();
         IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent);
 
         //isa part

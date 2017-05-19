@@ -21,7 +21,6 @@ package ai.grakn.test.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
-import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
@@ -39,7 +38,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multiset;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import mjson.Json;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
@@ -55,23 +53,19 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.TaskSchedule.at;
-import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskResumes;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createRunningTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
 import static java.time.Duration.between;
@@ -80,7 +74,6 @@ import static java.time.Instant.now;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
@@ -135,7 +128,7 @@ public class SingleQueueTaskRunnerTest {
         doAnswer(invocation -> {
             addTask(invocation.getArgument(0));
             return null;
-        }).when(mockedTM).addLowPriorityTask(Mockito.any(), Mockito.any());
+        }).when(mockedTM).addTask(Mockito.any(), Mockito.any());
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
@@ -449,118 +442,5 @@ public class SingleQueueTaskRunnerTest {
         assertThat(storage.getState(instantTask.getId()).status(), is(COMPLETED));
 
         assertThat(startedTime.get(instantTask.getId()), lessThan(startedTime.get(delayedTask.getId())));
-    }
-
-    @Test
-    public void whenRecurringTaskSubmitted_ItExecutesMoreThanOnce(){
-        final int numberOfExecutions = 5;
-        final AtomicInteger startedCounter = new AtomicInteger(0);
-
-        whenTaskStarts(taskId -> {
-                int numberTimesExecuted = startedCounter.incrementAndGet();
-                if(numberTimesExecuted == numberOfExecutions){
-                    taskRunner.stopTask(taskId);
-                }
-            }
-        );
-
-        TaskState task = createTask(ShortExecutionMockTask.class, recurring(ofMillis(100)));
-        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
-
-        taskRunner.run();
-        assertThat(storage.getState(task.getId()).status(), is(STOPPED));
-        assertThat(startedCounter.get(), equalTo(numberOfExecutions));
-    }
-
-    @Test
-    public void whenRecurringTaskSubmitted_ThereIsAnIntervalBetweenExecutions(){
-        final int numberOfExecutions = 5;
-        final Duration interval = Duration.ofMillis(100);
-        final Instant[] lastExecutionTime = {null};
-        final AtomicInteger startedCounter = new AtomicInteger(0);
-
-        whenTaskStarts(taskId -> {
-            if(lastExecutionTime[0] != null) {
-                assertThat(between(lastExecutionTime[0], now()), greaterThan(interval));
-            }
-
-            // Store the previous execution time for next round
-            lastExecutionTime[0] = storage.getState(taskId).schedule().runAt();
-
-            // Stop the recurring task so this test does not run forever
-            if(startedCounter.incrementAndGet() == numberOfExecutions){
-                taskRunner.stopTask(taskId);
-            }
-        });
-
-        TaskState task = createTask(ShortExecutionMockTask.class, recurring(now(), interval));
-        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
-
-        taskRunner.run();
-        assertThat(storage.getState(task.getId()).status(), is(STOPPED));
-        assertThat(startedCounter.get(), equalTo(numberOfExecutions));
-    }
-
-    @Test
-    public void whenRecurringTaskThrowsException_ItStopsExecuting(){
-        final int expectedExecutionsBeforeFailure = 1;
-        final AtomicInteger startedCounter = new AtomicInteger(0);
-        whenTaskStarts(taskId -> {
-            startedCounter.incrementAndGet();
-            throw new RuntimeException();
-        });
-
-        TaskState task = createTask(ShortExecutionMockTask.class, recurring(ofMillis(100)));
-        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
-
-        taskRunner.run();
-
-        assertThat(storage.getState(task.getId()).status(), is(FAILED));
-        assertThat(startedCounter.get(), equalTo(expectedExecutionsBeforeFailure));
-    }
-
-    @Test
-    public void whenATaskIsRestartedAfterExecution_ItIsResumed(){
-        ShortExecutionMockTask.resumedCounter.set(0);
-
-        TaskCheckpoint checkpoint = TaskCheckpoint.of(Json.object("checkpoint", true));
-        TaskState task = createRunningTasks(1, engineID).iterator().next().checkpoint(checkpoint);
-
-        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
-
-        taskRunner.run();
-
-        assertEquals(1, ShortExecutionMockTask.resumedCounter.get());
-    }
-
-    @Test
-    public void whenATaskIsRestartedAfterExecution_ItIsResumedFromLastCheckpoint(){
-        ShortExecutionMockTask.resumedCounter.set(0);
-
-        TaskCheckpoint checkpoint = TaskCheckpoint.of(Json.object("checkpoint", true));
-        TaskState task = createRunningTasks(1, engineID).iterator().next().checkpoint(checkpoint);
-
-        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
-
-        whenTaskResumes((c) -> {
-            assertThat(c, equalTo(checkpoint));
-        });
-
-        taskRunner.run();
-
-        assertEquals(1, ShortExecutionMockTask.resumedCounter.get());
-    }
-
-    @Test
-    public void whenATaskIsStoppedDuringExecution_ItSavesItsLastCheckpoint(){
-        TaskState task = createTask(EndlessExecutionMockTask.class);
-
-        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
-
-        whenTaskStarts(taskRunner::stopTask);
-
-        taskRunner.run();
-
-        assertThat(storage.getState(task.getId()).checkpoint(), notNullValue());
     }
 }

@@ -25,7 +25,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -226,46 +225,46 @@ public class PostProcessingTest extends GraphTestBase{
 
     @Test
     public void whenUpdatingTheCountsOfTypes_TheTypesHaveNewCounts() {
-        Map<TypeLabel, Long> types = new HashMap<>();
+        Map<ConceptId, Long> types = new HashMap<>();
         //Create Some Types;
         EntityTypeImpl t1 = (EntityTypeImpl) graknGraph.putEntityType("t1");
         ResourceTypeImpl t2 = (ResourceTypeImpl)  graknGraph.putResourceType("t2", ResourceType.DataType.STRING);
         RelationTypeImpl t3 = (RelationTypeImpl) graknGraph.putRelationType("t3");
 
         //Lets Set Some Counts
-        types.put(t1.getLabel(), 5L);
-        types.put(t2.getLabel(), 6L);
-        types.put(t3.getLabel(), 2L);
+        types.put(t1.getId(), 5L);
+        types.put(t2.getId(), 6L);
+        types.put(t3.getId(), 2L);
 
-        graknGraph.admin().updateTypeShards(types);
+        graknGraph.admin().updateConceptCounts(types);
         types.entrySet().forEach(entry ->
-                assertEquals((long) entry.getValue(), ((TypeImpl) graknGraph.getType(entry.getKey())).getInstanceCount()));
+                assertEquals((long) entry.getValue(), ((ConceptImpl) graknGraph.getConcept(entry.getKey())).getShardCount()));
 
         //Lets Set Some Counts
-        types.put(t1.getLabel(), -5L);
-        types.put(t2.getLabel(), -2L);
-        types.put(t3.getLabel(), 3L);
-        graknGraph.admin().updateTypeShards(types);
+        types.put(t1.getId(), -5L);
+        types.put(t2.getId(), -2L);
+        types.put(t3.getId(), 3L);
+        graknGraph.admin().updateConceptCounts(types);
 
-        assertEquals(0L, t1.getInstanceCount());
-        assertEquals(4L, t2.getInstanceCount());
-        assertEquals(5L, t3.getInstanceCount());
+        assertEquals(0L, t1.getShardCount());
+        assertEquals(4L, t2.getShardCount());
+        assertEquals(5L, t3.getShardCount());
     }
 
     @Test
-    public void whenPostProcessingCastingThatDoesNotExist_FixDuplicateCastingsReturnsFalse(){
+    public void whenPostProcessingCastingThatDoesNotExist_DuplicateCastingsExistReturnFalse(){
         String invalidCastingIndex = UUID.randomUUID().toString();
 
         assertFalse("Fix duplicate castings returns false",
-                graknGraph.fixDuplicateCastings(invalidCastingIndex, ImmutableSet.of(ConceptId.of(invalidCastingIndex))));
+                graknGraph.duplicateCastingsExist(invalidCastingIndex, ImmutableSet.of(ConceptId.of(invalidCastingIndex))));
     }
 
     @Test
-    public void whenPostProcessingCastingThatExistsButNoDuplicate_FixDuplicateCastingsReturnsFalse(){
+    public void whenPostProcessingCastingThatExistsButNoDuplicate_DuplicateCastingsExistReturnFalse(){
         CastingImpl validCasting = (CastingImpl) instance1.castings().iterator().next();
 
         assertFalse("Fix duplicate castings returns false",
-                graknGraph.fixDuplicateCastings(validCasting.getIndex(), ImmutableSet.of(validCasting.getId())));
+                graknGraph.duplicateCastingsExist(validCasting.getIndex(), ImmutableSet.of(validCasting.getId())));
     }
 
     @Test

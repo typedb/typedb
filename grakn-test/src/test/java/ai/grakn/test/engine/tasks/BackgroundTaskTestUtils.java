@@ -18,9 +18,9 @@
 
 package ai.grakn.test.engine.tasks;
 
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
@@ -32,17 +32,17 @@ import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
+import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
 import java.time.Instant;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
@@ -77,7 +77,7 @@ public class BackgroundTaskTestUtils {
     }
 
     public static TaskState createTask(Class<? extends BackgroundTask> clazz, TaskSchedule schedule) {
-        return TaskState.of(clazz, BackgroundTaskTestUtils.class.getName(), schedule);
+        return TaskState.of(clazz, BackgroundTaskTestUtils.class.getName(), schedule, TaskState.Priority.LOW);
     }
 
     public static void waitForDoneStatus(TaskStateStorage storage, Collection<TaskState> tasks) {

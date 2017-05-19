@@ -108,8 +108,8 @@ public class REST {
         //Commit Logs
         public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
         public static final String COMMIT_LOG_COUNTING = "types-with-new-counts";
-        public static final String COMMIT_LOG_TYPE_NAME = "type-name";
-        public static final String COMMIT_LOG_INSTANCE_COUNT = "instance-count";
+        public static final String COMMIT_LOG_CONCEPT_ID = "concept-id";
+        public static final String COMMIT_LOG_SHARDING_COUNT = "sharding-count";
 
         /**
          * Concept controller request parameters

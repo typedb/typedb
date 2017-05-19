@@ -43,7 +43,11 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        if (!selectedTypesHaveInstance()) return 0L;
+        if (!selectedTypesHaveInstance()) {
+            LOGGER.debug("Count = 0");
+            LOGGER.info("CountMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
+            return 0L;
+        }
 
         ComputerResult result = getGraphComputer().compute(new CountMapReduce(
                 subTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet())));

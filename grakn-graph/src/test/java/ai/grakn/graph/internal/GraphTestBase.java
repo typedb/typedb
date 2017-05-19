@@ -28,8 +28,8 @@ import org.junit.rules.ExpectedException;
 import java.util.UUID;
 
 public class GraphTestBase {
-    private AbstractGraknGraph<?> graknGraphBatch;
     protected AbstractGraknGraph<?> graknGraph;
+    private AbstractGraknGraph<?> graknGraphBatch;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

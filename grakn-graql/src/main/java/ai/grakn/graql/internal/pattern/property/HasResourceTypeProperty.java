@@ -25,8 +25,8 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -115,7 +115,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(VarName start) {
+    public Collection<EquivalentFragmentSet> match(Var start) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
         traversals.addAll(new PlaysProperty(ownerRole, required).match(start));
@@ -172,7 +172,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
-        VarName varName = var.getVarName();
+        Var varName = var.getVarName();
         TypeLabel typeLabel = this.getResourceType().getTypeLabel().orElse(null);
         //isa part
         VarPatternAdmin resVar = var(varName).has(Graql.label(typeLabel)).admin();

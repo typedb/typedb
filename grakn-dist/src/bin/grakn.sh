@@ -72,6 +72,7 @@ case "$1" in
 
 start)
 
+    "${GRAKN_HOME}/bin/grakn-redis.sh" start
     if [ "$USE_CASSANDRA" ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" start
     fi
@@ -84,6 +85,7 @@ start)
 
 stop)
 
+    "${GRAKN_HOME}/bin/grakn-redis.sh" stop
     "${GRAKN_HOME}/bin/grakn-engine.sh" stop
     if [ "$USE_KAFKA" ]; then
         "${GRAKN_HOME}/bin/kafka-server-stop.sh"

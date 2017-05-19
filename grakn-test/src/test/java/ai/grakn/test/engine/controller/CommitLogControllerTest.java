@@ -53,8 +53,8 @@ import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_INSTANCE_COUNT;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE_NAME;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_SHARDING_COUNT;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_CONCEPT_ID;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static com.jayway.restassured.RestAssured.baseURI;
 import static com.jayway.restassured.RestAssured.delete;
@@ -123,7 +123,7 @@ public class CommitLogControllerTest {
     public void whenControllerReceivesLog_TaskManagerReceivesPPTask() {
         sendFakeCommitLog();
 
-        verify(manager, times(1)).addLowPriorityTask(
+        verify(manager, times(1)).addTask(
                 argThat(argument -> argument.taskClass().equals(PostProcessingTask.class)),
                 argThat(argument -> argument.json().at(COMMIT_LOG_FIXING).equals(commitLog.at(COMMIT_LOG_FIXING)))
         );
@@ -140,7 +140,7 @@ public class CommitLogControllerTest {
 
         addSomeData(bob);
 
-        verify(manager, times(1)).addLowPriorityTask(
+        verify(manager, times(1)).addTask(
                 argThat(argument ->
                         argument.taskClass().equals(PostProcessingTask.class)),
                 argThat(argument ->
@@ -148,12 +148,12 @@ public class CommitLogControllerTest {
                         argument.json().at(COMMIT_LOG_FIXING).at(Schema.BaseType.CASTING.name()).asJsonMap().size() == 2 &&
                         argument.json().at(COMMIT_LOG_FIXING).at(Schema.BaseType.RESOURCE.name()).asJsonMap().size() == 1));
 
-        verify(manager, never()).addLowPriorityTask(
+        verify(manager, never()).addTask(
                 any(), argThat(arg -> arg.json().at(KEYSPACE).asString().equals(TIM)));
 
         addSomeData(tim);
 
-        verify(manager, times(1)).addLowPriorityTask(
+        verify(manager, times(1)).addTask(
                 argThat(argument ->
                         argument.taskClass().equals(PostProcessingTask.class)),
                 argThat(argument ->
@@ -178,7 +178,7 @@ public class CommitLogControllerTest {
     public void whenSendingCommitLogs_TaskManagerReceivesCountTask(){
         sendFakeCommitLog();
 
-        verify(manager, atLeastOnce()).addHighPriorityTask(
+        verify(manager, atLeastOnce()).addTask(
                 argThat(argument ->
                                 argument.taskClass().equals(UpdatingInstanceCountTask.class)),
                 argThat(argument ->
@@ -198,14 +198,14 @@ public class CommitLogControllerTest {
         addSomeData(tim);
 
         try {
-            verify(manager, atLeastOnce()).addHighPriorityTask(
+            verify(manager, atLeastOnce()).addTask(
                     argThat(argument ->
                             argument.taskClass().equals(UpdatingInstanceCountTask.class)),
                     argThat(argument ->
                             argument.json().at(KEYSPACE).asString().equals(BOB) &&
                             argument.json().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
 
-            verify(manager, atLeastOnce()).addHighPriorityTask(
+            verify(manager, atLeastOnce()).addTask(
                     argThat(argument ->
                             argument.taskClass().equals(UpdatingInstanceCountTask.class)),
                     argThat(argument ->
@@ -229,8 +229,8 @@ public class CommitLogControllerTest {
         resourceType.putResource("c");
         graph1.commit();
 
-        verify(manager, never()).addLowPriorityTask(any(), any());
-        verify(manager, never()).addHighPriorityTask(any(), any());
+        verify(manager, never()).addTask(any(), any());
+        verify(manager, never()).addTask(any(), any());
     }
 
     private void sendFakeCommitLog() {
@@ -249,11 +249,11 @@ public class CommitLogControllerTest {
         commitLogFixing.set(Schema.BaseType.RESOURCE.name(), commitLogFixResource);
 
         Json commitLogCounting = array();
-        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Alpha", COMMIT_LOG_INSTANCE_COUNT, -3));
-        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Bravo", COMMIT_LOG_INSTANCE_COUNT, -2));
-        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Delta", COMMIT_LOG_INSTANCE_COUNT, -1));
-        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Charlie", COMMIT_LOG_INSTANCE_COUNT,1));
-        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Foxtrot", COMMIT_LOG_INSTANCE_COUNT, 2));
+        commitLogCounting.add(object(COMMIT_LOG_CONCEPT_ID, "Alpha", COMMIT_LOG_SHARDING_COUNT, -3));
+        commitLogCounting.add(object(COMMIT_LOG_CONCEPT_ID, "Bravo", COMMIT_LOG_SHARDING_COUNT, -2));
+        commitLogCounting.add(object(COMMIT_LOG_CONCEPT_ID, "Delta", COMMIT_LOG_SHARDING_COUNT, -1));
+        commitLogCounting.add(object(COMMIT_LOG_CONCEPT_ID, "Charlie", COMMIT_LOG_SHARDING_COUNT,1));
+        commitLogCounting.add(object(COMMIT_LOG_CONCEPT_ID, "Foxtrot", COMMIT_LOG_SHARDING_COUNT, 2));
 
         commitLog = object(
                 COMMIT_LOG_FIXING, commitLogFixing,
@@ -271,7 +271,7 @@ public class CommitLogControllerTest {
         Mockito.doAnswer((answer) -> {
             countDownLatch.countDown();
             return true;
-        }).when(manager).addLowPriorityTask(any(), any());
+        }).when(manager).addTask(any(), any());
 
         RoleType role1 = graph.putRoleType("Role 1");
         RoleType role2 = graph.putRoleType("Role 2");

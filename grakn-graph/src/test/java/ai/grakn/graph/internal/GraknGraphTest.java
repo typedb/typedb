@@ -22,8 +22,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.Veri
 import org.junit.Test;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -384,7 +382,6 @@ public class GraknGraphTest extends GraphTestBase {
 
     @Test
     public void whenShardingSuperNode_EnsureNewInstancesGoToNewShard(){
-        Map<TypeLabel, Long> counts = new HashMap<>();
         EntityTypeImpl entityType = (EntityTypeImpl) graknGraph.putEntityType("The Special Type");
         EntityType s1 = entityType.currentShard();
 
@@ -392,23 +389,18 @@ public class GraknGraphTest extends GraphTestBase {
         Entity s1_e1 = entityType.addEntity();
         Entity s1_e2 = entityType.addEntity();
         Entity s1_e3 = entityType.addEntity();
-        counts.put(entityType.getLabel(), 200_000L); //Fake the creation of a super node
+        graknGraph.admin().shard(entityType.getId());
 
-        graknGraph.admin().updateTypeShards(counts); //Shard
         EntityType s2 = entityType.currentShard();
 
         //Add 5 instances to second shard
         Entity s2_e1 = entityType.addEntity();
         Entity s2_e2 = entityType.addEntity();
-
-        counts.put(entityType.getLabel(), 90_000L);
-        graknGraph.admin().updateTypeShards(counts); //Don't Shard because we not near super nodes
-
         Entity s2_e3 = entityType.addEntity();
         Entity s2_e4 = entityType.addEntity();
         Entity s2_e5 = entityType.addEntity();
 
-        graknGraph.admin().updateTypeShards(counts); //Shard Again
+        graknGraph.admin().shard(entityType.getId());
         EntityType s3 = entityType.currentShard();
 
         //Add 2 instances to 3rd shard

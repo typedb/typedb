@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.util.Schema;
@@ -62,7 +62,7 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDir
 class ShortcutFragmentSet extends EquivalentFragmentSet {
 
     ShortcutFragmentSet(
-            VarName relation, VarName edge, VarName rolePlayer, Optional<TypeLabel> roleType,
+            Var relation, Var edge, Var rolePlayer, Optional<TypeLabel> roleType,
             Optional<TypeLabel> relationType) {
         super(
                 Fragments.inShortcut(rolePlayer, edge, relation, roleType, relationType),
@@ -84,8 +84,8 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
     }
 
     private static boolean attemptOptimiseCasting(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph, CastingFragmentSet castingFragmentSet) {
-        VarName relation = castingFragmentSet.relation();
-        VarName casting = castingFragmentSet.casting();
+        Var relation = castingFragmentSet.relation();
+        Var casting = castingFragmentSet.casting();
 
         RolePlayerFragmentSet rolePlayerFragmentSet = findRolePlayerFragmentSet(fragmentSets, casting);
 
@@ -131,12 +131,12 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         fragmentSets.remove(rolePlayerFragmentSet);
         castingIsaFragment.ifPresent(fragmentSets::remove);
 
-        VarName rolePlayer = rolePlayerFragmentSet.rolePlayer();
+        Var rolePlayer = rolePlayerFragmentSet.rolePlayer();
         fragmentSets.add(new ShortcutFragmentSet(relation, casting, rolePlayer, roleType, relType));
         return true;
     }
 
-    private static Optional<TypeLabel> findTypeLabel(Collection<EquivalentFragmentSet> fragmentSets, VarName type) {
+    private static Optional<TypeLabel> findTypeLabel(Collection<EquivalentFragmentSet> fragmentSets, Var type) {
         return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
                 .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
                 .map(LabelFragmentSet::label)
@@ -144,7 +144,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
     }
 
     private static RolePlayerFragmentSet findRolePlayerFragmentSet(
-            Collection<EquivalentFragmentSet> fragmentSets, VarName casting) {
+            Collection<EquivalentFragmentSet> fragmentSets, Var casting) {
         // We can assume that this fragment set must exist
         //noinspection OptionalGetWithoutIsPresent
         return fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)

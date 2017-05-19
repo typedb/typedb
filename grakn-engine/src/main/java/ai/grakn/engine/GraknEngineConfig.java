@@ -54,6 +54,9 @@ public class GraknEngineConfig {
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
 
+    public static final String REDIS_SERVER_URL = "redis.host";
+    public static final String REDIS_SERVER_PORT = "redis.port";
+
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
     public static final String LOGGING_FILE_PATH_MAIN = "log.dirs";
     public static final String LOGGING_LEVEL = "log.level";
@@ -67,7 +70,9 @@ public class GraknEngineConfig {
 
     // Engine Config
     public static final String TASK_MANAGER_IMPLEMENTATION = "taskmanager.implementation";
-    public static final String USE_ZOOKEEPER_STORAGE = "taskmanager.storage.zk";
+
+    // Delay for the post processing task in milliseconds
+    public static final String POST_PROCESSING_TASK_DELAY = "tasks.postprocessing.delay";
 
     public static final String ZK_SERVERS = "tasks.zookeeper.servers";
     public static final String ZK_NAMESPACE = "tasks.zookeeper.namespace";
@@ -251,6 +256,10 @@ public class GraknEngineConfig {
     public int getPropertyAsInt(String property, int defaultValue) {
         return prop.containsKey(property) ? Integer.parseInt(prop.getProperty(property))
                                           : defaultValue;
+    }
+    
+    public long getPropertyAsLong(String property) {
+        return Long.parseLong(prop.getProperty(property));
     }
     
     public long getPropertyAsLong(String property, long defaultValue) {

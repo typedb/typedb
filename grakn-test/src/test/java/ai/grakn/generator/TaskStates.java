@@ -19,19 +19,16 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
 import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import com.google.common.collect.ImmutableSet;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-import mjson.Json;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -68,7 +65,7 @@ public class TaskStates extends Generator<TaskState> {
         // A bit in the past, because Instant is not monotonic
         TaskSchedule schedule = TaskSchedule.at(Instant.now().minusSeconds(60));
 
-        return TaskState.of(taskClass, creator, schedule);
+        return TaskState.of(taskClass, creator, schedule, TaskState.Priority.LOW);
     }
 
     public void configure(WithClass withClass) {

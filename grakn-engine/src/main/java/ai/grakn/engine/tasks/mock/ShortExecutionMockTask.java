@@ -29,13 +29,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author alexandraorth, Felix Chapman
  */
 public class ShortExecutionMockTask extends MockBackgroundTask {
-    public static final AtomicInteger startedCounter = new AtomicInteger(0);
     public static final AtomicInteger resumedCounter = new AtomicInteger(0);
 
     @Override
-    protected void executeStartInner(TaskId id) {
-        startedCounter.incrementAndGet();
-    }
+    protected void executeStartInner(TaskId id) {}
 
     @Override
     protected void executeResumeInner(TaskCheckpoint checkpoint) {

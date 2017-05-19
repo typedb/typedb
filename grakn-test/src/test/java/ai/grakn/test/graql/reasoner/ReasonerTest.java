@@ -29,7 +29,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -623,52 +623,6 @@ public class ReasonerTest {
         assertQueriesEqual(query, query2);
     }
 
-    @Ignore
-    @Test
-    public void testReasoningWithRuleContainingVarContraction(){
-        ReasonerUtils.createReflexiveRule(
-                snbGraph.graph().getRelationType("knows"),
-                snbGraph.graph().getRoleType("acquaintance1").getLabel(),
-                snbGraph.graph().getRoleType("acquaintance2").getLabel(),
-                snbGraph.graph());
-        String queryString = "match ($x, $y) isa knows;select $y;";
-        String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
-        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(query, query2);
-    }
-
-    @Ignore
-    @Test
-    //propagated sub [x/Bob] prevents from capturing the right inference
-    public void testReasoningWithRuleContainingVarContraction2(){
-        ReasonerUtils.createReflexiveRule(
-                snbGraph.graph().getRelationType("knows"),
-                snbGraph.graph().getRoleType("acquaintance1").getLabel(),
-                snbGraph.graph().getRoleType("acquaintance2").getLabel(),
-                snbGraph.graph());
-        String queryString = "match ($x, $y) isa knows;$x has name 'Bob';select $y;";
-        String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
-        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(query, query2);
-    }
-
-    @Ignore
-    @Test
-    //Bug with unification, perhaps should unify select vars not atom vars
-    public void testReasoningWithRuleContainingVarContraction3(){
-        Pattern body = snbGraph.graph().graql().parsePattern("$x isa person");
-        Pattern head = snbGraph.graph().graql().parsePattern("(acquaintance1: $x, acquaintance2: $x) isa knows");
-        snbGraph.graph().admin().getMetaRuleInference().putRule(body, head);
-
-        String queryString = "match ($x, $y) isa knows;$x has name 'Bob';";
-        String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
-        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(query, query2);
-    }
-
     @Test
     public void testReasoningWithQueryContainingTypeVariable(){
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
@@ -705,7 +659,7 @@ public class ReasonerTest {
         MatchQuery query2 = iqb.parse(queryString2);
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers answers2 = queryAnswers(query2);
-        assertEquals(answers.filterVars(Sets.newHashSet(VarName.of("x"))), answers2);
+        assertEquals(answers.filterVars(Sets.newHashSet(Var.of("x"))), answers2);
     }
 
     @Test
@@ -775,8 +729,8 @@ public class ReasonerTest {
 
         final int offset = 4;
         List<Answer> fullAnswers = query.execute();
-        List<Answer> answers = query.orderBy(VarName.of("a")).execute();
-        List<Answer> answers2 = query.orderBy(VarName.of("a")).offset(offset).execute();
+        List<Answer> answers = query.orderBy(Var.of("a")).execute();
+        List<Answer> answers2 = query.orderBy(Var.of("a")).offset(offset).execute();
 
         assertEquals(fullAnswers.size(), answers2.size() + offset);
         assertEquals(answers.size(), answers2.size() + offset);

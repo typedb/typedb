@@ -343,6 +343,7 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
     public static void refresh() {
         if (!GraknGraphRDD.commit) {
             setCommitFlag();
+            LOGGER.debug("Graph commit flag set!!!");
         }
     }
 

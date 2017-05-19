@@ -23,7 +23,7 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
@@ -194,7 +194,7 @@ public class TaskStateZookeeperStoreTest {
     }
 
     public TaskState task(String creator){
-        return TaskState.of(ShortExecutionMockTask.class, creator, TaskSchedule.now());
+        return TaskState.of(ShortExecutionMockTask.class, creator, TaskSchedule.now(), TaskState.Priority.LOW);
     }
 
     /**

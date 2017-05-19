@@ -189,8 +189,9 @@ public class TasksController {
         Class<?> clazz = getClass(className);
 
         // Create and schedule the task
-        TaskState taskState = TaskState.of(clazz, createdBy, schedule);
-        manager.addLowPriorityTask(taskState, configuration);
+        //TODO: Priority should not default to low but should rather be set via rest api
+        TaskState taskState = TaskState.of(clazz, createdBy, schedule, TaskState.Priority.LOW);
+        manager.addTask(taskState, configuration);
 
         // Configure the response
         response.type(APPLICATION_JSON.getMimeType());

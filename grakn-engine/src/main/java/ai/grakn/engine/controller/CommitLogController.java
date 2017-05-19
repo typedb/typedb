@@ -37,9 +37,11 @@ import spark.Service;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import java.time.Instant;
 import java.util.Optional;
 
 import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
+import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_TASK_DELAY;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
 import static ai.grakn.util.REST.Request.KEYSPACE;
@@ -52,6 +54,8 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
  */
 //TODO Implement delete
 public class CommitLogController {
+
+    private final int PP_TASK_DELAY_MS = GraknEngineConfig.getInstance().getPropertyAsInt(POST_PROCESSING_TASK_DELAY);
     private final TaskManager manager;
 
     public CommitLogController(Service spark, TaskManager manager){
@@ -88,9 +92,8 @@ public class CommitLogController {
         postProcessingConfiguration.set(KEYSPACE, keyspace);
         postProcessingConfiguration.set(COMMIT_LOG_FIXING, Json.read(req.body()).at(COMMIT_LOG_FIXING));
 
-        // TODO Make interval configurable
         TaskState postProcessingTask = TaskState.of(
-                PostProcessingTask.class, this.getClass().getName(), TaskSchedule.now());
+                PostProcessingTask.class, this.getClass().getName(), TaskSchedule.at(Instant.now().plusMillis(PP_TASK_DELAY_MS)), TaskState.Priority.LOW);
 
         //Instances to count
         Json countingConfiguration = Json.object();
@@ -98,11 +101,13 @@ public class CommitLogController {
         countingConfiguration.set(COMMIT_LOG_COUNTING, Json.read(req.body()).at(COMMIT_LOG_COUNTING));
 
         TaskState countingTask = TaskState.of(
-                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now());
+                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now(), TaskState.Priority.HIGH);
 
         // Send two tasks to the pipeline
-        manager.addLowPriorityTask(postProcessingTask, TaskConfiguration.of(postProcessingConfiguration));
-        manager.addHighPriorityTask(countingTask, TaskConfiguration.of(countingConfiguration));
+        manager.addTask(postProcessingTask, TaskConfiguration.of(postProcessingConfiguration));
+        manager.addTask(countingTask, TaskConfiguration.of(countingConfiguration));
+
+
 
         return "PP Task [ " + postProcessingTask.getId().getValue() + " ] and Counting task [" + countingTask.getId().getValue() + "] created for graph [" + keyspace + "]";
     }

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.pattern;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -55,7 +55,7 @@ class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
     }
 
     @Override
-    public Set<VarName> commonVarNames() {
+    public Set<Var> commonVarNames() {
         return patterns.stream().map(PatternAdmin::commonVarNames).reduce(Sets::intersection).orElse(ImmutableSet.of());
     }
 

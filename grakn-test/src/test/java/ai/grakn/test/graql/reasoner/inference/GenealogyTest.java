@@ -22,7 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graphs.GenealogyGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
@@ -179,6 +179,7 @@ public class GenealogyTest {
         assertEquals(answers.size(), 4);
     }
 
+    //@Ignore
     @Test
     public void testMarriedToThemselves(){
         String queryString = "match (spouse2: $x, spouse1: $x) isa marriage;";
@@ -194,6 +195,7 @@ public class GenealogyTest {
         MatchQuery query2 = iqb.parse(queryString2);
 
         QueryAnswers answers = queryAnswers(query);
+        assertEquals(answers.size(), 66);
         QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers2.size(), answers.size());
         assertEquals(answers2.size(), 66);
@@ -499,7 +501,7 @@ public class GenealogyTest {
         boolean isOk = true;
         Iterator<Answer> it =  answers.iterator();
         while (it.hasNext() && isOk){
-            Concept c = it.next().get(VarName.of(var));
+            Concept c = it.next().get(Var.of(var));
             isOk = c.asResource().getValue().equals(value);
         }
         return isOk;

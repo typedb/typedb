@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.pattern;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
@@ -51,7 +51,7 @@ public class Patterns {
         return VarPatternImpl.anon();
     }
 
-    public static VarPatternAdmin var(VarName name) {
+    public static VarPatternAdmin var(Var name) {
         return VarPatternImpl.named(name);
     }
 

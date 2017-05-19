@@ -22,15 +22,14 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.util.ErrorMessage;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.Consumer;
+
 import static ai.grakn.engine.GraknEngineConfig.LOADER_REPEAT_COMMITS;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 
 /**
  * <p>
@@ -50,42 +49,29 @@ public abstract class GraphMutators {
 
     /**
      *
-     * @param configuration
-     * @return
+     *
+     * @param keyspace keyspace of the graph to mutate
+     * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
-    protected static String getKeyspace(TaskConfiguration configuration){
-        return configuration.json().at(KEYSPACE).asString();
+    public static void runBatchMutationWithRetry(String keyspace, Consumer<GraknGraph> mutatingFunction){
+        runGraphMutationWithRetry(keyspace, GraknTxType.BATCH, mutatingFunction);
     }
 
     /**
      *
-     *
-     * @param configuration
+     * @param keyspace keyspace of the graph to mutate
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
-    public static void runBatchMutationWithRetry(TaskConfiguration configuration, Consumer<GraknGraph> mutatingFunction){
-        runGraphMutationWithRetry(configuration, GraknTxType.BATCH, mutatingFunction);
+    static void runGraphMutationWithRetry(String keyspace, Consumer<GraknGraph> mutatingFunction){
+        runGraphMutationWithRetry(keyspace, GraknTxType.WRITE, mutatingFunction);
     }
 
     /**
      *
-     * @param configuration
+     * @param keyspace keyspace of the graph to mutate
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
-     * @return
      */
-    public static void runGraphMutationWithRetry(TaskConfiguration configuration, Consumer<GraknGraph> mutatingFunction){
-        runGraphMutationWithRetry(configuration, GraknTxType.WRITE, mutatingFunction);
-    }
-
-    /**
-     *
-     * @param configuration
-     * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
-     * @return
-     */
-    private static void runGraphMutationWithRetry(TaskConfiguration configuration, GraknTxType txType, Consumer<GraknGraph> mutatingFunction){
-        String keyspace = getKeyspace(configuration);
-
+    private static void runGraphMutationWithRetry(String keyspace, GraknTxType txType, Consumer<GraknGraph> mutatingFunction){
         for(int retry = 0; retry < MAX_RETRY; retry++) {
             try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, txType))  {
 

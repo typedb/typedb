@@ -34,7 +34,7 @@ import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.printer.Printers;
@@ -165,8 +165,8 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "unchecked"})
 public class MatchQueryTest {
 
-    private final VarName x = VarName.of("x");
-    private final VarName y = VarName.of("y");
+    private final Var x = Var.of("x");
+    private final Var y = Var.of("y");
 
     private QueryBuilder qb;
 
@@ -243,10 +243,24 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testValueEqualsVarQuery() {
+    public void whenQueryingForResourcesWithEqualValues_ResultsAreCorrect() {
         MatchQuery query = qb.match(var("x").val(var("y")));
 
         assertThat(query.execute(), hasSize(greaterThan(10)));
+
+        query.forEach(result -> {
+            Concept x = result.get("x");
+            Concept y = result.get("y");
+            assertEquals(x.asResource().getValue(), y.asResource().getValue());
+        });
+    }
+
+    @Test
+    public void whenQueryingForTitlesWithEqualValues_ResultsAreCorrect() {
+        // This is an edge-case which fooled the resource-index optimiser
+        MatchQuery query = qb.match(var("x").isa("title").val(var("y")));
+
+        assertThat(query.execute(), hasSize(greaterThan(3)));
 
         query.forEach(result -> {
             Concept x = result.get("x");
@@ -815,7 +829,7 @@ public class MatchQueryTest {
     public void whenMatchingHas_ThenTheResultOnlyContainsTheExpectedVariables() {
         MatchQuery query = qb.match(var("x").has("name"));
         for (Answer result : query) {
-            assertEquals(result.keySet(), ImmutableSet.of(VarName.of("x")));
+            assertEquals(result.keySet(), ImmutableSet.of(Var.of("x")));
         }
     }
 

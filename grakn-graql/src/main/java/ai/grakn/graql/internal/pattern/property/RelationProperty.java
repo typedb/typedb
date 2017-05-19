@@ -26,8 +26,8 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
@@ -86,12 +86,12 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(VarName start) {
-        Collection<VarName> castingNames = new HashSet<>();
+    public Collection<EquivalentFragmentSet> match(Var start) {
+        Collection<Var> castingNames = new HashSet<>();
 
         ImmutableSet<EquivalentFragmentSet> traversals = relationPlayers.stream().flatMap(relationPlayer -> {
 
-            VarName castingName = VarName.anon();
+            Var castingName = Var.anon();
             castingNames.add(castingName);
 
             return equivalentFragmentSetFromCasting(start, castingName, relationPlayer);
@@ -121,7 +121,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         });
     }
 
-    private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(VarName start, VarName castingName, RelationPlayer relationPlayer) {
+    private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(Var start, Var castingName, RelationPlayer relationPlayer) {
         Optional<VarPatternAdmin> roleType = relationPlayer.getRoleType();
 
         if (roleType.isPresent()) {
@@ -135,7 +135,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * Add some patterns where this variable is a relation and the given variable is a roleplayer of that relation
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
-    private Stream<EquivalentFragmentSet> addRelatesPattern(VarName start, VarName casting, VarPatternAdmin rolePlayer) {
+    private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin rolePlayer) {
         return Stream.of(
                 casting(start, casting),
                 rolePlayer(casting, rolePlayer.getVarName())
@@ -147,7 +147,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param roleType a variable that is the roletype of the given roleplayer
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
-    private Stream<EquivalentFragmentSet> addRelatesPattern(VarName start, VarName casting, VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
+    private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
         return Stream.of(
                 casting(start, casting),
                 rolePlayer(casting, rolePlayer.getVarName()),
@@ -252,7 +252,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         if (isaProp != null) {
             VarPatternAdmin isaVar = isaProp.getType();
             TypeLabel typeLabel = isaVar.getTypeLabel().orElse(null);
-            VarName typeVariable = typeLabel == null ? isaVar.getVarName() : VarName.of("rel-" + UUID.randomUUID().toString());
+            Var typeVariable = typeLabel == null ? isaVar.getVarName() : Var.of("rel-" + UUID.randomUUID().toString());
             relVar = relVar.isa(Graql.var(typeVariable));
             if (typeLabel != null) {
                 GraknGraph graph = parent.graph();

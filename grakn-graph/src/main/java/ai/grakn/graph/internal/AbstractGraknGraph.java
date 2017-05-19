@@ -103,7 +103,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final boolean batchLoadingEnabled;
     private final G graph;
     private final ElementFactory elementFactory;
-    private final long shardingFactor;
     private final GraphCache graphCache;
 
     //----------------------------- Transaction Specific
@@ -114,7 +113,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         this.keyspace = keyspace;
         this.engine = engine;
         this.properties = properties;
-        shardingFactor = Long.parseLong(properties.get(SHARDING_THRESHOLD).toString());
         elementFactory = new ElementFactory(this);
 
         //Initialise Graph Caches
@@ -804,7 +802,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private Optional<String> commitWithLogs() throws GraknValidationException {
         validateGraph();
 
-        boolean submissionNeeded = !getTxCache().getInstanceCount().isEmpty() ||
+        boolean submissionNeeded = !getTxCache().getShardingCount().isEmpty() ||
                 !getTxCache().getModifiedCastings().isEmpty() ||
                 !getTxCache().getModifiedResources().isEmpty();
         JSONObject conceptLog = getTxCache().getFormattedLog();
@@ -859,6 +857,42 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
+    @Override
+    public boolean duplicateCastingsExist(String index, Set<ConceptId> castingVertexIds){
+        CastingImpl mainCasting = (CastingImpl) getMainConcept(index);
+        return getDuplicates(mainCasting, castingVertexIds).size() > 0;
+    }
+
+    /**
+     * Returns the duplicates of the given concept
+     * @param mainConcept primary concept - this one is returned by the index and not considered a duplicate
+     * @param conceptVertexIds Set of Ids containing potential duplicates of the main concept
+     * @return a set containing the duplicates of the given concept
+     */
+    private Set<? extends ConceptImpl> getDuplicates(ConceptImpl mainConcept, Set<ConceptId> conceptVertexIds){
+        Set<ConceptImpl> duplicated = conceptVertexIds.stream()
+                .map(id -> this.<ConceptImpl>getConceptRawId(id.getValue()))
+                //filter non-null, will be null if previously deleted/merged
+                .filter(Objects::nonNull)
+                .collect(toSet());
+
+        duplicated.remove(mainConcept);
+
+        return duplicated;
+    }
+
+    /**
+     * Given an index, get the concept associated with it. The "main" concept is the one
+     * returned by the index after all of the duplicates have been created.
+     *
+     * @param index retrieve the concept associated with this index
+     * @return Concept representing the vertex at the given index
+     */
+    private ConceptImpl getMainConcept(String index){
+        //This is done to ensure we merge into the indexed casting.
+        return getConcept(Schema.ConceptProperty.INDEX, index);
+    }
+
     /**
      * Merges the provided duplicate castings.
      *
@@ -867,17 +901,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds){
-        Set<CastingImpl> duplicated = castingVertexIds.stream()
-                .map(id -> this.<CastingImpl>getConceptRawId(id.getValue()))
-                //filter non-null, will be null if previously deleted/merged
-                .filter(Objects::nonNull)
-                .collect(toSet());
+        CastingImpl mainCasting = (CastingImpl) getMainConcept(index);
+        Set<CastingImpl> duplicated = (Set<CastingImpl>) getDuplicates(mainCasting, castingVertexIds);
 
-        //This is done to ensure we merge into the indexed casting. Needs to be cleaned up though
-        CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX, index);
-        duplicated.remove(mainCasting);
-
-        if(duplicated.size() > 0){
+        if (duplicated.size() > 0) {
             //Fix the duplicates
             Set<Relation> duplicateRelations = mergeCastings(mainCasting, duplicated);
 
@@ -959,24 +986,29 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
+     * Check if the given index has duplicates to merge
+     * @param index Index of the potentially duplicated resource
+     * @param resourceVertexIds Set of vertex ids containing potential duplicates
+     * @return true if there are duplicate resources amongst the given set and PostProcessing should proceed
+     */
+    @Override
+    public boolean duplicateResourcesExist(String index, Set<ConceptId> resourceVertexIds){
+        ResourceImpl<?> mainResource = (ResourceImpl<?>) getMainConcept(index);
+        return getDuplicates(mainResource, resourceVertexIds).size() > 0;
+    }
+
+    /**
      *
      * @param resourceVertexIds The resource vertex ids which need to be merged.
      * @return True if a commit is required.
      */
     @Override
     public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds){
-        Set<ResourceImpl> duplicates = resourceVertexIds.stream()
-                .map(id -> this.<ResourceImpl>getConceptRawId(id.getValue()))
-                //filter non-null, will be null if previously deleted/merged
-                .filter(Objects::nonNull)
-                .collect(toSet());
+        ResourceImpl<?> mainResource = (ResourceImpl<?>) getMainConcept(index);
+        Set<ResourceImpl> duplicates = (Set<ResourceImpl>) getDuplicates(mainResource, resourceVertexIds);
 
-        //The "main resource" will be the one returned by the index
-        ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index);
-        duplicates.remove(mainResource);
-
-        //Remove any resources associated with this index that are not the main resource
-        if(duplicates.size() > 0){
+        if(duplicates.size() > 0) {
+            //Remove any resources associated with this index that are not the main resource
             for (ResourceImpl<?> otherResource : duplicates) {
                 Collection<Relation> otherRelations = otherResource.relations();
 
@@ -1028,20 +1060,22 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public void updateTypeShards(Map<TypeLabel, Long> typeCounts){
+    public void updateConceptCounts(Map<ConceptId, Long> typeCounts){
        typeCounts.entrySet().forEach(entry -> {
            if(entry.getValue() != 0) {
-               TypeImpl type = getType(entry.getKey());
-
-               long newValue = type.getInstanceCount() + entry.getValue();
-               if(newValue < shardingFactor) {
-                   type.setInstanceCount(type.getInstanceCount() + entry.getValue());
-               } else {
-                   //TODO: Maintain the count properly. We reset so we can split with simpler logic
-                   type.setInstanceCount(0L);
-                   type.createShard();
-               }
+               ConceptImpl concept = getConcept(entry.getKey());
+               concept.setShardCount(concept.getShardCount() + entry.getValue());
            }
        });
+    }
+
+    @Override
+    public void shard(ConceptId conceptId){
+        ConceptImpl type = getConcept(conceptId);
+        if(type == null) {
+            LOG.warn("Cannot shard concept [" + conceptId + "] due to it not existing in the graph");
+        } else {
+            type.createShard();
+        }
     }
 }

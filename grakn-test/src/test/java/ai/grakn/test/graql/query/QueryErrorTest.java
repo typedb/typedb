@@ -25,7 +25,7 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
 import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
@@ -187,9 +188,16 @@ public class QueryErrorTest {
         Stream<Concept> concepts = query.get("y");
 
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(VarName.of("y")));
+        exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(Var.of("y")));
 
         //noinspection ResultOfMethodCallIgnored
         concepts.count();
+    }
+
+    @Test
+    public void whenUsingInvalidResourceValue_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(INVALID_VALUE.getMessage(qb.getClass()));
+        qb.match(var("x").val(qb));
     }
 }
