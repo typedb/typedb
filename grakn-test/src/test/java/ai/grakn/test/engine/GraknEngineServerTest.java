@@ -21,7 +21,6 @@ package ai.grakn.test.engine;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
-import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.test.EngineContext;
@@ -32,7 +31,6 @@ import org.junit.rules.ExpectedException;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.engine.GraknEngineConfig.USE_ZOOKEEPER_STORAGE;
 import static ai.grakn.engine.GraknEngineConfig.ZK_CONNECTION_TIMEOUT;
-import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -78,22 +76,5 @@ public class GraknEngineServerTest {
         try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
             assertThat(server.getTaskManager().storage(), instanceOf(TaskStateZookeeperStore.class));
         }
-    }
-
-    @Test
-    public void whenEnginePropertiesDoesNotIndicateZookeeperStorage_GraphStorageIsUsed() throws Exception {
-        ensureCassandraRunning();
-
-        // Should start engine with distributed server, which means we will get a cannot
-        // connect to Zookeeper exception (that has not been started)
-        GraknEngineConfig.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
-        GraknEngineConfig.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
-        GraknEngineConfig.getInstance().setConfigProperty(USE_ZOOKEEPER_STORAGE, "false");
-
-        try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
-            assertThat(server.getTaskManager().storage(), instanceOf(TaskStateGraphStore.class));
-        }
-
-        GraknEngineConfig.getInstance().setConfigProperty(USE_ZOOKEEPER_STORAGE, "true");
     }
 }

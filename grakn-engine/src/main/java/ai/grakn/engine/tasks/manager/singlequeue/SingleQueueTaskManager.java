@@ -29,6 +29,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.connection.ZookeeperConnection;
+import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
@@ -94,7 +95,7 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     public SingleQueueTaskManager(EngineID engineId) {
         this.zookeeper = new ZookeeperConnection();
-        this.storage = chooseStorage(properties, zookeeper);
+        this.storage = new TaskStateZookeeperStore(zookeeper);
         this.offsetStorage = new ExternalOffsetStorage(zookeeper);
 
         //TODO check that the number of partitions is at least the capacity
