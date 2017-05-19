@@ -127,7 +127,7 @@ public class SingleQueueTaskManager implements TaskManager {
             throw new RuntimeException(e);
         }
 
-        LockProvider.instantiate((lockPath) -> new ZookeeperLock(zookeeper, lockPath));
+        LockProvider.instantiate((lockPath, existingLock) -> new ZookeeperLock(zookeeper, lockPath));
 
         LOG.debug("TaskManager started");
     }
