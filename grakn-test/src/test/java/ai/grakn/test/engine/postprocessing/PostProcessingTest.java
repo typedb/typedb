@@ -150,7 +150,7 @@ public class PostProcessingTest {
                         ))
         );
 
-        task.start(null, configuration);
+        task.start(null, configuration, (x, y) -> {});
 
         graph = session.open(GraknTxType.READ);
 
@@ -249,7 +249,7 @@ public class PostProcessingTest {
                         ))
         );
 
-        task.start(null, configuration);
+        task.start(null, configuration, (x, y) -> {});
 
         graph = session.open(GraknTxType.READ);
 
