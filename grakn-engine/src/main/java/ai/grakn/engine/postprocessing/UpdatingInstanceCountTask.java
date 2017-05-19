@@ -112,20 +112,22 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
         Lock engineLock = LockProvider.getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
 
-        //Check if sharding is still needed. Another engine could have sharded whilst waiting for lock
-        if(updateShardCounts(keyspace, conceptId, 0)) {
+        try {
+            //Check if sharding is still needed. Another engine could have sharded whilst waiting for lock
+            if (updateShardCounts(keyspace, conceptId, 0)) {
 
-            //Shard
-            GraphMutators.runGraphMutationWithRetry(keyspace, graph -> {
-                graph.admin().shard(conceptId);
-                graph.admin().commitNoLogs();
-            });
+                //Shard
+                GraphMutators.runGraphMutationWithRetry(keyspace, graph -> {
+                    graph.admin().shard(conceptId);
+                    graph.admin().commitNoLogs();
+                });
 
-            //Update number of shards
-            redis.adjustCount(RedisConnection.getKeyNumShards(keyspace, conceptId), 1);
+                //Update number of shards
+                redis.adjustCount(RedisConnection.getKeyNumShards(keyspace, conceptId), 1);
+            }
+        } finally {
+            engineLock.unlock();
         }
-
-        engineLock.unlock();
     }
 
     private static String getLockingKey(String keyspace, ConceptId conceptId){
