@@ -29,6 +29,7 @@ import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import mjson.Json;
 import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,8 +43,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_TASK_DELAY;
-
 /**
  * <p>
  *     Task that control when postprocessing starts.
@@ -56,7 +55,7 @@ import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_TASK_DELAY;
  * @author alexandraorth, fppt
  */
 public class PostProcessingTask implements BackgroundTask {
-    private static final int PP_TASK_DELAY_MS = GraknEngineConfig.getInstance().getPropertyAsInt(POST_PROCESSING_TASK_DELAY);
+    private static final int PP_TASK_DELAY_MS = GraknEngineConfig.getInstance().getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
     private static final String JOB_FINISHED = "Post processing Job [{}] completed for indeces and ids: [{}]";
     private static final String LOCK_KEY = "/post-processing-lock";
@@ -258,5 +257,19 @@ public class PostProcessingTask implements BackgroundTask {
                 creator.getName(),
                 TaskSchedule.at(Instant.now().plusMillis(PP_TASK_DELAY_MS)),
                 TaskState.Priority.LOW);
+    }
+
+    /**
+     * Helper method which creates the task config needed in order to execute a PP task
+     *
+     * @param keyspace The keyspace of the graph to execute this on.
+     * @param config The config which contains the concepts to post process
+     * @return The task configuration encapsulating the above details in a manner executable by the task runner
+     */
+    public static TaskConfiguration createConfig(String keyspace, String config){
+        Json postProcessingConfiguration = Json.object();
+        postProcessingConfiguration.set(REST.Request.KEYSPACE, keyspace);
+        postProcessingConfiguration.set(REST.Request.COMMIT_LOG_FIXING, Json.read(config).at(REST.Request.COMMIT_LOG_FIXING));
+        return TaskConfiguration.of(postProcessingConfiguration);
     }
 }

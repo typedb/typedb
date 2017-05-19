@@ -24,10 +24,12 @@ import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.REST;
+import mjson.Json;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -147,5 +149,32 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
     @Override
     public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
         throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be resumed");
+    }
+
+    /**
+     * Helper method which creates PP Task States.
+     *
+     * @param creator The class which is creating the task
+     * @return The executable postprocessing task state
+     */
+    public static TaskState createTask(Class creator){
+        return TaskState.of(UpdatingInstanceCountTask.class,
+                creator.getName(),
+                TaskSchedule.now(),
+                TaskState.Priority.HIGH);
+    }
+
+    /**
+     * Helper method which creates the task config needed in order to execute the updating count task
+     *
+     * @param keyspace The keyspace of the graph to execute this on.
+     * @param config The config which contains the concepts with updated counts
+     * @return The task configuration encapsulating the above details in a manner executable by the task runner
+     */
+    public static TaskConfiguration createConfig(String keyspace, String config){
+        Json countingConfiguration = Json.object();
+        countingConfiguration.set(REST.Request.KEYSPACE, keyspace);
+        countingConfiguration.set(REST.Request.COMMIT_LOG_COUNTING, Json.read(config).at(REST.Request.COMMIT_LOG_COUNTING));;
+        return TaskConfiguration.of(countingConfiguration);
     }
 }

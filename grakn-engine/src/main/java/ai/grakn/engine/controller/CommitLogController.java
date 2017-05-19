@@ -23,13 +23,11 @@ import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import mjson.Json;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -43,7 +41,6 @@ import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_TASK_DELAY;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 
 /**
@@ -87,26 +84,19 @@ public class CommitLogController {
                 .orElse(GraknEngineConfig.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY));
 
         // Instances to post process
-        Json postProcessingConfiguration = Json.object();
-        postProcessingConfiguration.set(KEYSPACE, keyspace);
-        postProcessingConfiguration.set(COMMIT_LOG_FIXING, Json.read(req.body()).at(COMMIT_LOG_FIXING));
-
-        TaskState postProcessingTask = PostProcessingTask.createTask(this.getClass());
+        TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass());
+        TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(keyspace, req.body());
 
         //Instances to count
-        Json countingConfiguration = Json.object();
-        countingConfiguration.set(KEYSPACE, keyspace);
-        countingConfiguration.set(COMMIT_LOG_COUNTING, Json.read(req.body()).at(COMMIT_LOG_COUNTING));
-
-        TaskState countingTask = TaskState.of(
-                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now(), TaskState.Priority.HIGH);
+        TaskState countingTaskState = UpdatingInstanceCountTask.createTask(this.getClass());
+        TaskConfiguration countingTaskConfiguration = UpdatingInstanceCountTask.createConfig(keyspace, req.body());
 
         // Send two tasks to the pipeline
-        manager.addTask(postProcessingTask, TaskConfiguration.of(postProcessingConfiguration));
-        manager.addTask(countingTask, TaskConfiguration.of(countingConfiguration));
+        manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration);
+        manager.addTask(countingTaskState, countingTaskConfiguration);
 
 
 
-        return "PP Task [ " + postProcessingTask.getId().getValue() + " ] and Counting task [" + countingTask.getId().getValue() + "] created for graph [" + keyspace + "]";
+        return "PP Task [ " + postProcessingTaskState.getId().getValue() + " ] and Counting task [" + countingTaskState.getId().getValue() + "] created for graph [" + keyspace + "]";
     }
 }
