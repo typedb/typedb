@@ -38,7 +38,6 @@ import javax.ws.rs.Path;
 import java.util.Optional;
 
 import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
-import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_TASK_DELAY;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
@@ -50,8 +49,6 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
  */
 //TODO Implement delete
 public class CommitLogController {
-
-    private final int PP_TASK_DELAY_MS = GraknEngineConfig.getInstance().getPropertyAsInt(POST_PROCESSING_TASK_DELAY);
     private final TaskManager manager;
 
     public CommitLogController(Service spark, TaskManager manager){
