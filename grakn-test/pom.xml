@@ -38,6 +38,21 @@
     <dependencies>
         <dependency>
             <groupId>ai.grakn</groupId>
+            <artifactId>grakn-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>        
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-graql</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
             <artifactId>grakn-engine</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

@@ -27,6 +27,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
+import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 

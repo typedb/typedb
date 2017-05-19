@@ -1,3 +1,20 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
 package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
@@ -55,15 +72,15 @@ public abstract class GraknTestEnv {
      * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
      */
     static GraknEngineServer startEngine(String taskManagerClass, int port) throws Exception {
-    	// To ensure consistency b/w test profiles and configuration files, when not using Titan
-    	// for a unit tests in an IDE, add the following option:
-    	// -Dgrakn.conf=../conf/test/tinker/grakn.properties
-    	//
-    	// When using titan, add -Dgrakn.test-profile=titan
-    	//
-    	// The reason is that the default configuration of Grakn uses the Titan factory while the default
-    	// test profile is tinker: so when running a unit test within an IDE without any extra parameters,
-    	// we end up wanting to use the TitanFactory but without starting Cassandra first.
+        // To ensure consistency b/w test profiles and configuration files, when not using Titan
+        // for a unit tests in an IDE, add the following option:
+        // -Dgrakn.conf=../conf/test/tinker/grakn.properties
+        //
+        // When using titan, add -Dgrakn.test-profile=titan
+        //
+        // The reason is that the default configuration of Grakn uses the Titan factory while the default
+        // test profile is tinker: so when running a unit test within an IDE without any extra parameters,
+        // we end up wanting to use the TitanFactory but without starting Cassandra first.
         LOG.info("starting engine...");
 
         ensureCassandraRunning();
@@ -153,7 +170,12 @@ public abstract class GraknTestEnv {
             //noinspection unchecked
             cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
 
-            try {Thread.sleep(5000);} catch(InterruptedException ex) { LOG.info("Thread sleep interrupted."); }
+            try {
+                Thread.sleep(5000);
+            } 
+            catch(InterruptedException ex) { 
+                LOG.info("Thread sleep interrupted."); 
+            }
         }
         catch (Exception e) {
             throw new RuntimeException(e);
