@@ -110,10 +110,9 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
      */
     private static void shardConcept(String keyspace, ConceptId conceptId){
         Lock engineLock = LockProvider.getLock(getLockingKey());
+        engineLock.lock(); //Try to get the lock
 
         try {
-            engineLock.lock(); //Try to get the lock
-
             //Check if sharding is still needed. Another engine could have sharded whilst waiting for lock
             if (updateShardCounts(keyspace, conceptId, 0)) {
 
