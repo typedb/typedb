@@ -28,7 +28,7 @@ import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
-import com.google.common.collect.Iterators;
+
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,35 +103,32 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         InferenceRule rule = rc.getRule();
         Unifier ruleUnifier = rc.getRuleUnifier();
         Unifier permutationUnifier = rc.getPermutationUnifier();
+
         LOG.trace("Applying rule to: " + query +
                 rule + "\n" +
                 "t = " + ruleUnifier + "\n" +
                 "tp = " + permutationUnifier);
 
         //delta' = theta . thetaP . delta
+        Answer sub = query.getSubstitution();
         Unifier uInv = ruleUnifier.inverse();
         Answer partialSubPrime = query.getSubstitution()
                 .unify(permutationUnifier)
                 .unify(uInv);
 
+        Set<Var> queryVars = query.getVarNames();
         Set<Var> headVars = rule.getHead().getVarNames();
-        Iterator<Answer> baseIterator = rule.getBody().iterator(partialSubPrime, subGoals, cache);
-
+        ReasonerQueryIterator baseIterator = rule.getBody().iterator(partialSubPrime, subGoals, cache);
         //transform the rule answer to the answer to the query
-        return Iterators.transform(
-                baseIterator,
-                a -> {
-                    if (a == null) return null;
-                    else {
-                        return a
-                                .filterVars(headVars)
-                                .unify(ruleUnifier)
-                                .unify(permutationUnifier)
-                                .merge(query.getSubstitution())
-                                .filterVars(query.getVarNames())
-                                .explain(new RuleExplanation(rule));
-                    }
-                });
+        return baseIterator.hasStream()
+                .map(a -> a.filterVars(headVars))
+                .map(a -> a.unify(ruleUnifier))
+                .map(a -> a.unify(permutationUnifier))
+                .filter(a -> !a.isEmpty())
+                .map(a -> a.merge(sub))
+                .map(a -> a.filterVars(queryVars))
+                .map(a -> a.explain(new RuleExplanation(rule)))
+                .iterator();
     }
 
     @Override

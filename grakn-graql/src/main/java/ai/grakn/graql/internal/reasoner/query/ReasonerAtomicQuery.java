@@ -247,8 +247,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @return answers from rule resolution
      */
     private Stream<Answer> resolveViaRule(InferenceRule rule,
-                                          Unifier u,
-                                          Unifier pu,
+                                          Unifier ruleUnifier,
+                                          Unifier permutationUnifier,
                                           Set<ReasonerAtomicQuery> subGoals,
                                           Cache<ReasonerAtomicQuery, ?> cache,
                                           Cache<ReasonerAtomicQuery, ?> dCache,
@@ -258,8 +258,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Atom atom = this.getAtom();
 
         LOG.trace("Applying rule to: " + this + rule);
-        LOG.trace("t: " + u);
-        LOG.trace("tp: " + pu);
+        LOG.trace("t: " + ruleUnifier);
+        LOG.trace("tp: " + permutationUnifier);
 
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
@@ -289,11 +289,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         //unify answers
         boolean isHeadEquivalent = this.isEquivalent(ruleHead);
-        Set<Var> queryVars = this.getVarNames().size() < ruleHead.getVarNames().size()? u.keySet() : ruleHead.getVarNames();
+        Set<Var> queryVars = this.getVarNames().size() < ruleHead.getVarNames().size()? ruleUnifier.keySet() : ruleHead.getVarNames();
         answers = answers
                 .map(a -> a.filterVars(queryVars))
-                .map(a -> a.unify(u))
-                .map(a -> a.unify(pu));
+                .map(a -> a.unify(ruleUnifier))
+                .map(a -> a.unify(permutationUnifier))
+                .filter(a -> !a.isEmpty());
 
         //if query not exactly equal to the rule head, do some conversion
         return  isHeadEquivalent? dCache.record(this, answers) : dCache.record(this, getFilteredAnswerStream(answers));

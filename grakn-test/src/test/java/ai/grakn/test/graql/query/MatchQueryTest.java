@@ -243,10 +243,24 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testValueEqualsVarQuery() {
+    public void whenQueryingForResourcesWithEqualValues_ResultsAreCorrect() {
         MatchQuery query = qb.match(var("x").val(var("y")));
 
         assertThat(query.execute(), hasSize(greaterThan(10)));
+
+        query.forEach(result -> {
+            Concept x = result.get("x");
+            Concept y = result.get("y");
+            assertEquals(x.asResource().getValue(), y.asResource().getValue());
+        });
+    }
+
+    @Test
+    public void whenQueryingForTitlesWithEqualValues_ResultsAreCorrect() {
+        // This is an edge-case which fooled the resource-index optimiser
+        MatchQuery query = qb.match(var("x").isa("title").val(var("y")));
+
+        assertThat(query.execute(), hasSize(greaterThan(3)));
 
         query.forEach(result -> {
             Concept x = result.get("x");

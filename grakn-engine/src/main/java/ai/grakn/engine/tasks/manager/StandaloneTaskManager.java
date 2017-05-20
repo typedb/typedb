@@ -86,7 +86,12 @@ public class StandaloneTaskManager implements TaskManager {
         schedulingService = Executors.newScheduledThreadPool(1);
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
 
-        LockProvider.instantiate((lockName) -> new NonReentrantLock());
+        LockProvider.instantiate((lockName, existingLock) -> {
+            if(existingLock != null){
+                return existingLock;
+            }
+            return new NonReentrantLock();
+        });
     }
 
     @Override
@@ -176,7 +181,7 @@ public class StandaloneTaskManager implements TaskManager {
 
                     saveState(task);
 
-                    completed = runningTask.start(saveCheckpoint(task), configuration);
+                    completed = runningTask.start(saveCheckpoint(task), configuration, this::addTask);
                 }
 
                 if (completed) {

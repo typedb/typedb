@@ -63,20 +63,7 @@
                                 <argument>run</argument>
                                 <argument>test-coverage</argument>
                             </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>npm coverage</id>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <phase>verify</phase>
-                        <configuration>
-                            <executable>npm</executable>
-                            <arguments>
-                                <argument>run</argument>
-                                <argument>coverage</argument>
-                            </arguments>
+                            <skip>${skipTests}</skip>
                         </configuration>
                     </execution>
                     <execution>

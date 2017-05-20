@@ -18,13 +18,7 @@
 
 package ai.grakn.engine.tasks;
 
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
-import ai.grakn.engine.tasks.connection.ZookeeperConnection;
-import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
-import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
-
-import static ai.grakn.engine.GraknEngineConfig.USE_ZOOKEEPER_STORAGE;
 
 /**
  * <p>
@@ -59,14 +53,6 @@ public interface TaskManager {
     TaskStateStorage storage();
 
     // TODO: Add 'pause' and 'restart' methods
-
-    default TaskStateStorage chooseStorage(GraknEngineConfig properties, ZookeeperConnection zookeeper){
-        if(properties.getPropertyAsBool(USE_ZOOKEEPER_STORAGE)){
-            return new TaskStateZookeeperStore(zookeeper);
-        } else {
-            return new TaskStateGraphStore();
-        }
-    }
 
     void close();
 }
