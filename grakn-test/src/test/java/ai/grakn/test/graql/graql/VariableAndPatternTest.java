@@ -25,6 +25,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.test.GraphContext;
+
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;

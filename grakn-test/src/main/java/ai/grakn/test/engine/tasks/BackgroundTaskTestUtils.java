@@ -55,6 +55,8 @@ import static java.util.stream.Stream.generate;
 
 /**
  * Class holding useful methods for use throughout background task tests
+ * 
+ * @author alex
  */
 public class BackgroundTaskTestUtils {
 

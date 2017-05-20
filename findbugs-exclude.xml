@@ -10,6 +10,11 @@
         <Class name="~ai\.grakn\.engine\.tasks\.mock\..*"/>
     </Match>
 
+    <!-- Exclude test supporting classes-->
+    <Match>
+        <Class name="~ai\.grakn\.test\..*"/>
+    </Match>
+
     <!-- Exclude a lot of bugs we can't be bothered to fix -->
     <!-- TODO: Re-enable these -->
 

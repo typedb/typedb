@@ -30,6 +30,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.test.GraphContext;
+
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;

@@ -40,6 +40,11 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+/**
+ * TaskStates 
+ * 
+ * @author alex
+ */
 public class TaskStates extends Generator<TaskState> {
 
     // TODO: make this generate more classes
@@ -72,6 +77,12 @@ public class TaskStates extends Generator<TaskState> {
         this.classes = withClass.value();
     }
 
+    /**
+     * WithClass
+     * 
+     * @author alex
+     *
+     */
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
