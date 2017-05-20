@@ -39,6 +39,16 @@ public class ExceptionWrapper {
         }
     }
 
+    public static void rethrow(Throwable t) {
+        if (t instanceof Error) {
+            throw (Error) t;
+        } else if (t instanceof RuntimeException) {
+            throw (RuntimeException) t;
+        } else {
+            throw new RuntimeException(t);
+        }
+    }
+    
     /**
      * Function interface that throws exception for use in the noThrow function
      * @param <E>
