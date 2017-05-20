@@ -16,13 +16,19 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graphs;
+package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 
+/**
+ * SNBGraph
+ * 
+ * @author Sheldon
+ *
+ */
 public class SNBGraph extends TestGraph{
 
     public static Consumer<GraknGraph> get() {
