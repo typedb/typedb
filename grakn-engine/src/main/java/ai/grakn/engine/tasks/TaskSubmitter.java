@@ -18,35 +18,24 @@
 
 package ai.grakn.engine.tasks;
 
-import ai.grakn.engine.TaskId;
+import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 
 /**
  * <p>
- *     The base TaskManager interface.
+ *     Submits Background Tasks for processing
  * </p>
  *
  * <p>
- *     Provides common methods for scheduling tasks for execution and stopping task execution.
+ *     Allows tasks to be submitted for processing. Any task submitted is added to {@link TaskStateStorage}
+ *     and is later executed by Task runner such as {@link SingleQueueTaskRunner}.
  * </p>
  *
- * @author Denis Lobanov, alexandraorth
+ * @author fppt
  */
-public interface TaskManager extends TaskSubmitter{
-
+public interface TaskSubmitter {
     /**
-     * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the
-     * task is killed afterwards.
-     * @param id ID of task to stop.
+     * Schedule a {@link BackgroundTask} for execution.
+     * @param taskState Task to execute
      */
-    void stopTask(TaskId id);
-
-    /**
-     * Return the StateStorage instance that is used by this class.
-     * @return A StateStorage instance.
-     */
-    TaskStateStorage storage();
-
-    // TODO: Add 'pause' and 'restart' methods
-
-    void close();
+    void addTask(TaskState taskState, TaskConfiguration configuration);
 }
