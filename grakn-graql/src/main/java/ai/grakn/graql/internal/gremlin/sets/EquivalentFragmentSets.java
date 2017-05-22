@@ -35,7 +35,6 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.ResourceIndexFragmentSet.applyResourceIndexOptimisation;
-import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutOptimisation;
 
 /**
  * Factory class for producing instances of {@link EquivalentFragmentSet}.
@@ -52,20 +51,6 @@ public class EquivalentFragmentSets {
      */
     public static EquivalentFragmentSet plays(Var type, Var roleType, boolean required) {
         return new PlaysFragmentSet(type, roleType, required);
-    }
-
-    /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is a relation with a casting.
-     */
-    public static EquivalentFragmentSet casting(Var relation, Var casting) {
-        return new CastingFragmentSet(relation, casting);
-    }
-
-    /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is a casting connected to a role-player.
-     */
-    public static EquivalentFragmentSet rolePlayer(Var casting, Var rolePlayer) {
-        return new RolePlayerFragmentSet(casting, rolePlayer);
     }
 
     /**
@@ -178,8 +163,7 @@ public class EquivalentFragmentSets {
 
         // TODO: Create a real interface for these when there are more of them
         ImmutableList<Supplier<Boolean>> optimisations = ImmutableList.of(
-                () -> applyResourceIndexOptimisation(fragmentSets, graph),
-                () -> applyShortcutOptimisation(fragmentSets, graph)
+                () -> applyResourceIndexOptimisation(fragmentSets, graph)
         );
 
         // Repeatedly apply optimisations until they don't alter the query

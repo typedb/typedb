@@ -52,14 +52,10 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.gremlin.GraqlMatchers.feature;
 import static ai.grakn.graql.internal.gremlin.GraqlMatchers.satisfies;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.id;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inIsa;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRelates;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsa;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outRelates;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outRolePlayer;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.value;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -154,26 +150,6 @@ public class GraqlTraversalTest {
         GraqlTraversal shortcutFirst = traversal(outIsa(y, z), inShortcut(y, b), outShortcut(b, x), value(x, gt(1).admin()));
 
         assertFaster(valueFilterFirst, shortcutFirst);
-    }
-
-    @Test
-    public void testCheckDistinctCastingEarlyFaster() {
-        Var c1 = Var.of("c1");
-        Var c2 = Var.of("c2");
-        Var r = Var.of("r");
-
-        Fragment neq = Fragments.neq(c2, c1);
-        Fragment inRolePlayer = inRolePlayer(x, c1);
-        Fragment inCasting = inCasting(c1, r);
-        Fragment outCasting = outCasting(r, c2);
-        Fragment outRolePlayer = outRolePlayer(c2, y);
-
-        GraqlTraversal distinctEarly =
-                traversal(xId, inRolePlayer, inCasting, outCasting, neq, outRolePlayer);
-        GraqlTraversal distinctLate =
-                traversal(xId, inRolePlayer, inCasting, outCasting, outRolePlayer, neq);
-
-        assertFaster(distinctEarly, distinctLate);
     }
 
     @Test

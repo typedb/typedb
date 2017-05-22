@@ -50,9 +50,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.casting;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.isaCastings;
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUserDefinedIdPredicate;
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
@@ -136,10 +135,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin rolePlayer) {
-        return Stream.of(
-                casting(start, casting),
-                rolePlayer(casting, rolePlayer.getVarName())
-        );
+        return Stream.of(shortcut(start, casting, rolePlayer.getVarName()));
     }
 
     /**
@@ -149,8 +145,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
         return Stream.of(
-                casting(start, casting),
-                rolePlayer(casting, rolePlayer.getVarName()),
+                shortcut(start, casting, rolePlayer.getVarName()),
                 isaCastings(casting, roleType.getVarName())
         );
     }

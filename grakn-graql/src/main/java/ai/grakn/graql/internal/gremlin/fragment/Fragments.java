@@ -115,22 +115,6 @@ public class Fragments {
         return new OutPlaysFragment(start, end, required);
     }
 
-    public static Fragment inCasting(Var start, Var end) {
-        return new InCastingFragment(start, end);
-    }
-
-    public static Fragment outCasting(Var start, Var end) {
-        return new OutCastingFragment(start, end);
-    }
-
-    public static Fragment inRolePlayer(Var start, Var end) {
-        return new InRolePlayerFragment(start, end);
-    }
-
-    public static Fragment outRolePlayer(Var start, Var end) {
-        return new OutRolePlayerFragment(start, end);
-    }
-
     public static Fragment id(Var start, ConceptId id) {
         return new IdFragment(start, id);
     }
