@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.tasks;
 
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -32,10 +31,10 @@ public interface BackgroundTask {
      * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
      *                       the task to resume from this point should it crash.
      * @param configuration The configuration needed to execute the task
-     * @param taskSubmitter a function which can be used to submit more tasks as a result of completing this task
+     * @param taskSubmitter Allows followup tasks to be submitted for processing
      * @return true if the task successfully completed, or false if it was stopped.
      */
-    boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, BiConsumer<TaskState, TaskConfiguration> taskSubmitter);
+    boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter);
 
     /**
      * Called to stop execution of the task, may be called on a running or paused task.
