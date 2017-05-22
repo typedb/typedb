@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeId;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -41,7 +42,7 @@ public class SumMapReduce extends StatisticsMapReduce<Number> {
     public SumMapReduce() {
     }
 
-    public SumMapReduce(Set<TypeId> selectedTypeIds, String resourceDataType, String degreeKey) {
+    public SumMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreeKey) {
         super(selectedTypeIds, resourceDataType, degreeKey);
     }
 
