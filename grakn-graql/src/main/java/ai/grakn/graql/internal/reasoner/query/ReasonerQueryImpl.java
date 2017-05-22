@@ -83,6 +83,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
 
+    private int priority = Integer.MAX_VALUE;
+
     protected ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
         this.graph = graph;
         atomSet.addAll(AtomicFactory.createAtomSet(pattern, this));
@@ -107,7 +109,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public String toString(){
-        return getAtoms().stream().filter(Atomic::isAtom).map(Atomic::toString).collect(Collectors.joining(", "));
+        return atomSet.stream().filter(Atomic::isAtom).map(Atomic::toString).collect(Collectors.joining(", "));
     }
 
     @Override
@@ -133,8 +135,20 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return hashCode;
     }
 
+    /**
+     * @return the normalised priority of this query based on its atom content
+     */
+    public int resolutionPriority(){
+        if (priority == Integer.MAX_VALUE) {
+            Set<Atom> selectableAtoms = selectAtoms();
+            int totalPriority = selectableAtoms.stream().mapToInt(Atom::resolutionPriority).sum();
+            priority = totalPriority/selectableAtoms.size();
+        }
+        return priority;
+    }
+
     private void inferTypes() {
-        getAtoms().stream()
+        atomSet.stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .forEach(Atom::inferTypes);
     }
@@ -167,20 +181,18 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     private boolean isTransitive() {
-        return getAtoms().stream().filter(this::containsEquivalentAtom).count() == 2;
+        return atomSet.stream().filter(this::containsEquivalentAtom).count() == 2;
     }
 
     boolean isAtomic() {
-        return getAtoms().stream().filter(Atomic::isSelectable).count() == 1;
+        return atomSet.stream().filter(Atomic::isSelectable).count() == 1;
     }
 
     /**
      * @return atom set constituting this query
      */
     @Override
-    public Set<Atomic> getAtoms() {
-        return Sets.newHashSet(atomSet);
-    }
+    public Set<Atomic> getAtoms() { return atomSet;}
 
     private List<Atom> getPrioritisedAtoms(){
         return selectAtoms().stream()
@@ -206,7 +218,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return set of id predicates contained in this query
      */
     public Set<IdPredicate> getIdPredicates() {
-        return getAtoms().stream()
+        return atomSet.stream()
                 .filter(Atomic::isPredicate).map(at -> (Predicate) at)
                 .filter(Predicate::isIdPredicate).map(predicate -> (IdPredicate) predicate)
                 .collect(Collectors.toSet());
@@ -216,7 +228,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return set of value predicates contained in this query
      */
     public Set<ValuePredicate> getValuePredicates() {
-        return getAtoms().stream()
+        return atomSet.stream()
                 .filter(Atomic::isPredicate).map(at -> (Predicate) at)
                 .filter(Predicate::isValuePredicate).map(at -> (ValuePredicate) at)
                 .collect(Collectors.toSet());
@@ -236,7 +248,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return set of filter atoms (currently only NotEquals) contained in this query
      */
     public Set<NotEquals> getFilters() {
-        return getAtoms().stream()
+        return atomSet.stream()
                 .filter(at -> at.getClass() == NotEquals.class)
                 .map(at -> (NotEquals) at)
                 .collect(Collectors.toSet());
@@ -386,7 +398,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return selected atoms
      */
     public Set<Atom> selectAtoms() {
-        Set<Atom> atoms = new HashSet<>(atomSet).stream()
+        Set<Atom> atoms = atomSet.stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .collect(Collectors.toSet());
         if (atoms.size() == 1) return atoms;

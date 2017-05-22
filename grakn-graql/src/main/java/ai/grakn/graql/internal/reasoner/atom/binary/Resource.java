@@ -172,25 +172,33 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
     @Override
     public int resolutionPriority(){
-        int priority = super.resolutionPriority();
-        ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-        Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(Collectors.toSet());
+        if (priority == Integer.MAX_VALUE) {
+            priority = super.resolutionPriority();
+            ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
+            Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(Collectors.toSet());
 
-        priority += ResolutionStrategy.IS_RESOURCE_ATOM;
+            priority += ResolutionStrategy.IS_RESOURCE_ATOM;
 
-        if (vps.isEmpty()){
-            if (parent.getIdPredicate(getValueVariable()) != null) priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
-            else priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
-        } else {
-            for (ValuePredicateAdmin vp : vps) {
-                if (vp.isSpecific()) {
+            if (vps.isEmpty()) {
+                if (parent.getIdPredicate(getValueVariable()) != null) {
                     priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
-                } else if (vp.getInnerVar().isPresent()) {
-                    VarPatternAdmin innerVar = vp.getInnerVar().orElse(null);
-                    if (parent.getIdPredicate(innerVar.getVarName()) != null) priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
-                    else priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
-                } else {
-                    priority += ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
+                } else{
+                    priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
+                }
+            } else {
+                for (ValuePredicateAdmin vp : vps) {
+                    if (vp.isSpecific()) {
+                        priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+                    } else if (vp.getInnerVar().isPresent()) {
+                        VarPatternAdmin innerVar = vp.getInnerVar().orElse(null);
+                        if (parent.getIdPredicate(innerVar.getVarName()) != null) {
+                            priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+                        } else {
+                            priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
+                        }
+                    } else {
+                        priority += ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
+                    }
                 }
             }
         }
