@@ -42,7 +42,12 @@ public class LongMacro implements Macro<Long> {
             throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
         }
 
-        return Long.parseLong(values.get(0).toString());
+        String longValue = values.get(0).toString();
+        try {
+            return Long.parseLong(longValue);
+        } catch (NumberFormatException e){
+            throw new IllegalArgumentException("Value [" + longValue + "] is not a long in macro " + name());
+        }
     }
 
     @Override
