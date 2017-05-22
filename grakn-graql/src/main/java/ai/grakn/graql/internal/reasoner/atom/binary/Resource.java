@@ -64,7 +64,6 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
         a.getMultiPredicate().stream()
                 .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
                 .forEach(multiPredicate::add);
-        this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
     }
 
     @Override

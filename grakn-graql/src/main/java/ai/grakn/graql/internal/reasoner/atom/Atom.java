@@ -56,9 +56,10 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesCompatibl
  */
 public abstract class Atom extends AtomicBase {
 
-    protected Type type = null;
+    private Type type = null;
     protected ConceptId typeId = null;
     protected int priority = Integer.MAX_VALUE;
+    private Set<InferenceRule> applicableRules = null;
 
     protected Atom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
@@ -129,21 +130,18 @@ public abstract class Atom extends AtomicBase {
      * @return set of applicable rules - does detailed (slow) check for applicability
      */
     public Set<InferenceRule> getApplicableRules() {
-        return getPotentialRules().stream()
-                .map(rule -> new InferenceRule(rule, graph()))
-                .filter(this::isRuleApplicable)
-                .collect(Collectors.toSet());
+        if (applicableRules == null) {
+            applicableRules = getPotentialRules().stream()
+                    .map(rule -> new InferenceRule(rule, graph()))
+                    .filter(this::isRuleApplicable)
+                    .collect(Collectors.toSet());
+        }
+        return applicableRules;
     }
 
     @Override
     public boolean isRuleResolvable() {
-        Type type = getType();
-        if (type != null) {
-            return !this.getPotentialRules().isEmpty()
-                    && !this.getApplicableRules().isEmpty();
-        } else {
-            return !this.getApplicableRules().isEmpty();
-        }
+        return !this.getApplicableRules().isEmpty();
     }
 
     @Override
