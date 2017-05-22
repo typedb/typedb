@@ -84,11 +84,11 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     }
 
     public MedianVertexProgram(Set<TypeId> selectedTypeId, Set<TypeId> statisticsResourceTypeIds,
-                               String resourceDataType, String randomId) {
+                               ResourceType.DataType resourceDataType, String randomId) {
         this.selectedTypes = selectedTypeId;
         this.statisticsResourceTypeIds = statisticsResourceTypeIds;
 
-        String resourceDataTypeValue = resourceDataType.equals(ResourceType.DataType.LONG.getName()) ?
+        String resourceDataTypeValue = resourceDataType.equals(ResourceType.DataType.LONG) ?
                 Schema.ConceptProperty.VALUE_LONG.name() : Schema.ConceptProperty.VALUE_DOUBLE.name();
         persistentProperties.put(RESOURCE_DATA_TYPE, resourceDataTypeValue);
 

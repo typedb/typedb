@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeId;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -40,7 +41,7 @@ public class MaxMapReduce extends StatisticsMapReduce<Number> {
     public MaxMapReduce() {
     }
 
-    public MaxMapReduce(Set<TypeId> selectedTypeIds, String resourceDataType, String degreeKey) {
+    public MaxMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreeKey) {
         super(selectedTypeIds, resourceDataType, degreeKey);
     }
 

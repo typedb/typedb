@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeId;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -46,7 +47,7 @@ public class StdMapReduce extends StatisticsMapReduce<Map<String, Double>> {
     public StdMapReduce() {
     }
 
-    public StdMapReduce(Set<TypeId> selectedTypeIds, String resourceDataType, String degreeKey) {
+    public StdMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreeKey) {
         super(selectedTypeIds, resourceDataType, degreeKey);
     }
 
