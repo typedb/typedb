@@ -47,8 +47,8 @@ public class StdMapReduce extends StatisticsMapReduce<Map<String, Double>> {
     public StdMapReduce() {
     }
 
-    public StdMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreeKey) {
-        super(selectedTypeIds, resourceDataType, degreeKey);
+    public StdMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreePropertyKey) {
+        super(selectedTypeIds, resourceDataType, degreePropertyKey);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class StdMapReduce extends StatisticsMapReduce<Map<String, Double>> {
         if (resourceIsValid(vertex)) {
             Map<String, Double> tuple = new HashMap<>(3);
             Double degree =
-                    ((Long) vertex.value(degreeKey)).doubleValue();
+                    ((Long) vertex.value(degreePropertyKey)).doubleValue();
             double value = resourceValue(vertex).doubleValue();
             tuple.put(SUM, value * degree);
             tuple.put(SQUARE_SUM, value * value * degree);

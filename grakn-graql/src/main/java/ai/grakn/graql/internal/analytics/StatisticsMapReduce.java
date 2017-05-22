@@ -35,26 +35,26 @@ import java.util.Set;
 
 abstract class StatisticsMapReduce<T> extends GraknMapReduce<T> {
 
-    String degreeKey;
+    String degreePropertyKey;
 
     StatisticsMapReduce() {
 
     }
 
-    StatisticsMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreeKey) {
+    StatisticsMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreePropertyKey) {
         super(selectedTypeIds, resourceDataType);
-        this.degreeKey = degreeKey;
-        this.persistentProperties.put(DegreeVertexProgram.DEGREE, degreeKey);
+        this.degreePropertyKey = degreePropertyKey;
+        this.persistentProperties.put(DegreeVertexProgram.DEGREE, degreePropertyKey);
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
-        degreeKey = (String) persistentProperties.get(DegreeVertexProgram.DEGREE);
+        degreePropertyKey = (String) persistentProperties.get(DegreeVertexProgram.DEGREE);
     }
 
     boolean resourceIsValid(Vertex vertex) {
         boolean isSelected = selectedTypes.contains(Utility.getVertexTypeId(vertex));
-        return isSelected && vertex.<Long>value(degreeKey) > 0;
+        return isSelected && vertex.<Long>value(degreePropertyKey) > 0;
     }
 }

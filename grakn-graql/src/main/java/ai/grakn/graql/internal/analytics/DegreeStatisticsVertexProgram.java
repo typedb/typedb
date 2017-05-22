@@ -43,7 +43,7 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     // element key
     static final String VISITED = "degreeStatisticsVertexProgram.visited";
 
-    private String visited;
+    private String visitedPropertyKey;
 
     // Needed internally for OLAP tasks
     public DegreeStatisticsVertexProgram() {
@@ -51,19 +51,19 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
 
     public DegreeStatisticsVertexProgram(Set<TypeId> types, Set<TypeId> ofTypeIDs, String randomId) {
         super(types, ofTypeIDs, randomId);
-        visited = VISITED + randomId;
-        this.persistentProperties.put(VISITED, visited);
+        visitedPropertyKey = VISITED + randomId;
+        this.persistentProperties.put(VISITED, visitedPropertyKey);
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
-        visited = (String) this.persistentProperties.get(VISITED);
+        visitedPropertyKey = (String) this.persistentProperties.get(VISITED);
     }
 
     @Override
     public Set<String> getElementComputeKeys() {
-        return Sets.newHashSet(visited, degree);
+        return Sets.newHashSet(visitedPropertyKey, degreePropertyKey);
     }
 
     @Override
@@ -73,16 +73,16 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
                 degreeStatisticsStepInstance(vertex, messenger, selectedTypes, ofTypeIds);
                 break;
             case 1:
-                degreeStatisticsStepCastingIn(vertex, messenger, visited);
+                degreeStatisticsStepCastingIn(vertex, messenger, visitedPropertyKey);
                 break;
             case 2:
                 degreeStatisticsStepRelation(vertex, messenger);
                 break;
             case 3:
-                degreeStatisticsStepCastingOut(vertex, messenger, visited);
+                degreeStatisticsStepCastingOut(vertex, messenger, visitedPropertyKey);
                 break;
             case 4:
-                degreeStatisticsStepResource(vertex, messenger, ofTypeIds, degree);
+                degreeStatisticsStepResource(vertex, messenger, ofTypeIds, degreePropertyKey);
                 break;
             default:
                 throw new RuntimeException("unreachable");

@@ -42,8 +42,8 @@ public class SumMapReduce extends StatisticsMapReduce<Number> {
     public SumMapReduce() {
     }
 
-    public SumMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreeKey) {
-        super(selectedTypeIds, resourceDataType, degreeKey);
+    public SumMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreePropertyKey) {
+        super(selectedTypeIds, resourceDataType, degreePropertyKey);
     }
 
     @Override
@@ -52,7 +52,7 @@ public class SumMapReduce extends StatisticsMapReduce<Number> {
             if (resourceIsValid(vertex)) {
                 emitter.emit(NullObject.instance(),
                         ((Long) vertex.value(Schema.ConceptProperty.VALUE_LONG.name())) *
-                                ((Long) vertex.value(degreeKey)));
+                                ((Long) vertex.value(degreePropertyKey)));
                 return;
             }
             emitter.emit(NullObject.instance(), 0L);
@@ -60,7 +60,7 @@ public class SumMapReduce extends StatisticsMapReduce<Number> {
             if (resourceIsValid(vertex)) {
                 emitter.emit(NullObject.instance(),
                         ((Double) vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name())) *
-                                ((Long) vertex.value(degreeKey)));
+                                ((Long) vertex.value(degreePropertyKey)));
                 return;
             }
             emitter.emit(NullObject.instance(), 0D);

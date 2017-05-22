@@ -47,9 +47,9 @@ public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
     public DegreeDistributionMapReduce() {
     }
 
-    public DegreeDistributionMapReduce(Set<TypeId> selectedTypeIds, String degreeLabel) {
+    public DegreeDistributionMapReduce(Set<TypeId> selectedTypeIds, String degreePropertyKey) {
         super(selectedTypeIds);
-        this.persistentProperties.put(DegreeVertexProgram.DEGREE, degreeLabel);
+        this.persistentProperties.put(DegreeVertexProgram.DEGREE, degreePropertyKey);
     }
 
     @Override
