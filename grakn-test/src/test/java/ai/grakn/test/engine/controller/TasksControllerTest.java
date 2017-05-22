@@ -64,8 +64,6 @@ import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import static com.jayway.restassured.RestAssured.with;
 import static java.time.Instant.now;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.TestCase.fail;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -168,40 +166,23 @@ public class TasksControllerTest {
 
     @Test
     public void afterSendingTaskWithMissingClassName_Grakn400IsThrown(){
-        Response response = send(Json.object().toString(),
-                ImmutableMap.of(
-                        TASK_CREATOR_PARAMETER, this.getClass().getName(),
-                        TASK_RUN_AT_PARAMETER, Long.toString(now().toEpochMilli())
-                )
-        );
+        Response response = sendDefaultMinus(TASK_CLASS_NAME_PARAMETER);
 
-        String exception = response.getBody().as(Json.class, jsonMapper).at("exception").asString();
-        assertThat(exception, containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(TASK_CLASS_NAME_PARAMETER)));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(TASK_CLASS_NAME_PARAMETER)));
         assertThat(response.statusCode(), equalTo(400));
     }
 
     @Test
     public void afterSendingTaskWithMissingCreatedBy_Grakn400IsThrown(){
-        Response response = send(Json.object().toString(),
-                ImmutableMap.of(
-                        TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
-                        TASK_RUN_AT_PARAMETER, Long.toString(now().toEpochMilli())
-                )
-        );
+        Response response = sendDefaultMinus(TASK_CREATOR_PARAMETER);
 
-        String exception = response.getBody().as(Json.class, jsonMapper).at("exception").asString();
-        assertThat(exception, containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(TASK_CREATOR_PARAMETER)));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(TASK_CREATOR_PARAMETER)));
         assertThat(response.statusCode(), equalTo(400));
     }
 
     @Test
     public void afterSendingTaskWithMissingRunAt_Grakn400IsThrown(){
-        Response response = send(Json.object().toString(),
-                ImmutableMap.of(
-                        TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
-                        TASK_CREATOR_PARAMETER, this.getClass().getName()
-                )
-        );
+        Response response = sendDefaultMinus(TASK_RUN_AT_PARAMETER);
 
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(TASK_RUN_AT_PARAMETER)));
         assertThat(response.statusCode(), equalTo(400));
@@ -274,7 +255,7 @@ public class TasksControllerTest {
 
     @Test
     public void afterSendingTaskWithMalformedConfiguration_Grakn400IsThrown(){
-        Response response = send("non-json configuration");
+        Response response = send("non-json configuration", defaultParams());
         assertThat(response.statusCode(), equalTo(400));
     }
 
@@ -399,13 +380,15 @@ public class TasksControllerTest {
         return send(Json.object().toString(), defaultParams());
     }
 
-    private Response send(String configuration){
-        return send(configuration, defaultParams());
-    }
-
     private Response send(TaskState.Priority priority){
         Map<String, String> params = new HashMap<>(defaultParams());
         params.put(TASK_PRIORITY_PARAMETER, priority.name());
+        return send(Json.object().toString(), params);
+    }
+
+    private Response sendDefaultMinus(String property){
+        Map<String, String> params = new HashMap<>(defaultParams());
+        params.remove(property);
         return send(Json.object().toString(), params);
     }
 
