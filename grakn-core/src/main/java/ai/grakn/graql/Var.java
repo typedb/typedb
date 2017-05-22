@@ -19,6 +19,10 @@
 
 package ai.grakn.graql;
 
+import org.apache.commons.lang.StringUtils;
+
+import javax.annotation.Nullable;
+import java.util.UUID;
 import java.util.function.Function;
 
 /**
@@ -63,7 +67,7 @@ public interface Var extends VarPattern {
     String toString();
 
     @Override
-    boolean equals(Object o);
+    boolean equals(@Nullable Object o);
 
     @Override
     int hashCode();
