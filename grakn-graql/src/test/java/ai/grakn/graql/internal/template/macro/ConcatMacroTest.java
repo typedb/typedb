@@ -27,6 +27,7 @@ import org.junit.rules.ExpectedException;
 
 import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class ConcatMacroTest {
 
@@ -51,9 +52,9 @@ public class ConcatMacroTest {
 
     @Test
     public void applyConcatMacroToTwoOrMoreArguments_ResultIsNonNull(){
-        exception.expect(IllegalArgumentException.class);
+        String result = concatMacro.apply(ImmutableList.of("true", "false"));
 
-        concatMacro.apply(ImmutableList.of("true"));
+        assertNotNull(result);
     }
 
     @Test
