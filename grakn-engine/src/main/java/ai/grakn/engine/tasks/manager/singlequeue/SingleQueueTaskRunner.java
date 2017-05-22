@@ -231,7 +231,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
                 LOG.debug("{}\tmarked as running", task);
 
-                completed = runningTask.start(saveCheckpoint(task), configuration, manager::addTask);
+                completed = runningTask.start(saveCheckpoint(task), configuration, manager);
             }
 
             if (completed) {

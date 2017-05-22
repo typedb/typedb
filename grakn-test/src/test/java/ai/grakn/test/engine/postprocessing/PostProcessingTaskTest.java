@@ -22,7 +22,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskSubmitter;
+import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -34,7 +35,6 @@ import org.junit.Test;
 
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static ai.grakn.util.REST.Request.KEYSPACE;
@@ -54,14 +54,14 @@ public class PostProcessingTaskTest {
     private Set<ConceptId> mockResourceSet;
     private TaskConfiguration mockConfiguration;
     private Consumer<TaskCheckpoint> mockConsumer;
-    private BiConsumer<TaskState, TaskConfiguration> mockTaskSubmitter;
+    private TaskSubmitter mockTaskSubmitter;
 
     @Before
     public void mockPostProcessing(){
         mockConsumer = mock(Consumer.class);
         mockCastingIndex = UUID.randomUUID().toString();
         mockResourceIndex = UUID.randomUUID().toString();
-        mockTaskSubmitter = (x, y) -> {};
+        mockTaskSubmitter = mock(StandaloneTaskManager.class);
         mockCastingSet = Sets.newHashSet();
         mockResourceSet = Sets.newHashSet();
         mockConfiguration = mock(TaskConfiguration.class);
