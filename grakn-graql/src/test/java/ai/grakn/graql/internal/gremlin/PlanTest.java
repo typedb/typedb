@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Optional;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsa;
 import static org.junit.Assert.assertEquals;
@@ -45,8 +44,8 @@ public class PlanTest {
         Fragment outIsa = outIsa(y, a);
         outIsa.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
 
-        Fragment inShortcut = Fragments.inShortcut(y, Var.anon(), x, Optional.empty(), Optional.empty());
-        Fragment outShortcut = Fragments.outShortcut(x, Var.anon(), z, Optional.empty(), Optional.empty());
+        Fragment inShortcut = Fragments.inShortcut(y, Var.anon(), x, null, null);
+        Fragment outShortcut = Fragments.outShortcut(x, Var.anon(), z, null, null);
         inShortcut.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
         outShortcut.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
 

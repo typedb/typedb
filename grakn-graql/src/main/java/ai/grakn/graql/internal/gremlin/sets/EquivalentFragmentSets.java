@@ -30,7 +30,6 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -79,7 +78,7 @@ public class EquivalentFragmentSets {
      * An {@link EquivalentFragmentSet} that indicates a shortcut edge between two role-players.
      */
     public static EquivalentFragmentSet shortcut(Var relation, Var edge, Var rolePlayer) {
-        return new ShortcutFragmentSet(relation, edge, rolePlayer, Optional.empty(), Optional.empty());
+        return new ShortcutFragmentSet(relation, edge, rolePlayer, null, null);
     }
 
     /**
