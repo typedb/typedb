@@ -56,8 +56,6 @@ import static mjson.Json.read;
  */
 public class GraknSessionImpl implements GraknSession {
     private final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
-    private static final String TINKER_GRAPH_COMPUTER = "org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer";
-    private static final String COMPUTER = "graph.computer";
     private final String location;
     private final String keyspace;
 
@@ -76,17 +74,17 @@ public class GraknSessionImpl implements GraknSession {
         switch (transactionType){
             case READ:
             case WRITE:
-                graph = getConfiguredFactory().factory.open(transactionType);
+                graph = getConfiguredFactory().open(transactionType);
                 return graph;
             case BATCH:
-                graphBatch = getConfiguredFactory().factory.open(transactionType);
+                graphBatch = getConfiguredFactory().open(transactionType);
                 return graphBatch;
             default:
                 throw new GraphRuntimeException("Unknown type of transaction [" + transactionType.name() + "]");
         }
     }
 
-    private ConfiguredFactory getConfiguredFactory(){
+    private InternalFactory getConfiguredFactory(){
         return configureGraphFactory(keyspace, location, REST.GraphConfig.DEFAULT);
     }
 
@@ -95,9 +93,9 @@ public class GraknSessionImpl implements GraknSession {
      */
     @Override
     public GraknComputer getGraphComputer() {
-        ConfiguredFactory configuredFactory = configureGraphFactory(keyspace, location, REST.GraphConfig.COMPUTER);
-        Graph graph = configuredFactory.factory.getTinkerPopGraph(false);
-        return new GraknComputerImpl(graph, configuredFactory.graphComputer);
+        InternalFactory configuredFactory = configureGraphFactory(keyspace, location, REST.GraphConfig.COMPUTER);
+        Graph graph = configuredFactory.getTinkerPopGraph(false);
+        return new GraknComputerImpl(graph);
     }
 
     @Override
@@ -127,7 +125,7 @@ public class GraknSessionImpl implements GraknSession {
      * @param graphType The type of graph to produce, default, batch, or compute
      * @return A new or existing grakn graph factory with the defined name connecting to the specified remote location
      */
-    static ConfiguredFactory configureGraphFactory(String keyspace, String location, String graphType){
+    static InternalFactory configureGraphFactory(String keyspace, String location, String graphType){
         if(Grakn.IN_MEMORY.equals(location)){
             return configureGraphFactoryInMemory(keyspace);
         } else {
@@ -142,15 +140,13 @@ public class GraknSessionImpl implements GraknSession {
      * @param graphType The type of graph to produce, default, batch, or compute
      * @return A new or existing grakn graph factory with the defined name connecting to the specified remote location
      */
-    private static ConfiguredFactory configureGraphFactoryRemote(String keyspace, String engineUrl, String graphType){
+    private static InternalFactory configureGraphFactoryRemote(String keyspace, String engineUrl, String graphType){
         String restFactoryUri = engineUrl + CONFIGURATION + "?" + GRAPH_CONFIG_PARAM + "=" + graphType;
 
         Properties properties = new Properties();
         properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());
 
-        String computer = properties.get(COMPUTER).toString();
-
-        return new ConfiguredFactory(computer, FactoryBuilder.getFactory(keyspace, engineUrl, properties));
+        return FactoryBuilder.getFactory(keyspace, engineUrl, properties);
     }
 
     /**
@@ -158,23 +154,12 @@ public class GraknSessionImpl implements GraknSession {
      * @param keyspace The keyspace of the graph
      * @return  A new or existing grakn graph factory with the defined name holding the graph in memory
      */
-    private static ConfiguredFactory configureGraphFactoryInMemory(String keyspace){
+    private static InternalFactory configureGraphFactoryInMemory(String keyspace){
         Properties inMemoryProperties = new Properties();
         inMemoryProperties.put(AbstractGraknGraph.SHARDING_THRESHOLD, 100_000);
         inMemoryProperties.put(AbstractGraknGraph.NORMAL_CACHE_TIMEOUT_MS, 30_000);
         inMemoryProperties.put(AbstractGraknGraph.BATCH_CACHE_TIMEOUT_MS, 120_000);
 
-        InternalFactory factory = FactoryBuilder.getGraknGraphFactory(TinkerInternalFactory.class.getName(), keyspace, Grakn.IN_MEMORY, inMemoryProperties);
-        return new ConfiguredFactory(TINKER_GRAPH_COMPUTER, factory);
-    }
-
-    static class ConfiguredFactory {
-        final String graphComputer;
-        final InternalFactory factory;
-
-        ConfiguredFactory(String graphComputer, InternalFactory factory){
-            this.graphComputer = graphComputer;
-            this.factory = factory;
-        }
+        return FactoryBuilder.getGraknGraphFactory(TinkerInternalFactory.class.getName(), keyspace, Grakn.IN_MEMORY, inMemoryProperties);
     }
 }

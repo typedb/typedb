@@ -45,6 +45,7 @@ import java.util.Properties;
  * @author fppt
  */
 public class TitanHadoopInternalFactory extends AbstractInternalFactory<AbstractGraknGraph<HadoopGraph>, HadoopGraph> {
+    private static final String GRAPH_COMPUTER = "ai.grakn.graph.internal.computer.GraknSparkComputer";
     private static final String CLUSTER_KEYSPACE = "titanmr.ioformat.conf.storage.cassandra.keyspace";
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
     private final Logger LOG = LoggerFactory.getLogger(TitanHadoopInternalFactory.class);

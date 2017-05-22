@@ -51,12 +51,11 @@ import java.util.concurrent.ExecutionException;
  */
 public class GraknComputerImpl implements GraknComputer {
     private final Graph graph;
-    private final Class<? extends GraphComputer> graphComputerClass;
+    private static final Class<? extends GraphComputer> graphComputerClass = GraknSparkComputer.class;
     private GraphComputer graphComputer = null;
 
-    public GraknComputerImpl(Graph graph, String graphComputerType) {
+    public GraknComputerImpl(Graph graph) {
         this.graph = graph;
-        this.graphComputerClass = getGraphComputerClass(graphComputerType);
     }
 
     @Override
