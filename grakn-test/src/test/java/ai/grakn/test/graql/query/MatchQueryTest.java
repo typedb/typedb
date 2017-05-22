@@ -538,8 +538,8 @@ public class MatchQueryTest {
     @Test
     public void whenQueryingForSuperRolesAndRelations_TheResultsAreTheSame() {
         assertEquals(
-                qb.match(var("x").rel("work", "y").rel("author", "z").isa("authored-by")).execute(),
-                qb.match(var("x").rel("production-being-directed", "y").rel("director", "z").isa("directed-by")).execute()
+                Sets.newHashSet(qb.match(var("x").rel("work", "y").rel("author", "z").isa("authored-by"))),
+                Sets.newHashSet(qb.match(var("x").rel("production-being-directed", "y").rel("director", "z").isa("directed-by")))
         );
     }
 
@@ -547,16 +547,16 @@ public class MatchQueryTest {
     public void whenQueryingForSuperRolesAndRelationsWithOneRolePlayer_TheResultsAreTheSame() {
         // This is a special case which can cause comparisons between shortcut edges and castings
         assertEquals(
-                qb.match(var("x").rel("y").rel("author", "z").isa("authored-by")).execute(),
-                qb.match(var("x").rel("y").rel("director", "z").isa("directed-by")).execute()
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("author", "z").isa("authored-by"))),
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("director", "z").isa("directed-by")))
         );
     }
 
     @Test
     public void whenQueryingForSuperRelationTypes_TheResultsAreTheSame() {
         assertEquals(
-                qb.match(var("x").rel("y").rel("z").isa("authored-by")).execute(),
-                qb.match(var("x").rel("y").rel("z").isa("directed-by")).execute()
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("z").isa("authored-by"))),
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("z").isa("directed-by")))
         );
     }
 
