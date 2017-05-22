@@ -32,7 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDirectSubTypes;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -43,11 +42,9 @@ import static java.util.stream.Collectors.toSet;
  *  <li>There is a {@link RolePlayerFragmentSet} from {@code c} to {@code x}</li>
  *  <li>If there is a {@link IsaFragmentSet} from {@code c} to {@code C}, then {@code C} must have a
  *  {@link LabelFragmentSet}</li>
- *  <li>If there is a {@link IsaFragmentSet} from {@code r} to {@code R} then {@code R} must have no direct
- *  sub-types</li>
  * </ol>
  *
- * And optionally:
+ * The shortcut fragment can be constrained even further when any of the following optional criteria are met:
  *
  * <ol>
  *  <li>There is a {@link IsaFragmentSet} from {@code c} to a type with a {@link LabelFragmentSet}</li>
@@ -65,10 +62,10 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
     ShortcutFragmentSet(
             Var relation, Var edge, Var rolePlayer, Optional<Set<TypeLabel>> roleTypes,
-            Optional<TypeLabel> relationType) {
+            Optional<Set<TypeLabel>> relationTypes) {
         super(
-                Fragments.inShortcut(rolePlayer, edge, relation, roleTypes, relationType),
-                Fragments.outShortcut(relation, edge, rolePlayer, roleTypes, relationType)
+                Fragments.inShortcut(rolePlayer, edge, relation, roleTypes, relationTypes),
+                Fragments.outShortcut(relation, edge, rolePlayer, roleTypes, relationTypes)
         );
     }
 
@@ -100,11 +97,6 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
                 .map(IsaFragmentSet::type)
                 .flatMap(type -> findTypeLabel(fragmentSets, type));
 
-        // We can't use the shortcut's relation type label if the relation type has sub-types, because we don't know
-        // precisely which type the shortcut edge label will have. However, we can still use the shortcut edge and
-        // check the type of the relation the old fashioned way.
-        relType = relType.filter(type -> !hasDirectSubTypes(graph, type));
-
         // Try and get role type
         Optional<IsaCastingsFragmentSet> castingIsaFragment = fragmentSetOfType(IsaCastingsFragmentSet.class, fragmentSets)
                 .filter(isaFragmentSet -> isaFragmentSet.casting().equals(casting))
@@ -130,11 +122,15 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         Var rolePlayer = rolePlayerFragmentSet.rolePlayer();
 
         // Look up all sub-types
-        Optional<Set<TypeLabel>> roleTypes =
-                roleType.map(label -> graph.getType(label).subTypes().stream().map(Type::getLabel).collect(toSet()));
+        Optional<Set<TypeLabel>> roleTypes = subTypes(graph, roleType);
+        Optional<Set<TypeLabel>> relTypes = subTypes(graph, relType);
 
-        fragmentSets.add(new ShortcutFragmentSet(relation, casting, rolePlayer, roleTypes, relType));
+        fragmentSets.add(new ShortcutFragmentSet(relation, casting, rolePlayer, roleTypes, relTypes));
         return true;
+    }
+
+    private static Optional<Set<TypeLabel>> subTypes(GraknGraph graph, Optional<TypeLabel> type) {
+        return type.map(label -> graph.getType(label).subTypes().stream().map(Type::getLabel).collect(toSet()));
     }
 
     private static Optional<TypeLabel> findTypeLabel(Collection<EquivalentFragmentSet> fragmentSets, Var type) {

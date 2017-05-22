@@ -22,7 +22,6 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
-import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -48,28 +47,28 @@ class OutShortcutFragment extends AbstractFragment {
 
     private final Var edge;
     private final Optional<Set<TypeLabel>> roleTypes;
-    private final Optional<TypeLabel> relationType;
+    private final Optional<Set<TypeLabel>> relationTypes;
 
     OutShortcutFragment(
             Var relation, Var edge, Var rolePlayer, Optional<Set<TypeLabel>> roleTypes,
-            Optional<TypeLabel> relationType) {
+            Optional<Set<TypeLabel>> relationTypes) {
             super(relation, rolePlayer, edge);
             this.edge = edge;
             this.roleTypes = roleTypes;
-            this.relationType = relationType;
+            this.relationTypes = relationTypes;
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
         GraphTraversal<Vertex, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel()).as(edge.getValue());
         applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleTypes, graph);
-        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_ID, relationType.map(ImmutableSet::of), graph);
+        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_ID, relationTypes, graph);
         edgeTraversal.inV();
     }
 
     @Override
     public String getName() {
-        String rel = displayOptionalTypeLabels(relationType.map(ImmutableSet::of));
+        String rel = displayOptionalTypeLabels(relationTypes);
         String role = displayOptionalTypeLabels(roleTypes);
         return "-[shortcut:" + edge.shortName() + rel + role + "]->";
     }
@@ -90,7 +89,7 @@ class OutShortcutFragment extends AbstractFragment {
 
         if (!edge.equals(that.edge)) return false;
         if (!roleTypes.equals(that.roleTypes)) return false;
-        return relationType.equals(that.relationType);
+        return relationTypes.equals(that.relationTypes);
     }
 
     @Override
@@ -98,7 +97,7 @@ class OutShortcutFragment extends AbstractFragment {
         int result = super.hashCode();
         result = 31 * result + edge.hashCode();
         result = 31 * result + roleTypes.hashCode();
-        result = 31 * result + relationType.hashCode();
+        result = 31 * result + relationTypes.hashCode();
         return result;
     }
 }
