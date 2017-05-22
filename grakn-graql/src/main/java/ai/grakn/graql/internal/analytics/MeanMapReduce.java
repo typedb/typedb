@@ -54,7 +54,7 @@ public class MeanMapReduce extends StatisticsMapReduce<Map<String, Double>> {
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Map<String, Double>> emitter) {
         if (resourceIsValid(vertex)) {
             Map<String, Double> tuple = new HashMap<>(2);
-            Double degree = ((Long) vertex.value(degreeKey)).doubleValue();
+            Double degree = ((Long) vertex.value(degreePropertyKey)).doubleValue();
             tuple.put(SUM, degree * this.<Double>resourceValue(vertex).doubleValue());
             tuple.put(COUNT, degree);
             emitter.emit(NullObject.instance(), tuple);

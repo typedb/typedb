@@ -47,7 +47,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     Set<TypeId> ofTypeIds = new HashSet<>();
 
-    String degree;
+    String degreePropertyKey;
 
     // Needed internally for OLAP tasks
     public DegreeVertexProgram() {
@@ -55,9 +55,9 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     public DegreeVertexProgram(Set<TypeId> types, Set<TypeId> ofTypeIds, String randomId) {
         selectedTypes = types;
-        degree = DEGREE + randomId;
+        degreePropertyKey = DEGREE + randomId;
         this.ofTypeIds = ofTypeIds;
-        this.persistentProperties.put(DEGREE, degree);
+        this.persistentProperties.put(DEGREE, degreePropertyKey);
     }
 
     @Override
@@ -71,12 +71,12 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
         super.loadState(graph, configuration);
         configuration.subset(OF_TYPE_LABELS).getKeys().forEachRemaining(key ->
                 ofTypeIds.add(TypeId.of(configuration.getInt(OF_TYPE_LABELS + "." + key))));
-        degree = (String) this.persistentProperties.get(DEGREE);
+        degreePropertyKey = (String) this.persistentProperties.get(DEGREE);
     }
 
     @Override
     public Set<String> getElementComputeKeys() {
-        return Collections.singleton(degree);
+        return Collections.singleton(degreePropertyKey);
     }
 
     @Override
@@ -110,7 +110,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
             case 2:
                 TypeId typeId = Utility.getVertexTypeId(vertex);
                 if (selectedTypes.contains(typeId) && ofTypeIds.contains(typeId)) {
-                    vertex.property(degree, getMessageCount(messenger));
+                    vertex.property(degreePropertyKey, getMessageCount(messenger));
                 }
                 break;
 

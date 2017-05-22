@@ -41,8 +41,8 @@ public class MinMapReduce extends StatisticsMapReduce<Number> {
     public MinMapReduce() {
     }
 
-    public MinMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreeKey) {
-        super(selectedTypeIds, resourceDataType, degreeKey);
+    public MinMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreePropertyKey) {
+        super(selectedTypeIds, resourceDataType, degreePropertyKey);
     }
 
     @Override
