@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -28,9 +29,11 @@ import ai.grakn.util.Schema;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDirectSubTypes;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * A query can use a shortcut edge traversal when the following criteria are met:
@@ -47,8 +50,7 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDir
  * And optionally:
  *
  * <ol>
- *  <li>There is a {@link IsaFragmentSet} from {@code c} to a type with a {@link LabelFragmentSet} and no direct
- *  sub-types</li>
+ *  <li>There is a {@link IsaFragmentSet} from {@code c} to a type with a {@link LabelFragmentSet}</li>
  *  <li>There is a {@link IsaFragmentSet} from {@code r} to a type with a {@link LabelFragmentSet}</li>
  * </ol>
  *
@@ -62,11 +64,11 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDir
 class ShortcutFragmentSet extends EquivalentFragmentSet {
 
     ShortcutFragmentSet(
-            Var relation, Var edge, Var rolePlayer, Optional<TypeLabel> roleType,
+            Var relation, Var edge, Var rolePlayer, Optional<Set<TypeLabel>> roleTypes,
             Optional<TypeLabel> relationType) {
         super(
-                Fragments.inShortcut(rolePlayer, edge, relation, roleType, relationType),
-                Fragments.outShortcut(relation, edge, rolePlayer, roleType, relationType)
+                Fragments.inShortcut(rolePlayer, edge, relation, roleTypes, relationType),
+                Fragments.outShortcut(relation, edge, rolePlayer, roleTypes, relationType)
         );
     }
 
@@ -121,18 +123,17 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
             roleType = Optional.empty();
         }
 
-        // We can't use the shortcut edge in the presence of role-type hierarchies, because we don't know precisely
-        // which type the shortcut edge label will have.
-        if (roleType.isPresent() && hasDirectSubTypes(graph, roleType.get())) {
-            return false;
-        }
-
         fragmentSets.remove(castingFragmentSet);
         fragmentSets.remove(rolePlayerFragmentSet);
         castingIsaFragment.ifPresent(fragmentSets::remove);
 
         Var rolePlayer = rolePlayerFragmentSet.rolePlayer();
-        fragmentSets.add(new ShortcutFragmentSet(relation, casting, rolePlayer, roleType, relType));
+
+        // Look up all sub-types
+        Optional<Set<TypeLabel>> roleTypes =
+                roleType.map(label -> graph.getType(label).subTypes().stream().map(Type::getLabel).collect(toSet()));
+
+        fragmentSets.add(new ShortcutFragmentSet(relation, casting, rolePlayer, roleTypes, relType));
         return true;
     }
 

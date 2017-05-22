@@ -22,14 +22,16 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
+import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
+import java.util.Set;
 
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelToTraversal;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabel;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelsToTraversal;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabels;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_ID;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
@@ -45,36 +47,36 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
 class OutShortcutFragment extends AbstractFragment {
 
     private final Var edge;
-    private final Optional<TypeLabel> roleType;
+    private final Optional<Set<TypeLabel>> roleTypes;
     private final Optional<TypeLabel> relationType;
 
     OutShortcutFragment(
-            Var relation, Var edge, Var rolePlayer, Optional<TypeLabel> roleType,
+            Var relation, Var edge, Var rolePlayer, Optional<Set<TypeLabel>> roleTypes,
             Optional<TypeLabel> relationType) {
             super(relation, rolePlayer, edge);
             this.edge = edge;
-            this.roleType = roleType;
+            this.roleTypes = roleTypes;
             this.relationType = relationType;
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
         GraphTraversal<Vertex, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel()).as(edge.getValue());
-        applyTypeLabelToTraversal(edgeTraversal, ROLE_TYPE_ID, roleType, graph);
-        applyTypeLabelToTraversal(edgeTraversal, RELATION_TYPE_ID, relationType, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleTypes, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_ID, relationType.map(ImmutableSet::of), graph);
         edgeTraversal.inV();
     }
 
     @Override
     public String getName() {
-        String rel = displayOptionalTypeLabel(relationType);
-        String role = displayOptionalTypeLabel(roleType);
+        String rel = displayOptionalTypeLabels(relationType.map(ImmutableSet::of));
+        String role = displayOptionalTypeLabels(roleTypes);
         return "-[shortcut:" + edge.shortName() + rel + role + "]->";
     }
 
     @Override
     public double fragmentCost(double previousCost) {
-        long numRolePlayers = roleType.isPresent() ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
+        long numRolePlayers = roleTypes.isPresent() ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
         return previousCost * numRolePlayers;
     }
 
@@ -87,7 +89,7 @@ class OutShortcutFragment extends AbstractFragment {
         OutShortcutFragment that = (OutShortcutFragment) o;
 
         if (!edge.equals(that.edge)) return false;
-        if (!roleType.equals(that.roleType)) return false;
+        if (!roleTypes.equals(that.roleTypes)) return false;
         return relationType.equals(that.relationType);
     }
 
@@ -95,7 +97,7 @@ class OutShortcutFragment extends AbstractFragment {
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + edge.hashCode();
-        result = 31 * result + roleType.hashCode();
+        result = 31 * result + roleTypes.hashCode();
         result = 31 * result + relationType.hashCode();
         return result;
     }
