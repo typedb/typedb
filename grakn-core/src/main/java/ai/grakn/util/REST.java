@@ -91,7 +91,6 @@ public class REST {
         public static final String USER_ATTR = "user";
         
         // Request parameters
-        public static final String QUERY_FIELD = "query";
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
         public static final String GRAPH_CONFIG_PARAM = "graphConfig";
@@ -99,6 +98,7 @@ public class REST {
         public static final String TASK_CLASS_NAME_PARAMETER = "className";
         public static final String TASK_CREATOR_PARAMETER = "creator";
         public static final String TASK_RUN_AT_PARAMETER = "runAt";
+        public static final String TASK_PRIORITY_PARAMETER = "priority";
         public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
         public static final String TASK_LOADER_MUTATIONS = "mutations";
         public static final String LIMIT_PARAM = "limit";

@@ -32,11 +32,14 @@ import com.jayway.restassured.mapper.ObjectMapperDeserializationContext;
 import com.jayway.restassured.mapper.ObjectMapperSerializationContext;
 import com.jayway.restassured.response.Response;
 import com.jayway.restassured.specification.RequestSpecification;
+import java.util.HashMap;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 import spark.Service;
 
 import java.io.IOException;
@@ -46,12 +49,14 @@ import java.util.Map;
 
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_PRIORITY_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
@@ -59,6 +64,8 @@ import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import static com.jayway.restassured.RestAssured.with;
 import static java.time.Instant.now;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.TestCase.fail;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -78,7 +85,11 @@ public class TasksControllerTest {
     private static TaskManager manager;
     private final JsonMapper jsonMapper = new JsonMapper();
 
-    //TODO tests for stopping and getting multiple
+    @Before
+    public void reset(){
+        Mockito.reset(manager);
+        when(manager.storage()).thenReturn(mock(TaskStateStorage.class));
+    }
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -192,9 +203,44 @@ public class TasksControllerTest {
                 )
         );
 
-        String exception = response.getBody().as(Json.class, jsonMapper).at("exception").asString();
-        assertThat(exception, containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(TASK_RUN_AT_PARAMETER)));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(TASK_RUN_AT_PARAMETER)));
         assertThat(response.statusCode(), equalTo(400));
+    }
+
+    @Test
+    public void afterSendingTaskWithInvalidPriority_Grakn400IsThrown(){
+        Response response = send(Json.object().toString(),
+                ImmutableMap.of(
+                        TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
+                        TASK_CREATOR_PARAMETER, this.getClass().getName(),
+                        TASK_RUN_AT_PARAMETER, Long.toString(now().toEpochMilli()),
+                        TASK_PRIORITY_PARAMETER, "invalid"
+                )
+        );
+
+        assertThat(exception(response), containsString(IllegalArgumentException.class.getName()));
+        assertThat(response.statusCode(), equalTo(400));
+    }
+
+    @Test
+    public void afterSendingTaskWithMissingPriority_TaskSubmittedWithDefaultLowPriority(){
+        send();
+
+        verify(manager).addTask(argThat(argument -> argument.priority().equals(TaskState.Priority.LOW)), any());
+    }
+
+    @Test
+    public void afterSendingTaskWithLowPriority_TaskSubmittedWithLowPriority(){
+        send(TaskState.Priority.LOW);
+
+        verify(manager).addTask(argThat(argument -> argument.priority().equals(TaskState.Priority.LOW)), any());
+    }
+
+    @Test
+    public void afterSendingTaskWithHighPriority_TaskSubmittedWithHighPriority(){
+        send(TaskState.Priority.HIGH);
+
+        verify(manager).addTask(argThat(argument -> argument.priority().equals(TaskState.Priority.HIGH)), any());
     }
 
     @Test
@@ -355,6 +401,12 @@ public class TasksControllerTest {
 
     private Response send(String configuration){
         return send(configuration, defaultParams());
+    }
+
+    private Response send(TaskState.Priority priority){
+        Map<String, String> params = new HashMap<>(defaultParams());
+        params.put(TASK_PRIORITY_PARAMETER, priority.name());
+        return send(Json.object().toString(), params);
     }
 
     private Response send(String configuration, Map<String, String> params){
