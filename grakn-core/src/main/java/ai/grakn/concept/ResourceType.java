@@ -30,7 +30,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
-import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -270,7 +269,7 @@ public interface ResourceType<D> extends Type {
                 Schema.VertexProperty.VALUE_DATE,
                 (d) -> d.atZone(ZoneId.of("Z")).toInstant().toEpochMilli(),
                 (o) -> {
-                    Objects.requireNonNull(o);
+                    if (o == null) return null;
                     if (!(o instanceof Long)) {
                         throw GraphOperationException.invalidResourceValue(o, LONG);
                     }
@@ -301,8 +300,9 @@ public interface ResourceType<D> extends Type {
         }
 
         private static <X> X defaultConverter(Object o, Class clazz, Function<Object, X> converter){
-            Objects.requireNonNull(o);
-            if(clazz.isInstance(o)){
+            if(o == null){
+                return null;
+            } else if(clazz.isInstance(o)){
                 //noinspection unchecked
                 return (X) o;
             } else {
