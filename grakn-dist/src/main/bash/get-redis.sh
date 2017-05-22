@@ -16,6 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # <http://www.gnu.org/licenses/gpl.txt>.
+set -e
 
 echo "Downloading redis . . ."
 wget http://download.redis.io/releases/redis-2.6.17.tar.gz
