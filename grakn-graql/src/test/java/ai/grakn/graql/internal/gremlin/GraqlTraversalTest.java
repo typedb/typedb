@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -67,7 +68,9 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class GraqlTraversalTest {
 
@@ -92,6 +95,15 @@ public class GraqlTraversalTest {
     @BeforeClass
     public static void setUp() {
         graph = mock(GraknGraph.class);
+
+        // We have to mock out the `subTypes` call because the shortcut edge optimisation checks it
+        when(graph.getType(any())).thenAnswer(invocation -> {
+            Type type = mock(Type.class);
+            //noinspection unchecked
+            when(type.subTypes()).thenReturn((Collection) ImmutableSet.of(type));
+            when(type.getLabel()).thenReturn(invocation.getArgument(0));
+            return type;
+        });
     }
 
     @Test
