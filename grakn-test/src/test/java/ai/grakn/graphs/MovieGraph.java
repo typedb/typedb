@@ -41,9 +41,10 @@ public class MovieGraph extends TestGraph {
     private static ResourceType<Long> tmdbVoteCount, runtime;
     private static ResourceType<Double> tmdbVoteAverage;
     private static ResourceType<LocalDateTime> releaseDate;
-    private static RelationType hasCast, directedBy, hasGenre, hasCluster;
+    private static RelationType hasCast, authoredBy, directedBy, hasGenre, hasCluster;
     private static RoleType productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
     private static RoleType genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
+    private static RoleType work, author;
     private static RuleType aRuleType;
 
     private static Instance godfather, theMuppets, heat, apocalypseNow, hocusPocus, spy, chineseCoffee;
@@ -60,9 +61,13 @@ public class MovieGraph extends TestGraph {
 
     @Override
     public void buildOntology(GraknGraph graph) {
-        productionBeingDirected = graph.putRoleType("production-being-directed");
-        director = graph.putRoleType("director");
-        directedBy = graph.putRelationType("directed-by")
+        work = graph.putRoleType("work");
+        author = graph.putRoleType("author");
+        authoredBy = graph.putRelationType("authored-by").relates(work).relates(author);
+
+        productionBeingDirected = graph.putRoleType("production-being-directed").superType(work);
+        director = graph.putRoleType("director").superType(author);
+        directedBy = graph.putRelationType("directed-by").superType(authoredBy)
                 .relates(productionBeingDirected).relates(director);
 
         productionWithCast = graph.putRoleType("production-with-cast");
