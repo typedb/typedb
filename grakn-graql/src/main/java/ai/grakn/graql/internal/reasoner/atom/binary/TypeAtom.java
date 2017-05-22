@@ -116,9 +116,11 @@ public class TypeAtom extends Binary{
 
     @Override
     public int resolutionPriority(){
-        int priority = super.resolutionPriority();
-        priority += ResolutionStrategy.IS_TYPE_ATOM;
-        priority += getType() == null? ResolutionStrategy.NON_SPECIFIC_TYPE_ATOM : 0;
+        if (priority == Integer.MAX_VALUE) {
+            priority = super.resolutionPriority();
+            priority += ResolutionStrategy.IS_TYPE_ATOM;
+            priority += getType() == null ? ResolutionStrategy.NON_SPECIFIC_TYPE_ATOM : 0;
+        }
         return priority;
     }
 

@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graphs;
+package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
@@ -31,9 +31,16 @@ import java.util.function.Consumer;
 
 import static ai.grakn.graql.Graql.and;
 
+/**
+ * Abstract base for test graphs.
+ * 
+ * @author borislav
+ *
+ */
 public class AbstractGraph extends TestGraph {
 
     private static ResourceType<String> key;
+    @SuppressWarnings("unused")
     private static EntityType P, Q, p, q, r, s, t, u;
     private static RelationType rel, REL;
     private static RoleType relRoleA, relRoleB, RELRoleA, RELRoleB;

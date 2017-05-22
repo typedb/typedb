@@ -29,6 +29,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * TaskManagers
+ * 
+ * @author alex
+ */
 public class TaskManagers extends Generator<TaskManager> {
 
     @SuppressWarnings("unchecked")

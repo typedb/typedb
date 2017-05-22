@@ -41,6 +41,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
+import java.util.HashSet;
 import java.util.Map;
 
 import java.util.Objects;
@@ -64,6 +65,8 @@ public class InferenceRule {
     private final ReasonerQueryImpl body;
     private final ReasonerAtomicQuery head;
 
+    private int priority = Integer.MAX_VALUE;
+
     public InferenceRule(Rule rule, GraknGraph graph){
         ruleId = rule.getId();
         //TODO simplify once changes propagated to rule objects
@@ -84,7 +87,7 @@ public class InferenceRule {
 
     @Override
     public String toString(){
-        return  "\n" + this.body.toString() + "->" + this.head.toString() + "\n";
+        return  "\n" + this.body.toString() + "->" + this.head.toString() + "[" + resolutionPriority() +"]";
     }
 
     @Override
@@ -101,6 +104,16 @@ public class InferenceRule {
         hashCode = hashCode * 37 + getBody().hashCode();
         hashCode = hashCode * 37 + getHead().hashCode();
         return hashCode;
+    }
+
+    /**
+     * @return the priority with which the rule should be fired
+     */
+    public int resolutionPriority(){
+        if (priority == Integer.MAX_VALUE) {
+            priority = getBody().resolutionPriority();
+        }
+        return priority;
     }
 
     private static Conjunction<VarPatternAdmin> conjunction(PatternAdmin pattern){
@@ -201,7 +214,7 @@ public class InferenceRule {
     }
 
     private InferenceRule rewriteBody(){
-        body.getAtoms().stream()
+        new HashSet<>(body.getAtoms()).stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .filter(Atom::isRelation)
                 .filter(at -> !at.isUserDefinedName())

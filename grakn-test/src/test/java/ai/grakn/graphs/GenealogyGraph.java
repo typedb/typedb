@@ -19,6 +19,7 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 

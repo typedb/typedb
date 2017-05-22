@@ -21,6 +21,7 @@ package ai.grakn.test.graql.query;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.Autocomplete;
 import ai.grakn.test.GraphContext;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.ClassRule;

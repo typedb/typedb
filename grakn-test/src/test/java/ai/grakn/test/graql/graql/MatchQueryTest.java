@@ -25,6 +25,7 @@ import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraphContext;
+
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;

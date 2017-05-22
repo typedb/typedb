@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graphs;
+package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
@@ -37,6 +37,11 @@ import java.util.function.Consumer;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
+/**
+ * Base for all test graphs.
+ * @author borislav
+ *
+ */
 public abstract class TestGraph {
 
     protected void buildOntology(GraknGraph graph){};
@@ -56,22 +61,23 @@ public abstract class TestGraph {
         };
     }
 
-    static Instance putEntity(GraknGraph graph, String id, EntityType type, TypeLabel key) {
+    public static Instance putEntity(GraknGraph graph, String id, EntityType type, TypeLabel key) {
         Instance inst = type.addEntity();
         putResource(inst, graph.getType(key), id);
         return inst;
     }
 
-    static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource) {
+    public static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource) {
         Resource resourceInstance = resourceType.putResource(resource);
         instance.resource(resourceInstance);
     }
 
-    static Instance getInstance(GraknGraph graph, String id){
+    public static Instance getInstance(GraknGraph graph, String id){
         Set<Instance> instances = graph.getResourcesByValue(id)
                 .stream().flatMap(res -> res.ownerInstances().stream()).collect(toSet());
-        if (instances.size() != 1)
+        if (instances.size() != 1) {
             throw new IllegalStateException("Multiple instances with given resource value");
+        }
         return instances.iterator().next();
     }
 
