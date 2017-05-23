@@ -54,13 +54,6 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is an instance of a role-type.
-     */
-    public static EquivalentFragmentSet isaCastings(Var casting, Var roleType) {
-        return new IsaCastingsFragmentSet(casting, roleType);
-    }
-
-    /**
      * An {@link EquivalentFragmentSet} that indicates a shortcut edge between two role-players.
      */
     public static EquivalentFragmentSet shortcut(Var relation, Var edge, Var rolePlayer, Optional<Var> roleType) {

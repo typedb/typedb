@@ -50,7 +50,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.isaCastings;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUserDefinedIdPredicate;
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
@@ -144,10 +143,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
-        return Stream.of(
-                shortcut(start, casting, rolePlayer.getVarName(), Optional.of(roleType.getVarName())),
-                isaCastings(casting, roleType.getVarName())
-        );
+        return Stream.of(shortcut(start, casting, rolePlayer.getVarName(), Optional.of(roleType.getVarName())));
     }
 
     @Override

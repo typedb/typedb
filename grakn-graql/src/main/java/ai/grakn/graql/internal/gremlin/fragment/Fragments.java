@@ -78,21 +78,11 @@ public class Fragments {
     }
 
     public static Fragment inIsa(Var start, Var end) {
-        return new InIsaFragment(start, end, false);
+        return new InIsaFragment(start, end);
     }
 
     public static Fragment outIsa(Var start, Var end) {
-        return new OutIsaFragment(start, end, false);
-    }
-
-    // This method is a special case that allows getting the instances of role-types (castings)
-    public static Fragment inIsaCastings(Var start, Var end) {
-        return new InIsaFragment(start, end, true);
-    }
-
-    // This method is a special case that allows getting the instances of role-types (castings)
-    public static Fragment outIsaCastings(Var start, Var end) {
-        return new OutIsaFragment(start, end, true);
+        return new OutIsaFragment(start, end);
     }
 
     public static Fragment inHasScope(Var start, Var end) {
