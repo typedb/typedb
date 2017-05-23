@@ -23,6 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static junit.framework.TestCase.assertNotNull;
+
 /**
  * Testing the {@link GraknEngineConfig} class
  *
@@ -43,5 +45,12 @@ public class GraknEngineConfigTest {
         exception.expectMessage(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(property, configuration.getConfigFilePath()));
 
         configuration.getProperty(property);
+    }
+
+    @Test
+    public void whenGettingExistingProperty_PropertyIsReturned(){
+        String property = "server.port";
+
+        assertNotNull(configuration.getProperty(property));
     }
 }

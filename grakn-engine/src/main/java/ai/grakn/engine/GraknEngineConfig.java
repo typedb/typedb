@@ -238,7 +238,7 @@ public class GraknEngineConfig {
 
     public String getProperty(String property) {
          if(prop.containsKey(property)) {
-             prop.getProperty(property);
+             return prop.getProperty(property);
          }
 
          if(configFilePath == null){
