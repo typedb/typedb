@@ -34,7 +34,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 
 class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements SumQuery {
 
@@ -53,7 +52,7 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
         Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
 
-        String randomId = Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
+        String randomId = getRandomJobId();
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds, randomId),
