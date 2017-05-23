@@ -21,9 +21,11 @@ package ai.grakn.graql.internal.analytics;
 import ai.grakn.concept.TypeId;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
+import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collections;
@@ -40,19 +42,28 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
 
     // element key
     static final String VISITED = "degreeStatisticsVertexProgram.visited";
-    private static final Set<String> ELEMENT_COMPUTE_KEYS = Sets.newHashSet(VISITED, DEGREE);
+
+    private String visitedPropertyKey;
 
     // Needed internally for OLAP tasks
     public DegreeStatisticsVertexProgram() {
     }
 
-    public DegreeStatisticsVertexProgram(Set<TypeId> types, Set<TypeId> ofTypeIDs) {
-        super(types, ofTypeIDs);
+    public DegreeStatisticsVertexProgram(Set<TypeId> types, Set<TypeId> ofTypeIDs, String randomId) {
+        super(types, ofTypeIDs, randomId);
+        visitedPropertyKey = VISITED + randomId;
+        this.persistentProperties.put(VISITED, visitedPropertyKey);
+    }
+
+    @Override
+    public void loadState(final Graph graph, final Configuration configuration) {
+        super.loadState(graph, configuration);
+        visitedPropertyKey = (String) this.persistentProperties.get(VISITED);
     }
 
     @Override
     public Set<String> getElementComputeKeys() {
-        return ELEMENT_COMPUTE_KEYS;
+        return Sets.newHashSet(visitedPropertyKey, degreePropertyKey);
     }
 
     @Override
@@ -62,16 +73,16 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
                 degreeStatisticsStepInstance(vertex, messenger, selectedTypes, ofTypeIds);
                 break;
             case 1:
-                degreeStatisticsStepCastingIn(vertex, messenger);
+                degreeStatisticsStepCastingIn(vertex, messenger, visitedPropertyKey);
                 break;
             case 2:
                 degreeStatisticsStepRelation(vertex, messenger);
                 break;
             case 3:
-                degreeStatisticsStepCastingOut(vertex, messenger);
+                degreeStatisticsStepCastingOut(vertex, messenger, visitedPropertyKey);
                 break;
             case 4:
-                degreeStatisticsStepResource(vertex, messenger, ofTypeIds);
+                degreeStatisticsStepResource(vertex, messenger, ofTypeIds, degreePropertyKey);
                 break;
             default:
                 throw new RuntimeException("unreachable");
@@ -108,9 +119,9 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
         }
     }
 
-    static void degreeStatisticsStepCastingIn(Vertex vertex, Messenger<Long> messenger) {
+    static void degreeStatisticsStepCastingIn(Vertex vertex, Messenger<Long> messenger, String visited) {
         if (vertex.label().equals(Schema.BaseType.CASTING.name()) && messenger.receiveMessages().hasNext()) {
-            vertex.property(VISITED, true);
+            vertex.property(visited, true);
             messenger.sendMessage(messageScopeInCasting, 1L);
         }
     }
@@ -121,16 +132,17 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
         }
     }
 
-    static void degreeStatisticsStepCastingOut(Vertex vertex, Messenger<Long> messenger) {
-        if (vertex.label().equals(Schema.BaseType.CASTING.name()) && !vertex.property(VISITED).isPresent()
+    static void degreeStatisticsStepCastingOut(Vertex vertex, Messenger<Long> messenger, String visited) {
+        if (vertex.label().equals(Schema.BaseType.CASTING.name()) && !vertex.property(visited).isPresent()
                 && messenger.receiveMessages().hasNext()) {
             messenger.sendMessage(messageScopeOutRolePlayer, getMessageCount(messenger));
         }
     }
 
-    static void degreeStatisticsStepResource(Vertex vertex, Messenger<Long> messenger, Set<TypeId> ofTypeIds) {
+    static void degreeStatisticsStepResource(Vertex vertex, Messenger<Long> messenger,
+                                             Set<TypeId> ofTypeIds, String degree) {
         if (ofTypeIds.contains(Utility.getVertexTypeId(vertex))) {
-            vertex.property(DEGREE, getMessageCount(messenger));
+            vertex.property(degree, getMessageCount(messenger));
         }
     }
 }
