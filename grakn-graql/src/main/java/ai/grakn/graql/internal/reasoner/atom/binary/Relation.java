@@ -61,6 +61,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
@@ -89,6 +91,8 @@ public class Relation extends TypeAtom {
     private Multimap<RoleType, String> roleConceptIdMap = null;
     private Set<RelationPlayer> relationPlayers = null;
 
+    private static final Logger LOG = LoggerFactory.getLogger(Relation.class);
+
     public Relation(VarPatternAdmin pattern, IdPredicate predicate, ReasonerQuery par) { super(pattern, predicate, par);}
 
     public Relation(Var name, Var typeVariable, Map<Var, VarPattern> roleMap, IdPredicate pred, ReasonerQuery par) {
@@ -100,8 +104,8 @@ public class Relation extends TypeAtom {
     @Override
     public String toString(){
         String relationString = (isUserDefinedName()? getVarName() + " ": "") +
-                        (getType() != null? getType().getLabel() : "") +
-                        getRelationPlayers().toString();
+                (getType() != null? getType().getLabel() : "") +
+                getRelationPlayers().toString();
         return relationString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
     }
 
@@ -285,7 +289,7 @@ public class Relation extends TypeAtom {
     //rule head atom is applicable if it is unifiable
     private boolean isRuleApplicableViaAtom(Relation headAtom) {
         return headAtom.getRelationPlayers().size() >= this.getRelationPlayers().size()
-            && headAtom.getRelationPlayerMappings(this).size() == this.getRelationPlayers().size();
+                && headAtom.getRelationPlayerMappings(this).size() == this.getRelationPlayers().size();
     }
 
     @Override
@@ -367,6 +371,10 @@ public class Relation extends TypeAtom {
                     .collect(toSet());
 
             Set<RelationType> compatibleTypesFromTypes = getCompatibleRelationTypes(types, typeToRelationTypes);
+
+            LOG.debug("Inferring relation type of atom: " + this + getTypeConstraints());
+            LOG.debug("Compatible relation types: " + compatibleTypesFromTypes.stream().map(Type::getLabel).collect(Collectors.toSet()));
+
             if (compatibleTypesFromTypes.size() == 1) type = compatibleTypesFromTypes.iterator().next();
             else {
                 //do intersection with types recovered from role types
@@ -380,6 +388,7 @@ public class Relation extends TypeAtom {
     @Override
     public void inferTypes() {
         if (getPredicate() == null) inferRelationTypeFromTypes();
+        if (getExplicitRoleTypes().size() < getRelationPlayers().size() && getType() != null) computeRoleVarTypeMap();
     }
 
     @Override
@@ -644,11 +653,11 @@ public class Relation extends TypeAtom {
                                 .forEach(r -> {
                                     Collection<RelationPlayer> childRPs = parentType != null ?
                                             childRoleRPMap.get(r).stream()
-                                                .filter(rp -> {
-                                                    Var childRolePlayer = rp.getRolePlayer().getVarName();
-                                                    Type childType = childVarTypeMap.get(childRolePlayer);
-                                                    return childType == null || !checkTypesDisjoint(parentType, childType);
-                                                }).collect(toSet()) :
+                                                    .filter(rp -> {
+                                                        Var childRolePlayer = rp.getRolePlayer().getVarName();
+                                                        Type childType = childVarTypeMap.get(childRolePlayer);
+                                                        return childType == null || !checkTypesDisjoint(parentType, childType);
+                                                    }).collect(toSet()) :
                                             childRoleRPMap.get(r);
 
                                     childRPs.forEach(rp -> compatibleMappings.put(prp, rp));
