@@ -42,7 +42,7 @@ class ConceptCache<V> {
     //If no cache can produce the data then the database is read
     private final Supplier<V> databaseReader;
 
-    //Transaction bound. If this is not set it does not yet exist in the graph
+    //Transaction bound. If this is not set it does not yet exist in the scope of the transaction.
     private ThreadLocal<V> cachedValue = new ThreadLocal<>();
 
     //Graph bound value which has already been persisted and acts as a shared component cache

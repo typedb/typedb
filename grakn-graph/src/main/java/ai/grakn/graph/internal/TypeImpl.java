@@ -133,6 +133,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         cachedSuperType.flush();
         cachedDirectSubTypes.flush();
         cachedShards.flush();
+        cachedDirectPlays.flush();
     }
 
     @Override
