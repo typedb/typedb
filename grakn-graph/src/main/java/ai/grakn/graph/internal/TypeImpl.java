@@ -123,10 +123,17 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         type.cachedIsAbstract.ifPresent(value -> this.cachedIsAbstract.set(value));
     }
 
-    @Override
-    public Type copy(){
-        //noinspection unchecked
-        return new TypeImpl(this);
+    /**
+     * Flushes the internal transaction caches so that persisted information can be cached and shared between
+     * concepts
+     */
+    public void flushTxCache(){
+        cachedIsImplicit.flush();
+        cachedIsAbstract.flush();
+        cachedSuperType.flush();
+        cachedDirectSubTypes.flush();
+        cachedShards.flush();
+        cachedDirectPlays.flush();
     }
 
     @Override
@@ -137,12 +144,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     boolean isShard(){
         return cachedTypeLabel == null || cachedTypeLabel.getValue().startsWith("SHARDED TYPE-");
-    }
-
-    @SuppressWarnings("unchecked")
-    void copyCachedConcepts(T type){
-        ((TypeImpl<T, V>) type).cachedSuperType.ifPresent(value -> this.cachedSuperType.set(getGraknGraph().getTxCache().cacheClone(value)));
-        ((TypeImpl<T, V>) type).cachedDirectSubTypes.ifPresent(value -> this.cachedDirectSubTypes.set(getGraknGraph().getTxCache().cacheClone(value)));
     }
 
     /**

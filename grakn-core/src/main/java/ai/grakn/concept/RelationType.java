@@ -183,11 +183,4 @@ public interface RelationType extends Type {
      */
     @Override
     Collection<Relation> instances();
-
-    /**
-     *
-     * @return a deep copy of this concept.
-     */
-    @Override
-    RelationType copy();
 }

@@ -99,6 +99,9 @@ class GraphCache {
         //TODO: The difference between the caches need to be taken into account. For example if a type is delete then it should be removed from the cachedLabels
         cachedLabels.putAll(txCache.getLabelCache());
         cachedTypes.putAll(txCache.getTypeCache());
+
+        //Flush All The Internal Transaction Caches
+        txCache.getTypeCache().values().forEach(TypeImpl::flushTxCache);
     }
 
     /**
