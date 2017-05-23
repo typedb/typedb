@@ -92,7 +92,7 @@ public class BatchMutatorClientTest {
         // Wait for queries to finish
         loader.waitToFinish();
 
-        // Wait for callback function to execute
+        // Wait for callback function to execute - Callbacks are run asynchronously
         callbackCompleted.await(10, TimeUnit.SECONDS);
 
         // Verify that the logger received the failed log message
