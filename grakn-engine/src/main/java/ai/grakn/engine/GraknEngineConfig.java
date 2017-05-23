@@ -18,8 +18,6 @@
 
 package ai.grakn.engine;
 
-import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
