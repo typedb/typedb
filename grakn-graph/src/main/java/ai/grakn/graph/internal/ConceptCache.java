@@ -18,7 +18,6 @@
 
 package ai.grakn.graph.internal;
 
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -40,7 +39,7 @@ import java.util.function.Supplier;
  */
 class ConceptCache<V> {
     private final Supplier<V> databaseReader;
-    private Optional<V> cachedValue = Optional.empty();
+    private ThreadLocal<V> cachedValue = new ThreadLocal<V>();
 
     ConceptCache(Supplier<V> databaseReader){
         this.databaseReader = databaseReader;
@@ -52,10 +51,10 @@ class ConceptCache<V> {
      * @return The cached object.
      */
     public V get(){
-        if(!cachedValue.isPresent()){
+        if(!isPresent()){
             V newValue = databaseReader.get();
             if(newValue == null) return null;
-            cachedValue = Optional.of(newValue);
+            cachedValue.set(newValue);
         }
         return cachedValue.get();
     }
@@ -64,7 +63,7 @@ class ConceptCache<V> {
      * Clears the cache.
      */
     public void clear(){
-        cachedValue = Optional.empty();
+        cachedValue.remove();
     }
 
     /**
@@ -73,7 +72,7 @@ class ConceptCache<V> {
      * @param value the value to be cached
      */
     public void set(V value){
-        cachedValue = Optional.of(value);
+        cachedValue.set(value);
     }
 
     /**
@@ -81,7 +80,7 @@ class ConceptCache<V> {
      * @return true if there is anything stored in the cache
      */
     public boolean isPresent(){
-        return cachedValue.isPresent();
+        return cachedValue.get() != null;
     }
 
     /**
@@ -90,7 +89,7 @@ class ConceptCache<V> {
      * @param modifier the mutator function.
      */
     void ifPresent(Consumer<V> modifier){
-        if(cachedValue.isPresent()){
+        if(isPresent()){
             modifier.accept(cachedValue.get());
         }
     }
