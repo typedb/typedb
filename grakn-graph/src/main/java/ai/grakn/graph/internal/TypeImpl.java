@@ -136,12 +136,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     }
 
     @Override
-    public Type copy(){
-        //noinspection unchecked
-        return new TypeImpl(this);
-    }
-
-    @Override
     Set<T> shards(){
         return cachedShards.get();
     }

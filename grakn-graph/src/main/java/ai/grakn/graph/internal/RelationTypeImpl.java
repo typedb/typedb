@@ -53,15 +53,6 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         super(graknGraph, v, type, isImplicit);
     }
 
-    private RelationTypeImpl(RelationTypeImpl relationType){
-        super(relationType);
-    }
-
-    @Override
-    public RelationType copy(){
-        return new RelationTypeImpl(this);
-    }
-
     @Override
     public Relation addRelation() {
         return addInstance(Schema.BaseType.RELATION,
