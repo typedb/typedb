@@ -44,4 +44,9 @@ public class LookupExplanation extends Explanation {
 
     @Override
     public boolean isLookupExplanation(){ return true;}
+
+    @Override
+    public AnswerExplanation setQuery(ReasonerQuery q){
+        return new LookupExplanation(q);
+    }
 }

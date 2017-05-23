@@ -39,13 +39,17 @@ public class Explanation implements AnswerExplanation {
     private final Set<Answer> answers;
 
     public Explanation(){ answers = new HashSet<>();}
+    Explanation(ReasonerQuery q){
+        this.query = q.copy();
+        answers = new HashSet<>();
+    }
     Explanation(ReasonerQuery q, Set<Answer> ans){
         this.query = q.copy();
         this.answers = new HashSet<>(ans);
     }
     Explanation(Explanation e){
         this.answers = new HashSet<>(e.answers);
-        this.query = query != null? query.copy() : null;
+        this.query = e.getQuery().copy();
     }
 
     @Override
@@ -74,8 +78,7 @@ public class Explanation implements AnswerExplanation {
 
     @Override
     public AnswerExplanation setQuery(ReasonerQuery q){
-        this.query = q.copy();
-        return this;
+        return new Explanation(q);
     }
 
     @Override
