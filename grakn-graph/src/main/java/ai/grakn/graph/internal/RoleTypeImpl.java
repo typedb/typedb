@@ -75,6 +75,13 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         return new RoleTypeImpl(this);
     }
 
+    @Override
+    public void flushTxCache(){
+        super.flushTxCache();
+        cachedDirectPlayedByTypes.flush();
+        cachedRelationTypes.flush();
+    }
+
     /**
      *
      * @return The Relation Type which this role takes part in.

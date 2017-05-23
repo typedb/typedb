@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -38,8 +39,14 @@ import java.util.function.Supplier;
  *
  */
 class ConceptCache<V> {
+    //If no cache can produce the data then the database is read
     private final Supplier<V> databaseReader;
-    private ThreadLocal<V> cachedValue = new ThreadLocal<V>();
+
+    //Transaction bound. If this is not set it does not yet exist in the graph
+    private ThreadLocal<V> cachedValue = new ThreadLocal<>();
+
+    //Graph bound value which has already been persisted and acts as a shared component cache
+    private Optional<V> sharedValue = Optional.empty();
 
     ConceptCache(Supplier<V> databaseReader){
         this.databaseReader = databaseReader;
@@ -52,9 +59,11 @@ class ConceptCache<V> {
      */
     public V get(){
         if(!isPresent()){
-            V newValue = databaseReader.get();
-            if(newValue == null) return null;
-            cachedValue.set(newValue);
+            V value = null;
+            if(sharedValue.isPresent()) value = sharedValue.get();
+            if(value == null) value = databaseReader.get();
+            if(value == null) return null;
+            cachedValue.set(value);
         }
         return cachedValue.get();
     }
@@ -92,5 +101,13 @@ class ConceptCache<V> {
         if(isPresent()){
             modifier.accept(cachedValue.get());
         }
+    }
+
+    /**
+     * Takes the current value in the transaction cache if it is present and puts it in the sharedValue reference so
+     * that it can be accessed via all transactions.
+     */
+    void flush(){
+        if(isPresent()) sharedValue = Optional.of(get());
     }
 }

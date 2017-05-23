@@ -68,6 +68,12 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
                 (vertex, type) -> getGraknGraph().getElementFactory().buildRelation(vertex, type));
     }
 
+    @Override
+    public void flushTxCache(){
+        super.flushTxCache();
+        cachedRelates.flush();
+    }
+
     /**
      *
      * @return A list of the Role Types which make up this Relation Type.

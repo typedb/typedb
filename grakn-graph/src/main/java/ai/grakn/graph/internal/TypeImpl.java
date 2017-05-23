@@ -123,6 +123,18 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         type.cachedIsAbstract.ifPresent(value -> this.cachedIsAbstract.set(value));
     }
 
+    /**
+     * Flushes the internal transaction caches so that persisted information can be cached and shared between
+     * concepts
+     */
+    public void flushTxCache(){
+        cachedIsImplicit.flush();
+        cachedIsAbstract.flush();
+        cachedSuperType.flush();
+        cachedDirectSubTypes.flush();
+        cachedShards.flush();
+    }
+
     @Override
     public Type copy(){
         //noinspection unchecked
