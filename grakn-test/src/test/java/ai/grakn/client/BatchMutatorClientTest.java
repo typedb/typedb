@@ -28,6 +28,8 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.test.EngineContext;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -46,7 +48,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.argThat;
 import static java.util.stream.Stream.generate;
 import static org.mockito.Mockito.*;
@@ -71,16 +73,27 @@ public class BatchMutatorClientTest {
     }
 
     @Test
-    public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged(){
+    public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged() throws InterruptedException {
+        CountDownLatch consumerFinished = new CountDownLatch(1);
+
         // Create a BatchMutatorClient with a callback that will fail
         BatchMutatorClient loader = loader();
-        loader.setTaskCompletionConsumer((json) -> assertTrue("Testing Log failure",false));
+        loader.setTaskCompletionConsumer((json) -> {
+            try {
+                fail("Testing failures appear in logs");
+            } finally {
+                consumerFinished.countDown();
+            }
+        });
 
         // Load some queries
         generate(this::query).limit(1).forEach(loader::add);
 
         // Wait for queries to finish
         loader.waitToFinish();
+
+        // Wait for callback function to execute
+        consumerFinished.await(10, TimeUnit.SECONDS);
 
         // Verify that the logger received the failed log message
         assertThat(systemOut.getLog(), containsString("error in callback"));
