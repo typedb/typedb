@@ -74,7 +74,7 @@ public class BatchMutatorClientTest {
 
     @Test
     public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged() throws InterruptedException {
-        CountDownLatch consumerFinished = new CountDownLatch(1);
+        CountDownLatch callbackCompleted = new CountDownLatch(1);
 
         // Create a BatchMutatorClient with a callback that will fail
         BatchMutatorClient loader = loader();
@@ -82,7 +82,7 @@ public class BatchMutatorClientTest {
             try {
                 fail("Testing failures appear in logs");
             } finally {
-                consumerFinished.countDown();
+                callbackCompleted.countDown();
             }
         });
 
@@ -93,7 +93,7 @@ public class BatchMutatorClientTest {
         loader.waitToFinish();
 
         // Wait for callback function to execute
-        consumerFinished.await(10, TimeUnit.SECONDS);
+        callbackCompleted.await(10, TimeUnit.SECONDS);
 
         // Verify that the logger received the failed log message
         assertThat(systemOut.getLog(), containsString("error in callback"));
