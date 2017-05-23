@@ -25,7 +25,7 @@ import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -34,7 +34,6 @@ import mjson.Json;
 
 import java.util.Collection;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -55,7 +54,7 @@ public class MutatorTask implements BackgroundTask {
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, BiConsumer<TaskState, TaskConfiguration> taskSubmitter) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
         Collection<Query> inserts = getInserts(configuration);
         GraphMutators.runBatchMutationWithRetry(configuration.json().at(REST.Request.KEYSPACE).asString(), (graph) ->
                 insertQueriesInOneTransaction(graph, inserts, taskSubmitter)
@@ -83,10 +82,10 @@ public class MutatorTask implements BackgroundTask {
      * Execute the given queries against the given graph. Return if the operation was successfully completed.
      * @param graph grakn graph in which to insert the data
      * @param inserts graql queries to insert into the graph
-     * @param taskSubmitter a function which can be used to submit more tasks as a result of completing this task
+     * @param taskSubmitter allows new commit logs to be submitted for post processing
      * @return true if the data was inserted, false otherwise
      */
-    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts, BiConsumer<TaskState, TaskConfiguration> taskSubmitter) {
+    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts, TaskSubmitter taskSubmitter) {
         graph.showImplicitConcepts(true);
 
         inserts.forEach(q -> q.withGraph(graph).execute());
@@ -94,9 +93,9 @@ public class MutatorTask implements BackgroundTask {
         Optional<String> result = graph.admin().commitNoLogs();
         if(result.isPresent()){ //Submit more tasks if commit resulted in created commit logs
             String logs = result.get();
-            taskSubmitter.accept(PostProcessingTask.createTask(this.getClass()),
+            taskSubmitter.addTask(PostProcessingTask.createTask(this.getClass()),
                     PostProcessingTask.createConfig(graph.getKeyspace(), logs));
-            taskSubmitter.accept(UpdatingInstanceCountTask.createTask(this.getClass()),
+            taskSubmitter.addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
                     UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));
         }
 

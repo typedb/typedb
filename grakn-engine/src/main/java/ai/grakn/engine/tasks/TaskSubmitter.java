@@ -16,28 +16,26 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.factory;
+package ai.grakn.engine.tasks;
 
-import ai.grakn.graph.internal.GraknComputerImpl;
-import ai.grakn.graph.internal.computer.GraknSparkComputer;
-import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
-import org.apache.tinkerpop.gremlin.structure.Graph;
+import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 
 /**
+ * <p>
+ *     Submits Background Tasks for processing
+ * </p>
  *
+ * <p>
+ *     Allows tasks to be submitted for processing. Any task submitted is added to {@link TaskStateStorage}
+ *     and is later executed by Task runner such as {@link SingleQueueTaskRunner}.
+ * </p>
+ *
+ * @author fppt
  */
-public class GraknComputerMock extends GraknComputerImpl {
-    private final Graph graph;
-    private int numberOfWorkers;
-
-    public GraknComputerMock(Graph graph, int numberOfWorkers) {
-        super(graph);
-        this.numberOfWorkers = numberOfWorkers;
-        this.graph = graph;
-    }
-
-    @Override
-    protected GraphComputer getGraphComputer() {
-        return graph.compute(getGraphComputerClass(GraknSparkComputer.class.getName())).workers(numberOfWorkers);
-    }
+public interface TaskSubmitter {
+    /**
+     * Schedule a {@link BackgroundTask} for execution.
+     * @param taskState Task to execute
+     */
+    void addTask(TaskState taskState, TaskConfiguration configuration);
 }

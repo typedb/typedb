@@ -106,10 +106,18 @@ public interface Unifier{
     boolean containsAll(Unifier u);
 
     /**
-     * @param d unifier to be merged with this unifier
-     * @return this
+     * unifier merging by simple mapping addition (no variable clashes assumed)
+     * @param u unifier to be merged with this unifier
+     * @return merged unifier
      */
-    Unifier merge(Unifier d);
+    Unifier merge(Unifier u);
+
+    /**
+     * unifier combination by joining mappings
+     * @param u unifier to be combined with this unifier
+     * @return combined unifier
+     */
+    Unifier combine(Unifier u);
 
     /**
      * @return this

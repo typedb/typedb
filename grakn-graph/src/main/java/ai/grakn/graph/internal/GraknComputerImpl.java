@@ -26,6 +26,8 @@ import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 import java.util.concurrent.ExecutionException;
 
@@ -54,9 +56,13 @@ public class GraknComputerImpl implements GraknComputer {
     private final Class<? extends GraphComputer> graphComputerClass;
     private GraphComputer graphComputer = null;
 
-    public GraknComputerImpl(Graph graph, String graphComputerType) {
+    public GraknComputerImpl(Graph graph) {
         this.graph = graph;
-        this.graphComputerClass = getGraphComputerClass(graphComputerType);
+        if(graph instanceof TinkerGraph){
+            graphComputerClass = TinkerGraphComputer.class;
+        } else {
+            graphComputerClass = GraknSparkComputer.class;
+        }
     }
 
     @Override

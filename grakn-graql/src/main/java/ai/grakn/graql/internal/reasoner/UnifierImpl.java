@@ -23,9 +23,12 @@ import ai.grakn.graql.admin.Unifier;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javafx.util.Pair;
 
 /**
  *
@@ -119,6 +122,28 @@ public class UnifierImpl implements Unifier {
     public Unifier merge(Unifier d) {
         d.mappings().forEach(m -> unifier.put(m.getKey(), m.getValue()));
         return this;
+    }
+
+    @Override
+    public Unifier combine(Unifier d) {
+        if (Collections.disjoint(this.values(), d.keySet())){
+            return new UnifierImpl(this).merge(d);
+        }
+        Unifier merged = new UnifierImpl();
+        Unifier inverse = this.inverse();
+        this.mappings().stream().filter(m -> !d.containsKey(m.getValue())).forEach(m -> merged.addMapping(m.getKey(), m.getValue()));
+        d.mappings().stream()
+                .flatMap(m -> {
+                    Var lVar = m.getKey();
+                    if (inverse.containsKey(lVar)){
+                        return inverse.get(lVar).stream()
+                                .map(v -> new Pair<>(v, m.getValue()));
+                    } else {
+                        return Stream.of(new Pair<>(m.getKey(), m.getValue()));
+                    }
+                })
+                .forEach(m -> merged.addMapping(m.getKey(), m.getValue()));
+        return merged;
     }
 
     @Override

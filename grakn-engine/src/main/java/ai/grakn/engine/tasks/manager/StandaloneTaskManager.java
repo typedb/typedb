@@ -181,7 +181,7 @@ public class StandaloneTaskManager implements TaskManager {
 
                     saveState(task);
 
-                    completed = runningTask.start(saveCheckpoint(task), configuration, this::addTask);
+                    completed = runningTask.start(saveCheckpoint(task), configuration, this);
                 }
 
                 if (completed) {
