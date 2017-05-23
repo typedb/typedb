@@ -63,12 +63,6 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     }
 
     @Override
-    void copyCachedConcepts(RelationType type){
-        super.copyCachedConcepts(type);
-        ((RelationTypeImpl) type).cachedRelates.ifPresent(value -> this.cachedRelates.set(getGraknGraph().getTxCache().cacheClone(value)));
-    }
-
-    @Override
     public Relation addRelation() {
         return addInstance(Schema.BaseType.RELATION,
                 (vertex, type) -> getGraknGraph().getElementFactory().buildRelation(vertex, type));
