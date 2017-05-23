@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
@@ -76,8 +77,10 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
         Set<TypeId> ofTypeIds =
                 ofTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
 
-        result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationTypeIds, ofTypeIds),
-                new DegreeDistributionMapReduce(ofTypeIds));
+        String randomId = Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
+
+        result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationTypeIds, ofTypeIds, randomId),
+                new DegreeDistributionMapReduce(ofTypeIds, DegreeVertexProgram.DEGREE + randomId));
 
         LOGGER.info("DegreeVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(DegreeDistributionMapReduce.class.getName());

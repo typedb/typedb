@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.MedianQuery;
@@ -28,6 +29,7 @@ import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MedianQuery {
 
@@ -41,13 +43,15 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
+        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceTypeLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
         Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
         Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
 
+        String randomId = Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
+
         ComputerResult result = getGraphComputer().compute(
-                new MedianVertexProgram(allSubTypeIds, statisticsResourceTypeIds, dataType));
+                new MedianVertexProgram(allSubTypeIds, statisticsResourceTypeIds, dataType, randomId));
 
         Number finalResult = result.memory().get(MedianVertexProgram.MEDIAN);
         LOGGER.debug("Median = " + finalResult);

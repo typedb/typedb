@@ -19,10 +19,12 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
+import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.SumMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -32,6 +34,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements SumQuery {
 
@@ -45,14 +48,16 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
+        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceTypeLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
         Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
         Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
 
+        String randomId = Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
+
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds),
-                new SumMapReduce(statisticsResourceTypeIds, dataType));
+                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds, randomId),
+                new SumMapReduce(statisticsResourceTypeIds, dataType, DegreeVertexProgram.DEGREE + randomId));
         Map<Serializable, Number> sum = result.memory().get(SumMapReduce.class.getName());
 
         Number finalResult = sum.get(MapReduce.NullObject.instance());
