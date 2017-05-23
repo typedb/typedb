@@ -30,6 +30,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -53,6 +54,23 @@ public class TypeAtom extends Binary{
     public TypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
     public TypeAtom(VarPatternAdmin pattern, IdPredicate p, ReasonerQuery par) { super(pattern, p, par);}
     protected TypeAtom(TypeAtom a) { super(a);}
+
+    @Override
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.typeId != null? this.typeId.hashCode() : 0);
+        hashCode = hashCode * 37 + this.varName.hashCode();
+        return hashCode;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        BinaryBase a2 = (BinaryBase) obj;
+        return Objects.equals(this.typeId, a2.getTypeId())
+                && this.varName.equals(a2.getVarName());
+    }
 
     @Override
     public String toString(){
