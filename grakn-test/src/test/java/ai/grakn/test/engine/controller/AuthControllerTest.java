@@ -35,7 +35,7 @@ public class AuthControllerTest{
 
     @Test
     public void newSessionWithWrongPasswordAndUser() {
-        UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "marco",
+        engine.server().usersHandler().addUser(Json.object(UsersHandler.USER_NAME, "marco",
         											   UsersHandler.USER_PASSWORD, "ciao", 
         											   UsersHandler.USER_IS_ADMIN, true));
 
@@ -58,7 +58,7 @@ public class AuthControllerTest{
     @Test
     public void newSessionWithExistingUser() {
         //Add a user
-        UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "giulio", 
+        engine.server().usersHandler().addUser(Json.object(UsersHandler.USER_NAME, "giulio",
 				   UsersHandler.USER_PASSWORD, "ciao", 
 				   UsersHandler.USER_IS_ADMIN, true));
 

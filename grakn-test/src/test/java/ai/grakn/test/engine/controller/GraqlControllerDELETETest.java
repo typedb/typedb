@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
@@ -73,11 +74,11 @@ public class GraqlControllerDELETETest {
     @BeforeClass
     public static void setup(){
         spark = Service.ignite();
-        configureSpark(spark, PORT);
+        configureSpark(spark, PORT, GraknEngineConfig.getInstance());
 
         mockFactory = mock(EngineGraknGraphFactory.class);
 
-        new SystemController(spark);
+        new SystemController(spark, GraknEngineConfig.getInstance());
         new GraqlController(mockFactory, spark);
 
         spark.awaitInitialization();

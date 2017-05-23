@@ -27,6 +27,7 @@ import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
@@ -70,6 +71,7 @@ public class GraknEngineServer implements AutoCloseable {
     private final int port;
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
+    private final UsersHandler usersHandler = UsersHandler.create();
 
     private GraknEngineServer(String taskManagerClass, GraknEngineConfig prop, int port) {
         this.prop = prop;
@@ -110,6 +112,10 @@ public class GraknEngineServer implements AutoCloseable {
         return prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
     }
 
+    public UsersHandler usersHandler() {
+        return usersHandler;
+    }
+
     /**
      * Check in with the properties file to decide which type of task manager should be started
      */
@@ -125,7 +131,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public void startHTTP() {
-        configureSpark(spark, port);
+        configureSpark(spark, port, prop);
 
         // Start all the controllers
         EngineGraknGraphFactory factory = EngineGraknGraphFactory.getInstance();
@@ -133,8 +139,8 @@ public class GraknEngineServer implements AutoCloseable {
         new ConceptController(factory, spark);
         new DashboardController(factory, spark);
         new SystemController(spark, prop);
-        new AuthController(spark, prop);
-        new UserController(spark);
+        new AuthController(spark, prop, usersHandler());
+        new UserController(spark, usersHandler());
         new CommitLogController(spark, prop, taskManager);
         new TasksController(spark, taskManager);
 
@@ -143,7 +149,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
 
-    private void configureSpark(Service spark, int port){
+    public static void configureSpark(Service spark, int port, GraknEngineConfig prop){
         // Set host name
         spark.ipAddress(prop.getProperty(SERVER_HOST_NAME));
 
@@ -158,7 +164,11 @@ public class GraknEngineServer implements AutoCloseable {
         spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
         //Register filter to check authentication token in each request
-        spark.before((req, res) -> checkAuthorization(spark, req));
+        boolean isPasswordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
+
+        if (isPasswordProtected) {
+            spark.before((req, res) -> checkAuthorization(spark, req));
+        }
 
         //Register exception handlers
         spark.exception(GraknEngineServerException.class, (e, req, res) -> handleGraknServerError(e, res));
@@ -199,8 +209,7 @@ public class GraknEngineServer implements AutoCloseable {
      * access to specific endpoints.
      * @param request request information from the client
      */
-    private void checkAuthorization(Service spark, Request request) {
-        if(!isPasswordProtected()) return;
+    private static void checkAuthorization(Service spark, Request request) {
 
         //we dont check authorization token if the path requested is one of the unauthenticated ones
         if (!unauthenticatedEndPoints.contains(request.pathInfo())) {

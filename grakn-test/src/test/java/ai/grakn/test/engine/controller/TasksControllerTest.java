@@ -18,6 +18,7 @@
 
 package ai.grakn.test.engine.controller;
 
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.tasks.TaskManager;
@@ -92,7 +93,7 @@ public class TasksControllerTest {
     @BeforeClass
     public static void setUp() throws Exception {
         spark = Service.ignite();
-        configureSpark(spark, PORT);
+        configureSpark(spark, PORT, GraknEngineConfig.getInstance());
 
         manager = mock(TaskManager.class);
         when(manager.storage()).thenReturn(mock(TaskStateStorage.class));

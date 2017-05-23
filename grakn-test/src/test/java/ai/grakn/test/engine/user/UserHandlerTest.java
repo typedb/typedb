@@ -41,12 +41,13 @@ import static org.junit.Assert.assertTrue;
 
 public class UserHandlerTest {
 
-    private static UsersHandler users = UsersHandler.getInstance();
     private static String userName = "geralt";
     private static String password = "witcher";
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
+
+    private static UsersHandler users = engine.server().usersHandler();
 
     @Before
     public void addUser(){

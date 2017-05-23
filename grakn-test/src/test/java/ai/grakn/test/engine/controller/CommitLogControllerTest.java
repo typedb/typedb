@@ -27,6 +27,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
@@ -86,12 +87,12 @@ public class CommitLogControllerTest {
 
         baseURI = "http://localhost:" + PORT;
         spark = Service.ignite();
-        configureSpark(spark, PORT);
+        configureSpark(spark, PORT, GraknEngineConfig.getInstance());
 
         manager = mock(TaskManager.class);
 
-        new CommitLogController(spark, manager);
-        new SystemController(spark);
+        new CommitLogController(spark, GraknEngineConfig.getInstance(), manager);
+        new SystemController(spark, GraknEngineConfig.getInstance());
 
         spark.awaitInitialization();
     }

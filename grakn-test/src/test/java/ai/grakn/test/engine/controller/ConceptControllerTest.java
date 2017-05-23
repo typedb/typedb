@@ -21,6 +21,7 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
@@ -70,11 +71,11 @@ public class ConceptControllerTest {
     @BeforeClass
     public static void setup(){
         spark = Service.ignite();
-        configureSpark(spark, PORT);
+        configureSpark(spark, PORT, GraknEngineConfig.getInstance());
 
         mockFactory = mock(EngineGraknGraphFactory.class);
 
-        new SystemController(spark);
+        new SystemController(spark, GraknEngineConfig.getInstance());
         new ConceptController(mockFactory, spark);
 
         spark.awaitInitialization();

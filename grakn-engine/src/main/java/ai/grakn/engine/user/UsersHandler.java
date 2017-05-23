@@ -18,12 +18,11 @@
 
 package ai.grakn.engine.user;
 
+import ai.grakn.engine.GraknEngineConfig;
 import mjson.Json;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import ai.grakn.engine.GraknEngineConfig;
 
 /**
  * <p>
@@ -42,16 +41,12 @@ public class UsersHandler {
     public static final String USER_LAST_NAME = "user-last-name";
     public static final String USER_EMAIL = "user-email";
     public static final String USER_IS_ADMIN = "user-is-admin";
-    private static UsersHandler instance = null;
     private final Map<String, Json> usersMap = new HashMap<>();
-    
-    public synchronized static UsersHandler getInstance() {
-        if (instance == null) {
-            instance = new SystemKeyspaceUsers(); // new UsersHandler();
-        }
-        return instance;
+
+    public synchronized static UsersHandler create() {
+        return new SystemKeyspaceUsers(); // new UsersHandler();
     }
- 
+
     protected UsersHandler() {
     }
 

@@ -46,7 +46,7 @@ public class GraknEngineServerTest {
         // Should start engine with in-memory server
         GraknEngineConfig.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, StandaloneTaskManager.class.getName());
 
-        try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
+        try (GraknEngineServer server = GraknEngineServer.mainWithServer(GraknEngineConfig.getInstance())) {
             assertTrue(server.getTaskManager() instanceof StandaloneTaskManager);
         }
     }
@@ -58,7 +58,7 @@ public class GraknEngineServerTest {
         GraknEngineConfig.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
         GraknEngineConfig.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
 
-        try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
+        try (GraknEngineServer server = GraknEngineServer.mainWithServer(GraknEngineConfig.getInstance())) {
             assertThat(server.getTaskManager(), instanceOf(SingleQueueTaskManager.class));
         }
     }

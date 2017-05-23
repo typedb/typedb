@@ -33,12 +33,12 @@ import mjson.Json;
  *
  */
 public class SuperUserTest {
-    
-    private static UsersHandler users = UsersHandler.getInstance();
-    
+
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
-    
+
+    private static UsersHandler users = engine.server().usersHandler();
+
     @Test
     public void testSuperuserPresent() {
         Assert.assertNotNull(users.getUser(users.superUsername()));

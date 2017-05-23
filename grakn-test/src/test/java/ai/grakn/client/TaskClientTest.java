@@ -19,6 +19,7 @@
 
 package ai.grakn.client;
 
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.controller.TasksController;
@@ -69,7 +70,7 @@ public class TaskClientTest {
         client = TaskClient.of("localhost", 4567);
 
         spark = Service.ignite();
-        configureSpark(spark, 4567);
+        configureSpark(spark, 4567, GraknEngineConfig.getInstance());
 
         manager = mock(TaskManager.class);
         when(manager.storage()).thenReturn(mock(TaskStateStorage.class));

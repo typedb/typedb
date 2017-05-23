@@ -21,7 +21,6 @@ package ai.grakn.engine.session;
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.util.REST;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
@@ -119,7 +118,7 @@ public class RemoteSession {
 
         boolean credentialsProvided = username != null && password != null;
 
-        return credentialsProvided && UsersHandler.getInstance().validateUser(username.asString(), password.asString());
+        return credentialsProvided && server.usersHandler().validateUser(username.asString(), password.asString());
 
     }
 }

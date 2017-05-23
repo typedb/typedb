@@ -29,10 +29,11 @@ import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertTrue;
 
 public class UserControllerTest {
-    private UsersHandler users = UsersHandler.getInstance();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
+
+    private UsersHandler users = engine.server().usersHandler();
 
     @Test
     public void testAddNewUser(){

@@ -87,7 +87,7 @@ public abstract class GraknTestEnv {
 
         // start engine
         RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
-        GraknEngineServer server = GraknEngineServer.start(taskManagerClass, port);
+        GraknEngineServer server = GraknEngineServer.start(taskManagerClass, GraknEngineConfig.getInstance(), port);
 
         LOG.info("engine started.");
 
