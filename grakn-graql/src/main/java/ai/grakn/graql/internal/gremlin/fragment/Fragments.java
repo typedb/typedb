@@ -168,14 +168,20 @@ public class Fragments {
         });
     }
 
+    /**
+     * Optionally traverse from a shortcut edge to the role-type it mentions, plus any super-types.
+     *
+     * @param traversal the traversal, starting from the shortcut edge
+     * @param roleType the variable to assign to the role-type. If not present, do nothing
+     */
     static void traverseRoleTypeFromShortcutEdge(GraphTraversal<Vertex, Edge> traversal, Optional<Var> roleType) {
         roleType.ifPresent(var -> {
-            // Access role-type ID
+            // Access role-type ID from edge
             Var roleTypeIdProperty = Var.anon();
             Var edge = Var.anon();
             traversal.as(edge.getValue()).values(ROLE_TYPE_ID.name()).as(roleTypeIdProperty.getValue());
 
-            // Look up direct role-type
+            // Look up direct role-type using ID
             Var directRoleType = Var.anon();
             GraphTraversal<Vertex, Vertex> vertexTraversal =
                     traversal.V().as(directRoleType.getValue())

@@ -19,6 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -28,6 +29,8 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import com.google.common.base.Preconditions;
 
+import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
@@ -64,16 +67,91 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         this.relationTypeLabels = relationTypeLabels;
     }
 
-    Var relation() {
-        return relation;
+    /**
+     * A query can use the role-type labels on a shortcut edge when the following criteria are met:
+     * <ol>
+     *     <li>There is a {@link ShortcutFragmentSet} {@code $r-[shortcut:$e role:$R ...]->$p}
+     *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo]}
+     * </ol>
+     *
+     * When these criteria are met, the {@link ShortcutFragmentSet} can be filtered to the indirect sub-types of
+     * {@code foo} and will no longer need to navigate to the role-type directly:
+     * <p>
+     * {@code $r-[shortcut:$e roles:foo ...]->$p}
+     * <p>
+     *
+     * However, we must still retain the {@link LabelFragmentSet} because it is possible it is selected as a result or
+     * referred to elsewhere in the query.
+     */
+    static boolean applyShortcutRoleTypeOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+        Iterable<ShortcutFragmentSet> shortcuts = EquivalentFragmentSets.fragmentSetOfType(ShortcutFragmentSet.class, fragmentSets)::iterator;
+
+        for (ShortcutFragmentSet shortcut : shortcuts) {
+            Optional<Var> roleVar = shortcut.roleType;
+
+            if (!roleVar.isPresent()) continue;
+
+            @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.typeLabelOf(roleVar.get(), fragmentSets);
+
+            if (roleLabel == null) continue;
+
+            RoleType roleType = graph.getType(roleLabel.label());
+
+            fragmentSets.remove(shortcut);
+            fragmentSets.add(shortcut.substituteRoleTypeLabel(roleType));
+
+            return true;
+        }
+
+        return false;
     }
 
-    Optional<Var> roleType() {
-        return roleType;
-    }
+    /**
+     * A query can use the relation-type labels on a shortcut edge when the following criteria are met:
+     * <ol>
+     *     <li>There is a {@link ShortcutFragmentSet} {@code $r-[shortcut:$e ...]->$p}
+     *         without any relation type labels specified
+     *     <li>There is a {@link IsaFragmentSet} {@code $r-[isa]->$R}
+     *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo]}
+     * </ol>
+     *
+     * When these criteria are met, the {@link ShortcutFragmentSet} can be filtered to the indirect sub-types of
+     * {@code foo}.
+     * <p>
+     * {@code $r-[shortcut:$e rels:foo]->$p}
+     * <p>
+     *
+     * However, we must still retain the {@link LabelFragmentSet} because it is possible it is selected as a result or
+     * referred to elsewhere in the query.
+     * <p>
+     * We also keep the {@link IsaFragmentSet}, although the results will still be correct without it. This is because
+     * it can help with performance: there are some instances where it makes sense to navigate from the relation-type
+     * {@code foo} to all instances. In order to do that, the {@link IsaFragmentSet} must be present.
+     */
+    static boolean applyShortcutRelationTypeOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+        Iterable<ShortcutFragmentSet> shortcuts = EquivalentFragmentSets.fragmentSetOfType(ShortcutFragmentSet.class, fragmentSets)::iterator;
 
-    Optional<Set<TypeLabel>> relationTypeLabels() {
-        return relationTypeLabels;
+        for (ShortcutFragmentSet shortcut : shortcuts) {
+
+            if (shortcut.relationTypeLabels.isPresent()) continue;
+
+            @Nullable IsaFragmentSet isa = EquivalentFragmentSets.typeInformationOf(shortcut.relation, fragmentSets);
+
+            if (isa == null) continue;
+
+            @Nullable LabelFragmentSet relationLabel = EquivalentFragmentSets.typeLabelOf(isa.type(), fragmentSets);
+
+            if (relationLabel == null) continue;
+
+            RelationType relationType = graph.getType(relationLabel.label());
+
+            fragmentSets.remove(shortcut);
+            fragmentSets.add(shortcut.addRelationTypeLabel(relationType));
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -81,7 +159,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * @param roleType the role-type that this shortcut fragment must link to
      * @return a new {@link ShortcutFragmentSet} with the same properties excepting role-types
      */
-    ShortcutFragmentSet substituteRoleTypeLabel(RoleType roleType) {
+    private ShortcutFragmentSet substituteRoleTypeLabel(RoleType roleType) {
         Preconditions.checkState(this.roleType.isPresent());
         Preconditions.checkState(!roleTypeLabels.isPresent());
 
@@ -97,7 +175,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * @param relationType the relation-type that this shortcut fragment must link to
      * @return a new {@link ShortcutFragmentSet} with the same properties excepting relation-type labels
      */
-    ShortcutFragmentSet addRelationTypeLabel(RelationType relationType) {
+    private ShortcutFragmentSet addRelationTypeLabel(RelationType relationType) {
         Preconditions.checkState(!relationTypeLabels.isPresent());
 
         Set<TypeLabel> newRelationTypeLabels = relationType.subTypes().stream().map(Type::getLabel).collect(toSet());
