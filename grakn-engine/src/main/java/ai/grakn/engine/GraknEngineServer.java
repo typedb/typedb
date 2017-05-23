@@ -57,8 +57,6 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  */
 
 public class GraknEngineServer implements AutoCloseable {
-    private static final GraknEngineConfig prop = GraknEngineConfig.getInstance();
-
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final int WEBSOCKET_TIMEOUT = 3600000;
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
@@ -66,14 +64,16 @@ public class GraknEngineServer implements AutoCloseable {
             REST.WebPath.REMOTE_SHELL_URI,
             REST.WebPath.System.CONFIGURATION,
             REST.WebPath.IS_PASSWORD_PROTECTED_URI));
-    public static final boolean isPasswordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
 
+    private final GraknEngineConfig prop;
     private final EngineID engineId = EngineID.me();
     private final int port;
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
 
-    private GraknEngineServer(String taskManagerClass, int port) {
+    private GraknEngineServer(String taskManagerClass, GraknEngineConfig prop, int port) {
+        this.prop = prop;
+
         taskManager = startTaskManager(taskManagerClass);
         this.port = port;
         startHTTP();
@@ -81,28 +81,33 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public static void main(String[] args) {
-        GraknEngineServer server = mainWithServer();
+        GraknEngineConfig prop = GraknEngineConfig.getInstance();
+        GraknEngineServer server = mainWithServer(prop);
 
         // close GraknEngineServer on SIGTERM
         Thread closeThread = new Thread(server::close, "GraknEngineServer-shutdown");
         Runtime.getRuntime().addShutdownHook(closeThread);
     }
 
-    public static GraknEngineServer mainWithServer() {
+    public static GraknEngineServer mainWithServer(GraknEngineConfig prop) {
         // Start Engine
         int port = prop.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER);
         String taskManagerClass = prop.getProperty(TASK_MANAGER_IMPLEMENTATION);
-        return start(taskManagerClass, port);
+        return start(taskManagerClass, prop, port);
     }
 
-    public static GraknEngineServer start(String taskManagerClass, int port){
-        return new GraknEngineServer(taskManagerClass, port);
+    public static GraknEngineServer start(String taskManagerClass, GraknEngineConfig prop, int port){
+        return new GraknEngineServer(taskManagerClass, prop, port);
     }
 
     @Override
     public void close() {
         stopHTTP();
         stopTaskManager();
+    }
+
+    public boolean isPasswordProtected() {
+        return prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
     }
 
     /**
@@ -127,10 +132,10 @@ public class GraknEngineServer implements AutoCloseable {
         new GraqlController(factory, spark);
         new ConceptController(factory, spark);
         new DashboardController(factory, spark);
-        new SystemController(spark);
-        new AuthController(spark);
+        new SystemController(spark, prop);
+        new AuthController(spark, prop);
         new UserController(spark);
-        new CommitLogController(spark, taskManager);
+        new CommitLogController(spark, prop, taskManager);
         new TasksController(spark, taskManager);
 
         // This method will block until all the controllers are ready to serve requests
@@ -138,7 +143,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
 
-    public static void configureSpark(Service spark, int port){
+    private void configureSpark(Service spark, int port){
         // Set host name
         spark.ipAddress(prop.getProperty(SERVER_HOST_NAME));
 
@@ -194,8 +199,8 @@ public class GraknEngineServer implements AutoCloseable {
      * access to specific endpoints.
      * @param request request information from the client
      */
-    private static void checkAuthorization(Service spark, Request request) {
-        if(!isPasswordProtected) return;
+    private void checkAuthorization(Service spark, Request request) {
+        if(!isPasswordProtected()) return;
 
         //we dont check authorization token if the path requested is one of the unauthenticated ones
         if (!unauthenticatedEndPoints.contains(request.pathInfo())) {

@@ -49,9 +49,11 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
  */
 //TODO Implement delete
 public class CommitLogController {
+    private final GraknEngineConfig config;
     private final TaskManager manager;
 
-    public CommitLogController(Service spark, TaskManager manager){
+    public CommitLogController(Service spark, GraknEngineConfig config, TaskManager manager){
+        this.config = config;
         this.manager = manager;
 
         spark.post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
@@ -78,7 +80,7 @@ public class CommitLogController {
     })
     private String submitConcepts(Request req, Response res) {
         String keyspace = Optional.ofNullable(req.queryParams(KEYSPACE_PARAM))
-                .orElse(GraknEngineConfig.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY));
+                .orElse(config.getProperty(DEFAULT_KEYSPACE_PROPERTY));
 
         // Instances to post process
         TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass());

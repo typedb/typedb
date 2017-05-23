@@ -52,9 +52,12 @@ public class AuthController {
     private final static UsersHandler usersHandler = UsersHandler.getInstance();
     private final static String USERNAME_KEY = "username";
     private final static String PASSWORD_KEY = "password";
+    private final GraknEngineConfig config;
 
 
-    public AuthController(Service spark) {
+    public AuthController(Service spark, GraknEngineConfig config) {
+        this.config = config;
+
         spark.post(REST.WebPath.NEW_SESSION_URI, this::newSession);
         spark.get(REST.WebPath.IS_PASSWORD_PROTECTED_URI,this::isPasswordProtected);
     }
@@ -92,6 +95,6 @@ public class AuthController {
     @ApiOperation(
             value = "Returns true if Engine endpoints are password protected. False otherwise.")
     private String isPasswordProtected(Request req, Response res) {
-        return GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY);
+        return config.getProperty(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY);
     }
 }

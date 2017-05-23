@@ -50,11 +50,11 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 public class RemoteSession {
     private final Map<Session, GraqlSession> sessions = new HashMap<>();
     private final Logger LOG = LoggerFactory.getLogger(RemoteSession.class);
+    private final GraknEngineServer server;
 
     //TODO dont use the default uri
-    // This constructor is magically invoked by spark's websocket stuff
-    @SuppressWarnings("unused")
-    public RemoteSession() {
+    public RemoteSession(GraknEngineServer server) {
+        this.server = server;
     }
 
     @OnWebSocketConnect
@@ -112,7 +112,7 @@ public class RemoteSession {
     }
 
     private boolean sessionAuthorised(Json json) {
-        if (!GraknEngineServer.isPasswordProtected) return true;
+        if (!server.isPasswordProtected()) return true;
 
         Json username = json.at(USERNAME);
         Json password = json.at(PASSWORD);
