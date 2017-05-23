@@ -35,7 +35,10 @@ public class RuleExplanation extends Explanation {
 
     private final InferenceRule rule;
 
-    public RuleExplanation(InferenceRule rl){ this.rule = rl;}
+    public RuleExplanation(ReasonerQuery q, InferenceRule rl){
+        super(q);
+        this.rule = rl;
+    }
     public RuleExplanation(RuleExplanation exp){
         super(exp);
         this.rule = exp.getRule();
@@ -48,7 +51,9 @@ public class RuleExplanation extends Explanation {
     public boolean isRuleExplanation(){ return true;}
 
     @Override
-    public ReasonerQuery getQuery(){ return rule.getHead();}
+    public AnswerExplanation setQuery(ReasonerQuery q){
+        return new RuleExplanation(q, getRule());
+    }
 
     public InferenceRule getRule(){ return rule;}
 }

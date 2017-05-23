@@ -271,7 +271,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .computeJoin(subGoals, cache, dCache, materialise, explanation, differentialJoin)
                 .map(a -> a.filterVars(varsToRetain))
                 .distinct()
-                .map(ans -> ans.explain(new RuleExplanation(rule)));
+                .map(ans -> ans.explain(new RuleExplanation(this, rule)));
 
         if (materialise || rule.requiresMaterialisation(atom)) {
             if (!cache.contains(ruleHead)) dCache.record(ruleHead, ruleHead.lookup(cache));
