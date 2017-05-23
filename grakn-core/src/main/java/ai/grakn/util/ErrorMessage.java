@@ -174,6 +174,7 @@ public enum ErrorMessage {
 
     //Server Errors
     UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
+    UNAVAILABLE_PROPERTY("Property requested [%s] has not been defined. See configuration file [%s] for configured properties."),
     MISSING_MANDATORY_REQUEST_PARAMETERS("Missing mandatory query parameter [%s]"),
     MISSING_REQUEST_BODY("Empty body- it should contain the Graql query to be executed."),
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
