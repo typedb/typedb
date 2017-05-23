@@ -33,7 +33,6 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
-import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.ConceptProperty.INSTANCE_TYPE_ID;
