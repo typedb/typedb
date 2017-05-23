@@ -49,7 +49,6 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.argThat;
 import static java.util.stream.Stream.generate;
 import static org.mockito.Mockito.*;
@@ -81,7 +80,7 @@ public class BatchMutatorClientTest {
         BatchMutatorClient loader = loader();
         loader.setTaskCompletionConsumer((json) -> {
             try {
-                fail("Testing failures appear in logs");
+                throw new RuntimeException("deliberate failure");
             } finally {
                 callbackCompleted.countDown();
             }
