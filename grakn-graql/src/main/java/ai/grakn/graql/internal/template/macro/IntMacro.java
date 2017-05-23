@@ -41,7 +41,13 @@ public class IntMacro implements Macro<Integer> {
         if(values.size() != numberArguments){
             throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
         }
-        return Integer.parseInt(values.get(0).toString());
+
+        String intValue = values.get(0).toString();
+        try {
+            return Integer.parseInt(intValue);
+        } catch (NumberFormatException e){
+            throw new IllegalArgumentException("Value [" + intValue + "] is not an integer in macro " + name());
+        }
     }
 
     @Override

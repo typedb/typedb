@@ -23,6 +23,8 @@ import mjson.Json;
 import java.util.HashMap;
 import java.util.Map;
 
+import ai.grakn.engine.GraknEngineConfig;
+
 /**
  * <p>
  *     Class to interact with users stored in the graph.
@@ -31,6 +33,7 @@ import java.util.Map;
  * @author Marco Scoppetta
  */
 public class UsersHandler {
+    public static final String SUPERUSER = "admin";
     public static final String USER_ENTITY = "user";
     public static final String USER_NAME = "user-name";
     public static final String USER_PASSWORD = "user-password";
@@ -39,10 +42,9 @@ public class UsersHandler {
     public static final String USER_LAST_NAME = "user-last-name";
     public static final String USER_EMAIL = "user-email";
     public static final String USER_IS_ADMIN = "user-is-admin";
-
     private static UsersHandler instance = null;
     private final Map<String, Json> usersMap = new HashMap<>();
-
+    
     public synchronized static UsersHandler getInstance() {
         if (instance == null) {
             instance = new SystemKeyspaceUsers(); // new UsersHandler();
@@ -53,16 +55,22 @@ public class UsersHandler {
     protected UsersHandler() {
     }
 
+    public String superUsername() {
+        return SUPERUSER;
+    }
+    
     public boolean addUser(Json user) {
-        if (usersMap.containsKey(user.at(USER_NAME).asString())) {
+        String username = user.at(USER_NAME).asString();
+        if (superUsername().equals(username) || usersMap.containsKey(username)) {
             return false;
         }
-        usersMap.put(user.at(USER_NAME).asString(), user);
+        usersMap.put(username, user);
         return true;
     }
 
     public boolean updateUser(Json user) {
-        if (usersMap.containsKey(user.at(USER_NAME).asString())) {
+        String username = user.at(USER_NAME).asString();
+        if (superUsername().equals(username) || !usersMap.containsKey(username)) {
             return false;
         }
         usersMap.put(user.at(USER_NAME).asString(), user);
@@ -70,22 +78,33 @@ public class UsersHandler {
     }
 
     public boolean userExists(String username) {
-        return usersMap.containsKey(username);
+        return superUsername().equals(username) || usersMap.containsKey(username);
     }
 
     public boolean validateUser(String username, String hashedPassword) {
-        if (userExists(username)) {
+        if (superUsername().equals(username)) {
+            return hashedPassword.equals(GraknEngineConfig.getInstance().getProperty(
+                    GraknEngineConfig.ADMIN_PASSWORD_PROPERTY));
+        }
+        else if (userExists(username)) {
             return getUser(username).is(USER_PASSWORD, hashedPassword);
         }
-        return false;
+        else {
+            return false;
+        }
     }
 
     public Json getUser(String username) {
-        return usersMap.get(username);
+        return superUsername().equals(username) ? Json.object(USER_NAME, superUsername()) : usersMap.get(username);
     }
 
     public boolean removeUser(String username) {
-        return usersMap.remove(username) != null;
+        if (superUsername().equals(username)) {
+            return false;
+        }
+        else {
+            return usersMap.remove(username) != null;
+        }
     }
 
     public Json allUsers(int offset, int limit) {

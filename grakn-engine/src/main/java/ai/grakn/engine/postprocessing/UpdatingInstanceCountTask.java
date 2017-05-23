@@ -26,6 +26,7 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.REST;
@@ -35,7 +36,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -55,7 +55,7 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
     private static final long SHARDING_THRESHOLD = GraknEngineConfig.getInstance().getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
 
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, BiConsumer<TaskState, TaskConfiguration> taskSubmitter) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
         Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration);
         String keyspace = configuration.json().at(REST.Request.KEYSPACE).asString();
 

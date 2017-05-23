@@ -24,17 +24,21 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
+import java.util.Set;
 
-import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static ai.grakn.util.Schema.ConceptProperty.INSTANCE_TYPE_ID;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Factory for creating instances of {@link Fragment}.
@@ -47,14 +51,14 @@ public class Fragments {
 
     public static Fragment inShortcut(
             Var rolePlayer, Var edge, Var relation,
-            Optional<TypeLabel> roleType, Optional<TypeLabel> relationType) {
-        return new InShortcutFragment(rolePlayer, edge, relation, roleType, relationType);
+            Optional<Set<TypeLabel>> roleTypes, Optional<Set<TypeLabel>> relationTypes) {
+        return new InShortcutFragment(rolePlayer, edge, relation, roleTypes, relationTypes);
     }
 
     public static Fragment outShortcut(
             Var relation, Var edge, Var rolePlayer,
-            Optional<TypeLabel> roleType, Optional<TypeLabel> relationType) {
-        return new OutShortcutFragment(relation, edge, rolePlayer, roleType, relationType);
+            Optional<Set<TypeLabel>> roleTypes, Optional<Set<TypeLabel>> relationTypes) {
+        return new OutShortcutFragment(relation, edge, rolePlayer, roleTypes, relationTypes);
     }
 
     public static Fragment inSub(Var start, Var end) {
@@ -174,12 +178,17 @@ public class Fragments {
         return traversal.union(__.not(__.has(INSTANCE_TYPE_ID.name())), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
     }
 
-    static String displayOptionalTypeLabel(Optional<TypeLabel> typeLabel) {
-        return typeLabel.map(label -> " " + typeLabelToString(label)).orElse("");
+    static String displayOptionalTypeLabels(Optional<Set<TypeLabel>> typeLabels) {
+        return typeLabels.map(labels ->
+            " " + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
+        ).orElse("");
     }
 
-    static void applyTypeLabelToTraversal(
-            GraphTraversal<Vertex, Edge> traversal, Schema.EdgeProperty property, Optional<TypeLabel> typeLabel, GraknGraph graph) {
-        typeLabel.ifPresent(label -> traversal.has(property.name(), graph.admin().convertToId(label).getValue()));
+    static void applyTypeLabelsToTraversal(
+            GraphTraversal<Vertex, Edge> traversal, Schema.EdgeProperty property, Optional<Set<TypeLabel>> typeLabels, GraknGraph graph) {
+        typeLabels.ifPresent(labels -> {
+            Set<Integer> typeIds = labels.stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
+            traversal.has(property.name(), P.within(typeIds));
+        });
     }
 }

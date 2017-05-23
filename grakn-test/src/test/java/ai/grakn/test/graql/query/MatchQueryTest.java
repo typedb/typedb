@@ -85,6 +85,7 @@ import static ai.grakn.test.matcher.GraknMatchers.isShard;
 import static ai.grakn.test.matcher.GraknMatchers.resource;
 import static ai.grakn.test.matcher.GraknMatchers.results;
 import static ai.grakn.test.matcher.GraknMatchers.rule;
+import static ai.grakn.test.matcher.GraknMatchers.type;
 import static ai.grakn.test.matcher.GraknMatchers.variable;
 import static ai.grakn.test.matcher.MovieMatchers.aRuleType;
 import static ai.grakn.test.matcher.MovieMatchers.action;
@@ -211,6 +212,15 @@ public class MatchQueryTest {
         assertThat(query, variable("x", containsInAnyOrder(
                 marlonBrando, alPacino, missPiggy, kermitTheFrog, martinSheen, robertDeNiro, judeLaw, mirandaHeart,
                 betteMidler, sarahJessicaParker
+        )));
+    }
+
+    @Test
+    public void whenQueryingForRole_ResultContainsAllValidRoles() {
+        MatchQuery query = qb.match(var().rel(var(x), var().has("name", "Michael Corleone"))).distinct();
+
+        assertThat(query, variable("x", containsInAnyOrder(
+                type("concept"), type("role"), type("character-being-played")
         )));
     }
 
@@ -523,6 +533,31 @@ public class MatchQueryTest {
         ).select("x");
 
         assertThat(query, variable("x", (Matcher) hasItem(kermitTheFrog)));
+    }
+
+    @Test
+    public void whenQueryingForSuperRolesAndRelations_TheResultsAreTheSame() {
+        assertEquals(
+                Sets.newHashSet(qb.match(var("x").rel("work", "y").rel("author", "z").isa("authored-by"))),
+                Sets.newHashSet(qb.match(var("x").rel("production-being-directed", "y").rel("director", "z").isa("directed-by")))
+        );
+    }
+
+    @Test
+    public void whenQueryingForSuperRolesAndRelationsWithOneRolePlayer_TheResultsAreTheSame() {
+        // This is a special case which can cause comparisons between shortcut edges and castings
+        assertEquals(
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("author", "z").isa("authored-by"))),
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("director", "z").isa("directed-by")))
+        );
+    }
+
+    @Test
+    public void whenQueryingForSuperRelationTypes_TheResultsAreTheSame() {
+        assertEquals(
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("z").isa("authored-by"))),
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("z").isa("directed-by")))
+        );
     }
 
     @Test
