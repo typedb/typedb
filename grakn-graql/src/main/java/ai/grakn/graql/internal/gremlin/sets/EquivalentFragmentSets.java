@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -159,7 +160,8 @@ public class EquivalentFragmentSets {
         // TODO: Create a real interface for these when there are more of them
         ImmutableList<Supplier<Boolean>> optimisations = ImmutableList.of(
                 () -> applyResourceIndexOptimisation(fragmentSets, graph),
-                () -> applyShortcutRoleTypeOptimisation(fragmentSets, graph)
+                () -> applyShortcutRoleTypeOptimisation(fragmentSets, graph),
+                () -> applyShortcutRelationTypeOptimisation(fragmentSets, graph)
         );
 
         // Repeatedly apply optimisations until they don't alter the query
@@ -176,14 +178,14 @@ public class EquivalentFragmentSets {
     /**
      * A query can use the role-type labels on a shortcut edge when the following criteria are met:
      * <ol>
-     *     <li>There is a {@link ShortcutFragmentSet} {@code $r-[shortcut:$e role:$R]-$p}
+     *     <li>There is a {@link ShortcutFragmentSet} {@code $r-[shortcut:$e role:$R ...]->$p}
      *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo]}
      * </ol>
      *
      * When these criteria are met, the {@link ShortcutFragmentSet} can be filtered to the indirect sub-types of
      * {@code foo} and will no longer need to navigate to the role-type directly:
      * <p>
-     * {@code $r-[shortcut:$e roles:foo]}
+     * {@code $r-[shortcut:$e roles:foo ...]->$p}
      * <p>
      *
      * However, we must still retain the {@link LabelFragmentSet} because it is possible it is selected as a result or
@@ -195,20 +197,66 @@ public class EquivalentFragmentSets {
         for (ShortcutFragmentSet shortcut : shortcuts) {
             Optional<Var> roleVar = shortcut.roleType();
 
-            if (!roleVar.isPresent()) {
-                continue;
-            }
+            if (!roleVar.isPresent()) continue;
 
             @Nullable LabelFragmentSet roleLabel = typeLabelOf(roleVar.get(), fragmentSets);
 
-            if (roleLabel == null) {
-                continue;
-            }
+            if (roleLabel == null) continue;
 
             RoleType roleType = graph.getType(roleLabel.label());
 
             fragmentSets.remove(shortcut);
             fragmentSets.add(shortcut.substituteRoleTypeLabel(roleType));
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * A query can use the relation-type labels on a shortcut edge when the following criteria are met:
+     * <ol>
+     *     <li>There is a {@link ShortcutFragmentSet} {@code $r-[shortcut:$e ...]->$p}
+     *         without any relation type labels specified
+     *     <li>There is a {@link IsaFragmentSet} {@code $r-[isa]->$R}
+     *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo]}
+     * </ol>
+     *
+     * When these criteria are met, the {@link ShortcutFragmentSet} can be filtered to the indirect sub-types of
+     * {@code foo}.
+     * <p>
+     * {@code $r-[shortcut:$e rels:foo]->$p}
+     * <p>
+     *
+     * However, we must still retain the {@link LabelFragmentSet} because it is possible it is selected as a result or
+     * referred to elsewhere in the query.
+     * <p>
+     * We also keep the {@link IsaFragmentSet}, although the results will still be correct without it. This is because
+     * it can help with performance: there are some instances where it makes sense to navigate from the relation-type
+     * {@code foo} to all instances. In order to do that, the {@link IsaFragmentSet} must be present.
+     */
+    private static boolean applyShortcutRelationTypeOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+        Iterable<ShortcutFragmentSet> shortcuts = fragmentSetOfType(ShortcutFragmentSet.class, fragmentSets)::iterator;
+
+        for (ShortcutFragmentSet shortcut : shortcuts) {
+
+            if (shortcut.relationTypeLabels().isPresent()) continue;
+
+            Var relationVar = shortcut.relation();
+
+            @Nullable IsaFragmentSet isa = typeInformationOf(relationVar, fragmentSets);
+
+            if (isa == null) continue;
+
+            @Nullable LabelFragmentSet relationLabel = typeLabelOf(isa.type(), fragmentSets);
+
+            if (relationLabel == null) continue;
+
+            RelationType relationType = graph.getType(relationLabel.label());
+
+            fragmentSets.remove(shortcut);
+            fragmentSets.add(shortcut.addRelationTypeLabel(relationType));
 
             return true;
         }
@@ -229,6 +277,14 @@ public class EquivalentFragmentSets {
     static @Nullable LabelFragmentSet typeLabelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {
         return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
                 .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
+                .findAny()
+                .orElse(null);
+    }
+
+    @Nullable
+    static IsaFragmentSet typeInformationOf(Var instance, Collection<EquivalentFragmentSet> fragmentSets) {
+        return fragmentSetOfType(IsaFragmentSet.class, fragmentSets)
+                .filter(isaFragmentSet -> isaFragmentSet.instance().equals(instance))
                 .findAny()
                 .orElse(null);
     }

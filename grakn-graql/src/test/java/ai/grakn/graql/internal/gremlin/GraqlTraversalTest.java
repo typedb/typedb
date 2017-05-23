@@ -20,7 +20,9 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -64,7 +66,6 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -93,12 +94,25 @@ public class GraqlTraversalTest {
         graph = mock(GraknGraph.class);
 
         // We have to mock out the `subTypes` call because the shortcut edge optimisation checks it
-        when(graph.getType(any())).thenAnswer(invocation -> {
-            RoleType type = mock(RoleType.class);
+
+        TypeLabel wifeLabel = TypeLabel.of("wife");
+        RoleType wife = mock(RoleType.class);
+
+        when(graph.getType(wifeLabel)).thenAnswer(invocation -> {
             //noinspection unchecked
-            when(type.subTypes()).thenReturn((Collection) ImmutableSet.of(type));
-            when(type.getLabel()).thenReturn(invocation.getArgument(0));
-            return type;
+            when(wife.subTypes()).thenReturn((Collection) ImmutableSet.of(wife));
+            when(wife.getLabel()).thenReturn(wifeLabel);
+            return wife;
+        });
+
+        TypeLabel marriageLabel = TypeLabel.of("marriage");
+        RelationType marriage = mock(RelationType.class);
+
+        when(graph.getType(marriageLabel)).thenAnswer(invocation -> {
+            //noinspection unchecked
+            when(marriage.subTypes()).thenReturn((Collection) ImmutableSet.of(marriage));
+            when(marriage.getLabel()).thenReturn(marriageLabel);
+            return marriage;
         });
     }
 
@@ -246,8 +260,8 @@ public class GraqlTraversalTest {
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
-                matches(".*\\$x-\\[shortcut:\\$.* marriage]->\\$.* \\$x-\\[shortcut:\\$.* marriage]->\\$.* \\$.*\\[neq:\\$.*].*"),
-                matches(".*\\$.*<-\\[shortcut:\\$.* marriage]-\\$x-\\[shortcut:\\$.* marriage]->\\$.* \\$.*\\[neq:\\$.*].*")
+                matches(".*\\$x-\\[shortcut:\\$.* rels:marriage]->\\$.* \\$x-\\[shortcut:\\$.* rels:marriage]->\\$.* \\$.*\\[neq:\\$.*].*"),
+                matches(".*\\$.*<-\\[shortcut:\\$.* rels:marriage]-\\$x-\\[shortcut:\\$.* rels:marriage]->\\$.* \\$.*\\[neq:\\$.*].*")
         ));
     }
 

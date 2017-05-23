@@ -19,6 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
@@ -63,8 +64,16 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         this.relationTypeLabels = relationTypeLabels;
     }
 
+    Var relation() {
+        return relation;
+    }
+
     Optional<Var> roleType() {
         return roleType;
+    }
+
+    Optional<Set<TypeLabel>> relationTypeLabels() {
+        return relationTypeLabels;
     }
 
     /**
@@ -80,6 +89,21 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         return new ShortcutFragmentSet(
                 relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleTypeLabels), relationTypeLabels
+        );
+    }
+
+    /**
+     * Apply an optimisation where we check the relation-type property.
+     * @param relationType the relation-type that this shortcut fragment must link to
+     * @return a new {@link ShortcutFragmentSet} with the same properties excepting relation-type labels
+     */
+    ShortcutFragmentSet addRelationTypeLabel(RelationType relationType) {
+        Preconditions.checkState(!relationTypeLabels.isPresent());
+
+        Set<TypeLabel> newRelationTypeLabels = relationType.subTypes().stream().map(Type::getLabel).collect(toSet());
+
+        return new ShortcutFragmentSet(
+                relation, edge, rolePlayer, roleType, roleTypeLabels, Optional.of(newRelationTypeLabels)
         );
     }
 }

@@ -55,7 +55,7 @@ class OutShortcutFragment extends AbstractFragment {
     OutShortcutFragment(
             Var relation, Var edge, Var rolePlayer, Optional<Var> roleType, Optional<Set<TypeLabel>> roleTypeLabels,
             Optional<Set<TypeLabel>> relationTypeLabels) {
-            super(relation, rolePlayer, edge);
+            super(relation, rolePlayer, roleType.map(rt -> new Var[] {edge, rt}).orElse(new Var[] {edge}));
             this.edge = edge;
             this.roleType = roleType;
             this.roleTypeLabels = roleTypeLabels;

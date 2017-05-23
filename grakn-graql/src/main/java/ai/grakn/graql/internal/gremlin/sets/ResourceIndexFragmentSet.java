@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.stream.Stream;
 
@@ -61,7 +60,7 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         for (ValueFragmentSet valueSet : valueSets) {
             Var resource = valueSet.resource();
 
-            IsaFragmentSet isaSet = typeInformationOf(resource, fragmentSets);
+            IsaFragmentSet isaSet = EquivalentFragmentSets.typeInformationOf(resource, fragmentSets);
             if (isaSet == null) continue;
 
             Var type = isaSet.type();
@@ -101,14 +100,6 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
                     ValuePredicateAdmin predicate = valueFragmentSet.predicate();
                     return predicate.equalsValue().isPresent() && !predicate.getInnerVar().isPresent();
                 });
-    }
-
-    @Nullable
-    private static IsaFragmentSet typeInformationOf(Var resource, Collection<EquivalentFragmentSet> fragmentSets) {
-        return fragmentSetOfType(IsaFragmentSet.class, fragmentSets)
-                .filter(isaFragmentSet -> isaFragmentSet.instance().equals(resource))
-                .findAny()
-                .orElse(null);
     }
 
 }
