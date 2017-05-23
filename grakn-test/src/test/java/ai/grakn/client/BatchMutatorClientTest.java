@@ -48,6 +48,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.argThat;
 import static java.util.stream.Stream.generate;
@@ -93,7 +94,8 @@ public class BatchMutatorClientTest {
         loader.waitToFinish();
 
         // Wait for callback function to execute - Callbacks are run asynchronously
-        callbackCompleted.await(10, TimeUnit.SECONDS);
+        boolean callbackSuccessfullyCompleted = callbackCompleted.await(1, TimeUnit.MINUTES);
+        assertTrue("callback completed withing timeout", callbackSuccessfullyCompleted);
 
         // Verify that the logger received the failed log message
         assertThat(systemOut.getLog(), containsString("error in callback"));
