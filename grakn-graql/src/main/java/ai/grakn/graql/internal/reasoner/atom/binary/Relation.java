@@ -38,6 +38,7 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.util.CommonUtil;
@@ -61,6 +62,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
@@ -88,6 +91,8 @@ public class Relation extends TypeAtom {
     private Multimap<RoleType, Pair<Var, Type>> roleVarTypeMap = null;
     private Multimap<RoleType, String> roleConceptIdMap = null;
     private Set<RelationPlayer> relationPlayers = null;
+
+    private static final Logger LOG = LoggerFactory.getLogger(Relation.class);
 
     public Relation(VarPatternAdmin pattern, IdPredicate predicate, ReasonerQuery par) { super(pattern, predicate, par);}
 
@@ -367,6 +372,10 @@ public class Relation extends TypeAtom {
                     .collect(toSet());
 
             Set<RelationType> compatibleTypesFromTypes = getCompatibleRelationTypes(types, typeToRelationTypes);
+
+            LOG.trace("Inferring relation type of atom: " + this + getTypeConstraints());
+            LOG.trace("Compatible relation types: " + compatibleTypesFromTypes.stream().map(Type::getLabel).collect(Collectors.toSet()));
+
             if (compatibleTypesFromTypes.size() == 1) type = compatibleTypesFromTypes.iterator().next();
             else {
                 //do intersection with types recovered from role types
@@ -380,6 +389,7 @@ public class Relation extends TypeAtom {
     @Override
     public void inferTypes() {
         if (getPredicate() == null) inferRelationTypeFromTypes();
+        if (getExplicitRoleTypes().size() < getRelationPlayers().size() && getType() != null) computeRoleVarTypeMap();
     }
 
     @Override
