@@ -88,10 +88,7 @@ public class ExplanationTest {
         Answer answer4 = new QueryAnswer(ImmutableMap.of(Var.of("x"), polibuda, Var.of("y"), europe));
 
         List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
-        answers.stream()
-                .filter(a -> !a.getExplanation().isLookupExplanation())
-                .flatMap(a -> a.getExplicitPath().stream())
-                .forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
+        answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
         Answer queryAnswer2 = findAnswer(answer2, answers);
@@ -109,21 +106,23 @@ public class ExplanationTest {
         assertEquals(queryAnswer4.getAnswers().size(), 7);
 
         assertTrue(queryAnswer1.getExplanation().isLookupExplanation());
+        assertTrue(answerHasConsistentExplanations(queryAnswer1));
 
         assertTrue(queryAnswer2.getExplanation().isRuleExplanation());
         assertEquals(2, getLookupExplanations(queryAnswer2).size());
         assertEquals(2, queryAnswer2.getExplicitPath().size());
-        queryAnswer2.getExplicitPath().forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
+        assertTrue(answerHasConsistentExplanations(queryAnswer2));
 
         assertTrue(queryAnswer3.getExplanation().isRuleExplanation());
         assertEquals(2, getRuleExplanations(queryAnswer3).size());
         assertEquals(3, queryAnswer3.getExplicitPath().size());
-        queryAnswer3.getExplicitPath().forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
+        assertTrue(answerHasConsistentExplanations(queryAnswer3));
+
 
         assertTrue(queryAnswer4.getExplanation().isRuleExplanation());
         assertEquals(3, getRuleExplanations(queryAnswer4).size());
         assertEquals(4, queryAnswer4.getExplicitPath().size());
-        queryAnswer4.getExplicitPath().forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
+        assertTrue(answerHasConsistentExplanations(queryAnswer4));
     }
 
     @Test
@@ -136,10 +135,7 @@ public class ExplanationTest {
         Answer answer2 = new QueryAnswer(ImmutableMap.of(Var.of("x"), uw, Var.of("y"), poland));
 
         List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
-        answers.stream()
-                .filter(a -> !a.getExplanation().isLookupExplanation())
-                .flatMap(a -> a.getExplicitPath().stream())
-                .forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
+        answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
         Answer queryAnswer2 = findAnswer(answer2, answers);
@@ -154,11 +150,11 @@ public class ExplanationTest {
 
         assertEquals(4, getLookupExplanations(queryAnswer1).size());
         assertEquals(4, queryAnswer1.getExplicitPath().size());
-        queryAnswer1.getExplicitPath().forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
+        assertTrue(answerHasConsistentExplanations(queryAnswer1));
 
         assertEquals(4, getLookupExplanations(queryAnswer2).size());
         assertEquals(4, queryAnswer2.getExplicitPath().size());
-        queryAnswer2.getExplicitPath().forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
+        assertTrue(answerHasConsistentExplanations(queryAnswer2));
     }
 
     @Test
@@ -177,7 +173,7 @@ public class ExplanationTest {
         assertEquals(2, answer.getExplanation().getAnswers().size());
         assertEquals(3, getRuleExplanations(answer).size());
         assertEquals(4, answer.getExplicitPath().size());
-        answers.stream().flatMap(a -> a.getExplicitPath().stream()).forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
+        answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
     }
 
     @Test
@@ -192,7 +188,7 @@ public class ExplanationTest {
         MatchQuery query = iqb.parse(queryString);
         List<Answer> answers = query.admin().execute();
         assertEquals(answers.size(), 1);
-        answers.stream().flatMap(a -> a.getExplicitPath().stream()).forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
+        answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
     }
 
     @Test
@@ -243,11 +239,22 @@ public class ExplanationTest {
         return a.getExplanations().stream().filter(AnswerExplanation::isLookupExplanation).collect(Collectors.toSet());
     }
 
-    private boolean isExplanationConsistentWithAnswer(Answer a){
-        ReasonerQuery query = a.getExplanation().getQuery();
-        Set<Var> vars = query != null? query.getVarNames() : new HashSet<>();
-        return a.map().keySet().containsAll(vars);
+    private boolean answerHasConsistentExplanations(Answer ans){
+        Set<Answer> answers = ans.getAnswers().stream()
+                .filter(a -> !a.getExplanation().isJoinExplanation())
+                .collect(Collectors.toSet());
+        for (Answer a : answers){
+            if (!isExplanationConsistentWithAnswer(a)){
+                System.out.println(a.getExplanation().getClass());
+                return false;
+            }
+        }
+        return true;
     }
 
-
+    private boolean isExplanationConsistentWithAnswer(Answer ans){
+        ReasonerQuery query = ans.getExplanation().getQuery();
+        Set<Var> vars = query != null? query.getVarNames() : new HashSet<>();
+        return vars.containsAll(ans.map().keySet());
+    }
 }
