@@ -135,7 +135,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin rolePlayer) {
-        return Stream.of(shortcut(start, casting, rolePlayer.getVarName()));
+        return Stream.of(shortcut(start, casting, rolePlayer.getVarName(), Optional.empty()));
     }
 
     /**
@@ -145,7 +145,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
         return Stream.of(
-                shortcut(start, casting, rolePlayer.getVarName()),
+                shortcut(start, casting, rolePlayer.getVarName(), Optional.of(roleType.getVarName())),
                 isaCastings(casting, roleType.getVarName())
         );
     }

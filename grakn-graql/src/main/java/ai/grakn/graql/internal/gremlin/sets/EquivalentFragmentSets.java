@@ -63,8 +63,8 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a shortcut edge between two role-players.
      */
-    public static EquivalentFragmentSet shortcut(Var relation, Var edge, Var rolePlayer) {
-        return new ShortcutFragmentSet(relation, edge, rolePlayer, Optional.empty(), Optional.empty());
+    public static EquivalentFragmentSet shortcut(Var relation, Var edge, Var rolePlayer, Optional<Var> roleType) {
+        return new ShortcutFragmentSet(relation, edge, rolePlayer, roleType, Optional.empty(), Optional.empty());
     }
 
     /**

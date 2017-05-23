@@ -37,11 +37,11 @@ import java.util.Set;
 class ShortcutFragmentSet extends EquivalentFragmentSet {
 
     ShortcutFragmentSet(
-            Var relation, Var edge, Var rolePlayer, Optional<Set<TypeLabel>> roleTypes,
-            Optional<Set<TypeLabel>> relationTypes) {
+            Var relation, Var edge, Var rolePlayer, Optional<Var> roleType,
+            Optional<Set<TypeLabel>> roleTypeLabels, Optional<Set<TypeLabel>> relationTypeLabels) {
         super(
-                Fragments.inShortcut(rolePlayer, edge, relation, roleTypes, relationTypes),
-                Fragments.outShortcut(relation, edge, rolePlayer, roleTypes, relationTypes)
+                Fragments.inShortcut(rolePlayer, edge, relation, roleType, roleTypeLabels, relationTypeLabels),
+                Fragments.outShortcut(relation, edge, rolePlayer, roleType, roleTypeLabels, relationTypeLabels)
         );
     }
 }

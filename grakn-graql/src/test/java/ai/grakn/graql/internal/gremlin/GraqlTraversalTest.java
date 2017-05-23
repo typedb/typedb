@@ -313,11 +313,11 @@ public class GraqlTraversalTest {
     }
 
     private static Fragment outShortcut(Var relation, Var rolePlayer) {
-        return Fragments.outShortcut(relation, a, rolePlayer, Optional.empty(), Optional.empty());
+        return Fragments.outShortcut(relation, a, rolePlayer, Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     private static Fragment inShortcut(Var rolePlayer, Var relation) {
-        return Fragments.inShortcut(rolePlayer, c, relation, Optional.empty(), Optional.empty());
+        return Fragments.inShortcut(rolePlayer, c, relation, Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     private static void assertNearlyOptimal(Pattern pattern) {

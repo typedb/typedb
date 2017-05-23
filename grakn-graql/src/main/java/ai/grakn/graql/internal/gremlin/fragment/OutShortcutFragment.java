@@ -46,36 +46,39 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
 class OutShortcutFragment extends AbstractFragment {
 
     private final Var edge;
-    private final Optional<Set<TypeLabel>> roleTypes;
-    private final Optional<Set<TypeLabel>> relationTypes;
+
+    private final Optional<Var> roleType;
+    private final Optional<Set<TypeLabel>> roleTypeLabels;
+    private final Optional<Set<TypeLabel>> relationTypeLabels;
 
     OutShortcutFragment(
-            Var relation, Var edge, Var rolePlayer, Optional<Set<TypeLabel>> roleTypes,
-            Optional<Set<TypeLabel>> relationTypes) {
+            Var relation, Var edge, Var rolePlayer, Optional<Var> roleType, Optional<Set<TypeLabel>> roleTypeLabels,
+            Optional<Set<TypeLabel>> relationTypeLabels) {
             super(relation, rolePlayer, edge);
             this.edge = edge;
-            this.roleTypes = roleTypes;
-            this.relationTypes = relationTypes;
+            this.roleType = roleType;
+            this.roleTypeLabels = roleTypeLabels;
+            this.relationTypeLabels = relationTypeLabels;
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
         GraphTraversal<Vertex, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel()).as(edge.getValue());
-        applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleTypes, graph);
-        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_ID, relationTypes, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleTypeLabels, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_ID, relationTypeLabels, graph);
         edgeTraversal.inV();
     }
 
     @Override
     public String getName() {
-        String rel = displayOptionalTypeLabels(relationTypes);
-        String role = displayOptionalTypeLabels(roleTypes);
+        String rel = displayOptionalTypeLabels(relationTypeLabels);
+        String role = displayOptionalTypeLabels(roleTypeLabels);
         return "-[shortcut:" + edge.shortName() + rel + role + "]->";
     }
 
     @Override
     public double fragmentCost(double previousCost) {
-        long numRolePlayers = roleTypes.isPresent() ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
+        long numRolePlayers = roleTypeLabels.isPresent() ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
         return previousCost * numRolePlayers;
     }
 
@@ -88,16 +91,16 @@ class OutShortcutFragment extends AbstractFragment {
         OutShortcutFragment that = (OutShortcutFragment) o;
 
         if (!edge.equals(that.edge)) return false;
-        if (!roleTypes.equals(that.roleTypes)) return false;
-        return relationTypes.equals(that.relationTypes);
+        if (!roleTypeLabels.equals(that.roleTypeLabels)) return false;
+        return relationTypeLabels.equals(that.relationTypeLabels);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + edge.hashCode();
-        result = 31 * result + roleTypes.hashCode();
-        result = 31 * result + relationTypes.hashCode();
+        result = 31 * result + roleTypeLabels.hashCode();
+        result = 31 * result + relationTypeLabels.hashCode();
         return result;
     }
 }
