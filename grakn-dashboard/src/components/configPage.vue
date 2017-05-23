@@ -87,7 +87,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td>Version</td>
-                        <td>{{configuration['project.version']}}</td>
+                        <td>{{configuration['grakn.version']}}</td>
                     </tr>
                 </tbody>
             </table>

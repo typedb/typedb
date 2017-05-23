@@ -19,6 +19,7 @@
 package ai.grakn.engine;
 
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.GraknVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,8 @@ import java.util.Properties;
  * @author Marco Scoppetta
  */
 public class GraknEngineConfig {
+
+    public static final String GRAKN_VERSION_KEY = "grakn.version";
 
     public static final String FACTORY_INTERNAL = "factory.internal";
     public static final String FACTORY_ANALYTICS = "factory.analytics";
@@ -103,10 +106,18 @@ public class GraknEngineConfig {
             e.printStackTrace();
         }
         initialiseLogger();
+        setGraknVersion();
         computeThreadsNumber();
         LOG.info("Project directory in use: [" + getProjectPath() + "]");
         LOG.info("Configuration file in use: [" + configFilePath + "]");
         LOG.info("Number of threads set to [" + numOfThreads + "]");
+    }
+
+    private void setGraknVersion(){
+        LOG.info("setting version");
+        LOG.info(GraknVersion.VERSION);
+        prop.setProperty(GRAKN_VERSION_KEY, GraknVersion.VERSION);
+        System.out.println("Version set");
     }
 
     public void setConfigProperty(String key, String value){
