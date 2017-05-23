@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.RoleType;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -94,7 +94,7 @@ public class GraqlTraversalTest {
 
         // We have to mock out the `subTypes` call because the shortcut edge optimisation checks it
         when(graph.getType(any())).thenAnswer(invocation -> {
-            Type type = mock(Type.class);
+            RoleType type = mock(RoleType.class);
             //noinspection unchecked
             when(type.subTypes()).thenReturn((Collection) ImmutableSet.of(type));
             when(type.getLabel()).thenReturn(invocation.getArgument(0));
@@ -258,8 +258,8 @@ public class GraqlTraversalTest {
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
-                matches(".*\\$x-\\[shortcut:\\$.* wife]->\\$.* \\$x-\\[shortcut:\\$.*]->\\$.* \\$.*\\[neq:\\$.*].*"),
-                matches(".*\\$.*<-\\[shortcut:\\$.* wife]-\\$x-\\[shortcut:\\$.*]->\\$.* \\$.*\\[neq:\\$.*].*")
+                matches(".*\\$x-\\[shortcut:\\$.* roles:wife]->\\$.* \\$x-\\[shortcut:\\$.*]->\\$.* \\$.*\\[neq:\\$.*].*"),
+                matches(".*\\$.*<-\\[shortcut:\\$.* roles:wife]-\\$x-\\[shortcut:\\$.*]->\\$.* \\$.*\\[neq:\\$.*].*")
         ));
     }
 

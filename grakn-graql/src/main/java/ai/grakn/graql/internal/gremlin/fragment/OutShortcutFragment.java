@@ -78,8 +78,8 @@ class OutShortcutFragment extends AbstractFragment {
     @Override
     public String getName() {
         String role = roleType.map(rt -> " role:" + rt.shortName()).orElse("");
-        String rels = displayOptionalTypeLabels(relationTypeLabels);
-        String roles = displayOptionalTypeLabels(roleTypeLabels);
+        String rels = displayOptionalTypeLabels("rels", relationTypeLabels);
+        String roles = displayOptionalTypeLabels("roles", roleTypeLabels);
         return "-[shortcut:" + edge.shortName() + role + rels + roles + "]->";
     }
 

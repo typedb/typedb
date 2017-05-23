@@ -154,9 +154,9 @@ public class Fragments {
         return traversal.union(__.not(__.has(INSTANCE_TYPE_ID.name())), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
     }
 
-    static String displayOptionalTypeLabels(Optional<Set<TypeLabel>> typeLabels) {
+    static String displayOptionalTypeLabels(String name, Optional<Set<TypeLabel>> typeLabels) {
         return typeLabels.map(labels ->
-            " " + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
+            " " + name + ":" + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
         ).orElse("");
     }
 

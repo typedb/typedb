@@ -66,7 +66,7 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
             Var type = isaSet.type();
 
-            LabelFragmentSet nameSet = typeLabelOf(type, fragmentSets);
+            LabelFragmentSet nameSet = EquivalentFragmentSets.typeLabelOf(type, fragmentSets);
             if (nameSet == null) continue;
 
             TypeLabel typeLabel = nameSet.label();
@@ -111,10 +111,4 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
                 .orElse(null);
     }
 
-    private static LabelFragmentSet typeLabelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {
-        return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
-                .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
-                .findAny()
-                .orElse(null);
-    }
 }
