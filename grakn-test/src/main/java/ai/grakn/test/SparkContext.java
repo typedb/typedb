@@ -49,11 +49,6 @@ public class SparkContext extends ExternalResource {
         return new SparkContext(createControllers);
     }
 
-    public SparkContext port(int port) {
-        this.port = port;
-        return this;
-    }
-
     public int port() {
         return port;
     }

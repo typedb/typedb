@@ -73,14 +73,13 @@ public class CommitLogControllerTest {
 
     private static final String TEST_KEYSPACE = "test";
 
-    private static TaskManager manager;
+    private static TaskManager manager = mock(TaskManager.class);
 
     @ClassRule
     public static SparkContext ctx = SparkContext.withControllers(spark -> {
-        manager = mock(TaskManager.class);
         new CommitLogController(spark, manager);
         new SystemController(spark);
-    }).port(4567);
+    });
 
     private Json commitLog;
 
