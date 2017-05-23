@@ -26,37 +26,33 @@ import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
+import ai.grakn.test.SparkContext;
 import ai.grakn.test.engine.controller.TasksControllerTest.JsonMapper;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
-import java.util.Collections;
 import mjson.Json;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
-
 import org.junit.runners.MethodSorters;
 import spark.Service;
 
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
+import java.util.Collections;
+
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.test.GraknTestEnv.usingTitan;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
-import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.EXCEPTION;
 import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
 import static ai.grakn.util.REST.Response.Graql.RESPONSE;
@@ -68,7 +64,6 @@ import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -76,9 +71,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.booleanThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -92,25 +85,18 @@ public class GraqlControllerGETTest {
 
     private static GraknGraph mockGraph;
     private static QueryBuilder mockQueryBuilder;
-    private static EngineGraknGraphFactory mockFactory;
+    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
 
     private static final JsonMapper jsonMapper = new JsonMapper();
 
     @ClassRule
     public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
 
-    @BeforeClass
-    public static void setup(){
-        spark = Service.ignite();
-        configureSpark(spark, PORT);
-
-        mockFactory = mock(EngineGraknGraphFactory.class);
-
+    @ClassRule
+    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         new SystemController(spark);
         new GraqlController(mockFactory, spark);
-
-        spark.awaitInitialization();
-    }
+    });
 
     @Before
     public void setupMock(){
@@ -127,11 +113,6 @@ public class GraqlControllerGETTest {
         when(mockGraph.graql()).thenReturn(mockQueryBuilder);
 
         when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
-    }
-
-    @AfterClass
-    public static void shutdown(){
-        spark.stop();
     }
 
     @Test

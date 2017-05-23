@@ -62,8 +62,7 @@ public class SparkContext extends ExternalResource {
         return "localhost:" + port;
     }
 
-    @Override
-    protected void before() throws Throwable {
+    public void start() {
         spark = Service.ignite();
         configureSpark(spark, port);
 
@@ -74,8 +73,7 @@ public class SparkContext extends ExternalResource {
         spark.awaitInitialization();
     }
 
-    @Override
-    protected void after() {
+    public void stop() {
         spark.stop();
 
         // Block until server is truly stopped
@@ -88,6 +86,16 @@ public class SparkContext extends ExternalResource {
                 running = false;
             }
         }
+    }
+
+    @Override
+    protected void before() throws Throwable {
+        start();
+    }
+
+    @Override
+    protected void after() {
+        stop();
     }
 
     private static int getEphemeralPort() {
