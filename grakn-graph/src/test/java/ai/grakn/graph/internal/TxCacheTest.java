@@ -157,8 +157,6 @@ public class TxCacheTest extends GraphTestBase{
 
     @Test
     public void whenClosingTransaction_EnsureTransactionCacheIsEmpty(){
-        AbstractGraknGraph<?> graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, "something").open(GraknTxType.WRITE);
-
         TxCache cache = graknGraph.getTxCache();
 
         //Load some sample data
@@ -196,5 +194,21 @@ public class TxCacheTest extends GraphTestBase{
         assertThat(cache.getModifiedRelations().keySet(), empty());
         assertThat(cache.getModifiedResources(), empty());
         assertThat(cache.getShardingCount().keySet(), empty());
+    }
+
+    @Test
+    public void whenMutatingSuperTypeOfConceptCreatedInAnotherTransaction_EnsureTransactionBoundConceptIsMutated(){
+        EntityType e1 = graknGraph.putEntityType("e1");
+        EntityType e2 = graknGraph.putEntityType("e2").superType(e1);
+        EntityType e3 = graknGraph.putEntityType("e3");
+        graknGraph.commit();
+
+        graknGraph = (AbstractGraknGraph<?>) graknSession.open(GraknTxType.WRITE);
+        assertEquals(e1, e2.superType());
+
+        //Mutate Super Type
+        e2.superType(e3);
+        assertEquals(e3, e2.superType());
+        assertEquals(e3, graknGraph.getTxCache().getCachedType(e2.getLabel()).superType());
     }
 }
