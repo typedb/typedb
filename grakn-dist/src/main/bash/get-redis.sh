@@ -31,7 +31,6 @@ cd ..
 echo "Extracting redis binary and config. . . "
 mv redis-2.6.17/src/redis-server .
 mv redis-2.6.17/src/redis-cli .
-mv redis-2.6.17/redis.conf .
 
 echo "Cleaning up redis workspace . . ."
 rm redis-2.6.17.tar.*
