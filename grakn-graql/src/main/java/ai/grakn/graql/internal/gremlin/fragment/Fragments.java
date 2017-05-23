@@ -36,7 +36,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.ConceptProperty.INSTANCE_TYPE_ID;
+import static ai.grakn.util.Schema.ConceptProperty.TYPE_ID;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
+import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -165,4 +167,27 @@ public class Fragments {
             traversal.has(property.name(), P.within(typeIds));
         });
     }
+
+    static void traverseRoleTypeFromShortcutEdge(GraphTraversal<Vertex, Edge> traversal, Optional<Var> roleType) {
+        roleType.ifPresent(var -> {
+            // Access role-type ID
+            Var roleTypeIdProperty = Var.anon();
+            Var edge = Var.anon();
+            traversal.as(edge.getValue()).values(ROLE_TYPE_ID.name()).as(roleTypeIdProperty.getValue());
+
+            // Look up direct role-type
+            Var directRoleType = Var.anon();
+            GraphTraversal<Vertex, Vertex> vertexTraversal =
+                    traversal.V().as(directRoleType.getValue())
+                            .values(TYPE_ID.name())
+                            .where(P.eq(roleTypeIdProperty.getValue()))
+                            .select(directRoleType.getValue());
+
+            // Navigate up type hierarchy
+            Fragments.outSubs(vertexTraversal).as(var.getValue());
+
+            traversal.select(edge.getValue());
+        });
+    }
+
 }
