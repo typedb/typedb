@@ -32,7 +32,6 @@ import com.jayway.restassured.response.Response;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import spark.Service;
 
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.jsonResponse;
@@ -56,10 +55,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class GraqlControllerPOSTTest {
-
-    private static final String HOST = "localhost";
-    private static final int PORT = 4567;
-    private static Service spark;
 
     private static GraknGraph mockGraph;
     private static QueryBuilder mockQueryBuilder;
@@ -134,7 +129,7 @@ public class GraqlControllerPOSTTest {
 
         Response response = RestAssured.with()
                 .body(query)
-                .post(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
+                .post(REST.WebPath.Graph.GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
@@ -143,7 +138,7 @@ public class GraqlControllerPOSTTest {
     @Test
     public void POSTWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .post(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
+                .post(REST.WebPath.Graph.GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
@@ -251,6 +246,6 @@ public class GraqlControllerPOSTTest {
         return RestAssured.with()
                 .queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .body(query)
-                .post(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
+                .post(REST.WebPath.Graph.GRAQL);
     }
 }

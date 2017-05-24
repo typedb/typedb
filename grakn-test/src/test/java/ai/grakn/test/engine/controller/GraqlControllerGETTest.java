@@ -37,7 +37,6 @@ import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import spark.Service;
 
 import java.util.Collections;
 
@@ -79,10 +78,6 @@ import static org.mockito.Mockito.when;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GraqlControllerGETTest {
 
-    private static final String HOST = "localhost";
-    private static final int PORT = 4567;
-    private static Service spark;
-
     private static GraknGraph mockGraph;
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
@@ -96,7 +91,7 @@ public class GraqlControllerGETTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         new SystemController(spark);
         new GraqlController(mockFactory, spark);
-    });
+    }).port(4567); // TODO: Don't use the default port when bug #15130 is fixed
 
     @Before
     public void setupMock(){
@@ -166,7 +161,7 @@ public class GraqlControllerGETTest {
 
     @Test
     public void GETGraqlMatchWithNoKeyspace_ResponseStatusIs400(){
-        Response response = RestAssured.with().get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
+        Response response = RestAssured.with().get(REST.WebPath.Graph.GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
@@ -176,7 +171,7 @@ public class GraqlControllerGETTest {
     public void GETGraqlMatchWithNoQuery_ResponseStatusIs400(){
         Response response = RestAssured.with()
                 .queryParam(KEYSPACE, mockGraph.getKeyspace())
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
+                .get(REST.WebPath.Graph.GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(QUERY)));
@@ -188,7 +183,7 @@ public class GraqlControllerGETTest {
                 .queryParam(QUERY, "match $x isa movie;")
                 .queryParam(INFER, true)
                 .accept(APPLICATION_TEXT)
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
+                .get(REST.WebPath.Graph.GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(MATERIALISE)));
@@ -213,7 +208,7 @@ public class GraqlControllerGETTest {
         Response response = RestAssured.with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(QUERY, "match $x isa movie;")
                 .accept(APPLICATION_TEXT)
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
+                .get(REST.WebPath.Graph.GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(INFER)));
@@ -518,7 +513,7 @@ public class GraqlControllerGETTest {
                 .queryParam(MATERIALISE, materialise)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .accept(acceptType)
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
+                .get(REST.WebPath.Graph.GRAQL);
     }
 
     protected static String exception(Response response){

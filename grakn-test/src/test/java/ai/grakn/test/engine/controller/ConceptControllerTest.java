@@ -33,7 +33,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import spark.Service;
 
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
@@ -54,10 +53,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ConceptControllerTest {
-
-    private static final String HOST = "localhost";
-    private static final int PORT = 4567;
-    private static Service spark;
 
     private static GraknGraph mockGraph;
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
@@ -95,7 +90,7 @@ public class ConceptControllerTest {
 
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + concept.getId()));
+                .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
         assertThat(response.statusCode(), equalTo(406));
         assertThat(exception(response), containsString(UNSUPPORTED_CONTENT_TYPE.getMessage("*/*")));}
@@ -106,7 +101,7 @@ public class ConceptControllerTest {
 
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .accept(APPLICATION_HAL)
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + concept.getId()));
+                .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
         assertThat(response.contentType(), equalTo(APPLICATION_HAL));
     }
@@ -118,7 +113,7 @@ public class ConceptControllerTest {
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
                 .accept("invalid")
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + concept.getId()));
+                .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
         assertThat(response.statusCode(), equalTo(406));
         assertThat(exception(response), containsString(UNSUPPORTED_CONTENT_TYPE.getMessage("invalid")));
@@ -163,7 +158,7 @@ public class ConceptControllerTest {
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, "invalid")
                 .accept(APPLICATION_HAL)
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + "blah"));
+                .get(REST.WebPath.Concept.CONCEPT + "blah");
 
         assertThat(response.statusCode(), equalTo(500));
     }
@@ -172,6 +167,6 @@ public class ConceptControllerTest {
         return with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(LIMIT_EMBEDDED, numberEmbeddedComponents)
                 .accept(APPLICATION_HAL)
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + concept.getId().getValue()));
+                .get(REST.WebPath.Concept.CONCEPT + concept.getId().getValue());
     }
 }
