@@ -183,6 +183,7 @@
                     <artifactId>commons-io</artifactId>
                 </exclusion>
                 <exclusion>
+                    <!--Cannot be present with log4j-over-slf4j-->
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-log4j12</artifactId>
                 </exclusion>
@@ -200,6 +201,12 @@
             <artifactId>cassandra-unit</artifactId>
             <version>${cassandra-unit.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.datastax.cassandra</groupId>
