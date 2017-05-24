@@ -183,7 +183,7 @@ public class GraknEngineConfig {
     /**
      * @return The path to the grakn.log file in use.
      */
-    public String getLogFilePath() {
+    String getLogFilePath() {
         return System.getProperty(SYSTEM_PROPERTY_GRAKN_LOG_DIRECTORY);
     }
 
@@ -203,7 +203,7 @@ public class GraknEngineConfig {
      * @return The requested property as a full path. If it is specified as a relative path,
      * this method will return the path prepended with the project path.
      */
-    public String getPath(String path) {
+    String getPath(String path) {
         String propertyPath = prop.getProperty(path);
         if (Paths.get(propertyPath).isAbsolute()) {
             return propertyPath;
@@ -237,20 +237,24 @@ public class GraknEngineConfig {
     }
 
     public String getProperty(String property) {
-        return prop.getProperty(property);
+         if(prop.containsKey(property)) {
+             return prop.getProperty(property);
+         }
+
+         if(configFilePath == null){
+             throw new RuntimeException(ErrorMessage.NO_CONFIG_FILE.getMessage(configFilePath));
+         }
+
+         throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(property, configFilePath));
     }
 
     public String getProperty(String property, String defaultValue) {
-        String res = prop.getProperty(property);
-        if(res != null) {
-            return res;
-        }
-
-        return defaultValue;
+        return prop.containsKey(property) ? prop.getProperty(property)
+                                          : defaultValue ;
     }
 
     public int getPropertyAsInt(String property) {
-        return Integer.parseInt(prop.getProperty(property));
+        return Integer.parseInt(getProperty(property));
     }
 
     public int getPropertyAsInt(String property, int defaultValue) {
@@ -259,7 +263,7 @@ public class GraknEngineConfig {
     }
     
     public long getPropertyAsLong(String property) {
-        return Long.parseLong(prop.getProperty(property));
+        return Long.parseLong(getProperty(property));
     }
     
     public long getPropertyAsLong(String property, long defaultValue) {
@@ -267,16 +271,15 @@ public class GraknEngineConfig {
                                           : defaultValue;
     }
 
-    public boolean getPropertyAsBool(String property, boolean defaultValue) {
+    boolean getPropertyAsBool(String property, boolean defaultValue) {
         return prop.containsKey(property) ? Boolean.parseBoolean(prop.getProperty(property))
                                           : defaultValue;
     }
 
-    public static final String GRAKN_ASCII =
+    static final String GRAKN_ASCII =
                       "     ___  ___  ___  _  __ _  _     ___  ___     %n" +
                     "    / __|| _ \\/   \\| |/ /| \\| |   /   \\|_ _|    %n" +
                     "   | (_ ||   /| - || ' < | .` | _ | - | | |     %n" +
                     "    \\___||_|_\\|_|_||_|\\_\\|_|\\_|(_)|_|_||___|   %n%n" +
                       " Web Dashboard available at [%s]";
-
 }
