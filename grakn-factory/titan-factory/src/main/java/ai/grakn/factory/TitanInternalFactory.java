@@ -30,7 +30,10 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -85,6 +88,10 @@ final public class TitanInternalFactory extends AbstractInternalFactory<GraknTit
     }
 
     private synchronized TitanGraph newTitanGraph(String name, String address, Properties properties, boolean batchLoading){
+        TraversalStrategies graphStrategies = TraversalStrategies.GlobalCache.getStrategies(StandardTitanGraph.class).clone().addStrategies(new TitanPreviousPropertyStepStrategy());
+        TraversalStrategies.GlobalCache.registerStrategies(StandardTitanGraph.class, graphStrategies);
+        TraversalStrategies.GlobalCache.registerStrategies(StandardTitanTx.class, graphStrategies);
+
         TitanGraph titanGraph = configureGraph(name, address, properties, batchLoading);
         buildTitanIndexes(titanGraph);
         titanGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
