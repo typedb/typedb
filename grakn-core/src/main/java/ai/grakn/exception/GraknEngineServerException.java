@@ -27,7 +27,7 @@ import ai.grakn.util.ErrorMessage;
  */
 public class GraknEngineServerException extends RuntimeException {
 
-    final int status;
+    private final int status;
 
     public GraknEngineServerException(int status, ErrorMessage message, String... args) {
         super(message.getMessage(args));
