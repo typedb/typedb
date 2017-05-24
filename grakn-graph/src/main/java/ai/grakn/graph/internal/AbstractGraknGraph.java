@@ -725,7 +725,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //This is overridden by vendors for more efficient clearing approaches
     protected void clearGraph(){
-        operateOnOpenGraph(() -> getTinkerPopGraph().traversal().V().drop().iterate());
+        getTinkerPopGraph().traversal().V().drop().iterate();
     }
 
     @Override
