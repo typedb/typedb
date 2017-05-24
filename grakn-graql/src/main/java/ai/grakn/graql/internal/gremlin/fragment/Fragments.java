@@ -182,12 +182,8 @@ public class Fragments {
             traversal.as(edge.getValue()).values(ROLE_TYPE_ID.name()).as(roleTypeIdProperty.getValue());
 
             // Look up direct role-type using ID
-            Var directRoleType = Var.anon();
             GraphTraversal<Vertex, Vertex> vertexTraversal =
-                    traversal.V().as(directRoleType.getValue())
-                            .values(TYPE_ID.name())
-                            .where(P.eq(roleTypeIdProperty.getValue()))
-                            .select(directRoleType.getValue());
+                    traversal.V().has(TYPE_ID.name(), P.eq(roleTypeIdProperty.getValue()));
 
             // Navigate up type hierarchy
             Fragments.outSubs(vertexTraversal).as(var.getValue());
