@@ -76,8 +76,10 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
         Set<TypeId> ofTypeIds =
                 ofTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
 
-        result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationTypeIds, ofTypeIds),
-                new DegreeDistributionMapReduce(ofTypeIds));
+        String randomId = getRandomJobId();
+
+        result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationTypeIds, ofTypeIds, randomId),
+                new DegreeDistributionMapReduce(ofTypeIds, DegreeVertexProgram.DEGREE + randomId));
 
         LOGGER.info("DegreeVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(DegreeDistributionMapReduce.class.getName());

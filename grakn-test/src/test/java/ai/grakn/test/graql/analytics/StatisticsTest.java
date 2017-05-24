@@ -430,7 +430,7 @@ public class StatisticsTest {
         }
 
         List<Long> list = new ArrayList<>();
-        for (long i = 0L; i < 2L; i++) {
+        for (long i = 0L; i < 3L; i++) {
             list.add(i);
         }
         GraknSparkComputer.clear();
@@ -507,7 +507,7 @@ public class StatisticsTest {
         }
 
         List<Long> list = new ArrayList<>();
-        for (long i = 0L; i < 2L; i++) {
+        for (long i = 0L; i < 3L; i++) {
             list.add(i);
         }
         GraknSparkComputer.clear();

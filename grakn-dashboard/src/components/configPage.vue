@@ -66,16 +66,12 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                         <td>{{configuration['logging.level']}}</td>
                     </tr>
                     <tr>
-                        <td>Background Tasks time lapse</td>
-                        <td>{{configuration['backgroundTasks.time-lapse']}}</td>
-                    </tr>
-                    <tr>
                         <td>Batch size</td>
                         <td>{{configuration['blockingLoader.batch-size']}}</td>
                     </tr>
                     <tr>
                         <td>Default Keyspace</td>
-                        <td>{{configuration['graphdatabase.default-keyspace']}}</td>
+                        <td>{{configuration['graph.default-keyspace']}}</td>
                     </tr>
                     <tr>
                         <td>Repeat Commits</td>

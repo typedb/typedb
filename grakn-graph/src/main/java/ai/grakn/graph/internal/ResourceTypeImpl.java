@@ -57,17 +57,6 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
     }
 
-    private ResourceTypeImpl(ResourceTypeImpl resourceType){
-        //noinspection unchecked
-        super(resourceType);
-    }
-
-    @Override
-    public ResourceType<D> copy(){
-        //noinspection unchecked
-        return new ResourceTypeImpl(this);
-    }
-
     /**
      * This method is overridden so that we can check that the regex of the new super type (if it has a regex)
      * can be applied to all the existing instances.
