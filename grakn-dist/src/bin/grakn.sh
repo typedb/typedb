@@ -51,6 +51,10 @@ clean_grakn() {
         cd - >/dev/null
     fi
 
+    #Clear redis and stop it
+    "${GRAKN_HOME}/bin/redis-cli" flushall
+    "${GRAKN_HOME}/bin/grakn-redis.sh" stop
+
     if [ $USE_KAFKA ]; then
         local DEFAULT_KAFKA_LOGS=/tmp/grakn-kafka-logs/
         if [ -e "${DEFAULT_KAFKA_LOGS}" ]; then
