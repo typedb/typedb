@@ -185,6 +185,12 @@
             <version>${guava.version}</version>
         </dependency>
         <dependency>
+            <!-- SLF4J is the logging API all modules should use -->
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>annotations</artifactId>
             <version>${findbugs.version}</version>
@@ -253,6 +259,14 @@
                 <exclusion>
                     <groupId>it.unimi.dsi</groupId>
                     <artifactId>fastutil</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-classic</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

@@ -91,6 +91,11 @@
                             <groupId>ch.qos.logback</groupId>
                             <artifactId>logback-classic</artifactId>
                         </exclusion>
+                        <!--Excluded because we provide logback logger-->
+                        <exclusion>
+                            <groupId>org.slf4j</groupId>
+                            <artifactId>slf4j-nop</artifactId>
+                        </exclusion>
                     </exclusions>
                     <scope>test</scope>
                 </dependency>
@@ -173,6 +178,11 @@
                         <exclusion>
                             <groupId>ch.qos.logback</groupId>
                             <artifactId>logback-classic</artifactId>
+                        </exclusion>
+                        <!--Excluded because we provide logback logger-->
+                        <exclusion>
+                            <groupId>org.slf4j</groupId>
+                            <artifactId>slf4j-nop</artifactId>
                         </exclusion>
                     </exclusions>
                     <scope>test</scope>

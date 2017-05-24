@@ -126,6 +126,11 @@
                     <groupId>org.eclipse.jetty.orbit</groupId>
                     <artifactId>javax.servlet</artifactId>
                 </exclusion>
+                <!--Excluded because we provide logback logger-->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-nop</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
