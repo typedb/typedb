@@ -235,7 +235,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * @return set of atoms constituting constraints (by means of types) for this atom
+     * @return set of atoms constituting constraints (by means of types) for this query
      */
     public Set<TypeAtom> getTypeConstraints() {
         return getAtoms().stream()
