@@ -320,7 +320,6 @@ public interface GraknGraph extends AutoCloseable{
     /**
      * Closes and clears the current graph.
      *
-     * @throws GraphRuntimeException if the graph is closed
      */
     void clear();
 

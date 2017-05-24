@@ -21,6 +21,7 @@ package ai.grakn.factory;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
@@ -102,6 +103,25 @@ public class SystemKeyspace<T extends Graph> {
             }
             return true;
         });
+        return this;
+    }
+
+    /**
+     * This is called when a graph is deleted via {@link GraknGraph#clear()}.
+     * This removes the keyspace of the deleted graph from
+     *
+     * @param keyspace the keyspace to be removed from the system graph
+     */
+    SystemKeyspace<T> keyspaceDeleted(String keyspace){
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+            ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
+            Resource<String> resource = keyspaceName.getResource(keyspace);
+
+            if(resource == null) return this;
+            Instance instance = resource.owner();
+            if(instance != null) instance.delete();
+            resource.delete();
+        }
         return this;
     }
 
