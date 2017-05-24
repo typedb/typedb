@@ -321,6 +321,7 @@ public interface GraknGraph extends AutoCloseable{
      * Closes and clears the current graph.
      *
      */
+    @Deprecated
     void clear();
 
     // TODO: what does this do when the graph is closed?
