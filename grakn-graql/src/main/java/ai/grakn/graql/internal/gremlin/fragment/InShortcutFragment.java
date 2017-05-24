@@ -54,7 +54,7 @@ class InShortcutFragment extends AbstractFragment {
     InShortcutFragment(
             Var rolePlayer, Var edge, Var relation, Optional<Var> roleType, Optional<Set<TypeLabel>> roleTypeLabels,
             Optional<Set<TypeLabel>> relationTypeLabels) {
-        super(rolePlayer, relation, roleType.map(rt -> new Var[] {edge, rt}).orElse(new Var[] {edge}));
+        super(rolePlayer, relation, edge, optionalVarToArray(roleType));
         this.edge = edge;
         this.roleType = roleType;
         this.roleTypeLabels = roleTypeLabels;
