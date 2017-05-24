@@ -26,6 +26,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.util.GraknVersion;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
@@ -107,7 +108,7 @@ public class SystemKeyspace<T extends Graph> {
     }
 
     /**
-     * This is called when a graph is deleted via {@link GraknGraph#clear()}.
+     * This is called when a graph is deleted via {@link GraknAdmin#delete()}.
      * This removes the keyspace of the deleted graph from
      *
      * @param keyspace the keyspace to be removed from the system graph

@@ -126,7 +126,7 @@ public class ScalingTestIT {
     @After
     public void cleanGraph() {
         GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
-        graph.clear();
+        graph.admin().delete();
     }
 
     @Ignore
@@ -350,8 +350,7 @@ public class ScalingTestIT {
             printers.get(method).close();
         }
         GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
-        graph.clear();
-        graph.close();
+        graph.admin().delete();
     }
 
     private double meanOfSequence(long currentG, long nodesPerStep, long totalSteps) {
