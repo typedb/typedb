@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.util.Schema;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -61,8 +62,8 @@ import static java.util.stream.Collectors.toSet;
 class ShortcutFragmentSet extends EquivalentFragmentSet {
 
     ShortcutFragmentSet(
-            Var relation, Var edge, Var rolePlayer, Optional<Set<TypeLabel>> roleTypes,
-            Optional<Set<TypeLabel>> relationTypes) {
+            Var relation, Var edge, Var rolePlayer, @Nullable Set<TypeLabel> roleTypes,
+            @Nullable Set<TypeLabel> relationTypes) {
         super(
                 Fragments.inShortcut(rolePlayer, edge, relation, roleTypes, relationTypes),
                 Fragments.outShortcut(relation, edge, rolePlayer, roleTypes, relationTypes)
@@ -93,26 +94,28 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
                 .filter(isaFragmentSet -> isaFragmentSet.instance().equals(relation))
                 .findAny();
 
-        Optional<TypeLabel> relType = relIsaFragment
+        @Nullable TypeLabel relType = relIsaFragment
                 .map(IsaFragmentSet::type)
-                .flatMap(type -> findTypeLabel(fragmentSets, type));
+                .flatMap(type -> findTypeLabel(fragmentSets, type))
+                .orElse(null);
 
         // Try and get role type
         Optional<IsaCastingsFragmentSet> castingIsaFragment = fragmentSetOfType(IsaCastingsFragmentSet.class, fragmentSets)
                 .filter(isaFragmentSet -> isaFragmentSet.casting().equals(casting))
                 .findAny();
 
-        Optional<TypeLabel> roleType = castingIsaFragment
+        @Nullable TypeLabel roleType = castingIsaFragment
                 .map(IsaCastingsFragmentSet::roleType)
-                .flatMap(type -> findTypeLabel(fragmentSets, type));
+                .flatMap(type -> findTypeLabel(fragmentSets, type))
+                .orElse(null);
 
-        if (castingIsaFragment.isPresent() && !roleType.isPresent()) {
+        if (castingIsaFragment.isPresent() && roleType != null) {
             return false;
         }
 
         // When the meta role-type is specified, it's the same as not specifying the role at all
-        if (roleType.isPresent() && roleType.get().equals(Schema.MetaSchema.ROLE.getLabel())) {
-            roleType = Optional.empty();
+        if (roleType != null && roleType.equals(Schema.MetaSchema.ROLE.getLabel())) {
+            roleType = null;
         }
 
         fragmentSets.remove(castingFragmentSet);
@@ -122,15 +125,19 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         Var rolePlayer = rolePlayerFragmentSet.rolePlayer();
 
         // Look up all sub-types
-        Optional<Set<TypeLabel>> roleTypes = subTypes(graph, roleType);
-        Optional<Set<TypeLabel>> relTypes = subTypes(graph, relType);
+        @Nullable Set<TypeLabel> roleTypes = subTypes(graph, roleType);
+        @Nullable Set<TypeLabel> relTypes = subTypes(graph, relType);
 
         fragmentSets.add(new ShortcutFragmentSet(relation, casting, rolePlayer, roleTypes, relTypes));
         return true;
     }
 
-    private static Optional<Set<TypeLabel>> subTypes(GraknGraph graph, Optional<TypeLabel> type) {
-        return type.map(label -> graph.getType(label).subTypes().stream().map(Type::getLabel).collect(toSet()));
+    private static @Nullable Set<TypeLabel> subTypes(GraknGraph graph, @Nullable TypeLabel type) {
+        if (type != null) {
+            return graph.getType(type).subTypes().stream().map(Type::getLabel).collect(toSet());
+        } else {
+            return null;
+        }
     }
 
     private static Optional<TypeLabel> findTypeLabel(Collection<EquivalentFragmentSet> fragmentSets, Var type) {

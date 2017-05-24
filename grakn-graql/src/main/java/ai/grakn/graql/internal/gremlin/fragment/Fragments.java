@@ -32,7 +32,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Optional;
+import javax.annotation.Nullable;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.ConceptProperty.INSTANCE_TYPE_ID;
@@ -51,13 +51,13 @@ public class Fragments {
 
     public static Fragment inShortcut(
             Var rolePlayer, Var edge, Var relation,
-            Optional<Set<TypeLabel>> roleTypes, Optional<Set<TypeLabel>> relationTypes) {
+            @Nullable Set<TypeLabel> roleTypes, @Nullable Set<TypeLabel> relationTypes) {
         return new InShortcutFragment(rolePlayer, edge, relation, roleTypes, relationTypes);
     }
 
     public static Fragment outShortcut(
             Var relation, Var edge, Var rolePlayer,
-            Optional<Set<TypeLabel>> roleTypes, Optional<Set<TypeLabel>> relationTypes) {
+            @Nullable Set<TypeLabel> roleTypes, @Nullable Set<TypeLabel> relationTypes) {
         return new OutShortcutFragment(relation, edge, rolePlayer, roleTypes, relationTypes);
     }
 
@@ -178,17 +178,18 @@ public class Fragments {
         return traversal.union(__.not(__.has(INSTANCE_TYPE_ID.name())), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
     }
 
-    static String displayOptionalTypeLabels(Optional<Set<TypeLabel>> typeLabels) {
-        return typeLabels.map(labels ->
-            " " + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
-        ).orElse("");
+    static String displayOptionalTypeLabels(@Nullable Set<TypeLabel> typeLabels) {
+        if (typeLabels != null) {
+            return " " + typeLabels.stream().map(StringConverter::typeLabelToString).collect(joining(","));
+        } else {
+            return "";
+        }
     }
 
     static void applyTypeLabelsToTraversal(
-            GraphTraversal<Vertex, Edge> traversal, Schema.EdgeProperty property, Optional<Set<TypeLabel>> typeLabels, GraknGraph graph) {
-        typeLabels.ifPresent(labels -> {
-            Set<Integer> typeIds = labels.stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
-            traversal.has(property.name(), P.within(typeIds));
-        });
+            GraphTraversal<Vertex, Edge> traversal, Schema.EdgeProperty property, @Nullable Set<TypeLabel> typeLabels, GraknGraph graph) {
+        if (typeLabels == null) return;
+        Set<Integer> typeIds = typeLabels.stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
+        traversal.has(property.name(), P.within(typeIds));
     }
 }

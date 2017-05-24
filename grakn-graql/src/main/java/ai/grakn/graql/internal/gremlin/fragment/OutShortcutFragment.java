@@ -26,7 +26,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Optional;
+import javax.annotation.Nullable;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelsToTraversal;
@@ -46,12 +46,12 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
 class OutShortcutFragment extends AbstractFragment {
 
     private final Var edge;
-    private final Optional<Set<TypeLabel>> roleTypes;
-    private final Optional<Set<TypeLabel>> relationTypes;
+    private final @Nullable Set<TypeLabel> roleTypes;
+    private final @Nullable Set<TypeLabel> relationTypes;
 
     OutShortcutFragment(
-            Var relation, Var edge, Var rolePlayer, Optional<Set<TypeLabel>> roleTypes,
-            Optional<Set<TypeLabel>> relationTypes) {
+            Var relation, Var edge, Var rolePlayer, @Nullable Set<TypeLabel> roleTypes,
+            @Nullable Set<TypeLabel> relationTypes) {
             super(relation, rolePlayer, edge);
             this.edge = edge;
             this.roleTypes = roleTypes;
@@ -75,7 +75,7 @@ class OutShortcutFragment extends AbstractFragment {
 
     @Override
     public double fragmentCost(double previousCost) {
-        long numRolePlayers = roleTypes.isPresent() ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
+        long numRolePlayers = roleTypes != null ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
         return previousCost * numRolePlayers;
     }
 
@@ -88,16 +88,16 @@ class OutShortcutFragment extends AbstractFragment {
         OutShortcutFragment that = (OutShortcutFragment) o;
 
         if (!edge.equals(that.edge)) return false;
-        if (!roleTypes.equals(that.roleTypes)) return false;
-        return relationTypes.equals(that.relationTypes);
+        if (roleTypes != null ? !roleTypes.equals(that.roleTypes) : that.roleTypes != null) return false;
+        return relationTypes != null ? relationTypes.equals(that.relationTypes) : that.relationTypes == null;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + edge.hashCode();
-        result = 31 * result + roleTypes.hashCode();
-        result = 31 * result + relationTypes.hashCode();
+        result = 31 * result + (roleTypes != null ? roleTypes.hashCode() : 0);
+        result = 31 * result + (relationTypes != null ? relationTypes.hashCode() : 0);
         return result;
     }
 }

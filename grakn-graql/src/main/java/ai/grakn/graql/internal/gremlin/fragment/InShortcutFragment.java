@@ -26,7 +26,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Optional;
+import javax.annotation.Nullable;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelsToTraversal;
@@ -46,12 +46,12 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
 class InShortcutFragment extends AbstractFragment {
 
     private final Var edge;
-    private final Optional<Set<TypeLabel>> roleTypes;
-    private final Optional<Set<TypeLabel>> relationTypes;
+    private final @Nullable Set<TypeLabel> roleTypes;
+    private final @Nullable Set<TypeLabel> relationTypes;
 
     InShortcutFragment(
-            Var rolePlayer, Var edge, Var relation, Optional<Set<TypeLabel>> roleTypes,
-            Optional<Set<TypeLabel>> relationTypes) {
+            Var rolePlayer, Var edge, Var relation, @Nullable Set<TypeLabel> roleTypes,
+            @Nullable Set<TypeLabel> relationTypes) {
         super(rolePlayer, relation, edge);
         this.edge = edge;
         this.roleTypes = roleTypes;
@@ -87,16 +87,16 @@ class InShortcutFragment extends AbstractFragment {
         InShortcutFragment that = (InShortcutFragment) o;
 
         if (!edge.equals(that.edge)) return false;
-        if (!roleTypes.equals(that.roleTypes)) return false;
-        return relationTypes.equals(that.relationTypes);
+        if (roleTypes != null ? !roleTypes.equals(that.roleTypes) : that.roleTypes != null) return false;
+        return relationTypes != null ? relationTypes.equals(that.relationTypes) : that.relationTypes == null;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + edge.hashCode();
-        result = 31 * result + roleTypes.hashCode();
-        result = 31 * result + relationTypes.hashCode();
+        result = 31 * result + (roleTypes != null ? roleTypes.hashCode() : 0);
+        result = 31 * result + (relationTypes != null ? relationTypes.hashCode() : 0);
         return result;
     }
 }
