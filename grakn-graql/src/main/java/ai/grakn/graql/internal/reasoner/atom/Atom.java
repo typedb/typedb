@@ -65,7 +65,8 @@ public abstract class Atom extends AtomicBase {
     protected Atom(Atom a) {
         super(a);
         this.type = a.type;
-        this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
+        this.typeId = a.typeId != null? ConceptId.of(a.getTypeId().getValue()) : null;
+        this.applicableRules = a.applicableRules != null? a.getApplicableRules() : null;
     }
 
     @Override
@@ -249,7 +250,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return map of role type- (var name, var type) pairs
      */
-    public Multimap<RoleType, Pair<Var, Type>> getRoleVarTypeMap() { return ArrayListMultimap.create();}
+    public Multimap<RoleType, Var> getRoleVarMap() { return ArrayListMultimap.create();}
 
     /**
      * infers types (type, role types) fo the atom if applicable/possible

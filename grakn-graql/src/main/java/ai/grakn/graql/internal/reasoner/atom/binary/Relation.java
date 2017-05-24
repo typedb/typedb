@@ -87,7 +87,7 @@ import static java.util.stream.Collectors.toSet;
 public class Relation extends TypeAtom {
 
     private int hashCode = 0;
-    private Multimap<RoleType, Pair<Var, Type>> roleVarTypeMap = null;
+    private Multimap<RoleType, Var> roleVarMap = null;
     private Multimap<RoleType, String> roleConceptIdMap = null;
     private Set<RelationPlayer> relationPlayers = null;
 
@@ -99,7 +99,11 @@ public class Relation extends TypeAtom {
         super(constructRelationVar(name, typeVariable, roleMap), pred, par);
     }
 
-    private Relation(Relation a) { super(a);}
+    private Relation(Relation a) {
+        super(a);
+        this.relationPlayers = a.relationPlayers != null? a.getRelationPlayers() : null;
+        this.roleVarMap = a.roleVarMap != null? a.getRoleVarMap() : null;
+    }
 
     @Override
     public String toString(){
@@ -202,11 +206,11 @@ public class Relation extends TypeAtom {
 
     @Override
     public int equivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (this.typeId != null ? this.typeId.hashCode() : 0);
-        hashCode = hashCode * 37 + this.getRoleConceptIdMap().hashCode();
-        hashCode = hashCode * 37 + this.getRoleTypeMap().hashCode();
-        return hashCode;
+        int equivalenceHashCode = 1;
+        equivalenceHashCode = equivalenceHashCode * 37 + (this.typeId != null ? this.typeId.hashCode() : 0);
+        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().hashCode();
+        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleTypeMap().hashCode();
+        return equivalenceHashCode;
     }
 
     @Override
@@ -257,32 +261,30 @@ public class Relation extends TypeAtom {
      * @return map of pairs role type - Id predicate describing the role player playing this role (substitution)
      */
     private Multimap<RoleType, String> getRoleConceptIdMap() {
-        if (roleConceptIdMap != null) return roleConceptIdMap;
-        roleConceptIdMap =  ArrayListMultimap.create();
-        Map<Var, IdPredicate> varSubMap = getIdPredicates().stream()
-                .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
-        Multimap<RoleType, Var> roleMap = getRoleMap();
+        if (roleConceptIdMap == null) {
+            roleConceptIdMap = ArrayListMultimap.create();
 
-        roleMap.entries().forEach(e -> {
-            RoleType role = e.getKey();
-            Var var = e.getValue();
-            roleConceptIdMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : "");
-        });
+            Map<Var, IdPredicate> varSubMap = getPartialSubstitutions().stream()
+                    .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
+            Multimap<RoleType, Var> roleMap = getRoleVarMap();
+
+            roleMap.entries().forEach(e -> {
+                RoleType role = e.getKey();
+                Var var = e.getValue();
+                roleConceptIdMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : "");
+            });
+        }
         return roleConceptIdMap;
-    }
-
-    private Multimap<RoleType, Var> getRoleMap() {
-        Multimap<RoleType, Var> roleMap = ArrayListMultimap.create();
-        getRoleVarTypeMap().entries()
-                .forEach(e -> roleMap.put(e.getKey(), e.getValue().getKey()));
-        return roleMap;
     }
 
     private Multimap<RoleType, Type> getRoleTypeMap() {
         Multimap<RoleType, Type> roleTypeMap = ArrayListMultimap.create();
-        getRoleVarTypeMap().entries().stream()
-                .filter(e -> Objects.nonNull(e.getValue().getValue()))
-                .forEach(e -> roleTypeMap.put(e.getKey(), e.getValue().getValue()));
+        Multimap<RoleType, Var> roleMap = getRoleVarMap();
+        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
+
+        roleMap.entries().stream()
+                .filter(e -> varTypeMap.containsKey(e.getValue()))
+                .forEach(e -> roleTypeMap.put(e.getKey(), varTypeMap.get(e.getValue())));
         return roleTypeMap;
     }
 
@@ -309,7 +311,7 @@ public class Relation extends TypeAtom {
      * @return true if any of the relation's role types are meta role types
      */
     private boolean hasMetaRoles(){
-        Set<RoleType> parentRoles = getRoleVarTypeMap().keySet();
+        Set<RoleType> parentRoles = getRoleVarMap().keySet();
         for(RoleType role : parentRoles) {
             if (Schema.MetaSchema.isMetaLabel(role.getLabel())) return true;
         }
@@ -431,10 +433,10 @@ public class Relation extends TypeAtom {
     }
 
     private Set<Var> getMappedRolePlayers() {
-        return getRoleVarTypeMap().entries().stream()
+        return getRoleVarMap().entries().stream()
                 .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().getLabel()))
                 .map(Map.Entry::getValue)
-                .map(Pair::getKey).collect(toSet());
+                .collect(toSet());
     }
 
     /**
@@ -491,9 +493,9 @@ public class Relation extends TypeAtom {
      *
      * @return map containing roleType - (rolePlayer var - rolePlayer type) pairs
      */
-    private Multimap<RoleType, Pair<Var, Type>> computeRoleVarTypeMap() {
-        this.roleVarTypeMap = ArrayListMultimap.create();
-        if (getParentQuery() == null || getType() == null) return roleVarTypeMap;
+    private Multimap<RoleType, Var> computeRoleVarTypeMap() {
+        this.roleVarMap = ArrayListMultimap.create();
+        if (getParentQuery() == null || getType() == null) return roleVarMap;
 
         GraknGraph graph = getParentQuery().graph();
         RelationType relType = (RelationType) getType();
@@ -507,7 +509,6 @@ public class Relation extends TypeAtom {
             Var varName = c.getRolePlayer().getVarName();
             VarPatternAdmin role = c.getRoleType().orElse(null);
             if (role != null) {
-                Type type = varTypeMap.get(varName);
                 rolePlayerMappings.add(new Pair<>(varName, role));
                 //try directly
                 TypeLabel typeLabel = role.getTypeLabel().orElse(null);
@@ -518,9 +519,7 @@ public class Relation extends TypeAtom {
                     if (rolePredicate != null) roleType = graph.getConcept(rolePredicate.getPredicate());
                 }
                 allocatedRelationPlayers.add(c);
-                if (roleType != null) {
-                    roleVarTypeMap.put(roleType, new Pair<>(varName, type));
-                }
+                if (roleType != null) roleVarMap.put(roleType, varName);
             }
         });
 
@@ -559,7 +558,7 @@ public class Relation extends TypeAtom {
             mappings.get(casting).remove(roleType);
 
             rolePlayerMappings.add(new Pair<>(varName, roleVar));
-            roleVarTypeMap.put(roleType, new Pair<>(varName, type));
+            roleVarMap.put(roleType, varName);
             allocatedRelationPlayers.add(casting);
         }
 
@@ -569,25 +568,25 @@ public class Relation extends TypeAtom {
         Sets.difference(getRelationPlayers(), allocatedRelationPlayers)
                 .forEach(casting -> {
                     Var varName = casting.getRolePlayer().getVarName();
-                    roleVarTypeMap.put(metaRole, new Pair<>(varName, varTypeMap.get(varName)));
+                    roleVarMap.put(metaRole, varName);
                     rolePlayerMappings.add(new Pair<>(varName, metaRoleVar));
                 });
 
         //pattern mutation!
         atomPattern = constructRelationVar(isUserDefinedName() ? varName : Var.of(""), getValueVariable(), rolePlayerMappings);
         relationPlayers = null;
-        return roleVarTypeMap;
+        return roleVarMap;
     }
 
     @Override
-    public Multimap<RoleType, Pair<Var, Type>> getRoleVarTypeMap() {
-        if (roleVarTypeMap == null) computeRoleVarTypeMap();
-        return roleVarTypeMap;
+    public Multimap<RoleType, Var> getRoleVarMap() {
+        if (roleVarMap == null) computeRoleVarTypeMap();
+        return roleVarMap;
     }
 
     private Multimap<RoleType, RelationPlayer> getRoleRelationPlayerMap(){
         Multimap<RoleType, RelationPlayer> roleRelationPlayerMap = HashMultimap.create();
-        Multimap<RoleType, Pair<Var, Type>> roleVarTypeMap = getRoleVarTypeMap();
+        Multimap<RoleType, Var> roleVarTypeMap = getRoleVarMap();
         Set<RelationPlayer> relationPlayers = getRelationPlayers();
         roleVarTypeMap.asMap().entrySet()
                 .forEach(e -> {

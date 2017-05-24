@@ -180,7 +180,7 @@ public class HALUtils {
         // Put all the varNames in the map with EMPTY-ROLE role
         reasonerRel.getRolePlayers().forEach(varName -> varNamesToRole.put(varName, HAS_EMPTY_ROLE_EDGE));
         // Overrides the varNames that have roles in the previous map
-        reasonerRel.getRoleVarTypeMap().entries().stream().filter(entry -> !Schema.MetaSchema.isMetaLabel(entry.getKey().getLabel())).forEach(entry -> varNamesToRole.put(entry.getValue().getKey(), entry.getKey().getLabel().getValue()));
+        reasonerRel.getRoleVarMap().entries().stream().filter(entry -> !Schema.MetaSchema.isMetaLabel(entry.getKey().getLabel())).forEach(entry -> varNamesToRole.put(entry.getValue(), entry.getKey().getLabel().getValue()));
 
         String relationType = (reasonerRel.getType() != null) ? reasonerRel.getType().getLabel().getValue() : "";
         return new Pair<>(varNamesToRole, relationType);
