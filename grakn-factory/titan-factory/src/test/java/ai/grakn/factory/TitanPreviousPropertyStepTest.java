@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Felix Chapman
  */
-public class TraversalStrategyTest extends TitanTestBase {
+public class TitanPreviousPropertyStepTest extends TitanTestBase {
 
     private static GraphTraversalSource graph;
 

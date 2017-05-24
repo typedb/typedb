@@ -36,6 +36,14 @@ import java.util.List;
 import java.util.Optional;
 
 /**
+ * Optimisation applied to use Titan indices in the following additional case:
+ * <p>
+ * <code>
+ * g.V().outE().values("foo").as("x").V().has("bar", __.where(P.eq("x")));
+ * </code>
+ * <p>
+ * In this instance, the vertex can be looked up directly in Titan, joining the {@code V().has(..)} steps together.
+ *
  * @author Felix Chapman
  */
 public class TitanPreviousPropertyStepStrategy extends AbstractTraversalStrategy<ProviderOptimizationStrategy> implements ProviderOptimizationStrategy {
@@ -48,46 +56,53 @@ public class TitanPreviousPropertyStepStrategy extends AbstractTraversalStrategy
 
         for (TitanGraphStep graphStep : graphSteps) {
 
-            Step nextStep = graphStep.getNextStep();
+            if (!(graphStep.getNextStep() instanceof TraversalFilterStep)) continue;
+            TraversalFilterStep<Vertex> filterStep = (TraversalFilterStep<Vertex>) graphStep.getNextStep();
 
-            if (!(nextStep instanceof TraversalFilterStep)) continue;
-
-            TraversalFilterStep<Vertex> filterStep = (TraversalFilterStep<Vertex>) nextStep;
-
-            List<Traversal.Admin<Vertex, ?>> children = filterStep.getLocalChildren();
-
-            // TraversalFilterStep always has exactly one child
-            Traversal.Admin<Vertex, ?> child = children.get(0);
-
-            List<Step> steps = child.getSteps();
+            List<Step> steps = stepsFromFilterStep(filterStep);
 
             if (steps.size() < 2) continue;
+            Step propertiesStep = steps.get(0);
+            Step whereStep = steps.get(1);
 
-            Step step1 = steps.get(0);
-            Step step2 = steps.get(1);
+            if (!(propertiesStep instanceof PropertiesStep)) continue;
+            Optional<String> propertyKey = propertyFromPropertiesStep((PropertiesStep<Vertex>) propertiesStep);
+            if (!propertyKey.isPresent()) continue;
 
-            if (!(step1 instanceof PropertiesStep)) continue;
-            PropertiesStep<Vertex> propertiesStep = (PropertiesStep<Vertex>) step1;
+            if (!(whereStep instanceof WherePredicateStep)) continue;
+            Optional<String> label = eqPredicateFromWherePredicate((WherePredicateStep<Vertex>) whereStep);
+            if (!label.isPresent()) continue;
 
-            String[] propertyKeys = propertiesStep.getPropertyKeys();
-            if (propertyKeys.length != 1) continue;
-            String propertyKey = propertyKeys[0];
-
-            if (!(step2 instanceof WherePredicateStep)) continue;
-            WherePredicateStep<Vertex> whereStep = (WherePredicateStep<Vertex>) step2;
-
-            Optional<P<?>> optionalPredicate = whereStep.getPredicate();
-            if (!optionalPredicate.isPresent()) continue;
-            P<?> predicate = optionalPredicate.get();
-
-            if (!predicate.getBiPredicate().equals(Compare.eq)) continue;
-
-            String label = (String) predicate.getValue();
-
-            TitanPreviousPropertyStep newStep = new TitanPreviousPropertyStep(traversal, propertyKey, label);
-
-            traversal.removeStep(filterStep);
-            TraversalHelper.replaceStep(graphStep, newStep, traversal);
+            executeStrategy(traversal, graphStep, filterStep, propertyKey.get(), label.get());
         }
+    }
+
+    private List<Step> stepsFromFilterStep(TraversalFilterStep<Vertex> filterStep) {
+        // TraversalFilterStep always has exactly one child
+        return filterStep.getLocalChildren().get(0).getSteps();
+    }
+
+    private Optional<String> propertyFromPropertiesStep(PropertiesStep<Vertex> propertiesStep) {
+        String[] propertyKeys = propertiesStep.getPropertyKeys();
+        if (propertyKeys.length != 1) return Optional.empty();
+        return Optional.of(propertyKeys[0]);
+    }
+
+    private <T> Optional<T> eqPredicateFromWherePredicate(WherePredicateStep<Vertex> whereStep) {
+        Optional<P<?>> optionalPredicate = whereStep.getPredicate();
+
+        return optionalPredicate.flatMap(predicate -> {
+            if (!predicate.getBiPredicate().equals(Compare.eq)) return Optional.empty();
+            return Optional.of((T) predicate.getValue());
+        });
+    }
+
+    private void executeStrategy(
+            Traversal.Admin<?, ?> traversal, TitanGraphStep<?, ?> graphStep, TraversalFilterStep<Vertex> filterStep,
+            String propertyKey, String label) {
+
+        TitanPreviousPropertyStep newStep = new TitanPreviousPropertyStep(traversal, propertyKey, label);
+        traversal.removeStep(filterStep);
+        TraversalHelper.replaceStep(graphStep, newStep, traversal);
     }
 }

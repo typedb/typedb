@@ -29,15 +29,24 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
+ * Optimise a particular traversal in Titan:
+ * <p>
+ * <code>
+ * g.V().outE().values("foo").as("x").V().has("bar", __.where(P.eq("x")));
+ * </code>
+ * <p>
+ * This step can be used in place of {@code V().has(..)} since we are referring to a previously visited property in
+ * the traversal.
+ *
  * @author Felix Chapman
  */
-public class TitanPreviousPropertyStep<S, E extends Element> extends AbstractStep<S, E> {
+class TitanPreviousPropertyStep<S, E extends Element> extends AbstractStep<S, E> {
 
     private static final long serialVersionUID = -8906462828437711078L;
     private final String propertyKey;
     private final String stepLabel;
 
-    public TitanPreviousPropertyStep(Traversal.Admin traversal, String propertyKey, String stepLabel) {
+    TitanPreviousPropertyStep(Traversal.Admin traversal, String propertyKey, String stepLabel) {
         super(traversal);
         this.propertyKey = Objects.requireNonNull(propertyKey);
         this.stepLabel = Objects.requireNonNull(stepLabel);
