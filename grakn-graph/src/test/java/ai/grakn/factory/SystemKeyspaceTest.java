@@ -99,7 +99,7 @@ public class SystemKeyspaceTest {
 
         //Delete a graph entirely
         GraknGraph deletedGraph = graphs.iterator().next();
-        deletedGraph.clear();
+        deletedGraph.admin().delete();
         graphs.remove(deletedGraph);
 
         //Rebuild Graphs Using Keyspaces From Systenm Graph

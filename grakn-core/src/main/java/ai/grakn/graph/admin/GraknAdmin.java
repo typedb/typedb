@@ -207,7 +207,7 @@ public interface GraknAdmin {
      * @return A concept with the matching key and value
      */
     @CheckReturnValue
-    <T extends Concept> T  getConcept(Schema.ConceptProperty key, Object value);
+    <T extends Concept> T getConcept(Schema.ConceptProperty key, Object value);
 
     /**
      * Closes the root session this graph stems from. This will automatically rollback any pending transactions.
