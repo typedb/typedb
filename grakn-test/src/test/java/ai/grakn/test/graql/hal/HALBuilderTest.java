@@ -57,7 +57,7 @@ public class HALBuilderTest {
     public void testTransitiveRule() {
         Json response = getHALRepresentation(academyGraph.graph(), "match $x isa region; $y isa oil-platform; (located: $y, location: $x) isa located-in; limit 20;");
         // Limit to 20 results, each result will contain 3 variables, expected size 60
-        assertEquals(5, response.asList().size());
+        assertEquals(60, response.asList().size());
         response.asJsonList().forEach(halObj -> {
             assertEquals(halObj.at("_baseType").asString(), "ENTITY");
             String entityType = halObj.at("_type").asString();
