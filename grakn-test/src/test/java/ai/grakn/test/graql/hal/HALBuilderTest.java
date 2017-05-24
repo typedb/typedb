@@ -59,7 +59,6 @@ public class HALBuilderTest {
         // Limit to 20 results, each result will contain 3 variables, expected size 60
         assertEquals(60, response.asList().size());
         response.asJsonList().forEach(halObj -> {
-            assertEquals(halObj.at("_baseType").asString(), "ENTITY");
             String entityType = halObj.at("_type").asString();
             assertTrue(entityType.equals("oil-platform") || entityType.equals("region") || entityType.equals("located-in"));
         });
