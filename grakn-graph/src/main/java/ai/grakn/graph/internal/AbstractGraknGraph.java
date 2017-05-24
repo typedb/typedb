@@ -715,12 +715,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void clear() {
-        innerClear();
-    }
-
-    private void innerClear(){
+        closeSession();
         clearGraph();
-        closeTransaction(ErrorMessage.CLOSED_CLEAR.getMessage());
+        getTxCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
     }
 
     //This is overridden by vendors for more efficient clearing approaches

@@ -99,7 +99,6 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
 
     @Override
     protected void clearGraph() {
-        getTinkerPopGraph().close();
         TitanCleanup.clear(getTinkerPopGraph());
     }
 
