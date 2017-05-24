@@ -185,6 +185,12 @@
             <version>${guava.version}</version>
         </dependency>
         <dependency>
+            <!-- SLF4J is the logging API all modules should use -->
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>annotations</artifactId>
             <version>${findbugs.version}</version>
@@ -244,17 +250,6 @@
             <groupId>ai.grakn</groupId>
             <artifactId>test-tools</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.cassandra</groupId>
-            <artifactId>cassandra-all</artifactId>
-            <version>${cassandra-all.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>it.unimi.dsi</groupId>
-                    <artifactId>fastutil</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 
