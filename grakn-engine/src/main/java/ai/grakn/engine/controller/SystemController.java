@@ -101,7 +101,9 @@ public class SystemController {
         Json config = Json.make(properties);
 
         // Remove the JWT Secret
-        config.delAt(GraknEngineConfig.JWT_SECRET_PROPERTY);
+        if(config.has(GraknEngineConfig.JWT_SECRET_PROPERTY)) {
+            config.delAt(GraknEngineConfig.JWT_SECRET_PROPERTY);
+        }
 
         return config.toString();
     }
