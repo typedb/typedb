@@ -114,10 +114,7 @@ public class GraknEngineConfig {
     }
 
     private void setGraknVersion(){
-        LOG.info("setting version");
-        LOG.info(GraknVersion.VERSION);
         prop.setProperty(GRAKN_VERSION_KEY, GraknVersion.VERSION);
-        System.out.println("Version set");
     }
 
     public void setConfigProperty(String key, String value){
