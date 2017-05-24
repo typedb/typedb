@@ -19,9 +19,11 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -30,6 +32,9 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -52,6 +57,9 @@ public class TypeAtom extends Binary{
 
     public TypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
     public TypeAtom(VarPatternAdmin pattern, IdPredicate p, ReasonerQuery par) { super(pattern, p, par);}
+    public TypeAtom(Var var, Var valueVar, IdPredicate p, ReasonerQuery par){
+        this(Graql.var(var).isa(Graql.var(valueVar)).admin(), p, par);
+    }
     protected TypeAtom(TypeAtom a) { super(a);}
 
     @Override
@@ -79,6 +87,14 @@ public class TypeAtom extends Binary{
     @Override
     public Atomic copy(){
         return new TypeAtom(this);
+    }
+
+    public Set<TypeAtom> unify(Unifier u){
+        Collection<Var> vars = u.get(getVarName());
+        Var valueVar = getValueVariable();
+        return vars.isEmpty()?
+                Collections.singleton(this) :
+                vars.stream().map(v -> new TypeAtom(v, valueVar, getPredicate(), this.getParentQuery())).collect(Collectors.toSet());
     }
 
     @Override

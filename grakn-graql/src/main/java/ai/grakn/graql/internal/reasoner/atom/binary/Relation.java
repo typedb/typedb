@@ -59,17 +59,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getCompatibleRelationTypes;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.roleToRelationTypes;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.typeToRelationTypes;
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableMultiset;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -112,12 +109,6 @@ public class Relation extends TypeAtom {
                     .ifPresent(prop -> prop.getRelationPlayers().forEach(relationPlayers::add));
         }
         return relationPlayers;
-    }
-
-    private void modifyRelationPlayers(UnaryOperator<RelationPlayer> mapper) {
-        this.atomPattern = this.atomPattern.asVar().mapProperty(RelationProperty.class,
-                prop -> new RelationProperty(prop.getRelationPlayers().map(mapper).collect(toImmutableMultiset())));
-        relationPlayers = null;
     }
 
     @Override
@@ -383,23 +374,6 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public Atomic unify(Unifier u) {
-        super.unify(u);
-        modifyRelationPlayers(c -> {
-            Var var = c.getRolePlayer().getVarName();
-            if (u.containsKey(var)) {
-                Var target = u.get(var).iterator().next();
-                return c.setRolePlayer(c.getRolePlayer().setVarName(target));
-            } else if (u.containsValue(var)) {
-                return c.setRolePlayer(c.getRolePlayer().setVarName(capture(var)));
-            } else {
-                return c;
-            }
-        });
-        return this;
-    }
-
-    @Override
     public Set<Var> getVarNames() {
         Set<Var> vars = super.getVarNames();
         vars.addAll(getRolePlayers());
@@ -565,7 +539,7 @@ public class Relation extends TypeAtom {
                 });
 
         //pattern mutation!
-        atomPattern = constructRelationVar(isUserDefinedName() ? varName : Var.of(""), getValueVariable(), rolePlayerMappings);
+        atomPattern = constructRelationVar(isUserDefinedName() ? getVarName() : Var.of(""), getValueVariable(), rolePlayerMappings);
         relationPlayers = null;
         return roleVarTypeMap;
     }

@@ -34,14 +34,14 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
  */
 public abstract class Predicate<T> extends AtomicBase {
 
-    protected T predicate;
+    private final T predicate;
 
-    protected Predicate(VarPatternAdmin pattern, ReasonerQuery par) {
+    Predicate(VarPatternAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
         this.predicate = extractPredicate(pattern);
     }
 
-    protected Predicate(Predicate pred) {
+    Predicate(Predicate pred) {
         super(pred);
         this.predicate = extractPredicate(pred.getPattern().asVar());
     }
@@ -68,7 +68,7 @@ public abstract class Predicate<T> extends AtomicBase {
     public int hashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.getPredicateValue().hashCode();
-        hashCode = hashCode * 37 + this.varName.hashCode();
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
         return hashCode;
     }
 
