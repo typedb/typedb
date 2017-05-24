@@ -4,10 +4,9 @@ ENV LANG en_GB.UTF-8
 RUN apt-get update
 RUN apt-get install -y software-properties-common debconf-utils curl
 RUN add-apt-repository ppa:webupd8team/java
-RUN apt-get update
 RUN echo debconf shared/accepted-oracle-license-v1-1 select true | debconf-set-selections
 RUN echo debconf shared/accepted-oracle-license-v1-1 seen true | debconf-set-selections
-RUN apt-get install -y lsof maven oracle-java8-installer
+RUN apt-get update && apt-get install -y lsof maven oracle-java8-installer make
 
 RUN curl -sL https://deb.nodesource.com/setup_6.x -o nodesource_setup.sh && \
     bash nodesource_setup.sh && \
