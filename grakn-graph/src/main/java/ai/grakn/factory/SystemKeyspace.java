@@ -145,15 +145,14 @@ public class SystemKeyspace {
     }
 
     /**
-     * Checks if the keysoace exists in the system. First in memory cache and then checks the persisted graph.
+     * Checks if the keyspace exists in the system. The persisted graph is checked each time because the graph
+     * may have been deleted in another JVM.
      *
      * @param keyspace The keyspace which might be in the system
      * @return true if the keyspace is in the system
      */
     static boolean containsKeyspace(String keyspace){
-        if(openSpaces.containsKey(keyspace)) return true;
-
-        try (GraknGraph graph = factory().open(GraknTxType.WRITE)) {
+        try (GraknGraph graph = factory().open(GraknTxType.READ)) {
             return graph.getResourceType(KEYSPACE_RESOURCE.getValue()).getResource(keyspace) != null;
         }
     }
@@ -173,6 +172,8 @@ public class SystemKeyspace {
             Instance instance = resource.owner();
             if(instance != null) instance.delete();
             resource.delete();
+
+            openSpaces.remove(keyspace);
         }
     }
 
