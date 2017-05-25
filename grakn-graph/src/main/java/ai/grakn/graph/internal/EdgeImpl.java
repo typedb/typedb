@@ -57,7 +57,7 @@ class EdgeImpl {
 
     @Override
     public boolean equals(Object object) {
-        return object instanceof EdgeImpl && ((EdgeImpl) object).edgeEquals(edge);
+        return object instanceof EdgeImpl && ((EdgeImpl) object).edge.equals(edge);
     }
 
     /**
@@ -115,7 +115,4 @@ class EdgeImpl {
         edge.property(type.name(), value);
     }
 
-    private boolean edgeEquals(Edge toEdge) {
-        return edge.equals(toEdge);
-    }
 }

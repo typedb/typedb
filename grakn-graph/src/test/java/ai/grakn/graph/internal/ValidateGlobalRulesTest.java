@@ -23,32 +23,18 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Type;
 import org.junit.Test;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ValidateGlobalRulesTest extends GraphTestBase{
 
-    @Test(expected = InvocationTargetException.class)
-    public void testConstructor() throws Exception { //Checks that you cannot initialise it.
-        Constructor<ValidateGlobalRules> c = ValidateGlobalRules.class.getDeclaredConstructor();
-        c.setAccessible(true);
-        ValidateGlobalRules u = c.newInstance();
-    }
-
-
     @Test
     public void testValidatePlaysStructure() throws Exception {
-        Type fakeType = graknGraph.putEntityType("Fake Concept");
         EntityTypeImpl wolf = (EntityTypeImpl) graknGraph.putEntityType("wolf");
         EntityTypeImpl creature = (EntityTypeImpl) graknGraph.putEntityType("creature");
         EntityTypeImpl hunter = (EntityTypeImpl) graknGraph.putEntityType("hunter");
-        RoleType animal = graknGraph.putRoleType("animal");
         RelationType hunts = graknGraph.putRelationType("hunts");
         RoleTypeImpl witcher = (RoleTypeImpl) graknGraph.putRoleType("witcher");
         RoleTypeImpl monster = (RoleTypeImpl) graknGraph.putRoleType("monster");
