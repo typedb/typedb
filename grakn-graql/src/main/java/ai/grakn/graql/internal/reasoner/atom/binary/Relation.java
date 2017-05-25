@@ -97,8 +97,8 @@ public class Relation extends TypeAtom {
 
     private Relation(Relation a) {
         super(a);
-        this.relationPlayers = a.relationPlayers != null? a.getRelationPlayers() : null;
-        this.roleVarMap = a.roleVarMap != null? a.getRoleVarMap() : null;
+        this.relationPlayers = a.relationPlayers != null? a.relationPlayers : null;
+        this.roleVarMap = a.roleVarMap != null? a.roleVarMap : null;
     }
 
     @Override
@@ -167,7 +167,7 @@ public class Relation extends TypeAtom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         Relation a2 = (Relation) obj;
-        return Objects.equals(this.typeId, a2.getTypeId())
+        return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarNames().equals(a2.getVarNames())
                 && getRelationPlayers().equals(a2.getRelationPlayers());
     }
@@ -188,7 +188,7 @@ public class Relation extends TypeAtom {
         if (obj == this) return true;
         Relation a2 = (Relation) obj;
         return (isUserDefinedName() == a2.isUserDefinedName())
-                && Objects.equals(this.typeId, a2.getTypeId())
+                && Objects.equals(this.getTypeId(), a2.getTypeId())
                 && getRoleConceptIdMap().equals(a2.getRoleConceptIdMap())
                 && getRoleTypeMap().equals(a2.getRoleTypeMap())
                 && getRolePlayers().size() == a2.getRolePlayers().size();
@@ -197,7 +197,7 @@ public class Relation extends TypeAtom {
     @Override
     public int equivalenceHashCode() {
         int equivalenceHashCode = 1;
-        equivalenceHashCode = equivalenceHashCode * 37 + (this.typeId != null ? this.typeId.hashCode() : 0);
+        equivalenceHashCode = equivalenceHashCode * 37 + (this.getTypeId() != null ? this.getTypeId().hashCode() : 0);
         equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().hashCode();
         equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleTypeMap().hashCode();
         return equivalenceHashCode;

@@ -61,7 +61,7 @@ public abstract class Atom extends AtomicBase {
     protected Atom(Atom a) {
         super(a);
         this.type = a.type;
-        this.typeId = a.typeId != null? ConceptId.of(a.getTypeId().getValue()) : null;
+        this.typeId = a.getTypeId();
         this.applicableRules = a.applicableRules != null? a.getApplicableRules() : null;
     }
 
