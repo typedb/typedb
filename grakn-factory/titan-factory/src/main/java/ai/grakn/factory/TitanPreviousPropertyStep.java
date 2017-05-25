@@ -54,7 +54,6 @@ class TitanPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implement
     private static final long serialVersionUID = -8906462828437711078L;
     private final String propertyKey;
     private final String stepLabel;
-    private final TitanTransaction tx;
 
     /**
      * @param traversal the traversal that contains this step
@@ -66,21 +65,22 @@ class TitanPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implement
         this.propertyKey = Objects.requireNonNull(propertyKey);
         this.stepLabel = Objects.requireNonNull(stepLabel);
 
-        tx = TitanTraversalUtil.getTx(this.traversal);
     }
 
     @Override
     protected Iterator<TitanVertex> flatMap(Traverser.Admin<S> traverser) {
+        TitanTransaction tx = TitanTraversalUtil.getTx(this.traversal);
         Object value = getNullableScopeValue(Pop.first, stepLabel, traverser);
-        return value != null ? verticesWithProperty(value) : emptyIterator();
+        return value != null ? verticesWithProperty(tx, value) : emptyIterator();
     }
 
     /**
      * Look up vertices in Titan which have a property {@link TitanPreviousPropertyStep#propertyKey} with the given
      * value.
+     * @param tx the Titan transaction to read from
      * @param value the value that the property should have
      */
-    private Iterator<TitanVertex> verticesWithProperty(Object value) {
+    private Iterator<TitanVertex> verticesWithProperty(TitanTransaction tx, Object value) {
         return tx.query().has(propertyKey, value).vertices().iterator();
     }
 
