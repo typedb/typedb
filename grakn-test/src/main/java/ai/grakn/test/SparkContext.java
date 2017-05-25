@@ -21,6 +21,9 @@ package ai.grakn.test;
 
 
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.Grakn;
+import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.util.JWTHandler;
 import com.jayway.restassured.RestAssured;
 import org.junit.rules.ExternalResource;
 import spark.Service;
@@ -37,6 +40,8 @@ import static ai.grakn.engine.GraknEngineServer.configureSpark;
  */
 public class SparkContext extends ExternalResource {
 
+    private final GraknEngineConfig config = GraknEngineConfig.getInstance();
+    private final JWTHandler jwtHandler = JWTHandler.create();
     private final Consumer<Service> createControllers;
     private final GraknEngineConfig config = GraknEngineConfig.getInstance();
 

@@ -41,9 +41,18 @@ import java.util.Map;
 public class JWTHandler {
 
     static private final String issuer = "https://grakn.ai/";
-    static private final String secret = GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.JWT_SECRET_PROPERTY);
 
-    static public String signJWT(String username) {
+    private final String secret;
+
+    private JWTHandler(String secret) {
+        this.secret = secret;
+    }
+
+    public static JWTHandler create(GraknEngineConfig config) {
+        return new JWTHandler(config.getProperty(GraknEngineConfig.JWT_SECRET_PROPERTY));
+    }
+
+    public String signJWT(String username) {
         long iat = System.currentTimeMillis() / 1000L; // issued at claim
         long exp = iat + 3600L; // expires claim. In this case the token expires in 3600 seconds
 
@@ -57,7 +66,7 @@ public class JWTHandler {
         return signer.sign(claims);
     }
 
-    static public String extractUserFromJWT(String jwt) {
+    public String extractUserFromJWT(String jwt) {
         try {
             JWTVerifier verifier = new JWTVerifier(secret);
             Map<String, Object> claims = verifier.verify(jwt);
@@ -67,7 +76,7 @@ public class JWTHandler {
         }
     }
 
-    static public boolean verifyJWT(String jwt) {
+    public boolean verifyJWT(String jwt) {
         try {
             JWTVerifier verifier = new JWTVerifier(secret);
             verifier.verify(jwt);

@@ -53,11 +53,13 @@ public class AuthController {
     private final static String PASSWORD_KEY = "password";
     private final GraknEngineConfig config;
     private final UsersHandler usersHandler;
+    private final JWTHandler jwtHandler;
 
 
     public AuthController(Service spark, GraknEngineConfig config, UsersHandler usersHandler) {
         this.config = config;
         this.usersHandler = usersHandler;
+        this.jwtHandler = JWTHandler.create(config);
 
         spark.post(REST.WebPath.NEW_SESSION_URI, this::newSession);
         spark.get(REST.WebPath.IS_PASSWORD_PROTECTED_URI,this::isPasswordProtected);
@@ -83,7 +85,7 @@ public class AuthController {
         }
 
         if (usersHandler.validateUser(user, password)) {
-            return JWTHandler.signJWT(user);
+            return jwtHandler.signJWT(user);
         } else {
             throw new GraknEngineServerException(401,"Wrong authentication parameters have been provided.");
         }

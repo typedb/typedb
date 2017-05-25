@@ -21,17 +21,17 @@ import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.DashboardController;
+import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
-import ai.grakn.engine.controller.GraqlController;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.util.REST;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
@@ -167,7 +167,8 @@ public class GraknEngineServer implements AutoCloseable {
         boolean isPasswordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
 
         if (isPasswordProtected) {
-            spark.before((req, res) -> checkAuthorization(spark, req));
+            JWTHandler jwtHandler = JWTHandler.create(prop);
+            spark.before((req, res) -> checkAuthorization(spark, req, jwtHandler));
         }
 
         //Register exception handlers
@@ -209,7 +210,7 @@ public class GraknEngineServer implements AutoCloseable {
      * access to specific endpoints.
      * @param request request information from the client
      */
-    private static void checkAuthorization(Service spark, Request request) {
+    private static void checkAuthorization(Service spark, Request request, JWTHandler jwtHandler) {
 
         //we dont check authorization token if the path requested is one of the unauthenticated ones
         if (!unauthenticatedEndPoints.contains(request.pathInfo())) {
@@ -221,8 +222,8 @@ public class GraknEngineServer implements AutoCloseable {
                 }
 
                 String token = request.headers("Authorization").substring(7);
-                authenticated = JWTHandler.verifyJWT(token);
-                request.attribute(REST.Request.USER_ATTR, JWTHandler.extractUserFromJWT(token));
+                authenticated = jwtHandler.verifyJWT(token);
+                request.attribute(REST.Request.USER_ATTR, jwtHandler.extractUserFromJWT(token));
             } 
             catch (GraknEngineServerException e) {
                 throw e;

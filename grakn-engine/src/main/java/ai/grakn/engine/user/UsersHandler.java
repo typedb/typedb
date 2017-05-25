@@ -43,7 +43,7 @@ public class UsersHandler {
     public static final String USER_IS_ADMIN = "user-is-admin";
     private final Map<String, Json> usersMap = new HashMap<>();
 
-    public synchronized static UsersHandler create() {
+    public static UsersHandler create() {
         return new SystemKeyspaceUsers(); // new UsersHandler();
     }
 
