@@ -48,8 +48,8 @@ public class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGr
     }
 
     @Override
-    GraknTinkerGraph buildGraknGraphFromTinker(TinkerGraph graph, boolean batchLoading) {
-        return new GraknTinkerGraph(graph, super.keyspace, super.engineUrl, batchLoading, properties);
+    GraknTinkerGraph buildGraknGraphFromTinker(TinkerGraph graph) {
+        return new GraknTinkerGraph(graph, super.keyspace, super.engineUrl, properties);
     }
 
     @Override

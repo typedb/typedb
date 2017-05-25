@@ -145,7 +145,7 @@ public class LazyTest {
                 )
                 .map(a -> a.filterVars(rule.getHead().getVarNames()))
                 .distinct()
-                .map(ans -> ans.explain(new RuleExplanation(rule)));
+                .map(ans -> ans.explain(new RuleExplanation(query, rule)));
 
         cache.record(rule.getHead(), join);
 

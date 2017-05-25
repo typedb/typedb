@@ -28,6 +28,8 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.test.EngineContext;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -71,16 +73,28 @@ public class BatchMutatorClientTest {
     }
 
     @Test
-    public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged(){
+    public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged() throws InterruptedException {
+        CountDownLatch callbackCompleted = new CountDownLatch(1);
+
         // Create a BatchMutatorClient with a callback that will fail
         BatchMutatorClient loader = loader();
-        loader.setTaskCompletionConsumer((json) -> assertTrue("Testing Log failure",false));
+        loader.setTaskCompletionConsumer((json) -> {
+            try {
+                throw new RuntimeException("deliberate failure");
+            } finally {
+                callbackCompleted.countDown();
+            }
+        });
 
         // Load some queries
         generate(this::query).limit(1).forEach(loader::add);
 
         // Wait for queries to finish
         loader.waitToFinish();
+
+        // Wait for callback function to execute - Callbacks are run asynchronously
+        boolean callbackSuccessfullyCompleted = callbackCompleted.await(1, TimeUnit.MINUTES);
+        assertTrue("callback completed withing timeout", callbackSuccessfullyCompleted);
 
         // Verify that the logger received the failed log message
         assertThat(systemOut.getLog(), containsString("error in callback"));

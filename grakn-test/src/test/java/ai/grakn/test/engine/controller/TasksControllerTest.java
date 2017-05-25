@@ -27,28 +27,25 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.test.SparkContext;
 import com.google.common.collect.ImmutableMap;
 import com.jayway.restassured.mapper.ObjectMapper;
 import com.jayway.restassured.mapper.ObjectMapperDeserializationContext;
 import com.jayway.restassured.mapper.ObjectMapperSerializationContext;
 import com.jayway.restassured.response.Response;
 import com.jayway.restassured.specification.RequestSpecification;
-import java.util.HashMap;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.mockito.Mockito;
-import spark.Service;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
@@ -79,44 +76,18 @@ import static org.mockito.Mockito.when;
 
 public class TasksControllerTest {
     private static final int PORT = 4567;
-    private static final String URI = "localhost:" + PORT;
-    private static Service spark;
-    private static TaskManager manager;
+    private static TaskManager manager = mock(TaskManager.class);
     private final JsonMapper jsonMapper = new JsonMapper();
+
+    @ClassRule
+    public static final SparkContext ctx = SparkContext.withControllers(spark -> {
+        new TasksController(spark, manager);
+    });
 
     @Before
     public void reset(){
         Mockito.reset(manager);
         when(manager.storage()).thenReturn(mock(TaskStateStorage.class));
-    }
-
-    @BeforeClass
-    public static void setUp() throws Exception {
-        spark = Service.ignite();
-        configureSpark(spark, PORT, GraknEngineConfig.getInstance());
-
-        manager = mock(TaskManager.class);
-        when(manager.storage()).thenReturn(mock(TaskStateStorage.class));
-
-        new TasksController(spark, manager);
-
-        spark.awaitInitialization();
-    }
-
-    @AfterClass
-    public static void stopSpark() throws IOException {
-        spark.stop();
-
-        // Block until server is truly stopped
-        // This occurs when there is no longer a port assigned to the Spark server
-        boolean running = true;
-        while (running) {
-            try {
-                spark.port();
-            } catch(IllegalStateException e){
-                running = false;
-            }
-        }
     }
 
     @Test
@@ -395,11 +366,11 @@ public class TasksControllerTest {
 
     private Response send(String configuration, Map<String, String> params){
         RequestSpecification request = with().queryParams(params).body(configuration);
-        return request.post(String.format("http://%s%s", URI, TASKS));
+        return request.post(String.format("http://%s%s", ctx.uri(), TASKS));
     }
 
     private Response get(TaskId taskId){
-        return with().get(String.format("http://%s%s", URI, GET.replace(ID_PARAMETER, taskId.getValue())));
+        return with().get(String.format("http://%s%s", ctx.uri(), GET.replace(ID_PARAMETER, taskId.getValue())));
     }
 
     public static class JsonMapper implements ObjectMapper{

@@ -51,8 +51,8 @@ import java.util.function.Supplier;
  * @author fppt
  */
 public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
-    public GraknTitanGraph(TitanGraph graph, String name, String engineUrl, boolean batchLoading, Properties properties){
-        super(graph, name, engineUrl, batchLoading, properties);
+    public GraknTitanGraph(TitanGraph graph, String name, String engineUrl, Properties properties){
+        super(graph, name, engineUrl, properties);
     }
 
     /**

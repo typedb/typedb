@@ -27,17 +27,14 @@ import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
+import ai.grakn.test.SparkContext;
 import ai.grakn.util.REST;
 import com.jayway.restassured.response.Response;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import spark.Service;
 
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.stringResponse;
@@ -58,28 +55,17 @@ import static org.mockito.Mockito.when;
 
 public class ConceptControllerTest {
 
-    private static final String HOST = "localhost";
-    private static final int PORT = 4567;
-    private static Service spark;
-
     private static GraknGraph mockGraph;
-    private static EngineGraknGraphFactory mockFactory;
+    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
 
     @ClassRule
     public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
 
-    @BeforeClass
-    public static void setup(){
-        spark = Service.ignite();
-        configureSpark(spark, PORT, GraknEngineConfig.getInstance());
-
-        mockFactory = mock(EngineGraknGraphFactory.class);
-
-        new SystemController(spark, GraknEngineConfig.getInstance());
+    @ClassRule
+    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
+        new SystemController(spark);
         new ConceptController(mockFactory, spark);
-
-        spark.awaitInitialization();
-    }
+    });
 
     @Before
     public void setupMock(){
@@ -90,22 +76,6 @@ public class ConceptControllerTest {
                 graphContext.graph().getConcept(invocation.getArgument(0)));
 
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
-    }
-
-    @AfterClass
-    public static void shutdown(){
-        spark.stop();
-
-        // Block until server is truly stopped
-        // This occurs when there is no longer a port assigned to the Spark server
-        boolean running = true;
-        while (running) {
-            try {
-                spark.port();
-            } catch(IllegalStateException e){
-                running = false;
-            }
-        }
     }
 
     @Test
@@ -121,7 +91,7 @@ public class ConceptControllerTest {
 
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + concept.getId()));
+                .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
         assertThat(response.statusCode(), equalTo(406));
         assertThat(exception(response), containsString(UNSUPPORTED_CONTENT_TYPE.getMessage("*/*")));}
@@ -132,7 +102,7 @@ public class ConceptControllerTest {
 
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .accept(APPLICATION_HAL)
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + concept.getId()));
+                .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
         assertThat(response.contentType(), equalTo(APPLICATION_HAL));
     }
@@ -144,7 +114,7 @@ public class ConceptControllerTest {
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
                 .accept("invalid")
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + concept.getId()));
+                .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
         assertThat(response.statusCode(), equalTo(406));
         assertThat(exception(response), containsString(UNSUPPORTED_CONTENT_TYPE.getMessage("invalid")));
@@ -189,7 +159,7 @@ public class ConceptControllerTest {
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, "invalid")
                 .accept(APPLICATION_HAL)
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + "blah"));
+                .get(REST.WebPath.Concept.CONCEPT + "blah");
 
         assertThat(response.statusCode(), equalTo(500));
     }
@@ -198,6 +168,6 @@ public class ConceptControllerTest {
         return with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(LIMIT_EMBEDDED, numberEmbeddedComponents)
                 .accept(APPLICATION_HAL)
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + concept.getId().getValue()));
+                .get(REST.WebPath.Concept.CONCEPT + concept.getId().getValue());
     }
 }
