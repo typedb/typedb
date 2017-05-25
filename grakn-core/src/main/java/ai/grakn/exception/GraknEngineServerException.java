@@ -19,8 +19,6 @@
 package ai.grakn.exception;
 
 import ai.grakn.util.ErrorMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This Exception is thrown by Grakn Engine web server when operations accessible through APIs go wrong.
@@ -29,37 +27,25 @@ import org.slf4j.LoggerFactory;
  */
 public class GraknEngineServerException extends RuntimeException {
 
-    final int status;
+    private final int status;
 
     public GraknEngineServerException(int status, ErrorMessage message, String... args) {
         super(message.getMessage(args));
-        log(status, message.getMessage(args));
         this.status = status;
     }
 
     //TODO remove this method
     public GraknEngineServerException(int status, String message) {
         super(message);
-        log(status, message);
         this.status = status;
     }
 
     public GraknEngineServerException(int status, Exception e) {
         super(e.toString());
-        log(status, e);
         this.status = status;
     }
 
     public int getStatus() {
         return this.status;
-    }
-
-    private static void log(int status, Object message){
-        Logger logger = LoggerFactory.getLogger(GraknEngineServerException.class);
-        if(status == 404){
-            logger.trace("New Grakn Engine Server exception {}", message);
-        } else{
-            logger.error("New Grakn Engine Server exception {}", message);
-        }
     }
 }

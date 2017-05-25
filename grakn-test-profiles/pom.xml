@@ -67,7 +67,6 @@
             </activation>
             <properties>
                 <grakn.test-profile>tinker</grakn.test-profile>
-                <grakn.skip-bash-tests>true</grakn.skip-bash-tests>
             </properties>
         </profile>
 
@@ -75,7 +74,6 @@
             <id>titan</id>
             <properties>
                 <grakn.test-profile>titan</grakn.test-profile>
-                <grakn.skip-bash-tests>false</grakn.skip-bash-tests>
             </properties>
             <dependencies>
                 <dependency>
