@@ -251,13 +251,13 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingClear_TheGraphCloses(@Open GraknGraph graph) {
-        graph.clear();
+        graph.admin().delete();
         assertTrue(graph.isClosed());
     }
 
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
-        graph.clear();
+        graph.admin().delete();
         graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
@@ -268,8 +268,8 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeLabels.class) TypeLabel typeLabel) {
-        graph.clear();
+    public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeLabels.class) TypeLabel typeLabel) {
+        graph.admin().delete();
         graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
         assertNotNull(graph.getType(typeLabel));
         graph.close();

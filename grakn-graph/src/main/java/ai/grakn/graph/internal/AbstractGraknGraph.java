@@ -39,6 +39,8 @@ import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.factory.FactoryBuilder;
+import ai.grakn.factory.InternalFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
@@ -690,22 +692,23 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    /**
-     * Clears the graph completely.
-     */
-    @Override
-    public void clear() {
-        innerClear();
+    InternalFactory getSystemGraph(){
+        return FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, getEngineUrl(), getProperties());
     }
 
-    private void innerClear(){
+    @Override
+    public void delete() {
+        closeSession();
         clearGraph();
-        closeTransaction(ErrorMessage.CLOSED_CLEAR.getMessage());
+        getTxCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
+
+        //Remove the graph from the system keyspace
+        SystemKeyspace.deleteKeyspace(getSystemGraph(), getKeyspace());
     }
 
     //This is overridden by vendors for more efficient clearing approaches
     protected void clearGraph(){
-        operateOnOpenGraph(() -> getTinkerPopGraph().traversal().V().drop().iterate());
+        getTinkerPopGraph().traversal().V().drop().iterate();
     }
 
     @Override

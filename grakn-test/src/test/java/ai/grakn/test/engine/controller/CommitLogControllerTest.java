@@ -186,8 +186,8 @@ public class CommitLogControllerTest {
                             argument.json().at(KEYSPACE).asString().equals(TIM) &&
                             argument.json().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
         } finally {
-            Grakn.session(ctx.uri(), BOB).open(GraknTxType.WRITE).clear();
-            Grakn.session(ctx.uri(), TIM).open(GraknTxType.WRITE).clear();
+            Grakn.session(ctx.uri(), BOB).open(GraknTxType.WRITE).admin().delete();
+            Grakn.session(ctx.uri(), TIM).open(GraknTxType.WRITE).admin().delete();
 
             bob.close();
             tim.close();

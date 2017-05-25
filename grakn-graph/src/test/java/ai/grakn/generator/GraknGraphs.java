@@ -112,7 +112,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
         // Clear graph before retrieving
         graph = factory.open(GraknTxType.WRITE);
-        graph.clear();
+        graph.admin().delete();
         graph = factory.open(GraknTxType.WRITE);
 
         for (int i = 0; i < size; i++) {
