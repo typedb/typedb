@@ -78,7 +78,7 @@ class TitanPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implement
     /**
      * Look up vertices in Titan which have a property {@link TitanPreviousPropertyStep#propertyKey} with the given
      * value.
-     * @param value
+     * @param value the value that the property should have
      */
     private Iterator<TitanVertex> verticesWithProperty(Object value) {
         return tx.query().has(propertyKey, value).vertices().iterator();
