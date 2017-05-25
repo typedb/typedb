@@ -28,7 +28,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static ai.grakn.util.ErrorMessage.SCHEMA_LOCKED;
@@ -36,7 +35,6 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
 import static ai.grakn.util.ErrorMessage.VALIDATION_IS_ABSTRACT;
 
 //TODO Ignored because we disabled ontology modification check with batch graph in AbstractGraknGraph
-@Ignore
 public class OntologyMutationTest extends GraphTestBase{
     private RoleType husband;
     private RoleType wife;
@@ -228,6 +226,7 @@ public class OntologyMutationTest extends GraphTestBase{
         String relationTypeId = "relationtype";
         RoleType roleType = graknGraph.putRoleType(roleTypeId);
         graknGraph.putRelationType(relationTypeId).relates(roleType);
+        graknGraph.commit();
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
         roleType = graknGraphBatch.getRoleType(roleTypeId);
