@@ -27,8 +27,8 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.admin.GraknAdmin;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.GraknVersion;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +36,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -66,9 +67,8 @@ import java.util.stream.Collectors;
  * 
  * @author borislav, fppt
  *
- * @param <T>
  */
-public class SystemKeyspace<T extends Graph> {
+public class SystemKeyspace {
     // This will eventually be configurable and obtained the same way the factory is obtained
     // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
     // If there is a more natural home for this constant, feel free to put it there! (Boris)
@@ -77,21 +77,48 @@ public class SystemKeyspace<T extends Graph> {
     public static final TypeLabel KEYSPACE_ENTITY = TypeLabel.of("keyspace");
     public static final TypeLabel KEYSPACE_RESOURCE = TypeLabel.of("keyspace-name");
 
-    protected final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
 
     private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
-    private final InternalFactory<T> factory;
+    private static InternalFactory factory;
 
-    public SystemKeyspace(InternalFactory<T> factory){
-        this.factory = factory;
+    private SystemKeyspace(){
+    }
+
+    /**
+     * Initialises the systme keyspace for a specific running instance of engine
+     * @param engineUrl the url of engine to get the config from
+     * @param properties the properties used to initialise the keyspace
+     */
+    static void initialise(String engineUrl, Properties properties){
+        if(factory == null) {
+            factory = FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties);
+            loadSystemOntology();
+        }
+    }
+
+    private static InternalFactory factory(){
+        if(factory == null) throw new IllegalStateException("System factory has not yet been initialised");
+        return factory;
+    }
+
+    /**
+     * Closes the system keyspace if there are no pending transactions on it.
+     */
+    public static void close(){
+        AbstractGraknGraph system = factory().open(GraknTxType.READ);
+        system.close();
+        if (!system.isSessionClosed() && system.numOpenTx() == 0) {
+            system.closeSession();
+        }
     }
 
     /**
      * Notify that we just opened a keyspace with the same engineUrl & config.
      */
-    SystemKeyspace<T> keyspaceOpened(String keyspace) {
+    static void keyspaceOpened(String keyspace) {
         openSpaces.computeIfAbsent(keyspace, name -> {
-            try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+            try (GraknGraph graph = factory().open(GraknTxType.WRITE)) {
                 ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
                 Resource<String> resource = keyspaceName.putResource(keyspace);
                 if (resource.owner() == null) {
@@ -103,18 +130,16 @@ public class SystemKeyspace<T extends Graph> {
             }
             return true;
         });
-        return this;
     }
 
     /**
      * This is called when a graph is deleted via {@link GraknAdmin#delete()}.
      * This removes the keyspace of the deleted graph from the system graph
      *
-     * @param factory the factory used to access the system keyspace
      * @param keyspace the keyspace to be removed from the system graph
      */
-    public static void deleteKeyspace(InternalFactory factory, String keyspace){
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+    public static void deleteKeyspace(String keyspace){
+        try (GraknGraph graph = factory().open(GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
             Resource<String> resource = keyspaceName.getResource(keyspace);
 
@@ -130,12 +155,12 @@ public class SystemKeyspace<T extends Graph> {
      * only consists of types, the inserts are idempotent and it is safe to load it
      * multiple times.
      */
-    void loadSystemOntology() {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+    private static void loadSystemOntology() {
+        try (GraknGraph graph = factory().open(GraknTxType.WRITE)) {
             if (graph.getType(KEYSPACE_ENTITY) != null) {
                 return;
             }
-            ClassLoader loader = this.getClass().getClassLoader();
+            ClassLoader loader = SystemKeyspace.class.getClassLoader();
             String query;
             try (BufferedReader buffer = new BufferedReader(new InputStreamReader(loader.getResourceAsStream(SYSTEM_ONTOLOGY_FILE), StandardCharsets.UTF_8))) {
                 query = buffer.lines().collect(Collectors.joining("\n"));

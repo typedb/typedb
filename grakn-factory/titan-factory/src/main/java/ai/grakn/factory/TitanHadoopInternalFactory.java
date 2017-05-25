@@ -57,11 +57,6 @@ public class TitanHadoopInternalFactory extends AbstractInternalFactory<Abstract
     }
 
     @Override
-    InternalFactory<HadoopGraph> getSystemFactory(){
-        return null;
-    }
-
-    @Override
     AbstractGraknGraph<HadoopGraph> buildGraknGraphFromTinker(HadoopGraph graph) {
         throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_GRAPH.getMessage(HadoopGraph.class.getName()));
     }
