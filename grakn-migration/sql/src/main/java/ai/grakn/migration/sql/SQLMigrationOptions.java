@@ -20,6 +20,9 @@ package ai.grakn.migration.sql;
 
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.MigrationOptions;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
 import static ai.grakn.migration.base.MigrationCLI.die;
 import static java.lang.Integer.parseInt;
@@ -48,39 +51,52 @@ public class SQLMigrationOptions extends MigrationOptions {
         parse(args);
     }
 
-    public String getDriver() {
+    public Driver getDriver() {
         if(command.hasOption("driver")){
-            return command.getOptionValue("driver");
+            try {
+                return (Driver) Class.forName(command.getOptionValue("driver")).newInstance();
+            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                throw die(e);
+            }
         }
-        return die("No driver specified (-driver)");
+
+        throw die("No driver specified (-driver)");
+    }
+
+    public boolean hasDriver(){
+        return command.hasOption("driver");
     }
 
     public String getLocation() {
         if(command.hasOption("location")){
             return command.getOptionValue("location");
         }
-        return die("No db specified (-location)");
+
+        throw die("No db specified (-location)");
     }
 
     public String getUsername() {
         if(command.hasOption("user")){
             return command.getOptionValue("user");
         }
-        return die("No username specified (-user)");
+
+        throw die("No username specified (-user)");
     }
 
     public String getPassword() {
         if(command.hasOption("pass")){
             return command.getOptionValue("pass");
         }
-        return die("No password specified (-pass)");
+
+        throw die("No password specified (-pass)");
     }
 
     public String getQuery() {
         if(command.hasOption("query")){
             return command.getOptionValue("query");
         }
-        return die("No SQL query specified (-query)");
+
+        throw die("No SQL query specified (-query)");
     }
 
     public int getBatch() {

@@ -60,12 +60,19 @@ public class SQLMigrator {
 
         printInitMessage(options, options.getLocation() + " using " + options.getQuery());
 
-        try(Connection connection =
-                    DriverManager.getConnection(options.getLocation(), options.getUsername(), options.getPassword())) {
+        try {
+            if(options.hasDriver()) {
+                DriverManager.registerDriver(options.getDriver());
+            }
 
-            SQLMigrator sqlMigrator = new SQLMigrator(options.getQuery(), connection);
+            try(Connection connection = DriverManager.getConnection(options.getLocation(),
+                    options.getUsername(), options.getPassword())) {
 
-            MigrationCLI.loadOrPrint(sqlTemplate, sqlMigrator.convert(), options);
+                SQLMigrator sqlMigrator = new SQLMigrator(options.getQuery(), connection);
+
+                MigrationCLI.loadOrPrint(sqlTemplate, sqlMigrator.convert(), options);
+            }
+
         } catch (Throwable throwable){
             die(throwable);
         }
@@ -94,7 +101,7 @@ public class SQLMigrator {
      * @param data data to make valid
      * @return valid data
      */
-    public Map<String, Object> convertToValidValues(Map<String, Object> data){
+    private Map<String, Object> convertToValidValues(Map<String, Object> data){
         data = Maps.filterValues(data, Objects::nonNull);
         data = Maps.transformValues(data, this::convertToSupportedTypes);
         return data;
