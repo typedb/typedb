@@ -82,8 +82,8 @@ public abstract class Binary extends BinaryBase {
     @Override
     public int equivalenceHashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + (typeId != null? this.typeId.hashCode() : 0);
-        hashCode = hashCode * 37 + (predicate != null ? predicate.equivalenceHashCode() : 0);
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + (this.predicate != null ? this.predicate.equivalenceHashCode() : 0);
         return hashCode;
     }
 }
