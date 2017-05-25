@@ -41,8 +41,8 @@ import java.util.Properties;
 public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     private final TinkerGraph rootGraph;
 
-    public GraknTinkerGraph(TinkerGraph tinkerGraph, String name, String engineUrl, boolean batchLoading, Properties properties){
-        super(tinkerGraph, name, engineUrl, batchLoading, properties);
+    public GraknTinkerGraph(TinkerGraph tinkerGraph, String name, String engineUrl, Properties properties){
+        super(tinkerGraph, name, engineUrl, properties);
         rootGraph = tinkerGraph;
     }
 

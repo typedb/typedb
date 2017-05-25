@@ -35,8 +35,8 @@ public class EngineGraknSessionTest {
         graph1.close();
         GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.BATCH);
 
-        assertFalse(graph1.admin().isBatchLoadingEnabled());
-        assertTrue(graph2.admin().isBatchLoadingEnabled());
+        assertFalse(graph1.admin().isBatchGraph());
+        assertTrue(graph2.admin().isBatchGraph());
 
         graph1.close();
         graph2.close();
