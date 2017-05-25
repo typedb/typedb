@@ -19,14 +19,23 @@
 
 package ai.grakn.factory;
 
+import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanTraversalUtil;
+import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
-import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.process.traversal.step.Scoping;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
-import java.util.NoSuchElementException;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Objects;
+import java.util.Set;
+
+import static java.util.Collections.emptyIterator;
 
 /**
  * Optimise a particular traversal in Titan:
@@ -40,21 +49,39 @@ import java.util.Objects;
  *
  * @author Felix Chapman
  */
-class TitanPreviousPropertyStep<S, E extends Element> extends AbstractStep<S, E> {
+class TitanPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implements Scoping {
 
     private static final long serialVersionUID = -8906462828437711078L;
     private final String propertyKey;
     private final String stepLabel;
+    private final TitanTransaction tx;
 
+    /**
+     * @param traversal the traversal that contains this step
+     * @param propertyKey the property key that we are looking up
+     * @param stepLabel the step label that refers to a previously visited value in the traversal
+     */
     TitanPreviousPropertyStep(Traversal.Admin traversal, String propertyKey, String stepLabel) {
         super(traversal);
         this.propertyKey = Objects.requireNonNull(propertyKey);
         this.stepLabel = Objects.requireNonNull(stepLabel);
+
+        tx = TitanTraversalUtil.getTx(this.traversal);
     }
 
     @Override
-    protected Traverser<E> processNextStart() throws NoSuchElementException {
-        return null;
+    protected Iterator<TitanVertex> flatMap(Traverser.Admin<S> traverser) {
+        Object value = getNullableScopeValue(Pop.first, stepLabel, traverser);
+        return value != null ? verticesWithProperty(value) : emptyIterator();
+    }
+
+    /**
+     * Look up vertices in Titan which have a property {@link TitanPreviousPropertyStep#propertyKey} with the given
+     * value.
+     * @param value
+     */
+    private Iterator<TitanVertex> verticesWithProperty(Object value) {
+        return tx.query().has(propertyKey, value).vertices().iterator();
     }
 
     @Override
@@ -63,10 +90,9 @@ class TitanPreviousPropertyStep<S, E extends Element> extends AbstractStep<S, E>
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        TitanPreviousPropertyStep<?, ?> that = (TitanPreviousPropertyStep<?, ?>) o;
+        TitanPreviousPropertyStep<?> that = (TitanPreviousPropertyStep<?>) o;
 
-        if (!propertyKey.equals(that.propertyKey)) return false;
-        return stepLabel.equals(that.stepLabel);
+        return propertyKey.equals(that.propertyKey) && stepLabel.equals(that.stepLabel);
     }
 
     @Override
@@ -80,5 +106,15 @@ class TitanPreviousPropertyStep<S, E extends Element> extends AbstractStep<S, E>
     @Override
     public String toString() {
         return StringFactory.stepString(this, propertyKey, stepLabel);
+    }
+
+    @Override
+    public Set<String> getScopeKeys() {
+        return Collections.singleton(stepLabel);
+    }
+
+    @Override
+    public Set<TraverserRequirement> getRequirements() {
+        return TYPICAL_GLOBAL_REQUIREMENTS;
     }
 }

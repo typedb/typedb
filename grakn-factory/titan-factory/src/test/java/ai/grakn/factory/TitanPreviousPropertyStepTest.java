@@ -21,47 +21,122 @@ package ai.grakn.factory;
 
 import ai.grakn.GraknTxType;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.util.EmptyTraversalStrategies;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.BeforeClass;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.Test;
 
+import java.util.List;
+
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Felix Chapman
  */
 public class TitanPreviousPropertyStepTest extends TitanTestBase {
 
-    private static GraphTraversalSource graph;
+    private static final GraphTraversalSource tinker = TinkerGraph.open().traversal();
 
-    @BeforeClass
-    public static void setupClass() throws InterruptedException {
-        graph = titanGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph().traversal();
-    }
+    private static final GraphTraversalSource titan = titanGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph().traversal();
+
+    private static final Vertex vertexWithFoo = titan.addV().property("v prop", "foo").next();
+    private static final Vertex vertexWithBar = titan.addV().property("v prop", "bar").next();
+    private static final Vertex vertexWithoutProperty = titan.addV().next();
+    private static final Edge edge = titan.V(vertexWithoutProperty).as("x").addE("self").to("x").property("e prop", "foo").next();
 
     @Test
     public void whenFilteringAPropertyToBeEqualToAPreviousProperty_UseTitanGraphStep() {
-        GraphTraversal traversal = graph.V().outE().values("foo").as("x").V().has("bar", __.where(P.eq("x")));
+        GraphTraversal traversal = optimisableTraversal(titan);
 
-        GraphTraversal expected = optimisedTraversal();
+        GraphTraversal expected = optimisedTraversal(titan);
 
         traversal.asAdmin().applyStrategies();
 
         assertEquals(expected, traversal);
     }
 
-    private GraphTraversal optimisedTraversal() {
-        GraphTraversal<Vertex, Object> expected = graph.V().outE().values("foo").as("x");
+    @Test
+    public void whenExecutingUnOptimisedTraversal_ResultIsCorrect() {
+        GraphTraversal<Vertex, Vertex> traversal = optimisableTraversal(titan);
+
+        disableStrategies(traversal, () -> {
+            List<Vertex> vertices = traversal.toList();
+
+            assertThat(vertices, contains(vertexWithFoo));
+        });
+    }
+
+    @Test
+    public void whenExecutingOptimisedTraversal_ResultIsCorrect() {
+        GraphTraversal<Vertex, Vertex> traversal = optimisableTraversal(titan);
+
+        List<Vertex> vertices = traversal.toList();
+
+        assertThat(vertices, contains(vertexWithFoo));
+    }
+
+    @Test
+    public void whenExecutingManuallyOptimisedTraversal_ResultIsCorrect() {
+        GraphTraversal<Vertex, Vertex> traversal = optimisedTraversal(titan);
+
+        List<Vertex> vertices = traversal.toList();
+
+        assertThat(vertices, contains(vertexWithFoo));
+    }
+
+    @Test
+    public void whenUsingATitanGraph_ApplyStrategy() {
+        GraphTraversal<?, ?> traversal = optimisableTraversal(titan);
+        traversal.asAdmin().applyStrategies();
+
+        List<Step> steps = traversal.asAdmin().getSteps();
+        assertThat(steps, hasItem(instanceOf(TitanPreviousPropertyStep.class)));
+    }
+
+    @Test
+    public void whenUsingANonTitanGraph_DontApplyStrategy() {
+        GraphTraversal<?, ?> traversal = optimisableTraversal(tinker);
+        traversal.asAdmin().applyStrategies();
+
+        List<Step> steps = traversal.asAdmin().getSteps();
+        assertThat(steps, not(hasItem(instanceOf(TitanPreviousPropertyStep.class))));
+    }
+
+    private GraphTraversal<Vertex, Vertex> optimisableTraversal(GraphTraversalSource g) {
+        return g.V().outE().values("e prop").as("x").V().has("v prop", __.where(P.eq("x")));
+    }
+
+    private GraphTraversal<Vertex, Vertex> optimisedTraversal(GraphTraversalSource g) {
+        GraphTraversal expected = g.V().outE().values("e prop").as("x");
 
         GraphTraversal.Admin<Vertex, Object> admin = expected.asAdmin();
-        TitanPreviousPropertyStep<Vertex, Vertex> graphStep = new TitanPreviousPropertyStep<>(admin, "bar", "x");
+        TitanPreviousPropertyStep<?> graphStep = new TitanPreviousPropertyStep<>(admin, "v prop", "x");
         admin.addStep(graphStep);
 
         admin.applyStrategies();
 
         return expected;
+    }
+
+    private void disableStrategies(GraphTraversal traversal, Runnable consumer) {
+        TraversalStrategies strategies = traversal.asAdmin().getStrategies();
+
+        try {
+            traversal.asAdmin().setStrategies(EmptyTraversalStrategies.instance());
+            consumer.run();
+        } finally {
+            traversal.asAdmin().setStrategies(strategies);
+        }
     }
 }

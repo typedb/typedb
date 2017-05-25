@@ -78,7 +78,7 @@ public class TitanPreviousPropertyStepStrategy extends AbstractTraversalStrategy
     }
 
     private List<Step> stepsFromFilterStep(TraversalFilterStep<Vertex> filterStep) {
-        // TraversalFilterStep always has exactly one child
+        // TraversalFilterStep always has exactly one child, so this is safe
         return filterStep.getLocalChildren().get(0).getSteps();
     }
 
