@@ -151,7 +151,7 @@ public class SystemKeyspace {
      * @param keyspace The keyspace which might be in the system
      * @return true if the keyspace is in the system
      */
-    static boolean containsKeyspace(String keyspace){
+    public static boolean containsKeyspace(String keyspace){
         try (GraknGraph graph = factory().open(GraknTxType.READ)) {
             return graph.getResourceType(KEYSPACE_RESOURCE.getValue()).getResource(keyspace) != null;
         }
