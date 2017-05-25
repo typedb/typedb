@@ -68,7 +68,11 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         this.engineUrl = engineUrl;
         this.properties = properties;
 
-        if(!SystemKeyspace.SYSTEM_GRAPH_NAME.equals(keyspace)) SystemKeyspace.initialise(engineUrl, properties);
+        if(SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(keyspace)) {
+            SystemKeyspace.initialise(this);
+        } else {
+            SystemKeyspace.initialise(engineUrl, properties);
+        }
     }
 
     abstract M buildGraknGraphFromTinker(G graph);

@@ -86,13 +86,25 @@ public class SystemKeyspace {
     }
 
     /**
-     * Initialises the systme keyspace for a specific running instance of engine
+     * Initialises the system keyspace for a specific running instance of engine
      * @param engineUrl the url of engine to get the config from
      * @param properties the properties used to initialise the keyspace
      */
     static void initialise(String engineUrl, Properties properties){
         if(factory == null) {
             factory = FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties);
+            loadSystemOntology();
+        }
+    }
+
+    /**
+     * Initialises the system keyspace for a specific running instance of engine.
+     * This initializer is used when the first graph created is the system graph.
+     * @param internalFactory the factory to use when initialising the system graph.
+     */
+    static void initialise(InternalFactory internalFactory){
+        if(factory == null) {
+            factory = internalFactory;
             loadSystemOntology();
         }
     }
@@ -130,6 +142,20 @@ public class SystemKeyspace {
             }
             return true;
         });
+    }
+
+    /**
+     * Checks if the keysoace exists in the system. First in memory cache and then checks the persisted graph.
+     *
+     * @param keyspace The keyspace which might be in the system
+     * @return true if the keyspace is in the system
+     */
+    static boolean containsKeyspace(String keyspace){
+        if(openSpaces.containsKey(keyspace)) return true;
+
+        try (GraknGraph graph = factory().open(GraknTxType.WRITE)) {
+            return graph.getResourceType(KEYSPACE_RESOURCE.getValue()).getResource(keyspace) != null;
+        }
     }
 
     /**
