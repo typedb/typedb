@@ -52,7 +52,6 @@ public abstract class BinaryBase extends Atom {
     BinaryBase(BinaryBase a) {
         super(a);
         this.valueVariable = a.getValueVariable();
-        this.typeId = a.getTypeId();
     }
 
     protected abstract Var extractValueVariableName(VarPatternAdmin var);

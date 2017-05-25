@@ -97,8 +97,8 @@ public class Relation extends TypeAtom {
 
     private Relation(Relation a) {
         super(a);
-        this.relationPlayers = a.relationPlayers != null? a.relationPlayers : null;
-        this.roleVarMap = a.roleVarMap != null? a.roleVarMap : null;
+        this.relationPlayers = a.relationPlayers;
+        this.roleVarMap = a.roleVarMap;
     }
 
     @Override
