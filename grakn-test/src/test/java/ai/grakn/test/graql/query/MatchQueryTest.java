@@ -605,29 +605,9 @@ public class MatchQueryTest {
 
     @Test
     public void testSubRelationType() {
-        qb.insert(
-                label("ownership").sub("relation").relates("owner").relates("possession"),
-                label("organization-with-shares").sub("possession"),
-                label("possession").sub("role"),
-
-                label("share-ownership").sub("ownership").relates("shareholder").relates("organization-with-shares"),
-                label("shareholder").sub("owner"),
-                label("owner").sub("role"),
-
-                label("person").sub("entity").plays("shareholder"),
-                label("company").sub("entity").plays("organization-with-shares"),
-
-                var("apple").isa("company"),
-                var("bob").isa("person"),
-
-                var().rel("organization-with-shares", "apple").rel("shareholder", "bob").isa("share-ownership")
-        ).execute();
-
         // This method should work despite subs
         //noinspection ResultOfMethodCallIgnored
-        qb.match(var().rel("x").rel("shareholder", "y").isa("ownership")).stream().count();
-
-        movieGraph.rollback();
+        qb.match(var().rel("x").rel("director", "y").isa("authored-by")).stream().count();
     }
 
     @Test
