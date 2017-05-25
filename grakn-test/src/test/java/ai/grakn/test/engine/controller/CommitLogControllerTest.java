@@ -77,9 +77,9 @@ public class CommitLogControllerTest {
     private static TaskManager manager = mock(TaskManager.class);
 
     @ClassRule
-    public static SparkContext ctx = SparkContext.withControllers(spark -> {
-        new CommitLogController(spark, manager);
-        new SystemController(spark);
+    public static SparkContext ctx = SparkContext.withControllers((spark, config) -> {
+        new CommitLogController(spark, config.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY), manager);
+        new SystemController(spark, config);
     });
 
     private Json commitLog;

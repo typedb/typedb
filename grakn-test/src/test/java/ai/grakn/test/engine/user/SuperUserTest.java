@@ -47,7 +47,7 @@ public class SuperUserTest {
     @Test
     public void testSuperuserLogin() {        
         Assert.assertTrue(users.validateUser(users.superUsername(), 
-                          GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.ADMIN_PASSWORD_PROPERTY)));
+                          engine.server().config().getProperty(GraknEngineConfig.ADMIN_PASSWORD_PROPERTY)));
         Assert.assertFalse(users.validateUser(users.superUsername(), "asgasgdsfgdsf"));
     }
 

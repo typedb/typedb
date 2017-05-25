@@ -19,7 +19,6 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
@@ -65,8 +64,8 @@ public class GraqlControllerPOSTTest {
     public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
 
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(spark);
+    public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
+        new SystemController(spark, config);
         new GraqlController(mockFactory, spark);
     });
 

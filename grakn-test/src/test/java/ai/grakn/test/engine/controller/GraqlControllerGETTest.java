@@ -19,7 +19,6 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
@@ -89,8 +88,8 @@ public class GraqlControllerGETTest {
     public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
 
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(spark);
+    public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
+        new SystemController(spark, config);
         new GraqlController(mockFactory, spark);
     }).port(4567); // TODO: Don't use the default port when bug #15130 is fixed
 

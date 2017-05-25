@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.user;
 
-import ai.grakn.engine.GraknEngineConfig;
 import mjson.Json;
 
 import java.util.HashMap;
@@ -42,12 +41,14 @@ public class UsersHandler {
     public static final String USER_EMAIL = "user-email";
     public static final String USER_IS_ADMIN = "user-is-admin";
     private final Map<String, Json> usersMap = new HashMap<>();
+    final String adminPassword;
 
-    public static UsersHandler create() {
-        return new SystemKeyspaceUsers(); // new UsersHandler();
+    public static UsersHandler create(String adminPassword) {
+        return new SystemKeyspaceUsers(adminPassword); // new UsersHandler();
     }
 
-    protected UsersHandler() {
+    protected UsersHandler(String adminPassword) {
+        this.adminPassword = adminPassword;
     }
 
     public String superUsername() {
@@ -78,8 +79,7 @@ public class UsersHandler {
 
     public boolean validateUser(String username, String hashedPassword) {
         if (superUsername().equals(username)) {
-            return hashedPassword.equals(GraknEngineConfig.getInstance().getProperty(
-                    GraknEngineConfig.ADMIN_PASSWORD_PROPERTY));
+            return hashedPassword.equals(adminPassword);
         }
         else if (userExists(username)) {
             return getUser(username).is(USER_PASSWORD, hashedPassword);

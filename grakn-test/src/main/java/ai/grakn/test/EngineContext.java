@@ -20,6 +20,7 @@ package ai.grakn.test;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
@@ -49,6 +50,7 @@ public class EngineContext extends ExternalResource {
     private final boolean startKafka;
     private final boolean startSingleQueueEngine;
     private final boolean startStandaloneEngine;
+    private final GraknEngineConfig config = GraknEngineConfig.create();
     private int port = 4567;
 
     private EngineContext(boolean startKafka, boolean startSingleQueueEngine, boolean startStandaloneEngine){
@@ -78,6 +80,10 @@ public class EngineContext extends ExternalResource {
         return server;
     }
 
+    public GraknEngineConfig config() {
+        return config;
+    }
+
     public TaskManager getTaskManager(){
         return server.getTaskManager();
     }
@@ -90,17 +96,17 @@ public class EngineContext extends ExternalResource {
     @Override
     public void before() throws Throwable {
         if(startKafka){
-            startKafka();
+            startKafka(config);
         }
 
-        startRedis();
+        startRedis(config);
 
         if(startSingleQueueEngine){
-            server = startEngine(SingleQueueTaskManager.class.getName(), port);
+            server = startEngine(SingleQueueTaskManager.class.getName(), config, port);
         }
 
         if (startStandaloneEngine){
-            server = startEngine(StandaloneTaskManager.class.getName(), port);
+            server = startEngine(StandaloneTaskManager.class.getName(), config, port);
         }
     }
 

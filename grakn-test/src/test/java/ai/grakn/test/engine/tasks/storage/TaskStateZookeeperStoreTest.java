@@ -24,10 +24,10 @@ import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.connection.ZookeeperConnection;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
-import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -55,7 +55,7 @@ public class TaskStateZookeeperStoreTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        connection = new ZookeeperConnection();
+        connection = new ZookeeperConnection(engine.config());
         stateStorage = new TaskStateZookeeperStore(connection);
     }
 

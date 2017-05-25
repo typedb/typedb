@@ -84,23 +84,32 @@ public class GraknEngineConfig {
     public static final String ZK_BACKOFF_BASE_SLEEP_TIME = "tasks.zookeeper.backoff.base_sleep";
     public static final String ZK_BACKOFF_MAX_RETRIES = "tasks.zookeeper.backoff.max_retries";
 
+    private static String configFilePath = null;
+
     private Logger LOG;
 
     private final int MAX_NUMBER_OF_THREADS = 120;
     private final Properties prop;
     private static GraknEngineConfig instance = null;
-    private String configFilePath = null;
     private int numOfThreads = -1;
 
     public synchronized static GraknEngineConfig getInstance() {
-        if (instance == null) instance = new GraknEngineConfig();
+        if (instance == null) instance = GraknEngineConfig.create();
         return instance;
     }
 
-    private GraknEngineConfig() {
+    public static GraknEngineConfig create() {
+        return GraknEngineConfig.read(getConfigFilePath());
+    }
+
+    public static GraknEngineConfig read(String path) {
+        return new GraknEngineConfig(path);
+    }
+
+    private GraknEngineConfig(String path) {
         getProjectPath();
         prop = new Properties();
-        try (FileInputStream inputStream = new FileInputStream(getConfigFilePath())){
+        try (FileInputStream inputStream = new FileInputStream(path)){
             prop.load(inputStream);
         } catch (IOException e) {
             e.printStackTrace();
@@ -125,7 +134,7 @@ public class GraknEngineConfig {
      * Check if the JVM argument "-Dgrakn.conf" (which represents the path to the config file to use) is set.
      * If it is not set, it sets it to the default one.
      */
-    private void setConfigFilePath() {
+    private static void setConfigFilePath() {
         configFilePath = (System.getProperty(SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE) != null) ? System.getProperty(SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE) : GraknEngineConfig.DEFAULT_CONFIG_FILE;
         if (!Paths.get(configFilePath).isAbsolute()) {
             configFilePath = getProjectPath() + configFilePath;
@@ -235,7 +244,7 @@ public class GraknEngineConfig {
     /**
      * @return The path to the config file currently in use. Default: /conf/main/grakn.properties
      */
-    String getConfigFilePath() {
+    static String getConfigFilePath() {
         if (configFilePath == null) setConfigFilePath();
         return configFilePath;
     }

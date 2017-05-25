@@ -44,9 +44,10 @@ public class GraknEngineServerTest {
     @Test
     public void whenEnginePropertiesIndicatesStandaloneTM_StandaloneTmIsStarted() {
         // Should start engine with in-memory server
-        GraknEngineConfig.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, StandaloneTaskManager.class.getName());
+        GraknEngineConfig conf = GraknEngineConfig.create();
+        conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, StandaloneTaskManager.class.getName());
 
-        try (GraknEngineServer server = GraknEngineServer.mainWithServer(GraknEngineConfig.getInstance())) {
+        try (GraknEngineServer server = GraknEngineServer.mainWithServer(conf)) {
             assertTrue(server.getTaskManager() instanceof StandaloneTaskManager);
         }
     }
@@ -55,10 +56,11 @@ public class GraknEngineServerTest {
     public void whenEnginePropertiesIndicatesSingleQueueTM_SingleQueueTmIsStarted() {
         // Should start engine with distributed server, which means we will get a cannot
         // connect to Zookeeper exception (that has not been started)
-        GraknEngineConfig.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
-        GraknEngineConfig.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
+        GraknEngineConfig conf = GraknEngineConfig.create();
+        conf.setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
+        conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
 
-        try (GraknEngineServer server = GraknEngineServer.mainWithServer(GraknEngineConfig.getInstance())) {
+        try (GraknEngineServer server = GraknEngineServer.mainWithServer(conf)) {
             assertThat(server.getTaskManager(), instanceOf(SingleQueueTaskManager.class));
         }
     }

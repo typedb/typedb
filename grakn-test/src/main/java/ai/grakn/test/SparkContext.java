@@ -27,6 +27,7 @@ import spark.Service;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
@@ -37,19 +38,23 @@ import static ai.grakn.engine.GraknEngineServer.configureSpark;
  */
 public class SparkContext extends ExternalResource {
 
-    private final Consumer<Service> createControllers;
-    private final GraknEngineConfig config = GraknEngineConfig.getInstance();
+    private final BiConsumer<Service, GraknEngineConfig> createControllers;
+    private final GraknEngineConfig config = GraknEngineConfig.create();
 
     private Service spark;
     private int port;
 
-    private SparkContext(Consumer<Service> createControllers) {
+    private SparkContext(BiConsumer<Service, GraknEngineConfig> createControllers) {
         this.createControllers = createControllers;
         this.port = getEphemeralPort();
     }
 
-    public static SparkContext withControllers(Consumer<Service> createControllers) {
+    public static SparkContext withControllers(BiConsumer<Service, GraknEngineConfig> createControllers) {
         return new SparkContext(createControllers);
+    }
+
+    public static SparkContext withControllers(Consumer<Service> createControllers) {
+        return new SparkContext((spark, config) -> createControllers.accept(spark));
     }
 
     public SparkContext port(int port) {
@@ -65,13 +70,17 @@ public class SparkContext extends ExternalResource {
         return "localhost:" + port;
     }
 
+    public GraknEngineConfig config() {
+        return config;
+    }
+
     public void start() {
         spark = Service.ignite();
         configureSpark(spark, port, config);
 
         RestAssured.baseURI = "http://localhost:" + port;
 
-        createControllers.accept(spark);
+        createControllers.accept(spark, config);
 
         spark.awaitInitialization();
     }

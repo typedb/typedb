@@ -46,6 +46,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import static ai.grakn.engine.GraknEngineConfig.ADMIN_PASSWORD_PROPERTY;
 import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_HOST_NAME;
 import static ai.grakn.engine.GraknEngineConfig.STATIC_FILES_PATH;
@@ -72,12 +73,14 @@ public class GraknEngineServer implements AutoCloseable {
     private final int port;
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
-    private final UsersHandler usersHandler = UsersHandler.create();
+    private final UsersHandler usersHandler;
 
     private GraknEngineServer(String taskManagerClass, GraknEngineConfig prop, int port) {
         this.prop = prop;
 
         taskManager = startTaskManager(taskManagerClass);
+        usersHandler = UsersHandler.create(prop.getProperty(ADMIN_PASSWORD_PROPERTY));
+
         this.port = port;
         startHTTP();
         printStartMessage(prop.getProperty(SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER), prop.getLogFilePath());
@@ -109,6 +112,10 @@ public class GraknEngineServer implements AutoCloseable {
         stopTaskManager();
     }
 
+    public GraknEngineConfig config() {
+        return prop;
+    }
+
     public boolean isPasswordProtected() {
         return prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
     }
@@ -123,7 +130,7 @@ public class GraknEngineServer implements AutoCloseable {
     private TaskManager startTaskManager(String taskManagerClassName) {
         try {
             Class<TaskManager> taskManagerClass = (Class<TaskManager>) Class.forName(taskManagerClassName);
-            return taskManagerClass.getConstructor(EngineID.class).newInstance(engineId);
+            return taskManagerClass.getConstructor(EngineID.class).newInstance(engineId, prop);
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException e) {
             throw new IllegalArgumentException("Invalid or unavailable TaskManager class", e);
         } catch (InvocationTargetException e) {

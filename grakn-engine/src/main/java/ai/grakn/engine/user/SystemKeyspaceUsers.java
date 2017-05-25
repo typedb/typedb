@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.AskQuery;
@@ -30,13 +29,14 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import static ai.grakn.engine.util.ExceptionWrapper.rethrow;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+
+import static ai.grakn.engine.util.ExceptionWrapper.rethrow;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.Schema.MetaSchema.RESOURCE;
 
@@ -49,6 +49,10 @@ import static ai.grakn.util.Schema.MetaSchema.RESOURCE;
  */
 public class SystemKeyspaceUsers extends UsersHandler {
     private final Logger LOG = LoggerFactory.getLogger(SystemKeyspaceUsers.class);
+
+    SystemKeyspaceUsers(String adminPassword) {
+        super(adminPassword);
+    }
 
     /**
      * Add a new user. To make sure a user doesn't already exist, please
@@ -152,8 +156,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
     @Override
     public boolean validateUser(String username, String passwordClient) {
         if (superUsername().equals(username)) {
-            return passwordClient.equals(GraknEngineConfig.getInstance().getProperty(
-                    GraknEngineConfig.ADMIN_PASSWORD_PROPERTY));
+            return passwordClient.equals(adminPassword);
         }
         try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
             List<Answer> results = graph.graql().match(

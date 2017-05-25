@@ -2,7 +2,6 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.JWTHandler;
-
 import ai.grakn.test.EngineContext;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -72,8 +71,8 @@ public class AuthControllerTest{
 
         dataResponse.then().assertThat().statusCode(200);
         String token = dataResponse.asString();
-        assertTrue(JWTHandler.verifyJWT(token));
-        assertEquals("giulio", JWTHandler.extractUserFromJWT(dataResponse.asString()));
+        assertTrue(JWTHandler.create(engine.config()).verifyJWT(token));
+        assertEquals("giulio", JWTHandler.create(engine.config()).extractUserFromJWT(dataResponse.asString()));
 
         //Try to execute query WRONG token in request
         Response dataResponseNonAuthenticated = given().

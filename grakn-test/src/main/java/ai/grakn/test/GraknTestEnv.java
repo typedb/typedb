@@ -50,8 +50,6 @@ public abstract class GraknTestEnv {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestEnv.class);
 
-    private static final GraknEngineConfig properties = GraknEngineConfig.getInstance();
-
     private static String CONFIG = System.getProperty("grakn.test-profile");
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
     private static AtomicInteger KAFKA_COUNTER = new AtomicInteger(0);
@@ -71,7 +69,7 @@ public abstract class GraknTestEnv {
     /**
      * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
      */
-    static GraknEngineServer startEngine(String taskManagerClass, int port) throws Exception {
+    static GraknEngineServer startEngine(String taskManagerClass, GraknEngineConfig config, int port) throws Exception {
         // To ensure consistency b/w test profiles and configuration files, when not using Titan
         // for a unit tests in an IDE, add the following option:
         // -Dgrakn.conf=../conf/test/tinker/grakn.properties
@@ -86,31 +84,31 @@ public abstract class GraknTestEnv {
         ensureCassandraRunning();
 
         // start engine
-        RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
-        GraknEngineServer server = GraknEngineServer.start(taskManagerClass, GraknEngineConfig.getInstance(), port);
+        RestAssured.baseURI = "http://" + config.getProperty("server.host") + ":" + config.getProperty("server.port");
+        GraknEngineServer server = GraknEngineServer.start(taskManagerClass, config, port);
 
         LOG.info("engine started.");
 
         return server;
     }
 
-    static void startRedis() throws IOException {
+    static void startRedis(GraknEngineConfig config) throws IOException {
         if(REDIS_COUNTER.getAndIncrement() == 0) {
             LOG.info("Starting redis...");
-            redisServer = new RedisServer(properties.getPropertyAsInt(REDIS_SERVER_PORT));
+            redisServer = new RedisServer(config.getPropertyAsInt(REDIS_SERVER_PORT));
             redisServer.start();
             LOG.info("Redis started.");
         }
     }
 
-    static void startKafka() throws Exception {
+    static void startKafka(GraknEngineConfig config) throws Exception {
         // Clean-up ironically uses a lot of memory
         if (KAFKA_COUNTER.getAndIncrement() == 0) {
             LOG.info("Starting kafka...");
             kafkaUnit.setKafkaBrokerConfig("log.cleaner.enable", "false");
             kafkaUnit.startup();
-            kafkaUnit.createTopic(TaskState.Priority.HIGH.queue(), properties.getAvailableThreads() * 2);
-            kafkaUnit.createTopic(TaskState.Priority.LOW.queue(), properties.getAvailableThreads() * 2);
+            kafkaUnit.createTopic(TaskState.Priority.HIGH.queue(), config.getAvailableThreads() * 2);
+            kafkaUnit.createTopic(TaskState.Priority.LOW.queue(), config.getAvailableThreads() * 2);
             LOG.info("Kafka started.");
         }
     }

@@ -126,7 +126,7 @@ public class DistributionContext extends ExternalResource {
 
         ensureCassandraRunning();
 
-        startKafka();
+        startKafka(GraknEngineConfig.create());
 
         engineProcess = newEngineProcess(port);
         waitForEngine(port);

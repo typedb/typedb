@@ -32,7 +32,7 @@ import static junit.framework.TestCase.assertNotNull;
  */
 public class GraknEngineConfigTest {
 
-    private GraknEngineConfig configuration = GraknEngineConfig.getInstance();
+    private GraknEngineConfig configuration = GraknEngineConfig.create();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -42,7 +42,7 @@ public class GraknEngineConfigTest {
         String property = "invalid";
 
         exception.expect(RuntimeException.class);
-        exception.expectMessage(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(property, configuration.getConfigFilePath()));
+        exception.expectMessage(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(property, GraknEngineConfig.getConfigFilePath()));
 
         configuration.getProperty(property);
     }
