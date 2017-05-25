@@ -31,6 +31,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequire
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
@@ -71,7 +72,10 @@ class TitanPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implement
     @Override
     protected Iterator<TitanVertex> flatMap(Traverser.Admin<S> traverser) {
         TitanTransaction tx = TitanTraversalUtil.getTx(this.traversal);
+
+        // Retrieve property value to look-up, that is identified in the traversal by the `stepLabel`
         Object value = getNullableScopeValue(Pop.first, stepLabel, traverser);
+
         return value != null ? verticesWithProperty(tx, value) : emptyIterator();
     }
 
@@ -116,6 +120,8 @@ class TitanPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implement
 
     @Override
     public Set<TraverserRequirement> getRequirements() {
-        return TYPICAL_GLOBAL_REQUIREMENTS;
+        // This step requires being able to access previously visited properties in the traversal,
+        // so it needs `LABELED_PATH`.
+        return EnumSet.of(TraverserRequirement.LABELED_PATH);
     }
 }

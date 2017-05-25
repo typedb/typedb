@@ -79,7 +79,7 @@ public class TitanPreviousPropertyStepStrategy
 
             // Get the step label `b`
             if (!(whereStep instanceof WherePredicateStep)) continue;
-            Optional<String> label = eqPredicateFromWherePredicate((WherePredicateStep<Vertex>) whereStep);
+            Optional<String> label = labelFromWhereEqPredicate((WherePredicateStep<Vertex>) whereStep);
             if (!label.isPresent()) continue;
 
             executeStrategy(traversal, graphStep, filterStep, propertyKey.get(), label.get());
@@ -97,7 +97,7 @@ public class TitanPreviousPropertyStepStrategy
         return Optional.of(propertyKeys[0]);
     }
 
-    private Optional<String> eqPredicateFromWherePredicate(WherePredicateStep<Vertex> whereStep) {
+    private Optional<String> labelFromWhereEqPredicate(WherePredicateStep<Vertex> whereStep) {
         Optional<P<?>> optionalPredicate = whereStep.getPredicate();
 
         return optionalPredicate.flatMap(predicate -> {
