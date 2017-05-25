@@ -317,13 +317,6 @@ public interface GraknGraph extends AutoCloseable{
     @CheckReturnValue
     boolean implicitConceptsVisible();
 
-    /**
-     * Closes and clears the current graph.
-     *
-     */
-    @Deprecated
-    void clear();
-
     // TODO: what does this do when the graph is closed?
     /**
      * Utility function to get the name of the keyspace where the graph is persisted.

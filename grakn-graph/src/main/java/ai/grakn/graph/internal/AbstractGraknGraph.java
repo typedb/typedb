@@ -710,19 +710,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    /**
-     * Clears the graph completely.
-     */
     @Override
-    public void clear() {
+    public void delete() {
         closeSession();
         clearGraph();
         getTxCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
-    }
-
-    @Override
-    public void delete(){
-        clear();
     }
 
     //This is overridden by vendors for more efficient clearing approaches
