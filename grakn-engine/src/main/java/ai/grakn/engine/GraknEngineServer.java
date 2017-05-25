@@ -46,6 +46,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_HOST_NAME;
 import static ai.grakn.engine.GraknEngineConfig.STATIC_FILES_PATH;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
@@ -139,9 +140,9 @@ public class GraknEngineServer implements AutoCloseable {
         new ConceptController(factory, spark);
         new DashboardController(factory, spark);
         new SystemController(spark, prop);
-        new AuthController(spark, prop, usersHandler());
+        new AuthController(spark, isPasswordProtected(), JWTHandler.create(prop), usersHandler());
         new UserController(spark, usersHandler());
-        new CommitLogController(spark, prop, taskManager);
+        new CommitLogController(spark, prop.getProperty(DEFAULT_KEYSPACE_PROPERTY), taskManager);
         new TasksController(spark, taskManager);
 
         // This method will block until all the controllers are ready to serve requests

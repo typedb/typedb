@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
@@ -51,15 +50,14 @@ public class AuthController {
 
     private final static String USERNAME_KEY = "username";
     private final static String PASSWORD_KEY = "password";
-    private final GraknEngineConfig config;
     private final UsersHandler usersHandler;
     private final JWTHandler jwtHandler;
+    private boolean isPasswordProtected;
 
-
-    public AuthController(Service spark, GraknEngineConfig config, UsersHandler usersHandler) {
-        this.config = config;
+    public AuthController(Service spark, boolean isPasswordProtected, JWTHandler jwtHandler, UsersHandler usersHandler) {
+        this.isPasswordProtected = isPasswordProtected;
         this.usersHandler = usersHandler;
-        this.jwtHandler = JWTHandler.create(config);
+        this.jwtHandler = jwtHandler;
 
         spark.post(REST.WebPath.NEW_SESSION_URI, this::newSession);
         spark.get(REST.WebPath.IS_PASSWORD_PROTECTED_URI,this::isPasswordProtected);
@@ -98,6 +96,6 @@ public class AuthController {
     @ApiOperation(
             value = "Returns true if Engine endpoints are password protected. False otherwise.")
     private String isPasswordProtected(Request req, Response res) {
-        return config.getProperty(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY);
+        return String.valueOf(isPasswordProtected);
     }
 }
