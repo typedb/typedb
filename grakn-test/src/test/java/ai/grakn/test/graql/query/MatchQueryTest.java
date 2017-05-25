@@ -38,6 +38,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.test.GraknTestEnv;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
@@ -624,6 +625,9 @@ public class MatchQueryTest {
 
     @Test
     public void testGraqlPlaysSemanticsMatchGraphAPI() {
+        GraknGraph graph = GraknTestEnv.emptyGraph();
+        QueryBuilder qb = graph.graql();
+
         TypeLabel a = TypeLabel.of("a");
         TypeLabel b = TypeLabel.of("b");
         TypeLabel c = TypeLabel.of("c");
@@ -636,8 +640,6 @@ public class MatchQueryTest {
                 Graql.label(f).sub(Graql.label(e).sub(Graql.label(d).sub("role"))),
                 Graql.label(b).plays(Graql.label(e))
         ).execute();
-
-        GraknGraph graph = movieGraph.graph();
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
             Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(var("x"))).get("x").collect(Collectors.toSet());
@@ -652,8 +654,6 @@ public class MatchQueryTest {
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });
-
-        movieGraph.rollback();
     }
 
     @Test
