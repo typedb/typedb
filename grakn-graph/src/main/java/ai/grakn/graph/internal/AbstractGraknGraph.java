@@ -94,7 +94,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //----------------------------- Config Paths
     public static final String SHARDING_THRESHOLD = "graph.sharding-threshold";
     public static final String NORMAL_CACHE_TIMEOUT_MS = "graph.ontology-cache-timeout-ms";
-    public static final String BATCH_CACHE_TIMEOUT_MS = "graph.batch.ontology-cache-timeout-ms";
 
     //----------------------------- Graph Shared Variable
     private final String keyspace;
@@ -116,7 +115,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         elementFactory = new ElementFactory(this);
 
         //Initialise Graph Caches
-        graphCache = new GraphCache(properties, batchLoadingEnabled);
+        graphCache = new GraphCache(properties);
 
         //Initialise Graph
         getTxCache().openTx(GraknTxType.WRITE);
