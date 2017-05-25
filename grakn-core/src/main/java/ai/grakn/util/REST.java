@@ -46,6 +46,7 @@ public class REST {
          */
         public static class Tasks {
             public static final String TASKS = "/tasks";
+            public static final String TASKS_BULK = "/tasks/bulk";
             public static final String GET = "/tasks/:id";
             public static final String STOP = "/tasks/:id/stop";
         }
@@ -103,6 +104,8 @@ public class REST {
         public static final String TASK_LOADER_MUTATIONS = "mutations";
         public static final String LIMIT_PARAM = "limit";
         public static final String OFFSET_PARAM = "offset";
+        public static final String TASKS_PARAM = "tasks";
+        public static final String CONFIGURATION_PARAM = "configuration";
         public static final String KEYSPACE = "keyspace";
 
         //Commit Logs

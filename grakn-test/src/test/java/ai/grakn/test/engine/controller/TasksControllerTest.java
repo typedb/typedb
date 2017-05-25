@@ -18,33 +18,6 @@
 
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.engine.TaskId;
-import ai.grakn.engine.controller.TasksController;
-import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.TaskSchedule;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.engine.util.EngineID;
-import ai.grakn.test.SparkContext;
-import com.google.common.collect.ImmutableMap;
-import com.jayway.restassured.mapper.ObjectMapper;
-import com.jayway.restassured.mapper.ObjectMapperDeserializationContext;
-import com.jayway.restassured.mapper.ObjectMapperSerializationContext;
-import com.jayway.restassured.response.Response;
-import com.jayway.restassured.specification.RequestSpecification;
-import mjson.Json;
-import org.apache.http.entity.ContentType;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
@@ -59,6 +32,7 @@ import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS_BULK;
 import static com.jayway.restassured.RestAssured.with;
 import static java.time.Instant.now;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
@@ -70,11 +44,45 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ai.grakn.engine.TaskId;
+import ai.grakn.engine.controller.TasksController;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskSchedule;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
+import ai.grakn.engine.util.EngineID;
+import ai.grakn.test.SparkContext;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.jayway.restassured.mapper.ObjectMapper;
+import com.jayway.restassured.mapper.ObjectMapperDeserializationContext;
+import com.jayway.restassured.mapper.ObjectMapperSerializationContext;
+import com.jayway.restassured.response.Response;
+import com.jayway.restassured.specification.RequestSpecification;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import mjson.Json;
+import org.apache.http.HttpStatus;
+import org.apache.http.entity.ContentType;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.mockito.Mockito;
+
 public class TasksControllerTest {
-    private static final int PORT = 4567;
+
+    public static final Json EMPTY_JSON = Json.object();
     private static TaskManager manager = mock(TaskManager.class);
     private final JsonMapper jsonMapper = new JsonMapper();
 
@@ -114,15 +122,22 @@ public class TasksControllerTest {
     @Test
     public void afterSendingTaskWithRunAt_ItIsDelayedInStorage(){
         Instant runAt = now();
-        send(Json.object().toString(), defaultParams());
+        send(EMPTY_JSON.toString(), defaultParams());
 
         verify(manager).addTask(argThat(argument -> argument.schedule().runAt().equals(runAt)), any());
     }
 
     @Test
+    @Ignore
+    // TODO
+    public void afterSendingTaskWithConf_ConfigurationWellFormed(){
+
+    }
+
+    @Test
     public void afterSendingTaskWithInterval_ItIsRecurringInStorage(){
         Duration interval = Duration.ofSeconds(1);
-        send(Json.object().toString(),
+        send(EMPTY_JSON.toString(),
                 ImmutableMap.of(
                         TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
                         TASK_CREATOR_PARAMETER, this.getClass().getName(),
@@ -161,7 +176,7 @@ public class TasksControllerTest {
 
     @Test
     public void afterSendingTaskWithInvalidPriority_Grakn400IsThrown(){
-        Response response = send(Json.object().toString(),
+        Response response = send(EMPTY_JSON.toString(),
                 ImmutableMap.of(
                         TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
                         TASK_CREATOR_PARAMETER, this.getClass().getName(),
@@ -197,7 +212,7 @@ public class TasksControllerTest {
 
     @Test
     public void afterSendingTaskWithInvalidBackgroundTaskClassName_Grakn400IsThrown(){
-        Response response = send(Json.object().toString(),
+        Response response = send(EMPTY_JSON.toString(),
                 ImmutableMap.of(
                         TASK_CLASS_NAME_PARAMETER, this.getClass().getName(),
                         TASK_CREATOR_PARAMETER, this.getClass().getName(),
@@ -212,7 +227,7 @@ public class TasksControllerTest {
 
     @Test
     public void afterSendingTaskWithMalformedInterval_Grakn400IsThrown(){
-        Response response = send(Json.object().toString(),
+        Response response = send(EMPTY_JSON.toString(),
                 ImmutableMap.of(
                         TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
                         TASK_CREATOR_PARAMETER, this.getClass().getName(),
@@ -232,15 +247,59 @@ public class TasksControllerTest {
 
     @Test
     public void afterSendingTaskWithMalformedRunAt_Grakn400IsThrown(){
-        Response response = send(Json.object().toString(),
+        Response response = send(EMPTY_JSON.toString(),
                 ImmutableMap.of(
                         TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
                         TASK_CREATOR_PARAMETER, this.getClass().getName(),
                         TASK_RUN_AT_PARAMETER, ""
                 )
         );
-
         assertThat(response.statusCode(), equalTo(400));
+    }
+
+    @Test
+    public void afterSendingWellFormedNBulk_NTaskSubmitted() {
+        Map<String, String> params = new HashMap<>(defaultParams());
+        params.put(TASK_PRIORITY_PARAMETER, TaskState.Priority.LOW.name());
+        int nOfTasks = 10;
+        List<Map<String, String>> req = Collections.nCopies(nOfTasks, params);
+        Response response = sendBulk(EMPTY_JSON.toString(), req);
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
+        verify(manager, times(nOfTasks))
+                .addTask(argThat(argument -> argument.priority().equals(TaskState.Priority.LOW)),
+                        any());
+        assertThat(Json.read(response.getBody().asString()).asJsonList().stream()
+                .allMatch(e -> e.at("code").asInteger() == HttpStatus.SC_OK), equalTo(true));
+    }
+
+    @Test
+    public void afterSendingPartiallyWellFormedNBulk_BadRequest(){
+        Map<String, String> params = new HashMap<>(defaultParams());
+        params.put(TASK_PRIORITY_PARAMETER, TaskState.Priority.LOW.name());
+        int nOfTasks = 10;
+        List<Map<String, String>> req = new ArrayList<>(Collections.nCopies(nOfTasks, params));
+        req.add(ImmutableMap.of(
+                // Missing required parameter
+                TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
+                TASK_RUN_AT_PARAMETER, ""));
+        Response response = sendBulk(EMPTY_JSON.toString(), req);
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_BAD_REQUEST));
+    }
+
+    @Test
+    public void afterSendingBulkWithNoTask_BadRequest(){
+        Response response = sendBulk(EMPTY_JSON.toString(), Collections.emptyList());
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_BAD_REQUEST));
+    }
+
+    @Test
+    public void afterSendingSingleTaskInBulkWithMalformedRunAt_BadRequest(){
+        Response response = sendBulk(EMPTY_JSON.toString(),
+                // Missing required parameter
+                ImmutableList.of(ImmutableMap.of(
+                        TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
+                        TASK_RUN_AT_PARAMETER, "")));
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_BAD_REQUEST));
     }
 
     @Test
@@ -348,24 +407,30 @@ public class TasksControllerTest {
     }
 
     private Response send(){
-        return send(Json.object().toString(), defaultParams());
+        return send(EMPTY_JSON.toString(), defaultParams());
     }
 
     private Response send(TaskState.Priority priority){
         Map<String, String> params = new HashMap<>(defaultParams());
         params.put(TASK_PRIORITY_PARAMETER, priority.name());
-        return send(Json.object().toString(), params);
+        return send(EMPTY_JSON.toString(), params);
     }
 
     private Response sendDefaultMinus(String property){
         Map<String, String> params = new HashMap<>(defaultParams());
         params.remove(property);
-        return send(Json.object().toString(), params);
+        return send(EMPTY_JSON.toString(), params);
     }
 
     private Response send(String configuration, Map<String, String> params){
         RequestSpecification request = with().queryParams(params).body(configuration);
         return request.post(String.format("http://%s%s", ctx.uri(), TASKS));
+    }
+
+    private Response sendBulk(String configuration, List<Map<String, String>> tasks){
+        RequestSpecification request = with().body(
+                Json.object().set("configuration", configuration).set("tasks", tasks));
+        return request.post(String.format("http://%s%s", ctx.uri(), TASKS_BULK));
     }
 
     private Response get(TaskId taskId){

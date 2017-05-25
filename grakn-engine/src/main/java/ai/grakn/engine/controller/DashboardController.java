@@ -18,35 +18,12 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.RoleType;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.Query;
-import ai.grakn.util.REST;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import mjson.Json;
-import spark.Request;
-import spark.Response;
-import spark.Service;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import static ai.grakn.GraknTxType.READ;
 import static ai.grakn.engine.controller.ConceptController.mandatoryRequestParameter;
 import static ai.grakn.engine.controller.ConceptController.retrieveExistingConcept;
 import static ai.grakn.engine.controller.ConceptController.validateRequest;
-import static ai.grakn.engine.controller.GraqlController.mandatoryQueryParameter;
-import static ai.grakn.engine.controller.GraqlController.queryParameter;
+import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.graql.internal.hal.HALBuilder.HALExploreConcept;
 import static ai.grakn.graql.internal.hal.HALBuilder.explanationAnswersToHAL;
 import static ai.grakn.util.ErrorMessage.EXPLAIN_ONLY_MATCH;
@@ -60,6 +37,28 @@ import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
 import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
 import static ai.grakn.util.REST.Response.Graql.RESPONSE;
 import static java.util.stream.Collectors.toList;
+
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.RoleType;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Query;
+import ai.grakn.util.REST;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import mjson.Json;
+import spark.Request;
+import spark.Response;
+import spark.Service;
 
 /**
  * <p>

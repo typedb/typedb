@@ -18,42 +18,56 @@
 
 package ai.grakn.engine.controller;
 
+import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.engine.tasks.TaskSchedule.recurring;
+import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
+import static ai.grakn.util.REST.WebPath.Tasks.GET;
+import static ai.grakn.util.REST.WebPath.Tasks.STOP;
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS_BULK;
+import static java.lang.Long.parseLong;
+import static java.time.Instant.ofEpochMilli;
+import static java.util.stream.Collectors.toList;
+
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import mjson.Json;
-import org.apache.http.entity.ContentType;
-import spark.Request;
-import spark.Response;
-import spark.Service;
-
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Optional;
-
-import static ai.grakn.engine.controller.GraqlController.mandatoryQueryParameter;
-import static ai.grakn.engine.tasks.TaskSchedule.recurring;
-import static ai.grakn.util.REST.WebPath.Tasks.GET;
-import static ai.grakn.util.REST.WebPath.Tasks.STOP;
-import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
-import static java.lang.Long.parseLong;
-import static java.time.Instant.ofEpochMilli;
+import mjson.Json;
+import org.apache.http.HttpStatus;
+import org.apache.http.entity.ContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import spark.Request;
+import spark.Response;
+import spark.Service;
 
 /**
  * <p>
@@ -66,8 +80,12 @@ import static java.time.Instant.ofEpochMilli;
 @Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
 public class TasksController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(GraknVertexProgram.class);
     private static final TaskState.Priority DEFAULT_TASK_PRIORITY = TaskState.Priority.LOW;
+    public static final int MAX_THREADS = 20;
+
     private final TaskManager manager;
+    private final ExecutorService executor;
 
     public TasksController(Service spark, TaskManager manager) {
         if (manager==null) {
@@ -75,12 +93,15 @@ public class TasksController {
         }
         this.manager = manager;
 
-        spark.get(TASKS,       this::getTasks);
-        spark.get(GET,         this::getTask);
-        spark.put(STOP,        this::stopTask);
-        spark.post(TASKS,      this::createTask);
+        spark.get(TASKS, this::getTasks);
+        spark.get(GET, this::getTask);
+        spark.put(STOP, this::stopTask);
+        spark.post(TASKS, this::createTask);
+        spark.post(TASKS_BULK, this::createTaskBulk);
 
         spark.exception(EngineStorageException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
+        this.executor = Executors.newFixedThreadPool(MAX_THREADS);
+
     }
 
     @GET
@@ -157,7 +178,7 @@ public class TasksController {
             @ApiImplicitParam(name = "runAt", value = "Time to run at as milliseconds since the UNIX epoch", required = true, dataType = "long", paramType = "query"),
             @ApiImplicitParam(name = "interval",value = "If set the task will be marked as recurring and the value will be the time in milliseconds between repeated executions of this task. Value should be as Long.",
                     dataType = "long", paramType = "query"),
-            @ApiImplicitParam(name = "configuration", value = "JSON Object that will be given to the task as configuration.", dataType = "String", paramType = "body")
+            @ApiImplicitParam(name = REST.Request.CONFIGURATION_PARAM, value = "JSON Object that will be given to the task as configuration.", dataType = "String", paramType = "body")
     })
     private Json createTask(Request request, Response response) {
         String className = mandatoryQueryParameter(request, REST.Request.TASK_CLASS_NAME_PARAMETER);
@@ -166,8 +187,123 @@ public class TasksController {
         String intervalParam = request.queryParams(REST.Request.TASK_RUN_INTERVAL_PARAMETER);
         String priorityParam = request.queryParams(REST.Request.TASK_PRIORITY_PARAMETER);
 
+        Json body = bodyAsJson(request);
+        TaskState taskState = processTask(className, createdBy, runAtTime, intervalParam, priorityParam);
+        manager.addTask(taskState, TaskConfiguration.of(body));
+        // Configure the response
+        response.type(ContentType.APPLICATION_JSON.getMimeType());
+        response.status(200);
+
+        return Json.object("id", taskState.getId().getValue());
+    }
+
+    @POST
+    @Path("/bulk")
+    @ApiOperation(value = "Schedule a set of tasks.")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = REST.Request.TASKS_PARAM, value = "JSON Array containing an ordered list of tasks (see single task endpoint). The response references the order the task appears in the list as an index.", required = true, dataType = "List", paramType = "body"),
+            @ApiImplicitParam(name = REST.Request.CONFIGURATION_PARAM, value = "JSON Object that will be given to the task as configuration.", dataType = "String", paramType = "body")
+    })
+    private Json createTaskBulk(Request request, Response response) {
+        Json requestBodyAsJson = bodyAsJson(request);
+        Json configuration = requestBodyAsJson.has(REST.Request.CONFIGURATION_PARAM) ? requestBodyAsJson.at(
+                REST.Request.CONFIGURATION_PARAM) : Json.object();
+        if (!requestBodyAsJson.has(REST.Request.TASKS_PARAM) || requestBodyAsJson.at(REST.Request.TASKS_PARAM).asList().isEmpty()) {
+            throw new GraknEngineServerException(400, MISSING_MANDATORY_REQUEST_PARAMETERS, REST.Request.TASKS_PARAM);
+        }
+        List<Json> taskJsonList = requestBodyAsJson.at(REST.Request.TASKS_PARAM).asJsonList();
+        Json responseJson = Json.array();
+        response.type(ContentType.APPLICATION_JSON.getMimeType());
+        // We need to return the list of taskStates in order
+        // so the client can relate the state to each element in the request.
+        List<IndexedTaskState> taskStates = new ArrayList<>();
+        for (int i = 0; i < taskJsonList.size(); i++) {
+            Json singleTaskJson = taskJsonList.get(i);
+            try {
+                taskStates.add(new IndexedTaskState(extractParametersAndProcessTask(singleTaskJson), i));
+            } catch (Exception e) {
+                LOG.error("Malformed request at {}", singleTaskJson, e);
+                // We return a failure for the full request as this imply there is
+                // something wrong in the client logic that needs to be addressed
+                response.status(HttpStatus.SC_BAD_REQUEST);
+                return Json.object();
+            }
+        }
+        List<CompletableFuture<Json>> futures = taskStates.stream()
+                .map(taskState -> CompletableFuture.supplyAsync(() -> addTaskToManager(configuration, taskState), executor))
+                .collect(toList());
+
+        CompletableFuture<List<Json>> completableFuture = all(futures);
+
+        try {
+            List<Json> results = completableFuture.get(10, TimeUnit.SECONDS);
+            boolean hasFailures = false;
+            for (Json resultForTask : results) {
+                responseJson.add(resultForTask);
+                if (resultForTask.at("code").asInteger() != HttpStatus.SC_OK) {
+                    hasFailures = true;
+                }
+            }
+            if (!hasFailures) {
+                response.status(HttpStatus.SC_OK);
+            } else if (responseJson.asJsonList().size() > 0) {
+                response.status(HttpStatus.SC_ACCEPTED);
+            } else {
+                response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            }
+            return responseJson;
+        } catch (TimeoutException|InterruptedException e) {
+            LOG.error("Task interrupted", e);
+            response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            return Json.object();
+        } catch (Exception e) {
+            LOG.error("Exception while processing batch of tasks", e);
+            response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            return Json.object();
+        }
+    }
+
+    private Json addTaskToManager(Json configuration,
+            IndexedTaskState iTaskState) {
+        Json singleTaskReturnJson = Json.object().set("index", iTaskState.getIndex());
+        try {
+            manager.addTask(iTaskState.getTaskState(), TaskConfiguration.of(configuration));
+            singleTaskReturnJson.set("id", iTaskState.getTaskState().getId().getValue());
+            singleTaskReturnJson.set("code", HttpStatus.SC_OK);
+        } catch (Exception e) {
+            LOG.error("Server error while adding the task", e);
+            singleTaskReturnJson.set("code", HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        }
+        return singleTaskReturnJson;
+    }
+
+    static private <T> CompletableFuture<List<T>> all(List<CompletableFuture<T>> cf) {
+        return CompletableFuture.allOf(cf.toArray(new CompletableFuture[cf.size()]))
+                .thenApply(v -> cf.stream()
+                        .map(CompletableFuture::join)
+                        .collect(toList())
+                );
+    }
+
+    private TaskState extractParametersAndProcessTask(Json singleTaskJson) {
+        Function<String, Optional<Json>> extractor = p -> Optional
+                .ofNullable(singleTaskJson.at(p));
+        String className = mandatoryQueryParameter(extractor,
+                REST.Request.TASK_CLASS_NAME_PARAMETER).asString();
+        String createdBy = mandatoryQueryParameter(extractor,
+                REST.Request.TASK_CREATOR_PARAMETER).asString();
+        String runAtTime = mandatoryQueryParameter(extractor,
+                REST.Request.TASK_RUN_AT_PARAMETER).asString();
+        String intervalParam = extractor.apply(REST.Request.TASK_RUN_INTERVAL_PARAMETER)
+                .map(Json::asString).orElse(null);
+        String priorityParam = extractor.apply(REST.Request.TASK_PRIORITY_PARAMETER)
+                .map(Json::asString).orElse(null);
+        return processTask(className, createdBy, runAtTime, intervalParam,
+                priorityParam);
+    }
+
+    private TaskState processTask(String className, String createdBy, String runAtTime, String intervalParam, String priorityParam) {
         TaskSchedule schedule;
-        TaskConfiguration configuration;
         TaskState.Priority priority;
         try {
             // Get the schedule of the task
@@ -179,9 +315,6 @@ public class TasksController {
 
             // Get the priority of a task (default is low)
             priority = Optional.ofNullable(priorityParam).map(TaskState.Priority::valueOf).orElse(DEFAULT_TASK_PRIORITY);
-
-            // Get the configuration of the task
-            configuration = TaskConfiguration.of(request.body().isEmpty() ? Json.object() : Json.read(request.body()));
         } catch (Exception e){
             throw new GraknEngineServerException(400, e);
         }
@@ -190,14 +323,17 @@ public class TasksController {
         Class<?> clazz = getClass(className);
 
         // Create and schedule the task
-        TaskState taskState = TaskState.of(clazz, createdBy, schedule, priority);
-        manager.addTask(taskState, configuration);
+        return TaskState.of(clazz, createdBy, schedule, priority);
+    }
 
-        // Configure the response
-        response.type(ContentType.APPLICATION_JSON.getMimeType());
-        response.status(200);
-
-        return Json.object("id", taskState.getId().getValue());
+    private Json bodyAsJson(Request request) {
+        String requestBody = request.body();
+        try {
+            return requestBody.isEmpty() ? Json.object() : Json.read(requestBody).at("value");
+        } catch(Exception e) {
+            LOG.error("Malformed json in body of request {}", requestBody);
+            throw new GraknEngineServerException(400, e);
+        }
     }
 
     /**
@@ -248,5 +384,24 @@ public class TasksController {
                 .set("exception", state.exception())
                 .set("stackTrace", state.stackTrace())
                 .set("engineID", state.engineID() != null ? state.engineID().value() : null);
+    }
+
+    private static class IndexedTaskState {
+
+        private final TaskState taskState;
+        private final int index;
+
+        IndexedTaskState(TaskState taskState, int index) {
+            this.taskState = taskState;
+            this.index = index;
+        }
+
+        public TaskState getTaskState() {
+            return taskState;
+        }
+
+        public int getIndex() {
+            return index;
+        }
     }
 }
