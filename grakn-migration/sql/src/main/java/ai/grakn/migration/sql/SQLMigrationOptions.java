@@ -21,8 +21,6 @@ package ai.grakn.migration.sql;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.MigrationOptions;
 import java.sql.Driver;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 
 import static ai.grakn.migration.base.MigrationCLI.die;
 import static java.lang.Integer.parseInt;
