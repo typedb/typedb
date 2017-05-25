@@ -80,7 +80,7 @@ class TxCache {
     //Transaction Specific Meta Data
     private boolean isTxOpen = false;
     private boolean showImplicitTypes = false;
-    private boolean txReadOnly = false;
+    private GraknTxType txType;
     private String closedReason = null;
 
     TxCache(GraphCache graphCache) {
@@ -378,7 +378,7 @@ class TxCache {
     }
     void openTx(GraknTxType txType){
         isTxOpen = true;
-        txReadOnly = GraknTxType.READ.equals(txType);
+        this.txType = txType;
         closedReason = null;
     }
     boolean isTxOpen(){
@@ -392,8 +392,8 @@ class TxCache {
         return showImplicitTypes;
     }
 
-    boolean isTxReadOnly(){
-        return txReadOnly;
+    GraknTxType txType(){
+        return txType;
     }
 
     String getClosedReason(){

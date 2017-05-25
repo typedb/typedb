@@ -125,7 +125,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The concept itself casted to the correct interface itself
      */
     T setUniqueProperty(Schema.ConceptProperty key, String id){
-        if(graknGraph.isBatchLoadingEnabled() || updateAllowed(key, id)) {
+        if(graknGraph.isBatchGraph() || updateAllowed(key, id)) {
             return setProperty(key, id);
         } else {
             throw new ConceptNotUniqueException(this, key, id);

@@ -99,7 +99,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final String keyspace;
     private final String engine;
     private final Properties properties;
-    private final boolean batchLoadingEnabled;
     private final G graph;
     private final ElementFactory elementFactory;
     private final GraphCache graphCache;
@@ -107,7 +106,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
 
-    public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled, Properties properties) {
+    public AbstractGraknGraph(G graph, String keyspace, String engine, Properties properties) {
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
@@ -124,8 +123,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(initialiseMetaConcepts()) close(true, false);
         getTxCache().showImplicitTypes(false);
 
-        //Set batch loading because ontology has been loaded
-        this.batchLoadingEnabled = batchLoadingEnabled;
     }
 
     @Override
@@ -220,7 +217,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public boolean isReadOnly(){
-        return getTxCache().isTxReadOnly();
+        return GraknTxType.READ.equals(getTxCache().txType());
     }
 
     @Override
@@ -239,8 +236,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public boolean isBatchLoadingEnabled(){
-        return batchLoadingEnabled;
+    public boolean isBatchGraph(){
+        return GraknTxType.BATCH.equals(getTxCache().txType());
     }
 
     @SuppressWarnings("unchecked")
@@ -345,7 +342,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     void checkOntologyMutation(){
         checkMutation();
-        if(isBatchLoadingEnabled()){
+        if(isBatchGraph()){
             throw new GraphRuntimeException(ErrorMessage.SCHEMA_LOCKED.getMessage());
         }
     }

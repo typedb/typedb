@@ -80,7 +80,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         return FactoryBuilder.getGraknGraphFactory(this.getClass().getName(), SystemKeyspace.SYSTEM_GRAPH_NAME, engineUrl, properties);
     }
 
-    abstract M buildGraknGraphFromTinker(G graph, boolean batchLoading);
+    abstract M buildGraknGraphFromTinker(G graph);
 
     abstract G buildTinkerPopGraph(boolean batchLoading);
 
@@ -107,7 +107,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         boolean batchLoading = GraknTxType.BATCH.equals(txType);
 
         if(graknGraph == null){
-            graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
+            graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading));
             if (!SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(this.keyspace)) {
                 systemKeyspace.keyspaceOpened(this.keyspace);
             }
@@ -117,7 +117,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
             }
 
             if(graknGraph.isSessionClosed()){
-                graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
+                graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading));
             }
         }
 
