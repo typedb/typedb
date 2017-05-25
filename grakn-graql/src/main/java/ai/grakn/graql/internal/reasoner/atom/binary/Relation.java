@@ -523,7 +523,6 @@ public class Relation extends TypeAtom {
 
             RelationPlayer casting = entry.getKey();
             Var varName = casting.getRolePlayer().getVarName();
-            Type type = varTypeMap.get(varName);
             RoleType roleType = entry.getValue().iterator().next();
             VarPatternAdmin roleVar = Graql.var().label(roleType.getLabel()).admin();
 
