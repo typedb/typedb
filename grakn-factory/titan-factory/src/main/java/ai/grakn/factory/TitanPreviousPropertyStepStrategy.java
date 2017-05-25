@@ -39,36 +39,45 @@ import java.util.Optional;
  * Optimisation applied to use Titan indices in the following additional case:
  * <p>
  * <code>
- * g.V().outE().values("foo").as("x").V().has("bar", __.where(P.eq("x")));
+ * g.V().outE().values(c).as(b).V().filter(__.properties(a).where(P.eq(b)));
  * </code>
  * <p>
- * In this instance, the vertex can be looked up directly in Titan, joining the {@code V().has(..)} steps together.
+ * In this instance, the vertex can be looked up directly in Titan, joining the {@code V().filter(..)}
+ * steps together.
  *
  * @author Felix Chapman
  */
-public class TitanPreviousPropertyStepStrategy extends AbstractTraversalStrategy<ProviderOptimizationStrategy> implements ProviderOptimizationStrategy {
+public class TitanPreviousPropertyStepStrategy
+        extends AbstractTraversalStrategy<ProviderOptimizationStrategy> implements ProviderOptimizationStrategy {
 
     private static final long serialVersionUID = 6888929702831948298L;
 
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
+
+        // Retrieve all graph (`V()`) steps - this is the step the strategy should replace
         List<TitanGraphStep> graphSteps = TraversalHelper.getStepsOfClass(TitanGraphStep.class, traversal);
 
         for (TitanGraphStep graphStep : graphSteps) {
+            // For each graph step, confirm it follows this pattern:
+            // `V().filter(__.properties(a).where(P.eq(b)))`
 
             if (!(graphStep.getNextStep() instanceof TraversalFilterStep)) continue;
             TraversalFilterStep<Vertex> filterStep = (TraversalFilterStep<Vertex>) graphStep.getNextStep();
 
+            // Retrieve the filter steps e.g. `__.properties(a).where(P.eq(b))`
             List<Step> steps = stepsFromFilterStep(filterStep);
 
             if (steps.size() < 2) continue;
-            Step propertiesStep = steps.get(0);
-            Step whereStep = steps.get(1);
+            Step propertiesStep = steps.get(0); // This is `properties(a)`
+            Step whereStep = steps.get(1);      // This is `filter(__.where(P.eq(b)))`
 
+            // Get the property key `a`
             if (!(propertiesStep instanceof PropertiesStep)) continue;
             Optional<String> propertyKey = propertyFromPropertiesStep((PropertiesStep<Vertex>) propertiesStep);
             if (!propertyKey.isPresent()) continue;
 
+            // Get the step label `b`
             if (!(whereStep instanceof WherePredicateStep)) continue;
             Optional<String> label = eqPredicateFromWherePredicate((WherePredicateStep<Vertex>) whereStep);
             if (!label.isPresent()) continue;
@@ -88,15 +97,19 @@ public class TitanPreviousPropertyStepStrategy extends AbstractTraversalStrategy
         return Optional.of(propertyKeys[0]);
     }
 
-    private <T> Optional<T> eqPredicateFromWherePredicate(WherePredicateStep<Vertex> whereStep) {
+    private Optional<String> eqPredicateFromWherePredicate(WherePredicateStep<Vertex> whereStep) {
         Optional<P<?>> optionalPredicate = whereStep.getPredicate();
 
         return optionalPredicate.flatMap(predicate -> {
             if (!predicate.getBiPredicate().equals(Compare.eq)) return Optional.empty();
-            return Optional.of((T) predicate.getValue());
+            return Optional.of((String) predicate.getValue());
         });
     }
 
+    /**
+     * Replace the {@code graphStep} and {@code filterStep} with a new {@link TitanPreviousPropertyStep} in the given
+     * {@code traversal}.
+     */
     private void executeStrategy(
             Traversal.Admin<?, ?> traversal, TitanGraphStep<?, ?> graphStep, TraversalFilterStep<Vertex> filterStep,
             String propertyKey, String label) {

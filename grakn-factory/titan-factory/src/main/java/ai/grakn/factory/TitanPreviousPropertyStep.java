@@ -41,10 +41,10 @@ import static java.util.Collections.emptyIterator;
  * Optimise a particular traversal in Titan:
  * <p>
  * <code>
- * g.V().outE().values("foo").as("x").V().has("bar", __.where(P.eq("x")));
+ * g.V().outE().values(c).as(b).V().filter(__.properties(a).where(P.eq(b)));
  * </code>
  * <p>
- * This step can be used in place of {@code V().has(..)} since we are referring to a previously visited property in
+ * This step can be used in place of {@code V().filter(..)} since we are referring to a previously visited property in
  * the traversal.
  *
  * @author Felix Chapman
@@ -58,13 +58,14 @@ class TitanPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implement
     /**
      * @param traversal the traversal that contains this step
      * @param propertyKey the property key that we are looking up
-     * @param stepLabel the step label that refers to a previously visited value in the traversal
+     * @param stepLabel
+     * the step label that refers to a previously visited value in the traversal.
+     * e.g. in {@code g.V().as(b)}, {@code b} is a step label.
      */
     TitanPreviousPropertyStep(Traversal.Admin traversal, String propertyKey, String stepLabel) {
         super(traversal);
         this.propertyKey = Objects.requireNonNull(propertyKey);
         this.stepLabel = Objects.requireNonNull(stepLabel);
-
     }
 
     @Override
