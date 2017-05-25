@@ -91,7 +91,6 @@ public class Relation extends TypeAtom {
     private static final Logger LOG = LoggerFactory.getLogger(Relation.class);
 
     public Relation(VarPatternAdmin pattern, IdPredicate predicate, ReasonerQuery par) { super(pattern, predicate, par);}
-
     public Relation(Var name, Var typeVariable, Map<Var, VarPattern> roleMap, IdPredicate pred, ReasonerQuery par) {
         super(constructRelationVar(name, typeVariable, roleMap), pred, par);
     }
