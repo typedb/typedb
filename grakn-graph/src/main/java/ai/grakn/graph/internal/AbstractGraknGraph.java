@@ -723,7 +723,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         getTxCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
 
         //Remove the graph from the system keyspace
-        SystemKeyspace.keyspaceDeleted(getSystemGraph(), getKeyspace());
+        SystemKeyspace.deleteKeyspace(getSystemGraph(), getKeyspace());
     }
 
     //This is overridden by vendors for more efficient clearing approaches
