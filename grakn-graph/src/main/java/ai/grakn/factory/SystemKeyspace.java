@@ -108,7 +108,7 @@ public class SystemKeyspace<T extends Graph> {
 
     /**
      * This is called when a graph is deleted via {@link GraknAdmin#delete()}.
-     * This removes the keyspace of the deleted graph from thr system graph
+     * This removes the keyspace of the deleted graph from the system graph
      *
      * @param factory the factory used to access the system keyspace
      * @param keyspace the keyspace to be removed from the system graph
