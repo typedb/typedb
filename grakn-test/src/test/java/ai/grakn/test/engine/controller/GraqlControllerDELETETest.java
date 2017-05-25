@@ -25,17 +25,14 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
+import ai.grakn.test.SparkContext;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import spark.Service;
 
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.originalQuery;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
@@ -58,30 +55,18 @@ import static org.mockito.Mockito.when;
 
 public class GraqlControllerDELETETest {
 
-
-    private static final String HOST = "localhost";
-    private static final int PORT = 4567;
-    private static Service spark;
-
     private static GraknGraph mockGraph;
     private static QueryBuilder mockQueryBuilder;
-    private static EngineGraknGraphFactory mockFactory;
+    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
 
     @ClassRule
     public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
 
-    @BeforeClass
-    public static void setup(){
-        spark = Service.ignite();
-        configureSpark(spark, PORT);
-
-        mockFactory = mock(EngineGraknGraphFactory.class);
-
+    @ClassRule
+    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         new SystemController(spark);
         new GraqlController(mockFactory, spark);
-
-        spark.awaitInitialization();
-    }
+    });
 
     @Before
     public void setupMock(){
@@ -98,11 +83,6 @@ public class GraqlControllerDELETETest {
         when(mockGraph.graql()).thenReturn(mockQueryBuilder);
 
         when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
-    }
-
-    @AfterClass
-    public static void shutdown(){
-        spark.stop();
     }
 
     @Test
@@ -138,7 +118,7 @@ public class GraqlControllerDELETETest {
 
         Response response = RestAssured.with()
                 .body(query)
-                .delete(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
+                .delete(REST.WebPath.Graph.GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
@@ -147,7 +127,7 @@ public class GraqlControllerDELETETest {
     @Test
     public void DELETEWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .delete(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
+                .delete(REST.WebPath.Graph.GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
@@ -259,6 +239,6 @@ public class GraqlControllerDELETETest {
         return RestAssured.with()
                 .queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .body(query)
-                .delete(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
+                .delete(REST.WebPath.Graph.GRAQL);
     }
 }

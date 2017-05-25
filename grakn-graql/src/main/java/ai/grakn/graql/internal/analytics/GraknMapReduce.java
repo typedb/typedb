@@ -46,17 +46,17 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
 
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
 
-    public GraknMapReduce(Set<TypeId> selectedTypes) {
+    GraknMapReduce(Set<TypeId> selectedTypes) {
         this.selectedTypes = selectedTypes;
     }
 
-    public GraknMapReduce(Set<TypeId> selectedTypes, String resourceDataType) {
+    GraknMapReduce(Set<TypeId> selectedTypes, ResourceType.DataType resourceDataType) {
         this(selectedTypes);
-        persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType);
+        persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType.getName());
     }
 
     // Needed internally for OLAP tasks
-    public GraknMapReduce() {
+    GraknMapReduce() {
     }
 
     /**
@@ -120,11 +120,6 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
     @Override
     public Map<Serializable, T> generateFinalResult(Iterator<KeyValue<Serializable, T>> iterator) {
         return Utility.keyValuesToMap(iterator);
-    }
-
-    final boolean resourceIsValid(Vertex vertex) {
-        boolean isSelected = selectedTypes.contains(Utility.getVertexTypeId(vertex));
-        return isSelected && vertex.<Long>value(DegreeVertexProgram.DEGREE) > 0;
     }
 
     final Number resourceValue(Vertex vertex) {

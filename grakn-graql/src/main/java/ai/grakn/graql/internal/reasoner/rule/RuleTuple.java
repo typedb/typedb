@@ -44,5 +44,4 @@ public class RuleTuple {
     public InferenceRule getRule(){ return rule;}
     public Unifier getRuleUnifier(){ return ruleUnifier;}
     public Unifier getPermutationUnifier(){ return permutationUnifier;}
-
 }

@@ -101,6 +101,9 @@ public class ReasoningTests {
     public static final GraphContext testSet19 = GraphContext.preLoad("testSet19.gql").assumeTrue(usingTinker());
 
     @ClassRule
+    public static final GraphContext testSet19recursive = GraphContext.preLoad("testSet19-recursive.gql").assumeTrue(usingTinker());
+
+    @ClassRule
     public static final GraphContext testSet20 = GraphContext.preLoad("testSet20.gql").assumeTrue(usingTinker());
 
     @ClassRule
@@ -345,7 +348,7 @@ public class ReasoningTests {
     }
 
     @Test //Expected result: Two answers obtained only if the rule query containing sub type is correctly executed.
-    public void instanceTypeHierarchyRespected(){
+    public void instanceTypeHierarchyRespected_queryHasSuperTypes(){
         QueryBuilder qb = testSet19.graph().graql().infer(true);
         String queryString = "match " +
                 "$x isa entity1;" +
@@ -359,7 +362,7 @@ public class ReasoningTests {
     }
 
     @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
-    public void instanceTypeHierarchyRespected2(){
+    public void instanceTypeHierarchyRespected_querySpecialisesType(){
         QueryBuilder qb = testSet19.graph().graql().infer(true);
         String queryString = "match " +
                 "$x isa entity1;" +
@@ -371,6 +374,65 @@ public class ReasoningTests {
         assertEquals(answers.size(), 1);
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
         assertEquals(answers2.size(), 1);
+    }
+
+    @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
+    public void instanceTypeHierarchyRespected_queryOverwritesTypes(){
+        QueryBuilder qb = testSet19.graph().graql().infer(true);
+        String queryString = "match " +
+                "$x isa subEntity1;" +
+                "$y isa entity1;" +
+                "(role1: $x, role2: $y) isa relation1;";
+        String queryString2 = queryString + "$y has name 'a';";
+
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        assertEquals(answers.size(), 2);
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
+        assertEquals(answers2.size(), 2);
+    }
+
+    @Test //Expected result: Two answers obtained only if the rule query containing sub type is correctly executed.
+    public void instanceTypeHierarchyRespected_queryHasSuperTypes_recursiveRule(){
+        QueryBuilder qb = testSet19recursive.graph().graql().infer(true);
+        String queryString = "match " +
+                "$x isa entity1;" +
+                "$y isa entity1;" +
+                "(role1: $x, role2: $y) isa relation1;";
+        String queryString2 = queryString + "$y has name 'a';";
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        assertEquals(answers.size(), 2);
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
+        assertEquals(answers2.size(), 2);
+    }
+
+    @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
+    public void instanceTypeHierarchyRespected_querySpecialisesType_recursiveRule(){
+        QueryBuilder qb = testSet19recursive.graph().graql().infer(true);
+        String queryString = "match " +
+                "$x isa entity1;" +
+                "$y isa subEntity1;" +
+                "(role1: $x, role2: $y) isa relation1;";
+        String queryString2 = queryString + "$y has name 'a';";
+
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        assertEquals(answers.size(), 1);
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
+        assertEquals(answers2.size(), 1);
+    }
+
+    @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
+    public void instanceTypeHierarchyRespected_queryOverwritesTypes_recursiveRule(){
+        QueryBuilder qb = testSet19recursive.graph().graql().infer(true);
+        String queryString = "match " +
+                "$x isa subEntity1;" +
+                "$y isa entity1;" +
+                "(role1: $x, role2: $y) isa relation1;";
+        String queryString2 = queryString + "$y has name 'a';";
+
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        assertEquals(answers.size(), 2);
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
+        assertEquals(answers2.size(), 2);
     }
 
     @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.

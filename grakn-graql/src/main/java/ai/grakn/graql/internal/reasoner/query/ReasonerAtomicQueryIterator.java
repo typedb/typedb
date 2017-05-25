@@ -23,7 +23,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -76,10 +75,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
         this.queryIterator = streamUnifierPair.getKey()
-                .map(a -> {
-                    if (!a.getExplanation().isLookupExplanation()) return a;
-                    else return a.explain(new LookupExplanation(query));
-                })
+                .map(a -> a.explain(a.getExplanation().setQuery(query)))
                 .iterator();
         this.cacheUnifier = streamUnifierPair.getValue().inverse();
 
@@ -112,22 +108,22 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         //delta' = theta . thetaP . delta
         Answer sub = query.getSubstitution();
         Unifier uInv = ruleUnifier.inverse();
-        Answer partialSubPrime = query.getSubstitution()
+        Answer partialSubPrime = sub
                 .unify(permutationUnifier)
                 .unify(uInv);
 
         Set<Var> queryVars = query.getVarNames();
         Set<Var> headVars = rule.getHead().getVarNames();
+        Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
         ReasonerQueryIterator baseIterator = rule.getBody().iterator(partialSubPrime, subGoals, cache);
         //transform the rule answer to the answer to the query
         return baseIterator.hasStream()
                 .map(a -> a.filterVars(headVars))
-                .map(a -> a.unify(ruleUnifier))
-                .map(a -> a.unify(permutationUnifier))
+                .map(a -> a.unify(combinedUnifier))
                 .filter(a -> !a.isEmpty())
                 .map(a -> a.merge(sub))
                 .map(a -> a.filterVars(queryVars))
-                .map(a -> a.explain(new RuleExplanation(rule)))
+                .map(a -> a.explain(new RuleExplanation(query, rule)))
                 .iterator();
     }
 

@@ -22,13 +22,13 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
@@ -42,11 +42,9 @@ import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import java.util.HashSet;
-import java.util.Map;
 
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -165,46 +163,43 @@ public class InferenceRule {
 
     /**
      * @param parentAtom atom containing constraints (parent)
-     * @param ruleUnifier rule unifier
-     * @param permutationUnifier permutation unifier
+     * @param unifier unifier unifying parent with the rule
      * @return rule with propagated constraints from parent
      */
-    public InferenceRule propagateConstraints(Atom parentAtom, Unifier ruleUnifier, Unifier permutationUnifier){
+    public InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
         if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
 
         //only transfer value predicates if head has a user specified value variable
         Atom headAtom = head.getAtom();
         if(headAtom.isResource() && ((Resource) headAtom).getMultiPredicate().isEmpty()){
             Set<ValuePredicate> valuePredicates = parentAtom.getValuePredicates().stream()
-                    .map(ValuePredicate::copy)
-                    .map(type -> type.unify(permutationUnifier))
-                    .map(type -> type.unify(ruleUnifier))
-                    .map(type -> (ValuePredicate) type)
+                    .flatMap(vp -> vp.unify(unifier).stream())
                     .collect(toSet());
             head.addAtomConstraints(valuePredicates);
             body.addAtomConstraints(valuePredicates);
         }
 
         Set<TypeAtom> unifiedTypes = parentAtom.getTypeConstraints().stream()
-                .map(TypeAtom::copy)
-                .map(type -> type.unify(permutationUnifier))
-                .map(type -> type.unify(ruleUnifier))
-                .map(type -> (TypeAtom) type)
+                .flatMap(type -> type.unify(unifier).stream())
                 .collect(toSet());
 
-        //remove less specific types if present
-        Map<Var, Type> unifiedVarTypeMap = unifiedTypes.stream()
-                .collect(Collectors.toMap(Atomic::getVarName, TypeAtom::getType));
-        Set<Var> unifiedTypeVars = unifiedTypes.stream()
-                .map(Atom::getVarName)
-                .collect(toSet());
-        body.getTypeConstraints().stream()
-                .filter(type -> unifiedTypeVars.contains(type.getVarName()))
-                .filter(type -> !type.equals(unifiedVarTypeMap.get(type.getVarName())))
-                .filter(type -> type.getType().subTypes().contains(unifiedVarTypeMap.get(type.getVarName())))
-                .forEach(body::removeAtomic);
+        //set rule body types to sub types of combined query+rule types
+        Set<TypeAtom> ruleTypes = body.getTypeConstraints().stream().filter(t -> !t.isRelation()).collect(toSet());
+        Set<TypeAtom> allTypes = Sets.union(unifiedTypes, ruleTypes);
+        Set<TypeAtom> types = allTypes.stream()
+                .filter(ta -> {
+                    Type type = ta.getType();
+                    Type subType = allTypes.stream()
+                            .map(Atom::getType)
+                            .filter(Objects::nonNull)
+                            .filter(t -> ReasonerUtils.getSuperTypes(t).contains(type))
+                            .findFirst().orElse(null);
+                    return type == null || subType == null;
+                }).collect(toSet());
 
-        body.addAtomConstraints(unifiedTypes.stream().filter(type -> !body.getTypeConstraints().contains(type)).collect(toSet()));
+        ruleTypes.forEach(body::removeAtomic);
+        body.addAtomConstraints(types);
+
         return this;
     }
 

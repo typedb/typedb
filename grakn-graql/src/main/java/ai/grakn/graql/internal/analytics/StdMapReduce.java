@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeId;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -36,7 +37,7 @@ import java.util.Set;
  * @author Sheldon Hall
  */
 
-public class StdMapReduce extends GraknMapReduce<Map<String, Double>> {
+public class StdMapReduce extends StatisticsMapReduce<Map<String, Double>> {
 
     public static final String COUNT = "C";
     public static final String SUM = "S";
@@ -46,15 +47,16 @@ public class StdMapReduce extends GraknMapReduce<Map<String, Double>> {
     public StdMapReduce() {
     }
 
-    public StdMapReduce(Set<TypeId> selectedTypeIds, String resourceDataType) {
-        super(selectedTypeIds, resourceDataType);
+    public StdMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreePropertyKey) {
+        super(selectedTypeIds, resourceDataType, degreePropertyKey);
     }
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Map<String, Double>> emitter) {
         if (resourceIsValid(vertex)) {
             Map<String, Double> tuple = new HashMap<>(3);
-            Double degree = ((Long) vertex.value(DegreeVertexProgram.DEGREE)).doubleValue();
+            Double degree =
+                    ((Long) vertex.value(degreePropertyKey)).doubleValue();
             double value = resourceValue(vertex).doubleValue();
             tuple.put(SUM, value * degree);
             tuple.put(SQUARE_SUM, value * value * degree);

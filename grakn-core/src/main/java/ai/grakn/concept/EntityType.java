@@ -159,11 +159,4 @@ public interface EntityType extends Type{
      */
     @Override
     Collection<Entity> instances();
-
-    /**
-     *
-     * @return a deep copy of this concept.
-     */
-    @Override
-    EntityType copy();
 }

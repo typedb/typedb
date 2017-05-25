@@ -19,10 +19,12 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
+import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.MinMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -45,14 +47,16 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
+        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceTypeLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
         Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
         Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
 
+        String randomId = getRandomJobId();
+
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds),
-                new MinMapReduce(statisticsResourceTypeIds, dataType));
+                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds, randomId),
+                new MinMapReduce(statisticsResourceTypeIds, dataType, DegreeVertexProgram.DEGREE + randomId));
         Map<Serializable, Number> min = result.memory().get(MinMapReduce.class.getName());
 
         LOGGER.debug("Min = " + min.get(MapReduce.NullObject.instance()));

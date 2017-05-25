@@ -158,11 +158,11 @@ public class MigrationCLI {
         }
     }
 
-    public static String die(Throwable throwable){
+    public static RuntimeException die(Throwable throwable){
         return die(ExceptionUtils.getFullStackTrace(throwable));
     }
 
-    public static String die(String errorMsg) {
+    public static RuntimeException die(String errorMsg) {
         throw new RuntimeException(errorMsg);
     }
 
