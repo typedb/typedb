@@ -21,28 +21,27 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import javafx.util.Pair;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesCompatible;
 
@@ -57,11 +56,12 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesCompatibl
  */
 public abstract class Atom extends AtomicBase {
 
-    protected Type type = null;
+    private Type type = null;
     protected ConceptId typeId = null;
     protected int priority = Integer.MAX_VALUE;
+    private Set<InferenceRule> applicableRules = null;
 
-    protected Atom(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
+    protected Atom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
         super(a);
         this.type = a.type;
@@ -70,8 +70,6 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public boolean isAtom(){ return true;}
-
-    public boolean isBinary(){return false;}
 
     /**
      * @return true if the atom corresponds to a atom
@@ -104,7 +102,7 @@ public abstract class Atom extends AtomicBase {
             priority += isRecursive()? ResolutionStrategy.RECURSIVE_ATOM : 0;
 
             priority += getTypeConstraints().size() * ResolutionStrategy.GUARD;
-            Set<VarName> otherVars = getParentQuery().getAtoms().stream()
+            Set<Var> otherVars = getParentQuery().getAtoms().stream()
                     .filter(a -> a != this)
                     .flatMap(at -> at.getVarNames().stream())
                     .collect(Collectors.toSet());
@@ -130,21 +128,18 @@ public abstract class Atom extends AtomicBase {
      * @return set of applicable rules - does detailed (slow) check for applicability
      */
     public Set<InferenceRule> getApplicableRules() {
-        return getPotentialRules().stream()
-                .map(rule -> new InferenceRule(rule, graph()))
-                .filter(this::isRuleApplicable)
-                .collect(Collectors.toSet());
+        if (applicableRules == null) {
+            applicableRules = getPotentialRules().stream()
+                    .map(rule -> new InferenceRule(rule, graph()))
+                    .filter(this::isRuleApplicable)
+                    .collect(Collectors.toSet());
+        }
+        return applicableRules;
     }
 
     @Override
     public boolean isRuleResolvable() {
-        Type type = getType();
-        if (type != null) {
-            return !this.getPotentialRules().isEmpty()
-                    && !this.getApplicableRules().isEmpty();
-        } else {
-            return !this.getApplicableRules().isEmpty();
-        }
+        return !this.getApplicableRules().isEmpty();
     }
 
     @Override
@@ -188,7 +183,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return value variable name
      */
-    public VarName getValueVariable() {
+    public Var getValueVariable() {
         throw new IllegalArgumentException("getValueVariable called on Atom object " + getPattern());
     }
 
@@ -252,7 +247,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return map of role type- (var name, var type) pairs
      */
-    public Multimap<RoleType, Pair<VarName, Type>> getRoleVarTypeMap() { return ArrayListMultimap.create();}
+    public Multimap<RoleType, Pair<Var, Type>> getRoleVarTypeMap() { return ArrayListMultimap.create();}
 
     /**
      * infers types (type, role types) fo the atom if applicable/possible
@@ -266,9 +261,9 @@ public abstract class Atom extends AtomicBase {
     public Atom rewriteToUserDefined(){ return this;}
 
     /**
-     * rewrites the atom to one with user defined name, need unifiers for cases when we have variable clashes
-     * between the relation variable and relation players
-     * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
+     * find unifier with parent atom
+     * @param parentAtom atom to be unified with
+     * @return unifier
      */
-    public Pair<Atom, Unifier> rewriteToUserDefinedWithUnifiers(){ return new Pair<>(this, new UnifierImpl());}
+    public abstract Unifier getUnifier(Atomic parentAtom);
 }

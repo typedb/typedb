@@ -1,3 +1,4 @@
+
 insert 
 
 # Primary Scheduled task entity.
@@ -56,10 +57,10 @@ user key user-name;
 
 user has user-password,
      has user-password-salt,
-	 has user-first-name,
-	 has user-last-name,
-	 has user-email,
-	 has user-is-admin;
+     has user-first-name,
+     has user-last-name,
+     has user-email,
+     has user-is-admin;
 
 # Meta System Information
 system-version sub resource, datatype string;

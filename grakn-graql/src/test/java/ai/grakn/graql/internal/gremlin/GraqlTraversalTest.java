@@ -20,11 +20,12 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -67,19 +68,21 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class GraqlTraversalTest {
 
-    private static final VarName a = VarName.of("a");
-    private static final VarName b = VarName.of("b");
-    private static final VarName c = VarName.of("c");
-    private static final VarName x = VarName.of("x");
-    private static final VarName y = VarName.of("y");
-    private static final VarName z = VarName.of("z");
-    private static final VarName xx = VarName.of("xx");
-    private static final VarName yy = VarName.of("yy");
-    private static final VarName zz = VarName.of("zz");
+    private static final Var a = Var.of("a");
+    private static final Var b = Var.of("b");
+    private static final Var c = Var.of("c");
+    private static final Var x = Var.of("x");
+    private static final Var y = Var.of("y");
+    private static final Var z = Var.of("z");
+    private static final Var xx = Var.of("xx");
+    private static final Var yy = Var.of("yy");
+    private static final Var zz = Var.of("zz");
     private static final Fragment xId = id(x, ConceptId.of("Titanic"));
     private static final Fragment xValue = value(x, eq("hello").admin());
     private static final Fragment yId = id(y, ConceptId.of("movie"));
@@ -92,6 +95,15 @@ public class GraqlTraversalTest {
     @BeforeClass
     public static void setUp() {
         graph = mock(GraknGraph.class);
+
+        // We have to mock out the `subTypes` call because the shortcut edge optimisation checks it
+        when(graph.getType(any())).thenAnswer(invocation -> {
+            Type type = mock(Type.class);
+            //noinspection unchecked
+            when(type.subTypes()).thenReturn((Collection) ImmutableSet.of(type));
+            when(type.getLabel()).thenReturn(invocation.getArgument(0));
+            return type;
+        });
     }
 
     @Test
@@ -146,9 +158,9 @@ public class GraqlTraversalTest {
 
     @Test
     public void testCheckDistinctCastingEarlyFaster() {
-        VarName c1 = VarName.of("c1");
-        VarName c2 = VarName.of("c2");
-        VarName r = VarName.of("r");
+        Var c1 = Var.of("c1");
+        Var c2 = Var.of("c2");
+        Var r = Var.of("r");
 
         Fragment neq = Fragments.neq(c2, c1);
         Fragment inRolePlayer = inRolePlayer(x, c1);
@@ -166,7 +178,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void testAllTraversalsSimpleQuery() {
-        Var pattern = Patterns.var(x).id(ConceptId.of("Titanic")).isa(Patterns.var(y).id(ConceptId.of("movie")));
+        VarPattern pattern = Patterns.var(x).id(ConceptId.of("Titanic")).isa(Patterns.var(y).id(ConceptId.of("movie")));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());
@@ -224,7 +236,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void whenPlanningSimpleUnaryRelation_ApplyShortcutOptimisation() {
-        Var rel = var("x").rel("y");
+        VarPattern rel = var("x").rel("y");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
@@ -241,7 +253,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void whenPlanningSimpleBinaryRelationQuery_ApplyShortcutOptimisation() {
-        Var rel = var("x").rel("y").rel("z");
+        VarPattern rel = var("x").rel("y").rel("z");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
@@ -253,7 +265,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void whenPlanningBinaryRelationQueryWithType_ApplyShortcutOptimisation() {
-        Var rel = var("x").rel("y").rel("z").isa("marriage");
+        VarPattern rel = var("x").rel("y").rel("z").isa("marriage");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
@@ -265,7 +277,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void testShortcutOptimisationWithRoles() {
-        Var rel = var("x").rel("y").rel("wife", "z");
+        VarPattern rel = var("x").rel("y").rel("wife", "z");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
@@ -290,7 +302,7 @@ public class GraqlTraversalTest {
     }
 
     private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
-        Collection<Conjunction<VarAdmin>> patterns = pattern.admin().getDisjunctiveNormalForm().getPatterns();
+        Collection<Conjunction<VarPatternAdmin>> patterns = pattern.admin().getDisjunctiveNormalForm().getPatterns();
 
         List<Set<List<Fragment>>> collect = patterns.stream()
                 .map(conjunction -> new ConjunctionQuery(conjunction, graph))
@@ -310,7 +322,7 @@ public class GraqlTraversalTest {
 
         // Make sure all dependencies are met
         for (List<Fragment> fragmentList : fragments) {
-            Set<VarName> visited = new HashSet<>();
+            Set<Var> visited = new HashSet<>();
 
             for (Fragment fragment : fragmentList) {
                 if (!visited.containsAll(fragment.getDependencies())) {
@@ -324,11 +336,11 @@ public class GraqlTraversalTest {
         return Optional.of(GraqlTraversal.create(fragments));
     }
 
-    private static Fragment outShortcut(VarName relation, VarName rolePlayer) {
+    private static Fragment outShortcut(Var relation, Var rolePlayer) {
         return Fragments.outShortcut(relation, a, rolePlayer, Optional.empty(), Optional.empty());
     }
 
-    private static Fragment inShortcut(VarName rolePlayer, VarName relation) {
+    private static Fragment inShortcut(Var rolePlayer, Var relation) {
         return Fragments.inShortcut(rolePlayer, c, relation, Optional.empty(), Optional.empty());
     }
 

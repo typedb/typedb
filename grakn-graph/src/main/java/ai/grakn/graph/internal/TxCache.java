@@ -26,7 +26,6 @@ import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
-import com.google.common.collect.ImmutableSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -34,7 +33,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -76,15 +74,14 @@ class TxCache {
     //We Track Relations so that we can look them up before they are completely defined and indexed on commit
     private final Map<String, RelationImpl> modifiedRelations = new HashMap<>();
 
-    //We Track the number of instances each type has lost or gained
-    private final Map<TypeLabel, Long> instanceCount = new HashMap<>();
+    //We Track the number of concept connections which have been made which may result in a new shard
+    private final Map<ConceptId, Long> shardingCount = new HashMap<>();
 
     //Transaction Specific Meta Data
     private boolean isTxOpen = false;
     private boolean showImplicitTypes = false;
     private boolean txReadOnly = false;
     private String closedReason = null;
-    private Map<TypeLabel, Type> cloningCache = new HashMap<>();
 
     TxCache(GraphCache graphCache) {
         this.graphCache = graphCache;
@@ -123,53 +120,11 @@ class TxCache {
 
         //Read central cache into txCache cloning only base concepts. Sets clones later
         for (Type type : cachedOntologySnapshot.values()) {
-            cacheConcept((TypeImpl) cacheClone(type));
-        }
-
-        //Iterate through cached clones completing the cloning process.
-        //This part has to be done in a separate iteration otherwise we will infinitely recurse trying to clone everything
-        for (Type type : ImmutableSet.copyOf(cloningCache.values())) {
-            //noinspection unchecked
-            ((TypeImpl) type).copyCachedConcepts(cachedOntologySnapshot.get(type.getLabel()));
+            cacheConcept((TypeImpl) type);
         }
 
         //Load Labels Separately. We do this because the TypeCache may have expired.
         cachedLabelsSnapshot.forEach(this::cacheLabel);
-
-        //Purge clone cache to save memory
-        cloningCache.clear();
-    }
-
-    /**
-     *
-     * @param type The type to clone
-     * @param <X> The type of the concept
-     * @return The newly deep cloned set
-     */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
-    <X extends Type> X cacheClone(X type){
-        //Is a cloning even needed?
-        if(cloningCache.containsKey(type.getLabel())){
-            return (X) cloningCache.get(type.getLabel());
-        }
-
-        //If the clone has not happened then make a new one
-        Type clonedType = type.copy();
-
-        //Update clone cache so we don't clone multiple concepts in the same transaction
-        cloningCache.put(clonedType.getLabel(), clonedType);
-
-        return (X) clonedType;
-    }
-
-    /**
-     *
-     * @param types a set of concepts to clone
-     * @param <X> the type of those concepts
-     * @return the set of concepts deep cloned
-     */
-    <X extends Type> Set<X> cacheClone(Set<X> types){
-        return types.stream().map(this::cacheClone).collect(Collectors.toSet());
     }
 
     /**
@@ -231,8 +186,8 @@ class TxCache {
      *
      * @return All the types that have gained or lost instances and by how much
      */
-    Map<TypeLabel, Long> getInstanceCount(){
-        return instanceCount;
+    Map<ConceptId, Long> getShardingCount(){
+        return shardingCount;
     }
 
     /**
@@ -249,6 +204,14 @@ class TxCache {
      */
     Map<TypeLabel, TypeId> getLabelCache(){
         return labelCache;
+    }
+
+    /**
+     *
+     * @return All the concepts which have been accessed in this transaction
+     */
+    Map<ConceptId, ConceptImpl> getConceptCache() {
+        return conceptCache;
     }
 
     /**
@@ -358,16 +321,16 @@ class TxCache {
         return labelCache.get(label);
     }
 
-    void addedInstance(TypeLabel name){
-        instanceCount.compute(name, (key, value) -> value == null ? 1 : value + 1);
-        cleanupInstanceCount(name);
+    void addedInstance(ConceptId conceptId){
+        shardingCount.compute(conceptId, (key, value) -> value == null ? 1 : value + 1);
+        cleanupShardingCount(conceptId);
     }
-    void removedInstance(TypeLabel name){
-        instanceCount.compute(name, (key, value) -> value == null ? -1 : value - 1);
-        cleanupInstanceCount(name);
+    void removedInstance(ConceptId conceptId){
+        shardingCount.compute(conceptId, (key, value) -> value == null ? -1 : value - 1);
+        cleanupShardingCount(conceptId);
     }
-    private void cleanupInstanceCount(TypeLabel name){
-        if(instanceCount.get(name) == 0) instanceCount.remove(name);
+    private void cleanupShardingCount(ConceptId conceptId){
+        if(shardingCount.get(conceptId) == 0) shardingCount.remove(conceptId);
     }
 
     JSONObject getFormattedLog(){
@@ -379,10 +342,10 @@ class TxCache {
         //Types with instance changes
         JSONArray typesWithInstanceChanges = new JSONArray();
 
-        getInstanceCount().forEach((key, value) -> {
+        getShardingCount().forEach((key, value) -> {
             JSONObject jsonObject = new JSONObject();
-            jsonObject.put(REST.Request.COMMIT_LOG_TYPE_NAME, key.getValue());
-            jsonObject.put(REST.Request.COMMIT_LOG_INSTANCE_COUNT, value);
+            jsonObject.put(REST.Request.COMMIT_LOG_CONCEPT_ID, key.getValue());
+            jsonObject.put(REST.Request.COMMIT_LOG_SHARDING_COUNT, value);
             typesWithInstanceChanges.put(jsonObject);
         });
 
@@ -407,6 +370,8 @@ class TxCache {
         modifiedConcepts.clear();
         modifiedCastings.clear();
         modifiedResources.clear();
+        modifiedRelations.clear();
+        shardingCount.clear();
         conceptCache.clear();
         typeCache.clear();
         labelCache.clear();

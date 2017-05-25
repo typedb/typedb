@@ -19,7 +19,7 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -43,7 +43,7 @@ public interface Answer {
     Answer copy();
 
     @CheckReturnValue
-    Set<VarName> keySet();
+    Set<Var> keySet();
 
     @CheckReturnValue
     Collection<Concept> values();
@@ -52,27 +52,27 @@ public interface Answer {
     Set<Concept> concepts();
 
     @CheckReturnValue
-    Set<Map.Entry<VarName, Concept>> entrySet();
+    Set<Map.Entry<Var, Concept>> entrySet();
 
     @CheckReturnValue
     Concept get(String var);
 
     @CheckReturnValue
-    Concept get(VarName var);
+    Concept get(Var var);
 
-    Concept put(VarName var, Concept con);
+    Concept put(Var var, Concept con);
 
-    Concept remove(VarName var);
+    Concept remove(Var var);
 
     @CheckReturnValue
-    Map<VarName, Concept> map();
+    Map<Var, Concept> map();
 
     void putAll(Answer a);
 
-    void putAll(Map<VarName, Concept> m2);
+    void putAll(Map<Var, Concept> m2);
 
     @CheckReturnValue
-    boolean containsKey(VarName var);
+    boolean containsKey(Var var);
 
     @CheckReturnValue
     boolean isEmpty();
@@ -80,7 +80,7 @@ public interface Answer {
     @CheckReturnValue
     int size();
 
-    void forEach(BiConsumer<? super VarName, ? super Concept> consumer);
+    void forEach(BiConsumer<? super Var, ? super Concept> consumer);
 
     /**
      * perform an answer merge without explanation
@@ -91,7 +91,6 @@ public interface Answer {
      */
     @CheckReturnValue
     Answer merge(Answer a2);
-
 
     /**
      * perform an answer merge with optional explanation
@@ -117,7 +116,7 @@ public interface Answer {
      * @return answer with filtered variables
      */
     @CheckReturnValue
-    Answer filterVars(Set<VarName> vars);
+    Answer filterVars(Set<Var> vars);
 
     /**
      * @param unifier set of mappings between variables
@@ -130,8 +129,12 @@ public interface Answer {
      * @param unifierSet set of permutation mappings
      * @return stream of permuted answers
      */
+    @CheckReturnValue
     Stream<Answer> permute(Set<Unifier> unifierSet);
 
+    /**
+     * @return an explanation object indicating how this answer was obtained
+     */
     @CheckReturnValue
     AnswerExplanation getExplanation();
 

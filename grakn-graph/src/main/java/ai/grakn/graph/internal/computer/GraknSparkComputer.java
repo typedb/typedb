@@ -343,6 +343,7 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
     public static void refresh() {
         if (!GraknGraphRDD.commit) {
             setCommitFlag();
+            LOGGER.debug("Graph commit flag set!!!");
         }
     }
 
@@ -442,8 +443,8 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
                 }
                 if (!inputFromSpark || partitioned) {
                     loadedGraphRDD = loadedGraphRDD.persist(
-                            StorageLevel.fromString(graknSparkComputer.hadoopConfiguration
-                                    .get(Constants.GREMLIN_SPARK_GRAPH_STORAGE_LEVEL, "MEMORY_ONLY")));
+                            StorageLevel.fromString(graknSparkComputer.hadoopConfiguration.get(
+                                    Constants.GREMLIN_SPARK_GRAPH_STORAGE_LEVEL, "MEMORY_AND_DISK_SER")));
                 }
                 GraknGraphRDD.commit = false;
             } catch (final InstantiationException | IllegalAccessException e) {

@@ -18,18 +18,16 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
 
 /**
  *
@@ -42,9 +40,9 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
  */
 public class NotEquals extends AtomicBase {
 
-    private VarName refVarName;
+    private final Var refVarName;
 
-    public NotEquals(VarName varName, NeqProperty prop, ReasonerQuery parent){
+    public NotEquals(Var varName, NeqProperty prop, ReasonerQuery parent){
         super(var(varName).neq(var(prop.getVar().getVarName())).admin(), parent);
         this.refVarName = prop.getVar().getVarName();
     }
@@ -65,7 +63,7 @@ public class NotEquals extends AtomicBase {
     @Override
     public int hashCode(){
         int hashCode = 1;
-        hashCode = hashCode * 37 + this.varName.hashCode();
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
         hashCode = hashCode * 37 + this.refVarName.hashCode();
         return hashCode;
     }
@@ -78,28 +76,11 @@ public class NotEquals extends AtomicBase {
     @Override
     public Atomic copy() { return new NotEquals(this);}
 
-    private void setRefVarName(VarName var){
-        refVarName = var;
-        atomPattern = var(varName).neq(var(var)).admin();
-    }
-
-    @Override
-    public void unify(Unifier unifier){
-        super.unify(unifier);
-        VarName var = getReferenceVarName();
-        if (unifier.containsKey(var)) {
-            setRefVarName(unifier.get(var));
-        } else if (unifier.containsValue(var)) {
-            setRefVarName(capture(var));
-        }
-    }
-
-    public VarName getReferenceVarName(){ return refVarName;}
+    private Var getReferenceVarName(){ return refVarName;}
 
     public static boolean notEqualsOperator(Answer answer, NotEquals atom) {
-        return !answer.get(atom.varName).equals(answer.get(atom.refVarName));
+        return !answer.get(atom.getVarName()).equals(answer.get(atom.refVarName));
     }
-
 
     /**
      * apply the not equals filter to answer set
@@ -109,7 +90,7 @@ public class NotEquals extends AtomicBase {
     public QueryAnswers filter(QueryAnswers answers){
         QueryAnswers results = new QueryAnswers();
         answers.stream()
-                .filter(answer -> !answer.get(varName).equals(answer.get(refVarName)))
+                .filter(answer -> !answer.get(getVarName()).equals(answer.get(refVarName)))
                 .forEach(results::add);
         return results;
     }
@@ -120,6 +101,6 @@ public class NotEquals extends AtomicBase {
      * @return filtered answer stream
      */
     public Stream<Answer> filter(Stream<Answer> answers){
-        return answers.filter(answer -> !answer.get(varName).equals(answer.get(refVarName)));
+        return answers.filter(answer -> !answer.get(getVarName()).equals(answer.get(refVarName)));
     }
 }

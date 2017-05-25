@@ -1,0 +1,102 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
+package ai.grakn.graql.internal.template.macro;
+
+import com.google.common.collect.ImmutableList;
+import java.util.Collections;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+public class LongMacroTest {
+
+    private final LongMacro longMacro = new LongMacro();
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
+    @Test
+    public void applyLongMacroToNoArguments_ExceptionIsThrown(){
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage("Wrong number of arguments");
+
+        longMacro.apply(Collections.emptyList());
+    }
+
+    @Test
+    public void applyLongMacroToMoreThanOneArgument_ExceptionIsThrown(){
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage("Wrong number of arguments");
+
+        longMacro.apply(ImmutableList.of("1.0", "2.0"));
+    }
+
+    @Test
+    public void applyLongMacroToOneArgument_ItReturnsNonNull(){
+        assertNotNull(longMacro.apply(ImmutableList.of("1")));
+    }
+
+    @Test
+    public void applyLongMacroToInvalidValue_ExceptionIsThrown(){
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(containsString("is not a long"));
+
+        longMacro.apply(ImmutableList.of("invalid"));
+    }
+
+    @Test
+    public void applyLongMacroToIntValue_ReturnsCorrectLong(){
+        assertEquals(new Long(1), longMacro.apply(ImmutableList.of("1")));
+    }
+
+    @Test
+    public void applyLongMacroToVeryLongValue_ReturnsCorrectLong(){
+        assertEquals(new Long(123456789123456789L), longMacro.apply(ImmutableList.of("123456789123456789")));
+    }
+
+    @Test
+    public void applyLongMacroToDoubleValue_ExceptionIsThrown(){
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(containsString("is not a long"));
+
+        longMacro.apply(ImmutableList.of("15.0"));
+    }
+
+    @Test
+    public void applyLongMacroToLongValueWithUnderscores_ExceptionIsThrown(){
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(containsString("is not a long"));
+
+        longMacro.apply(ImmutableList.of("15_000"));
+    }
+
+    @Test
+    public void whenUsingLongMacroInTemplate_ItExecutesCorrectly(){
+        String template = "insert $x val @long(<value>);";
+        String expected = "insert $x0 val 4;";
+
+        assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
+        assertParseEquals(template, Collections.singletonMap("value", 4), expected);
+    }
+}

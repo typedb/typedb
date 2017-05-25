@@ -19,6 +19,7 @@
 package ai.grakn.engine;
 
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.GraknVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,23 +37,28 @@ import java.util.Properties;
  */
 public class GraknEngineConfig {
 
+    public static final String GRAKN_VERSION_KEY = "grakn.version";
+
     public static final String FACTORY_INTERNAL = "factory.internal";
     public static final String FACTORY_ANALYTICS = "factory.analytics";
 
     public static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn.properties";
     public static final String DEFAULT_LOG_CONFIG_FILE = "../conf/main/logback.xml";
 
-    public static final String DEFAULT_KEYSPACE_PROPERTY = "graphdatabase.default-keyspace";
+    public static final String DEFAULT_KEYSPACE_PROPERTY = "graph.default-keyspace";
 
     public static final String NUM_THREADS_PROPERTY = "loader.threads";
     public static final String JWT_SECRET_PROPERTY = "JWT.secret";
-    public static final String PASSWORD_PROTECTED_PROPERTY="password.protected";
-
+    public static final String PASSWORD_PROTECTED_PROPERTY = "password.protected";
+    public static final String ADMIN_PASSWORD_PROPERTY = "admin.password";
+    
     public static final String SERVER_HOST_NAME = "server.host";
     public static final String SERVER_PORT_NUMBER = "server.port";
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
-    public static final String POST_PROCESSING_DELAY = "backgroundTasks.post-processing-delay";
+
+    public static final String REDIS_SERVER_URL = "redis.host";
+    public static final String REDIS_SERVER_PORT = "redis.port";
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
     public static final String LOGGING_FILE_PATH_MAIN = "log.dirs";
@@ -67,7 +73,9 @@ public class GraknEngineConfig {
 
     // Engine Config
     public static final String TASK_MANAGER_IMPLEMENTATION = "taskmanager.implementation";
-    public static final String USE_ZOOKEEPER_STORAGE = "taskmanager.storage.zk";
+
+    // Delay for the post processing task in milliseconds
+    public static final String POST_PROCESSING_TASK_DELAY = "tasks.postprocessing.delay";
 
     public static final String ZK_SERVERS = "tasks.zookeeper.servers";
     public static final String ZK_NAMESPACE = "tasks.zookeeper.namespace";
@@ -98,10 +106,15 @@ public class GraknEngineConfig {
             e.printStackTrace();
         }
         initialiseLogger();
+        setGraknVersion();
         computeThreadsNumber();
         LOG.info("Project directory in use: [" + getProjectPath() + "]");
         LOG.info("Configuration file in use: [" + configFilePath + "]");
         LOG.info("Number of threads set to [" + numOfThreads + "]");
+    }
+
+    private void setGraknVersion(){
+        prop.setProperty(GRAKN_VERSION_KEY, GraknVersion.VERSION);
     }
 
     public void setConfigProperty(String key, String value){
@@ -178,7 +191,7 @@ public class GraknEngineConfig {
     /**
      * @return The path to the grakn.log file in use.
      */
-    public String getLogFilePath() {
+    String getLogFilePath() {
         return System.getProperty(SYSTEM_PROPERTY_GRAKN_LOG_DIRECTORY);
     }
 
@@ -198,7 +211,7 @@ public class GraknEngineConfig {
      * @return The requested property as a full path. If it is specified as a relative path,
      * this method will return the path prepended with the project path.
      */
-    public String getPath(String path) {
+    String getPath(String path) {
         String propertyPath = prop.getProperty(path);
         if (Paths.get(propertyPath).isAbsolute()) {
             return propertyPath;
@@ -232,36 +245,49 @@ public class GraknEngineConfig {
     }
 
     public String getProperty(String property) {
-        return prop.getProperty(property);
+         if(prop.containsKey(property)) {
+             return prop.getProperty(property);
+         }
+
+         if(configFilePath == null){
+             throw new RuntimeException(ErrorMessage.NO_CONFIG_FILE.getMessage(configFilePath));
+         }
+
+         throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(property, configFilePath));
     }
 
     public String getProperty(String property, String defaultValue) {
-        String res = prop.getProperty(property);
-        if(res != null) {
-            return res;
-        }
-
-        return defaultValue;
+        return prop.containsKey(property) ? prop.getProperty(property)
+                                          : defaultValue ;
     }
 
     public int getPropertyAsInt(String property) {
-        return Integer.parseInt(prop.getProperty(property));
+        return Integer.parseInt(getProperty(property));
     }
 
+    public int getPropertyAsInt(String property, int defaultValue) {
+        return prop.containsKey(property) ? Integer.parseInt(prop.getProperty(property))
+                                          : defaultValue;
+    }
+    
     public long getPropertyAsLong(String property) {
-        return Long.parseLong(prop.getProperty(property));
+        return Long.parseLong(getProperty(property));
+    }
+    
+    public long getPropertyAsLong(String property, long defaultValue) {
+        return prop.containsKey(property) ? Long.parseLong(prop.getProperty(property))
+                                          : defaultValue;
     }
 
-    public boolean getPropertyAsBool(String property) {
-        return Boolean.parseBoolean(prop.getProperty(property));
+    boolean getPropertyAsBool(String property, boolean defaultValue) {
+        return prop.containsKey(property) ? Boolean.parseBoolean(prop.getProperty(property))
+                                          : defaultValue;
     }
 
-
-    public static final String GRAKN_ASCII =
+    static final String GRAKN_ASCII =
                       "     ___  ___  ___  _  __ _  _     ___  ___     %n" +
                     "    / __|| _ \\/   \\| |/ /| \\| |   /   \\|_ _|    %n" +
                     "   | (_ ||   /| - || ' < | .` | _ | - | | |     %n" +
                     "    \\___||_|_\\|_|_||_|\\_\\|_|\\_|(_)|_|_||___|   %n%n" +
                       " Web Dashboard available at [%s]";
-
 }

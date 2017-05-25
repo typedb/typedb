@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.reasoner.atom.property;
 
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
@@ -35,7 +35,7 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
  */
 public class IsAbstractAtom extends AtomicBase {
 
-    public IsAbstractAtom(VarName varName, ReasonerQuery parent){
+    public IsAbstractAtom(Var varName, ReasonerQuery parent){
         super(Graql.var(varName).isAbstract().admin(), parent);
     }
 
@@ -49,7 +49,7 @@ public class IsAbstractAtom extends AtomicBase {
     @Override
     public int hashCode(){
         int hashCode = equivalenceHashCode();
-        hashCode = hashCode * 37 + this.varName.hashCode();
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
         return hashCode;
     }
 

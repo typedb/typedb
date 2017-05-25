@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.graph.internal.GraknComputerImpl;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -27,24 +28,16 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
  */
 public class GraknComputerMock extends GraknComputerImpl {
     private final Graph graph;
-    private final String graphComputerType;
     private int numberOfWorkers;
 
-    public GraknComputerMock(Graph graph, String graphComputerType) {
-        super(graph, graphComputerType);
-        this.graph = graph;
-        this.graphComputerType = graphComputerType;
-    }
-
-    public GraknComputerMock(Graph graph, String graphComputerType, int numberOfWorkers) {
-        super(graph, graphComputerType);
+    public GraknComputerMock(Graph graph, int numberOfWorkers) {
+        super(graph);
         this.numberOfWorkers = numberOfWorkers;
         this.graph = graph;
-        this.graphComputerType = graphComputerType;
     }
 
     @Override
     protected GraphComputer getGraphComputer() {
-        return graph.compute(getGraphComputerClass(graphComputerType)).workers(numberOfWorkers);
+        return graph.compute(getGraphComputerClass(GraknSparkComputer.class.getName())).workers(numberOfWorkers);
     }
 }

@@ -17,14 +17,9 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
-import ai.grakn.util.ErrorMessage;
-
 
 /**
  *
@@ -39,14 +34,14 @@ import ai.grakn.util.ErrorMessage;
  */
 public abstract class Predicate<T> extends AtomicBase {
 
-    protected T predicate;
+    private final T predicate;
 
-    protected Predicate(VarAdmin pattern, ReasonerQuery par) {
+    Predicate(VarPatternAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
         this.predicate = extractPredicate(pattern);
     }
 
-    protected Predicate(Predicate pred) {
+    Predicate(Predicate pred) {
         super(pred);
         this.predicate = extractPredicate(pred.getPattern().asVar());
     }
@@ -73,7 +68,7 @@ public abstract class Predicate<T> extends AtomicBase {
     public int hashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.getPredicateValue().hashCode();
-        hashCode = hashCode * 37 + this.varName.hashCode();
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
         return hashCode;
     }
 
@@ -98,19 +93,7 @@ public abstract class Predicate<T> extends AtomicBase {
     @Override
     public boolean isRuleResolvable(){ return false;}
 
-    @Override
-    public Unifier getUnifier(Atomic parentAtom) {
-        if (!(parentAtom instanceof Predicate)) {
-            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
-        }
-        Unifier unifier = new UnifierImpl();
-        if (!this.getVarName().equals(parentAtom.getVarName())) {
-            unifier.addMapping(this.getVarName(), parentAtom.getVarName());
-        }
-        return unifier;
-    }
-
     public T getPredicate(){ return predicate;}
     public abstract String getPredicateValue();
-    protected abstract T extractPredicate(VarAdmin pattern);
+    protected abstract T extractPredicate(VarPatternAdmin pattern);
 }

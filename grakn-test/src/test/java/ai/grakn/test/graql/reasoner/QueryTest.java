@@ -22,23 +22,20 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graphs.AdmissionsGraph;
 import ai.grakn.graphs.GeoGraph;
-import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.GraphContext;
+import ai.grakn.test.SNBGraph;
+
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-
 
 import java.util.Set;
 
@@ -171,8 +168,8 @@ public class QueryTest {
                 "$x has GRE $x-GRE-388fa981-faa8-4705-984e-f14b072eb688;" +
                 "$x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6 label 'applicant';" +
                 "$x-GRE-388fa981-faa8-4705-984e-f14b072eb688 val > 1099;}";
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
         ReasonerQueryImpl parentQuery = ReasonerQueries.create(pattern, graph);
         ReasonerQueryImpl childQuery = ReasonerQueries.create(pattern2, graph);
         assertEquals(parentQuery, childQuery);
@@ -188,11 +185,11 @@ public class QueryTest {
         String patternString4 = "{$x has GRE $gre;$gre val '1099';}";
         String patternString5 = "{$x has GRE $gre;$gre val > $var;}";
 
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
-        Conjunction<VarAdmin> pattern3 = conjunction(patternString3, graph);
-        Conjunction<VarAdmin> pattern4 = conjunction(patternString4, graph);
-        Conjunction<VarAdmin> pattern5 = conjunction(patternString5, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
+        Conjunction<VarPatternAdmin> pattern4 = conjunction(patternString4, graph);
+        Conjunction<VarPatternAdmin> pattern5 = conjunction(patternString5, graph);
 
         ReasonerQueryImpl query = ReasonerQueries.create(pattern, graph);
         ReasonerQueryImpl query2 = ReasonerQueries.create(pattern2, graph);
@@ -230,7 +227,7 @@ public class QueryTest {
         assertEquals(query, query2);
     }
 
-    //Bug #11150 Relations with resources as single VarAdmin
+    //Bug #11150 Relations with resources as single VarPatternAdmin
     @Test //tests whether directly and indirectly reified relations are equivalent
     public void testAlphaEquivalence_reifiedRelation(){
         GraknGraph graph = genealogyOntology.graph();
@@ -241,8 +238,8 @@ public class QueryTest {
         assertEquals(query, query2);
     }
 
-    private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){
-        Set<VarAdmin> vars = graph.graql().parsePattern(patternString).admin()
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknGraph graph){
+        Set<VarPatternAdmin> vars = graph.graql().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

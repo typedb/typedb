@@ -23,7 +23,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.admin.MatchQueryAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
@@ -40,8 +40,8 @@ public class InsertQueryImplTest {
     private final Optional<MatchQueryAdmin> match1 = Optional.of(Graql.match(var("x").isa("movie")).admin());
     private final Optional<MatchQueryAdmin> match2 = Optional.of(Graql.match(var("y").isa("movie")).admin());
 
-    private final ImmutableCollection<VarAdmin> vars1 = ImmutableSet.of(var("x").admin());
-    private final ImmutableCollection<VarAdmin> vars2 = ImmutableSet.of(var("y").admin());
+    private final ImmutableCollection<VarPatternAdmin> vars1 = ImmutableSet.of(var("x").admin());
+    private final ImmutableCollection<VarPatternAdmin> vars2 = ImmutableSet.of(var("y").admin());
 
     @Test
     public void insertQueriesWithTheSameVarsAndMatchQueryAreEqual() {

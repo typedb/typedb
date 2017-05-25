@@ -83,7 +83,7 @@ public class Graql {
      * @return an insert query that will insert the given variables into the graph
      */
     @CheckReturnValue
-    public static InsertQuery insert(Var... vars) {
+    public static InsertQuery insert(VarPattern... vars) {
         return withoutGraph().insert(vars);
     }
 
@@ -92,7 +92,7 @@ public class Graql {
      * @return an insert query that will insert the given variables into the graph
      */
     @CheckReturnValue
-    public static InsertQuery insert(Collection<? extends Var> vars) {
+    public static InsertQuery insert(Collection<? extends VarPattern> vars) {
         return withoutGraph().insert(vars);
     }
 
@@ -150,8 +150,8 @@ public class Graql {
      * @return a new query variable
      */
     @CheckReturnValue
-    public static Var var(String name) {
-        return var(VarName.of(name));
+    public static VarPattern var(String name) {
+        return var(Var.of(name));
     }
 
     /**
@@ -159,7 +159,7 @@ public class Graql {
      * @return a new query variable
      */
     @CheckReturnValue
-    public static Var var(VarName name) {
+    public static VarPattern var(Var name) {
         return Patterns.var(Objects.requireNonNull(name));
     }
 
@@ -167,7 +167,7 @@ public class Graql {
      * @return a new, anonymous query variable
      */
     @CheckReturnValue
-    public static Var var() {
+    public static VarPattern var() {
         return Patterns.var();
     }
 
@@ -176,7 +176,7 @@ public class Graql {
      * @return a query variable that identifies a concept by label
      */
     @CheckReturnValue
-    public static Var label(TypeLabel label) {
+    public static VarPattern label(TypeLabel label) {
         return var().label(label);
     }
 
@@ -185,7 +185,7 @@ public class Graql {
      * @return a query variable that identifies a concept by label
      */
     @CheckReturnValue
-    public static Var label(String label) {
+    public static VarPattern label(String label) {
         return var().label(label);
     }
 
@@ -243,7 +243,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Answer, Number> sum(String name) {
-        return Aggregates.sum(VarName.of(name));
+        return Aggregates.sum(Var.of(name));
     }
 
     /**
@@ -252,7 +252,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> max(String name) {
-        return Aggregates.max(VarName.of(name));
+        return Aggregates.max(Var.of(name));
     }
 
     /**
@@ -261,7 +261,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> min(String name) {
-        return Aggregates.min(VarName.of(name));
+        return Aggregates.min(Var.of(name));
     }
 
     /**
@@ -270,7 +270,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Answer, Optional<Double>> mean(String name) {
-        return Aggregates.mean(VarName.of(name));
+        return Aggregates.mean(Var.of(name));
     }
 
     /**
@@ -279,7 +279,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Answer, Optional<Number>> median(String name) {
-        return Aggregates.median(VarName.of(name));
+        return Aggregates.median(Var.of(name));
     }
 
     /**
@@ -288,7 +288,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Answer, Optional<Double>> std(String name) {
-        return Aggregates.std(VarName.of(name));
+        return Aggregates.std(Var.of(name));
     }
 
     /**
@@ -309,7 +309,7 @@ public class Graql {
     @CheckReturnValue
     public static <T> Aggregate<Answer, Map<Concept, T>> group(
             String varName, Aggregate<? super Answer, T> aggregate) {
-        return Aggregates.group(VarName.of(varName), aggregate);
+        return Aggregates.group(Var.of(varName), aggregate);
     }
 
     /**
@@ -353,7 +353,7 @@ public class Graql {
      * @return a predicate that is true when a value equals the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate eq(Var var) {
+    public static ValuePredicate eq(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.eq(var.admin());
     }
@@ -373,7 +373,7 @@ public class Graql {
      * @return a predicate that is true when a value does not equal the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate neq(Var var) {
+    public static ValuePredicate neq(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.neq(var.admin());
     }
@@ -393,7 +393,7 @@ public class Graql {
      * @return a predicate that is true when a value is strictly greater than the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate gt(Var var) {
+    public static ValuePredicate gt(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.gt(var.admin());
     }
@@ -413,7 +413,7 @@ public class Graql {
      * @return a predicate that is true when a value is greater or equal to the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate gte(Var var) {
+    public static ValuePredicate gte(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.gte(var.admin());
     }
@@ -433,7 +433,7 @@ public class Graql {
      * @return a predicate that is true when a value is strictly less than the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate lt(Var var) {
+    public static ValuePredicate lt(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.lt(var.admin());
     }
@@ -453,7 +453,7 @@ public class Graql {
      * @return a predicate that is true when a value is less or equal to the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate lte(Var var) {
+    public static ValuePredicate lte(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.lte(var.admin());
     }
@@ -483,7 +483,7 @@ public class Graql {
      * @return a predicate that returns true when a value contains the given substring
      */
     @CheckReturnValue
-    public static ValuePredicate contains(Var var) {
+    public static ValuePredicate contains(VarPattern var) {
         Objects.requireNonNull(var);
         return Predicates.contains(var.admin());
     }

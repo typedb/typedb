@@ -19,10 +19,12 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
+import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.MeanMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -45,14 +47,16 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
+        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceTypeLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
         Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
         Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
 
+        String randomId = getRandomJobId();
+
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds),
-                new MeanMapReduce(statisticsResourceTypeIds, dataType));
+                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds, randomId),
+                new MeanMapReduce(statisticsResourceTypeIds, dataType, DegreeVertexProgram.DEGREE + randomId));
         Map<Serializable, Map<String, Double>> mean = result.memory().get(MeanMapReduce.class.getName());
         Map<String, Double> meanPair = mean.get(MapReduce.NullObject.instance());
 

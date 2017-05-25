@@ -25,9 +25,9 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
@@ -77,21 +77,21 @@ import static ai.grakn.util.ErrorMessage.LABEL_NOT_FOUND;
 public class InsertQueryExecutor {
 
     private final GraknGraph graph;
-    private final Collection<VarAdmin> vars;
-    private final Map<VarName, Concept> concepts = new HashMap<>();
-    private final Map<VarName, Concept> namedConcepts = new HashMap<>();
-    private final Stack<VarName> visitedVars = new Stack<>();
-    private final ImmutableMap<VarName, List<VarAdmin>> varsByVarName;
-    private final ImmutableMap<TypeLabel, List<VarAdmin>> varsByTypeLabel;
-    private final ImmutableMap<ConceptId, List<VarAdmin>> varsById;
+    private final Collection<VarPatternAdmin> vars;
+    private final Map<Var, Concept> concepts = new HashMap<>();
+    private final Map<Var, Concept> namedConcepts = new HashMap<>();
+    private final Stack<Var> visitedVars = new Stack<>();
+    private final ImmutableMap<Var, List<VarPatternAdmin>> varsByVarName;
+    private final ImmutableMap<TypeLabel, List<VarPatternAdmin>> varsByTypeLabel;
+    private final ImmutableMap<ConceptId, List<VarPatternAdmin>> varsById;
 
-    InsertQueryExecutor(Collection<VarAdmin> vars, GraknGraph graph) {
+    InsertQueryExecutor(Collection<VarPatternAdmin> vars, GraknGraph graph) {
         this.vars = vars;
         this.graph = graph;
 
         // Group variables by variable name
         varsByVarName = ImmutableMap.copyOf(
-                vars.stream().collect(Collectors.groupingBy(VarAdmin::getVarName))
+                vars.stream().collect(Collectors.groupingBy(VarPatternAdmin::getVarName))
         );
 
         // Group variables by id (if they have one defined)
@@ -134,9 +134,9 @@ public class InsertQueryExecutor {
     }
 
     /**
-     * @param var the Var to insert into the graph
+     * @param var the {@link VarPatternAdmin} to insert into the graph
      */
-    private void insertVar(VarAdmin var) {
+    private void insertVar(VarPatternAdmin var) {
         Concept concept = getConcept(var);
         var.getProperties().forEach(property -> ((VarPropertyInternal) property).insert(this, concept));
     }
@@ -146,11 +146,11 @@ public class InsertQueryExecutor {
     }
 
     /**
-     * @param var the Var that is represented by a concept in the graph
+     * @param var the {@link VarPatternAdmin} that is represented by a concept in the graph
      * @return the same as addConcept, but using an internal map to remember previous calls
      */
-    public Concept getConcept(VarAdmin var) {
-        VarName name = var.getVarName();
+    public Concept getConcept(VarPatternAdmin var) {
+        Var name = var.getVarName();
         if (visitedVars.contains(name)) {
             throw new IllegalStateException(INSERT_RECURSIVE.getMessage(var.getPrintableName()));
         }
@@ -164,11 +164,11 @@ public class InsertQueryExecutor {
     }
 
     /**
-     * @param varToAdd the Var that is to be added into the graph
-     * @return the concept representing the given Var, creating it if it doesn't exist
+     * @param varToAdd the {@link VarPatternAdmin} that is to be added into the graph
+     * @return the concept representing the given {@link VarPatternAdmin}, creating it if it doesn't exist
      */
-    private Concept addConcept(VarAdmin varToAdd) {
-        VarAdmin var = mergeVar(varToAdd);
+    private Concept addConcept(VarPatternAdmin varToAdd) {
+        VarPatternAdmin var = mergeVar(varToAdd);
 
         Optional<IsaProperty> type = var.getProperty(IsaProperty.class);
         Optional<SubProperty> sub = var.getProperty(SubProperty.class);
@@ -211,9 +211,9 @@ public class InsertQueryExecutor {
      * @param var the variable to merge
      * @return the merged variable
      */
-    private VarAdmin mergeVar(VarAdmin var) {
+    private VarPatternAdmin mergeVar(VarPatternAdmin var) {
         boolean changed = true;
-        Set<VarAdmin> varsToMerge = new HashSet<>();
+        Set<VarPatternAdmin> varsToMerge = new HashSet<>();
 
         // Keep merging until the set of merged variables stops changing
         // This handles cases when variables are referred to with multiple degrees of separation
@@ -221,7 +221,7 @@ public class InsertQueryExecutor {
         // id "123" isa movie; $x id "123", name "Bob"; $y id "123"; ($y, $z)
         while (changed) {
             // Merge variable referred to by variable name...
-            List<VarAdmin> vars = varsByVarName.getOrDefault(var.getVarName(), Lists.newArrayList());
+            List<VarPatternAdmin> vars = varsByVarName.getOrDefault(var.getVarName(), Lists.newArrayList());
             vars.add(var);
             boolean byVarNameChange = varsToMerge.addAll(vars);
             var = Patterns.mergeVars(varsToMerge);
@@ -242,11 +242,11 @@ public class InsertQueryExecutor {
 
     /**
      * @param id the ID of the concept
-     * @param var the Var representing the concept in the insert query
+     * @param var the {@link VarPatternAdmin} representing the concept in the insert query
      * @param isa the type property of the var
      * @return a concept with the given ID and the specified type
      */
-    private Instance putInstance(Optional<ConceptId> id, VarAdmin var, IsaProperty isa) {
+    private Instance putInstance(Optional<ConceptId> id, VarPatternAdmin var, IsaProperty isa) {
         Type type = getConcept(isa.getType()).asType();
 
         if (type.isEntityType()) {
@@ -274,11 +274,11 @@ public class InsertQueryExecutor {
 
     /**
      * @param label the label of the concept
-     * @param var the Var representing the concept in the insert query
+     * @param var the {@link VarPatternAdmin} representing the concept in the insert query
      * @param sub the supertype property of the var
      * @return a concept with the given ID and the specified type
      */
-    private Type putType(TypeLabel label, VarAdmin var, SubProperty sub) {
+    private Type putType(TypeLabel label, VarPatternAdmin var, SubProperty sub) {
         Type superType = getConcept(sub.getSuperType()).asType();
 
         if (superType.isEntityType()) {
@@ -319,7 +319,7 @@ public class InsertQueryExecutor {
         return label.orElseThrow(() -> new IllegalStateException(INSERT_TYPE_WITHOUT_LABEL.getMessage()));
     }
 
-    private Object getValue(VarAdmin var) {
+    private Object getValue(VarPatternAdmin var) {
         Iterator<ValueProperty> properties = var.getProperties(ValueProperty.class).iterator();
 
         if (properties.hasNext()) {
@@ -340,10 +340,10 @@ public class InsertQueryExecutor {
     }
 
     /**
-     * Get the datatype of a Var if specified, else throws an IllegalStateException
+     * Get the datatype of a {@link VarPatternAdmin} if specified, else throws an IllegalStateException
      * @return the datatype of the given var
      */
-    private ResourceType.DataType<?> getDataType(VarAdmin var) {
+    private ResourceType.DataType<?> getDataType(VarPatternAdmin var) {
         Optional<ResourceType.DataType<?>> directDataType =
                 var.getProperty(DataTypeProperty.class).map(DataTypeProperty::getDataType);
 
@@ -357,7 +357,7 @@ public class InsertQueryExecutor {
         );
     }
 
-    private Optional<VarAdmin> getSub(VarAdmin var) {
+    private Optional<VarPatternAdmin> getSub(VarPatternAdmin var) {
         return var.getProperty(SubProperty.class).map(SubProperty::getSuperType);
     }
 }

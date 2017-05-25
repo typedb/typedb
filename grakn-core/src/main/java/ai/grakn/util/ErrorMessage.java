@@ -115,6 +115,7 @@ public enum ErrorMessage {
     CONFLICTING_PROPERTIES("the following unique properties in '%s' conflict: '%s' and '%s'"),
     NON_POSITIVE_LIMIT("limit %s should be positive"),
     NEGATIVE_OFFSET("offset %s should be non-negative"),
+    INVALID_VALUE("unsupported resource value type %s"),
 
     AGGREGATE_ARGUMENT_NUM("aggregate '%s' takes %s arguments, but got %s"),
     UNKNOWN_AGGREGATE("unknown aggregate '%s'"),
@@ -173,17 +174,20 @@ public enum ErrorMessage {
 
     //Server Errors
     UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
+    UNAVAILABLE_PROPERTY("Property requested [%s] has not been defined. See configuration file [%s] for configured properties."),
     MISSING_MANDATORY_REQUEST_PARAMETERS("Missing mandatory query parameter [%s]"),
     MISSING_REQUEST_BODY("Empty body- it should contain the Graql query to be executed."),
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
     INVALID_CONTENT_TYPE("Invalid combination of query [%s] and content type [%s]"),
     EXPLAIN_ONLY_MATCH("Cannot get explanation for non-match query, given: [%s]"),
+    LOCK_ALREADY_INSTANTIATED("Lock provider can only be instantiated once"),
 
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),
     GRAPH_MUTATION_ERROR("Unexpected error during graph mutation due to [%s]"),
     UNABLE_TO_MUTATE_GRAPH("Unable to mutate graph [%s] due to several repeating errors"),
     BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
+
     //Distributed loading Errors
     ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host. Message:[%s] \n Transaction string: [%s] "),
     ERROR_COMMUNICATING_TO_HOST("Exception thrown while trying to communicate with host [%s]"),

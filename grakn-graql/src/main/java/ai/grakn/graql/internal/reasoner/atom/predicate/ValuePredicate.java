@@ -19,12 +19,16 @@
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.stream.Collectors;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Iterator;
@@ -41,8 +45,8 @@ import java.util.Set;
  */
 public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
 
-    public ValuePredicate(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
-    public ValuePredicate(VarName varName, ValuePredicateAdmin pred, ReasonerQuery par){
+    public ValuePredicate(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
+    public ValuePredicate(Var varName, ValuePredicateAdmin pred, ReasonerQuery par){
         this(createValueVar(varName, pred), par);}
     private ValuePredicate(ValuePredicate pred) { super(pred);}
 
@@ -51,7 +55,14 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
         return new ValuePredicate(this);
     }
 
-    public static VarAdmin createValueVar(VarName name, ValuePredicateAdmin pred) {
+    public Set<ValuePredicate> unify(Unifier u){
+        Collection<Var> vars = u.get(getVarName());
+        return vars.isEmpty()?
+                Collections.singleton(this) :
+                vars.stream().map(v -> new ValuePredicate(v, getPredicate(), this.getParentQuery())).collect(Collectors.toSet());
+    }
+
+    public static VarPatternAdmin createValueVar(Var name, ValuePredicateAdmin pred) {
         return Graql.var(name).val(pred).admin();
     }
 
@@ -61,15 +72,15 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
         if (obj == this) return true;
         Predicate a2 = (Predicate) obj;
         return this.getVarName().equals(a2.getVarName())
-                && this.predicate.getClass().equals(a2.predicate.getClass())
+                && this.getPredicate().getClass().equals(a2.getPredicate().getClass())
                 && this.getPredicateValue().equals(a2.getPredicateValue());
     }
 
     @Override
     public int hashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + this.varName.hashCode();
-        hashCode = hashCode * 37 + this.predicate.getClass().hashCode();
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
+        hashCode = hashCode * 37 + this.getPredicate().getClass().hashCode();
         return hashCode;
     }
 
@@ -78,14 +89,14 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         ValuePredicate a2 = (ValuePredicate) obj;
-        return this.predicate.getClass().equals(a2.predicate.getClass()) &&
+        return this.getPredicate().getClass().equals(a2.getPredicate().getClass()) &&
                 this.getPredicateValue().equals(a2.getPredicateValue());
     }
 
     @Override
     public int equivalenceHashCode() {
         int hashCode = super.equivalenceHashCode();
-        hashCode = hashCode * 37 + this.predicate.getClass().getName().hashCode();
+        hashCode = hashCode * 37 + this.getPredicate().getClass().getName().hashCode();
         return hashCode;
     }
 
@@ -94,11 +105,11 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
 
     @Override
     public String getPredicateValue() {
-        return predicate.getPredicate().map(P::getValue).map(Object::toString).orElse("");
+        return getPredicate().getPredicate().map(P::getValue).map(Object::toString).orElse("");
     }
 
     @Override
-    protected ValuePredicateAdmin extractPredicate(VarAdmin pattern) {
+    protected ValuePredicateAdmin extractPredicate(VarPatternAdmin pattern) {
         Iterator<ValueProperty> properties = pattern.getProperties(ValueProperty.class).iterator();
         ValueProperty property = properties.next();
         if (properties.hasNext()) {
@@ -108,9 +119,9 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     }
 
     @Override
-    public Set<VarName> getVarNames(){
-        Set<VarName> vars = super.getVarNames();
-        VarAdmin innerVar = getPredicate().getInnerVar().orElse(null);
+    public Set<Var> getVarNames(){
+        Set<Var> vars = super.getVarNames();
+        VarPatternAdmin innerVar = getPredicate().getInnerVar().orElse(null);
         if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
         return vars;
     }

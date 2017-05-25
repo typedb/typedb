@@ -145,11 +145,4 @@ public interface RuleType extends Type {
      */
     @Override
     Collection<Rule> instances();
-
-    /**
-     *
-     * @return a deep copy of this concept.
-     */
-    @Override
-    RuleType copy();
 }

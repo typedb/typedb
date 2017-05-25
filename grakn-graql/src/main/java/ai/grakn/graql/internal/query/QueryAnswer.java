@@ -20,11 +20,13 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.explanation.Explanation;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.HashMap;
@@ -45,7 +47,7 @@ import java.util.stream.Stream;
  */
 public class QueryAnswer implements Answer {
 
-    private final Map<VarName, Concept> map = new HashMap<>();
+    private final Map<Var, Concept> map = new HashMap<>();
     private AnswerExplanation explanation = new Explanation();
 
     public QueryAnswer(){}
@@ -55,7 +57,7 @@ public class QueryAnswer implements Answer {
         explanation = a.getExplanation();
     }
 
-    public QueryAnswer(Map<VarName, Concept> m){
+    public QueryAnswer(Map<Var, Concept> m){
         map.putAll(m);
     }
 
@@ -79,7 +81,7 @@ public class QueryAnswer implements Answer {
     public int hashCode(){ return map.hashCode();}
 
     @Override
-    public Set<VarName> keySet(){ return map.keySet();}
+    public Set<Var> keySet(){ return map.keySet();}
 
     @Override
     public Collection<Concept> values(){ return map.values();}
@@ -88,33 +90,33 @@ public class QueryAnswer implements Answer {
     public Set<Concept> concepts(){ return map.values().stream().collect(Collectors.toSet());}
 
     @Override
-    public Set<Map.Entry<VarName, Concept>> entrySet(){ return map.entrySet();}
+    public Set<Map.Entry<Var, Concept>> entrySet(){ return map.entrySet();}
 
     @Override
     public Concept get(String var) {
-        return map.get(VarName.of(var));
+        return map.get(Var.of(var));
     }
 
     @Override
-    public Concept get(VarName var){ return map.get(var);}
+    public Concept get(Var var){ return map.get(var);}
 
     @Override
-    public Concept put(VarName var, Concept con){ return map.put(var, con);}
+    public Concept put(Var var, Concept con){ return map.put(var, con);}
 
     @Override
-    public Concept remove(VarName var){ return map.remove(var);}
+    public Concept remove(Var var){ return map.remove(var);}
 
     @Override
-    public Map<VarName, Concept> map(){ return map;}
+    public Map<Var, Concept> map(){ return map;}
 
     @Override
     public void putAll(Answer a){ map.putAll(a.map());}
 
     @Override
-    public void putAll(Map<VarName, Concept> m2){ map.putAll(m2);}
+    public void putAll(Map<Var, Concept> m2){ map.putAll(m2);}
 
     @Override
-    public boolean containsKey(VarName var){ return map.containsKey(var);}
+    public boolean containsKey(Var var){ return map.containsKey(var);}
 
     @Override
     public boolean isEmpty(){ return map.isEmpty();}
@@ -123,7 +125,7 @@ public class QueryAnswer implements Answer {
     public int size(){ return map.size();}
 
     @Override
-    public void forEach(BiConsumer<? super VarName, ? super Concept> consumer) {
+    public void forEach(BiConsumer<? super Var, ? super Concept> consumer) {
         map.forEach(consumer);
     }
 
@@ -154,9 +156,9 @@ public class QueryAnswer implements Answer {
     }
 
     @Override
-    public Answer filterVars(Set<VarName> vars) {
+    public Answer filterVars(Set<Var> vars) {
         QueryAnswer filteredAnswer = new QueryAnswer(this);
-        Set<VarName> varsToRemove = Sets.difference(this.keySet(), vars);
+        Set<Var> varsToRemove = Sets.difference(this.keySet(), vars);
         varsToRemove.forEach(filteredAnswer::remove);
 
         return filteredAnswer.setExplanation(this.getExplanation());
@@ -165,14 +167,25 @@ public class QueryAnswer implements Answer {
     @Override
     public Answer unify(Unifier unifier){
         if (unifier.isEmpty()) return this;
-        return new QueryAnswer(
-                this.entrySet().stream()
-                        .collect(Collectors.toMap(e -> {
-                            VarName var = e.getKey();
-                            VarName uvar = unifier.get(var);
-                            return uvar == null? var : uvar;
-                        }, Map.Entry::getValue))
-        ).setExplanation(this.getExplanation());
+        Answer unified = new QueryAnswer();
+        Multimap<Var, Concept> answerMultimap = HashMultimap.create();
+
+        this.entrySet()
+                .forEach(e -> {
+                    Var var = e.getKey();
+                    Collection<Var> uvars = unifier.get(var);
+                    if (uvars.isEmpty()) {
+                        answerMultimap.put(var, e.getValue());
+                    } else {
+                        uvars.forEach(uv -> answerMultimap.put(uv, e.getValue()));
+                    }
+                });
+        //non-ambiguous mapping
+        if ( answerMultimap.keySet().size() == answerMultimap.values().size()) {
+            answerMultimap.entries().forEach(e -> unified.put(e.getKey(), e.getValue()));
+        }
+
+        return unified.setExplanation(this.getExplanation());
     }
 
     @Override

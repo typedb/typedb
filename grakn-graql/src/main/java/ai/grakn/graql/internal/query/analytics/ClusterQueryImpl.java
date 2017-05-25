@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuery<T> {
@@ -56,7 +55,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         Set<TypeLabel> withResourceRelationTypes = getHasResourceRelationTypes();
         withResourceRelationTypes.addAll(subTypeLabels);
 
-        String randomId = Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
+        String randomId = getRandomJobId();
 
         Set<TypeId> withResourceRelationTypeIds =
                 withResourceRelationTypes.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
@@ -141,4 +140,25 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         return (ClusterQuery<T>) super.withGraph(graph);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        ClusterQueryImpl<?> that = (ClusterQueryImpl<?>) o;
+
+        if (members != that.members) return false;
+        if (anySize != that.anySize) return false;
+        return clusterSize == that.clusterSize;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (members ? 1 : 0);
+        result = 31 * result + (anySize ? 1 : 0);
+        result = 31 * result + (int) (clusterSize ^ (clusterSize >>> 32));
+        return result;
+    }
 }

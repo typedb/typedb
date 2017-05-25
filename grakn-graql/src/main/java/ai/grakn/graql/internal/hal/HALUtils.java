@@ -23,10 +23,10 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -123,8 +123,8 @@ public class HALUtils {
         }
     }
 
-    static Map<VarAdmin, Pair<Map<VarName, String>, String>> computeRoleTypesFromQuery(MatchQuery matchQuery, Answer firstAnswer) {
-        final Map<VarAdmin, Pair<Map<VarName, String>, String>> roleTypes = new HashMap<>();
+    static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQuery(MatchQuery matchQuery, Answer firstAnswer) {
+        final Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
         AnswerExplanation firstExplanation = firstAnswer.getExplanation();
         if (firstExplanation.isEmpty()) {
             return computeRoleTypesFromQueryNoReasoner(matchQuery);
@@ -138,22 +138,22 @@ public class HALUtils {
         }
     }
 
-    private static void updateRoleTypesFromAnswer(Map<VarAdmin, Pair<Map<VarName, String>, String>> roleTypes, Answer answer) {
+    private static void updateRoleTypesFromAnswer(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Answer answer) {
         Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
         if (atom.isRelation()) {
-            Optional<VarAdmin> var = atom.getPattern().getVars().stream().filter(x -> x.hasProperty(RelationProperty.class)).findFirst();
-            VarAdmin varAdmin = atom.getPattern().asVar();
+            Optional<VarPatternAdmin> var = atom.getPattern().getVars().stream().filter(x -> x.hasProperty(RelationProperty.class)).findFirst();
+            VarPatternAdmin varAdmin = atom.getPattern().asVar();
             if (var.isPresent() && !var.get().isUserDefinedName()) {
                 roleTypes.put(varAdmin, pairVarNamesRelationType(atom));
             }
         }
     }
 
-    private static Map<VarAdmin, Pair<Map<VarName, String>, String>> computeRoleTypesFromQueryNoReasoner(MatchQuery matchQuery) {
-        final Map<VarAdmin, Pair<Map<VarName, String>, String>> roleTypes = new HashMap<>();
+    private static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQueryNoReasoner(MatchQuery matchQuery) {
+        final Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
         matchQuery.admin().getPattern().getVars().forEach(var -> {
             if (var.getProperty(RelationProperty.class).isPresent() && !var.isUserDefinedName()) {
-                Map<VarName, String> tempMap = new HashMap<>();
+                Map<Var, String> tempMap = new HashMap<>();
                 var.getProperty(RelationProperty.class).get()
                         .getRelationPlayers().forEach(x -> {
                             tempMap.put(x.getRolePlayer().getVarName(),
@@ -174,9 +174,9 @@ public class HALUtils {
         return roleTypes;
     }
 
-    private static Pair<Map<VarName, String>, String> pairVarNamesRelationType(Atom atom) {
+    private static Pair<Map<Var, String>, String> pairVarNamesRelationType(Atom atom) {
         Relation reasonerRel = ((Relation) atom);
-        Map<VarName, String> varNamesToRole = new HashMap<>();
+        Map<Var, String> varNamesToRole = new HashMap<>();
         // Put all the varNames in the map with EMPTY-ROLE role
         reasonerRel.getRolePlayers().forEach(varName -> varNamesToRole.put(varName, HAS_EMPTY_ROLE_EDGE));
         // Overrides the varNames that have roles in the previous map
@@ -186,20 +186,20 @@ public class HALUtils {
         return new Pair<>(varNamesToRole, relationType);
     }
 
-    static Map<VarAdmin, Boolean> buildInferredRelationsMap(Answer firstAnswer) {
-        final Map<VarAdmin, Boolean> inferredRelations = new HashMap<>();
+    static Map<VarPatternAdmin, Boolean> buildInferredRelationsMap(Answer firstAnswer) {
+        final Map<VarPatternAdmin, Boolean> inferredRelations = new HashMap<>();
         AnswerExplanation firstExplanation = firstAnswer.getExplanation();
         if (firstExplanation.isRuleExplanation() || firstExplanation.isLookupExplanation()) {
             Atom atom = ((ReasonerAtomicQuery) firstAnswer.getExplanation().getQuery()).getAtom();
             if (atom.isRelation()) {
-                VarAdmin varAdmin = atom.getPattern().asVar();
+                VarPatternAdmin varAdmin = atom.getPattern().asVar();
                 inferredRelations.put(varAdmin, firstAnswer.getExplanation().isRuleExplanation());
             }
         } else {
             firstAnswer.getExplanation().getAnswers().forEach(answer -> {
                 Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
                 if (atom.isRelation()) {
-                    VarAdmin varAdmin = atom.getPattern().asVar();
+                    VarPatternAdmin varAdmin = atom.getPattern().asVar();
                     inferredRelations.put(varAdmin, answer.getExplanation().isRuleExplanation());
                 }
             });

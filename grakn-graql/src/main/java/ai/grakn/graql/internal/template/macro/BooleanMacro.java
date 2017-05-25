@@ -20,6 +20,8 @@ package ai.grakn.graql.internal.template.macro;
 
 import ai.grakn.graql.macro.Macro;
 
+import com.google.common.collect.ImmutableSet;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -33,6 +35,7 @@ import java.util.List;
  */
 public class BooleanMacro implements Macro<Boolean> {
 
+    private static final Collection<String> allowedBooleanValues = ImmutableSet.of("true", "false");
     private static final int numberArguments = 1;
 
     @Override
@@ -41,7 +44,12 @@ public class BooleanMacro implements Macro<Boolean> {
             throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
         }
 
-        return Boolean.parseBoolean(values.get(0).toString());
+        String booleanValue = values.get(0).toString().toLowerCase();
+        if(!allowedBooleanValues.contains(booleanValue)){
+            throw new IllegalArgumentException("Wrong value for boolean in argument " + values + " to macro " + name());
+        }
+
+        return Boolean.parseBoolean(booleanValue);
     }
 
     @Override

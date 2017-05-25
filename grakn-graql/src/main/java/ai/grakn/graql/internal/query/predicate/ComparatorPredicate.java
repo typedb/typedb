@@ -20,9 +20,9 @@ package ai.grakn.graql.internal.query.predicate;
 
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -36,12 +36,13 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static ai.grakn.concept.ResourceType.DataType.SUPPORTED_TYPES;
+import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
 
 abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
     private final Optional<Object> originalValue;
     private final Optional<Object> value;
-    private final Optional<VarAdmin> var;
+    private final Optional<VarPatternAdmin> var;
 
     private static final String[] VALUE_PROPERTIES =
             SUPPORTED_TYPES.values().stream()
@@ -54,10 +55,10 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
      * @param value the value that this predicate is testing against
      */
     ComparatorPredicate(Object value) {
-        if (value instanceof VarAdmin) {
+        if (value instanceof VarPatternAdmin) {
             this.originalValue = Optional.empty();
             this.value = Optional.empty();
-            this.var = Optional.of((VarAdmin) value);
+            this.var = Optional.of((VarPatternAdmin) value);
         } else {
             // Convert integers to longs for consistency
             if (value instanceof Integer) {
@@ -68,6 +69,10 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
             // Convert values to how they are stored in the graph
             ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getName());
+
+            if (dataType == null) {
+                throw new IllegalArgumentException(INVALID_VALUE.getMessage(value.getClass()));
+            }
 
             // We can trust the `SUPPORTED_TYPES` map to store things with the right type
             //noinspection unchecked
@@ -81,7 +86,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
     /**
      * @param var the variable that this predicate is testing against
      */
-    ComparatorPredicate(Var var) {
+    ComparatorPredicate(VarPattern var) {
         this.originalValue = Optional.empty();
         this.value = Optional.empty();
         this.var = Optional.of(var.admin());
@@ -132,7 +137,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
     }
 
     @Override
-    public Optional<VarAdmin> getInnerVar() {
+    public Optional<VarPatternAdmin> getInnerVar() {
         return var;
     }
 
@@ -141,7 +146,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
         var.ifPresent(theVar -> {
             // Compare to another variable
             String thisVar = UUID.randomUUID().toString();
-            VarName otherVar = theVar.getVarName();
+            Var otherVar = theVar.getVarName();
             String otherValue = UUID.randomUUID().toString();
 
             Traversal[] traversals = Stream.of(VALUE_PROPERTIES)

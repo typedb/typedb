@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -122,18 +123,19 @@ public class DegreeTest {
         GraknSparkComputer.clear();
         graph.close();
 
-        list.parallelStream().forEach(i -> {
+        Set<Map<Long, Set<String>>> result = list.parallelStream().map(i -> {
             try (GraknGraph graph = factory.open(GraknTxType.READ)) {
-                Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
-
-                assertEquals(3, degrees.size());
-                degrees.forEach((key, value) -> value.forEach(
-                        id -> {
-                            assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
-                            assertEquals(correctDegrees.get(ConceptId.of(id)), key);
-                        }
-                ));
+                return graph.graql().compute().degree().execute();
             }
+        }).collect(Collectors.toSet());
+        result.forEach(degrees -> {
+            assertEquals(3, degrees.size());
+            degrees.forEach((key, value) -> value.forEach(
+                    id -> {
+                        assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(correctDegrees.get(ConceptId.of(id)), key);
+                    }
+            ));
         });
 
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {

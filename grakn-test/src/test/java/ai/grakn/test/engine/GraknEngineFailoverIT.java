@@ -23,7 +23,7 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.exception.EngineStorageException;
@@ -37,7 +37,6 @@ import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 import java.util.HashSet;

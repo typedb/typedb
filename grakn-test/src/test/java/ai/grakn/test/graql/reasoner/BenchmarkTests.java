@@ -29,9 +29,10 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.test.GraphContext;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -305,12 +306,12 @@ public class BenchmarkTests {
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }
 
-    private Conjunction<VarAdmin> conjunction(Conjunction<PatternAdmin> pattern){
+    private Conjunction<VarPatternAdmin> conjunction(Conjunction<PatternAdmin> pattern){
         return Patterns.conjunction(pattern.admin().getVars());
     }
 
-    private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){
-        Set<VarAdmin> vars = graph.graql().parsePattern(patternString).admin()
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknGraph graph){
+        Set<VarPatternAdmin> vars = graph.graql().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

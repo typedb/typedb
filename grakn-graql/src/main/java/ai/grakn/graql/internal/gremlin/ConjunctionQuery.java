@@ -20,9 +20,9 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
@@ -44,10 +44,10 @@ import static java.util.stream.Collectors.toSet;
 /**
  * A query that does not contain any disjunctions, so it can be represented as a single gremlin traversal.
  * <p>
- * The {@code ConjunctionQuery} is passed a {@code Pattern.Conjunction<Var.Admin>}. A {@code VarTraversal} can be
- * extracted from each {@code Var} and {@code EquivalentFragmentSet}s can be extracted from each {@code VarTraversal}.
+ * The {@code ConjunctionQuery} is passed a {@link Conjunction<VarPatternAdmin>}.
+ * {@link EquivalentFragmentSet}s can be extracted from each {@link GraqlTraversal}.
  * <p>
- * The {@code EquivalentFragmentSet}s are sorted to produce a set of lists of {@code Fragments}. Each list of fragments
+ * The {@link EquivalentFragmentSet}s are sorted to produce a set of lists of {@link Fragment}s. Each list of fragments
  * describes a connected component in the query. Most queries are completely connected, so there will be only one
  * list of fragments in the set. If the query is disconnected (e.g. match $x isa movie, $y isa person), then there
  * will be multiple lists of fragments in the set.
@@ -56,14 +56,14 @@ import static java.util.stream.Collectors.toSet;
  */
 class ConjunctionQuery {
 
-    private final Set<VarAdmin> vars;
+    private final Set<VarPatternAdmin> vars;
 
     private final ImmutableSet<EquivalentFragmentSet> equivalentFragmentSets;
 
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(Conjunction<VarAdmin> patternConjunction, GraknGraph graph) {
+    ConjunctionQuery(Conjunction<VarPatternAdmin> patternConjunction, GraknGraph graph) {
         vars = patternConjunction.getPatterns();
 
         if (vars.size() == 0) {
@@ -74,19 +74,19 @@ class ConjunctionQuery {
                 vars.stream().flatMap(ConjunctionQuery::equivalentFragmentSetsRecursive).collect(toImmutableSet());
 
         // Get all variable names mentioned in non-starting fragments
-        Set<VarName> names = fragmentSets.stream()
+        Set<Var> names = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::stream)
                 .filter(fragment -> !fragment.isStartingFragment())
                 .flatMap(fragment -> fragment.getVariableNames().stream())
                 .collect(toImmutableSet());
 
         // Get all dependencies fragments have on certain variables existing
-        Set<VarName> dependencies = fragmentSets.stream()
+        Set<Var> dependencies = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::stream)
                 .flatMap(fragment -> fragment.getDependencies().stream())
                 .collect(toImmutableSet());
 
-        Set<VarName> validNames = Sets.difference(names, dependencies);
+        Set<Var> validNames = Sets.difference(names, dependencies);
 
         // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
         Set<EquivalentFragmentSet> initialEquivalentFragmentSets = fragmentSets.stream()
@@ -130,14 +130,14 @@ class ConjunctionQuery {
                 .flatMap(v -> v.getTypeLabels().stream());
     }
 
-    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarAdmin var) {
+    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarPatternAdmin var) {
         return var.getImplicitInnerVars().stream().flatMap(ConjunctionQuery::equivalentFragmentSetsOfVar);
     }
 
-    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(VarAdmin var) {
+    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(VarPatternAdmin var) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
-        VarName start = var.getVarName();
+        Var start = var.getVarName();
 
         var.getProperties().forEach(property -> {
             VarPropertyInternal propertyInternal = (VarPropertyInternal) property;

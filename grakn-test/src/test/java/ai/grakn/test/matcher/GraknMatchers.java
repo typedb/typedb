@@ -23,7 +23,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.hamcrest.Description;
@@ -62,9 +62,9 @@ public class GraknMatchers {
      * Create a matcher to test against the results of a Graql query.
      */
     public static Matcher<MatchQuery> results(
-            Matcher<? extends Iterable<? extends Map<? extends VarName, ? extends MatchableConcept>>> matcher
+            Matcher<? extends Iterable<? extends Map<? extends Var, ? extends MatchableConcept>>> matcher
     ) {
-        return new PropertyMatcher<MatchQuery, Iterable<? extends Map<? extends VarName, ? extends MatchableConcept>>>(matcher) {
+        return new PropertyMatcher<MatchQuery, Iterable<? extends Map<? extends Var, ? extends MatchableConcept>>>(matcher) {
 
             @Override
             public String getName() {
@@ -72,7 +72,7 @@ public class GraknMatchers {
             }
 
             @Override
-            Iterable<? extends Map<VarName, ? extends MatchableConcept>> transform(MatchQuery item) {
+            Iterable<? extends Map<Var, ? extends MatchableConcept>> transform(MatchQuery item) {
                 return item.stream().map(m -> Maps.transformValues(m.map(), MatchableConcept::new)).collect(toList());
             }
         };
@@ -210,7 +210,7 @@ public class GraknMatchers {
     /**
      * Create a matcher to test that the concept has the given type name.
      */
-    static Matcher<MatchableConcept> type(String type) {
+    public static Matcher<MatchableConcept> type(String type) {
         return type(TypeLabel.of(type));
     }
 

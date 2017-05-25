@@ -18,11 +18,11 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -66,19 +66,19 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty 
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(VarName start) {
+    public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(EquivalentFragmentSets.value(start, predicate));
     }
 
     @Override
-    public void checkInsertable(VarAdmin var) {
+    public void checkInsertable(VarPatternAdmin var) {
         if (!predicate.equalsValue().isPresent()) {
             throw new IllegalStateException(ErrorMessage.INSERT_PREDICATE.getMessage());
         }
     }
 
     @Override
-    public Stream<VarAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> getInnerVars() {
         return CommonUtil.optionalToStream(predicate.getInnerVar());
     }
 
@@ -99,7 +99,7 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty 
     }
 
     @Override
-    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         return new ValuePredicate(var.getVarName(), this.getPredicate(), parent);
     }
 }

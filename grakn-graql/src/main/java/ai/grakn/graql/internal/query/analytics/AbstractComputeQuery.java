@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -186,5 +187,27 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
                 .filter(type -> graph.get().getType(type).isResourceType())
                 .map(Schema.ImplicitType.HAS::getLabel)
                 .collect(Collectors.toSet());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AbstractComputeQuery<?> that = (AbstractComputeQuery<?>) o;
+
+        if (!graph.equals(that.graph)) return false;
+        return subTypeLabels.equals(that.subTypeLabels);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = graph.hashCode();
+        result = 31 * result + subTypeLabels.hashCode();
+        return result;
+    }
+
+    static String getRandomJobId() {
+        return Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
     }
 }

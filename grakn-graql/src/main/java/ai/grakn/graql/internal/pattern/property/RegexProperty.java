@@ -20,11 +20,11 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
@@ -68,7 +68,7 @@ public class RegexProperty extends AbstractVarProperty implements UniqueVarPrope
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(VarName start) {
+    public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(EquivalentFragmentSets.regex(start, regex));
     }
 
@@ -94,7 +94,7 @@ public class RegexProperty extends AbstractVarProperty implements UniqueVarPrope
     }
 
     @Override
-    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         return new RegexAtom(var.getVarName(), this, parent);
     }
 }

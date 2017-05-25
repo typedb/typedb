@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -92,13 +92,13 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>
      * @param vars variable names of interest
      * @return inverse answer map for specified query
      */
-    public Map<Pair<VarName, Concept>, Set<Answer>> getInverseAnswerMap(Q query, Set<VarName> vars){
-        Map<Pair<VarName, Concept>, Set<Answer>> inverseAnswerMap = new HashMap<>();
+    public Map<Pair<Var, Concept>, Set<Answer>> getInverseAnswerMap(Q query, Set<Var> vars){
+        Map<Pair<Var, Concept>, Set<Answer>> inverseAnswerMap = new HashMap<>();
         Set<Answer> answers = getAnswerStream(query).collect(Collectors.toSet());
         answers.forEach(answer -> answer.entrySet().stream()
                 .filter(e -> vars.contains(e.getKey()))
                 .forEach(entry -> {
-                    Pair<VarName, Concept> key = new Pair<>(entry.getKey(), entry.getValue());
+                    Pair<Var, Concept> key = new Pair<>(entry.getKey(), entry.getValue());
                     Set<Answer> match = inverseAnswerMap.get(key);
                     if (match != null){
                         match.add(answer);
@@ -116,7 +116,7 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>
      * @param query for answer are to be retrieved
      * @return inverse answer map for specified query
      */
-    public Map<Pair<VarName, Concept>, Set<Answer>> getInverseAnswerMap(Q query){
+    public Map<Pair<Var, Concept>, Set<Answer>> getInverseAnswerMap(Q query){
         return getInverseAnswerMap(query, query.getVarNames());
     }
 

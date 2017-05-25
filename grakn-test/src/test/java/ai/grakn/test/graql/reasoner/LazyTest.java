@@ -23,10 +23,10 @@ import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.MatrixGraphII;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
@@ -37,6 +37,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraphContext;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
@@ -74,8 +75,8 @@ public class LazyTest {
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{(geo-entity: $y, entity-location: $z) isa is-located-in;}";
 
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
         ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
 
@@ -96,9 +97,9 @@ public class LazyTest {
         String patternString2 = "{(geo-entity: $y, entity-location: $z) isa is-located-in;}";
         String patternString3 = "{(geo-entity: $x, entity-location: $z) isa is-located-in;}";
 
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
-        Conjunction<VarAdmin> pattern3 = conjunction(patternString3, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
         ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
         ReasonerAtomicQuery query3 = ReasonerQueries.atomic(pattern3, graph);
@@ -124,9 +125,9 @@ public class LazyTest {
         String patternString2 = "{(geo-entity: $y, entity-location: $z) isa is-located-in;}";
         String patternString3 = "{(geo-entity: $z, entity-location: $w) isa is-located-in;}";
 
-        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
-        Conjunction<VarAdmin> pattern3 = conjunction(patternString3, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
         ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
         ReasonerAtomicQuery query3 = ReasonerQueries.atomic(pattern3, graph);
@@ -135,7 +136,7 @@ public class LazyTest {
         query.lookup(cache);
         InferenceRule rule = new InferenceRule(ReasonerUtils.getRules(graph).iterator().next(), graph);
 
-        Set<VarName> joinVars = Sets.intersection(query.getVarNames(), query2.getVarNames());
+        Set<Var> joinVars = Sets.intersection(query.getVarNames(), query2.getVarNames());
         Stream<Answer> join = join(
                 query.getMatchQuery().admin().stream(),
                 query2.getMatchQuery().admin().stream(),
@@ -144,7 +145,7 @@ public class LazyTest {
                 )
                 .map(a -> a.filterVars(rule.getHead().getVarNames()))
                 .distinct()
-                .map(ans -> ans.explain(new RuleExplanation(rule)));
+                .map(ans -> ans.explain(new RuleExplanation(query, rule)));
 
         cache.record(rule.getHead(), join);
 
@@ -202,8 +203,8 @@ public class LazyTest {
         return new QueryAnswers(query.admin().stream().collect(toSet()));
     }
 
-    private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){
-        Set<VarAdmin> vars = graph.graql().parsePattern(patternString).admin()
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknGraph graph){
+        Set<VarPatternAdmin> vars = graph.graql().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

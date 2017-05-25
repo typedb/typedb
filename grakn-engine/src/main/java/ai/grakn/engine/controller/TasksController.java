@@ -27,11 +27,14 @@ import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import mjson.Json;
+import org.apache.http.entity.ContentType;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -46,21 +49,11 @@ import java.util.Optional;
 
 import static ai.grakn.engine.controller.GraqlController.mandatoryQueryParameter;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
-import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
-import static ai.grakn.util.REST.Request.ID_PARAMETER;
-import static ai.grakn.util.REST.Request.LIMIT_PARAM;
-import static ai.grakn.util.REST.Request.OFFSET_PARAM;
-import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
-import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
-import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
-import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
-import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import static java.lang.Long.parseLong;
 import static java.time.Instant.ofEpochMilli;
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 /**
  * <p>
@@ -72,6 +65,8 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 @Path("/tasks")
 @Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
 public class TasksController {
+
+    private static final TaskState.Priority DEFAULT_TASK_PRIORITY = TaskState.Priority.LOW;
     private final TaskManager manager;
 
     public TasksController(Service spark, TaskManager manager) {
@@ -100,21 +95,21 @@ public class TasksController {
     })
     private Json getTasks(Request request, Response response) {
         TaskStatus status = null;
-        String className = request.queryParams(TASK_CLASS_NAME_PARAMETER);
-        String creator = request.queryParams(TASK_CREATOR_PARAMETER);
+        String className = request.queryParams(REST.Request.TASK_CLASS_NAME_PARAMETER);
+        String creator = request.queryParams(REST.Request.TASK_CREATOR_PARAMETER);
         int limit = 0;
         int offset = 0;
 
-        if(request.queryParams(LIMIT_PARAM) != null) {
-            limit = Integer.parseInt(request.queryParams(LIMIT_PARAM));
+        if(request.queryParams(REST.Request.LIMIT_PARAM) != null) {
+            limit = Integer.parseInt(request.queryParams(REST.Request.LIMIT_PARAM));
         }
 
-        if(request.queryParams(OFFSET_PARAM) != null) {
-            offset = Integer.parseInt(request.queryParams(OFFSET_PARAM));
+        if(request.queryParams(REST.Request.OFFSET_PARAM) != null) {
+            offset = Integer.parseInt(request.queryParams(REST.Request.OFFSET_PARAM));
         }
 
-        if(request.queryParams(TASK_STATUS_PARAMETER) != null) {
-            status = TaskStatus.valueOf(request.queryParams(TASK_STATUS_PARAMETER));
+        if(request.queryParams(REST.Request.TASK_STATUS_PARAMETER) != null) {
+            status = TaskStatus.valueOf(request.queryParams(REST.Request.TASK_STATUS_PARAMETER));
         }
 
         Json result = Json.array();
@@ -124,7 +119,7 @@ public class TasksController {
                 .forEach(result::add);
 
         response.status(200);
-        response.type(APPLICATION_JSON.getMimeType());
+        response.type(ContentType.APPLICATION_JSON.getMimeType());
 
         return result;
     }
@@ -147,7 +142,7 @@ public class TasksController {
     @ApiOperation(value = "Stop a running or paused task.")
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private Json stopTask(Request request, Response response) {
-        String id = request.params(ID_PARAMETER);
+        String id = request.params(REST.Request.ID_PARAMETER);
         manager.stopTask(TaskId.of(id));
         return Json.object();
     }
@@ -158,19 +153,22 @@ public class TasksController {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "className", value = "Class name of object implementing the BackgroundTask interface", required = true, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "createdBy", value = "String representing the user scheduling this task", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "priority", value = "String representing priority of a task. Must be one of {high, low}. The default is \"low\"", required = false, dataType = "string", paramType = "query", access = "low", allowableValues = "high,low"),
             @ApiImplicitParam(name = "runAt", value = "Time to run at as milliseconds since the UNIX epoch", required = true, dataType = "long", paramType = "query"),
             @ApiImplicitParam(name = "interval",value = "If set the task will be marked as recurring and the value will be the time in milliseconds between repeated executions of this task. Value should be as Long.",
                     dataType = "long", paramType = "query"),
             @ApiImplicitParam(name = "configuration", value = "JSON Object that will be given to the task as configuration.", dataType = "String", paramType = "body")
     })
     private Json createTask(Request request, Response response) {
-        String className = mandatoryQueryParameter(request, TASK_CLASS_NAME_PARAMETER);
-        String createdBy = mandatoryQueryParameter(request, TASK_CREATOR_PARAMETER);
-        String runAtTime = mandatoryQueryParameter(request, TASK_RUN_AT_PARAMETER);
-        String intervalParam = request.queryParams(TASK_RUN_INTERVAL_PARAMETER);
+        String className = mandatoryQueryParameter(request, REST.Request.TASK_CLASS_NAME_PARAMETER);
+        String createdBy = mandatoryQueryParameter(request, REST.Request.TASK_CREATOR_PARAMETER);
+        String runAtTime = mandatoryQueryParameter(request, REST.Request.TASK_RUN_AT_PARAMETER);
+        String intervalParam = request.queryParams(REST.Request.TASK_RUN_INTERVAL_PARAMETER);
+        String priorityParam = request.queryParams(REST.Request.TASK_PRIORITY_PARAMETER);
 
         TaskSchedule schedule;
         TaskConfiguration configuration;
+        TaskState.Priority priority;
         try {
             // Get the schedule of the task
             Optional<Duration> optionalInterval = Optional.ofNullable(intervalParam).map(Long::valueOf).map(Duration::ofMillis);
@@ -178,6 +176,9 @@ public class TasksController {
             schedule = optionalInterval
                     .map(interval -> recurring(time, interval))
                     .orElse(TaskSchedule.at(time));
+
+            // Get the priority of a task (default is low)
+            priority = Optional.ofNullable(priorityParam).map(TaskState.Priority::valueOf).orElse(DEFAULT_TASK_PRIORITY);
 
             // Get the configuration of the task
             configuration = TaskConfiguration.of(request.body().isEmpty() ? Json.object() : Json.read(request.body()));
@@ -189,11 +190,11 @@ public class TasksController {
         Class<?> clazz = getClass(className);
 
         // Create and schedule the task
-        TaskState taskState = TaskState.of(clazz, createdBy, schedule);
-        manager.addLowPriorityTask(taskState, configuration);
+        TaskState taskState = TaskState.of(clazz, createdBy, schedule, priority);
+        manager.addTask(taskState, configuration);
 
         // Configure the response
-        response.type(APPLICATION_JSON.getMimeType());
+        response.type(ContentType.APPLICATION_JSON.getMimeType());
         response.status(200);
 
         return Json.object("id", taskState.getId().getValue());
@@ -210,12 +211,12 @@ public class TasksController {
         try {
             Class<?> clazz = Class.forName(className);
             if (!BackgroundTask.class.isAssignableFrom(clazz)) {
-                throw new GraknEngineServerException(400, UNAVAILABLE_TASK_CLASS, className);
+                throw new GraknEngineServerException(400, ErrorMessage.UNAVAILABLE_TASK_CLASS, className);
             }
 
             return clazz;
         } catch (ClassNotFoundException e) {
-            throw new GraknEngineServerException(400, UNAVAILABLE_TASK_CLASS, className);
+            throw new GraknEngineServerException(400, ErrorMessage.UNAVAILABLE_TASK_CLASS, className);
         }
     }
 

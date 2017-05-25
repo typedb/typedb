@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -81,7 +81,7 @@ public class QueryAnswers implements Iterable<Answer>{
      * @param vars set of variable names
      * @return filtered answers
      */
-    public QueryAnswers filterVars(Set<VarName> vars) {
+    public QueryAnswers filterVars(Set<Var> vars) {
         return new QueryAnswers(this.stream().map(result -> Maps.filterKeys(result.map(), vars::contains))
                 .map(QueryAnswer::new)
                 .collect(Collectors.toSet()));
@@ -95,11 +95,10 @@ public class QueryAnswers implements Iterable<Answer>{
     public QueryAnswers unify(Unifier unifier){
         if (unifier.isEmpty()) return new QueryAnswers(this);
         QueryAnswers unifiedAnswers = new QueryAnswers();
-        this.forEach(answer -> {
-            Answer unifiedAnswer = answer.unify(unifier);
-            unifiedAnswers.add(unifiedAnswer);
-        });
-
+        this.stream()
+            .map(a -> a.unify(unifier))
+            .filter(a -> !a.isEmpty())
+            .forEach(unifiedAnswers::add);
         return unifiedAnswers;
     }
 

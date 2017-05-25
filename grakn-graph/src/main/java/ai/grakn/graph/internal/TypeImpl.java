@@ -123,10 +123,17 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         type.cachedIsAbstract.ifPresent(value -> this.cachedIsAbstract.set(value));
     }
 
-    @Override
-    public Type copy(){
-        //noinspection unchecked
-        return new TypeImpl(this);
+    /**
+     * Flushes the internal transaction caches so that persisted information can be cached and shared between
+     * concepts
+     */
+    public void flushTxCache(){
+        cachedIsImplicit.flush();
+        cachedIsAbstract.flush();
+        cachedSuperType.flush();
+        cachedDirectSubTypes.flush();
+        cachedShards.flush();
+        cachedDirectPlays.flush();
     }
 
     @Override
@@ -137,12 +144,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     boolean isShard(){
         return cachedTypeLabel == null || cachedTypeLabel.getValue().startsWith("SHARDED TYPE-");
-    }
-
-    @SuppressWarnings("unchecked")
-    void copyCachedConcepts(T type){
-        ((TypeImpl<T, V>) type).cachedSuperType.ifPresent(value -> this.cachedSuperType.set(getGraknGraph().getTxCache().cacheClone(value)));
-        ((TypeImpl<T, V>) type).cachedDirectSubTypes.ifPresent(value -> this.cachedDirectSubTypes.set(getGraknGraph().getTxCache().cacheClone(value)));
     }
 
     /**
@@ -177,7 +178,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         Vertex instanceVertex = getGraknGraph().addVertex(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
-            getGraknGraph().getTxCache().addedInstance(getLabel());
+            getGraknGraph().getTxCache().addedInstance(getId());
         }
         return producer.apply(instanceVertex, currentShard());
     }
@@ -714,15 +715,5 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         if(resources(implicitType).contains(resourceType)) {
             throw new ConceptException(ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE.getMessage(getLabel(), resourceType.getLabel()));
         }
-    }
-
-    long getInstanceCount(){
-        Long value = getProperty(Schema.ConceptProperty.INSTANCE_COUNT);
-        if(value == null) return 0L;
-        return value;
-    }
-
-    void setInstanceCount(Long instanceCount){
-        setProperty(Schema.ConceptProperty.INSTANCE_COUNT, instanceCount);
     }
 }

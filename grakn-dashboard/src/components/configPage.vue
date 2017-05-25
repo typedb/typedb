@@ -38,40 +38,36 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                         <td>{{configuration['server.port']}}</td>
                     </tr>
                     <tr>
-                        <td>Threads</td>
+                        <td>Graph Factory</td>
+                        <td>{{configuration['factory.internal']}}</td>
+                    </tr>
+                    <tr>
+                        <td>Graph Analytics Factory</td>
+                        <td>{{configuration['factory.analytics']}}</td>
+                    </tr>
+                    <tr>
+                        <td>Default Keyspace</td>
+                        <td>{{configuration['graph.default-keyspace']}}</td>
+                    </tr>
+                    <tr>
+                        <td>Graph Sharding Threshold</td>
+                        <td>{{configuration['graph.sharding-threshold']}}</td>
+                    </tr>
+                    <tr>
+                        <td>Server Executor Threads</td>
                         <td>{{configuration['loader.threads']}}</td>
-                    </tr>
-                    <tr>
-                        <td>Database config</td>
-                        <td>{{configuration['graphdatabase.config']}}</td>
-                    </tr>
-                    <tr>
-                        <td>Batch config</td>
-                        <td>{{configuration['graphdatabase.batch-config']}}</td>
-                    </tr>
-                    <tr>
-                        <td>Graph Computer config</td>
-                        <td>{{configuration['graphdatabase.computer']}}</td>
                     </tr>
                     <tr>
                         <td>Engine assets directory</td>
                         <td>{{configuration['server.static-file-dir']}}</td>
                     </tr>
                     <tr>
-                        <td>Log File</td>
-                        <td>{{configuration['logging.file.main']}}</td>
+                        <td>Log Directory</td>
+                        <td>{{configuration['log.dirs']}}</td>
                     </tr>
                     <tr>
                         <td>Logging Level</td>
-                        <td>{{configuration['logging.level']}}</td>
-                    </tr>
-                    <tr>
-                        <td>Background Tasks time lapse</td>
-                        <td>{{configuration['backgroundTasks.time-lapse']}}</td>
-                    </tr>
-                    <tr>
-                        <td>Background Tasks post processing delay</td>
-                        <td>{{configuration['backgroundTasks.post-processing-delay']}}</td>
+                        <td>{{configuration['log.level']}}</td>
                     </tr>
                     <tr>
                         <td>Batch size</td>
@@ -79,7 +75,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td>Default Keyspace</td>
-                        <td>{{configuration['graphdatabase.default-keyspace']}}</td>
+                        <td>{{configuration['graph.default-keyspace']}}</td>
                     </tr>
                     <tr>
                         <td>Repeat Commits</td>
@@ -91,7 +87,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td>Version</td>
-                        <td>{{configuration['project.version']}}</td>
+                        <td>{{configuration['grakn.version']}}</td>
                     </tr>
                 </tbody>
             </table>

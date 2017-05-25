@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.tasks;
 
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.test.EngineContext;
 import org.apache.kafka.clients.consumer.Consumer;

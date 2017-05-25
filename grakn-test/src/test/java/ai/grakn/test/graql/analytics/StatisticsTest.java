@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -429,16 +430,17 @@ public class StatisticsTest {
         }
 
         List<Long> list = new ArrayList<>();
-        for (long i = 0L; i < 2L; i++) {
+        for (long i = 0L; i < 3L; i++) {
             list.add(i);
         }
         GraknSparkComputer.clear();
-        list.parallelStream().forEach(i -> {
-            try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-                assertEquals(2.5,
-                        graph.graql().compute().std().of(resourceType2).in(thing).execute().get(), delta);
+
+        List<Double> numberList = list.parallelStream().map(i -> {
+            try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+                return graph.graql().compute().std().of(resourceType2).in(thing).execute().get();
             }
-        });
+        }).collect(Collectors.toList());
+        numberList.forEach(value -> assertEquals(2.5D, value.doubleValue(), delta));
     }
 
     @Test
@@ -505,16 +507,16 @@ public class StatisticsTest {
         }
 
         List<Long> list = new ArrayList<>();
-        for (long i = 0L; i < 2L; i++) {
+        for (long i = 0L; i < 3L; i++) {
             list.add(i);
         }
         GraknSparkComputer.clear();
-        list.parallelStream().forEach(i -> {
+        List<Number> numberList = list.parallelStream().map(i -> {
             try (GraknGraph graph = factory.open(GraknTxType.READ)) {
-                assertEquals(1.5D,
-                        graph.graql().compute().median().of(resourceType1).execute().get());
+                return graph.graql().compute().median().of(resourceType1).execute().get();
             }
-        });
+        }).collect(Collectors.toList());
+        numberList.forEach(value -> assertEquals(1.5D, value.doubleValue(), delta));
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {

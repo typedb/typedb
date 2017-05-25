@@ -46,7 +46,7 @@ import static java.util.stream.Collectors.joining;
 abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     Set<TypeLabel> statisticsResourceTypeLabels = new HashSet<>();
-    private final Map<TypeLabel, String> resourceTypesDataTypeMap = new HashMap<>();
+    private final Map<TypeLabel, ResourceType.DataType> resourceTypesDataTypeMap = new HashMap<>();
 
     AbstractStatisticsQuery<T> setStatisticsResourceType(String... statisticsResourceTypeLabels) {
         this.statisticsResourceTypeLabels = Arrays.stream(statisticsResourceTypeLabels).map(TypeLabel::of).collect(Collectors.toSet());
@@ -99,36 +99,36 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         metaResourceType.subTypes().stream()
                 .filter(type -> !type.equals(metaResourceType))
                 .forEach(type -> resourceTypesDataTypeMap
-                        .put(type.asType().getLabel(), type.asResourceType().getDataType().getName()));
+                        .put(type.asType().getLabel(), type.asResourceType().getDataType()));
     }
 
-    String checkSelectedResourceTypesHaveCorrectDataType(Set<TypeLabel> types) {
-        if (types == null || types.isEmpty()) {
+    ResourceType.DataType getDataTypeOfSelectedResourceTypes(Set<TypeLabel> resourceTypes) {
+        if (resourceTypes == null || resourceTypes.isEmpty()) {
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
         }
 
-        String dataType = null;
-        for (TypeLabel type : types) {
+        ResourceType.DataType dataType = null;
+        for (TypeLabel resourceType : resourceTypes) {
             // check if the selected type is a resource-type
-            if (!resourceTypesDataTypeMap.containsKey(type)) {
+            if (!resourceTypesDataTypeMap.containsKey(resourceType)) {
                 throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                         .getMessage(this.getClass().toString()));
             }
 
             if (dataType == null) {
                 // check if the resource-type has data-type LONG or DOUBLE
-                dataType = resourceTypesDataTypeMap.get(type);
+                dataType = resourceTypesDataTypeMap.get(resourceType);
 
-                if (!dataType.equals(ResourceType.DataType.LONG.getName()) &&
-                        !dataType.equals(ResourceType.DataType.DOUBLE.getName())) {
+                if (!dataType.equals(ResourceType.DataType.LONG) &&
+                        !dataType.equals(ResourceType.DataType.DOUBLE)) {
                     throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                             .getMessage(this.getClass().toString()));
                 }
 
             } else {
                 // check if all the resource-types have the same data-type
-                if (!dataType.equals(resourceTypesDataTypeMap.get(type))) {
+                if (!dataType.equals(resourceTypesDataTypeMap.get(resourceType))) {
                     throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                             .getMessage(this.getClass().toString()));
                 }
@@ -160,5 +160,25 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     Set<TypeId> convertLabelsToIds(Set<TypeLabel> labelSet) {
         return labelSet.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        AbstractStatisticsQuery<?> that = (AbstractStatisticsQuery<?>) o;
+
+        return statisticsResourceTypeLabels.equals(that.statisticsResourceTypeLabels) &&
+                resourceTypesDataTypeMap.equals(that.resourceTypesDataTypeMap);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + statisticsResourceTypeLabels.hashCode();
+        result = 31 * result + resourceTypesDataTypeMap.hashCode();
+        return result;
     }
 }

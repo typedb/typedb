@@ -76,8 +76,10 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
         Set<TypeId> ofTypeIds =
                 ofTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
 
-        result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationTypeIds, ofTypeIds),
-                new DegreeDistributionMapReduce(ofTypeIds));
+        String randomId = getRandomJobId();
+
+        result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationTypeIds, ofTypeIds, randomId),
+                new DegreeDistributionMapReduce(ofTypeIds, DegreeVertexProgram.DEGREE + randomId));
 
         LOGGER.info("DegreeVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(DegreeDistributionMapReduce.class.getName());
@@ -131,5 +133,25 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     @Override
     public DegreeQuery withGraph(GraknGraph graph) {
         return (DegreeQuery) super.withGraph(graph);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        DegreeQueryImpl that = (DegreeQueryImpl) o;
+
+        if (ofTypeLabelsSet != that.ofTypeLabelsSet) return false;
+        return ofTypeLabels.equals(that.ofTypeLabels);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (ofTypeLabelsSet ? 1 : 0);
+        result = 31 * result + ofTypeLabels.hashCode();
+        return result;
     }
 }

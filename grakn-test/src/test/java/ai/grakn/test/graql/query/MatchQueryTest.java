@@ -34,7 +34,7 @@ import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.printer.Printers;
@@ -85,6 +85,7 @@ import static ai.grakn.test.matcher.GraknMatchers.isShard;
 import static ai.grakn.test.matcher.GraknMatchers.resource;
 import static ai.grakn.test.matcher.GraknMatchers.results;
 import static ai.grakn.test.matcher.GraknMatchers.rule;
+import static ai.grakn.test.matcher.GraknMatchers.type;
 import static ai.grakn.test.matcher.GraknMatchers.variable;
 import static ai.grakn.test.matcher.MovieMatchers.aRuleType;
 import static ai.grakn.test.matcher.MovieMatchers.action;
@@ -165,8 +166,8 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "unchecked"})
 public class MatchQueryTest {
 
-    private final VarName x = VarName.of("x");
-    private final VarName y = VarName.of("y");
+    private final Var x = Var.of("x");
+    private final Var y = Var.of("y");
 
     private QueryBuilder qb;
 
@@ -215,6 +216,15 @@ public class MatchQueryTest {
     }
 
     @Test
+    public void whenQueryingForRole_ResultContainsAllValidRoles() {
+        MatchQuery query = qb.match(var().rel(var(x), var().has("name", "Michael Corleone"))).distinct();
+
+        assertThat(query, variable("x", containsInAnyOrder(
+                type("concept"), type("role"), type("character-being-played")
+        )));
+    }
+
+    @Test
     public void testPredicateQuery1() {
         MatchQuery query = qb.match(
                 var("x").isa("movie").has("title", var("t")),
@@ -243,10 +253,24 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testValueEqualsVarQuery() {
+    public void whenQueryingForResourcesWithEqualValues_ResultsAreCorrect() {
         MatchQuery query = qb.match(var("x").val(var("y")));
 
         assertThat(query.execute(), hasSize(greaterThan(10)));
+
+        query.forEach(result -> {
+            Concept x = result.get("x");
+            Concept y = result.get("y");
+            assertEquals(x.asResource().getValue(), y.asResource().getValue());
+        });
+    }
+
+    @Test
+    public void whenQueryingForTitlesWithEqualValues_ResultsAreCorrect() {
+        // This is an edge-case which fooled the resource-index optimiser
+        MatchQuery query = qb.match(var("x").isa("title").val(var("y")));
+
+        assertThat(query.execute(), hasSize(greaterThan(3)));
 
         query.forEach(result -> {
             Concept x = result.get("x");
@@ -509,6 +533,31 @@ public class MatchQueryTest {
         ).select("x");
 
         assertThat(query, variable("x", (Matcher) hasItem(kermitTheFrog)));
+    }
+
+    @Test
+    public void whenQueryingForSuperRolesAndRelations_TheResultsAreTheSame() {
+        assertEquals(
+                Sets.newHashSet(qb.match(var("x").rel("work", "y").rel("author", "z").isa("authored-by"))),
+                Sets.newHashSet(qb.match(var("x").rel("production-being-directed", "y").rel("director", "z").isa("directed-by")))
+        );
+    }
+
+    @Test
+    public void whenQueryingForSuperRolesAndRelationsWithOneRolePlayer_TheResultsAreTheSame() {
+        // This is a special case which can cause comparisons between shortcut edges and castings
+        assertEquals(
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("author", "z").isa("authored-by"))),
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("director", "z").isa("directed-by")))
+        );
+    }
+
+    @Test
+    public void whenQueryingForSuperRelationTypes_TheResultsAreTheSame() {
+        assertEquals(
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("z").isa("authored-by"))),
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("z").isa("directed-by")))
+        );
     }
 
     @Test
@@ -815,7 +864,7 @@ public class MatchQueryTest {
     public void whenMatchingHas_ThenTheResultOnlyContainsTheExpectedVariables() {
         MatchQuery query = qb.match(var("x").has("name"));
         for (Answer result : query) {
-            assertEquals(result.keySet(), ImmutableSet.of(VarName.of("x")));
+            assertEquals(result.keySet(), ImmutableSet.of(Var.of("x")));
         }
     }
 

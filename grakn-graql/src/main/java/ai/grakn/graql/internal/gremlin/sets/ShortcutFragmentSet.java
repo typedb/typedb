@@ -20,17 +20,19 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.util.Schema;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDirectSubTypes;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * A query can use a shortcut edge traversal when the following criteria are met:
@@ -40,15 +42,12 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDir
  *  <li>There is a {@link RolePlayerFragmentSet} from {@code c} to {@code x}</li>
  *  <li>If there is a {@link IsaFragmentSet} from {@code c} to {@code C}, then {@code C} must have a
  *  {@link LabelFragmentSet}</li>
- *  <li>If there is a {@link IsaFragmentSet} from {@code r} to {@code R} then {@code R} must have no direct
- *  sub-types</li>
  * </ol>
  *
- * And optionally:
+ * The shortcut fragment can be constrained even further when any of the following optional criteria are met:
  *
  * <ol>
- *  <li>There is a {@link IsaFragmentSet} from {@code c} to a type with a {@link LabelFragmentSet} and no direct
- *  sub-types</li>
+ *  <li>There is a {@link IsaFragmentSet} from {@code c} to a type with a {@link LabelFragmentSet}</li>
  *  <li>There is a {@link IsaFragmentSet} from {@code r} to a type with a {@link LabelFragmentSet}</li>
  * </ol>
  *
@@ -62,11 +61,11 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDir
 class ShortcutFragmentSet extends EquivalentFragmentSet {
 
     ShortcutFragmentSet(
-            VarName relation, VarName edge, VarName rolePlayer, Optional<TypeLabel> roleType,
-            Optional<TypeLabel> relationType) {
+            Var relation, Var edge, Var rolePlayer, Optional<Set<TypeLabel>> roleTypes,
+            Optional<Set<TypeLabel>> relationTypes) {
         super(
-                Fragments.inShortcut(rolePlayer, edge, relation, roleType, relationType),
-                Fragments.outShortcut(relation, edge, rolePlayer, roleType, relationType)
+                Fragments.inShortcut(rolePlayer, edge, relation, roleTypes, relationTypes),
+                Fragments.outShortcut(relation, edge, rolePlayer, roleTypes, relationTypes)
         );
     }
 
@@ -84,8 +83,8 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
     }
 
     private static boolean attemptOptimiseCasting(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph, CastingFragmentSet castingFragmentSet) {
-        VarName relation = castingFragmentSet.relation();
-        VarName casting = castingFragmentSet.casting();
+        Var relation = castingFragmentSet.relation();
+        Var casting = castingFragmentSet.casting();
 
         RolePlayerFragmentSet rolePlayerFragmentSet = findRolePlayerFragmentSet(fragmentSets, casting);
 
@@ -97,11 +96,6 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         Optional<TypeLabel> relType = relIsaFragment
                 .map(IsaFragmentSet::type)
                 .flatMap(type -> findTypeLabel(fragmentSets, type));
-
-        // We can't use the shortcut's relation type label if the relation type has sub-types, because we don't know
-        // precisely which type the shortcut edge label will have. However, we can still use the shortcut edge and
-        // check the type of the relation the old fashioned way.
-        relType = relType.filter(type -> !hasDirectSubTypes(graph, type));
 
         // Try and get role type
         Optional<IsaCastingsFragmentSet> castingIsaFragment = fragmentSetOfType(IsaCastingsFragmentSet.class, fragmentSets)
@@ -121,22 +115,25 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
             roleType = Optional.empty();
         }
 
-        // We can't use the shortcut edge in the presence of role-type hierarchies, because we don't know precisely
-        // which type the shortcut edge label will have.
-        if (roleType.isPresent() && hasDirectSubTypes(graph, roleType.get())) {
-            return false;
-        }
-
         fragmentSets.remove(castingFragmentSet);
         fragmentSets.remove(rolePlayerFragmentSet);
         castingIsaFragment.ifPresent(fragmentSets::remove);
 
-        VarName rolePlayer = rolePlayerFragmentSet.rolePlayer();
-        fragmentSets.add(new ShortcutFragmentSet(relation, casting, rolePlayer, roleType, relType));
+        Var rolePlayer = rolePlayerFragmentSet.rolePlayer();
+
+        // Look up all sub-types
+        Optional<Set<TypeLabel>> roleTypes = subTypes(graph, roleType);
+        Optional<Set<TypeLabel>> relTypes = subTypes(graph, relType);
+
+        fragmentSets.add(new ShortcutFragmentSet(relation, casting, rolePlayer, roleTypes, relTypes));
         return true;
     }
 
-    private static Optional<TypeLabel> findTypeLabel(Collection<EquivalentFragmentSet> fragmentSets, VarName type) {
+    private static Optional<Set<TypeLabel>> subTypes(GraknGraph graph, Optional<TypeLabel> type) {
+        return type.map(label -> graph.getType(label).subTypes().stream().map(Type::getLabel).collect(toSet()));
+    }
+
+    private static Optional<TypeLabel> findTypeLabel(Collection<EquivalentFragmentSet> fragmentSets, Var type) {
         return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
                 .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
                 .map(LabelFragmentSet::label)
@@ -144,7 +141,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
     }
 
     private static RolePlayerFragmentSet findRolePlayerFragmentSet(
-            Collection<EquivalentFragmentSet> fragmentSets, VarName casting) {
+            Collection<EquivalentFragmentSet> fragmentSets, Var casting) {
         // We can assume that this fragment set must exist
         //noinspection OptionalGetWithoutIsPresent
         return fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)

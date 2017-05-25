@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.graql.Order;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 
 import ai.grakn.graql.admin.Answer;
 import java.util.Comparator;
@@ -27,11 +27,11 @@ import java.util.stream.Stream;
 
 class MatchOrderImpl implements MatchOrder {
 
-    private final VarName var;
+    private final Var var;
 
     private final Comparator<Answer> comparator;
 
-    MatchOrderImpl(VarName var, Order order) {
+    MatchOrderImpl(Var var, Order order) {
         this.var = var;
 
         Comparator<Answer> comparator = Comparator.comparing(this::getOrderValue);
@@ -40,7 +40,7 @@ class MatchOrderImpl implements MatchOrder {
     }
 
     @Override
-    public VarName getVar() {
+    public Var getVar() {
         return var;
     }
 

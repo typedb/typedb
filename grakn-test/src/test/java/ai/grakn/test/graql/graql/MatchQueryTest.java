@@ -22,9 +22,10 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.Order;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraphContext;
+
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -127,7 +128,7 @@ public class MatchQueryTest {
     @Test
     public void whenSelectingVarNotInQuery_Throw() {
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(VarName.of("x")));
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Var.of("x")));
         graph.graql().match(var()).select("x").execute();
     }
 
@@ -138,7 +139,7 @@ public class MatchQueryTest {
 
     @Test(expected = Exception.class)
     public void testVarNameNullSet() {
-        graph.graql().match(var()).select((Set<VarName>) null).execute();
+        graph.graql().match(var()).select((Set<Var>) null).execute();
     }
 
     @Test(expected = Exception.class)
@@ -153,7 +154,7 @@ public class MatchQueryTest {
 
     @Test(expected = Exception.class)
     public void testOrderBy2() {
-        graph.graql().match(var().isa("movie")).orderBy((VarName) null, Order.desc).execute();
+        graph.graql().match(var().isa("movie")).orderBy((Var) null, Order.desc).execute();
     }
 
     @Test(expected = Exception.class)
@@ -163,7 +164,7 @@ public class MatchQueryTest {
 
     @Test(expected = Exception.class)
     public void testOrderBy4() {
-        graph.graql().match(var("x").isa("movie")).orderBy((VarName) null, Order.desc).execute();
+        graph.graql().match(var("x").isa("movie")).orderBy((Var) null, Order.desc).execute();
     }
 
     @Test(expected = Exception.class)

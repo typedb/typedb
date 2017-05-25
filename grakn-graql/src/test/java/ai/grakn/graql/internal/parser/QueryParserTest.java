@@ -24,14 +24,16 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
 import ai.grakn.util.ErrorMessage;
@@ -504,9 +506,9 @@ public class QueryParserTest {
     public void testCustomAggregate() {
         QueryBuilder qb = withoutGraph();
 
-        qb.registerAggregate("get-any", args -> new GetAny((VarName) args.get(0)));
+        qb.registerAggregate("get-any", args -> new GetAny((Var) args.get(0)));
 
-        AggregateQuery<Concept> expected = qb.match(var("x").isa("movie")).aggregate(new GetAny(VarName.of("x")));
+        AggregateQuery<Concept> expected = qb.match(var("x").isa("movie")).aggregate(new GetAny(Var.of("x")));
         AggregateQuery<Concept> parsed = qb.parse("match $x isa movie; aggregate get-any $x;");
 
         assertEquals(expected, parsed);
@@ -525,6 +527,32 @@ public class QueryParserTest {
     @Test
     public void testParseComputeCluster() {
         assertParseEquivalence("compute cluster in movie, person; members;");
+    }
+
+    @Test
+    public void testParseComputeClusterWithMembersThenSize() {
+        ClusterQuery<?> expected = Graql.compute().cluster().in("movie", "person").members().clusterSize(10);
+        ClusterQuery<?> parsed = Graql.parse("compute cluster in movie, person; members; size 10;");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void testParseComputeClusterWithSizeThenMembers() {
+        ClusterQuery<?> expected = Graql.compute().cluster().in("movie", "person").clusterSize(10).members();
+        ClusterQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members;");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void testParseComputeClusterWithSizeThenMembersThenSize() {
+        ClusterQuery<?> expected =
+                Graql.compute().cluster().in("movie", "person").clusterSize(10).members().clusterSize(15);
+
+        ClusterQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members; size 15;");
+
+        assertEquals(expected, parsed);
     }
 
     @Test
@@ -621,7 +649,7 @@ public class QueryParserTest {
     public void testParseBooleanType() {
         MatchQuery query = parse("match $x datatype boolean;");
 
-        VarAdmin var = query.admin().getPattern().getVars().iterator().next();
+        VarPatternAdmin var = query.admin().getPattern().getVars().iterator().next();
 
         //noinspection OptionalGetWithoutIsPresent
         DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
@@ -783,9 +811,9 @@ public class QueryParserTest {
 
     class GetAny extends AbstractAggregate<Answer, Concept> {
 
-        private final VarName varName;
+        private final Var varName;
 
-        GetAny(VarName varName) {
+        GetAny(Var varName) {
             this.varName = varName;
         }
 

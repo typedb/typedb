@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
@@ -83,7 +83,7 @@ public interface Atomic {
      * @return true if atom contains an occurrence of the variable name
      */
     @CheckReturnValue
-    default boolean containsVar(VarName name){ return false;}
+    default boolean containsVar(Var name){ return false;}
 
     /**
      * @return the corresponding base pattern
@@ -109,21 +109,11 @@ public interface Atomic {
     void setParentQuery(ReasonerQuery q);
 
     @CheckReturnValue
-    Unifier getUnifier(Atomic parentAtom);
-
-    /**
-     * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
-     * if capture occurs it is marked with a "capture-><name of the captured occurrence>" name
-     * @param unifier contain variable mappings to be applied
-     */
-    void unify(Unifier unifier);
-
-    @CheckReturnValue
-    VarName getVarName();
+    Var getVarName();
 
     /**
      * @return all addressable variable names in the atom
      */
     @CheckReturnValue
-    Set<VarName> getVarNames();
+    Set<Var> getVarNames();
 }

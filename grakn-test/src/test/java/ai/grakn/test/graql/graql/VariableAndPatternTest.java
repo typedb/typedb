@@ -23,8 +23,9 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.test.GraphContext;
+
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -87,8 +88,8 @@ public class VariableAndPatternTest {
 
     @Test
     public void testVarEquals() {
-        Var var1;
-        Var var2;
+        VarPattern var1;
+        VarPattern var2;
 
         var1 = var();
         var2 = var();
@@ -111,7 +112,7 @@ public class VariableAndPatternTest {
 
     @Test
     public void testConjunction() {
-        Set<Var> varSet1 = Sets.newHashSet(
+        Set<VarPattern> varSet1 = Sets.newHashSet(
                 var("x").isa("movie"),
                 var("y1").isa("genre").has("name", "crime"),
                 var().isa("has-genre").rel(var("x")).rel(var("y1")));
@@ -121,7 +122,7 @@ public class VariableAndPatternTest {
                 .collect(Collectors.toSet());
         assertFalse(resultSet1.isEmpty());
 
-        Set<Var> varSet11 = Sets.newHashSet(var("x"));
+        Set<VarPattern> varSet11 = Sets.newHashSet(var("x"));
         varSet11.addAll(varSet1);
         Set<Concept> resultSet11 = graph.graql().match(varSet11).select("x").execute()
                 .stream()
@@ -136,7 +137,7 @@ public class VariableAndPatternTest {
                 .collect(Collectors.toSet());
         assertEquals(resultSet11, resultSet1);
 
-        Set<Var> varSet2 = Sets.newHashSet(
+        Set<VarPattern> varSet2 = Sets.newHashSet(
                 var("x").isa("movie"),
                 var("y2").isa("person").has("name", "Marlon Brando"),
                 var().isa("has-cast").rel(var("x")).rel(var("y2")));
@@ -146,7 +147,7 @@ public class VariableAndPatternTest {
                 .collect(Collectors.toSet());
         assertFalse(resultSet1.isEmpty());
 
-        Set<Var> varSet3 = Sets.newHashSet(
+        Set<VarPattern> varSet3 = Sets.newHashSet(
                 var("x").isa("movie"),
                 var("y").isa("genre").has("name", "crime"),
                 var().isa("has-genre").rel(var("x")).rel(var("y")),
@@ -175,21 +176,21 @@ public class VariableAndPatternTest {
 
     @Test(expected = Exception.class)
     public void whenConjunctionPassedNull_Throw() {
-        Set<Var> varSet = null;
+        Set<VarPattern> varSet = null;
         //noinspection ResultOfMethodCallIgnored,ConstantConditions
         and(varSet);
     }
 
     @Test(expected = Exception.class)
     public void whenConjunctionPassedVarAndNull_Throw() {
-        Var var = null;
+        VarPattern var = null;
         //noinspection ResultOfMethodCallIgnored,ConstantConditions
         and(var(), var);
     }
 
     @Test
     public void testDisjunction() {
-        Set<Var> varSet1 = Sets.newHashSet(
+        Set<VarPattern> varSet1 = Sets.newHashSet(
                 var("x").isa("movie"),
                 var("y1").isa("genre").has("name", "crime"),
                 var().isa("has-genre").rel(var("x")).rel(var("y1")));
@@ -199,7 +200,7 @@ public class VariableAndPatternTest {
                 .collect(Collectors.toSet());
         assertFalse(resultSet1.isEmpty());
 
-        Set<Var> varSet2 = Sets.newHashSet(
+        Set<VarPattern> varSet2 = Sets.newHashSet(
                 var("x").isa("movie"),
                 var("y2").isa("person").has("name", "Marlon Brando"),
                 var().isa("has-cast").rel(var("x")).rel(var("y2")));
@@ -232,14 +233,14 @@ public class VariableAndPatternTest {
 
     @Test(expected = Exception.class)
     public void whenDisjunctionPassedNull_Throw() {
-        Set<Var> varSet = null;
+        Set<VarPattern> varSet = null;
         //noinspection ResultOfMethodCallIgnored,ConstantConditions
         or(varSet);
     }
 
     @Test(expected = Exception.class)
     public void whenDisjunctionPassedVarAndNull_Throw() {
-        Var var = null;
+        VarPattern var = null;
         //noinspection ResultOfMethodCallIgnored,ConstantConditions
         or(var(), var);
     }
@@ -269,7 +270,7 @@ public class VariableAndPatternTest {
 
     @Test(expected = Exception.class)
     public void whenNegationPassedNull_Throw() {
-        Var var = null;
+        VarPattern var = null;
         //noinspection ConstantConditions,ResultOfMethodCallIgnored
         neq(var);
     }
