@@ -39,6 +39,7 @@ import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
@@ -715,6 +716,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         closeSession();
         clearGraph();
         getTxCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
+
+        //Remove the graph from the system keyspace
+        //TODO: This is quite ugly. Think of a way to unugly it
+        //noinspection unchecked
+        new SystemKeyspace<>(FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, getEngineUrl(), getProperties())).keyspaceDeleted(getKeyspace());
     }
 
     //This is overridden by vendors for more efficient clearing approaches

@@ -73,10 +73,9 @@ public class SystemKeyspace<T extends Graph> {
     // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
     // If there is a more natural home for this constant, feel free to put it there! (Boris)
     public static final String SYSTEM_GRAPH_NAME = "graknSystem";
-    public static final String SYSTEM_ONTOLOGY_FILE = "system.gql";
+    private static final String SYSTEM_ONTOLOGY_FILE = "system.gql";
     public static final TypeLabel KEYSPACE_ENTITY = TypeLabel.of("keyspace");
     public static final TypeLabel KEYSPACE_RESOURCE = TypeLabel.of("keyspace-name");
-    public static final TypeLabel SYSTEM_VERSION = TypeLabel.of("system-version");
 
     protected final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
 
@@ -113,7 +112,7 @@ public class SystemKeyspace<T extends Graph> {
      *
      * @param keyspace the keyspace to be removed from the system graph
      */
-    SystemKeyspace<T> keyspaceDeleted(String keyspace){
+    public SystemKeyspace<T> keyspaceDeleted(String keyspace){
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
             Resource<String> resource = keyspaceName.getResource(keyspace);

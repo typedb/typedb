@@ -17,9 +17,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class SystemKeyspaceTest {
@@ -101,10 +99,11 @@ public class SystemKeyspaceTest {
         graphs.remove(deletedGraph);
 
         //Rebuild Graphs Using Keyspaces From Systenm Graph
-        Set<GraknGraph> systemGraphs = buildGraphs(getSystemKeyspaces().toArray(new String[3]));
+        Set<String> systemKeyspaces = getSystemKeyspaces();
+        Set<GraknGraph> systemGraphs = buildGraphs(systemKeyspaces.toArray(new String[systemKeyspaces.size()]));
 
         //Check only 2 graphs have been built
-        assertThat(graphs, containsInAnyOrder(systemGraphs));
+        assertEquals(graphs, systemGraphs);
     }
 
     private Set<GraknGraph> buildGraphs(String ... keyspaces){
