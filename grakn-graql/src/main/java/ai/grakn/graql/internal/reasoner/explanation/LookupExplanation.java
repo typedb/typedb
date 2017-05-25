@@ -35,7 +35,7 @@ public class LookupExplanation extends Explanation {
 
 
     public LookupExplanation(ReasonerQuery q){ super(q, new HashSet<>());}
-    public LookupExplanation(LookupExplanation exp){
+    private LookupExplanation(LookupExplanation exp){
         super(exp.getQuery(), exp.getAnswers());
     }
 

@@ -173,18 +173,14 @@ public class InferenceRule {
         Atom headAtom = head.getAtom();
         if(headAtom.isResource() && ((Resource) headAtom).getMultiPredicate().isEmpty()){
             Set<ValuePredicate> valuePredicates = parentAtom.getValuePredicates().stream()
-                    .map(ValuePredicate::copy)
-                    .map(type -> type.unify(unifier))
-                    .map(type -> (ValuePredicate) type)
+                    .flatMap(vp -> vp.unify(unifier).stream())
                     .collect(toSet());
             head.addAtomConstraints(valuePredicates);
             body.addAtomConstraints(valuePredicates);
         }
 
         Set<TypeAtom> unifiedTypes = parentAtom.getTypeConstraints().stream()
-                .map(TypeAtom::copy)
-                .map(type -> type.unify(unifier))
-                .map(type -> (TypeAtom) type)
+                .flatMap(type -> type.unify(unifier).stream())
                 .collect(toSet());
 
         //set rule body types to sub types of combined query+rule types
@@ -201,7 +197,7 @@ public class InferenceRule {
                     return type == null || subType == null;
                 }).collect(toSet());
 
-        ruleTypes.stream().filter(t -> !t.isRelation()).forEach(body::removeAtomic);
+        ruleTypes.forEach(body::removeAtomic);
         body.addAtomConstraints(types);
 
         return this;

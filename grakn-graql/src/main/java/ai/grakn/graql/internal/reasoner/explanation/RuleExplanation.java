@@ -39,7 +39,7 @@ public class RuleExplanation extends Explanation {
         super(q);
         this.rule = rl;
     }
-    public RuleExplanation(RuleExplanation exp){
+    private RuleExplanation(RuleExplanation exp){
         super(exp);
         this.rule = exp.getRule();
     }
