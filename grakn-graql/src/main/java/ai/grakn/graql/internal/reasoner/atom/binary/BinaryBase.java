@@ -32,8 +32,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
-
 /**
  *
  * <p>
@@ -47,12 +45,12 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
 public abstract class BinaryBase extends Atom {
     private Var valueVariable;
 
-    protected BinaryBase(VarPatternAdmin pattern, ReasonerQuery par) {
+    BinaryBase(VarPatternAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
         this.valueVariable = extractValueVariableName(pattern);
     }
 
-    protected BinaryBase(BinaryBase a) {
+    BinaryBase(BinaryBase a) {
         super(a);
         this.valueVariable = a.getValueVariable();
         this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
@@ -64,18 +62,13 @@ public abstract class BinaryBase extends Atom {
     public Var getValueVariable() {
         return valueVariable;
     }
-    protected void setValueVariable(Var var) {
-        valueVariable = var;
-    }
-
-    @Override
-    public boolean isBinary() { return true;}
+    void setValueVariable(Var var) { valueVariable = var;}
 
     @Override
     public int hashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + (this.typeId != null? this.typeId.hashCode() : 0);
-        hashCode = hashCode * 37 + this.varName.hashCode();
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
         hashCode = hashCode * 37 + this.valueVariable.hashCode();
         return hashCode;
     }
@@ -86,7 +79,7 @@ public abstract class BinaryBase extends Atom {
         if (obj == this) return true;
         BinaryBase a2 = (BinaryBase) obj;
         return Objects.equals(this.typeId, a2.getTypeId())
-                && this.varName.equals(a2.getVarName())
+                && this.getVarName().equals(a2.getVarName())
                 && this.valueVariable.equals(a2.getValueVariable());
     }
 
@@ -99,40 +92,12 @@ public abstract class BinaryBase extends Atom {
                 && hasEquivalentPredicatesWith(a2);
     }
 
-    /**
-     * @return set of atoms that are (potentially indirectly) linked to this atom via valueVariable
-     */
-    public Set<Atom> getLinkedAtoms(){
-        Set<Atom> atoms = new HashSet<>();
-        getParentQuery().getAtoms().stream()
-                .filter(Atomic::isAtom).map(atom -> (Atom) atom)
-                .filter(Atom::isBinary).map(atom -> (BinaryBase) atom)
-                .filter(atom -> atom.getVarName().equals(valueVariable))
-                .forEach(atom -> {
-                    atoms.add(atom);
-                    atoms.addAll(atom.getLinkedAtoms());
-                });
-        return atoms;
-    }
-
     @Override
     public Set<Var> getVarNames() {
         Set<Var> vars = new HashSet<>();
         if (isUserDefinedName()) vars.add(getVarName());
         if (!valueVariable.getValue().isEmpty()) vars.add(valueVariable);
         return vars;
-    }
-
-    @Override
-    public Atomic unify (Unifier unifier) {
-        super.unify(unifier);
-        Var var = valueVariable;
-        if (unifier.containsKey(var)) {
-            setValueVariable(unifier.get(var).iterator().next());
-        } else if (unifier.containsValue(var)) {
-            setValueVariable(capture(var));
-        }
-        return this;
     }
 
     @Override

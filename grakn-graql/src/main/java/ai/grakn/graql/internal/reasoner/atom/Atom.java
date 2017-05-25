@@ -72,8 +72,6 @@ public abstract class Atom extends AtomicBase {
     @Override
     public boolean isAtom(){ return true;}
 
-    public boolean isBinary(){return false;}
-
     /**
      * @return true if the atom corresponds to a atom
      * */
