@@ -18,7 +18,6 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -77,14 +76,5 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     public void abort(){
         LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(TinkerGraph.class.getName(), "aborted"));
         super.abort();
-    }
-
-    @Override
-    public <T extends Concept> T getConceptRawId(Object id) {
-        try {
-            return super.getConceptRawId(Long.valueOf(id.toString()));
-        } catch (NumberFormatException e){
-            return null;
-        }
     }
 }

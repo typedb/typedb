@@ -45,13 +45,6 @@ import static org.junit.Assert.assertTrue;
 public class GraknGraphTest extends GraphTestBase {
 
     @Test
-    public void whenGettingConceptByRawID_ReturnTheConcept(){
-        EntityType c1 = graknGraph.putEntityType("c1");
-        Concept c2 = graknGraph.getConceptRawId(c1.getId());
-        assertEquals(c1, c2);
-    }
-
-    @Test
     public void whenGettingConceptById_ReturnTheConcept(){
         EntityType entityType = graknGraph.putEntityType("test-name");
         assertEquals(entityType, graknGraph.getConcept(entityType.getId()));

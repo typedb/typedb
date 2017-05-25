@@ -532,22 +532,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     //------------------------------------ Lookup
-    /**
-     * Looks up concept by using id against vertex ids. Does not use the index.
-     * This is primarily used to fix duplicates when indicies cannot be relied on.
-     *
-     * @param id The id of the concept which should match the vertex id
-     * @return The concept if it exists.
-     */
-    public <T extends Concept> T getConceptRawId(Object id) {
-        GraphTraversal<Vertex, Vertex> traversal = getTinkerPopGraph().traversal().V(id);
-        if (traversal.hasNext()) {
-            return getElementFactory().buildConcept(traversal.next());
-        } else {
-            return null;
-        }
-    }
-
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
         if(getTxCache().isConceptCached(id)){
@@ -866,12 +850,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     /**
      * Returns the duplicates of the given concept
      * @param mainConcept primary concept - this one is returned by the index and not considered a duplicate
-     * @param conceptVertexIds Set of Ids containing potential duplicates of the main concept
+     * @param conceptIds Set of Ids containing potential duplicates of the main concept
      * @return a set containing the duplicates of the given concept
      */
-    private Set<? extends ConceptImpl> getDuplicates(ConceptImpl mainConcept, Set<ConceptId> conceptVertexIds){
-        Set<ConceptImpl> duplicated = conceptVertexIds.stream()
-                .map(id -> this.<ConceptImpl>getConceptRawId(id.getValue()))
+    private Set<? extends ConceptImpl> getDuplicates(ConceptImpl mainConcept, Set<ConceptId> conceptIds){
+        Set<ConceptImpl> duplicated = conceptIds.stream()
+                .map(this::<ConceptImpl>getConcept)
                 //filter non-null, will be null if previously deleted/merged
                 .filter(Objects::nonNull)
                 .collect(toSet());
