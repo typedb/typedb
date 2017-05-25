@@ -22,15 +22,15 @@ package ai.grakn.factory;
 import ai.grakn.GraknTxType;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
-import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.util.EmptyTraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import java.util.List;
 
@@ -44,6 +44,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Felix Chapman
  */
+@FixMethodOrder(value= MethodSorters.NAME_ASCENDING)
 public class TitanPreviousPropertyStepTest extends TitanTestBase {
 
     private static final GraphTraversalSource tinker = TinkerGraph.open().traversal();
@@ -64,17 +65,6 @@ public class TitanPreviousPropertyStepTest extends TitanTestBase {
         traversal.asAdmin().applyStrategies();
 
         assertEquals(expected, traversal);
-    }
-
-    @Test
-    public void whenExecutingUnOptimisedTraversal_ResultIsCorrect() {
-        GraphTraversal<Vertex, Vertex> traversal = optimisableTraversal(titan);
-
-        disableStrategies(traversal, () -> {
-            List<Vertex> vertices = traversal.toList();
-
-            assertThat(vertices, contains(vertexWithFoo));
-        });
     }
 
     @Test
@@ -129,14 +119,4 @@ public class TitanPreviousPropertyStepTest extends TitanTestBase {
         return expected;
     }
 
-    private void disableStrategies(GraphTraversal traversal, Runnable consumer) {
-        TraversalStrategies strategies = traversal.asAdmin().getStrategies();
-
-        try {
-            traversal.asAdmin().setStrategies(EmptyTraversalStrategies.instance());
-            consumer.run();
-        } finally {
-            traversal.asAdmin().setStrategies(strategies);
-        }
-    }
 }
