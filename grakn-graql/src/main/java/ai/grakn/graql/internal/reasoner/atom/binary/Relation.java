@@ -552,7 +552,6 @@ public class Relation extends TypeAtom {
         return roleVarMap;
     }
 
-    @Override
     public Multimap<RoleType, Var> getRoleVarMap() {
         if (roleVarMap == null) computeRoleVarTypeMap();
         return roleVarMap;

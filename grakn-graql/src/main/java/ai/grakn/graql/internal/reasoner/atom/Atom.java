@@ -244,12 +244,6 @@ public abstract class Atom extends AtomicBase {
     public Set<TypeAtom> getMappedTypeConstraints() { return new HashSet<>();}
     public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return new HashSet<>();}
 
-    //TODO move down to relation only
-    /**
-     * @return map of role type- (var name, var type) pairs
-     */
-    public Multimap<RoleType, Var> getRoleVarMap() { return ArrayListMultimap.create();}
-
     /**
      * infers types (type, role types) fo the atom if applicable/possible
      */
