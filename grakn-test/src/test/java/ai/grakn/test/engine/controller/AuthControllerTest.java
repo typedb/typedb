@@ -38,7 +38,7 @@ public class AuthControllerTest{
         											   UsersHandler.USER_PASSWORD, "ciao",
         											   UsersHandler.USER_IS_ADMIN, true));
 
-        Json body = Json.object("username", "miko", "password", "ciao");
+        Json body = Json.object("username", "mark", "password", "ciao");
 
         Response dataResponseWrongUser = given().
                 contentType("application/json").
