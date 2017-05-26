@@ -372,8 +372,11 @@ public class Relation extends TypeAtom {
         );
 
         //intersect relation types from roles and types
-        if (compatibleTypes.isEmpty()) compatibleTypes = compatibleTypesFromTypes;
-        else if (!compatibleTypesFromTypes.isEmpty()) compatibleTypes = Sets.intersection(compatibleTypesFromTypes, compatibleTypes);
+        if (compatibleTypes.isEmpty()){
+            compatibleTypes = compatibleTypesFromTypes;
+        } else if (!compatibleTypesFromTypes.isEmpty()){
+            compatibleTypes = Sets.intersection(compatibleTypesFromTypes, compatibleTypes);
+        }
 
         LOG.debug("Inferring relation type of atom: " + this + getTypeConstraints());
         LOG.debug("Compatible relation types: " + compatibleTypes.stream().map(Type::getLabel).collect(Collectors.toSet()));
