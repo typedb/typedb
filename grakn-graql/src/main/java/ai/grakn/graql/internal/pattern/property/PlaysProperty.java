@@ -75,7 +75,7 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.plays(start, role.getVarName(), required));
+        return ImmutableSet.of(EquivalentFragmentSets.plays(this, start, role.getVarName(), required));
     }
 
     @Override

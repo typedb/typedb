@@ -16,7 +16,7 @@ public class InPlaysFragmentTest {
 
     private final Var start = Var.anon();
     private final Var end = Var.anon();
-    private final InPlaysFragment fragment = new InPlaysFragment(start, end, false);
+    private final InPlaysFragment fragment = new InPlaysFragment(null, start, end, false);
 
     @Test
     @SuppressWarnings("unchecked")

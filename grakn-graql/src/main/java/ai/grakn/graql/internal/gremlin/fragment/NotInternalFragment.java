@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -29,8 +30,8 @@ import static ai.grakn.util.Schema.ConceptProperty.IS_SHARD;
 
 class NotInternalFragment extends AbstractFragment {
 
-    NotInternalFragment(Var start) {
-        super(start);
+    NotInternalFragment(VarProperty varProperty, Var start) {
+        super(varProperty, start);
     }
 
     @Override

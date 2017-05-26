@@ -100,7 +100,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         ImmutableSet<EquivalentFragmentSet> distinctCastingTraversals = castingNames.stream().flatMap(
                 castingName -> castingNames.stream()
                         .filter(otherName -> !otherName.equals(castingName))
-                        .map(otherName -> EquivalentFragmentSets.neq(castingName, otherName))
+                        .map(otherName -> EquivalentFragmentSets.neq(this, castingName, otherName))
         ).collect(toImmutableSet());
 
         return Sets.union(traversals, distinctCastingTraversals);
@@ -137,8 +137,8 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin rolePlayer) {
         return Stream.of(
-                casting(start, casting),
-                rolePlayer(casting, rolePlayer.getVarName())
+                casting(this, start, casting),
+                rolePlayer(this, casting, rolePlayer.getVarName())
         );
     }
 
@@ -149,9 +149,9 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
         return Stream.of(
-                casting(start, casting),
-                rolePlayer(casting, rolePlayer.getVarName()),
-                isaCastings(casting, roleType.getVarName())
+                casting(this, start, casting),
+                rolePlayer(this, casting, rolePlayer.getVarName()),
+                isaCastings(this, casting, roleType.getVarName())
         );
     }
 

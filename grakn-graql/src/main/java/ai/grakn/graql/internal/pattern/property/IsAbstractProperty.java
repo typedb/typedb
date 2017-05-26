@@ -52,7 +52,7 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(isAbstract(start));
+        return ImmutableSet.of(isAbstract(this, start));
     }
 
     @Override

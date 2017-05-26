@@ -23,6 +23,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.util.Schema;
@@ -60,12 +61,12 @@ import static java.util.stream.Collectors.toSet;
  */
 class ShortcutFragmentSet extends EquivalentFragmentSet {
 
-    ShortcutFragmentSet(
-            Var relation, Var edge, Var rolePlayer, Optional<Set<TypeLabel>> roleTypes,
+    ShortcutFragmentSet(VarProperty varProperty,
+                        Var relation, Var edge, Var rolePlayer, Optional<Set<TypeLabel>> roleTypes,
             Optional<Set<TypeLabel>> relationTypes) {
         super(
-                Fragments.inShortcut(rolePlayer, edge, relation, roleTypes, relationTypes),
-                Fragments.outShortcut(relation, edge, rolePlayer, roleTypes, relationTypes)
+                Fragments.inShortcut(varProperty, rolePlayer, edge, relation, roleTypes, relationTypes),
+                Fragments.outShortcut(varProperty, relation, edge, rolePlayer, roleTypes, relationTypes)
         );
     }
 
@@ -125,7 +126,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         Optional<Set<TypeLabel>> roleTypes = subTypes(graph, roleType);
         Optional<Set<TypeLabel>> relTypes = subTypes(graph, relType);
 
-        fragmentSets.add(new ShortcutFragmentSet(relation, casting, rolePlayer, roleTypes, relTypes));
+        fragmentSets.add(new ShortcutFragmentSet(null, relation, casting, rolePlayer, roleTypes, relTypes));
         return true;
     }
 

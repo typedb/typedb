@@ -23,6 +23,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
@@ -35,12 +36,12 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDir
 
 /**
  * A query can use a more-efficient resource index traversal when the following criteria are met:
- *
+ * <p>
  * 1. There is an {@link IsaFragmentSet} and a {@link ValueFragmentSet} referring to the same instance {@link Var}.
  * 2. The {@link IsaFragmentSet} refers to a type {@link Var} with a {@link LabelFragmentSet}.
  * 3. The {@link LabelFragmentSet} refers to a type in the graph without direct sub-types.
  * 4. The {@link ValueFragmentSet} is an equality predicate referring to a literal value.
- *
+ * <p>
  * When all these criteria are met, the fragments representing the {@link IsaFragmentSet} and the
  * {@link ValueFragmentSet} can be replaced with a {@link ResourceIndexFragmentSet} that will use the resource index to
  * perform a unique lookup in constant time.
@@ -49,8 +50,8 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDir
  */
 class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
-    private ResourceIndexFragmentSet(Var start, TypeLabel typeLabel, Object value) {
-        super(Fragments.resourceIndex(start, typeLabel, value));
+    private ResourceIndexFragmentSet(VarProperty varProperty, Var start, TypeLabel typeLabel, Object value) {
+        super(Fragments.resourceIndex(varProperty, start, typeLabel, value));
     }
 
     static boolean applyResourceIndexOptimisation(
@@ -91,7 +92,11 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         // Add a new fragment set to replace the old ones
         Var resource = valueSet.resource();
         Object value = valueSet.predicate().equalsValue().get();
-        ResourceIndexFragmentSet indexFragmentSet = new ResourceIndexFragmentSet(resource, typeLabel, value);
+
+        // Use isa property as the property of the fragment
+        VarProperty varProperty = isaSet.fragments().iterator().next().getVarProperty();
+        ResourceIndexFragmentSet indexFragmentSet = new ResourceIndexFragmentSet(varProperty, resource, typeLabel, value);
+
         fragmentSets.add(indexFragmentSet);
     }
 

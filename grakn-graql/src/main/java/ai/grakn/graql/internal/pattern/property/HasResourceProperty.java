@@ -123,9 +123,9 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Var edge2 = Var.anon();
 
         return ImmutableSet.of(
-                shortcut(relation, edge1, start),
-                shortcut(relation, edge2, resource.getVarName()),
-                neq(edge1, edge2)
+                shortcut(this, relation, edge1, start),
+                shortcut(this, relation, edge2, resource.getVarName()),
+                neq(this, edge1, edge2)
         );
     }
 

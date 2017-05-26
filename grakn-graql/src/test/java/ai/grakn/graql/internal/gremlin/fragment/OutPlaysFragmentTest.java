@@ -16,7 +16,7 @@ public class OutPlaysFragmentTest {
 
     private final Var start = Var.anon();
     private final Var end = Var.anon();
-    private final OutPlaysFragment fragment = new OutPlaysFragment(start, end, false);
+    private final OutPlaysFragment fragment = new OutPlaysFragment(null, start, end, false);
 
     @Test
     @SuppressWarnings("unchecked")

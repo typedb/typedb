@@ -42,11 +42,11 @@ public class PlanTest {
         Var y = Var.of("y");
         Var z = Var.of("z");
 
-        Fragment outIsa = outIsa(y, a);
+        Fragment outIsa = outIsa(null, y, a);
         outIsa.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
 
-        Fragment inShortcut = Fragments.inShortcut(y, Var.anon(), x, Optional.empty(), Optional.empty());
-        Fragment outShortcut = Fragments.outShortcut(x, Var.anon(), z, Optional.empty(), Optional.empty());
+        Fragment inShortcut = Fragments.inShortcut(null, y, Var.anon(), x, Optional.empty(), Optional.empty());
+        Fragment outShortcut = Fragments.outShortcut(null, x, Var.anon(), z, Optional.empty(), Optional.empty());
         inShortcut.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
         outShortcut.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
 

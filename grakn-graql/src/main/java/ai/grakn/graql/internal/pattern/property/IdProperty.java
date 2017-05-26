@@ -65,7 +65,7 @@ public class IdProperty extends AbstractVarProperty implements NamedProperty, Un
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.id(start, id));
+        return ImmutableSet.of(EquivalentFragmentSets.id(this, start, id));
     }
 
     @Override

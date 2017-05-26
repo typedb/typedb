@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
@@ -29,7 +30,7 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
  */
 class DataTypeFragmentSet extends EquivalentFragmentSet {
 
-    DataTypeFragmentSet(Var resourceType, ResourceType.DataType dataType) {
-        super(Fragments.dataType(resourceType, dataType));
+    DataTypeFragmentSet(VarProperty varProperty, Var resourceType, ResourceType.DataType dataType) {
+        super(Fragments.dataType(varProperty, resourceType, dataType));
     }
 }

@@ -24,6 +24,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -47,123 +48,124 @@ import static java.util.stream.Collectors.toSet;
  */
 public class Fragments {
 
-    private Fragments() {}
-
-    public static Fragment inShortcut(
-            Var rolePlayer, Var edge, Var relation,
-            Optional<Set<TypeLabel>> roleTypes, Optional<Set<TypeLabel>> relationTypes) {
-        return new InShortcutFragment(rolePlayer, edge, relation, roleTypes, relationTypes);
+    private Fragments() {
     }
 
-    public static Fragment outShortcut(
-            Var relation, Var edge, Var rolePlayer,
-            Optional<Set<TypeLabel>> roleTypes, Optional<Set<TypeLabel>> relationTypes) {
-        return new OutShortcutFragment(relation, edge, rolePlayer, roleTypes, relationTypes);
+    public static Fragment inShortcut(VarProperty varProperty,
+                                      Var rolePlayer, Var edge, Var relation,
+                                      Optional<Set<TypeLabel>> roleTypes, Optional<Set<TypeLabel>> relationTypes) {
+        return new InShortcutFragment(varProperty, rolePlayer, edge, relation, roleTypes, relationTypes);
     }
 
-    public static Fragment inSub(Var start, Var end) {
-        return new InSubFragment(start, end);
+    public static Fragment outShortcut(VarProperty varProperty,
+                                       Var relation, Var edge, Var rolePlayer,
+                                       Optional<Set<TypeLabel>> roleTypes, Optional<Set<TypeLabel>> relationTypes) {
+        return new OutShortcutFragment(varProperty, relation, edge, rolePlayer, roleTypes, relationTypes);
     }
 
-    public static Fragment outSub(Var start, Var end) {
-        return new OutSubFragment(start, end);
+    public static Fragment inSub(VarProperty varProperty, Var start, Var end) {
+        return new InSubFragment(varProperty, start, end);
     }
 
-    public static InRelatesFragment inRelates(Var start, Var end) {
-        return new InRelatesFragment(start, end);
+    public static Fragment outSub(VarProperty varProperty, Var start, Var end) {
+        return new OutSubFragment(varProperty, start, end);
     }
 
-    public static Fragment outRelates(Var start, Var end) {
-        return new OutRelatesFragment(start, end);
+    public static InRelatesFragment inRelates(VarProperty varProperty, Var start, Var end) {
+        return new InRelatesFragment(varProperty, start, end);
     }
 
-    public static Fragment inIsa(Var start, Var end) {
-        return new InIsaFragment(start, end, false);
+    public static Fragment outRelates(VarProperty varProperty, Var start, Var end) {
+        return new OutRelatesFragment(varProperty, start, end);
     }
 
-    public static Fragment outIsa(Var start, Var end) {
-        return new OutIsaFragment(start, end, false);
+    public static Fragment inIsa(VarProperty varProperty, Var start, Var end) {
+        return new InIsaFragment(varProperty, start, end, false);
     }
 
-    // This method is a special case that allows getting the instances of role-types (castings)
-    public static Fragment inIsaCastings(Var start, Var end) {
-        return new InIsaFragment(start, end, true);
+    public static Fragment outIsa(VarProperty varProperty, Var start, Var end) {
+        return new OutIsaFragment(varProperty, start, end, false);
     }
 
     // This method is a special case that allows getting the instances of role-types (castings)
-    public static Fragment outIsaCastings(Var start, Var end) {
-        return new OutIsaFragment(start, end, true);
+    public static Fragment inIsaCastings(VarProperty varProperty, Var start, Var end) {
+        return new InIsaFragment(varProperty, start, end, true);
     }
 
-    public static Fragment inHasScope(Var start, Var end) {
-        return new InHasScopeFragment(start, end);
+    // This method is a special case that allows getting the instances of role-types (castings)
+    public static Fragment outIsaCastings(VarProperty varProperty, Var start, Var end) {
+        return new OutIsaFragment(varProperty, start, end, true);
     }
 
-    public static Fragment outHasScope(Var start, Var end) {
-        return new OutHasScopeFragment(start, end);
+    public static Fragment inHasScope(VarProperty varProperty, Var start, Var end) {
+        return new InHasScopeFragment(varProperty, start, end);
     }
 
-    public static Fragment dataType(Var start, ResourceType.DataType dataType) {
-        return new DataTypeFragment(start, dataType);
+    public static Fragment outHasScope(VarProperty varProperty, Var start, Var end) {
+        return new OutHasScopeFragment(varProperty, start, end);
     }
 
-    public static Fragment inPlays(Var start, Var end, boolean required) {
-        return new InPlaysFragment(start, end, required);
+    public static Fragment dataType(VarProperty varProperty, Var start, ResourceType.DataType dataType) {
+        return new DataTypeFragment(varProperty, start, dataType);
     }
 
-    public static Fragment outPlays(Var start, Var end, boolean required) {
-        return new OutPlaysFragment(start, end, required);
+    public static Fragment inPlays(VarProperty varProperty, Var start, Var end, boolean required) {
+        return new InPlaysFragment(varProperty, start, end, required);
     }
 
-    public static Fragment inCasting(Var start, Var end) {
-        return new InCastingFragment(start, end);
+    public static Fragment outPlays(VarProperty varProperty, Var start, Var end, boolean required) {
+        return new OutPlaysFragment(varProperty, start, end, required);
     }
 
-    public static Fragment outCasting(Var start, Var end) {
-        return new OutCastingFragment(start, end);
+    public static Fragment inCasting(VarProperty varProperty, Var start, Var end) {
+        return new InCastingFragment(varProperty, start, end);
     }
 
-    public static Fragment inRolePlayer(Var start, Var end) {
-        return new InRolePlayerFragment(start, end);
+    public static Fragment outCasting(VarProperty varProperty, Var start, Var end) {
+        return new OutCastingFragment(varProperty, start, end);
     }
 
-    public static Fragment outRolePlayer(Var start, Var end) {
-        return new OutRolePlayerFragment(start, end);
+    public static Fragment inRolePlayer(VarProperty varProperty, Var start, Var end) {
+        return new InRolePlayerFragment(varProperty, start, end);
     }
 
-    public static Fragment id(Var start, ConceptId id) {
-        return new IdFragment(start, id);
+    public static Fragment outRolePlayer(VarProperty varProperty, Var start, Var end) {
+        return new OutRolePlayerFragment(varProperty, start, end);
     }
 
-    public static Fragment label(Var start, TypeLabel label) {
-        return new LabelFragment(start, label);
+    public static Fragment id(VarProperty varProperty, Var start, ConceptId id) {
+        return new IdFragment(varProperty, start, id);
     }
 
-    public static Fragment value(Var start, ValuePredicateAdmin predicate) {
-        return new ValueFragment(start, predicate);
+    public static Fragment label(VarProperty varProperty, Var start, TypeLabel label) {
+        return new LabelFragment(varProperty, start, label);
     }
 
-    public static Fragment isAbstract(Var start) {
-        return new IsAbstractFragment(start);
+    public static Fragment value(VarProperty varProperty, Var start, ValuePredicateAdmin predicate) {
+        return new ValueFragment(varProperty, start, predicate);
     }
 
-    public static Fragment regex(Var start, String regex) {
-        return new RegexFragment(start, regex);
+    public static Fragment isAbstract(VarProperty varProperty, Var start) {
+        return new IsAbstractFragment(varProperty, start);
     }
 
-    public static Fragment notInternal(Var start) {
-        return new NotInternalFragment(start);
+    public static Fragment regex(VarProperty varProperty, Var start, String regex) {
+        return new RegexFragment(varProperty, start, regex);
     }
 
-    public static Fragment neq(Var start, Var other) {
-        return new NeqFragment(start, other);
+    public static Fragment notInternal(VarProperty varProperty, Var start) {
+        return new NotInternalFragment(varProperty, start);
+    }
+
+    public static Fragment neq(VarProperty varProperty, Var start, Var other) {
+        return new NeqFragment(varProperty, start, other);
     }
 
     /**
      * A {@link Fragment} that uses an index stored on each resource. Resources are indexed by direct type and value.
      */
-    public static Fragment resourceIndex(Var start, TypeLabel typeLabel, Object resourceValue) {
-        return new ResourceIndexFragment(start, typeLabel, resourceValue);
+    public static Fragment resourceIndex(VarProperty varProperty, Var start, TypeLabel typeLabel, Object resourceValue) {
+        return new ResourceIndexFragment(varProperty, start, typeLabel, resourceValue);
     }
 
     @SuppressWarnings("unchecked")
@@ -180,7 +182,7 @@ public class Fragments {
 
     static String displayOptionalTypeLabels(Optional<Set<TypeLabel>> typeLabels) {
         return typeLabels.map(labels ->
-            " " + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
+                " " + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
         ).orElse("");
     }
 
