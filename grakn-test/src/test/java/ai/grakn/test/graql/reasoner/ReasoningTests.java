@@ -231,7 +231,7 @@ public class ReasoningTests {
         String queryString = "match (role1:$x) isa relation2;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         assertEquals(answers.size(), 1);
-    }git 
+    }
 
     /**
      * recursive relation having same type for different role players
@@ -480,7 +480,7 @@ public class ReasoningTests {
     @Test //Expected result: Relations between all entity instances including relation between each instance and itself
     public void reasoningWithEntityTypes() {
         QueryBuilder qb = testSet24.graph().graql().infer(true);
-        QueryBuilder qbm = testSet24.graph().graql().infer(true).materialise(true);
+        QueryBuilder qbm = testSet24.graph().graql().infer(true);
         String queryString = "match (role1:$x1, role2:$x2) isa relation1;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         QueryAnswers answers2 = queryAnswers(qbm.parse(queryString));
