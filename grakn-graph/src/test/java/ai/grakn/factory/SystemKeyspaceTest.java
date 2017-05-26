@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class SystemKeyspaceTest {
@@ -40,6 +41,7 @@ public class SystemKeyspaceTest {
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system graph", spaces.contains(keyspace));
+            assertTrue(SystemKeyspace.containsKeyspace(keyspace));
         }
 
         graphs.forEach(GraknGraph::close);
@@ -104,6 +106,7 @@ public class SystemKeyspaceTest {
 
         //Check only 2 graphs have been built
         assertEquals(graphs, systemGraphs);
+        assertFalse(SystemKeyspace.containsKeyspace(deletedGraph.getKeyspace()));
     }
 
     private Set<GraknGraph> buildGraphs(String ... keyspaces){
