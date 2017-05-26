@@ -22,6 +22,7 @@ package ai.grakn.factory;
 import ai.grakn.GraknTxType;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -101,6 +102,22 @@ public class TitanPreviousPropertyStepTest extends TitanTestBase {
 
         List<Step> steps = traversal.asAdmin().getSteps();
         assertThat(steps, not(hasItem(instanceOf(TitanPreviousPropertyStep.class))));
+    }
+
+    @Test
+    public void whenUsingATitanGraph_TheTitanPreviousPropertyStepStrategyIsInList() {
+        GraphTraversal<Vertex, Vertex> traversal = optimisableTraversal(titan);
+        List<TraversalStrategy<?>> strategies = traversal.asAdmin().getStrategies().toList();
+
+        assertThat(strategies, hasItem(instanceOf(TitanPreviousPropertyStepStrategy.class)));
+    }
+
+    @Test
+    public void whenUsingANonTitanGraph_TheTitanPreviousPropertyStepStrategyIsNotInList() {
+        GraphTraversal<Vertex, Vertex> traversal = optimisableTraversal(tinker);
+        List<TraversalStrategy<?>> strategies = traversal.asAdmin().getStrategies().toList();
+
+        assertThat(strategies, not(hasItem(instanceOf(TitanPreviousPropertyStepStrategy.class))));
     }
 
     private GraphTraversal<Vertex, Vertex> optimisableTraversal(GraphTraversalSource g) {
