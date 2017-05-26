@@ -70,18 +70,16 @@ public class GraknEngineServer implements AutoCloseable {
 
     private final GraknEngineConfig prop;
     private final EngineID engineId = EngineID.me();
-    private final int port;
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
     private final UsersHandler usersHandler;
 
-    private GraknEngineServer(String taskManagerClass, GraknEngineConfig prop, int port) {
+    private GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
 
-        taskManager = startTaskManager(taskManagerClass);
+        taskManager = startTaskManager();
         usersHandler = UsersHandler.create(prop.getProperty(ADMIN_PASSWORD_PROPERTY));
 
-        this.port = port;
         startHTTP();
         printStartMessage(prop.getProperty(SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
@@ -97,13 +95,11 @@ public class GraknEngineServer implements AutoCloseable {
 
     public static GraknEngineServer mainWithServer(GraknEngineConfig prop) {
         // Start Engine
-        int port = prop.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER);
-        String taskManagerClass = prop.getProperty(TASK_MANAGER_IMPLEMENTATION);
-        return start(taskManagerClass, prop, port);
+        return start(prop);
     }
 
-    public static GraknEngineServer start(String taskManagerClass, GraknEngineConfig prop, int port){
-        return new GraknEngineServer(taskManagerClass, prop, port);
+    public static GraknEngineServer start(GraknEngineConfig prop){
+        return new GraknEngineServer(prop);
     }
 
     @Override
@@ -127,7 +123,9 @@ public class GraknEngineServer implements AutoCloseable {
     /**
      * Check in with the properties file to decide which type of task manager should be started
      */
-    private TaskManager startTaskManager(String taskManagerClassName) {
+    private TaskManager startTaskManager() {
+        String taskManagerClassName = prop.getProperty(TASK_MANAGER_IMPLEMENTATION);
+
         try {
             Class<TaskManager> taskManagerClass = (Class<TaskManager>) Class.forName(taskManagerClassName);
             return taskManagerClass.getConstructor(EngineID.class).newInstance(engineId, prop);
@@ -139,7 +137,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public void startHTTP() {
-        configureSpark(spark, port, prop);
+        configureSpark(spark, prop);
 
         // Start all the controllers
         EngineGraknGraphFactory factory = EngineGraknGraphFactory.getInstance();
@@ -157,12 +155,12 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
 
-    public static void configureSpark(Service spark, int port, GraknEngineConfig prop){
+    public static void configureSpark(Service spark, GraknEngineConfig prop){
         // Set host name
         spark.ipAddress(prop.getProperty(SERVER_HOST_NAME));
 
         // Set port
-        spark.port(port);
+        spark.port(prop.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER));
 
         // Set the external static files folder
         spark.staticFiles.externalLocation(prop.getPath(STATIC_FILES_PATH));

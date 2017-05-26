@@ -42,11 +42,10 @@ public class SparkContext extends ExternalResource {
     private final GraknEngineConfig config = GraknEngineConfig.create();
 
     private Service spark;
-    private int port;
 
     private SparkContext(BiConsumer<Service, GraknEngineConfig> createControllers) {
         this.createControllers = createControllers;
-        this.port = getEphemeralPort();
+        port(getEphemeralPort());
     }
 
     public static SparkContext withControllers(BiConsumer<Service, GraknEngineConfig> createControllers) {
@@ -58,16 +57,16 @@ public class SparkContext extends ExternalResource {
     }
 
     public SparkContext port(int port) {
-        this.port = port;
+        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(port));
         return this;
     }
 
     public int port() {
-        return port;
+        return config.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER);
     }
 
     public String uri() {
-        return "localhost:" + port;
+        return "http://localhost:" + port();
     }
 
     public GraknEngineConfig config() {
@@ -76,9 +75,9 @@ public class SparkContext extends ExternalResource {
 
     public void start() {
         spark = Service.ignite();
-        configureSpark(spark, port, config);
+        configureSpark(spark, config);
 
-        RestAssured.baseURI = "http://localhost:" + port;
+        RestAssured.baseURI = uri();
 
         createControllers.accept(spark, config);
 

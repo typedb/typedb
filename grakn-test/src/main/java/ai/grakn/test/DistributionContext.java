@@ -153,7 +153,7 @@ public class DistributionContext extends ExternalResource {
 
     private Process newEngineProcess(Integer port) throws IOException {
         // Set correct port & task manager
-        Properties properties = GraknEngineConfig.getInstance().getProperties();
+        Properties properties = GraknEngineConfig.create().getProperties();
         properties.setProperty(LOGGING_LEVEL, LOG_LEVEL);
         properties.setProperty(SERVER_PORT_NUMBER, port.toString());
         properties.setProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());

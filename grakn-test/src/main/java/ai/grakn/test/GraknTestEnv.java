@@ -69,7 +69,7 @@ public abstract class GraknTestEnv {
     /**
      * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
      */
-    static GraknEngineServer startEngine(String taskManagerClass, GraknEngineConfig config, int port) throws Exception {
+    static GraknEngineServer startEngine(GraknEngineConfig config) throws Exception {
         // To ensure consistency b/w test profiles and configuration files, when not using Titan
         // for a unit tests in an IDE, add the following option:
         // -Dgrakn.conf=../conf/test/tinker/grakn.properties
@@ -85,7 +85,7 @@ public abstract class GraknTestEnv {
 
         // start engine
         RestAssured.baseURI = "http://" + config.getProperty("server.host") + ":" + config.getProperty("server.port");
-        GraknEngineServer server = GraknEngineServer.start(taskManagerClass, config, port);
+        GraknEngineServer server = GraknEngineServer.start(config);
 
         LOG.info("engine started.");
 
