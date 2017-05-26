@@ -29,7 +29,6 @@ import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 
 public class UserControllerTest {
-    private UsersHandler users = UsersHandler.getInstance();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
