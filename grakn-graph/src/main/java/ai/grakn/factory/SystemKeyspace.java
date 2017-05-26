@@ -38,6 +38,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -80,6 +81,7 @@ public class SystemKeyspace {
     protected static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
 
     private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
+    private static final AtomicBoolean isFactorySet = new AtomicBoolean(false);
     private static InternalFactory factory;
 
     private SystemKeyspace(){
@@ -91,7 +93,7 @@ public class SystemKeyspace {
      * @param properties the properties used to initialise the keyspace
      */
     static void initialise(String engineUrl, Properties properties){
-        if(factory == null) {
+        if(isFactorySet.compareAndSet(false, true)){
             factory = FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties);
             loadSystemOntology();
         }
