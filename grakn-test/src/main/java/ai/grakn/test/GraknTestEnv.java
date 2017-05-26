@@ -150,8 +150,7 @@ public abstract class GraknTestEnv {
                     .forEach(x -> x.values().forEach(y -> {
                         String name = y.asResource().getValue().toString();
                         GraknGraph graph = engineGraknGraphFactory.getGraph(name, GraknTxType.WRITE);
-                        graph.clear();
-                        graph.admin().commitNoLogs();
+                        graph.admin().delete();
                     }));
         }
         engineGraknGraphFactory.refreshConnections();

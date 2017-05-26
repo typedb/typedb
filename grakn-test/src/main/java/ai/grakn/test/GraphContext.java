@@ -76,8 +76,7 @@ public class GraphContext implements TestRule {
 
     public void rollback() {
         if (usingTinker()) {
-            graph.clear();
-            graph.admin().commitNoLogs();
+            graph.admin().delete();
             loadGraph();
         } else if (!graph.isClosed()) {
             graph.close();

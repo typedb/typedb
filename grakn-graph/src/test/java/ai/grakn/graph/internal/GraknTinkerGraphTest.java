@@ -70,7 +70,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
     public void whenClearingGraph_EnsureGraphIsClosedAndRealodedWhenNextOpening(){
         graknGraph.putEntityType("entity type");
         assertNotNull(graknGraph.getEntityType("entity type"));
-        graknGraph.clear();
+        graknGraph.admin().delete();
         assertTrue(graknGraph.isClosed());
         graknGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
         assertNull(graknGraph.getEntityType("entity type"));

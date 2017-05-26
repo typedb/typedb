@@ -33,9 +33,24 @@ public class AuthControllerTest{
     }
 
     @Test
-    public void newSessionWithWrongPasswordAndUser() {
+    public void newSessionWithWrongUser() {
         engine.server().usersHandler().addUser(Json.object(UsersHandler.USER_NAME, "marco",
-        											   UsersHandler.USER_PASSWORD, "ciao", 
+        											   UsersHandler.USER_PASSWORD, "ciao",
+        											   UsersHandler.USER_IS_ADMIN, true));
+
+        Json body = Json.object("username", "miko", "password", "ciao");
+
+        Response dataResponseWrongUser = given().
+                contentType("application/json").
+                body(body.toString()).when().
+                post("/auth/session/");
+        dataResponseWrongUser.then().assertThat().statusCode(401);
+    }
+
+    @Test
+    public void newSessionWithWrongPassword() {
+        engine.server().usersHandler().addUser(Json.object(UsersHandler.USER_NAME, "marco",
+        											   UsersHandler.USER_PASSWORD, "ciao",
         											   UsersHandler.USER_IS_ADMIN, true));
 
         Json body = Json.object("username", "marco", "password", "hello");
@@ -45,12 +60,6 @@ public class AuthControllerTest{
                 body(body.toString()).when().
                 post("/auth/session/");
         dataResponseWrongPass.then().assertThat().statusCode(401);
-
-        Response dataResponseWrongUser = given().
-                contentType("application/json").
-                body(body.toString()).when().
-                post("/auth/session/");
-        dataResponseWrongUser.then().assertThat().statusCode(401);
     }
 
     @Ignore

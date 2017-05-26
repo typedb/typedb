@@ -21,10 +21,12 @@ package ai.grakn.factory;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.util.GraknVersion;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
@@ -71,10 +73,9 @@ public class SystemKeyspace<T extends Graph> {
     // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
     // If there is a more natural home for this constant, feel free to put it there! (Boris)
     public static final String SYSTEM_GRAPH_NAME = "graknSystem";
-    public static final String SYSTEM_ONTOLOGY_FILE = "system.gql";
+    private static final String SYSTEM_ONTOLOGY_FILE = "system.gql";
     public static final TypeLabel KEYSPACE_ENTITY = TypeLabel.of("keyspace");
     public static final TypeLabel KEYSPACE_RESOURCE = TypeLabel.of("keyspace-name");
-    public static final TypeLabel SYSTEM_VERSION = TypeLabel.of("system-version");
 
     protected final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
 
@@ -103,6 +104,25 @@ public class SystemKeyspace<T extends Graph> {
             return true;
         });
         return this;
+    }
+
+    /**
+     * This is called when a graph is deleted via {@link GraknAdmin#delete()}.
+     * This removes the keyspace of the deleted graph from the system graph
+     *
+     * @param factory the factory used to access the system keyspace
+     * @param keyspace the keyspace to be removed from the system graph
+     */
+    public static void deleteKeyspace(InternalFactory factory, String keyspace){
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+            ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
+            Resource<String> resource = keyspaceName.getResource(keyspace);
+
+            if(resource == null) return;
+            Instance instance = resource.owner();
+            if(instance != null) instance.delete();
+            resource.delete();
+        }
     }
 
     /**

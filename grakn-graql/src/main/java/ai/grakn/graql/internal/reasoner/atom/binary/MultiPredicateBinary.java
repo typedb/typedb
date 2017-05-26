@@ -81,7 +81,7 @@ public abstract class MultiPredicateBinary<T extends Predicate> extends BinaryBa
     @Override
     public int equivalenceHashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + (this.typeId != null? this.typeId.hashCode() : 0);
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + multiPredicateEquivalenceHashCode();
         return hashCode;
     }

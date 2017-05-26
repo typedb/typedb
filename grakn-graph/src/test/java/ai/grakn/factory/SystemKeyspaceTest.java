@@ -4,14 +4,17 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
+import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collection;
+import java.util.Arrays;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -19,38 +22,38 @@ import static org.junit.Assert.assertTrue;
 
 public class SystemKeyspaceTest {
 
-	private final String space1 = "SystemKeyspaceTest.space1".toLowerCase();
-	private final String space2 = "SystemKeyspaceTest.space2";
-	private final String space3 = "SystemKeyspaceTest.space3";
+    @Before
+    public void cleanSystemKeySpaceGraph(){
+        try(GraknSession system = Grakn.session(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+            try (GraknGraph graph = system.open(GraknTxType.WRITE)) {
+                graph.getEntityType("keyspace").instances().forEach(Concept::delete);
+            }
+        }
+    }
 
     @Test
     public void whenCreatingMultipleGraphs_EnsureKeySpacesAreAddedToSystemGraph() throws GraknValidationException {
-    	GraknSession f1 = Grakn.session(Grakn.IN_MEMORY, space1);
-    	f1.open(GraknTxType.WRITE).close();
-    	GraknSession f2 = Grakn.session(Grakn.IN_MEMORY, space2);
-    	GraknGraph gf2 = f2.open(GraknTxType.WRITE);
-    	GraknSession f3 = Grakn.session(Grakn.IN_MEMORY, space3);
-    	GraknGraph gf3 = f3.open(GraknTxType.WRITE);
-    	GraknSession system = Grakn.session(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME);
-    	GraknGraph graph = system.open(GraknTxType.WRITE);
-    	ResourceType<String> keyspaceName = graph.getResourceType("keyspace-name");
-    	Collection<String> spaces = graph.getEntityType("keyspace").instances()
-    		.stream().map(e -> 
-    			e.resources(keyspaceName).iterator().next().getValue().toString()).collect(Collectors.toList());
+        String [] keyspaces = {"s1", "s2", "s3"};
 
-        assertTrue("Keyspace [" + space1 + "] is missing from system graph", spaces.contains(space1));
-        assertTrue("Keyspace [" + space2 + "] is missing from system graph", spaces.contains(space2.toLowerCase()));
-        assertTrue("Keyspace [" + space3 + "] is missing from system graph", spaces.contains(space3.toLowerCase()));
+        Set<GraknGraph> graphs = buildGraphs(keyspaces);
+        Set<String> spaces = getSystemKeyspaces();
 
-        assertEquals(GraknVersion.VERSION,
-                graph.getResourceType("system-version").instances().iterator().next().getValue().toString());
+        for (String keyspace : keyspaces) {
+            assertTrue("Keyspace [" + keyspace + "] is missing from system graph", spaces.contains(keyspace));
+        }
 
-        gf2.close();
-    	gf3.close();
-    	graph.close();
+        graphs.forEach(GraknGraph::close);
     }
 
-
+    @Test
+    public void ensureVersionIsLoadedIntoSystemGraph(){
+        try(GraknSession system = Grakn.session(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME)){
+            try(GraknGraph graph = system.open(GraknTxType.WRITE)) {
+                assertEquals(GraknVersion.VERSION,
+                        graph.getResourceType("system-version").instances().iterator().next().getValue().toString());
+            }
+        }
+    }
 
     @Test
     public void ensureUserOntologyIsLoadedIntoSystemGraph(){
@@ -82,4 +85,41 @@ public class SystemKeyspaceTest {
         graph.close();
     }
 
+    @Test
+    public void whenClearingGraphs_EnsureTheyAreDeletedFromSystemGraph(){
+        String [] keyspaces = {"g1", "g2", "g3"};
+
+        //Create graphs to begin with
+        Set<GraknGraph> graphs = buildGraphs(keyspaces);
+        graphs.forEach(GraknGraph::close);
+
+        //Delete a graph entirely
+        GraknGraph deletedGraph = graphs.iterator().next();
+        deletedGraph.admin().delete();
+        graphs.remove(deletedGraph);
+
+        //Rebuild Graphs Using Keyspaces From Systenm Graph
+        Set<String> systemKeyspaces = getSystemKeyspaces();
+        Set<GraknGraph> systemGraphs = buildGraphs(systemKeyspaces.toArray(new String[systemKeyspaces.size()]));
+
+        //Check only 2 graphs have been built
+        assertEquals(graphs, systemGraphs);
+    }
+
+    private Set<GraknGraph> buildGraphs(String ... keyspaces){
+        return Arrays.stream(keyspaces).
+                map(k -> Grakn.session(Grakn.IN_MEMORY, k).open(GraknTxType.WRITE)).
+                collect(Collectors.toSet());
+    }
+
+    private Set<String> getSystemKeyspaces(){
+        GraknSession system = Grakn.session(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME);
+        try(GraknGraph graph = system.open(GraknTxType.WRITE)) {
+            ResourceType<String> keyspaceName = graph.getResourceType("keyspace-name");
+            return graph.getEntityType("keyspace").instances().
+                    stream().
+                    map(e -> e.resources(keyspaceName).iterator().next().getValue().toString()).
+                    collect(Collectors.toSet());
+        }
+    }
 }
