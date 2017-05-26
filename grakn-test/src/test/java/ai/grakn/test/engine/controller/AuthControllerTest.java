@@ -1,12 +1,14 @@
 package ai.grakn.test.engine.controller;
 
+import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.JWTHandler;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.SparkContext;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
-import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import static com.jayway.restassured.RestAssured.given;
@@ -15,8 +17,16 @@ import static org.junit.Assert.assertTrue;
 
 public class AuthControllerTest{
 
-    @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    private static final JWTHandler jwtHandler = JWTHandler.create(GraknEngineConfig.create());
+    private static final String adminPassword = "top secret";
+
+    private UsersHandler usersHandler;
+
+    @Rule
+    public final SparkContext ctx = SparkContext.withControllers(spark -> {
+        usersHandler = UsersHandler.create(adminPassword);
+        new AuthController(spark, true, jwtHandler, usersHandler);
+    });
 
     // TODO: Un-ignore these tests now that the config is not always a singleton
     //Ignoring a couple of randomly failing tests. I will probably need to create a new config file with password protection enabled.
@@ -35,7 +45,7 @@ public class AuthControllerTest{
 
     @Test
     public void newSessionWithWrongUser() {
-        UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "marco",
+        usersHandler.addUser(Json.object(UsersHandler.USER_NAME, "marco",
         											   UsersHandler.USER_PASSWORD, "ciao",
         											   UsersHandler.USER_IS_ADMIN, true));
 
@@ -50,7 +60,7 @@ public class AuthControllerTest{
 
     @Test
     public void newSessionWithWrongPassword() {
-        UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "marco",
+        usersHandler.addUser(Json.object(UsersHandler.USER_NAME, "marco",
         											   UsersHandler.USER_PASSWORD, "ciao",
         											   UsersHandler.USER_IS_ADMIN, true));
 
@@ -67,7 +77,7 @@ public class AuthControllerTest{
     @Test
     public void newSessionWithExistingUser() {
         //Add a user
-        UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "giulio",
+        usersHandler.addUser(Json.object(UsersHandler.USER_NAME, "giulio",
 				   UsersHandler.USER_PASSWORD, "ciao",
 				   UsersHandler.USER_IS_ADMIN, true));
 
@@ -81,8 +91,8 @@ public class AuthControllerTest{
 
         dataResponse.then().assertThat().statusCode(200);
         String token = dataResponse.asString();
-        assertTrue(JWTHandler.create(engine.config()).verifyJWT(token));
-        assertEquals("giulio", JWTHandler.create(engine.config()).extractUserFromJWT(dataResponse.asString()));
+        assertTrue(jwtHandler.verifyJWT(token));
+        assertEquals("giulio", jwtHandler.extractUserFromJWT(dataResponse.asString()));
 
         //Try to execute query WRONG token in request
         Response dataResponseNonAuthenticated = given().
