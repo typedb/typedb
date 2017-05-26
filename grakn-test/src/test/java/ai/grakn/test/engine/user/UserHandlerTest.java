@@ -47,7 +47,7 @@ public class UserHandlerTest {
 
     // This is necessary because `UsersHandler` communicates with the system keyspace
     @ClassRule
-    public final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void addUser(){
