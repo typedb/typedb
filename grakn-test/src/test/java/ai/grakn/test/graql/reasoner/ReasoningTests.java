@@ -28,14 +28,15 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -167,7 +168,7 @@ public class ReasoningTests {
 
     @Test //Expected result: The queries should return the same two matches.
     public void generatingIsaEdge() {
-        QueryBuilder qb = testSet4.graph().graql().infer(true);
+        QueryBuilder qb = testSet4.graph().graql().infer(true).materialise(true);
         String query1String = "match $x isa entity1;";
         String query2String = "match $x isa entity2;";
         QueryAnswers answers1 = queryAnswers(qb.parse(query1String));
@@ -209,28 +210,28 @@ public class ReasoningTests {
     }
 
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
-    public void roleUnificationWithRoleHierarchiesInvolved1() {
+    public void roleUnificationWithRoleHierarchiesInvolved() {
         QueryBuilder qb = testSet8.graph().graql().infer(true);
         String queryString = "match (role2:$x, role3:$y) isa relation2;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
-        answers.forEach(y -> assertTrue(y.values().size()<=1));
+        assertThat(answers.stream().collect(toSet()), empty());
     }
 
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
-    public void roleUnificationWithRoleHierarchiesInvolved2() {
+    public void roleUnificationWithRepeatingRoleTypes() {
         QueryBuilder qb = testSet9.graph().graql().infer(true);
         String queryString = "match (role1:$x, role1:$y) isa relation2;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
-        answers.forEach(y -> assertTrue(y.values().size()<=1));
+        assertThat(answers.stream().collect(toSet()), empty());
     }
 
     @Test //Expected result: The query should return a single match
-    public void roleUnificationWithRoleHierarchiesInvolved3() {
+    public void roleUnificationWithLessRelationPlayersInQueryThanHead() {
         QueryBuilder qb = testSet9.graph().graql().infer(true);
         String queryString = "match (role1:$x) isa relation2;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         assertEquals(answers.size(), 1);
-    }
+    }git 
 
     /**
      * recursive relation having same type for different role players

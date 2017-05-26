@@ -5,7 +5,6 @@ insert
 role1 sub role;
 role2 sub role;
 
-
 #Entities
 
 entity1 sub entity
@@ -37,7 +36,6 @@ isa inference-rule
 		(role1:$x, role2:$z) isa relation1;
 	};
 
-
 isa inference-rule 
 	lhs {
 		(role1:$x, role2:$y) isa relation1;
@@ -46,7 +44,6 @@ isa inference-rule
 		(role1:$x, role2:$y) isa relation2;
 	};
 
-
 isa inference-rule 
 	lhs {
 		(role1:$x, role2:$y) isa relation3;
@@ -55,7 +52,6 @@ isa inference-rule
 		(role1:$x, role2:$y) isa relation2;
 	};
 
-
 isa inference-rule 
 	lhs {
 		(role1:$x, role2:$y) isa relation2;
@@ -63,7 +59,6 @@ isa inference-rule
 	rhs {
 		(role1:$x, role2:$y) isa relation3;
 	};
-
 
 #Data
 
