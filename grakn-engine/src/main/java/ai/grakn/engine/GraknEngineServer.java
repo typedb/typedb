@@ -108,14 +108,6 @@ public class GraknEngineServer implements AutoCloseable {
         stopTaskManager();
     }
 
-    public boolean isPasswordProtected() {
-        return prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
-    }
-
-    public UsersHandler usersHandler() {
-        return usersHandler;
-    }
-
     /**
      * Check in with the properties file to decide which type of task manager should be started
      */
@@ -146,8 +138,8 @@ public class GraknEngineServer implements AutoCloseable {
         new ConceptController(factory, spark);
         new DashboardController(factory, spark);
         new SystemController(spark, prop);
-        new AuthController(spark, isPasswordProtected(), JWTHandler.create(prop), usersHandler());
-        new UserController(spark, usersHandler());
+        new AuthController(spark, passwordProtected, JWTHandler.create(prop), usersHandler);
+        new UserController(spark, usersHandler);
         new CommitLogController(spark, prop.getProperty(DEFAULT_KEYSPACE_PROPERTY), taskManager);
         new TasksController(spark, taskManager);
 
