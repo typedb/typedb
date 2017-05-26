@@ -51,6 +51,7 @@ public class ZookeeperConnection {
     /**
      * Start the connection to zookeeper. This method is blocking.
      */
+    // TODO: Don't pass entire configuration into here
     public ZookeeperConnection(GraknEngineConfig config) {
         openClient(config);
     }
