@@ -47,6 +47,8 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import java.util.SortedSet;
+import java.util.stream.Stream;
 import javafx.util.Pair;
 
 import java.util.ArrayList;
@@ -61,6 +63,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import org.antlr.misc.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +71,9 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getCompatibleRelationTypes;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getListPermutations;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getTopType;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUnifiersFromPermutations;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.roleHierarchyToRelationTypes;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.roleToRelationTypes;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.typeToRelationTypes;
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableMultiset;
@@ -354,38 +359,53 @@ public class Relation extends TypeAtom {
         return this;
     }
 
-    public Set<RelationType> inferPossibleRelationTypes() {
+    public List<RelationType> inferPossibleRelationTypes() {
+        final Multimap<RelationType, RoleType> compatibleTypes = HashMultimap.create();
+
         //look at available role types
-        Set<RelationType> compatibleTypes = ReasonerUtils.getTopTypes(
-                getCompatibleRelationTypes(getExplicitRoleTypes(), roleToRelationTypes)
-        );
+        //create a map from each explicit role type + its subtypes
+        //do map intersection between all such maps
+        getExplicitRoleTypes().stream()
+                .flatMap(rt -> rt.subTypes().stream())
+                .forEach(rt ->
+                                roleHierarchyToRelationTypes.apply(rt)
+                                        .forEach(rel -> {
+                                            if (compatibleTypes.containsKey(rel) || compatibleTypes.isEmpty()) {
+                                                compatibleTypes.put(rel, rt);
+                                            }
+                                        })
+                );
 
         //look at entity types
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
         Set<Type> types = getRolePlayers().stream()
-                    .filter(varTypeMap::containsKey)
-                    .map(varTypeMap::get)
-                    .collect(toSet());
+                .filter(varTypeMap::containsKey)
+                .map(varTypeMap::get)
+                .collect(toSet());
 
-        Set<RelationType> compatibleTypesFromTypes = ReasonerUtils.getTopTypes(
-                getCompatibleRelationTypes(types, typeToRelationTypes)
-        );
-
-        //intersect relation types from roles and types
-        if (compatibleTypes.isEmpty()){
-            compatibleTypes = compatibleTypesFromTypes;
-        } else if (!compatibleTypesFromTypes.isEmpty()){
-            compatibleTypes = Sets.intersection(compatibleTypesFromTypes, compatibleTypes);
-        }
+        types.stream()
+                .flatMap(t -> t.subTypes().stream())
+                .flatMap(t -> t.plays().stream())
+                .forEach(rt ->
+                        roleToRelationTypes.apply(rt)
+                                .forEach(rel -> {
+                                    if (compatibleTypes.containsKey(rel) || compatibleTypes.isEmpty()){
+                                        compatibleTypes.put(rel, rt);
+                                    }
+                                })
+                );
 
         LOG.debug("Inferring relation type of atom: " + this + getTypeConstraints());
-        LOG.debug("Compatible relation types: " + compatibleTypes.stream().map(Type::getLabel).collect(Collectors.toSet()));
+        LOG.debug("Compatible relation types: " + compatibleTypes.keySet().stream().map(Type::getLabel).collect(Collectors.toSet()));
 
-        return compatibleTypes;
+        return compatibleTypes.asMap().entrySet().stream()
+                .sorted(Comparator.comparing(e -> e.getValue().size()))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
     }
 
     private Relation inferRelationType(){
-        Set<RelationType> relationTypes = inferPossibleRelationTypes();
+        List<RelationType> relationTypes = inferPossibleRelationTypes();
         if (relationTypes.size() == 1) addType(relationTypes.iterator().next());
         return this;
     }

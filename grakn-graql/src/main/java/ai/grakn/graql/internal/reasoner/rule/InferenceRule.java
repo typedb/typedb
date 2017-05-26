@@ -204,7 +204,7 @@ public class InferenceRule {
                     return type == null || subType == null;
                 }).collect(toSet());
 
-        ruleTypes.stream().filter(t -> !t.isRelation()).forEach(body::removeAtomic);
+        ruleTypes.forEach(body::removeAtomic);
         body.addAtomConstraints(types);
 
         return this;

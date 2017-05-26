@@ -251,17 +251,25 @@ public class ReasonerUtils {
     }
 
     /**
-     * @param role input role type
+     * @param type input type
      * @return set of all non-meta super types of the role
      */
-    public static Set<Type> getSuperTypes(Type role){
+    public static Set<Type> getSuperTypes(Type type){
         Set<Type> superTypes = new HashSet<>();
-        Type superType = role.superType();
+        Type superType = type.superType();
         while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
             superTypes.add(superType);
             superType = superType.superType();
         }
         return superTypes;
+    }
+
+    public static Type getTopType(Type type){
+        Type superType = type;
+        while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
+            superType = superType.superType();
+        }
+        return superType;
     }
 
     /**
@@ -286,13 +294,17 @@ public class ReasonerUtils {
         return relRoles.stream().filter(typeRoles::contains).collect(toSet());
     }
 
-    /**
-     * convert a given role type to a set of relation types in which it can appear including  the role type hierarchy
-     */
     public static final Function<RoleType, Set<RelationType>> roleToRelationTypes =
-            role -> role.subTypes().stream()
-                    .flatMap(r -> r.relationTypes().stream())
+            role -> role.relationTypes().stream()
                     .filter(rt -> !rt.isImplicit())
+                    .collect(toSet());
+
+    /**
+     * convert a given role type to a set of relation types in which it can appear including the role type hierarchy
+     */
+    public static final Function<RoleType, Set<RelationType>> roleHierarchyToRelationTypes =
+            role -> role.subTypes().stream()
+                    .flatMap(r -> roleToRelationTypes.apply(r).stream())
                     .collect(toSet());
 
     /**
@@ -304,6 +316,10 @@ public class ReasonerUtils {
                     .flatMap(roleType -> roleType.relationTypes().stream())
                     .filter(rt -> !rt.isImplicit())
                     .collect(toSet());
+
+    public static <T extends Type> Set<RelationType> getCompatibleRelationTypes(T type, Function<T, Set<RelationType>> typeMapper) {
+        return typeMapper.apply(type);
+    }
 
     /**
      * compute the set of compatible relation types for given types (intersection of allowed sets of relation types for each entry type)
