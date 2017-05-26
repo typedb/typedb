@@ -354,40 +354,42 @@ public class Relation extends TypeAtom {
         return this;
     }
 
-    private void inferRelationTypeFromTypes() {
+    public Set<RelationType> inferPossibleRelationTypes() {
         //look at available role types
-        Type type = null;
-        Set<Type> compatibleTypes = ReasonerUtils.getTopTypes(
+        Set<RelationType> compatibleTypes = ReasonerUtils.getTopTypes(
                 getCompatibleRelationTypes(getExplicitRoleTypes(), roleToRelationTypes)
         );
-        if (compatibleTypes.size() == 1) type = compatibleTypes.iterator().next();
 
-        //look at types
-        if (type == null) {
-            Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
-            Set<Type> types = getRolePlayers().stream()
+        //look at entity types
+        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
+        Set<Type> types = getRolePlayers().stream()
                     .filter(varTypeMap::containsKey)
                     .map(varTypeMap::get)
                     .collect(toSet());
 
-            Set<RelationType> compatibleTypesFromTypes = getCompatibleRelationTypes(types, typeToRelationTypes);
+        Set<RelationType> compatibleTypesFromTypes = ReasonerUtils.getTopTypes(
+                getCompatibleRelationTypes(types, typeToRelationTypes)
+        );
 
-            LOG.trace("Inferring relation type of atom: " + this + getTypeConstraints());
-            LOG.trace("Compatible relation types: " + compatibleTypesFromTypes.stream().map(Type::getLabel).collect(Collectors.toSet()));
+        //intersect relation types from roles and types
+        if (compatibleTypes.isEmpty()) compatibleTypes = compatibleTypesFromTypes;
+        else if (!compatibleTypesFromTypes.isEmpty()) compatibleTypes = Sets.intersection(compatibleTypesFromTypes, compatibleTypes);
 
-            if (compatibleTypesFromTypes.size() == 1) type = compatibleTypesFromTypes.iterator().next();
-            else {
-                //do intersection with types recovered from role types
-                compatibleTypesFromTypes.retainAll(compatibleTypes);
-                if (compatibleTypesFromTypes.size() == 1) type = compatibleTypesFromTypes.iterator().next();
-            }
-        }
-        if (type != null) addType(type);
+        LOG.debug("Inferring relation type of atom: " + this + getTypeConstraints());
+        LOG.debug("Compatible relation types: " + compatibleTypes.stream().map(Type::getLabel).collect(Collectors.toSet()));
+
+        return compatibleTypes;
+    }
+
+    private Relation inferRelationType(){
+        Set<RelationType> relationTypes = inferPossibleRelationTypes();
+        if (relationTypes.size() == 1) addType(relationTypes.iterator().next());
+        return this;
     }
 
     @Override
     public void inferTypes() {
-        if (getPredicate() == null) inferRelationTypeFromTypes();
+        if (getPredicate() == null) inferRelationType();
         if (getExplicitRoleTypes().size() < getRelationPlayers().size() && getType() != null) computeRoleVarTypeMap();
     }
 
