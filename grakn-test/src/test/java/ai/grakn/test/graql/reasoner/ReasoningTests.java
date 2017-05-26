@@ -259,8 +259,7 @@ public class ReasoningTests {
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         assertEquals(answers.size(), 2);
     }
-
-    @Ignore
+    
     @Test //Expected result: The query should return a unique match
     public void rulesInteractingWithTypeHierarchy() {
         QueryBuilder qb = testSet13.graph().graql().infer(true);
