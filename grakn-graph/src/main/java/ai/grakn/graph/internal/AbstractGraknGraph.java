@@ -50,12 +50,12 @@ import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import mjson.Json;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -788,7 +788,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         boolean submissionNeeded = !getTxCache().getShardingCount().isEmpty() ||
                 !getTxCache().getModifiedCastings().isEmpty() ||
                 !getTxCache().getModifiedResources().isEmpty();
-        JSONObject conceptLog = getTxCache().getFormattedLog();
+        Json conceptLog = getTxCache().getFormattedLog();
 
         LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransactionInternal();
