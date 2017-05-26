@@ -24,9 +24,11 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.user.Password;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.test.EngineContext;
 import mjson.Json;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -42,6 +44,10 @@ public class UserHandlerTest {
     private static UsersHandler users = UsersHandler.getInstance();
     private static String userName = "geralt";
     private static String password = "witcher";
+
+    // This is necessary because `UsersHandler` communicates with the system keyspace
+    @ClassRule
+    public final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void addUser(){
