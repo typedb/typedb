@@ -35,9 +35,7 @@ public class AuthControllerTest{
 
     @Test
     public void newSessionWithWrongUser() {
-        UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "marco",
-        											   UsersHandler.USER_PASSWORD, "ciao",
-        											   UsersHandler.USER_IS_ADMIN, true));
+        addUser("marco", "ciao");
 
         Json body = Json.object("username", "mark", "password", "ciao");
 
@@ -50,9 +48,7 @@ public class AuthControllerTest{
 
     @Test
     public void newSessionWithWrongPassword() {
-        UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "marco",
-        											   UsersHandler.USER_PASSWORD, "ciao", 
-        											   UsersHandler.USER_IS_ADMIN, true));
+        addUser("marco", "ciao");
 
         Json body = Json.object("username", "marco", "password", "hello");
 
@@ -66,10 +62,7 @@ public class AuthControllerTest{
     @Ignore
     @Test
     public void newSessionWithExistingUser() {
-        //Add a user
-        UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "giulio", 
-				   UsersHandler.USER_PASSWORD, "ciao", 
-				   UsersHandler.USER_IS_ADMIN, true));
+        addUser("guilio", "ciao");
 
         Json body = Json.object("username", "giulio", "password", "ciao");
 
@@ -116,4 +109,12 @@ public class AuthControllerTest{
         dataResponseMalformed.then().assertThat().statusCode(400);
     }
 
+    private void addUser(String username, String password) {
+        Json user = Json.object(UsersHandler.USER_NAME, username,
+                UsersHandler.USER_PASSWORD, password,
+                UsersHandler.USER_IS_ADMIN, true);
+
+        given().contentType("application/json").body(user).post("/users/one")
+                .then().assertThat().statusCode(200);
+    }
 }
