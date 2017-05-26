@@ -65,7 +65,7 @@ public class GraqlControllerPOSTTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
-        new SystemController(spark, config);
+        new SystemController(spark, config.getProperties());
         new GraqlController(mockFactory, spark);
     });
 

@@ -89,7 +89,7 @@ public class GraqlControllerGETTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
-        new SystemController(spark, config);
+        new SystemController(spark, config.getProperties());
         new GraqlController(mockFactory, spark);
     }).port(4567); // TODO: Don't use the default port when bug #15130 is fixed
 

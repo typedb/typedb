@@ -79,7 +79,7 @@ public class CommitLogControllerTest {
     @ClassRule
     public static SparkContext ctx = SparkContext.withControllers((spark, config) -> {
         new CommitLogController(spark, config.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY), manager);
-        new SystemController(spark, config);
+        new SystemController(spark, config.getProperties());
     });
 
     private Json commitLog;
