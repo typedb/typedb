@@ -20,15 +20,13 @@ package ai.grakn.test.engine.user;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.user.Password;
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.test.EngineContext;
 import mjson.Json;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -44,10 +42,8 @@ public class UserHandlerTest {
     private static String userName = "geralt";
     private static String password = "witcher";
 
-    @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
-
-    private static UsersHandler users = engine.server().usersHandler();
+    private final String adminPassword = "top secret";
+    private final UsersHandler users = UsersHandler.create(adminPassword);
 
     @Before
     public void addUser(){

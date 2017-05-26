@@ -20,13 +20,13 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.test.EngineContext;
-import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.junit.ClassRule;
 import org.junit.Test;
+
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 public class UserControllerTest {
 
@@ -36,7 +36,7 @@ public class UserControllerTest {
     private UsersHandler users = engine.server().usersHandler();
 
     @Test
-    public void testAddNewUser(){
+    public void testAddAndGetNewUser(){
         String userName = "person";
         String password = "password";
 
@@ -48,23 +48,8 @@ public class UserControllerTest {
                 extract().response().andReturn();
 
         //Check he is there
-        assertTrue(users.getUser(userName).is(UsersHandler.USER_NAME, userName));
-    }
-
-    @Test
-    public void testGetUser(){
-        String userName = "bob";
-        String password = "smith";
-
-        //Add User
-        Json user = Json.object(UsersHandler.USER_NAME, userName, UsersHandler.USER_PASSWORD, password);
-        users.addUser(user);
-
-        //Get Him Back
-        Response dataResponse =
-                get("/user/one?" + UsersHandler.USER_NAME + "=" + userName).then().
-                        statusCode(200).extract().response().andReturn();
-
-        assertTrue(dataResponse.getBody().asString().contains(userName));
+        String response = get("/user/one?" + UsersHandler.USER_NAME + "=" + userName).then().
+                        statusCode(200).extract().response().body().asString();
+        assertEquals(Json.read(response).at("user-name"), body.at("user-name"));
     }
 }
