@@ -124,7 +124,7 @@ public class GraknEngineServer implements AutoCloseable {
 
         try {
             Class<TaskManager> taskManagerClass = (Class<TaskManager>) Class.forName(taskManagerClassName);
-            return taskManagerClass.getConstructor(EngineID.class).newInstance(engineId, prop);
+            return taskManagerClass.getConstructor(EngineID.class, GraknEngineConfig.class).newInstance(engineId, prop);
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException e) {
             throw new IllegalArgumentException("Invalid or unavailable TaskManager class", e);
         } catch (InvocationTargetException e) {
