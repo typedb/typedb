@@ -354,11 +354,15 @@ public class Relation extends TypeAtom {
         return this;
     }
 
+    /**
+     * infer relation types that this relation atom can potentially have
+     * NB: entity types and role types are treated separately as they behave differently:
+     * entity types only play the explicitly defined roles (not the relevant part of the hierarchy of the specified role)
+     * @return set of relation types this atom can have
+     */
     public Set<RelationType> inferPossibleRelationTypes() {
         //look at available role types
-        Set<RelationType> compatibleTypes = ReasonerUtils.getTopTypes(
-                getCompatibleRelationTypes(getExplicitRoleTypes(), roleToRelationTypes)
-        );
+        Set<RelationType> compatibleTypesFromRoles = getCompatibleRelationTypes(getExplicitRoleTypes(), roleToRelationTypes);
 
         //look at entity types
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
@@ -367,21 +371,22 @@ public class Relation extends TypeAtom {
                     .map(varTypeMap::get)
                     .collect(toSet());
 
-        Set<RelationType> compatibleTypesFromTypes = ReasonerUtils.getTopTypes(
-                getCompatibleRelationTypes(types, typeToRelationTypes)
-        );
+        Set<RelationType> compatibleTypesFromTypes = getCompatibleRelationTypes(types, typeToRelationTypes);
 
+        Set<RelationType> compatibleTypes;
         //intersect relation types from roles and types
-        if (compatibleTypes.isEmpty()){
+        if (compatibleTypesFromRoles.isEmpty()){
             compatibleTypes = compatibleTypesFromTypes;
         } else if (!compatibleTypesFromTypes.isEmpty()){
-            compatibleTypes = Sets.intersection(compatibleTypesFromTypes, compatibleTypes);
+            compatibleTypes = Sets.intersection(compatibleTypesFromTypes, compatibleTypesFromRoles);
+        } else {
+            compatibleTypes = compatibleTypesFromRoles;
         }
 
-        LOG.debug("Inferring relation type of atom: " + this + getTypeConstraints());
-        LOG.debug("Compatible relation types: " + compatibleTypes.stream().map(Type::getLabel).collect(Collectors.toSet()));
+        LOG.trace("Inferring relation type of atom: " + this + getTypeConstraints());
+        LOG.trace("Compatible relation types: " + compatibleTypes.stream().map(Type::getLabel).collect(Collectors.toSet()));
 
-        return compatibleTypes;
+        return ReasonerUtils.getTopTypes(compatibleTypes);
     }
 
     private Relation inferRelationType(){
