@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -99,7 +100,8 @@ public class SingleQueueTaskManager implements TaskManager {
         this.offsetStorage = new ExternalOffsetStorage(zookeeper);
 
         //TODO check that the number of partitions is at least the capacity
-        this.producer = kafkaProducer(config);
+        //TODO only pass necessary Kafka properties
+        this.producer = kafkaProducer(config.getProperties());
 
         // Create thread pool for the task runners
         ThreadFactory taskRunnerPoolFactory = new ThreadFactoryBuilder()
@@ -195,7 +197,8 @@ public class SingleQueueTaskManager implements TaskManager {
      * Get a new kafka consumer listening on the given topic
      */
     private Consumer<TaskState, TaskConfiguration> newConsumer(String topic){
-        Consumer<TaskState, TaskConfiguration> consumer = kafkaConsumer("task-runners-" + topic, config);
+        Properties properties = config.getProperties();  // TODO: Only pass necessary kafka properties
+        Consumer<TaskState, TaskConfiguration> consumer = kafkaConsumer("task-runners-" + topic, properties);
         consumer.subscribe(ImmutableList.of(topic), rebalanceListener(consumer, offsetStorage));
         return consumer;
     }

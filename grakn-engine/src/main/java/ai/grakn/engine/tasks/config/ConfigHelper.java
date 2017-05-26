@@ -24,7 +24,6 @@ import ai.grakn.engine.tasks.TaskConfigurationSerializer;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateDeserializer;
 import ai.grakn.engine.tasks.TaskStateSerializer;
-import ai.grakn.engine.GraknEngineConfig;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -43,9 +42,8 @@ import java.util.Properties;
  */
 public class ConfigHelper {
 
-    public static Consumer<TaskState, TaskConfiguration> kafkaConsumer(String groupId, GraknEngineConfig config) {
-        Properties properties = new Properties();
-        properties.putAll(config.getProperties());
+    public static Consumer<TaskState, TaskConfiguration> kafkaConsumer(String groupId, Properties properties) {
+        properties = new Properties(properties);
 
         properties.put("group.id", groupId);
         properties.put("enable.auto.commit", "false");
@@ -63,9 +61,8 @@ public class ConfigHelper {
         return new KafkaConsumer<>(properties, new TaskStateDeserializer(), new TaskConfigurationDeserializer());
     }
 
-    public static Producer<TaskState, TaskConfiguration> kafkaProducer(GraknEngineConfig config) {
-        Properties properties = new Properties();
-        properties.putAll(config.getProperties());
+    public static Producer<TaskState, TaskConfiguration> kafkaProducer(Properties properties) {
+        properties = new Properties(properties);
 
         return new KafkaProducer<>(properties, new TaskStateSerializer(), new TaskConfigurationSerializer());
     }
