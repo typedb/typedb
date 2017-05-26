@@ -18,12 +18,15 @@
 
 package ai.grakn.test.engine.postprocessing;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
+import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -71,6 +74,9 @@ public class PostProcessingTaskTest {
                         Schema.BaseType.CASTING.name(), Json.object(mockCastingIndex, mockCastingSet),
                         Schema.BaseType.RESOURCE.name(), Json.object(mockResourceIndex, mockResourceSet)
                 )));
+
+        //Initialise system keyspace
+        Grakn.session(Grakn.DEFAULT_URI, SystemKeyspace.SYSTEM_GRAPH_NAME).open(GraknTxType.WRITE).close();
     }
 
     @Test
