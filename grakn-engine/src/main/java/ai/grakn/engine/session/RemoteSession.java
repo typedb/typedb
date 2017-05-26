@@ -20,7 +20,7 @@ package ai.grakn.engine.session;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
-import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.util.REST;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
@@ -31,6 +31,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,11 +50,11 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 public class RemoteSession {
     private final Map<Session, GraqlSession> sessions = new HashMap<>();
     private final Logger LOG = LoggerFactory.getLogger(RemoteSession.class);
-    private final GraknEngineServer server;
+    private final @Nullable UsersHandler usersHandler;
 
     //TODO dont use the default uri
-    public RemoteSession(GraknEngineServer server) {
-        this.server = server;
+    public RemoteSession(@Nullable UsersHandler usersHandler) {
+        this.usersHandler = usersHandler;
     }
 
     @OnWebSocketConnect
@@ -111,14 +112,14 @@ public class RemoteSession {
     }
 
     private boolean sessionAuthorised(Json json) {
-        if (!server.isPasswordProtected()) return true;
+        if (usersHandler == null) return true;
 
         Json username = json.at(USERNAME);
         Json password = json.at(PASSWORD);
 
         boolean credentialsProvided = username != null && password != null;
 
-        return credentialsProvided && server.usersHandler().validateUser(username.asString(), password.asString());
+        return credentialsProvided && usersHandler.validateUser(username.asString(), password.asString());
 
     }
 }
