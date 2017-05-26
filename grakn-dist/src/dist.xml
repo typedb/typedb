@@ -139,20 +139,9 @@
         </fileSet>
         <!-- Redis Package -->
         <fileSet>
-            <outputDirectory>conf/redis</outputDirectory>
-            <directory>${basedir}/target/redis</directory>
-            <includes>
-                <include>redis.conf</include>
-            </includes>
-        </fileSet>
-        <fileSet>
             <outputDirectory>bin</outputDirectory>
             <directory>${basedir}/target/redis</directory>
-            <excludes>
-                <exclude>redis.conf</exclude>
-            </excludes>
         </fileSet>
-
     </fileSets>
     <dependencySets>
         <dependencySet>

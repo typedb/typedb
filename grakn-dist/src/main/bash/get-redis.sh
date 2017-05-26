@@ -18,23 +18,8 @@
 # <http://www.gnu.org/licenses/gpl.txt>.
 
 echo "Downloading redis . . ."
-wget http://download.redis.io/releases/redis-2.6.17.tar.gz
-
-echo "Unpacking redis tar . . ."
-tar xzf redis-2.6.17.tar.gz
-
-echo "Compiling redis. . . "
-cd redis-2.6.17
-make
-cd ..
-
-echo "Extracting redis binary and config. . . "
-mv redis-2.6.17/src/redis-server .
-mv redis-2.6.17/src/redis-cli .
-mv redis-2.6.17/redis.conf .
-
-echo "Cleaning up redis workspace . . ."
-rm redis-2.6.17.tar.*
-rm -rf redis-2.6.17
-
+wget https://github.com/fppt/redis-prebuilt/raw/master/redis-cli-linux
+wget https://github.com/fppt/redis-prebuilt/raw/master/redis-cli-osx
+wget https://github.com/fppt/redis-prebuilt/raw/master/redis-server-linux
+wget https://github.com/fppt/redis-prebuilt/raw/master/redis-server-osx
 echo "Redis distribution ready"
