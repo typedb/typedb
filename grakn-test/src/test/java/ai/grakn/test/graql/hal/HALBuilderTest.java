@@ -20,7 +20,8 @@ public class HALBuilderTest {
     public static final GraphContext academyGraph = GraphContext.preLoad(AcademyGraph.get());
 
     @Test
-    public void testHALStructure() {
+    public void whenReceivingHALResponse_EnsureResponseContainsConceptDetails()
+    {
         Json response = getHALRepresentation(academyGraph.graph(), "match $x isa entity; limit 5;");
         String keyspace = academyGraph.graph().getKeyspace();
         assertEquals(5, response.asList().size());
@@ -35,7 +36,7 @@ public class HALBuilderTest {
 
 
     @Test
-    public void testSelectingSubsetOfVariables() {
+    public void whenUseSelectInQuery_EnsureWeReceiveAValidHALResponse() {
         Json response = getHALRepresentation(academyGraph.graph(), "match $article isa article has subject \"Italian Referendum\";\n" +
                 "$platform isa oil-platform has distance-from-coast <= 18;\n" +
                 "(location: $country, located: $platform) isa located-in;\n" +
@@ -54,7 +55,7 @@ public class HALBuilderTest {
     }
 
     @Test
-    public void testTransitiveRule() {
+    public void whenTriggerReasonerWithTransitiveRule_EnsureWeReceiveAValidHALResponse() {
         Json response = getHALRepresentation(academyGraph.graph(), "match $x isa region; $y isa oil-platform; (located: $y, location: $x) isa located-in; limit 20;");
         // Limit to 20 results, each result will contain 3 variables, expected size 60
         assertEquals(60, response.asList().size());
