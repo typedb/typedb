@@ -18,6 +18,7 @@ public class AuthControllerTest{
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
+    // TODO: Un-ignore these tests now that the config is not always a singleton
     //Ignoring a couple of randomly failing tests. I will probably need to create a new config file with password protection enabled.
     //Or maybe find alternative to singleton.
     @Test
