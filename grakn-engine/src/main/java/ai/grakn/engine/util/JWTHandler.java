@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.util;
 
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.exception.GraknEngineServerException;
 import com.auth0.jwt.JWTSigner;
 import com.auth0.jwt.JWTVerifier;
@@ -48,8 +47,8 @@ public class JWTHandler {
         this.secret = secret;
     }
 
-    public static JWTHandler create(GraknEngineConfig config) {
-        return new JWTHandler(config.getProperty(GraknEngineConfig.JWT_SECRET_PROPERTY));
+    public static JWTHandler create(String secret) {
+        return new JWTHandler(secret);
     }
 
     public String signJWT(String username) {

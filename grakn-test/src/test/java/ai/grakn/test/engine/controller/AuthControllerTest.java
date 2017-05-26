@@ -1,6 +1,5 @@
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.JWTHandler;
@@ -17,7 +16,7 @@ import static org.junit.Assert.assertTrue;
 
 public class AuthControllerTest{
 
-    private static final JWTHandler jwtHandler = JWTHandler.create(GraknEngineConfig.create());
+    private static final JWTHandler jwtHandler = JWTHandler.create("secret token");
     private static final String adminPassword = "top secret";
 
     private UsersHandler usersHandler;

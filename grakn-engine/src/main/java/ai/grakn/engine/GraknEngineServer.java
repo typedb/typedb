@@ -48,6 +48,7 @@ import java.util.Set;
 
 import static ai.grakn.engine.GraknEngineConfig.ADMIN_PASSWORD_PROPERTY;
 import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
+import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_HOST_NAME;
 import static ai.grakn.engine.GraknEngineConfig.STATIC_FILES_PATH;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
@@ -73,12 +74,14 @@ public class GraknEngineServer implements AutoCloseable {
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
     private final UsersHandler usersHandler;
+    private final JWTHandler jwtHandler;
 
     private GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
 
         taskManager = startTaskManager();
         usersHandler = UsersHandler.create(prop.getProperty(ADMIN_PASSWORD_PROPERTY));
+        jwtHandler = JWTHandler.create(prop.getProperty(JWT_SECRET_PROPERTY));
 
         startHTTP();
         printStartMessage(prop.getProperty(SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER), prop.getLogFilePath());
@@ -121,7 +124,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public void startHTTP() {
-        configureSpark(spark, prop);
+        configureSpark(spark, prop, jwtHandler);
 
         // Start the websocket for Graql
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, new RemoteSession(usersHandler));
@@ -134,7 +137,7 @@ public class GraknEngineServer implements AutoCloseable {
         new ConceptController(factory, spark);
         new DashboardController(factory, spark);
         new SystemController(spark, prop.getProperties());  // TODO: Only pass the necessary properties
-        new AuthController(spark, passwordProtected, JWTHandler.create(prop), usersHandler);
+        new AuthController(spark, passwordProtected, jwtHandler, usersHandler);
         new UserController(spark, usersHandler);
         new CommitLogController(spark, prop.getProperty(DEFAULT_KEYSPACE_PROPERTY), taskManager);
         new TasksController(spark, taskManager);
@@ -144,7 +147,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
 
-    public static void configureSpark(Service spark, GraknEngineConfig prop){
+    public static void configureSpark(Service spark, GraknEngineConfig prop, JWTHandler jwtHandler){
         // Set host name
         spark.ipAddress(prop.getProperty(SERVER_HOST_NAME));
 
@@ -160,7 +163,6 @@ public class GraknEngineServer implements AutoCloseable {
         boolean isPasswordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
 
         if (isPasswordProtected) {
-            JWTHandler jwtHandler = JWTHandler.create(prop);
             spark.before((req, res) -> checkAuthorization(spark, req, jwtHandler));
         }
 
