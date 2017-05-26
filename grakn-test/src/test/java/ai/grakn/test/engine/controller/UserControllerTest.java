@@ -33,8 +33,6 @@ public class UserControllerTest {
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
-    private UsersHandler users = engine.server().usersHandler();
-
     @Test
     public void testAddAndGetNewUser(){
         String userName = "person";

@@ -42,8 +42,8 @@ public class UserHandlerTest {
     private static String userName = "geralt";
     private static String password = "witcher";
 
-    private final String adminPassword = "top secret";
-    private final UsersHandler users = UsersHandler.create(adminPassword);
+    private static final String adminPassword = "top secret";
+    private static final UsersHandler users = UsersHandler.create(adminPassword);
 
     @Before
     public void addUser(){
