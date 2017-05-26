@@ -105,7 +105,7 @@ public class SystemKeyspace {
      * @param internalFactory the factory to use when initialising the system graph.
      */
     static void initialise(InternalFactory internalFactory){
-        if(factory == null) {
+        if(isFactorySet.compareAndSet(false, true)){
             factory = internalFactory;
             loadSystemOntology();
         }
