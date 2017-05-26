@@ -28,20 +28,40 @@ redisRunning()
     echo $(ps -ef | grep "redis-server" | grep -v grep | awk '{ print $2}')
 }
 
+executeRedisServer(){
+    if [ "$(uname)" == "Darwin" ]; then
+        "${GRAKN_HOME}/bin/"redis-server-osx $1 &
+    elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+        "${GRAKN_HOME}/bin/"redis-server-linux $1 &
+    fi
+}
+
+executeRedisCli(){
+    if [ "$(uname)" == "Darwin" ]; then
+        "${GRAKN_HOME}/bin/"redis-cli-osx $1
+    elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+        "${GRAKN_HOME}/bin/"redis-cli-linux $1
+    fi
+}
+
 case "$1" in
 
 start)
-
 	if [ $(redisRunning) ] ; then
     	echo "Redis is already running"
     else
     	echo "Starting redis"
-    	"${GRAKN_HOME}/bin/"redis-server "${GRAKN_HOME}/conf/redis/redis.conf" &
+    	executeRedisServer "${GRAKN_HOME}/conf/redis/redis.conf"
 	fi
     ;;
 stop)
 	echo "Stopping redis"
-    "${GRAKN_HOME}/bin/redis-cli" shutdown
+    executeRedisCli shutdown
+    ;;
+clean)
+    echo "Cleaning redis"
+    executeRedisCli flushall
+    executeRedisCli shutdown
     ;;
 
 esac

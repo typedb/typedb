@@ -22,4 +22,5 @@ wget https://github.com/fppt/redis-prebuilt/raw/master/redis-cli-linux
 wget https://github.com/fppt/redis-prebuilt/raw/master/redis-cli-osx
 wget https://github.com/fppt/redis-prebuilt/raw/master/redis-server-linux
 wget https://github.com/fppt/redis-prebuilt/raw/master/redis-server-osx
+chmod +x redis-*
 echo "Redis distribution ready"
