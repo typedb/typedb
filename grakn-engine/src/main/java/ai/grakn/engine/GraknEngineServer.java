@@ -135,6 +135,11 @@ public class GraknEngineServer implements AutoCloseable {
     public void startHTTP() {
         configureSpark(spark, prop);
 
+        // Start the websocket for Graql
+        spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, new RemoteSession(usersHandler));
+
+        boolean passwordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
+
         // Start all the controllers
         EngineGraknGraphFactory factory = EngineGraknGraphFactory.getInstance();
         new GraqlController(factory, spark);
@@ -161,8 +166,6 @@ public class GraknEngineServer implements AutoCloseable {
         // Set the external static files folder
         spark.staticFiles.externalLocation(prop.getPath(STATIC_FILES_PATH));
 
-        // Start the websocket for Graql
-        spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, RemoteSession.class);
         spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
         //Register filter to check authentication token in each request
