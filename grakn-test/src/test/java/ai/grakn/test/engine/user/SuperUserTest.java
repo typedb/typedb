@@ -17,14 +17,10 @@
  */
 package ai.grakn.test.engine.user;
 
-import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Test;
-
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.test.EngineContext;
 import mjson.Json;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * Testing behavior of admin/super user.
@@ -34,10 +30,8 @@ import mjson.Json;
  */
 public class SuperUserTest {
 
-    @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
-
-    private static UsersHandler users = engine.server().usersHandler();
+    private static final String adminPassword = "top secret";
+    private static final UsersHandler users = UsersHandler.create(adminPassword);
 
     @Test
     public void testSuperuserPresent() {
@@ -46,8 +40,7 @@ public class SuperUserTest {
     
     @Test
     public void testSuperuserLogin() {        
-        Assert.assertTrue(users.validateUser(users.superUsername(), 
-                          engine.server().config().getProperty(GraknEngineConfig.ADMIN_PASSWORD_PROPERTY)));
+        Assert.assertTrue(users.validateUser(users.superUsername(), adminPassword));
         Assert.assertFalse(users.validateUser(users.superUsername(), "asgasgdsfgdsf"));
     }
 

@@ -108,10 +108,6 @@ public class GraknEngineServer implements AutoCloseable {
         stopTaskManager();
     }
 
-    public GraknEngineConfig config() {
-        return prop;
-    }
-
     public boolean isPasswordProtected() {
         return prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
     }
