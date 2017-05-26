@@ -113,7 +113,7 @@ public class AuthControllerTest{
                 UsersHandler.USER_PASSWORD, password,
                 UsersHandler.USER_IS_ADMIN, true);
 
-        given().contentType("application/json").body(user).post("/users/one")
+        given().contentType("application/json").body(user.toString()).post("/user/one")
                 .then().assertThat().statusCode(200);
     }
 }
