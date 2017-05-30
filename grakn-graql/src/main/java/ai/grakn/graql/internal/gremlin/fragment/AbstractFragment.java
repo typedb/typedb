@@ -25,6 +25,8 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Optional;
 import java.util.Set;
 
+import static ai.grakn.graql.internal.util.CommonUtil.optionalToStream;
+
 abstract class AbstractFragment implements Fragment{
 
     // TODO: Find a better way to represent these values (either abstractly, or better estimates)
@@ -52,16 +54,20 @@ abstract class AbstractFragment implements Fragment{
         this.varNames = ImmutableSet.of(start);
     }
 
-    AbstractFragment(Var start, Var end) {
-        this.start = start;
-        this.end = Optional.of(end);
-        this.varNames = ImmutableSet.of(start, end);
-    }
-
     AbstractFragment(Var start, Var end, Var... others) {
         this.start = start;
         this.end = Optional.of(end);
         this.varNames = ImmutableSet.<Var>builder().add(start).add(end).add(others).build();
+    }
+
+    AbstractFragment(Var start, Var end, Var other, Var... others) {
+        this.start = start;
+        this.end = Optional.of(end);
+        this.varNames = ImmutableSet.<Var>builder().add(start).add(end).add(other).add(others).build();
+    }
+
+    static Var[] optionalVarToArray(Optional<Var> var) {
+        return optionalToStream(var).toArray(Var[]::new);
     }
 
     @Override

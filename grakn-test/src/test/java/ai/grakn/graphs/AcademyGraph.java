@@ -16,33 +16,29 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.Var;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import ai.grakn.test.graphs.TestGraph;
 
-import static ai.grakn.util.Schema.EdgeLabel.CASTING;
+import java.util.function.Consumer;
 
-class OutCastingFragment extends AbstractFragment {
+public class AcademyGraph extends TestGraph {
 
-    OutCastingFragment(Var start, Var end) {
-        super(start, end);
+    final private static String ontologyFile = "academy/ontology.gql";
+    final private static String dataFile = "academy/data.gql";
+    final private static String rulesFile = "academy/rules.gql";
+
+    public static Consumer<GraknGraph> get() {
+        return new AcademyGraph().build();
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.out(CASTING.getLabel());
-    }
-
-    @Override
-    public String getName() {
-        return "-[casting]->";
-    }
-
-    @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost * NUM_ROLE_PLAYERS_PER_RELATION;
+    public Consumer<GraknGraph> build() {
+        return (GraknGraph graph) -> {
+            loadFromFile(graph, ontologyFile);
+            loadFromFile(graph, dataFile);
+            loadFromFile(graph, rulesFile);
+        };
     }
 }

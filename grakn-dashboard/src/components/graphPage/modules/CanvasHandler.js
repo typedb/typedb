@@ -34,7 +34,7 @@ function clearGraph() {
 function onClickSubmit(query:string) {
   if (query.includes('aggregate')) {
           // Error message until we will not properly support aggregate queries in graph page.
-    EventHub.$emit('error-message', 'Invalid query: \'aggregate\' queries are not allowed from the Graph page. Please use the Console page.');
+    EventHub.$emit('error-message', '{"exception":"Invalid query: \'aggregate\' queries are not allowed from the Graph page. \\nPlease use the Console page."}');
     return;
   }
 

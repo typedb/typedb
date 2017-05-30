@@ -364,8 +364,8 @@ public class Relation extends TypeAtom {
 
             Set<RelationType> compatibleTypesFromTypes = getCompatibleRelationTypes(types, typeToRelationTypes);
 
-            LOG.debug("Inferring relation type of atom: " + this + getTypeConstraints());
-            LOG.debug("Compatible relation types: " + compatibleTypesFromTypes.stream().map(Type::getLabel).collect(Collectors.toSet()));
+            LOG.trace("Inferring relation type of atom: " + this + getTypeConstraints());
+            LOG.trace("Compatible relation types: " + compatibleTypesFromTypes.stream().map(Type::getLabel).collect(Collectors.toSet()));
 
             if (compatibleTypesFromTypes.size() == 1) type = compatibleTypesFromTypes.iterator().next();
             else {
