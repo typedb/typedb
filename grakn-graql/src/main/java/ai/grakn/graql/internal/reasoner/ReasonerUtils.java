@@ -347,7 +347,7 @@ public class ReasonerUtils {
         return intersection;
     }
 
-    /** TODO
+    /**
      * compute the map of compatible relation types for given types (intersection of allowed sets of relation types for each entry type)
      * and compatible role types
      * @param types for which the set of compatible relation types is to be computed

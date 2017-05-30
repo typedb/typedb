@@ -380,6 +380,7 @@ public class Relation extends TypeAtom {
             compatibleTypes = compatibleTypesFromTypes;
         } else if (!compatibleTypesFromTypes.isEmpty()){
             compatibleTypes = multimapIntersection(compatibleTypesFromTypes, compatibleTypesFromRoles);
+
         } else {
             compatibleTypes = compatibleTypesFromRoles;
         }
