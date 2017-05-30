@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # <http://www.gnu.org/licenses/gpl.txt>.
 
+set -e
+
 echo "Downloading redis . . ."
 wget https://github.com/fppt/redis-prebuilt/raw/master/redis-cli-linux
 wget https://github.com/fppt/redis-prebuilt/raw/master/redis-cli-osx
