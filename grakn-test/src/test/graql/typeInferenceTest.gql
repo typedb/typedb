@@ -25,6 +25,11 @@ entity2 sub entity
 	plays role2;
 
 entity3 sub entity
+    plays role2
+    plays role3
+    plays role4;
+
+entity4 sub entity
     plays role4;
 
 #Relations

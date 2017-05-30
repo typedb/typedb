@@ -40,8 +40,11 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import java.util.stream.Stream;
 import javafx.util.Pair;
 
 import java.util.ArrayList;
@@ -58,6 +61,7 @@ import java.util.function.Function;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.flatMap;
 
 /**
  *
@@ -317,8 +321,56 @@ public class ReasonerUtils {
                     .filter(rt -> !rt.isImplicit())
                     .collect(toSet());
 
-    public static <T extends Type> Set<RelationType> getCompatibleRelationTypes(T type, Function<T, Set<RelationType>> typeMapper) {
-        return typeMapper.apply(type);
+
+    /**
+     * convert a given entity type to a map of relation types in which it can play roles and the corresponding role types including entity type hierarchy
+     */
+    public static final Function<RoleType, Multimap<RelationType, RoleType>> roleHierarchyToRelationTypesWithRoles =
+            role -> {
+                Multimap<RelationType, RoleType> relationMap = HashMultimap.create();
+                Collection<RoleType> roleTypes = role.subTypes();
+                roleTypes
+                        .forEach(roleType -> {
+                            roleType.relationTypes().stream()
+                                    .filter(rel -> !rel.isImplicit())
+                                    .forEach(rel -> relationMap.put(rel, roleType));
+                        });
+                return relationMap;
+            };
+
+    /**
+     * convert a given entity type to a map of relation types in which it can play roles and the corresponding role types including entity type hierarchy
+     */
+    public static final Function<Type, Multimap<RelationType, RoleType>> typeToRelationTypesWithRoles =
+            type -> {
+                Multimap<RelationType, RoleType> relationMap = HashMultimap.create();
+                Collection<? extends Type> types = type.subTypes();
+                types.stream()
+                        .flatMap(t -> t.plays().stream())
+                        .forEach(roleType -> {
+                            roleType.relationTypes().stream()
+                                    .filter(rel -> !rel.isImplicit())
+                                    .forEach(rel -> relationMap.put(rel, roleType));
+                        });
+                return relationMap;
+            };
+
+    /**
+     *
+     * @param m1
+     * @param m2
+     * @param <K>
+     * @param <V>
+     * @return
+     */
+    public static <K, V> Multimap<K, V> multimapIntersection(Multimap<K, V> m1, Multimap<K, V> m2){
+        Multimap<K, V> intersection = HashMultimap.create();
+        Sets.SetView<K> keyIntersection = Sets.intersection(m1.keySet(), m2.keySet());
+        Stream.concat(m1.entries().stream(), m2.entries().stream())
+                .filter(e -> keyIntersection.contains(e.getKey()))
+                .forEach(e -> intersection.put(e.getKey(), e.getValue()));
+        return intersection;
+
     }
 
     /**
@@ -335,6 +387,17 @@ public class ReasonerUtils {
         compatibleTypes.addAll(typeMapper.apply(it.next()));
         while(it.hasNext() && compatibleTypes.size() > 1) {
             compatibleTypes.retainAll(typeMapper.apply(it.next()));
+        }
+        return compatibleTypes;
+    }
+
+    public static <T extends Type> Multimap<RelationType, RoleType> getCompatibleRelationTypesWithRoles(Set<T> types, Function<T, Multimap<RelationType, RoleType>> typeMapper) {
+        Multimap<RelationType, RoleType> compatibleTypes = HashMultimap.create();
+        if (types.isEmpty()) return compatibleTypes;
+        Iterator<T> it = types.iterator();
+        compatibleTypes.putAll(typeMapper.apply(it.next()));
+        while(it.hasNext() && compatibleTypes.size() > 1) {
+            compatibleTypes = multimapIntersection(compatibleTypes, typeMapper.apply(it.next()));
         }
         return compatibleTypes;
     }
