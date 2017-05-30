@@ -68,6 +68,7 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getCompatibleRelationTypesWithRoles;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getListPermutations;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getSuperTypes;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.multimapIntersection;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.roleHierarchyToRelationTypesWithRoles;
@@ -380,7 +381,6 @@ public class Relation extends TypeAtom {
             compatibleTypes = compatibleTypesFromTypes;
         } else if (!compatibleTypesFromTypes.isEmpty()){
             compatibleTypes = multimapIntersection(compatibleTypesFromTypes, compatibleTypesFromRoles);
-
         } else {
             compatibleTypes = compatibleTypesFromRoles;
         }
@@ -393,6 +393,7 @@ public class Relation extends TypeAtom {
         return compatibleTypes.asMap().entrySet().stream()
                 .sorted(Comparator.comparing(e -> -e.getValue().size()))
                 .map(Map.Entry::getKey)
+                .filter(t -> Sets.intersection(getSuperTypes(t), compatibleTypes.keySet()).isEmpty())
                 .collect(Collectors.toList());
     }
 
