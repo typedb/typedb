@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # <http://www.gnu.org/licenses/gpl.txt>.
 
+REDIS_PS=/tmp/grakn-redis.pid
+
 if [ -z "${GRAKN_HOME}" ]; then
     [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
     GRAKN_BIN=$(cd "$(dirname "${path}")" && pwd -P)
@@ -64,10 +66,10 @@ clean)
     executeRedisCli shutdown
     ;;
 status)
-    if [[ $(executeRedisCli PONG) ]]; then
+	if [ -e $REDIS_PS ] && ps -p `cat $REDIS_PS` > /dev/null ; then
         echo "Redis is running"
-	else
-	    echo "Redis has stopped"
-	fi
-	;;
+    else
+        echo "Redis has stopped"
+    fi
+    ;;
 esac
