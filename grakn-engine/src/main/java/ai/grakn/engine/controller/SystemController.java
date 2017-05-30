@@ -85,7 +85,8 @@ public class SystemController {
         String graphConfig = request.queryParams(GRAPH_CONFIG_PARAM);
 
         // Make a copy of the properties object
-        Properties properties = new Properties(graphProperties);
+        Properties properties = new Properties();
+        properties.putAll(graphProperties);
 
         // Get the correct factory based on the request
         switch ((graphConfig != null) ? graphConfig : DEFAULT) {

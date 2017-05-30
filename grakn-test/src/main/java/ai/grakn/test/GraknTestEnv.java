@@ -181,7 +181,7 @@ public abstract class GraknTestEnv {
     }
 
     static String getUri(GraknEngineConfig config) {
-        return "http://" + config.getProperty("server.host") + ":" + config.getProperty("server.port");
+        return config.getProperty("server.host") + ":" + config.getProperty("server.port");
     }
 
     public static String randomKeyspace(){
