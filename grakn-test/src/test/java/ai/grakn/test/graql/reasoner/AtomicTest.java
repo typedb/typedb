@@ -20,6 +20,7 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
@@ -48,6 +49,7 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.Collection;
+import java.util.Collections;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -75,6 +77,9 @@ public class AtomicTest {
 
     @ClassRule
     public static final GraphContext genealogyOntology = GraphContext.preLoad("genealogy/ontology.gql").assumeTrue(usingTinker());
+
+    @ClassRule
+    public static final GraphContext typeInferenceSet = GraphContext.preLoad("typeInferenceTest.gql").assumeTrue(usingTinker());
 
     @ClassRule
     public static final GraphContext ruleApplicabilitySet = GraphContext.preLoad("ruleApplicabilityTest.gql").assumeTrue(usingTinker());
@@ -582,21 +587,181 @@ public class AtomicTest {
     }
 
     @Test
-    public void testTypeInference(){
-        String typeId = snbGraph.graph().getType(TypeLabel.of("recommendation")).getId().getValue();
-        String patternString = "{($x, $y); $x isa person; $y isa product;}";
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
-        Atom atom = query.getAtom();
-        assertTrue(atom.getTypeId().getValue().equals(typeId));
+    public void testTypeInference_singleGuard() {
+        GraknGraph graph = typeInferenceSet.graph();
+        String patternString = "{$x isa entity1; ($x, $y);}";
+        String patternString2 = "{$x isa subEntity1; ($x, $y);}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
+        Relation atom = (Relation) query.getAtom();
+        Relation atom2 = (Relation) query2.getAtom();
+
+        Set<RelationType> possibleTypes = Sets.newHashSet(
+                graph.getType(TypeLabel.of("relation1")),
+                graph.getType(TypeLabel.of("relation3"))
+        );
+        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        Set<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes();
+        assertEquals(relationTypes, possibleTypes);
+        assertEquals(relationTypes2, possibleTypes);
+        assertEquals(atom.getType(), null);
+        assertEquals(atom2.getType(), null);
     }
 
     @Test
-    public void testTypeInference2(){
-        String typeId = cwGraph.graph().getType(TypeLabel.of("transaction")).getId().getValue();
-        String patternString = "{($z, $y, $x);$z isa country;$x isa rocket;$y isa person;}";
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, cwGraph.graph()), cwGraph.graph());
-        Atom atom = query.getAtom();
-        assertTrue(atom.getTypeId().getValue().equals(typeId));
+    public void testTypeInference_doubleGuard() {
+        GraknGraph graph = typeInferenceSet.graph();
+        String patternString = "{$x isa entity1; ($x, $y); $y isa entity2;}";
+        String patternString2 = "{$x isa subEntity1; ($x, $y); $y isa entity2;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
+        Relation atom = (Relation) query.getAtom();
+        Relation atom2 = (Relation) query2.getAtom();
+
+        Set<RelationType> possibleTypes = Collections.singleton(
+                graph.getType(TypeLabel.of("relation1"))
+        );
+        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        Set<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes();
+        assertEquals(relationTypes, possibleTypes);
+        assertEquals(relationTypes2, possibleTypes);
+        assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation1")));
+        assertEquals(atom2.getType(), graph.getType(TypeLabel.of("relation1")));
+    }
+
+    @Test
+    public void testTypeInference_singleRole() {
+        GraknGraph graph = typeInferenceSet.graph();
+        String patternString = "{(role2: $x, $y);}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        Relation atom = (Relation) query.getAtom();
+
+        Set<RelationType> possibleTypes = Sets.newHashSet(
+                graph.getType(TypeLabel.of("relation1")),
+                graph.getType(TypeLabel.of("relation2")),
+                graph.getType(TypeLabel.of("relation3"))
+        );
+        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        assertEquals(relationTypes, possibleTypes);
+        assertEquals(atom.getType(), null);
+    }
+
+    @Test
+    public void testTypeInference_singleRole_subType() {
+        GraknGraph graph = typeInferenceSet.graph();
+        String patternString = "{(subRole2: $x, $y);}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        Relation atom = (Relation) query.getAtom();
+
+        Set<RelationType> possibleTypes = Collections.singleton(
+                graph.getType(TypeLabel.of("relation3"))
+        );
+        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        assertEquals(relationTypes, possibleTypes);
+        assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation3")));
+    }
+
+    @Test
+    public void testTypeInference_singleRole_singleGuard() {
+        GraknGraph graph = typeInferenceSet.graph();
+        String patternString = "{(role2: $x, $y); $y isa entity1;}";
+        String patternString2 = "{(role2: $x, $y); $y isa subEntity1;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
+        Relation atom = (Relation) query.getAtom();
+        Relation atom2 = (Relation) query2.getAtom();
+
+        Set<RelationType> possibleTypes = Sets.newHashSet(
+                graph.getType(TypeLabel.of("relation1")),
+                graph.getType(TypeLabel.of("relation3"))
+        );
+        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        Set<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes();
+        assertEquals(relationTypes, possibleTypes);
+        assertEquals(relationTypes2, possibleTypes);
+        assertEquals(atom.getType(), null);
+        assertEquals(atom2.getType(), null);
+    }
+
+    @Test
+    public void testTypeInference_singleRole_singleGuard_bothAreSuperTypes() {
+        GraknGraph graph = typeInferenceSet.graph();
+        String patternString = "{(subRole2: $x, $y); $y isa subEntity1;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        Relation atom = (Relation) query.getAtom();
+
+        Set<RelationType> possibleTypes = Collections.singleton(
+                graph.getType(TypeLabel.of("relation3"))
+        );
+        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        assertEquals(relationTypes, possibleTypes);
+        assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation3")));
+    }
+
+    @Test
+    public void testTypeInference_singleRole_singleGuard_contradictionOnDifferentRelationPlayers() {
+        GraknGraph graph = typeInferenceSet.graph();
+        String patternString = "{(role1: $x, $y); $y isa entity3;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        Relation atom = (Relation) query.getAtom();
+
+        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        assertThat(relationTypes, empty());
+        assertEquals(atom.getType(), null);
+    }
+
+    @Test
+    public void testTypeInference_singleRole_singleGuard_contradictionOnSameRelationPlayer() {
+        GraknGraph graph = typeInferenceSet.graph();
+        String patternString = "{(role1: $x, $y); $x isa entity3;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        Relation atom = (Relation) query.getAtom();
+
+        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        assertThat(relationTypes, empty());
+        assertEquals(atom.getType(), null);
+    }
+
+    @Test
+    public void testTypeInference_singleRole_doubleGuard() {
+        GraknGraph graph = typeInferenceSet.graph();
+        String patternString = "{$x isa entity1;(role2: $x, $y); $y isa entity2;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        Relation atom = (Relation) query.getAtom();
+
+        Set<RelationType> possibleTypes = Collections.singleton(
+                graph.getType(TypeLabel.of("relation1"))
+        );
+        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        assertEquals(relationTypes, possibleTypes);
+        assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation1")));
+    }
+
+    @Test
+    public void testTypeInference_doubleRole_doubleGuard() {
+        GraknGraph graph = typeInferenceSet.graph();
+        String patternString = "{$x isa entity1;(role1: $x, role2: $y); $y isa entity2;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        Relation atom = (Relation) query.getAtom();
+
+        Set<RelationType> possibleTypes = Collections.singleton(
+                graph.getType(TypeLabel.of("relation1"))
+        );
+        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        assertEquals(relationTypes, possibleTypes);
+        assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation1")));
+    }
+
+    @Test
+    public void testTypeInference_doubleRole_doubleGuard_contradiction() {
+        GraknGraph graph = typeInferenceSet.graph();
+        String patternString = "{$x isa entity1;(role1: $x, role2: $y); $y isa entity3;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        Relation atom = (Relation) query.getAtom();
+
+        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        assertThat(relationTypes, empty());
+        assertEquals(atom.getType(), null);
     }
 
     @Test
