@@ -41,6 +41,7 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -74,14 +75,16 @@ public class GraknEngineServer implements AutoCloseable {
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
     private final UsersHandler usersHandler;
-    private final JWTHandler jwtHandler;
+    private final @Nullable JWTHandler jwtHandler;  // TODO: Make sure controllers handle the null case
 
     private GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
 
         taskManager = startTaskManager();
         usersHandler = UsersHandler.create(prop.getProperty(ADMIN_PASSWORD_PROPERTY));
-        jwtHandler = JWTHandler.create(prop.getProperty(JWT_SECRET_PROPERTY));
+
+        @Nullable String secret = prop.getProperty(JWT_SECRET_PROPERTY, null);
+        jwtHandler = secret != null? JWTHandler.create(secret) : null;
 
         startHTTP();
         printStartMessage(prop.getProperty(SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER), prop.getLogFilePath());
@@ -147,7 +150,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
 
-    public static void configureSpark(Service spark, GraknEngineConfig prop, JWTHandler jwtHandler){
+    public static void configureSpark(Service spark, GraknEngineConfig prop, @Nullable JWTHandler jwtHandler){
         // Set host name
         spark.ipAddress(prop.getProperty(SERVER_HOST_NAME));
 
