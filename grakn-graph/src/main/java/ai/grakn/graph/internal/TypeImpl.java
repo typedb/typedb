@@ -605,7 +605,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The Type itself.
      */
     public T setAbstract(Boolean isAbstract) {
-        if(isAbstract && this.<TypeImpl>getIncomingNeighbours(Schema.EdgeLabel.SHARD).anyMatch(thing ->
+        if(!Schema.MetaSchema.isMetaLabel(getLabel()) && isAbstract &&
+                this.<TypeImpl>getIncomingNeighbours(Schema.EdgeLabel.SHARD).anyMatch(thing ->
                         thing.getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().isPresent())){
             throw new GraphRuntimeException(ErrorMessage.IS_ABSTRACT.getMessage(getLabel()));
         }

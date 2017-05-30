@@ -177,6 +177,7 @@ public class TypePropertyTest {
 
     @Property
     public void whenSettingATypeAbstractFlag_TheTypesAbstractFlagIsSet(@Meta(false) Type type, boolean isAbstract) {
+        assumeThat(directInstances(type), empty());
         type.setAbstract(isAbstract);
         assertEquals(isAbstract, type.isAbstract());
     }
