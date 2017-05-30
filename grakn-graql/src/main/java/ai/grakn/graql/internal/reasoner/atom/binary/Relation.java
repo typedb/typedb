@@ -47,8 +47,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import java.util.SortedSet;
-import java.util.stream.Stream;
 import javafx.util.Pair;
 
 import java.util.ArrayList;
@@ -63,22 +61,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import org.antlr.misc.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getCompatibleRelationTypes;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getCompatibleRelationTypesWithRoles;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getListPermutations;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getTopType;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.multimapIntersection;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.roleHierarchyToRelationTypes;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.roleHierarchyToRelationTypesWithRoles;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.roleToRelationTypes;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.typeToRelationTypes;
 import static ai.grakn.graql.internal.reasoner.ReasonerUtils.typeToRelationTypesWithRoles;
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableMultiset;
 import static java.util.stream.Collectors.toSet;
@@ -392,8 +384,10 @@ public class Relation extends TypeAtom {
             compatibleTypes = compatibleTypesFromRoles;
         }
 
-        LOG.debug("Inferring relation type of atom: " + this + getTypeConstraints());
-        LOG.debug("Compatible relation types: " + compatibleTypes.keySet().stream().map(Type::getLabel).collect(Collectors.toSet()));
+        LOG.trace("Inferring relation type of atom: " + this + getTypeConstraints());
+        LOG.trace("Compatible relation types: " + compatibleTypes.asMap().entrySet().stream()
+                .sorted(Comparator.comparing(e -> -e.getValue().size()))
+                .map(e -> e.getKey().getLabel() + "[" + e.getValue().size() + "]").collect(Collectors.joining(", ")));
 
         return compatibleTypes.asMap().entrySet().stream()
                 .sorted(Comparator.comparing(e -> -e.getValue().size()))

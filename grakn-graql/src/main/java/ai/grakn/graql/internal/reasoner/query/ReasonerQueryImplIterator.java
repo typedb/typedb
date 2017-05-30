@@ -71,8 +71,18 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         LOG.trace("CQ plan: " + query.getResolutionPlan());
 
         this.atomicQueryIterator = new ReasonerAtomicQuery(topAtom).iterator(new QueryAnswer(), subGoals, cache);
+        //getAtomicQueryIterator(topAtom);
         this.queryPrime = ReasonerQueries.prime(query, topAtom);
     }
+
+    /*
+    private Iterator<Answer> getAtomicQueryIterator(Atom topAtom) {
+        Iterator<ReasonerQueryIterator> qIterator = new ReasonerAtomicQuery(topAtom).getQueryStream()
+                .map(q -> q.iterator(new QueryAnswer(), subGoals, cache))
+                .iterator();
+        return Iterators.concat(qIterator);
+    }
+    */
 
     @Override
     public boolean hasNext() {

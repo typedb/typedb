@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.RelationType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -44,6 +45,7 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import java.util.Comparator;
 import javafx.util.Pair;
@@ -287,7 +289,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             answers = dCache.record(ruleHead, answers);
         }
 
-
         //unify answers
         boolean isHeadEquivalent = this.isEquivalent(ruleHead);
         Set<Var> queryVars = this.getVarNames().size() < ruleHead.getVarNames().size()? ruleUnifier.keySet() : ruleHead.getVarNames();
@@ -351,10 +352,30 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ReasonerQueryIterator iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return new ReasonerAtomicQueryIterator(this, sub, subGoals, cache);
+    public Iterator<Answer> iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        Iterator<ReasonerAtomicQueryIterator> qIterator = getQueryStream()
+                .map(q -> new ReasonerAtomicQueryIterator(q, sub, subGoals, cache))
+                .iterator();
+        return Iterators.concat(qIterator);
     }
 
+    /**
+     * @return stream of atomic query obtained by inserting all inferred possible types (if ambiguous)
+     */
+    Stream<ReasonerAtomicQuery> getQueryStream(){
+        Atom atom = getAtom();
+        if (!atom.isRelation() || atom.getType() != null) return Stream.of(this);
+        else{
+            List<RelationType> relationTypes = ((Relation) atom).inferPossibleRelationTypes();
+            return relationTypes.stream()
+                    .map(type -> ((Relation) AtomicFactory.create(atom, atom.getParentQuery())).addType(type))
+                    .map(ReasonerAtomicQuery::new);
+        }
+    }
+
+    /**
+     * @return iterator of all rules applicable to this atomic query including permuted cases when the role types are blank
+     */
     Iterator<RuleTuple> getRuleIterator(){
         return getAtom().getApplicableRules().stream()
                 .flatMap(r -> {
@@ -366,6 +387,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .sorted(Comparator.comparing(rt -> -rt.getRule().resolutionPriority()))
                 .iterator();
     }
+
     /**
      *
      * <p>

@@ -61,7 +61,6 @@ import java.util.function.Function;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
 import static java.util.stream.Collectors.toSet;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.flatMap;
 
 /**
  *
@@ -298,32 +297,8 @@ public class ReasonerUtils {
         return relRoles.stream().filter(typeRoles::contains).collect(toSet());
     }
 
-    public static final Function<RoleType, Set<RelationType>> roleToRelationTypes =
-            role -> role.relationTypes().stream()
-                    .filter(rt -> !rt.isImplicit())
-                    .collect(toSet());
-
     /**
-     * convert a given role type to a set of relation types in which it can appear including the role type hierarchy
-     */
-    public static final Function<RoleType, Set<RelationType>> roleHierarchyToRelationTypes =
-            role -> role.subTypes().stream()
-                    .flatMap(r -> roleToRelationTypes.apply(r).stream())
-                    .collect(toSet());
-
-    /**
-     * convert a given entity type to a set of relation types in which it can play roles including entity type hierarchy
-     */
-    public static final Function<Type, Set<RelationType>> typeToRelationTypes =
-            type -> type.subTypes().stream()
-                    .flatMap(t -> t.plays().stream())
-                    .flatMap(roleType -> roleType.relationTypes().stream())
-                    .filter(rt -> !rt.isImplicit())
-                    .collect(toSet());
-
-
-    /**
-     * convert a given entity type to a map of relation types in which it can play roles and the corresponding role types including entity type hierarchy
+     * convert a given role type to a map of relation types in which it can play roles and the corresponding role types including entity type hierarchy
      */
     public static final Function<RoleType, Multimap<RelationType, RoleType>> roleHierarchyToRelationTypesWithRoles =
             role -> {
@@ -356,12 +331,12 @@ public class ReasonerUtils {
             };
 
     /**
-     *
-     * @param m1
-     * @param m2
-     * @param <K>
-     * @param <V>
-     * @return
+     * calculates map intersection by doing an intersection on key sets and accumulating the keys
+     * @param m1 first operand
+     * @param m2 second operand
+     * @param <K> map key type
+     * @param <V> map value type
+     * @return map intersection
      */
     public static <K, V> Multimap<K, V> multimapIntersection(Multimap<K, V> m1, Multimap<K, V> m2){
         Multimap<K, V> intersection = HashMultimap.create();
@@ -370,27 +345,16 @@ public class ReasonerUtils {
                 .filter(e -> keyIntersection.contains(e.getKey()))
                 .forEach(e -> intersection.put(e.getKey(), e.getValue()));
         return intersection;
-
     }
 
-    /**
-     * compute the set of compatible relation types for given types (intersection of allowed sets of relation types for each entry type)
+    /** TODO
+     * compute the map of compatible relation types for given types (intersection of allowed sets of relation types for each entry type)
+     * and compatible role types
      * @param types for which the set of compatible relation types is to be computed
      * @param typeMapper function mapping a type to the set of compatible relation types
      * @param <T> type generic
-     * @return set of compatible relation types
+     * @return map of compatible relation types and their corresponding role types
      */
-    public static <T extends Type> Set<RelationType> getCompatibleRelationTypes(Set<T> types, Function<T, Set<RelationType>> typeMapper) {
-        Set<RelationType> compatibleTypes = new HashSet<>();
-        if (types.isEmpty()) return compatibleTypes;
-        Iterator<T> it = types.iterator();
-        compatibleTypes.addAll(typeMapper.apply(it.next()));
-        while(it.hasNext() && compatibleTypes.size() > 1) {
-            compatibleTypes.retainAll(typeMapper.apply(it.next()));
-        }
-        return compatibleTypes;
-    }
-
     public static <T extends Type> Multimap<RelationType, RoleType> getCompatibleRelationTypesWithRoles(Set<T> types, Function<T, Multimap<RelationType, RoleType>> typeMapper) {
         Multimap<RelationType, RoleType> compatibleTypes = HashMultimap.create();
         if (types.isEmpty()) return compatibleTypes;
