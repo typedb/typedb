@@ -21,6 +21,7 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
@@ -40,6 +41,7 @@ import static java.util.stream.Collectors.toSet;
 public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGenerator<T> {
 
     private Optional<Boolean> meta = Optional.empty();
+    private Optional<Boolean> isAbstract = Optional.empty();
 
     AbstractTypeGenerator(Class<T> type) {
         super(type);
@@ -61,6 +63,10 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
         if (!includeMeta()) {
             types.remove(metaType());
             types.removeAll(otherMetaTypes());
+        }
+
+        if(!includeAbstract()){
+            types = types.stream().filter(type -> Schema.MetaSchema.isMetaLabel(type.getLabel()) || !type.isAbstract()).collect(toSet());
         }
         
         if (types.isEmpty() && includeNonMeta()) {
@@ -92,8 +98,17 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
         return !meta.orElse(false);
     }
 
+    private final boolean includeAbstract(){
+        return isAbstract.orElse(false);
+    }
+
     final AbstractTypeGenerator<T> excludeMeta() {
         meta = Optional.of(false);
+        return this;
+    }
+
+    final AbstractTypeGenerator<T> excludeAbstract() {
+        isAbstract = Optional.of(false);
         return this;
     }
 

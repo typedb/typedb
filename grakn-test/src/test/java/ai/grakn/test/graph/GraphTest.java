@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static ai.grakn.util.ErrorMessage.VALIDATION_IS_ABSTRACT;
+import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -145,15 +145,13 @@ public class GraphTest {
             }
         }
 
-        expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(VALIDATION_IS_ABSTRACT.getMessage(label));
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(IS_ABSTRACT.getMessage(label));
 
         try(GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "abstractTest")){
             try(GraknGraph graph = session.open(GraknTxType.WRITE)){
                 graph.getEntityType(label).addEntity();
-                graph.commit();
             }
         }
-
     }
 }

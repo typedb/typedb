@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
 import static ai.grakn.util.ErrorMessage.VALIDATION_INSTANCE;
-import static ai.grakn.util.ErrorMessage.VALIDATION_IS_ABSTRACT;
+import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_MORE_CASTING_THAN_ROLES;
@@ -189,7 +189,7 @@ class ValidateGlobalRules {
                 conceptType.<TypeImpl>getIncomingNeighbours(Schema.EdgeLabel.SHARD).anyMatch(thing ->
                 thing.getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().isPresent())){
 
-            return Optional.of(VALIDATION_IS_ABSTRACT.getMessage(conceptType.getLabel()));
+            return Optional.of(IS_ABSTRACT.getMessage(conceptType.getLabel()));
         }
         return Optional.empty();
     }

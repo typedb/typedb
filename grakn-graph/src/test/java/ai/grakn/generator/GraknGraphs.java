@@ -199,8 +199,9 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 Type type = type();
-                type.setAbstract(true);
-                summary(type, "setAbstract", true);
+                boolean isAbstract = random.nextBoolean();
+                type.setAbstract(isAbstract);
+                summary(type, "setAbstract", isAbstract);
             },
             () -> {
                 EntityType entityType1 = entityType();

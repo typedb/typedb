@@ -140,7 +140,7 @@ public class ValidatorTest extends GraphTestBase{
         x4.superType(x3);
 
         expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x1.getLabel())));
+        expectedException.expectMessage(containsString(ErrorMessage.IS_ABSTRACT.getMessage(x1.getLabel())));
 
         graknGraph.commit();
     }
