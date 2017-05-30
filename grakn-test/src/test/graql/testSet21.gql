@@ -1,29 +1,10 @@
 insert
 
-#Roles
-
-role1 sub role;
-role2 sub role;
-
 #Entities
 
 entity1 sub entity;
 sub-entity1 sub entity1;
 entity2 sub entity;
-
-#Relations
-
-relation1 sub relation
-	relates role1
-	relates role2;
-
-sub-relation1 sub relation1
-	relates role1
-	relates role2;
-
-relation2 sub relation
-    relates role1
-    relates role2;
 
 #Rules
 
