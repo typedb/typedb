@@ -45,6 +45,7 @@ import javax.annotation.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.engine.GraknEngineConfig.ADMIN_PASSWORD_PROPERTY;
@@ -83,8 +84,8 @@ public class GraknEngineServer implements AutoCloseable {
         taskManager = startTaskManager();
         usersHandler = UsersHandler.create(prop.getProperty(ADMIN_PASSWORD_PROPERTY));
 
-        @Nullable String secret = prop.getProperty(JWT_SECRET_PROPERTY, null);
-        jwtHandler = secret != null? JWTHandler.create(secret) : null;
+        Optional<String> secret = prop.tryProperty(JWT_SECRET_PROPERTY);
+        jwtHandler = secret.map(JWTHandler::create).orElse(null);
 
         startHTTP();
         printStartMessage(prop.getProperty(SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER), prop.getLogFilePath());

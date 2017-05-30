@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.Properties;
 
 
@@ -265,9 +266,8 @@ public class GraknEngineConfig {
          throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(property, configFilePath));
     }
 
-    public String getProperty(String property, String defaultValue) {
-        return prop.containsKey(property) ? prop.getProperty(property)
-                                          : defaultValue ;
+    public Optional<String> tryProperty(String property) {
+        return Optional.ofNullable(prop.getProperty(property));
     }
 
     public int getPropertyAsInt(String property) {
