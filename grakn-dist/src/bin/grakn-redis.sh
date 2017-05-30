@@ -63,5 +63,11 @@ clean)
     executeRedisCli flushall
     executeRedisCli shutdown
     ;;
-
+status)
+    if [[ $(executeRedisCli PONG) ]]; then
+        echo "Redis is running"
+	else
+	    echo "Redis is not running"
+	fi
+	;;
 esac

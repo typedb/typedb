@@ -113,7 +113,7 @@ clean)
     ;;
 
 status)
-
+    "${GRAKN_HOME}/bin/grakn-redis.sh" status
     "${GRAKN_HOME}/bin/grakn-engine.sh" status
     if [ "$USE_KAFKA" ]; then
         "${GRAKN_HOME}/bin/kafka-server-status.sh"
