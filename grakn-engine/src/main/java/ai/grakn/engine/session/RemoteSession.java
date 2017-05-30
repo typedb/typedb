@@ -55,7 +55,6 @@ public class RemoteSession extends WebSocketAdapter {
     @Override
     public void onWebSocketClose(int statusCode, String reason) {
         String message = "Websocket closed, code: " + statusCode + ", reason: " + reason;
-        System.out.println("sheep" + message);
         // 1000 = Normal close, 1001 = Going away
         if (statusCode == 1000 || statusCode == 1001) {
             LOG.debug(message);
@@ -69,7 +68,6 @@ public class RemoteSession extends WebSocketAdapter {
     public void onWebSocketText(String message) {
         try {
             LOG.debug("Received message: " + message);
-            System.out.println("cow" + message);
 
             Json json = Json.read(message);
 
