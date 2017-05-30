@@ -62,6 +62,11 @@ stop)
     ;;
 clean)
     echo "Cleaning redis"
+
+    if [ ! $(redisRunning) ] ; then
+        executeRedisServer "${GRAKN_HOME}/conf/redis/redis.conf"
+    fi
+
     executeRedisCli flushall
     executeRedisCli shutdown
     ;;
