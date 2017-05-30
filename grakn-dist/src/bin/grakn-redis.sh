@@ -32,9 +32,9 @@ redisRunning()
 
 executeRedisServer(){
     if [ "$(uname)" == "Darwin" ]; then
-        "${GRAKN_HOME}/bin/"redis-server-osx $1 &
+        "${GRAKN_HOME}/bin/"redis-server-osx $1
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-        "${GRAKN_HOME}/bin/"redis-server-linux $1 &
+        "${GRAKN_HOME}/bin/"redis-server-linux $1
     fi
 }
 
