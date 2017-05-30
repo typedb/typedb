@@ -22,6 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static ai.grakn.util.ErrorMessage.VALIDATION_IS_ABSTRACT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -129,5 +130,30 @@ public class GraphTest {
         expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(graph.getKeyspace()));
 
         graph.putEntityType("A Thing");
+    }
+
+    @Test
+    public void whenAddingEntitiesToAbstractTypeCreatedInDifferentTransaction_Throw(){
+        assumeFalse(usingTinker());
+
+        String label = "An Abstract Thing";
+
+        try(GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "abstractTest")){
+            try(GraknGraph graph = session.open(GraknTxType.WRITE)){
+                graph.putEntityType(label).setAbstract(true);
+                graph.commit();
+            }
+        }
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(VALIDATION_IS_ABSTRACT.getMessage(label));
+
+        try(GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "abstractTest")){
+            try(GraknGraph graph = session.open(GraknTxType.WRITE)){
+                graph.getEntityType(label).addEntity();
+                graph.commit();
+            }
+        }
+
     }
 }
