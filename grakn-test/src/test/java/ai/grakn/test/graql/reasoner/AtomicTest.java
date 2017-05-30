@@ -51,11 +51,8 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;
-<<<<<<< HEAD
 import java.util.List;
-import java.util.stream.Collectors;
-=======
->>>>>>> 0314b7528f6070ac53b227e7b0da8b5a7eb93b84
+
 import javafx.util.Pair;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.BeforeClass;
