@@ -22,7 +22,6 @@ package ai.grakn.test;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.JWTHandler;
-import com.jayway.restassured.RestAssured;
 import org.junit.rules.ExternalResource;
 import spark.Service;
 
@@ -79,7 +78,7 @@ public class SparkContext extends ExternalResource {
         spark = Service.ignite();
         configureSpark(spark, config, JWTHandler.create(config.getProperty(JWT_SECRET_PROPERTY)));
 
-        RestAssured.baseURI = uri();
+        GraknTestEnv.setRestAssuredUri(config);
 
         createControllers.accept(spark, config);
 
