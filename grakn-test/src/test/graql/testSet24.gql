@@ -33,4 +33,3 @@ isa inference-rule
 $x isa entity1;
 $y isa entity1;
 $z isa entity1;
-
