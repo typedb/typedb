@@ -49,15 +49,15 @@ executeRedisCli(){
 case "$1" in
 
 start)
-	if [ $(redisRunning) ] ; then
-    	echo "Redis is already running"
+    if [ $(redisRunning) ] ; then
+        echo "Redis is already running"
     else
-    	echo "Starting redis"
-    	executeRedisServer "${GRAKN_HOME}/conf/redis/redis.conf"
-	fi
+        echo "Starting redis"
+        executeRedisServer "${GRAKN_HOME}/conf/redis/redis.conf"
+    fi
     ;;
 stop)
-	echo "Stopping redis"
+    echo "Stopping redis"
     executeRedisCli shutdown
     ;;
 clean)
@@ -66,7 +66,7 @@ clean)
     executeRedisCli shutdown
     ;;
 status)
-	if [ -e $REDIS_PS ] && ps -p `cat $REDIS_PS` > /dev/null ; then
+    if [ -e $REDIS_PS ] && ps -p `cat $REDIS_PS` > /dev/null ; then
         echo "Redis is running"
     else
         echo "Redis has stopped"
