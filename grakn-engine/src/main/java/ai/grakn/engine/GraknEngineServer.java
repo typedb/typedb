@@ -130,10 +130,11 @@ public class GraknEngineServer implements AutoCloseable {
     public void startHTTP() {
         configureSpark(spark, prop, jwtHandler);
 
-        // Start the websocket for Graql
-        spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, new RemoteSession(usersHandler));
-
         boolean passwordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
+
+        // Start the websocket for Graql
+        RemoteSession graqlWebSocket = passwordProtected ? new RemoteSession(usersHandler) : new RemoteSession(null);
+        spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
         // Start all the controllers
         EngineGraknGraphFactory factory = EngineGraknGraphFactory.getInstance();
