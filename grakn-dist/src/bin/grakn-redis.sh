@@ -67,7 +67,7 @@ status)
     if [[ $(executeRedisCli PONG) ]]; then
         echo "Redis is running"
 	else
-	    echo "Redis is not running"
+	    echo "Redis has stopped"
 	fi
 	;;
 esac
