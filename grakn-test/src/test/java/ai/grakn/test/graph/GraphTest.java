@@ -36,7 +36,7 @@ public class GraphTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void isClosedTest() throws Exception {
+    public void whencCommitting_EnsureGraphTransactionIsClosed() throws Exception {
         GraknGraph graph = engine.factoryWithNewKeyspace().open(GraknTxType.WRITE);
         String keyspace = graph.getKeyspace();
         graph.putEntityType("thing");
@@ -63,7 +63,7 @@ public class GraphTest {
     }
 
     @Test
-    public void testSameGraphs() throws GraknValidationException {
+    public void whenFetchingGraphsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureGraphsAreTheSame() throws GraknValidationException {
         String key = "mykeyspace";
         GraknGraph graph1 = Grakn.session(Grakn.DEFAULT_URI, key).open(GraknTxType.WRITE);
         graph1.close();
