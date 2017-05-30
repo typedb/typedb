@@ -31,12 +31,11 @@ import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertTrue;
 
 public class UserControllerTest {
-    private static final String adminPassword = "top secret";
     private UsersHandler users;
 
     @Rule
     public final SparkContext ctx = SparkContext.withControllers(spark -> {
-        users = UsersHandler.create(adminPassword);
+        users = UsersHandler.create("top secret");
         new UserController(spark, users);
     });
 

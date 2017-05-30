@@ -17,13 +17,12 @@ import static org.junit.Assert.assertTrue;
 public class AuthControllerTest{
 
     private static final JWTHandler jwtHandler = JWTHandler.create("secret token");
-    private static final String adminPassword = "top secret";
 
     private UsersHandler usersHandler;
 
     @Rule
     public final SparkContext ctx = SparkContext.withControllers(spark -> {
-        usersHandler = UsersHandler.create(adminPassword);
+        usersHandler = UsersHandler.create("top secret");
         new AuthController(spark, true, jwtHandler, usersHandler);
     });
 

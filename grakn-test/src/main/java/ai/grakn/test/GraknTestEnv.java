@@ -84,7 +84,7 @@ public abstract class GraknTestEnv {
         ensureCassandraRunning();
 
         // start engine
-        RestAssured.baseURI = "http://" + config.getProperty("server.host") + ":" + config.getProperty("server.port");
+        RestAssured.baseURI = getUri(config);
         GraknEngineServer server = GraknEngineServer.start(config);
 
         LOG.info("engine started.");
@@ -178,6 +178,10 @@ public abstract class GraknTestEnv {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    static String getUri(GraknEngineConfig config) {
+        return "http://" + config.getProperty("server.host") + ":" + config.getProperty("server.port");
     }
 
     public static String randomKeyspace(){

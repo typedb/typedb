@@ -19,7 +19,6 @@
 
 package ai.grakn.client;
 
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.controller.TasksController;

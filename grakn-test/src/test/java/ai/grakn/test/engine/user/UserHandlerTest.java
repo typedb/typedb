@@ -41,11 +41,9 @@ import static org.junit.Assert.assertTrue;
 
 public class UserHandlerTest {
 
+    private static final UsersHandler users = UsersHandler.create("top secret");
     private static String userName = "geralt";
     private static String password = "witcher";
-
-    private static final String adminPassword = "top secret";
-    private static final UsersHandler users = UsersHandler.create(adminPassword);
 
     // This is necessary because `UsersHandler` communicates with the system keyspace
     @ClassRule

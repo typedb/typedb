@@ -52,7 +52,6 @@ public class RemoteSession {
     private final Logger LOG = LoggerFactory.getLogger(RemoteSession.class);
     private final @Nullable UsersHandler usersHandler;
 
-    //TODO dont use the default uri
     public RemoteSession(@Nullable UsersHandler usersHandler) {
         this.usersHandler = usersHandler;
     }

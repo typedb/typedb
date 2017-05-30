@@ -68,7 +68,7 @@ public class SparkContext extends ExternalResource {
     }
 
     public String uri() {
-        return "http://localhost:" + port();
+        return GraknTestEnv.getUri(config);
     }
 
     public GraknEngineConfig config() {
