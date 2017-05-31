@@ -20,6 +20,7 @@ package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -38,6 +39,7 @@ import static ai.grakn.test.graphs.TestGraph.loadFromFile;
  */
 public class GraphContext implements TestRule {
 
+    private EngineGraknGraphFactory factory;
     private GraknGraph graph;
     private String keyspace;
     private Consumer<GraknGraph> preLoad;
@@ -45,6 +47,7 @@ public class GraphContext implements TestRule {
     private boolean assumption = true;
 
     private GraphContext(Consumer<GraknGraph> build, String[] files){
+        this.factory = EngineGraknGraphFactory.create(GraknEngineConfig.create().getProperties());
         this.preLoad = build;
         this.files = files;
         this.keyspace = randomKeyspace();
@@ -89,8 +92,12 @@ public class GraphContext implements TestRule {
         loadGraph();
     }
 
+    public EngineGraknGraphFactory factory(){
+        return factory;
+    }
+
     private GraknGraph getEngineGraph(){
-        return EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE);
+        return factory().getGraph(keyspace, GraknTxType.WRITE);
     }
 
     private void loadGraph() {

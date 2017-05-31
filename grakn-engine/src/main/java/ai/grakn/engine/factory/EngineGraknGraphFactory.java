@@ -21,7 +21,6 @@ package ai.grakn.engine.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.factory.FactoryBuilder;
 
 import java.util.Properties;
@@ -43,19 +42,14 @@ import java.util.Properties;
  */
 public class EngineGraknGraphFactory {
     private final Properties properties;
-    private static EngineGraknGraphFactory instance = null;
 
-
-    public static synchronized EngineGraknGraphFactory getInstance() {
-        if (instance == null) {
-            instance = new EngineGraknGraphFactory();
-        }
-        return instance;
+    public static EngineGraknGraphFactory create(Properties properties) {
+        return new EngineGraknGraphFactory(properties);
     }
 
-    private EngineGraknGraphFactory() {
-        properties = new Properties();
-        properties.putAll(GraknEngineConfig.getInstance().getProperties());
+    private EngineGraknGraphFactory(Properties properties) {
+        this.properties = new Properties();
+        this.properties.putAll(properties);
     }
 
     public synchronized void refreshConnections(){

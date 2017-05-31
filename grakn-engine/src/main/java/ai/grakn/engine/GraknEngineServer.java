@@ -77,12 +77,14 @@ public class GraknEngineServer implements AutoCloseable {
     private final TaskManager taskManager;
     private final UsersHandler usersHandler;
     private final @Nullable JWTHandler jwtHandler;  // TODO: Make sure controllers handle the null case
+    private final EngineGraknGraphFactory factory;
 
     private GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
 
+        factory = EngineGraknGraphFactory.create(prop.getProperties());
         taskManager = startTaskManager();
-        usersHandler = UsersHandler.create(prop.getProperty(ADMIN_PASSWORD_PROPERTY));
+        usersHandler = UsersHandler.create(prop.getProperty(ADMIN_PASSWORD_PROPERTY), factory);
 
         Optional<String> secret = prop.tryProperty(JWT_SECRET_PROPERTY);
         jwtHandler = secret.map(JWTHandler::create).orElse(null);
@@ -137,7 +139,6 @@ public class GraknEngineServer implements AutoCloseable {
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
         // Start all the controllers
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.getInstance();
         new GraqlController(factory, spark);
         new ConceptController(factory, spark);
         new DashboardController(factory, spark);
@@ -203,6 +204,10 @@ public class GraknEngineServer implements AutoCloseable {
 
     public TaskManager getTaskManager(){
         return taskManager;
+    }
+
+    public EngineGraknGraphFactory factory() {
+        return factory;
     }
 
     /**

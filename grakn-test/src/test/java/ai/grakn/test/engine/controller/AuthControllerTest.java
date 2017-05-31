@@ -3,9 +3,11 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.JWTHandler;
+import ai.grakn.test.GraphContext;
 import ai.grakn.test.SparkContext;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,9 +22,12 @@ public class AuthControllerTest{
 
     private UsersHandler usersHandler;
 
+    @ClassRule
+    public static final GraphContext graph = GraphContext.empty();
+
     @Rule
     public final SparkContext ctx = SparkContext.withControllers(spark -> {
-        usersHandler = UsersHandler.create("top secret");
+        usersHandler = UsersHandler.create("top secret", graph.factory());
         new AuthController(spark, true, jwtHandler, usersHandler);
     });
 

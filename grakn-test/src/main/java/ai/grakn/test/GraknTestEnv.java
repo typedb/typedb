@@ -133,21 +133,19 @@ public abstract class GraknTestEnv {
         LOG.info("stopping engine...");
 
         server.close();
-        clearGraphs();
+        clearGraphs(server.factory());
 
         LOG.info("engine stopped.");
 
         // There is no way to stop the embedded Casssandra, no such API offered.
     }
 
-    public static GraknGraph emptyGraph() {
-        return EngineGraknGraphFactory.getInstance().getGraph(randomKeyspace(), GraknTxType.WRITE);
+    public static GraknGraph emptyGraph(EngineGraknGraphFactory factory) {
+        return factory.getGraph(randomKeyspace(), GraknTxType.WRITE);
     }
 
-    private static void clearGraphs() {
+    private static void clearGraphs(EngineGraknGraphFactory engineGraknGraphFactory) {
         // Drop all keyspaces
-        EngineGraknGraphFactory engineGraknGraphFactory = EngineGraknGraphFactory.getInstance();
-
         try(GraknGraph systemGraph = engineGraknGraphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .execute()
