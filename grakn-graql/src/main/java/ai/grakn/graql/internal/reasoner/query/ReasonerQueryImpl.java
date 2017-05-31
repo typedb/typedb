@@ -194,7 +194,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public Set<Atomic> getAtoms() { return atomSet;}
 
-    private List<Atom> getPrioritisedAtoms(){
+    List<Atom> getPrioritisedAtoms(){
         return selectAtoms().stream()
                 .sorted(Comparator.comparing(Atom::resolutionPriority).reversed())
                 .collect(Collectors.toList());

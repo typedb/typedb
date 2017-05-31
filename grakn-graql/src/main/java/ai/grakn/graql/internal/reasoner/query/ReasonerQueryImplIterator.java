@@ -23,9 +23,16 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,53 +50,35 @@ import org.slf4j.LoggerFactory;
  */
 class ReasonerQueryImplIterator extends ReasonerQueryIterator {
 
-    private Answer partialSub = new QueryAnswer();
-    private final ReasonerQueryImpl queryPrime;
-
-    private final QueryCache<ReasonerAtomicQuery> cache;
-    private final Set<ReasonerAtomicQuery> subGoals;
-
-    private final Iterator<Answer> atomicQueryIterator;
-    private Iterator<Answer> queryIterator = Collections.emptyIterator();
-
+    private final Iterator<Answer> queryIterator;
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
     ReasonerQueryImplIterator(ReasonerQueryImpl q,
                               Answer sub,
                               Set<ReasonerAtomicQuery> subGoals,
                               QueryCache<ReasonerAtomicQuery> cache){
-        this.subGoals = subGoals;
-        this.cache = cache;
 
         //get prioritised atom and construct atomic query from it
         ReasonerQueryImpl query = new ReasonerQueryImpl(q);
         query.addSubstitution(sub);
-        Atom topAtom = query.getTopAtom();
 
         LOG.trace("CQ: " + query);
         LOG.trace("CQ delta: " + sub);
         LOG.trace("CQ plan: " + query.getResolutionPlan());
 
-        this.atomicQueryIterator = new ReasonerAtomicQuery(topAtom).iterator(new QueryAnswer(), subGoals, cache);
-        this.queryPrime = ReasonerQueries.prime(query, topAtom);
+        LinkedList<ReasonerAtomicQuery> queries = query.getPrioritisedAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toCollection(LinkedList::new));
+        this.queryIterator = new ReasonerAtomicQueryCumulativeIterator(new QueryAnswer(), queries, subGoals, cache);
     }
 
     @Override
     public boolean hasNext() {
-        if (queryIterator.hasNext()) return true;
-
-        if (atomicQueryIterator.hasNext()) {
-            partialSub = atomicQueryIterator.next();
-            queryIterator = queryPrime.iterator(partialSub, subGoals, cache);
-            return hasNext();
-        }
-        else return false;
+        return queryIterator.hasNext();
     }
 
     @Override
     public Answer next() {
         Answer sub = queryIterator.next();
-        sub = sub.merge(partialSub, true);
+        //LOG.debug("CQ answer: " + sub);
         return sub;
     }
 }
