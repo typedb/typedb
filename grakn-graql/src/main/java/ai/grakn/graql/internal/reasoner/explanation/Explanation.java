@@ -45,10 +45,10 @@ public class Explanation implements AnswerExplanation {
     }
     Explanation(ReasonerQuery q, Set<Answer> ans){
         this.query = q;
-        this.answers = new HashSet<>(ans);
+        this.answers = ans;
     }
     Explanation(Explanation e){
-        this.answers = new HashSet<>(e.answers);
+        this.answers = e.answers;;
         this.query = e.getQuery();
     }
 
