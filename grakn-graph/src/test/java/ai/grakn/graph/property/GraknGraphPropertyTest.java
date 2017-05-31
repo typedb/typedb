@@ -36,6 +36,7 @@ import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.generator.AbstractTypeGenerator.Abstract;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
@@ -161,7 +162,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingGetResourcesByValueAfterAddingAResource_TheResultIncludesTheResource(
             @Open GraknGraph graph,
-            @FromGraph @Meta(false) ResourceType resourceType, @From(ResourceValues.class) Object value) {
+            @FromGraph @Meta(false) @Abstract(false)  ResourceType resourceType, @From(ResourceValues.class) Object value) {
         assumeThat(value.getClass().getName(), is(resourceType.getDataType().getName()));
 
         Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(value);

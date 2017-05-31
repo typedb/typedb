@@ -41,7 +41,7 @@ import static java.util.stream.Collectors.toSet;
 public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGenerator<T> {
 
     private Optional<Boolean> meta = Optional.empty();
-    private Optional<Boolean> isAbstract = Optional.empty();
+    private Optional<Boolean> includeAbstract = Optional.empty();
 
     AbstractTypeGenerator(Class<T> type) {
         super(type);
@@ -99,7 +99,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
     }
 
     private final boolean includeAbstract(){
-        return isAbstract.orElse(true);
+        return includeAbstract.orElse(true);
     }
 
     final AbstractTypeGenerator<T> excludeMeta() {
@@ -108,7 +108,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
     }
 
     final AbstractTypeGenerator<T> excludeAbstract() {
-        isAbstract = Optional.of(false);
+        includeAbstract = Optional.of(false);
         return this;
     }
 
@@ -116,10 +116,21 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
         this.meta = Optional.of(meta.value());
     }
 
+    public final void configure(Abstract includeAbstract) {
+        this.includeAbstract = Optional.of(includeAbstract.value());
+    }
+
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
     public @interface Meta {
+        boolean value() default true;
+    }
+
+    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
+    @Retention(RUNTIME)
+    @GeneratorConfiguration
+    public @interface Abstract {
         boolean value() default true;
     }
 }
