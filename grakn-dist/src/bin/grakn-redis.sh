@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # <http://www.gnu.org/licenses/gpl.txt>.
 
+REDIS_PS=/tmp/grakn-redis.pid
+
 if [ -z "${GRAKN_HOME}" ]; then
     [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
     GRAKN_BIN=$(cd "$(dirname "${path}")" && pwd -P)
@@ -28,20 +30,51 @@ redisRunning()
     echo $(ps -ef | grep "redis-server" | grep -v grep | awk '{ print $2}')
 }
 
+executeRedisServer(){
+    if [ "$(uname)" == "Darwin" ]; then
+        "${GRAKN_HOME}/bin/"redis-server-osx $1
+    elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+        "${GRAKN_HOME}/bin/"redis-server-linux $1
+    fi
+}
+
+executeRedisCli(){
+    if [ "$(uname)" == "Darwin" ]; then
+        "${GRAKN_HOME}/bin/"redis-cli-osx $1
+    elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+        "${GRAKN_HOME}/bin/"redis-cli-linux $1
+    fi
+}
+
 case "$1" in
 
 start)
-
-	if [ $(redisRunning) ] ; then
-    	echo "Redis is already running"
+    if [ $(redisRunning) ] ; then
+        echo "Redis is already running"
     else
-    	echo "Starting redis"
-    	"${GRAKN_HOME}/bin/"redis-server "${GRAKN_HOME}/conf/redis/redis.conf" &
-	fi
+        echo "Starting redis"
+        executeRedisServer "${GRAKN_HOME}/conf/redis/redis.conf"
+    fi
     ;;
 stop)
-	echo "Stopping redis"
-    "${GRAKN_HOME}/bin/redis-cli" shutdown
+    echo "Stopping redis"
+    executeRedisCli shutdown
     ;;
+clean)
+    echo "Cleaning redis"
 
+    if [ ! $(redisRunning) ] ; then
+        executeRedisServer "${GRAKN_HOME}/conf/redis/redis.conf"
+    fi
+
+    executeRedisCli flushall
+    executeRedisCli shutdown
+    ;;
+status)
+    if [ -e $REDIS_PS ] && ps -p `cat $REDIS_PS` > /dev/null ; then
+        echo "Redis is running"
+    else
+        echo "Redis has stopped"
+    fi
+    ;;
 esac
