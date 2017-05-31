@@ -48,7 +48,7 @@ public class Explanation implements AnswerExplanation {
         this.answers = ans;
     }
     Explanation(Explanation e){
-        this.answers = e.answers;;
+        this.answers = e.answers;
         this.query = e.getQuery();
     }
 
