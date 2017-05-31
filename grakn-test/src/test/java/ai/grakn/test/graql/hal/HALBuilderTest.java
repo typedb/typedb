@@ -20,8 +20,7 @@ public class HALBuilderTest {
     public static final GraphContext academyGraph = GraphContext.preLoad(AcademyGraph.get());
 
     @Test
-    public void whenReceivingHALResponse_EnsureResponseContainsConceptDetails()
-    {
+    public void whenReceivingHALResponse_EnsureResponseContainsConceptDetails() {
         Json response = getHALRepresentation(academyGraph.graph(), "match $x isa entity; limit 5;");
         String keyspace = academyGraph.graph().getKeyspace();
         assertEquals(5, response.asList().size());
@@ -36,8 +35,27 @@ public class HALBuilderTest {
 
 
     @Test
-    public void whenUseSelectInQuery_EnsureWeReceiveAValidHALResponse() {
+    public void whenUseSelectInQueryUsingInference_EnsureWeReceiveAValidHALResponse() {
         Json response = getHALRepresentation(academyGraph.graph(), "match $article isa article has subject \"Italian Referendum\";\n" +
+                "$platform isa oil-platform has distance-from-coast <= 18;\n" +
+                "(location: $country, located: $platform) isa located-in;\n" +
+                "$country isa country has name \"Italy\";\n" +
+                "(owner: $company, owned: $platform) isa owns;\n" +
+                "(issuer: $company, issued: $bond) isa issues;\n" +
+                "select $bond, $article; offset 0; limit 5;");
+
+        // Limit to 5 results, each result will contain 2 variables, so the expected size of HAL results is 10.
+        assertEquals(10, response.asList().size());
+        response.asJsonList().forEach(halObj -> {
+            assertEquals(halObj.at("_baseType").asString(), "ENTITY");
+            String entityType = halObj.at("_type").asString();
+            assertTrue(entityType.equals("bond") || entityType.equals("article"));
+        });
+    }
+
+    @Test
+    public void whenUseSelectInQueryWithoutUsingInference_EnsureWeReceiveAValidHALResponse() {
+        Json response = getHALRepresentationNoInference(academyGraph.graph(), "match $article isa article has subject \"Italian Referendum\";\n" +
                 "$platform isa oil-platform has distance-from-coast <= 18;\n" +
                 "(location: $country, located: $platform) isa located-in;\n" +
                 "$country isa country has name \"Italy\";\n" +
@@ -67,6 +85,11 @@ public class HALBuilderTest {
 
     private Json getHALRepresentation(GraknGraph graph, String queryString) {
         Query<?> query = graph.graql().materialise(false).infer(true).parse(queryString);
+        return renderHALArrayData((MatchQuery) query, 0, 5);
+    }
+
+    private Json getHALRepresentationNoInference(GraknGraph graph, String queryString) {
+        Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
         return renderHALArrayData((MatchQuery) query, 0, 5);
     }
 
