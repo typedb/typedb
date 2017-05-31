@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
 import static ai.grakn.util.ErrorMessage.VALIDATION_INSTANCE;
-import static ai.grakn.util.ErrorMessage.VALIDATION_IS_ABSTRACT;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_MORE_CASTING_THAN_ROLES;
@@ -176,21 +175,6 @@ class ValidateGlobalRules {
             }
         }
 
-        return Optional.empty();
-    }
-
-    /**
-     *
-     * @param conceptType The concept type to be validated
-     * @return An error message if the conceptType  abstract and has incoming isa edges
-     */
-    static Optional<String> validateIsAbstractHasNoIncomingIsaEdges(TypeImpl<?, ?> conceptType){
-        if(conceptType.isAbstract() &&
-                conceptType.<TypeImpl>getIncomingNeighbours(Schema.EdgeLabel.SHARD).anyMatch(thing ->
-                thing.getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().isPresent())){
-
-            return Optional.of(VALIDATION_IS_ABSTRACT.getMessage(conceptType.getLabel()));
-        }
         return Optional.empty();
     }
 

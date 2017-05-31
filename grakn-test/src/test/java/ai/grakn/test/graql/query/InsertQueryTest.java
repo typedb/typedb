@@ -404,7 +404,6 @@ public class InsertQueryTest {
         String roleTypeLabel = HAS_OWNER.getLabel("title").getValue();
         qb.insert(
                 label("new-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("new-type").isAbstract(),
                 label("new-type").plays(roleTypeLabel),
                 var("x").isa("new-type")
         ).execute();
@@ -417,7 +416,6 @@ public class InsertQueryTest {
         //noinspection OptionalGetWithoutIsPresent
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
-        assertTrue(newType.asEntityType().isAbstract());
         assertTrue(newType.plays().contains(movieGraph.graph().getRoleType(roleTypeLabel)));
 
         assertTrue(qb.match(var().isa("new-type")).ask().execute());

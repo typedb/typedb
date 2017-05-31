@@ -125,26 +125,6 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.commit();
     }
 
-
-    @Test
-    public void whenCommittingAbstractTypeWithInstances_Throw(){
-        EntityType x1 = graknGraph.putEntityType("x1");
-        graknGraph.putEntityType("x2");
-        EntityType x3 = graknGraph.putEntityType("x3");
-        EntityType x4 = graknGraph.putEntityType("x4");
-        x1.addEntity();
-
-        x1.setAbstract(true);
-        x4.setAbstract(true);
-
-        x4.superType(x3);
-
-        expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x1.getLabel())));
-
-        graknGraph.commit();
-    }
-
     @Test
     public void whenDeletingRelations_EnsureGraphRemainsValid() throws GraknValidationException {
         // ontology

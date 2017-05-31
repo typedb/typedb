@@ -63,6 +63,7 @@ public enum ErrorMessage {
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]"),
     TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
     CONCEPT_HAS_NO_SHARD("Concept [%s] does not have any shard"),
+    IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -72,7 +73,6 @@ public enum ErrorMessage {
             "which it's type [%s] is not connecting to via a relates connection \n"),
 
     VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play RoleType [%s] \n"),
-    VALIDATION_IS_ABSTRACT("The abstract Type [%s] should not have any instances \n"),
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("RoleType [%s] does not have a relates connection to any Relation Type. \n"),
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
     VALIDATION_INSTANCE("Instance [%s] of type [%s] does not play the required role [%s] \n"),
