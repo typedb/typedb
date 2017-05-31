@@ -20,12 +20,15 @@ package ai.grakn.test;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import org.junit.rules.ExternalResource;
+
+import com.jayway.restassured.RestAssured;
 
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
@@ -89,6 +92,10 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void before() throws Throwable {
+        GraknEngineConfig properties = GraknEngineConfig.getInstance();
+        RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");        
+        if (!properties.getPropertyAsBool("test.start.embedded.components", true))
+            return;
         if(startKafka){
             startKafka();
         }
@@ -106,6 +113,9 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void after() {
+        if (!GraknEngineConfig.getInstance().getPropertyAsBool("test.start.embedded.components", true))
+            return;
+        
         noThrow(MockBackgroundTask::clearTasks, "Error clearing tasks");
 
         try {

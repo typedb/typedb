@@ -86,7 +86,6 @@ public abstract class GraknTestEnv {
         ensureCassandraRunning();
 
         // start engine
-        RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
         GraknEngineServer server = GraknEngineServer.start(taskManagerClass, port);
 
         LOG.info("engine started.");
