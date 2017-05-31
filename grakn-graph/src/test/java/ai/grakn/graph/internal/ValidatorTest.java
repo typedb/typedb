@@ -28,7 +28,6 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Test;
 
@@ -124,18 +123,6 @@ public class ValidatorTest extends GraphTestBase{
         expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(alone.getLabel())));
 
         graknGraph.commit();
-    }
-
-
-    @Test
-    public void whenCommittingAbstractTypeWithInstances_Throw(){
-        EntityType x1 = graknGraph.putEntityType("x1");
-        x1.addEntity();
-
-        expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(containsString(ErrorMessage.IS_ABSTRACT.getMessage(x1.getLabel())));
-
-        x1.setAbstract(true);
     }
 
     @Test

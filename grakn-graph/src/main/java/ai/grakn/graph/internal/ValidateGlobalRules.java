@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
 import static ai.grakn.util.ErrorMessage.VALIDATION_INSTANCE;
-import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_MORE_CASTING_THAN_ROLES;

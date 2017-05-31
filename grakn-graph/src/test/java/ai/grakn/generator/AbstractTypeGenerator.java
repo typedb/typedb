@@ -99,7 +99,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
     }
 
     private final boolean includeAbstract(){
-        return isAbstract.orElse(false);
+        return isAbstract.orElse(true);
     }
 
     final AbstractTypeGenerator<T> excludeMeta() {
