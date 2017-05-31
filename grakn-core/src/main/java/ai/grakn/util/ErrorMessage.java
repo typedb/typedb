@@ -44,7 +44,7 @@ public enum ErrorMessage {
             "Resource Type [%s] does not conform to the regular expression"),
     REGEX_NOT_STRING("The Resource Type [%s] is not of type String so it cannot support regular expressions"),
     ROLE_IS_NULL("The provided role cannot be null with roleplayer [%s]"),
-    CLOSED_CLEAR("This graph has been closed due to clearing it"),
+    CLOSED_CLEAR("The session for graph has been closed due to deleting the graph"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The transaction was not %s. The graph was actually effected directly"),
     IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
@@ -63,6 +63,7 @@ public enum ErrorMessage {
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]"),
     TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
     CONCEPT_HAS_NO_SHARD("Concept [%s] does not have any shard"),
+    IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -72,7 +73,6 @@ public enum ErrorMessage {
             "which it's type [%s] is not connecting to via a relates connection \n"),
 
     VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play RoleType [%s] \n"),
-    VALIDATION_IS_ABSTRACT("The abstract Type [%s] should not have any instances \n"),
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("RoleType [%s] does not have a relates connection to any Relation Type. \n"),
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
     VALIDATION_INSTANCE("Instance [%s] of type [%s] does not play the required role [%s] \n"),
@@ -174,6 +174,7 @@ public enum ErrorMessage {
 
     //Server Errors
     UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
+    UNAVAILABLE_PROPERTY("Property requested [%s] has not been defined. See configuration file [%s] for configured properties."),
     MISSING_MANDATORY_REQUEST_PARAMETERS("Missing mandatory query parameter [%s]"),
     MISSING_REQUEST_BODY("Empty body- it should contain the Graql query to be executed."),
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),

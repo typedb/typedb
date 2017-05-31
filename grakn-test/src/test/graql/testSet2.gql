@@ -1,28 +1,9 @@
 insert
 
-#Roles
-
-role1 sub role;
-role2 sub role;
-
-
 #Entities
 
-entity1 sub entity
-	plays role1
-	plays role2;
-
-entity2 sub entity
-	plays role1
-	plays role2;
-
-
-#Relations
-
-relation1 sub relation
-	relates role1
-	relates role2;
-
+entity1 sub entity;
+entity2 sub entity;
 
 #Rules
 
@@ -33,7 +14,6 @@ isa inference-rule
 	rhs {
 		$x isa entity2;
 	};
-
 
 #Data
 

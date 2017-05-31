@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeId;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -35,14 +36,14 @@ import java.util.Set;
  * @author Sheldon Hall
  */
 
-public class SumMapReduce extends GraknMapReduce<Number> {
+public class SumMapReduce extends StatisticsMapReduce<Number> {
 
     // Needed internally for OLAP tasks
     public SumMapReduce() {
     }
 
-    public SumMapReduce(Set<TypeId> selectedTypeIds, String resourceDataType) {
-        super(selectedTypeIds, resourceDataType);
+    public SumMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreePropertyKey) {
+        super(selectedTypeIds, resourceDataType, degreePropertyKey);
     }
 
     @Override
@@ -51,7 +52,7 @@ public class SumMapReduce extends GraknMapReduce<Number> {
             if (resourceIsValid(vertex)) {
                 emitter.emit(NullObject.instance(),
                         ((Long) vertex.value(Schema.ConceptProperty.VALUE_LONG.name())) *
-                                ((Long) vertex.value(DegreeVertexProgram.DEGREE)));
+                                ((Long) vertex.value(degreePropertyKey)));
                 return;
             }
             emitter.emit(NullObject.instance(), 0L);
@@ -59,7 +60,7 @@ public class SumMapReduce extends GraknMapReduce<Number> {
             if (resourceIsValid(vertex)) {
                 emitter.emit(NullObject.instance(),
                         ((Double) vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name())) *
-                                ((Long) vertex.value(DegreeVertexProgram.DEGREE)));
+                                ((Long) vertex.value(degreePropertyKey)));
                 return;
             }
             emitter.emit(NullObject.instance(), 0D);

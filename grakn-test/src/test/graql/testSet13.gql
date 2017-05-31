@@ -7,7 +7,6 @@ role2 sub role;
 role3 sub role1;
 role4 sub role2;
 
-
 #Entities
 
 entity1 sub entity
@@ -39,7 +38,6 @@ isa inference-rule
 	rhs {
 		(role3:$x, role4:$y) isa relation3;
 	};
-
 
 #Data
 

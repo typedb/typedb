@@ -73,6 +73,7 @@
         <orientdb.version>3.2.3.0</orientdb.version>
         <orientdb-gremlin-core.version>3.2.1</orientdb-gremlin-core.version>
         <logback.version>1.1.7</logback.version>
+        <slf4j.version>1.7.20</slf4j.version>
         <csv.version>1.4</csv.version>
         <jool.version>3.8.5</jool.version>
         <cassandra-unit.version>2.1.9.2</cassandra-unit.version>
@@ -91,7 +92,7 @@
         <quickcheck.version>0.7</quickcheck.version>
         <httpclient.version>4.5.3</httpclient.version>
         <findbugs.version>3.0.1</findbugs.version>
-        <redis.version>2.6.0</redis.version>
+        <redis.version>2.9.0</redis.version>
         <redis-test.version>0.6</redis-test.version>
         <main.basedir>${project.parent.basedir}</main.basedir>
     </properties>
@@ -184,6 +185,12 @@
             <version>${guava.version}</version>
         </dependency>
         <dependency>
+            <!-- SLF4J is the logging API all modules should use -->
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>annotations</artifactId>
             <version>${findbugs.version}</version>
@@ -226,20 +233,23 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <!--JCL-over-SLF4J to migrate from java logger to slf4j (redis) -->
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!--log4J-over-SLF4J to migrate from log4j logger to slf4j (kafka) -->
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>test-tools</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.cassandra</groupId>
-            <artifactId>cassandra-all</artifactId>
-            <version>${cassandra-all.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>it.unimi.dsi</groupId>
-                    <artifactId>fastutil</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 

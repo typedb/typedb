@@ -107,8 +107,8 @@ public class TitanInternalFactoryTest extends TitanTestBase{
         assertEquals(mg1, mg3);
         assertEquals(tinkerGraphMg1, mg3.getTinkerPopGraph());
 
-        assertTrue(mg1.isBatchLoadingEnabled());
-        assertFalse(mg2.isBatchLoadingEnabled());
+        assertTrue(mg1.isBatchGraph());
+        assertFalse(mg2.isBatchGraph());
 
         assertNotEquals(mg1, mg2);
         assertNotEquals(tinkerGraphMg1, tinkerGraphMg2);

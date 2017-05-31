@@ -48,12 +48,12 @@ import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import mjson.Json;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,13 +94,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //----------------------------- Config Paths
     public static final String SHARDING_THRESHOLD = "graph.sharding-threshold";
     public static final String NORMAL_CACHE_TIMEOUT_MS = "graph.ontology-cache-timeout-ms";
-    public static final String BATCH_CACHE_TIMEOUT_MS = "graph.batch.ontology-cache-timeout-ms";
 
     //----------------------------- Graph Shared Variable
     private final String keyspace;
     private final String engine;
     private final Properties properties;
-    private final boolean batchLoadingEnabled;
     private final G graph;
     private final ElementFactory elementFactory;
     private final GraphCache graphCache;
@@ -108,7 +106,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
 
-    public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled, Properties properties) {
+    public AbstractGraknGraph(G graph, String keyspace, String engine, Properties properties) {
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
@@ -116,7 +114,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         elementFactory = new ElementFactory(this);
 
         //Initialise Graph Caches
-        graphCache = new GraphCache(properties, batchLoadingEnabled);
+        graphCache = new GraphCache(properties);
 
         //Initialise Graph
         getTxCache().openTx(GraknTxType.WRITE);
@@ -125,8 +123,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(initialiseMetaConcepts()) close(true, false);
         getTxCache().showImplicitTypes(false);
 
-        //Set batch loading because ontology has been loaded
-        this.batchLoadingEnabled = batchLoadingEnabled;
     }
 
     @Override
@@ -221,7 +217,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public boolean isReadOnly(){
-        return getTxCache().isTxReadOnly();
+        return GraknTxType.READ.equals(getTxCache().txType());
     }
 
     @Override
@@ -240,8 +236,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public boolean isBatchLoadingEnabled(){
-        return batchLoadingEnabled;
+    public boolean isBatchGraph(){
+        return GraknTxType.BATCH.equals(getTxCache().txType());
     }
 
     @SuppressWarnings("unchecked")
@@ -346,7 +342,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     void checkOntologyMutation(){
         checkMutation();
-        if(isBatchLoadingEnabled()){
+        if(isBatchGraph()){
             throw new GraphRuntimeException(ErrorMessage.SCHEMA_LOCKED.getMessage());
         }
     }
@@ -532,22 +528,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     //------------------------------------ Lookup
-    /**
-     * Looks up concept by using id against vertex ids. Does not use the index.
-     * This is primarily used to fix duplicates when indicies cannot be relied on.
-     *
-     * @param id The id of the concept which should match the vertex id
-     * @return The concept if it exists.
-     */
-    public <T extends Concept> T getConceptRawId(Object id) {
-        GraphTraversal<Vertex, Vertex> traversal = getTinkerPopGraph().traversal().V(id);
-        if (traversal.hasNext()) {
-            return getElementFactory().buildConcept(traversal.next());
-        } else {
-            return null;
-        }
-    }
-
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
         if(getTxCache().isConceptCached(id)){
@@ -710,22 +690,19 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    /**
-     * Clears the graph completely.
-     */
     @Override
-    public void clear() {
-        innerClear();
-    }
-
-    private void innerClear(){
+    public void delete() {
+        closeSession();
         clearGraph();
-        closeTransaction(ErrorMessage.CLOSED_CLEAR.getMessage());
+        getTxCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
+
+        //Remove the graph from the system keyspace
+        SystemKeyspace.deleteKeyspace(getKeyspace());
     }
 
     //This is overridden by vendors for more efficient clearing approaches
     protected void clearGraph(){
-        operateOnOpenGraph(() -> getTinkerPopGraph().traversal().V().drop().iterate());
+        getTinkerPopGraph().traversal().V().drop().iterate();
     }
 
     @Override
@@ -805,7 +782,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         boolean submissionNeeded = !getTxCache().getShardingCount().isEmpty() ||
                 !getTxCache().getModifiedCastings().isEmpty() ||
                 !getTxCache().getModifiedResources().isEmpty();
-        JSONObject conceptLog = getTxCache().getFormattedLog();
+        Json conceptLog = getTxCache().getFormattedLog();
 
         LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransactionInternal();
@@ -866,12 +843,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     /**
      * Returns the duplicates of the given concept
      * @param mainConcept primary concept - this one is returned by the index and not considered a duplicate
-     * @param conceptVertexIds Set of Ids containing potential duplicates of the main concept
+     * @param conceptIds Set of Ids containing potential duplicates of the main concept
      * @return a set containing the duplicates of the given concept
      */
-    private Set<? extends ConceptImpl> getDuplicates(ConceptImpl mainConcept, Set<ConceptId> conceptVertexIds){
-        Set<ConceptImpl> duplicated = conceptVertexIds.stream()
-                .map(id -> this.<ConceptImpl>getConceptRawId(id.getValue()))
+    private Set<? extends ConceptImpl> getDuplicates(ConceptImpl mainConcept, Set<ConceptId> conceptIds){
+        Set<ConceptImpl> duplicated = conceptIds.stream()
+                .map(this::<ConceptImpl>getConcept)
                 //filter non-null, will be null if previously deleted/merged
                 .filter(Objects::nonNull)
                 .collect(toSet());

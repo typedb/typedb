@@ -49,7 +49,7 @@ public class GraknOrientDBGraphTest {
 
     @After
     public void cleanup(){
-        graknGraph.clear();
+        graknGraph.admin().delete();
     }
 
     @Ignore // Failing remotely only

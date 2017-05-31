@@ -268,7 +268,7 @@ public class ReasonerUtils {
      * @param types entry type set
      * @return top non-meta types from within the provided set of role types
      */
-    public static Set<Type> getTopTypes(Set<? extends Type> types) {
+    public static <T extends Type> Set<T> getTopTypes(Set<T> types) {
         return types.stream()
                 .filter(rt -> Sets.intersection(getSuperTypes(rt), types).isEmpty())
                 .collect(toSet());
@@ -287,16 +287,20 @@ public class ReasonerUtils {
     }
 
     /**
-     * convert given role type to a set of relation types in which it can appear
+     * convert a given role type to a set of relation types in which it can appear including  the role type hierarchy
      */
     public static final Function<RoleType, Set<RelationType>> roleToRelationTypes =
-            role -> role.relationTypes().stream().filter(rt -> !rt.isImplicit()).collect(toSet());
+            role -> role.subTypes().stream()
+                    .flatMap(r -> r.relationTypes().stream())
+                    .filter(rt -> !rt.isImplicit())
+                    .collect(toSet());
 
     /**
-     * convert given entity type to a set of relation types in which it can play roles
+     * convert a given entity type to a set of relation types in which it can play roles including entity type hierarchy
      */
     public static final Function<Type, Set<RelationType>> typeToRelationTypes =
-            type -> type.plays().stream()
+            type -> type.subTypes().stream()
+                    .flatMap(t -> t.plays().stream())
                     .flatMap(roleType -> roleType.relationTypes().stream())
                     .filter(rt -> !rt.isImplicit())
                     .collect(toSet());

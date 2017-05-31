@@ -739,6 +739,8 @@ public class ReasonerTest {
         assertEquals(answers2.iterator().next().get("a").asResource().getValue().toString(), "23");
     }
 
+    //obsolete, should be handled by type inference
+    @Ignore
     @Test
     public void testReasoningWithQueryContainingRelates() {
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
@@ -752,6 +754,8 @@ public class ReasonerTest {
         assertQueriesEqual(query, query2);
     }
 
+    //obsolete, should be handled by type inference
+    @Ignore
     @Test
     public void testReasoningWithQueryContainingRelates2() {
         String queryString = "match ($x, $y) isa $rel;$rel relates $role;";

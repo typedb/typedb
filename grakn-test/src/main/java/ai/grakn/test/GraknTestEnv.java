@@ -103,9 +103,6 @@ public abstract class GraknTestEnv {
     }
 
     static void startKafka() throws Exception {
-        // Kafka is using log4j, which is super annoying. We make sure it only logs error here
-        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
-
         // Clean-up ironically uses a lot of memory
         if (KAFKA_COUNTER.getAndIncrement() == 0) {
             LOG.info("Starting kafka...");
@@ -144,6 +141,10 @@ public abstract class GraknTestEnv {
         // There is no way to stop the embedded Casssandra, no such API offered.
     }
 
+    public static GraknGraph emptyGraph() {
+        return EngineGraknGraphFactory.getInstance().getGraph(randomKeyspace(), GraknTxType.WRITE);
+    }
+
     private static void clearGraphs() {
         // Drop all keyspaces
         EngineGraknGraphFactory engineGraknGraphFactory = EngineGraknGraphFactory.getInstance();
@@ -154,8 +155,7 @@ public abstract class GraknTestEnv {
                     .forEach(x -> x.values().forEach(y -> {
                         String name = y.asResource().getValue().toString();
                         GraknGraph graph = engineGraknGraphFactory.getGraph(name, GraknTxType.WRITE);
-                        graph.clear();
-                        graph.admin().commitNoLogs();
+                        graph.admin().delete();
                     }));
         }
         engineGraknGraphFactory.refreshConnections();

@@ -28,6 +28,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -123,10 +124,17 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         type.cachedIsAbstract.ifPresent(value -> this.cachedIsAbstract.set(value));
     }
 
-    @Override
-    public Type copy(){
-        //noinspection unchecked
-        return new TypeImpl(this);
+    /**
+     * Flushes the internal transaction caches so that persisted information can be cached and shared between
+     * concepts
+     */
+    public void flushTxCache(){
+        cachedIsImplicit.flush();
+        cachedIsAbstract.flush();
+        cachedSuperType.flush();
+        cachedDirectSubTypes.flush();
+        cachedShards.flush();
+        cachedDirectPlays.flush();
     }
 
     @Override
@@ -137,12 +145,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     boolean isShard(){
         return cachedTypeLabel == null || cachedTypeLabel.getValue().startsWith("SHARDED TYPE-");
-    }
-
-    @SuppressWarnings("unchecked")
-    void copyCachedConcepts(T type){
-        ((TypeImpl<T, V>) type).cachedSuperType.ifPresent(value -> this.cachedSuperType.set(getGraknGraph().getTxCache().cacheClone(value)));
-        ((TypeImpl<T, V>) type).cachedDirectSubTypes.ifPresent(value -> this.cachedDirectSubTypes.set(getGraknGraph().getTxCache().cacheClone(value)));
     }
 
     /**
@@ -174,6 +176,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
             throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getLabel()));
         }
+
+        if(isAbstract()) throw new GraphRuntimeException(ErrorMessage.IS_ABSTRACT.getMessage(getLabel()));
 
         Vertex instanceVertex = getGraknGraph().addVertex(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
@@ -386,7 +390,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
             traversal.forEachRemaining(vertex -> {
                 ConceptImpl<Concept> concept = getGraknGraph().getElementFactory().buildConcept(vertex);
-                if (!concept.isCasting()) {
+                if (concept != null && !concept.isCasting()) {
                     instances.add((V) concept);
                 }
             });
@@ -601,8 +605,13 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The Type itself.
      */
     public T setAbstract(Boolean isAbstract) {
+        if(!Schema.MetaSchema.isMetaLabel(getLabel()) && isAbstract &&
+                this.<TypeImpl>getIncomingNeighbours(Schema.EdgeLabel.SHARD).anyMatch(thing ->
+                        thing.getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().isPresent())){
+            throw new GraphRuntimeException(ErrorMessage.IS_ABSTRACT.getMessage(getLabel()));
+        }
+
         setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
-        if(isAbstract) getGraknGraph().getTxCache().trackConceptForValidation(this);
         cachedIsAbstract.set(isAbstract);
         return getThis();
     }

@@ -125,7 +125,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The concept itself casted to the correct interface itself
      */
     T setUniqueProperty(Schema.ConceptProperty key, String id){
-        if(graknGraph.isBatchLoadingEnabled() || updateAllowed(key, id)) {
+        if(graknGraph.isBatchGraph() || updateAllowed(key, id)) {
             return setProperty(key, id);
         } else {
             throw new ConceptNotUniqueException(this, key, id);
@@ -537,8 +537,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     public boolean equals(Object object) {
         //Compare Concept
         //based on id because vertex comparisons are equivalent
-        if (this == object) return true;
-        return object instanceof ConceptImpl && ((ConceptImpl) object).getId().equals(getId());
+        return this == object || object instanceof ConceptImpl && ((ConceptImpl) object).getId().equals(getId());
     }
 
     @Override

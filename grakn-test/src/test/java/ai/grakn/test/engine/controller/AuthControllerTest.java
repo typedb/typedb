@@ -34,9 +34,24 @@ public class AuthControllerTest{
     }
 
     @Test
-    public void newSessionWithWrongPasswordAndUser() {
+    public void newSessionWithWrongUser() {
         UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "marco",
-        											   UsersHandler.USER_PASSWORD, "ciao", 
+        											   UsersHandler.USER_PASSWORD, "ciao",
+        											   UsersHandler.USER_IS_ADMIN, true));
+
+        Json body = Json.object("username", "mark", "password", "ciao");
+
+        Response dataResponseWrongUser = given().
+                contentType("application/json").
+                body(body.toString()).when().
+                post("/auth/session/");
+        dataResponseWrongUser.then().assertThat().statusCode(401);
+    }
+
+    @Test
+    public void newSessionWithWrongPassword() {
+        UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "marco",
+        											   UsersHandler.USER_PASSWORD, "ciao",
         											   UsersHandler.USER_IS_ADMIN, true));
 
         Json body = Json.object("username", "marco", "password", "hello");
@@ -46,20 +61,14 @@ public class AuthControllerTest{
                 body(body.toString()).when().
                 post("/auth/session/");
         dataResponseWrongPass.then().assertThat().statusCode(401);
-
-        Response dataResponseWrongUser = given().
-                contentType("application/json").
-                body(body.toString()).when().
-                post("/auth/session/");
-        dataResponseWrongUser.then().assertThat().statusCode(401);
     }
 
     @Ignore
     @Test
     public void newSessionWithExistingUser() {
         //Add a user
-        UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "giulio", 
-				   UsersHandler.USER_PASSWORD, "ciao", 
+        UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "giulio",
+				   UsersHandler.USER_PASSWORD, "ciao",
 				   UsersHandler.USER_IS_ADMIN, true));
 
         Json body = Json.object("username", "giulio", "password", "ciao");

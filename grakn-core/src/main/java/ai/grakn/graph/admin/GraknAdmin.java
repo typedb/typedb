@@ -69,7 +69,7 @@ public interface GraknAdmin {
      * @return true if batch loading is enabled
      */
     @CheckReturnValue
-    boolean isBatchLoadingEnabled();
+    boolean isBatchGraph();
 
     //------------------------------------- Meta Types ----------------------------------
     /**
@@ -207,10 +207,16 @@ public interface GraknAdmin {
      * @return A concept with the matching key and value
      */
     @CheckReturnValue
-    <T extends Concept> T  getConcept(Schema.ConceptProperty key, Object value);
+    <T extends Concept> T getConcept(Schema.ConceptProperty key, Object value);
 
     /**
      * Closes the root session this graph stems from. This will automatically rollback any pending transactions.
      */
     void closeSession();
+
+    /**
+     * Immediately closes the session and deletes the graph.
+     * Should be used with caution as this will invalidate any pending transactions
+     */
+    void delete();
 }

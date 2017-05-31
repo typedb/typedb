@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import org.junit.After;
 import org.junit.Before;
@@ -28,28 +29,31 @@ import org.junit.rules.ExpectedException;
 import java.util.UUID;
 
 public class GraphTestBase {
+    protected GraknSession graknSession;
     protected AbstractGraknGraph<?> graknGraph;
     private AbstractGraknGraph<?> graknGraphBatch;
+    private String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
+
     @Before
     public void setUpGraph() {
-        String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
-        graknGraphBatch = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
-        graknGraphBatch.close();
+        graknSession = Grakn.session(Grakn.IN_MEMORY, keyspace);
         graknGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
     }
 
     @After
-    public void destroyGraphAccessManager() throws Exception {
+    public void closeSession() throws Exception {
         graknGraph.close();
+        if(graknGraphBatch != null) graknGraphBatch.close();
+        graknSession.close();
     }
 
-    public AbstractGraknGraph<?> switchToBatchGraph(){
+    AbstractGraknGraph<?> switchToBatchGraph(){
         graknGraph.close();
-        graknGraphBatch = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, graknGraphBatch.getKeyspace()).open(GraknTxType.BATCH);
+        graknGraphBatch = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
         return graknGraphBatch;
     }
 }

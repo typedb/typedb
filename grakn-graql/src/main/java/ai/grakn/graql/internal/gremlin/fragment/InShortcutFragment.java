@@ -31,6 +31,7 @@ import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelsToTraversal;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabels;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.traverseRoleTypeFromShortcutEdge;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_ID;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
@@ -46,31 +47,39 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
 class InShortcutFragment extends AbstractFragment {
 
     private final Var edge;
-    private final Optional<Set<TypeLabel>> roleTypes;
-    private final Optional<Set<TypeLabel>> relationTypes;
+    private final Optional<Var> roleType;
+    private final Optional<Set<TypeLabel>> roleTypeLabels;
+    private final Optional<Set<TypeLabel>> relationTypeLabels;
 
     InShortcutFragment(
-            Var rolePlayer, Var edge, Var relation, Optional<Set<TypeLabel>> roleTypes,
-            Optional<Set<TypeLabel>> relationTypes) {
-        super(rolePlayer, relation, edge);
+            Var rolePlayer, Var edge, Var relation, Optional<Var> roleType, Optional<Set<TypeLabel>> roleTypeLabels,
+            Optional<Set<TypeLabel>> relationTypeLabels) {
+        super(rolePlayer, relation, edge, optionalVarToArray(roleType));
         this.edge = edge;
-        this.roleTypes = roleTypes;
-        this.relationTypes = relationTypes;
+        this.roleType = roleType;
+        this.roleTypeLabels = roleTypeLabels;
+        this.relationTypeLabels = relationTypeLabels;
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
         GraphTraversal<Vertex, Edge> edgeTraversal = traversal.inE(SHORTCUT.getLabel()).as(edge.getValue());
-        applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleTypes, graph);
-        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_ID, relationTypes, graph);
+
+        // Filter by any provided type labels
+        applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleTypeLabels, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_ID, relationTypeLabels, graph);
+
+        traverseRoleTypeFromShortcutEdge(edgeTraversal, roleType);
+
         edgeTraversal.outV();
     }
 
     @Override
     public String getName() {
-        String rel = displayOptionalTypeLabels(relationTypes);
-        String role = displayOptionalTypeLabels(roleTypes);
-        return "<-[shortcut:" + edge.shortName() + rel + role + "]-";
+        String role = roleType.map(rt -> " role:" + rt.shortName()).orElse("");
+        String rels = displayOptionalTypeLabels("rels", relationTypeLabels);
+        String roles = displayOptionalTypeLabels("roles", roleTypeLabels);
+        return "<-[shortcut:" + edge.shortName() + role + rels + roles + "]-";
     }
 
     @Override
@@ -87,16 +96,16 @@ class InShortcutFragment extends AbstractFragment {
         InShortcutFragment that = (InShortcutFragment) o;
 
         if (!edge.equals(that.edge)) return false;
-        if (!roleTypes.equals(that.roleTypes)) return false;
-        return relationTypes.equals(that.relationTypes);
+        if (!roleTypeLabels.equals(that.roleTypeLabels)) return false;
+        return relationTypeLabels.equals(that.relationTypeLabels);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + edge.hashCode();
-        result = 31 * result + roleTypes.hashCode();
-        result = 31 * result + relationTypes.hashCode();
+        result = 31 * result + roleTypeLabels.hashCode();
+        result = 31 * result + relationTypeLabels.hashCode();
         return result;
     }
 }

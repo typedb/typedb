@@ -112,7 +112,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
         // Clear graph before retrieving
         graph = factory.open(GraknTxType.WRITE);
-        graph.clear();
+        graph.admin().delete();
         graph = factory.open(GraknTxType.WRITE);
 
         for (int i = 0; i < size; i++) {
@@ -199,8 +199,9 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 Type type = type();
-                type.setAbstract(true);
-                summary(type, "setAbstract", true);
+                boolean isAbstract = random.nextBoolean();
+                type.setAbstract(isAbstract);
+                summary(type, "setAbstract", isAbstract);
             },
             () -> {
                 EntityType entityType1 = entityType();

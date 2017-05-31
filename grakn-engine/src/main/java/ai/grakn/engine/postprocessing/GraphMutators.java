@@ -23,6 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknBackendException;
+import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +73,11 @@ public abstract class GraphMutators {
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
     private static void runGraphMutationWithRetry(String keyspace, GraknTxType txType, Consumer<GraknGraph> mutatingFunction){
+        if(!SystemKeyspace.containsKeyspace(keyspace)){ //This may be slow.
+            LOG.warn("Attempting to execute mutation on graph [" + keyspace + "] which no longer exists");
+            return;
+        }
+
         for(int retry = 0; retry < MAX_RETRY; retry++) {
             try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, txType))  {
 

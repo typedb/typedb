@@ -35,11 +35,6 @@ public final class ResolutionStrategy {
     public static final int PARTIAL_SUBSTITUTION = 30;
 
     /**
-     * priority modifier for each rule that is applicable to a given atom
-     */
-    public static final int APPLICABLE_RULE = -1;
-
-    /**
      * priority modifier if a given atom is a resource atom
      */
     public static final int IS_RESOURCE_ATOM = 0;

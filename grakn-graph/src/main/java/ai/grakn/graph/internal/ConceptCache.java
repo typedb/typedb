@@ -39,8 +39,14 @@ import java.util.function.Supplier;
  *
  */
 class ConceptCache<V> {
+    //If no cache can produce the data then the database is read
     private final Supplier<V> databaseReader;
-    private Optional<V> cachedValue = Optional.empty();
+
+    //Transaction bound. If this is not set it does not yet exist in the scope of the transaction.
+    private ThreadLocal<V> cachedValue = new ThreadLocal<>();
+
+    //Graph bound value which has already been persisted and acts as a shared component cache
+    private Optional<V> sharedValue = Optional.empty();
 
     ConceptCache(Supplier<V> databaseReader){
         this.databaseReader = databaseReader;
@@ -52,10 +58,12 @@ class ConceptCache<V> {
      * @return The cached object.
      */
     public V get(){
-        if(!cachedValue.isPresent()){
-            V newValue = databaseReader.get();
-            if(newValue == null) return null;
-            cachedValue = Optional.of(newValue);
+        if(!isPresent()){
+            V value = null;
+            if(sharedValue.isPresent()) value = sharedValue.get();
+            if(value == null) value = databaseReader.get();
+            if(value == null) return null;
+            cachedValue.set(value);
         }
         return cachedValue.get();
     }
@@ -64,7 +72,7 @@ class ConceptCache<V> {
      * Clears the cache.
      */
     public void clear(){
-        cachedValue = Optional.empty();
+        cachedValue.remove();
     }
 
     /**
@@ -73,7 +81,7 @@ class ConceptCache<V> {
      * @param value the value to be cached
      */
     public void set(V value){
-        cachedValue = Optional.of(value);
+        cachedValue.set(value);
     }
 
     /**
@@ -81,7 +89,7 @@ class ConceptCache<V> {
      * @return true if there is anything stored in the cache
      */
     public boolean isPresent(){
-        return cachedValue.isPresent();
+        return cachedValue.get() != null;
     }
 
     /**
@@ -90,8 +98,16 @@ class ConceptCache<V> {
      * @param modifier the mutator function.
      */
     void ifPresent(Consumer<V> modifier){
-        if(cachedValue.isPresent()){
+        if(isPresent()){
             modifier.accept(cachedValue.get());
         }
+    }
+
+    /**
+     * Takes the current value in the transaction cache if it is present and puts it in the sharedValue reference so
+     * that it can be accessed via all transactions.
+     */
+    void flush(){
+        if(isPresent()) sharedValue = Optional.of(get());
     }
 }
