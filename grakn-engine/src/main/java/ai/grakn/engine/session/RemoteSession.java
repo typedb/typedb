@@ -48,8 +48,16 @@ public class RemoteSession extends WebSocketAdapter {
     private final Logger LOG = LoggerFactory.getLogger(RemoteSession.class);
     private final @Nullable UsersHandler usersHandler;
 
-    public RemoteSession(@Nullable UsersHandler usersHandler) {
+    private RemoteSession(@Nullable UsersHandler usersHandler) {
         this.usersHandler = usersHandler;
+    }
+
+    public static RemoteSession create() {
+        return new RemoteSession(null);
+    }
+
+    public static RemoteSession passwordProtected(UsersHandler usersHandler) {
+        return new RemoteSession(usersHandler);
     }
 
     @Override
