@@ -181,21 +181,6 @@ class ValidateGlobalRules {
 
     /**
      *
-     * @param conceptType The concept type to be validated
-     * @return An error message if the conceptType  abstract and has incoming isa edges
-     */
-    static Optional<String> validateIsAbstractHasNoIncomingIsaEdges(TypeImpl<?, ?> conceptType){
-        if(conceptType.isAbstract() &&
-                conceptType.<TypeImpl>getIncomingNeighbours(Schema.EdgeLabel.SHARD).anyMatch(thing ->
-                thing.getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().isPresent())){
-
-            return Optional.of(IS_ABSTRACT.getMessage(conceptType.getLabel()));
-        }
-        return Optional.empty();
-    }
-
-    /**
-     *
      * @param relationType the relation type to be validated
      * @return Error messages if the role type sub structure does not match the relation type sub structure
      */
