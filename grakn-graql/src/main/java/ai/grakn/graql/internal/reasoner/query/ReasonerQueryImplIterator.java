@@ -83,7 +83,7 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
             queryIterator = queryPrime.iterator(partialSub, subGoals, cache);
             return hasNext();
         }
-        else return false;
+        return false;
     }
 
     @Override
