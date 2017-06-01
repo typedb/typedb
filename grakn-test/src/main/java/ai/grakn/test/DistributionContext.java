@@ -24,8 +24,11 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.util.GraknVersion;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
+import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 
 import java.io.File;
@@ -122,6 +125,8 @@ public class DistributionContext extends ExternalResource {
 
     @Override
     public void before() throws Throwable {
+        assertPackageBuilt();
+
         unzipDistribution();
 
         ensureCassandraRunning();
@@ -140,6 +145,14 @@ public class DistributionContext extends ExternalResource {
             stopKafka();
         } catch (Exception e) {
             throw new RuntimeException("Could not shut down", e);
+        }
+    }
+
+    private void assertPackageBuilt() throws IOException {
+        boolean packaged = Files.exists(Paths.get(TARGET_DIRECTORY, ZIP));
+
+        if(!packaged) {
+            Assert.fail("Grakn has not been packaged. Please package before running tests with the distribution context.");
         }
     }
 
