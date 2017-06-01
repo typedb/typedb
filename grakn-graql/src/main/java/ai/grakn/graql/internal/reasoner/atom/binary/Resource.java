@@ -173,21 +173,31 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
             priority += ResolutionStrategy.IS_RESOURCE_ATOM;
 
             if (vps.isEmpty()) {
-                if (parent.getIdPredicate(getValueVariable()) != null) {
+                if (parent.getIdPredicate(getValueVariable()) != null
+                        || parent.getIdPredicate(getVarName()) != null) {
                     priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
                 } else{
                     priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
                 }
             } else {
                 for (ValuePredicateAdmin vp : vps) {
+                    //vp with a value
                     if (vp.isSpecific()) {
                         priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
-                    } else if (vp.getInnerVar().isPresent()) {
+
+                    } //vp with a variable
+                    else if (vp.getInnerVar().isPresent()) {
                         VarPatternAdmin innerVar = vp.getInnerVar().orElse(null);
-                        if (parent.getIdPredicate(innerVar.getVarName()) != null) {
+                        //variable mapped inside the query
+                        if (parent.getIdPredicate(innerVar.getVarName()) != null
+                                || parent.getIdPredicate(getVarName()) != null) {
                             priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
-                        } else {
+                        } //variable equality
+                        else if (vp.equalsValue().isPresent()){
                             priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
+                        } //variable inequality
+                        else {
+                            priority += ResolutionStrategy.COMPARISON_VARIABLE_VALUE_PREDICATE;
                         }
                     } else {
                         priority += ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;

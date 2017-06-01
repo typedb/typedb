@@ -85,8 +85,13 @@ public final class ResolutionStrategy {
 
     /**
      * priority modifier for each value predicate with variable
+     */
+    public static final int VARIABLE_VALUE_PREDICATE = -100;
+
+    /**
+     * priority modifier for each value predicate with variable requiring comparison
      * NB: atom satisfying this criterion should be resolved last
      */
-    public static final int VARIABLE_VALUE_PREDICATE = -1000;
+    public static final int COMPARISON_VARIABLE_VALUE_PREDICATE = - 1000;
 }
 

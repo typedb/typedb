@@ -28,9 +28,6 @@ public class ReasonerAtomicQueryCumulativeIterator extends ReasonerQueryIterator
     private final Iterator<Answer> atomicQueryIterator;
     private Iterator<Answer> queryIterator;
 
-
-    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
-
     ReasonerAtomicQueryCumulativeIterator(Answer sub, LinkedList<ReasonerAtomicQuery> qs,
                                           Set<ReasonerAtomicQuery> subGoals,
                                           QueryCache<ReasonerAtomicQuery> cache){

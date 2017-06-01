@@ -58,15 +58,13 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
                               Set<ReasonerAtomicQuery> subGoals,
                               QueryCache<ReasonerAtomicQuery> cache){
 
-        //get prioritised atom and construct atomic query from it
         ReasonerQueryImpl query = new ReasonerQueryImpl(q);
         query.addSubstitution(sub);
 
         LOG.trace("CQ: " + query);
-        LOG.trace("CQ delta: " + sub);
-        LOG.trace("CQ plan: " + query.getResolutionPlan());
+        //LOG.trace("CQ plan: " + query.getResolutionPlan());
 
-        LinkedList<ReasonerAtomicQuery> queries = query.getPrioritisedAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toCollection(LinkedList::new));
+        LinkedList<ReasonerAtomicQuery> queries = query.getResolutionPlan();
         this.queryIterator = new ReasonerAtomicQueryCumulativeIterator(new QueryAnswer(), queries, subGoals, cache);
     }
 
@@ -77,8 +75,6 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
 
     @Override
     public Answer next() {
-        Answer sub = queryIterator.next();
-        //LOG.debug("CQ answer: " + sub);
-        return sub;
+        return queryIterator.next();
     }
 }
