@@ -24,4 +24,8 @@ script:
     - mvn test -Dtest=$TESTS -DfailIfNoTests=false jacoco:report
     - bash <(curl -s https://codecov.io/bash)
 before_install:
+<<<<<<< HEAD
   - npm config set registry http://registry.npmjs.org/
+=======
+  - npm config set registry http://registry.npmjs.org/
+>>>>>>> central/stable
