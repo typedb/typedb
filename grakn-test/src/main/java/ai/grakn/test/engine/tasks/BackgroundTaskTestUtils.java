@@ -27,7 +27,6 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.engine.util.EngineID;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
@@ -51,7 +50,6 @@ import static ai.grakn.engine.tasks.TaskSchedule.now;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
-import static java.util.stream.Stream.generate;
 
 /**
  * Class holding useful methods for use throughout background task tests

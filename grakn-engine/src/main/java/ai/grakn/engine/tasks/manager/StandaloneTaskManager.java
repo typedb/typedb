@@ -33,15 +33,14 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
-import java.util.HashSet;
-import java.util.Set;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
