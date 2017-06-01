@@ -18,6 +18,10 @@
 
 package ai.grakn.exception;
 
+import java.util.Map;
+
+import static ai.grakn.util.ErrorMessage.TEMPLATE_MISSING_KEY;
+
 /**
  * <p>
  *     Syntax Exception
@@ -40,5 +44,19 @@ public class GraqlSyntaxException extends GraknException {
      */
     public static GraqlSyntaxException parsingError(String error){
         return new GraqlSyntaxException(error);
+    }
+
+    /**
+     * Thrown when there is a syntactic error in a Graql template
+     */
+    public static GraqlSyntaxException parsingTemplateError(String statmentType, String invalidText, Map<String, Object> data){
+        return new GraqlSyntaxException("Invalid " + statmentType + " statement: " + invalidText + " for data " + data);
+    }
+
+    /**
+     * Thrown when a key is missing during parsing a template with matching data
+     */
+    public static GraqlSyntaxException parsingTemplateMissingKey(String invalidText, Map<String, Object> data){
+        return new GraqlSyntaxException(TEMPLATE_MISSING_KEY.getMessage(invalidText, data));
     }
 }
