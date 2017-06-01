@@ -34,9 +34,9 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.admin.GraknAdmin;
@@ -723,7 +723,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public void commit() throws GraknValidationException{
+    public void commit() throws InvalidGraphException{
         close(true, true);
     }
 
@@ -766,14 +766,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     /**
      * Commits to the graph without submitting any commit logs.
      *
-     * @throws GraknValidationException when the graph does not conform to the object concept
+     * @throws InvalidGraphException when the graph does not conform to the object concept
      */
     @Override
-    public Optional<String> commitNoLogs() throws GraknValidationException {
+    public Optional<String> commitNoLogs() throws InvalidGraphException {
         return close(true, false);
     }
 
-    private Optional<String> commitWithLogs() throws GraknValidationException {
+    private Optional<String> commitWithLogs() throws InvalidGraphException {
         validateGraph();
 
         boolean submissionNeeded = !getTxCache().getShardingCount().isEmpty() ||
@@ -804,16 +804,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    void validateGraph() throws GraknValidationException {
+    void validateGraph() throws InvalidGraphException {
         Validator validator = new Validator(this);
         if (!validator.validate()) {
             List<String> errors = validator.getErrorsFound();
-            StringBuilder error = new StringBuilder();
-            error.append(ErrorMessage.VALIDATION.getMessage(errors.size()));
-            for (String s : errors) {
-                error.append(s);
-            }
-            throw new GraknValidationException(error.toString());
+            if(!errors.isEmpty()) throw InvalidGraphException.validationErrors(errors);
         }
     }
 

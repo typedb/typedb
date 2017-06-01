@@ -28,7 +28,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -142,7 +142,7 @@ public class EntityTest extends GraphTestBase{
     }
 
     @Test
-    public void whenAddingMultipleResourcesToEntity_EnsureDifferentRelationsAreBuilt() throws GraknValidationException {
+    public void whenAddingMultipleResourcesToEntity_EnsureDifferentRelationsAreBuilt() throws InvalidGraphException {
         String resourceTypeId = "A Resource Thing";
         EntityType entityType = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
@@ -178,7 +178,7 @@ public class EntityTest extends GraphTestBase{
     }
 
     @Test
-    public void whenMissingKeyOnEntity_Throw() throws GraknValidationException {
+    public void whenMissingKeyOnEntity_Throw() throws InvalidGraphException {
         String resourceTypeId = "A Resource Thing";
         EntityType entityType = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
@@ -186,7 +186,7 @@ public class EntityTest extends GraphTestBase{
 
         entityType.addEntity();
 
-        expectedException.expect(GraknValidationException.class);
+        expectedException.expect(InvalidGraphException.class);
         graknGraph.validateGraph();
     }
 

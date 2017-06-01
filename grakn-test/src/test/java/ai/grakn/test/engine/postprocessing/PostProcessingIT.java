@@ -28,7 +28,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
@@ -58,7 +58,7 @@ public class PostProcessingIT {
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Test
-    public void checkThatDuplicateResourcesAtLargerScaleAreMerged() throws GraknValidationException, ExecutionException, InterruptedException {
+    public void checkThatDuplicateResourcesAtLargerScaleAreMerged() throws InvalidGraphException, ExecutionException, InterruptedException {
         assumeFalse(usingTinker());
 
         GraknSession session = engine.factoryWithNewKeyspace();
@@ -112,7 +112,7 @@ public class PostProcessingIT {
                     Thread.sleep((long) Math.floor(Math.random() * 1000));
 
                     graph.commit();
-                } catch (InterruptedException | SchemaViolationException | PropertyNotUniqueException | GraknValidationException e ) {
+                } catch (InterruptedException | SchemaViolationException | PropertyNotUniqueException | InvalidGraphException e ) {
                     //IGNORED
                 }
             }));

@@ -32,7 +32,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.generator.AbstractTypeGenerator.Abstract;
@@ -286,7 +286,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingClose_TheGraphIsClosed(GraknGraph graph) throws GraknValidationException {
+    public void whenCallingClose_TheGraphIsClosed(GraknGraph graph) throws InvalidGraphException {
         graph.close();
         assertTrue(graph.isClosed());
     }

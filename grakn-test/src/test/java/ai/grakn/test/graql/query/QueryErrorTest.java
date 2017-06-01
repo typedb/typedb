@@ -20,7 +20,7 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.MatchQuery;
@@ -143,7 +143,7 @@ public class QueryErrorTest {
     }
 
     @Test
-    public void testExceptionWhenNoHasResourceRelation() throws GraknValidationException {
+    public void testExceptionWhenNoHasResourceRelation() throws InvalidGraphException {
         // Create a fresh graph, with no has between person and name
         QueryBuilder emptyQb = empty.graph().graql();
         emptyQb.insert(

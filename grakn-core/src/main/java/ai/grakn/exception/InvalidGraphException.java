@@ -19,6 +19,9 @@
 package ai.grakn.exception;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.util.ErrorMessage;
+
+import java.util.List;
 
 /**
  * <p>
@@ -33,7 +36,22 @@ import ai.grakn.GraknGraph;
  * @author fppt
  */
 public class InvalidGraphException extends GraknException{
-    public InvalidGraphException(String error) {
-        super(error);
+    private List<String> errros;
+
+    private InvalidGraphException(List<String> errros, String message) {
+        super(message);
+        this.errros = errros;
+    }
+
+    /**
+     * Thrown on commit when validation errors are found
+     */
+    public static InvalidGraphException validationErrors(List<String> errors){
+        StringBuilder message = new StringBuilder();
+        message.append(ErrorMessage.VALIDATION.getMessage(errors.size()));
+        for (String s : errors) {
+            message.append(s);
+        }
+        return new InvalidGraphException(errors, message.toString());
     }
 }

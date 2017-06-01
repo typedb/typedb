@@ -31,7 +31,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
@@ -161,7 +161,7 @@ public class RelationTest extends GraphTestBase{
     }
 
     @Test
-    public void whenCreatingRelation_EnsureUniqueHashIsCreatedBasedOnRolePlayers() throws GraknValidationException {
+    public void whenCreatingRelation_EnsureUniqueHashIsCreatedBasedOnRolePlayers() throws InvalidGraphException {
         RoleType roleType1 = graknGraph.putRoleType("role type 1");
         RoleType roleType2 = graknGraph.putRoleType("role type 2");
         EntityType type = graknGraph.putEntityType("concept type").plays(roleType1).plays(roleType2);
@@ -201,7 +201,7 @@ public class RelationTest extends GraphTestBase{
     }
 
     @Test
-    public void whenAddingDuplicateRelations_Throw() throws GraknValidationException {
+    public void whenAddingDuplicateRelations_Throw() throws InvalidGraphException {
         RoleType roleType1 = graknGraph.putRoleType("role type 1");
         RoleType roleType2 = graknGraph.putRoleType("role type 2");
         EntityType type = graknGraph.putEntityType("concept type").plays(roleType1).plays(roleType2);
@@ -215,7 +215,7 @@ public class RelationTest extends GraphTestBase{
         String exceptionThrown = null;
         try{
             graknGraph.commit();
-        } catch(GraknValidationException e){
+        } catch(InvalidGraphException e){
             exceptionThrown = e.getMessage();
         }
         boolean flag = exceptionThrown != null && (exceptionThrown.contains(VALIDATION_RELATION_DUPLICATE.getMessage(relation1.toString())) ||

@@ -14,7 +14,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -219,7 +219,7 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
-    public void attemptingToUseClosedGraphFailingThenOpeningGraph_EnsureGraphIsUsable() throws GraknValidationException {
+    public void attemptingToUseClosedGraphFailingThenOpeningGraph_EnsureGraphIsUsable() throws InvalidGraphException {
         GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "testing-again").open(GraknTxType.WRITE);
         graph.close();
 
@@ -238,7 +238,7 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
-    public void checkThatMainCentralCacheIsNotAffectedByTransactionModifications() throws GraknValidationException, ExecutionException, InterruptedException {
+    public void checkThatMainCentralCacheIsNotAffectedByTransactionModifications() throws InvalidGraphException, ExecutionException, InterruptedException {
         //Check Central cache is empty
         assertCacheOnlyContainsMetaTypes();
 
@@ -410,7 +410,7 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
-    public void checkComplexSampleOntologyCanLoad() throws GraknValidationException {
+    public void checkComplexSampleOntologyCanLoad() throws InvalidGraphException {
         graknGraph.graql().parse("insert\n" +
                 "user-interaction sub relation is-abstract;\n" +
                 "qa sub user-interaction\n" +

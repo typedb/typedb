@@ -28,7 +28,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.PropertyNotUniqueException;
@@ -361,9 +361,9 @@ public interface GraknGraph extends AutoCloseable{
      * Commits any changes to the graph and closes the transaction. You must use the {@link GraknSession} to
      * get a new open transaction.
      *
-     * @throws GraknValidationException when the transaction contains graph mutations which does not conform to the Grakn
+     * @throws InvalidGraphException when the transaction contains graph mutations which does not conform to the Grakn
      * knowledge model.
      */
-    void commit() throws GraknValidationException;
+    void commit() throws InvalidGraphException;
 
 }

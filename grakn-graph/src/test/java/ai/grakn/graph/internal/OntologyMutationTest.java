@@ -25,7 +25,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphRuntimeException;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,7 +47,7 @@ public class OntologyMutationTest extends GraphTestBase{
     private Instance bob;
 
     @Before
-    public void buildMarriageGraph() throws GraknValidationException {
+    public void buildMarriageGraph() throws InvalidGraphException {
         husband = graknGraph.putRoleType("Husband");
         wife = graknGraph.putRoleType("Wife");
         RoleType driver = graknGraph.putRoleType("Driver");
@@ -69,34 +69,34 @@ public class OntologyMutationTest extends GraphTestBase{
     }
 
     @Test
-    public void whenDeletingPlaysUsedByExistingCasting_Throw() throws GraknValidationException {
+    public void whenDeletingPlaysUsedByExistingCasting_Throw() throws InvalidGraphException {
         person.deletePlays(wife);
 
-        expectedException.expect(GraknValidationException.class);
+        expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(VALIDATION_CASTING.getMessage(woman.getLabel(), alice.getId(), wife.getLabel()));
 
         graknGraph.commit();
     }
 
     @Test
-    public void whenDeletingRelatesUsedByExistingRelation_Throw() throws GraknValidationException {
+    public void whenDeletingRelatesUsedByExistingRelation_Throw() throws InvalidGraphException {
         marriage.deleteRelates(husband);
-        expectedException.expect(GraknValidationException.class);
+        expectedException.expect(InvalidGraphException.class);
         graknGraph.commit();
     }
 
     @Test
-    public void whenChanginSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws GraknValidationException {
+    public void whenChanginSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidGraphException {
         man.superType(car);
 
-        expectedException.expect(GraknValidationException.class);
+        expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(VALIDATION_CASTING.getMessage(man.getLabel(), bob.getId(), husband.getLabel()));
 
         graknGraph.commit();
     }
 
     @Test
-    public void whenChangingTypeWithInstancesToAbstract_Throw() throws GraknValidationException {
+    public void whenChangingTypeWithInstancesToAbstract_Throw() throws InvalidGraphException {
         man.addEntity();
 
         expectedException.expect(GraphRuntimeException.class);

@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
@@ -106,7 +106,7 @@ public class GraqlController {
 
         // Handle invalid type castings and invalid insertions
         spark.exception(GraphOperationException.class, (e, req, res) -> handleError(422, e, res));
-        spark.exception(GraknValidationException.class, (e, req, res) -> handleError(422, e, res));
+        spark.exception(InvalidGraphException.class, (e, req, res) -> handleError(422, e, res));
     }
 
     @GET

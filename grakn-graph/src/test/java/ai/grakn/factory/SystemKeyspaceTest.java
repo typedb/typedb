@@ -7,7 +7,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
 import org.junit.Before;
@@ -33,7 +33,7 @@ public class SystemKeyspaceTest {
     }
 
     @Test
-    public void whenCreatingMultipleGraphs_EnsureKeySpacesAreAddedToSystemGraph() throws GraknValidationException {
+    public void whenCreatingMultipleGraphs_EnsureKeySpacesAreAddedToSystemGraph() throws InvalidGraphException {
         String [] keyspaces = {"s1", "s2", "s3"};
 
         Set<GraknGraph> graphs = buildGraphs(keyspaces);
