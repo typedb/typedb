@@ -16,6 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # <http://www.gnu.org/licenses/gpl.txt>.
+set -e
 
 set -e
 
