@@ -24,7 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.GraknTitanGraph;
 import org.junit.After;
 import org.junit.Before;
@@ -96,7 +96,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
     public void whenAbortingTransaction_GraphIsClosedBecauseOfAbort(){
         graknGraph.abort();
         assertTrue("Aborting transaction did not close the graph", graknGraph.isClosed());
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GRAPH_CLOSED_ON_ACTION.getMessage("closed", graknGraph.getKeyspace()));
         graknGraph.putEntityType("This should fail");
     }
@@ -122,7 +122,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
         graph.close();
 
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
 
         //noinspection ResultOfMethodCallIgnored

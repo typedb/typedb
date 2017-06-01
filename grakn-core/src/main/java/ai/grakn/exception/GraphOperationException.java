@@ -18,6 +18,7 @@
 
 package ai.grakn.exception;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
@@ -50,11 +51,22 @@ public class GraphOperationException extends GraknException{
         super(error);
     }
 
+    protected GraphOperationException(String error, Exception e){
+        super(error, e);
+    }
+
     /**
      * Thrown when attempting to mutate a {@link ai.grakn.util.Schema.MetaSchema}
      */
     public static GraphOperationException metaTypeImmutable(TypeLabel metaLabel){
         return new GraphOperationException(META_TYPE_IMMUTABLE.getMessage(metaLabel));
+    }
+
+    /**
+     * Throw when trying to add instances to an abstract Type
+     */
+    public static GraphOperationException addingInstancesToAbstractType(Type type){
+        return new GraphOperationException(ErrorMessage.IS_ABSTRACT.getMessage(type.getLabel()));
     }
 
     /**
@@ -131,9 +143,62 @@ public class GraphOperationException extends GraknException{
     }
 
     /**
+     * Thrown when trying to make the keysoace null
+     */
+    public static GraphOperationException nullKeyspace(){
+        return new GraphOperationException(ErrorMessage.NULL_VALUE.getMessage("keyspace"));
+    }
+
+    /**
      * Thrown when trying to set a {@code value} on the {@code resource} which does not conform to it's regex
      */
     public static GraphOperationException regexFailure(Resource resource, String value, String regex){
         return new GraphOperationException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resource.getId(), value, resource.type().getLabel()));
+    }
+
+    /**
+     * Thrown when attempting to open a transaction which is already open
+     */
+    public static GraphOperationException transactionOpen(GraknGraph graph){
+        return new GraphOperationException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(graph.getKeyspace()));
+    }
+
+    /**
+     * Thrown when attempting to open an invalid type of transaction
+     */
+    public static GraphOperationException transactionInvalid(Object tx){
+        return new GraphOperationException("Unknown type of transaction [" + tx + "]");
+    }
+
+    /**
+     * Thrown when attempting to mutate a read only transaction
+     */
+    public static GraphOperationException transactionReadOnly(GraknGraph graph){
+        return new GraphOperationException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.getKeyspace()));
+    }
+
+    /**
+     * Thrown when attempting to mutate the ontology while the transaction is in batch mode
+     */
+    public static GraphOperationException ontologyMutation(){
+        return new GraphOperationException(ErrorMessage.SCHEMA_LOCKED.getMessage());
+    }
+
+    /**
+     * Thrown when attempting to use the graph when the transaction is closed
+     */
+    public static GraphOperationException transactionClosed(GraknGraph graph, String reason){
+        if(reason == null){
+            return new GraphOperationException(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()));
+        } else {
+            return new GraphOperationException(reason);
+        }
+    }
+
+    /**
+     * Thrown when the graph can not be closed due to an unknown reason.
+     */
+    public static GraphOperationException closingGraphFailed(GraknGraph graph, Exception e){
+        return new GraphOperationException("Unable to close graph [" + graph.getKeyspace() + "]", e);
     }
 }

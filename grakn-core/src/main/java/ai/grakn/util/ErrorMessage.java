@@ -52,7 +52,7 @@ public enum ErrorMessage {
     HAS_INVALID("The type [%s] is not allowed to have a %s of type [%s]"),
     INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
     ROLE_TYPE_ERROR("The role type [%s] cannot play itself"),
-    BACKEND_EXCEPTION("Unknown Backend Exception."),
+    BACKEND_EXCEPTION("Backend Exception."),
     GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
     SESSION_CLOSED("The session for graph [%s] was closed"),
     GRAPH_CLOSED_ON_ACTION("The transaction was %s and closed graph [%s]. Use the session to get a new transaction for the graph."),

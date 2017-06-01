@@ -28,8 +28,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.GraphRuntimeException;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -177,7 +175,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             throw GraphOperationException.metaTypeImmutable(getLabel());
         }
 
-        if(isAbstract()) throw new GraphRuntimeException(ErrorMessage.IS_ABSTRACT.getMessage(getLabel()));
+        if(isAbstract()) throw GraphOperationException.addingInstancesToAbstractType(this);
 
         Vertex instanceVertex = getGraknGraph().addVertex(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
@@ -608,7 +606,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         if(!Schema.MetaSchema.isMetaLabel(getLabel()) && isAbstract &&
                 this.<TypeImpl>getIncomingNeighbours(Schema.EdgeLabel.SHARD).anyMatch(thing ->
                         thing.getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().isPresent())){
-            throw new GraphRuntimeException(ErrorMessage.IS_ABSTRACT.getMessage(getLabel()));
+            throw GraphOperationException.addingInstancesToAbstractType(this);
         }
 
         setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);

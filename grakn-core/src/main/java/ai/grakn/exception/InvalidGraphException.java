@@ -36,11 +36,9 @@ import java.util.List;
  * @author fppt
  */
 public class InvalidGraphException extends GraknException{
-    private List<String> errros;
 
-    private InvalidGraphException(List<String> errros, String message) {
+    private InvalidGraphException(String message) {
         super(message);
-        this.errros = errros;
     }
 
     /**
@@ -52,6 +50,6 @@ public class InvalidGraphException extends GraknException{
         for (String s : errors) {
             message.append(s);
         }
-        return new InvalidGraphException(errors, message.toString());
+        return new InvalidGraphException(message.toString());
     }
 }

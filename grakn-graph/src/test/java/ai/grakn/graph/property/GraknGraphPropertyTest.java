@@ -32,9 +32,8 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.generator.AbstractTypeGenerator.Abstract;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
@@ -97,7 +96,7 @@ public class GraknGraphPropertyTest {
         Object[] params = mockParamsOf(method);
 
         exception.expect(InvocationTargetException.class);
-        exception.expectCause(isA(GraphRuntimeException.class));
+        exception.expectCause(isA(GraphOperationException.class));
         exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
 
         method.invoke(graph, params);
@@ -321,7 +320,7 @@ public class GraknGraphPropertyTest {
         ResourceType resource = graph.admin().getMetaResourceType();
 
         // TODO: Test for a better error message
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(GraphOperationException.class);
 
         //noinspection ResultOfMethodCallIgnored
         resource.superType();

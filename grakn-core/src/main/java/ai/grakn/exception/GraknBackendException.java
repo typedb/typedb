@@ -18,6 +18,8 @@
 
 package ai.grakn.exception;
 
+import static ai.grakn.util.ErrorMessage.BACKEND_EXCEPTION;
+
 /**
  * <p>
  *     Backend Grakn Exception
@@ -33,7 +35,15 @@ package ai.grakn.exception;
  * @author fppt
  */
 public class GraknBackendException extends GraknException {
-    protected GraknBackendException(String error) {
-        super(error);
+    protected GraknBackendException(String error, Exception e) {
+        super(error, e);
+    }
+
+    /**
+     * Thrown when the persistence layer throws an unexpected exception.
+     * This can include timeouts
+     */
+    public static GraknBackendException unknown(Exception e){
+        return new GraknBackendException(BACKEND_EXCEPTION.getMessage(), e);
     }
 }

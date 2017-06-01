@@ -18,6 +18,8 @@
 
 package ai.grakn.exception;
 
+import static ai.grakn.util.ErrorMessage.LOCKING_EXCEPTION;
+
 /**
  * <p>
  *     Graph Mutation Exception
@@ -32,7 +34,15 @@ package ai.grakn.exception;
  * @author fppt
  */
 public class TemporaryWriteException extends GraknBackendException{
-    private TemporaryWriteException(String error) {
-        super(error);
+    private TemporaryWriteException(String error, Exception e) {
+        super(error, e);
+    }
+
+    /**
+     * Thrown when the persistence layer is locked temporarily.
+     * Retrying the transaction is reccomended.
+     */
+    public static TemporaryWriteException temporaryLock(Exception e){
+        return new TemporaryWriteException(LOCKING_EXCEPTION.getMessage(), e);
     }
 }

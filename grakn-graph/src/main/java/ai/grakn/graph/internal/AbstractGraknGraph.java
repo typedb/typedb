@@ -35,7 +35,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.factory.SystemKeyspace;
@@ -340,13 +339,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     void checkOntologyMutation(){
         checkMutation();
-        if(isBatchGraph()){
-            throw new GraphRuntimeException(ErrorMessage.SCHEMA_LOCKED.getMessage());
-        }
+        if(isBatchGraph()) throw GraphOperationException.ontologyMutation();
     }
 
     void checkMutation(){
-        if(isReadOnly()) throw new GraphRuntimeException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(getKeyspace()));
+        if(isReadOnly()) throw GraphOperationException.transactionReadOnly(this);
     }
 
 
@@ -391,19 +388,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * An operation on the graph which requires it to be open.
      *
      * @param supplier The operation to be performed on the graph
-     * @throws GraphRuntimeException if the graph is closed.
+     * @throws GraphOperationException if the graph is closed.
      * @return The result of the operation on the graph.
      */
     private <X> X operateOnOpenGraph(Supplier<X> supplier){
-        if(isClosed()){
-            String reason = getTxCache().getClosedReason();
-            if(reason == null){
-                throw new GraphRuntimeException(ErrorMessage.GRAPH_CLOSED.getMessage(getKeyspace()));
-            } else {
-                throw new GraphRuntimeException(reason);
-            }
-        }
-
+        if(isClosed()) throw GraphOperationException.transactionClosed(this, getTxCache().getClosedReason());
         return supplier.get();
     }
 
@@ -708,7 +697,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             getTxCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(getKeyspace()));
             getTinkerPopGraph().close();
         } catch (Exception e) {
-            throw new GraphRuntimeException("Unable to close graph [" + getKeyspace() + "]", e);
+            throw GraphOperationException.closingGraphFailed(this, e);
         }
     }
 

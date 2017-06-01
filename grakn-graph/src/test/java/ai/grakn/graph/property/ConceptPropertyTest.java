@@ -26,7 +26,6 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
@@ -91,7 +90,7 @@ public class ConceptPropertyTest {
         Object[] params = mockParamsOf(method);
 
         exception.expect(InvocationTargetException.class);
-        exception.expectCause(isA(GraphRuntimeException.class));
+        exception.expectCause(isA(GraphOperationException.class));
         exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
 
         method.invoke(concept, params);

@@ -31,7 +31,11 @@ package ai.grakn.exception;
  * @author fppt
  */
 public class GraknException extends RuntimeException {
-    public GraknException(String error){
+    protected GraknException(String error){
         super(error);
+    }
+
+    protected GraknException(String error, Exception e){
+        super(error, e);
     }
 }

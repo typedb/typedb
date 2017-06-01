@@ -26,7 +26,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.GraphOperationException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -99,7 +99,7 @@ public class OntologyMutationTest extends GraphTestBase{
     public void whenChangingTypeWithInstancesToAbstract_Throw() throws InvalidGraphException {
         man.addEntity();
 
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(IS_ABSTRACT.getMessage(man.getLabel()));
 
         man.setAbstract(true);
@@ -107,7 +107,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
     @Test
     public void whenAddingEntityTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
@@ -116,7 +116,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
     @Test
     public void whenAddingRoleTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
@@ -125,7 +125,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
     @Test
     public void whenAddingResourceTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
@@ -134,7 +134,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
     @Test
     public void whenAddingRuleTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
@@ -143,7 +143,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
     @Test
     public void whenAddingRelationTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
@@ -161,7 +161,7 @@ public class OntologyMutationTest extends GraphTestBase{
         RoleType roleType = graknGraphBatch.getRoleType(roleTypeId);
         RelationType relationType = graknGraphBatch.getRelationType(relationTypeId);
 
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
         relationType.relates(roleType);
@@ -178,7 +178,7 @@ public class OntologyMutationTest extends GraphTestBase{
         RoleType roleType = graknGraphBatch.getRoleType(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
         entityType.plays(roleType);
@@ -196,7 +196,7 @@ public class OntologyMutationTest extends GraphTestBase{
         EntityType entityType1 = graknGraphBatch.getEntityType(entityTypeId1);
         EntityType entityType2 = graknGraphBatch.getEntityType(entityTypeId2);
 
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
         entityType1.superType(entityType2);
@@ -214,7 +214,7 @@ public class OntologyMutationTest extends GraphTestBase{
         roleType = graknGraphBatch.getRoleType(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
         entityType.deletePlays(roleType);
@@ -232,7 +232,7 @@ public class OntologyMutationTest extends GraphTestBase{
         roleType = graknGraphBatch.getRoleType(roleTypeId);
         RelationType relationType = graknGraphBatch.getRelationType(relationTypeId);
 
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
         relationType.deleteRelates(roleType);
