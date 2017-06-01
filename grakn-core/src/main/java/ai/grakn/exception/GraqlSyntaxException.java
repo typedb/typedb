@@ -31,7 +31,14 @@ package ai.grakn.exception;
  * @author fppt
  */
 public class GraqlSyntaxException extends GraknException {
-    public GraqlSyntaxException(String error) {
+    private GraqlSyntaxException(String error) {
         super(error);
+    }
+
+    /**
+     * Thrown when a parsing error occurs during parsing a graql file
+     */
+    public static GraqlSyntaxException parsingError(String error){
+        return new GraqlSyntaxException(error);
     }
 }
