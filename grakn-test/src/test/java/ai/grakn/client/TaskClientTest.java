@@ -26,7 +26,6 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.exception.EngineUnavailableException;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.test.SparkContext;
 import mjson.Json;
@@ -101,7 +100,7 @@ public class TaskClientTest {
             Instant runAt = now();
             Json configuration = Json.nil();
 
-            exception.expect(EngineUnavailableException.class);
+            exception.expect(GraknBackendException.class);
             client.sendTask(taskClass, creator, runAt, null, configuration);
         } finally {
             ctx.start();
@@ -115,7 +114,7 @@ public class TaskClientTest {
         try {
             TaskState task = createTask();
 
-            exception.expect(EngineUnavailableException.class);
+            exception.expect(GraknBackendException.class);
             client.getStatus(task.getId());
         } finally {
             ctx.start();

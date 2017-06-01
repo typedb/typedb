@@ -21,7 +21,6 @@ package ai.grakn.client;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.exception.EngineUnavailableException;
 import ai.grakn.exception.GraknBackendException;
 import mjson.Json;
 import org.apache.http.HttpResponse;
@@ -112,7 +111,7 @@ public class TaskClient extends Client {
 
             return TaskId.of(jsonResponse.at("id").asString());
         } catch (IOException e){
-            throw new EngineUnavailableException(e);
+            throw GraknBackendException.engineUnavailable(host, port, e);
         } catch (URISyntaxException e){
             throw new RuntimeException(e);
         }
@@ -150,7 +149,7 @@ public class TaskClient extends Client {
         } catch (URISyntaxException e){
             throw new RuntimeException(e);
         } catch (IOException e){
-            throw new EngineUnavailableException(e);
+            throw GraknBackendException.engineUnavailable(host, port, e);
         }
     }
 
@@ -180,7 +179,7 @@ public class TaskClient extends Client {
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         } catch (IOException e){
-            throw new EngineUnavailableException(e);
+            throw GraknBackendException.engineUnavailable(host, port, e);
         }
     }
 

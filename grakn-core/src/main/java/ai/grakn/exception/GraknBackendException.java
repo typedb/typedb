@@ -21,6 +21,8 @@ package ai.grakn.exception;
 import ai.grakn.engine.TaskId;
 import org.apache.commons.lang.exception.ExceptionUtils;
 
+import java.io.IOException;
+
 import static ai.grakn.util.ErrorMessage.BACKEND_EXCEPTION;
 import static ai.grakn.util.ErrorMessage.STATE_STORAGE_ERROR;
 
@@ -79,7 +81,14 @@ public class GraknBackendException extends GraknException {
     /**
      * Thrown when a task id is missing from the task state storage
      */
-    public static GraknBackendException stateStorageTaskRetreivalFailure(Exception e){
+    public static GraknBackendException stateStorageTaskRetrievalFailure(Exception e){
         return new GraknBackendException("Could not get state from storage " + ExceptionUtils.getFullStackTrace(e));
+    }
+
+    /**
+     * Thrown when the task client cannot reach engine
+     */
+    public static GraknBackendException engineUnavailable(String host, int port, IOException e){
+        return new GraknBackendException("Cannot reach Grakn engine on [" + host + ":" + port + "]", e);
     }
 }

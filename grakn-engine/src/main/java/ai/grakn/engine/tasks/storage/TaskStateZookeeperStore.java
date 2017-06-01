@@ -160,7 +160,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
 
             return stream.collect(toSet());
         } catch (Exception e){
-            throw GraknBackendException.stateStorageTaskRetreivalFailure(e);
+            throw GraknBackendException.stateStorageTaskRetrievalFailure(e);
         }
     }
 
