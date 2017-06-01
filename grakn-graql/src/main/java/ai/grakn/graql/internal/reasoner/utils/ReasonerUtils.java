@@ -249,6 +249,11 @@ public class ReasonerUtils {
         return superTypes;
     }
 
+    /**
+     *
+     * @param type for which top type is to be found
+     * @return non-meta top type of the type
+     */
     public static Type getTopType(Type type){
         Type superType = type;
         while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
@@ -432,20 +437,6 @@ public class ReasonerUtils {
 
         VarPattern headVar = var().isa(Graql.label(relation.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), var(varNames.peek()));
         return graph.admin().getMetaRuleInference().putRule(Patterns.conjunction(bodyVars), headVar);
-    }
-    
-    /**
-     * @param role in question
-     * @return top non-meta super role of the role
-     */
-    public static RoleType getNonMetaTopRole(RoleType role){
-        RoleType topRole = role;
-        RoleType superRole = topRole.superType();
-        while(!Schema.MetaSchema.isMetaLabel(superRole.getLabel())) {
-            topRole = superRole;
-            superRole = superRole.superType();
-        }
-        return topRole;
     }
 
     /**
