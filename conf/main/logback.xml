@@ -21,6 +21,8 @@
     <property name="graknLogFileName" value="grakn.log"/>
     <property name="graknPPLogFileName" value="grakn-postprocessing.log"/>
 
+    <property resource="grakn.properties"/>
+
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%msg%n</pattern>
@@ -28,7 +30,7 @@
     </appender>
 
     <appender name="MAIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${grakn.log.dirs}/${graknLogFileName}</file>
+        <file>${log.dirs}/${graknLogFileName}</file>
         <encoder>
             <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
@@ -44,7 +46,7 @@
     </appender>
 
     <appender name="POST-PROCESSING" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${grakn.log.dirs}/${graknPPLogFileName}</file>
+        <file>${log.dirs}/${graknPPLogFileName}</file>
         <encoder>
             <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
@@ -63,7 +65,7 @@
     </logger>
 
     <!--All GRAKN logs go to main log file-->
-    <logger name="ai.grakn" level="${grakn.log.level:-INFO}">
+    <logger name="ai.grakn" level="${log.level:-INFO}">
         <appender-ref ref="MAIN"/>
     </logger>
 
@@ -78,7 +80,7 @@
     </logger>
 
     <!--Post Processing logs go to separate log file-->
-    <logger name="ai.grakn.engine.postprocessing" level="${grakn.log.level:-INFO}" additivity="false">
+    <logger name="ai.grakn.engine.postprocessing" level="${log.level:-INFO}" additivity="false">
         <appender-ref ref="POST-PROCESSING"/>
     </logger>
 

@@ -20,14 +20,17 @@
 package ai.grakn.test;
 
 
-import com.jayway.restassured.RestAssured;
+import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.util.JWTHandler;
 import org.junit.rules.ExternalResource;
 import spark.Service;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 
 /**
@@ -36,39 +39,48 @@ import static ai.grakn.engine.GraknEngineServer.configureSpark;
  */
 public class SparkContext extends ExternalResource {
 
-    private final Consumer<Service> createControllers;
-    private Service spark;
-    private int port;
+    private final BiConsumer<Service, GraknEngineConfig> createControllers;
+    private final GraknEngineConfig config = GraknEngineConfig.create();
 
-    private SparkContext(Consumer<Service> createControllers) {
+    private Service spark;
+
+    private SparkContext(BiConsumer<Service, GraknEngineConfig> createControllers) {
         this.createControllers = createControllers;
-        this.port = getEphemeralPort();
+        port(getEphemeralPort());
     }
 
-    public static SparkContext withControllers(Consumer<Service> createControllers) {
+    public static SparkContext withControllers(BiConsumer<Service, GraknEngineConfig> createControllers) {
         return new SparkContext(createControllers);
     }
 
+    public static SparkContext withControllers(Consumer<Service> createControllers) {
+        return new SparkContext((spark, config) -> createControllers.accept(spark));
+    }
+
     public SparkContext port(int port) {
-        this.port = port;
+        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(port));
         return this;
     }
 
     public int port() {
-        return port;
+        return config.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER);
     }
 
     public String uri() {
-        return "localhost:" + port;
+        return GraknTestEnv.getUri(config);
+    }
+
+    public GraknEngineConfig config() {
+        return config;
     }
 
     public void start() {
         spark = Service.ignite();
-        configureSpark(spark, port);
+        configureSpark(spark, config, JWTHandler.create(config.getProperty(JWT_SECRET_PROPERTY)));
 
-        RestAssured.baseURI = "http://localhost:" + port;
+        GraknTestEnv.setRestAssuredUri(config);
 
-        createControllers.accept(spark);
+        createControllers.accept(spark, config);
 
         spark.awaitInitialization();
     }
