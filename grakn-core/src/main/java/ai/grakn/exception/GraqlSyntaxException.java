@@ -31,4 +31,7 @@ package ai.grakn.exception;
  * @author fppt
  */
 public class GraqlSyntaxException extends GraknException {
+    public GraqlSyntaxException(String error) {
+        super(error);
+    }
 }

@@ -22,7 +22,7 @@ package ai.grakn.graph.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractTypeGenerator.Abstract;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
@@ -65,7 +65,7 @@ public class EntityTypePropertyTest {
 
     @Property
     public void whenAddingAnEntityOfTheMetaEntityType_Throw(@Meta EntityType type) {
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.addEntity();
     }

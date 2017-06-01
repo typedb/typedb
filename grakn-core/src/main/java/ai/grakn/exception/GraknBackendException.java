@@ -33,4 +33,7 @@ package ai.grakn.exception;
  * @author fppt
  */
 public class GraknBackendException extends GraknException {
+    protected GraknBackendException(String error) {
+        super(error);
+    }
 }

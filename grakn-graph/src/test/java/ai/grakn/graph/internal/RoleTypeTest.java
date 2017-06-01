@@ -23,8 +23,8 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,7 +55,7 @@ public class RoleTypeTest extends GraphTestBase {
 
     @Test
     public void whenSettingRoleTypeToPlayItself_Throw(){
-        expectedException.expect(ConceptException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getLabel()));
         roleType.plays(roleType);
     }
@@ -99,7 +99,7 @@ public class RoleTypeTest extends GraphTestBase {
         RoleType roleType = graknGraph.putRoleType("New Role Type");
         graknGraph.putEntityType("Entity Type").plays(roleType);
 
-        expectedException.expect(ConceptException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleType.getLabel()));
 
         roleType.delete();
@@ -110,7 +110,7 @@ public class RoleTypeTest extends GraphTestBase {
         RoleType roleType2 = graknGraph.putRoleType("New Role Type");
         graknGraph.putRelationType("Thing").relates(roleType2).relates(roleType);
 
-        expectedException.expect(ConceptException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleType2.getLabel()));
 
         roleType2.delete();
@@ -128,7 +128,7 @@ public class RoleTypeTest extends GraphTestBase {
 
         relationType.addRelation().addRolePlayer(roleA, a).addRolePlayer(roleB, b);
 
-        expectedException.expect(ConceptException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleA.getLabel()));
 
         roleA.delete();

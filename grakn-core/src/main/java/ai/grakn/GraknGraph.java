@@ -28,10 +28,10 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
 
@@ -65,7 +65,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing {@link EntityType} with the provided label
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
      */
     EntityType putEntityType(String label);
 
@@ -77,7 +77,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing {@link EntityType} with the provided label
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
      */
     EntityType putEntityType(TypeLabel label);
 
@@ -93,8 +93,8 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing {@link ResourceType} with the provided label and data type.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link ResourceType}.
-     * @throws ConceptException if the {@param label} is already in use by an existing {@link ResourceType} which is
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link ResourceType}.
+     * @throws GraphOperationException if the {@param label} is already in use by an existing {@link ResourceType} which is
      *                          unique or has a different datatype.
      */
     <V> ResourceType<V> putResourceType(String label, ResourceType.DataType<V> dataType);
@@ -111,8 +111,8 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing {@link ResourceType} with the provided label and data type.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link ResourceType}.
-     * @throws ConceptException if the {@param label} is already in use by an existing {@link ResourceType} which is
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link ResourceType}.
+     * @throws GraphOperationException if the {@param label} is already in use by an existing {@link ResourceType} which is
      *                          unique or has a different datatype.
      */
     <V> ResourceType<V> putResourceType(TypeLabel label, ResourceType.DataType<V> dataType);
@@ -125,7 +125,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return new or existing {@link RuleType} with the provided label.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link RuleType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RuleType}.
      */
     RuleType putRuleType(String label);
 
@@ -137,7 +137,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return new or existing {@link RuleType} with the provided label.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link RuleType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RuleType}.
      */
     RuleType putRuleType(TypeLabel label);
 
@@ -149,7 +149,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing {@link RelationType} with the provided label.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
      */
     RelationType putRelationType(String label);
 
@@ -161,7 +161,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing {@link RelationType} with the provided label.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
      */
     RelationType putRelationType(TypeLabel label);
 
@@ -173,7 +173,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return new or existing {@link RoleType} with the provided Id.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link RoleType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RoleType}.
      */
     RoleType putRoleType(String label);
 
@@ -185,7 +185,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return new or existing {@link RoleType} with the provided Id.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link RoleType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RoleType}.
      */
     RoleType putRoleType(TypeLabel label);
 

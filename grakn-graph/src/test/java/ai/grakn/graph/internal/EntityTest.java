@@ -28,9 +28,8 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.junit.Test;
@@ -53,7 +52,7 @@ public class EntityTest extends GraphTestBase{
     }
 
     @Test
-    public void whenDeletingInstanceInRelationShip_TheInstanceAndCastingsAreDeleteTheRelationRemains() throws ConceptException{
+    public void whenDeletingInstanceInRelationShip_TheInstanceAndCastingsAreDeleteTheRelationRemains() throws GraphOperationException{
         //Ontology
         EntityType type = graknGraph.putEntityType("Concept Type");
         RelationType relationType = graknGraph.putRelationType("relationTypes");
@@ -92,7 +91,7 @@ public class EntityTest extends GraphTestBase{
     }
 
     @Test
-    public void whenDeletingLastRolePlayerInRelation_TheRelationIsDeleted() throws ConceptException {
+    public void whenDeletingLastRolePlayerInRelation_TheRelationIsDeleted() throws GraphOperationException {
         EntityType type = graknGraph.putEntityType("Concept Type");
         RelationType relationType = graknGraph.putRelationType("relationTypes");
         RoleType role1 = graknGraph.putRoleType("role1");
@@ -134,7 +133,7 @@ public class EntityTest extends GraphTestBase{
         Entity entity = entityType.addEntity();
         Resource resource = resourceType.putResource("A resource thing");
 
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(
                 ErrorMessage.HAS_INVALID.getMessage(entityType.getLabel(), "resource", resourceType.getLabel())
         );

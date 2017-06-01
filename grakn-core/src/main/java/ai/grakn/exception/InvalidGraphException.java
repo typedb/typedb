@@ -33,4 +33,7 @@ import ai.grakn.GraknGraph;
  * @author fppt
  */
 public class InvalidGraphException extends GraknException{
+    public InvalidGraphException(String error) {
+        super(error);
+    }
 }

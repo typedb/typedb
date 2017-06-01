@@ -32,9 +32,8 @@ public enum ErrorMessage {
     //--------------------------------------------- Core Errors -----------------------------------------------
     CANNOT_DELETE("Type [%s] cannot be deleted as it still has incoming edges"),
     SUPER_TYPE_LOOP_DETECTED("By setting the super type of concept [%s] to [%s]. You will be creating a loop. This is prohibited"),
-    ID_NOT_UNIQUE("Failed to change the Id of Concept [%s] due to another concept already having an id of " +
-            "type [%s] with value [%s]"),
-    ID_ALREADY_TAKEN("The id [%s] is already taken by concept [%s]"),
+    INVALID_UNIQUE_PROPERTY_MUTATION("Property [%s] of Concept [%s] cannot be changed to [%s] as it is already taken by Concept [%s]"),
+    UNIQUE_PROPERTY_TAKEN("Property [%s] with value [%s] is already taken by concept [%s]"),
     TOO_MANY_CONCEPTS("Too many concepts found for key [%s] and value [%s]"),
     TOO_MANY_CASTINGS("More than one casting found between Role [%s] and Instance [%s]"),
     INVALID_DATATYPE("The value [%s] must be of datatype [%s]"),

@@ -22,7 +22,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
@@ -35,7 +35,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class RuleTest extends GraphTestBase{
     private Pattern lhs;
@@ -54,7 +53,7 @@ public class RuleTest extends GraphTestBase{
         assertEquals(lhs, rule.getLHS());
         assertEquals(rhs, rule.getRHS());
 
-        expectedException.expect(InvalidConceptValueException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(NULL_VALUE.getMessage(RULE_LHS));
 
         conceptType.putRule(null, null);

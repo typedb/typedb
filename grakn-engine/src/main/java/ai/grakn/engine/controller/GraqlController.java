@@ -21,10 +21,10 @@ package ai.grakn.engine.controller;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DeleteQuery;
@@ -39,9 +39,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import java.util.Collection;
-import java.util.stream.Collectors;
-import javax.ws.rs.POST;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
@@ -51,10 +48,13 @@ import spark.Response;
 import spark.Service;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
@@ -105,7 +105,7 @@ public class GraqlController {
         spark.exception(IllegalArgumentException.class, (e, req, res) -> handleError(400, e, res));
 
         // Handle invalid type castings and invalid insertions
-        spark.exception(ConceptException.class, (e, req, res) -> handleError(422, e, res));
+        spark.exception(GraphOperationException.class, (e, req, res) -> handleError(422, e, res));
         spark.exception(GraknValidationException.class, (e, req, res) -> handleError(422, e, res));
     }
 

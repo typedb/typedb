@@ -28,8 +28,8 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
@@ -45,8 +45,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static junit.framework.TestCase.assertEquals;
@@ -114,7 +112,7 @@ public class PostProcessingIT {
                     Thread.sleep((long) Math.floor(Math.random() * 1000));
 
                     graph.commit();
-                } catch (InterruptedException | SchemaViolationException | ConceptNotUniqueException | GraknValidationException e ) {
+                } catch (InterruptedException | SchemaViolationException | PropertyNotUniqueException | GraknValidationException e ) {
                     //IGNORED
                 }
             }));

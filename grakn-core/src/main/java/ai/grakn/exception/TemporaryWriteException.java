@@ -32,4 +32,7 @@ package ai.grakn.exception;
  * @author fppt
  */
 public class TemporaryWriteException extends GraknBackendException{
+    private TemporaryWriteException(String error) {
+        super(error);
+    }
 }

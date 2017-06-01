@@ -18,6 +18,13 @@
 
 package ai.grakn.exception;
 
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.TypeLabel;
+import ai.grakn.util.Schema;
+
+import static ai.grakn.util.ErrorMessage.INVALID_UNIQUE_PROPERTY_MUTATION;
+import static ai.grakn.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
+
 /**
  * <p>
  *     Unique Concept Property Violation
@@ -32,4 +39,23 @@ package ai.grakn.exception;
  * @author fppt
  */
 public class PropertyNotUniqueException extends GraphOperationException{
+    private PropertyNotUniqueException(String error) {
+        super(error);
+    }
+
+    /**
+     * Thrown when trying to set the property of concept {@code mutatingConcept} to a {@code value} which is already
+     * taken by concept {@code conceptWithValue}
+     */
+    public static PropertyNotUniqueException cannotChangeProperty(Concept mutatingConcept, Concept conceptWithValue, Schema.ConceptProperty property, Object value){
+        return new PropertyNotUniqueException(INVALID_UNIQUE_PROPERTY_MUTATION.getMessage(property, mutatingConcept, value, conceptWithValue));
+    }
+
+    /**
+     * Thrown when trying to create a concept using a unique property which is already taken.
+     * For example this happens when using an already taken {@link TypeLabel}
+     */
+    public static PropertyNotUniqueException cannotCreateProperty(Concept conceptWithValue, Schema.ConceptProperty property, Object value){
+        return new PropertyNotUniqueException(UNIQUE_PROPERTY_TAKEN.getMessage(property.name(), value, conceptWithValue));
+    }
 }

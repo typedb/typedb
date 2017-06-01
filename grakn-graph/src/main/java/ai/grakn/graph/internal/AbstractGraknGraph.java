@@ -34,11 +34,10 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.GraphRuntimeException;
-import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
@@ -69,7 +68,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -367,7 +365,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             vertex = addTypeVertex(getNextId(), label, baseType);
         } else {
             if(!baseType.equals(concept.getBaseType())) {
-                throw new ConceptNotUniqueException(concept, label.getValue());
+                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.ConceptProperty.TYPE_LABEL, label);
             }
             vertex = concept.getVertex();
         }
@@ -425,7 +423,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         TypeImpl type = buildType(label, () -> factory.apply(putVertex(label, baseType)));
 
         T finalType = validateConceptType(type, baseType, () -> {
-            throw new ConceptNotUniqueException(type, label.getValue());
+            throw PropertyNotUniqueException.cannotCreateProperty(type, Schema.ConceptProperty.TYPE_LABEL, label);
         });
 
         //Automatic shard creation - If this type does not have a shard create one
@@ -508,9 +506,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if(Schema.MetaSchema.isMetaLabel(label)) {
-            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(label));
+            throw GraphOperationException.metaTypeImmutable(label);
         } else if(!dataType.equals(resourceType.getDataType())){
-            throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
+            throw GraphOperationException.immutableProperty(resourceType.getDataType(), dataType, resourceType, Schema.ConceptProperty.DATA_TYPE);
         }
 
         return resourceType;
@@ -553,8 +551,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //Make sure you trying to retrieve supported data type
         if(!ResourceType.DataType.SUPPORTED_TYPES.containsKey(value.getClass().getName())){
-            String supported = ResourceType.DataType.SUPPORTED_TYPES.keySet().stream().collect(Collectors.joining(","));
-            throw new InvalidConceptValueException(ErrorMessage.INVALID_DATATYPE.getMessage(value.getClass().getName(), supported));
+            throw GraphOperationException.unsupportedDataType(value);
         }
 
         HashSet<Resource<V>> resources = new HashSet<>();

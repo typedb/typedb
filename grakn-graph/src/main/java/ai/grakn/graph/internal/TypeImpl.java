@@ -27,7 +27,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -174,7 +174,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         getGraknGraph().checkMutation();
 
         if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
-            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getLabel()));
+            throw GraphOperationException.metaTypeImmutable(getLabel());
         }
 
         if(isAbstract()) throw new GraphRuntimeException(ErrorMessage.IS_ABSTRACT.getMessage(getLabel()));
@@ -272,7 +272,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
                 in(Schema.EdgeLabel.SHARD.getLabel()).in(Schema.EdgeLabel.ISA.getLabel()).hasNext();
 
         if(hasSubs || hasInstances){
-            throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getLabel()));
+            throw GraphOperationException.typeCannotBeDeleted(getLabel());
         } else {
             //Force load of linked concepts whose caches need to be updated
             cachedSuperType.get();
@@ -487,7 +487,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             //Note the check before the actual construction
             if(superTypeLoops()){
                 cachedSuperType.set(oldSuperType); //Reset if the new super type causes a loop
-                throw new ConceptException(ErrorMessage.SUPER_TYPE_LOOP_DETECTED.getMessage(getLabel(), newSuperType.getLabel()));
+                throw GraphOperationException.loopCreated(this, newSuperType);
             }
 
             //Modify the graph once we have checked no loop occurs
@@ -631,7 +631,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         if(isShard()) return;
         getGraknGraph().checkOntologyMutation();
         if(Schema.MetaSchema.isMetaLabel(getLabel())){
-            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getLabel()));
+            throw GraphOperationException.metaTypeImmutable(getLabel());
         }
     }
 
@@ -650,7 +650,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         //Check if resource type is the meta
         if(Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())){
-            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resourceType.getLabel()));
+            throw GraphOperationException.metaTypeImmutable(resourceType.getLabel());
         }
 
         TypeLabel resourceTypeLabel = resourceType.getLabel();
@@ -717,11 +717,11 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param implicitType The implicit relation to check against.
      * @param resourceType The resource type which should not be in that implicit relation
      *
-     * @throws ConceptException when the resource type is already used in another implicit relation
+     * @throws GraphOperationException when the resource type is already used in another implicit relation
      */
     private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, ResourceType resourceType){
         if(resources(implicitType).contains(resourceType)) {
-            throw new ConceptException(ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE.getMessage(getLabel(), resourceType.getLabel()));
+            throw GraphOperationException.duplicateHas(this, resourceType);
         }
     }
 }
