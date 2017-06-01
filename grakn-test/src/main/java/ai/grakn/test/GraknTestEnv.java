@@ -24,7 +24,6 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.factory.SystemKeyspace;
-import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
 import redis.embedded.RedisServer;

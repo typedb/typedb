@@ -279,7 +279,7 @@ public class GraknEngineConfig {
                                           : defaultValue;
     }
 
-    boolean getPropertyAsBool(String property, boolean defaultValue) {
+    public boolean getPropertyAsBool(String property, boolean defaultValue) {
         return prop.containsKey(property) ? Boolean.parseBoolean(prop.getProperty(property))
                                           : defaultValue;
     }

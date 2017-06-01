@@ -94,8 +94,9 @@ public class EngineContext extends ExternalResource {
     public void before() throws Throwable {
         GraknEngineConfig properties = GraknEngineConfig.getInstance();
         RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");        
-        if (!properties.getPropertyAsBool("test.start.embedded.components", true))
+        if (!properties.getPropertyAsBool("test.start.embedded.components", true)) {
             return;
+        }
         if(startKafka){
             startKafka();
         }
@@ -113,9 +114,9 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void after() {
-        if (!GraknEngineConfig.getInstance().getPropertyAsBool("test.start.embedded.components", true))
+        if (!GraknEngineConfig.getInstance().getPropertyAsBool("test.start.embedded.components", true)) {
             return;
-        
+        }
         noThrow(MockBackgroundTask::clearTasks, "Error clearing tasks");
 
         try {
