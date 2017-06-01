@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner;
+package ai.grakn.graql.internal.reasoner.utils;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
@@ -36,8 +36,10 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
@@ -188,24 +190,6 @@ public class ReasonerUtils {
     }
 
     /**
-     * Provides more readable answer output.
-     * @param answers set of answers to be printed
-     */
-    public static void printAnswers(Set<Map<String, Concept>> answers) {
-        answers.forEach(result -> {
-            result.entrySet().forEach(entry -> {
-                Concept concept = entry.getValue();
-                System.out.print(entry.getKey() + ": " + concept.getId() + " : ");
-                if (concept.isResource()) {
-                    System.out.print(concept.asResource().getValue() + " ");
-                }
-            });
-            System.out.println();
-        });
-        System.out.println();
-    }
-
-    /**
      * get unifiers by comparing permutations with original variables
      * @param originalVars original ordered variables
      * @param permutations different permutations on the variables
@@ -298,39 +282,6 @@ public class ReasonerUtils {
     }
 
     /**
-     * convert a given role type to a map of relation types in which it can play roles and the corresponding role types including entity type hierarchy
-     */
-    public static final Function<RoleType, Multimap<RelationType, RoleType>> roleHierarchyToRelationTypesWithRoles =
-            role -> {
-                Multimap<RelationType, RoleType> relationMap = HashMultimap.create();
-                Collection<RoleType> roleTypes = role.subTypes();
-                roleTypes
-                        .forEach(roleType -> {
-                            roleType.relationTypes().stream()
-                                    .filter(rel -> !rel.isImplicit())
-                                    .forEach(rel -> relationMap.put(rel, roleType));
-                        });
-                return relationMap;
-            };
-
-    /**
-     * convert a given entity type to a map of relation types in which it can play roles and the corresponding role types including entity type hierarchy
-     */
-    public static final Function<Type, Multimap<RelationType, RoleType>> typeToRelationTypesWithRoles =
-            type -> {
-                Multimap<RelationType, RoleType> relationMap = HashMultimap.create();
-                Collection<? extends Type> types = type.subTypes();
-                types.stream()
-                        .flatMap(t -> t.plays().stream())
-                        .forEach(roleType -> {
-                            roleType.relationTypes().stream()
-                                    .filter(rel -> !rel.isImplicit())
-                                    .forEach(rel -> relationMap.put(rel, roleType));
-                        });
-                return relationMap;
-            };
-
-    /**
      * calculates map intersection by doing an intersection on key sets and accumulating the keys
      * @param m1 first operand
      * @param m2 second operand
@@ -351,17 +302,17 @@ public class ReasonerUtils {
      * compute the map of compatible relation types for given types (intersection of allowed sets of relation types for each entry type)
      * and compatible role types
      * @param types for which the set of compatible relation types is to be computed
-     * @param typeMapper function mapping a type to the set of compatible relation types
+     //* @param typeMapper function mapping a type to the set of compatible relation types
      * @param <T> type generic
      * @return map of compatible relation types and their corresponding role types
      */
-    public static <T extends Type> Multimap<RelationType, RoleType> getCompatibleRelationTypesWithRoles(Set<T> types, Function<T, Multimap<RelationType, RoleType>> typeMapper) {
+    public static <T extends Type> Multimap<RelationType, RoleType> getCompatibleRelationTypesWithRoles(Set<T> types, TypeConverter<T> typeConverter) {
         Multimap<RelationType, RoleType> compatibleTypes = HashMultimap.create();
         if (types.isEmpty()) return compatibleTypes;
         Iterator<T> it = types.iterator();
-        compatibleTypes.putAll(typeMapper.apply(it.next()));
+        compatibleTypes.putAll(typeConverter.toRelationMultimap(it.next()));
         while(it.hasNext() && compatibleTypes.size() > 1) {
-            compatibleTypes = multimapIntersection(compatibleTypes, typeMapper.apply(it.next()));
+            compatibleTypes = multimapIntersection(compatibleTypes, typeConverter.toRelationMultimap(it.next()));
         }
         return compatibleTypes;
     }
