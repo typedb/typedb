@@ -23,7 +23,6 @@ import ai.grakn.util.GraknVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -44,7 +43,6 @@ public class GraknEngineConfig {
     public static final String FACTORY_ANALYTICS = "factory.analytics";
 
     public static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn.properties";
-    public static final String DEFAULT_LOG_CONFIG_FILE = "../conf/main/logback.xml";
 
     public static final String DEFAULT_KEYSPACE_PROPERTY = "graph.default-keyspace";
 
@@ -62,15 +60,10 @@ public class GraknEngineConfig {
     public static final String REDIS_SERVER_PORT = "redis.port";
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
-    public static final String LOGGING_FILE_PATH_MAIN = "log.dirs";
-    public static final String LOGGING_LEVEL = "log.level";
 
     private static final String SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY = "grakn.dir";
     private static final String SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE = "grakn.conf";
     private static final String SYSTEM_PROPERTY_GRAKN_LOG_DIRECTORY = "grakn.log.dirs";
-    private static final String SYSTEM_PROPERTY_GRAKN_LOG_LEVEL = "grakn.log.level";
-
-    public static final String LOG_FILE_CONFIG_SYSTEM_PROPERTY = "logback.configurationFile";
 
     // Engine Config
     public static final String TASK_MANAGER_IMPLEMENTATION = "taskmanager.implementation";
@@ -87,7 +80,7 @@ public class GraknEngineConfig {
 
     private static String configFilePath = null;
 
-    private Logger LOG;
+    private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.class);
 
     private final int MAX_NUMBER_OF_THREADS = 120;
     private final Properties prop;
@@ -115,7 +108,6 @@ public class GraknEngineConfig {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        initialiseLogger();
         setGraknVersion();
         computeThreadsNumber();
         LOG.info("Project directory in use: [" + getProjectPath() + "]");
@@ -141,40 +133,6 @@ public class GraknEngineConfig {
             configFilePath = getProjectPath() + configFilePath;
         }
 
-    }
-
-    /**
-     * Check if the JVM argument "-Dlogback.configurationFile" is set.
-     * If it is not set, it sets it to the default one.
-     * It also sets the -Dgrakn.log.file system property equal to the one specified in grakn.properties.
-     * The grakn.log.file property will be used by logback.xml
-     */
-    private void initialiseLogger() {
-        if (System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) == null) {
-            System.setProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY, getProjectPath() + DEFAULT_LOG_CONFIG_FILE);
-        }
-
-        System.setProperty(SYSTEM_PROPERTY_GRAKN_LOG_DIRECTORY, getPath(LOGGING_FILE_PATH_MAIN));
-
-        setLogLevel();
-
-        if (!(new File(System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY))).exists()) {
-            LoggerFactory.getLogger(GraknEngineConfig.class).error(ErrorMessage.NO_LOG_CONFIG_FILE.getMessage(System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY)));
-        } else {
-            LOG = LoggerFactory.getLogger(GraknEngineConfig.class);
-            LOG.info("Logging configuration file in use:[" + System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) + "]");
-        }
-    }
-
-    /**
-     * Set Grakn logging level.
-     * If the -Dgrakn.log.level is set, that value will be used,
-     * otherwise it will be used the one specified in the config file.
-     */
-    private void setLogLevel() {
-        if (System.getProperty(SYSTEM_PROPERTY_GRAKN_LOG_LEVEL) == null) {
-            System.setProperty(SYSTEM_PROPERTY_GRAKN_LOG_LEVEL, prop.getProperty(LOGGING_LEVEL));
-        }
     }
 
     /**

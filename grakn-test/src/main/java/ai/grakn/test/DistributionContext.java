@@ -38,7 +38,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.engine.GraknEngineConfig.LOGGING_LEVEL;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
@@ -64,8 +63,6 @@ import static java.util.stream.Collectors.joining;
  * @author alexandraorth
  */
 public class DistributionContext extends ExternalResource {
-
-    private static final String LOG_LEVEL = "INFO";
 
     private static final FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
     private static final String ZIP = "grakn-dist-" + GraknVersion.VERSION + ".zip";
@@ -154,7 +151,6 @@ public class DistributionContext extends ExternalResource {
     private Process newEngineProcess(Integer port) throws IOException {
         // Set correct port & task manager
         Properties properties = GraknEngineConfig.create().getProperties();
-        properties.setProperty(LOGGING_LEVEL, LOG_LEVEL);
         properties.setProperty(SERVER_PORT_NUMBER, port.toString());
         properties.setProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
 
@@ -182,7 +178,10 @@ public class DistributionContext extends ExternalResource {
      * Get the class path of all the jars in the /lib folder
      */
     private String getClassPath(){
-        return Stream.of(new File(DIST_DIRECTORY + "/lib").listFiles(jarFiles))
+        Stream<File> jars = Stream.of(new File(DIST_DIRECTORY + "/lib").listFiles(jarFiles));
+        File conf = new File(DIST_DIRECTORY + "/conf/main/");
+
+        return Stream.concat(jars, Stream.of(conf))
                 .filter(f -> !f.getName().contains("slf4j-log4j12"))
                 .map(File::getAbsolutePath)
                 .collect(joining(":"));
