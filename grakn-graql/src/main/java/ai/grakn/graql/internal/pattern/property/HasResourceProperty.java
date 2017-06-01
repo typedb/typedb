@@ -49,7 +49,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getValuePredicates;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static java.util.stream.Collectors.joining;
 

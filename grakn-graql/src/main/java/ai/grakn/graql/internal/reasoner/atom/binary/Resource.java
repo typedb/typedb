@@ -43,7 +43,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesDisjoint;
 
 /**
  *
