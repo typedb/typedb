@@ -45,7 +45,6 @@ import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.test.GraknTestEnv.startKafka;
 import static ai.grakn.test.GraknTestEnv.stopKafka;
 import static java.lang.System.currentTimeMillis;
-import static java.nio.file.Files.setPosixFilePermissions;
 import static java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.GROUP_READ;
 import static java.nio.file.attribute.PosixFilePermission.GROUP_WRITE;
@@ -72,10 +71,6 @@ public class DistributionContext extends ExternalResource {
     private static final String CURRENT_DIRECTORY = System.getProperty("user.dir");
     private static final String TARGET_DIRECTORY = CURRENT_DIRECTORY + "/../grakn-dist/target/";
     private static final String DIST_DIRECTORY = TARGET_DIRECTORY + "grakn-dist-" + GraknVersion.VERSION;
-    private static final Set<PosixFilePermission> permissions =  EnumSet.of(
-            OWNER_EXECUTE, OWNER_READ, OWNER_WRITE,
-            GROUP_EXECUTE, GROUP_WRITE, GROUP_READ,
-            OTHERS_EXECUTE, OTHERS_READ, OTHERS_WRITE);
     private final Class<? extends TaskManager> taskManagerClass;
 
     private Process engineProcess;
@@ -147,8 +142,6 @@ public class DistributionContext extends ExternalResource {
         // Unzip the distribution
         ZipFile zipped = new ZipFile( TARGET_DIRECTORY + ZIP);
         zipped.extractAll(TARGET_DIRECTORY);
-
-        setPosixFilePermissions(new File(DIST_DIRECTORY + "/bin/grakn-engine.sh").toPath(), permissions);
     }
 
     private Process newEngineProcess(Integer port) throws IOException {
