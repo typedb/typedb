@@ -30,6 +30,7 @@ package ai.grakn.exception;
  *
  * @author fppt
  */
+//TODO: Felix to integrate with Graql
 public class GraqlQueryException extends GraknException{
     public GraqlQueryException(String error) {
         super(error);
