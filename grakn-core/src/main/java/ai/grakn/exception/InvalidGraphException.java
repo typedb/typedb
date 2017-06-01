@@ -18,16 +18,19 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.GraknGraph;
 
 /**
- * A locking exception which may occur in a multi threaded environment.
- * Catching this exception, clearing the transaction, and retrying may allow the commit to execute successfully.
+ * <p>
+ *     Broken Graph Exception
+ * </p>
  *
- * @author Filipe Teixeira
+ * <p>
+ *     This exception is thrown on {@link GraknGraph#commit()} when the graph does not comply with the grakn
+ *     validation rules. For a complete list of these rules please refer to the documentation
+ * </p>
+ *
+ * @author fppt
  */
-public class GraknLockingException extends GraknBackendExceptionOld {
-    public GraknLockingException(Exception e) {
-        super(ErrorMessage.LOCKING_EXCEPTION.getMessage(), e);
-    }
+public class InvalidGraphException extends GraknException{
 }

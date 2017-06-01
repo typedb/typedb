@@ -21,13 +21,16 @@ package ai.grakn.exception;
 import ai.grakn.util.ErrorMessage;
 
 /**
- * A locking exception which may occur in a multi threaded environment.
- * Catching this exception, clearing the transaction, and retrying may allow the commit to execute successfully.
+ * An exception which encapsulates a vendor backend error
  *
  * @author Filipe Teixeira
  */
-public class GraknLockingException extends GraknBackendExceptionOld {
-    public GraknLockingException(Exception e) {
-        super(ErrorMessage.LOCKING_EXCEPTION.getMessage(), e);
+public class GraknBackendExceptionOld extends GraphRuntimeException {
+    public GraknBackendExceptionOld(Exception e) {
+        super(ErrorMessage.BACKEND_EXCEPTION.getMessage(), e);
+    }
+
+    public GraknBackendExceptionOld(String message, Exception e) {
+        super(message, e);
     }
 }

@@ -1,33 +1,35 @@
 /*
  * Grakn - A Distributed Semantic Database
  * Copyright (C) 2016  Grakn Labs Limited
- *
+ *  
  * Grakn is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ *  
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ *  
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
 package ai.grakn.exception;
 
-import ai.grakn.util.ErrorMessage;
-
 /**
- * A locking exception which may occur in a multi threaded environment.
- * Catching this exception, clearing the transaction, and retrying may allow the commit to execute successfully.
+ * <p>
+ *     Unique Concept Property Violation
+ * </p>
  *
- * @author Filipe Teixeira
+ * <p>
+ *     This occurs when attempting to add a globally unique property to a concept.
+ *     For example when creating a {@link ai.grakn.concept.EntityType} and {@link ai.grakn.concept.RelationType} using
+ *     the same {@link ai.grakn.concept.TypeLabel}
+ * </p>
+ *
+ * @author fppt
  */
-public class GraknLockingException extends GraknBackendExceptionOld {
-    public GraknLockingException(Exception e) {
-        super(ErrorMessage.LOCKING_EXCEPTION.getMessage(), e);
-    }
+public class PropertyNotUniqueException extends GraphOperationException{
 }

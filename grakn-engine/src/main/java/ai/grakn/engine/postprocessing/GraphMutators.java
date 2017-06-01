@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknBackendExceptionOld;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
@@ -88,7 +88,7 @@ public abstract class GraphMutators {
                 mutatingFunction.accept(graph);
 
                 return;
-            } catch (GraknBackendException e){
+            } catch (GraknBackendExceptionOld e){
                 // retry...
                 LOG.debug(ErrorMessage.GRAPH_MUTATION_ERROR.getMessage(e.getMessage()), e);
             }

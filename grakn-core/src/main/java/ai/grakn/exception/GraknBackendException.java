@@ -18,19 +18,19 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.util.ErrorMessage;
-
 /**
- * An exception which encapsulates a vendor backend error
+ * <p>
+ *     Backend Grakn Exception
+ * </p>
  *
- * @author Filipe Teixeira
+ * <p>
+ *     Failures which occur server side are wrapped in this exception. This can include but is not limited to:
+ *     - Kafka timeouts
+ *     - Cassandra Timeouts
+ *     - Malformed Requests
+ * </p>
+ *
+ * @author fppt
  */
-public class GraknBackendException extends GraphRuntimeException {
-    public GraknBackendException(Exception e) {
-        super(ErrorMessage.BACKEND_EXCEPTION.getMessage(), e);
-    }
-
-    public GraknBackendException(String message, Exception e) {
-        super(message, e);
-    }
+public class GraknBackendException extends GraknException {
 }

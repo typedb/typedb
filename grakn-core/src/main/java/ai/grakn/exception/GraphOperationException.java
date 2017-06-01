@@ -18,16 +18,17 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.util.ErrorMessage;
-
 /**
- * A locking exception which may occur in a multi threaded environment.
- * Catching this exception, clearing the transaction, and retrying may allow the commit to execute successfully.
+ * <p>
+ *     Illegal Graph Mutation Exception
+ * </p>
  *
- * @author Filipe Teixeira
+ * <p>
+ *     This exception is thrown to prevent the user from incorrectly mutating the graph.
+ *     For example when attempting to an instances to an abstract type this exception is thrown.
+ * </p>
+ *
+ * @author fppt
  */
-public class GraknLockingException extends GraknBackendExceptionOld {
-    public GraknLockingException(Exception e) {
-        super(ErrorMessage.LOCKING_EXCEPTION.getMessage(), e);
-    }
+public class GraphOperationException extends GraknException{
 }

@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknBackendExceptionOld;
 import ai.grakn.exception.GraknLockingException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.Schema;
@@ -112,7 +112,7 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
 
     /**
      * Executes a method which has the potential to throw a {@link TemporaryLockingException} or a {@link PermanentLockingException}.
-     * If the exception is thrown it is wrapped in a {@link GraknBackendException} so that the transaction can be retried.
+     * If the exception is thrown it is wrapped in a {@link GraknBackendExceptionOld} so that the transaction can be retried.
      *
      * @param method The locking method to execute
      */
@@ -123,7 +123,7 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
             if(e.isCausedBy(TemporaryLockingException.class) || e.isCausedBy(PermanentLockingException.class)){
                 throw new GraknLockingException(e);
             } else {
-                throw new GraknBackendException(e);
+                throw new GraknBackendExceptionOld(e);
             }
         }
     }

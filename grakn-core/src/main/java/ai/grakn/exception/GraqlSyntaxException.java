@@ -18,16 +18,17 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.util.ErrorMessage;
-
 /**
- * A locking exception which may occur in a multi threaded environment.
- * Catching this exception, clearing the transaction, and retrying may allow the commit to execute successfully.
+ * <p>
+ *     Syntax Exception
+ * </p>
  *
- * @author Filipe Teixeira
+ * <p>
+ *     This is thrown when a parsing error occurs.
+ *     It means the user has input an invalid graql query which cannot be parsed.
+ * </p>
+ *
+ * @author fppt
  */
-public class GraknLockingException extends GraknBackendExceptionOld {
-    public GraknLockingException(Exception e) {
-        super(ErrorMessage.LOCKING_EXCEPTION.getMessage(), e);
-    }
+public class GraqlSyntaxException extends GraknException {
 }
