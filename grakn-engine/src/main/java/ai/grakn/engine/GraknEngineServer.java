@@ -48,12 +48,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.engine.GraknEngineConfig.ADMIN_PASSWORD_PROPERTY;
-import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
-import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
-import static ai.grakn.engine.GraknEngineConfig.SERVER_HOST_NAME;
-import static ai.grakn.engine.GraknEngineConfig.STATIC_FILES_PATH;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -84,7 +78,7 @@ public class GraknEngineServer implements AutoCloseable {
         taskManager = startTaskManager();
 
         startHTTP();
-        printStartMessage(prop.getProperty(SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER), prop.getLogFilePath());
+        printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
 
     public static void main(String[] args) {
@@ -111,7 +105,7 @@ public class GraknEngineServer implements AutoCloseable {
      * Check in with the properties file to decide which type of task manager should be started
      */
     private TaskManager startTaskManager() {
-        String taskManagerClassName = prop.getProperty(TASK_MANAGER_IMPLEMENTATION);
+        String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
 
         try {
             Class<TaskManager> taskManagerClass = (Class<TaskManager>) Class.forName(taskManagerClassName);
@@ -128,9 +122,9 @@ public class GraknEngineServer implements AutoCloseable {
         boolean passwordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
 
         // TODO: Make sure controllers handle the null case
-        Optional<String> secret = prop.tryProperty(JWT_SECRET_PROPERTY);
+        Optional<String> secret = prop.tryProperty(GraknEngineConfig.JWT_SECRET_PROPERTY);
         @Nullable JWTHandler jwtHandler = secret.map(JWTHandler::create).orElse(null);
-        UsersHandler usersHandler = UsersHandler.create(prop.getProperty(ADMIN_PASSWORD_PROPERTY), factory);
+        UsersHandler usersHandler = UsersHandler.create(prop.getProperty(GraknEngineConfig.ADMIN_PASSWORD_PROPERTY), factory);
 
         configureSpark(spark, prop, jwtHandler);
 
@@ -145,7 +139,7 @@ public class GraknEngineServer implements AutoCloseable {
         new SystemController(spark, prop.getProperties());  // TODO: Only pass the necessary properties
         new AuthController(spark, passwordProtected, jwtHandler, usersHandler);
         new UserController(spark, usersHandler);
-        new CommitLogController(spark, prop.getProperty(DEFAULT_KEYSPACE_PROPERTY), taskManager);
+        new CommitLogController(spark, prop.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY), taskManager);
         new TasksController(spark, taskManager);
 
         // This method will block until all the controllers are ready to serve requests
@@ -155,13 +149,13 @@ public class GraknEngineServer implements AutoCloseable {
 
     public static void configureSpark(Service spark, GraknEngineConfig prop, @Nullable JWTHandler jwtHandler){
         // Set host name
-        spark.ipAddress(prop.getProperty(SERVER_HOST_NAME));
+        spark.ipAddress(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME));
 
         // Set port
         spark.port(prop.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER));
 
         // Set the external static files folder
-        spark.staticFiles.externalLocation(prop.getPath(STATIC_FILES_PATH));
+        spark.staticFiles.externalLocation(prop.getPath(GraknEngineConfig.STATIC_FILES_PATH));
 
         spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
