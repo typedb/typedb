@@ -22,9 +22,9 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DeleteQuery;
@@ -59,10 +59,6 @@ import java.util.stream.Collectors;
 import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
-import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
-import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
-import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
@@ -130,13 +126,9 @@ public class GraqlController {
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
 
-            if(!query.isReadOnly()){
-                throw new GraknEngineServerException(405, "Only \"read-only\" queries are allowed.");
-            }
+            if(!query.isReadOnly()) throw GraknBackendException.invalidQuery("\"read-only\"");
 
-            if(!validContentType(acceptType, query)){
-                throw new GraknEngineServerException(406, INVALID_CONTENT_TYPE, query.getClass().getName(), acceptType);
-            }
+            if(!validContentType(acceptType, query)) throw GraknBackendException.contentTypeQueryMismatch(acceptType, query);
 
             Json responseBody = executeReadQuery(request, query, acceptType);
             return respond(response, query, acceptType, responseBody);
@@ -158,9 +150,7 @@ public class GraqlController {
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
 
-            if(!(query instanceof InsertQuery)){
-                throw new GraknEngineServerException(405, "Only INSERT queries are allowed.");
-            }
+            if(!(query instanceof InsertQuery)) throw GraknBackendException.invalidQuery("INSERT");
 
             Json responseBody = executeInsertQuery((InsertQuery) query);
 
@@ -185,9 +175,7 @@ public class GraqlController {
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
 
-            if(!(query instanceof DeleteQuery)){
-                throw new GraknEngineServerException(405, "Only DELETE queries are allowed.");
-            }
+            if(!(query instanceof DeleteQuery)) throw GraknBackendException.invalidQuery("DELETE");
 
             // Execute the query
             ((DeleteQuery) query).execute();
@@ -208,8 +196,7 @@ public class GraqlController {
      * @return value of the given parameter
      */
     static String mandatoryQueryParameter(Request request, String parameter){
-        return queryParameter(request, parameter).orElseThrow(() ->
-                new GraknEngineServerException(400, MISSING_MANDATORY_REQUEST_PARAMETERS, parameter));
+        return queryParameter(request, parameter).orElseThrow(() -> GraknBackendException.requestMissingParameters(parameter));
     }
 
     /**
@@ -230,8 +217,7 @@ public class GraqlController {
      * @return value of the request body as a string
      */
     static String mandatoryBody(Request request){
-        return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(() ->
-                new GraknEngineServerException(400, MISSING_REQUEST_BODY));
+        return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(GraknBackendException::requestMissingBody);
     }
 
     /**
@@ -322,7 +308,7 @@ public class GraqlController {
 
                 return Json.object(RESPONSE, formatAsHAL(query, keyspace, limitEmbedded));
             default:
-                throw new GraknEngineServerException(406, UNSUPPORTED_CONTENT_TYPE, acceptType);
+                throw GraknBackendException.unsupportedContentType(acceptType);
         }
 
     }

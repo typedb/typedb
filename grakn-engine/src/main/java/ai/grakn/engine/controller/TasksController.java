@@ -26,8 +26,6 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -71,7 +69,7 @@ public class TasksController {
 
     public TasksController(Service spark, TaskManager manager) {
         if (manager==null) {
-            throw new GraknEngineServerException(500,"Task manager has not been instantiated.");
+            throw GraknBackendException.internalError("Task manager has not been instantiated.");
         }
         this.manager = manager;
 
@@ -183,7 +181,7 @@ public class TasksController {
             // Get the configuration of the task
             configuration = TaskConfiguration.of(request.body().isEmpty() ? Json.object() : Json.read(request.body()));
         } catch (Exception e){
-            throw new GraknEngineServerException(400, e);
+            throw GraknBackendException.serverException(400, e);
         }
 
         // Get the class of this background task
@@ -210,13 +208,10 @@ public class TasksController {
     private Class<?> getClass(String className){
         try {
             Class<?> clazz = Class.forName(className);
-            if (!BackgroundTask.class.isAssignableFrom(clazz)) {
-                throw new GraknEngineServerException(400, ErrorMessage.UNAVAILABLE_TASK_CLASS, className);
-            }
-
+            if (!BackgroundTask.class.isAssignableFrom(clazz)) throw GraknBackendException.invalidTask(className);
             return clazz;
         } catch (ClassNotFoundException e) {
-            throw new GraknEngineServerException(400, ErrorMessage.UNAVAILABLE_TASK_CLASS, className);
+            throw GraknBackendException.invalidTask(className);
         }
     }
 

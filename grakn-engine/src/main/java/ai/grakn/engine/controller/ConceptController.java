@@ -23,8 +23,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.exception.GraknBackendException;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
@@ -43,9 +43,7 @@ import static ai.grakn.engine.controller.GraqlController.getAcceptType;
 import static ai.grakn.engine.controller.GraqlController.mandatoryQueryParameter;
 import static ai.grakn.engine.controller.GraqlController.queryParameter;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.NO_CONCEPT_IN_KEYSPACE;
-import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Concept.OFFSET_EMBEDDED;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
@@ -131,7 +129,7 @@ public class ConceptController {
             responseObj.set(RESOURCES_JSON_FIELD, instances(graph.admin().getMetaResourceType()));
             return responseObj.toString();
         } catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
+            throw GraknBackendException.serverException(500, e);
         }
     }
 
@@ -139,7 +137,7 @@ public class ConceptController {
         Concept concept = graph.getConcept(conceptId);
 
         if (notPresent(concept)) {
-            throw new GraknEngineServerException(500, NO_CONCEPT_IN_KEYSPACE.getMessage(conceptId, graph.getKeyspace()));
+            throw GraknBackendException.internalError(NO_CONCEPT_IN_KEYSPACE.getMessage(conceptId, graph.getKeyspace()));
         }
 
         return concept;
@@ -147,10 +145,7 @@ public class ConceptController {
 
     static void validateRequest(Request request){
         String acceptType = getAcceptType(request);
-
-        if(!acceptType.equals(APPLICATION_HAL)){
-            throw new GraknEngineServerException(406, UNSUPPORTED_CONTENT_TYPE, acceptType);
-        }
+        if(!acceptType.equals(APPLICATION_HAL)) throw GraknBackendException.unsupportedContentType(acceptType);
     }
 
     private List<String> instances(Type type) {
@@ -166,8 +161,7 @@ public class ConceptController {
      * @return value of the given parameter
      */
     static String mandatoryRequestParameter(Request request, String parameter){
-        return Optional.ofNullable(request.params(parameter)).orElseThrow(() ->
-                new GraknEngineServerException(400, MISSING_MANDATORY_REQUEST_PARAMETERS, parameter));
+        return Optional.ofNullable(request.params(parameter)).orElseThrow(() -> GraknBackendException.requestMissingParameters(parameter));
     }
 
     /**

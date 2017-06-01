@@ -26,8 +26,8 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
 import io.swagger.annotations.ApiImplicitParam;
@@ -96,7 +96,7 @@ public class SystemController {
                 properties.setProperty(FACTORY_INTERNAL, properties.get(FACTORY_ANALYTICS).toString());
                 break;
             default:
-                throw new GraknEngineServerException(500, "Unrecognised graph config: " + graphConfig);
+                throw GraknBackendException.internalError("Unrecognised graph config: " + graphConfig);
         }
 
         // Turn the properties into a Json object
@@ -124,15 +124,14 @@ public class SystemController {
             for (Entity keyspace : graph.<EntityType>getType(SystemKeyspace.KEYSPACE_ENTITY).instances()) {
                 Collection<Resource<?>> names = keyspace.resources(keyspaceName);
                 if (names.size() != 1) {
-                    throw new GraknEngineServerException(500,
-                            ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " has no unique name."));
+                    throw GraknBackendException.internalError(ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " has no unique name."));
                 }
                 result.add(names.iterator().next().getValue());
             }
             return result.toString();
         } catch (Exception e) {
             LOG.error("While retrieving keyspace list:", e);
-            throw new GraknEngineServerException(500, e);
+            throw GraknBackendException.serverException(500, e);
         }
     }
 }

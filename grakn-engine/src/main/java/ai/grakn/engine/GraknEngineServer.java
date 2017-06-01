@@ -31,7 +31,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.util.REST;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
@@ -167,7 +167,7 @@ public class GraknEngineServer implements AutoCloseable {
         }
 
         //Register exception handlers
-        spark.exception(GraknEngineServerException.class, (e, req, res) -> handleGraknServerError(e, res));
+        spark.exception(GraknBackendException.class, (e, req, res) -> handleGraknServerError(e, res));
         spark.exception(Exception.class,                  (e, req, res) -> handleInternalError(e, res));
     }
 
@@ -217,19 +217,19 @@ public class GraknEngineServer implements AutoCloseable {
             boolean authenticated;
             try {
                 if (request.headers("Authorization") == null || !request.headers("Authorization").startsWith("Bearer ")) {
-                    throw new GraknEngineServerException(401, "Authorization field in header corrupted or absent.");
+                    throw GraknBackendException.authenticationFailure();
                 }
 
                 String token = request.headers("Authorization").substring(7);
                 authenticated = jwtHandler.verifyJWT(token);
                 request.attribute(REST.Request.USER_ATTR, jwtHandler.extractUserFromJWT(token));
             } 
-            catch (GraknEngineServerException e) {
+            catch (GraknBackendException e) {
                 throw e;
             }
             catch (Exception e) {
                 //request is malformed, return 400
-                throw new GraknEngineServerException(400, e);
+                throw GraknBackendException.serverException(400, e);
             }
             if (!authenticated) {
                 spark.halt(401, "User not authenticated.");
@@ -238,7 +238,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     /**
-     * Handle any {@link GraknEngineServerException} that are thrown by the server. Configures and returns
+     * Handle any {@link GraknBackendException} that are thrown by the server. Configures and returns
      * the correct JSON response.
      *
      * @param exception exception thrown by the server
@@ -246,7 +246,7 @@ public class GraknEngineServer implements AutoCloseable {
      */
     private static void handleGraknServerError(Exception exception, Response response){
         LOG.error("REST error", exception);
-        response.status(((GraknEngineServerException) exception).getStatus());
+        response.status(((GraknBackendException) exception).getStatus().orElse(500));
         response.body(Json.object("exception", exception.getMessage()).toString());
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }

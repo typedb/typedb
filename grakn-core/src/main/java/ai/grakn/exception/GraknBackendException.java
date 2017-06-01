@@ -19,9 +19,12 @@
 package ai.grakn.exception;
 
 import ai.grakn.engine.TaskId;
+import ai.grakn.graql.Query;
+import ai.grakn.util.ErrorMessage;
 import org.apache.commons.lang.exception.ExceptionUtils;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import static ai.grakn.util.ErrorMessage.BACKEND_EXCEPTION;
 import static ai.grakn.util.ErrorMessage.STATE_STORAGE_ERROR;
@@ -41,12 +44,31 @@ import static ai.grakn.util.ErrorMessage.STATE_STORAGE_ERROR;
  * @author fppt
  */
 public class GraknBackendException extends GraknException {
+    private Optional<Integer> status = Optional.empty();
+
+    protected GraknBackendException(String error, Exception e, int status) {
+        super(error, e);
+        this.status = Optional.of(status);
+    }
+
     protected GraknBackendException(String error, Exception e) {
         super(error, e);
     }
 
+    protected GraknBackendException(String error, int status){
+        super(error);
+        this.status = Optional.of(status);
+    }
+
     protected GraknBackendException(String error){
         super(error);
+    }
+
+    /**
+     * Gets the error status code if one is available
+     */
+    public Optional<Integer> getStatus(){
+        return status;
     }
 
     /**
@@ -90,5 +112,76 @@ public class GraknBackendException extends GraknException {
      */
     public static GraknBackendException engineUnavailable(String host, int port, IOException e){
         return new GraknBackendException("Cannot reach Grakn engine on [" + host + ":" + port + "]", e);
+    }
+
+    /**
+     * Thrown when the Grakn server has an internal exception.
+     * This is thrown upwards to be interpreted by clients
+     */
+    public static GraknBackendException serverException(int status, Exception e){
+        return new GraknBackendException("Exception on Grakn engine", e, status);
+    }
+
+    /**
+     * Thrown when attempting to create an invalid task
+     */
+    public static GraknBackendException invalidTask(String className){
+        return new GraknBackendException(ErrorMessage.UNAVAILABLE_TASK_CLASS.getMessage(className), 400);
+    }
+
+    /**
+     * Thrown when a request is missing mandatory parameters
+     */
+    public static GraknBackendException requestMissingParameters(String parameter){
+        return new GraknBackendException(ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(parameter), 400);
+    }
+
+    /**
+     * Thrown when a request is missing the body
+     */
+    public static GraknBackendException requestMissingBody(){
+        return new GraknBackendException(ErrorMessage.MISSING_REQUEST_BODY.getMessage(), 400);
+    }
+
+    /**
+     * Thrown the content type specified in a request is invalid
+     */
+    public static GraknBackendException unsupportedContentType(String contentType){
+        return new GraknBackendException(ErrorMessage.UNSUPPORTED_CONTENT_TYPE.getMessage(contentType), 406);
+    }
+
+    /**
+     * Thrown when there is a mismatch between the content type in the request and the query to be executed
+     */
+    public static GraknBackendException contentTypeQueryMismatch(String contentType, Query query){
+        return new GraknBackendException(ErrorMessage.INVALID_CONTENT_TYPE.getMessage(query.getClass().getName(), contentType), 406);
+    }
+
+    /**
+     * Thrown when an incorrect query is used with a REST endpoint
+     */
+    public static GraknBackendException invalidQuery(String queryType){
+        return new GraknBackendException(ErrorMessage.INVALID_QUERY_USAGE.getMessage(queryType), 405);
+    }
+
+    /**
+     * Thrown when asked to explain a non-match query
+     */
+    public static GraknBackendException invalidQueryExplaination(String query){
+        return new GraknBackendException(ErrorMessage.EXPLAIN_ONLY_MATCH.getMessage(query), 405);
+    }
+
+    /**
+     * Thrown when an incorrect query is used with a REST endpoint
+     */
+    public static GraknBackendException authenticationFailure(){
+        return new GraknBackendException("Authentication parameters are incorrect or invalid", 401);
+    }
+
+    /**
+     * Thrown when an internal server error occurs. This is likely due to incorrect configs
+     */
+    public static GraknBackendException internalError(String errorMessage){
+        return new GraknBackendException(errorMessage, 500);
     }
 }

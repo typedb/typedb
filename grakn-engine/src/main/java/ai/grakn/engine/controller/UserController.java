@@ -19,7 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -102,7 +102,7 @@ public class UserController {
             return true;
         } catch(Exception e){
             LOG.error("Error during creating new user", e);
-            throw new GraknEngineServerException(500,e);
+            throw GraknBackendException.serverException(500, e);
         }
     }
     
