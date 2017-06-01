@@ -75,8 +75,6 @@ public class GraknEngineServer implements AutoCloseable {
     private final EngineID engineId = EngineID.me();
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
-    private final UsersHandler usersHandler;
-    private final @Nullable JWTHandler jwtHandler;  // TODO: Make sure controllers handle the null case
     private final EngineGraknGraphFactory factory;
 
     private GraknEngineServer(GraknEngineConfig prop) {
@@ -84,10 +82,6 @@ public class GraknEngineServer implements AutoCloseable {
 
         factory = EngineGraknGraphFactory.create(prop.getProperties());
         taskManager = startTaskManager();
-        usersHandler = UsersHandler.create(prop.getProperty(ADMIN_PASSWORD_PROPERTY), factory);
-
-        Optional<String> secret = prop.tryProperty(JWT_SECRET_PROPERTY);
-        jwtHandler = secret.map(JWTHandler::create).orElse(null);
 
         startHTTP();
         printStartMessage(prop.getProperty(SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER), prop.getLogFilePath());
@@ -130,9 +124,15 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public void startHTTP() {
-        configureSpark(spark, prop, jwtHandler);
 
         boolean passwordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
+
+        // TODO: Make sure controllers handle the null case
+        Optional<String> secret = prop.tryProperty(JWT_SECRET_PROPERTY);
+        @Nullable JWTHandler jwtHandler = secret.map(JWTHandler::create).orElse(null);
+        UsersHandler usersHandler = UsersHandler.create(prop.getProperty(ADMIN_PASSWORD_PROPERTY), factory);
+
+        configureSpark(spark, prop, jwtHandler);
 
         // Start the websocket for Graql
         RemoteSession graqlWebSocket = passwordProtected ? RemoteSession.passwordProtected(usersHandler) : RemoteSession.create();
