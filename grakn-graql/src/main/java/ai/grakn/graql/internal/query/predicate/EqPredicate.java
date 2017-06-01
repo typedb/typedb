@@ -47,7 +47,7 @@ class EqPredicate extends ComparatorPredicate {
 
     @Override
     public boolean isSpecific() {
-        return true;
+        return !getInnerVar().isPresent();
     }
 
     @Override
