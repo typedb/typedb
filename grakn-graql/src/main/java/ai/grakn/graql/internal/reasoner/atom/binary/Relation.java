@@ -32,7 +32,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.reasoner.ReasonerUtils;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
@@ -40,6 +40,8 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.utils.conversion.RoleTypeConverter;
+import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverterImpl;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -64,13 +66,13 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getCompatibleRelationTypes;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getListPermutations;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUnifiersFromPermutations;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.roleToRelationTypes;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.typeToRelationTypes;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.capture;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesDisjoint;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getCompatibleRelationTypesWithRoles;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getListPermutations;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getSuperTypes;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getUnifiersFromPermutations;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableMultiset;
 import static java.util.stream.Collectors.toSet;
 
@@ -358,39 +360,45 @@ public class Relation extends TypeAtom {
      * infer relation types that this relation atom can potentially have
      * NB: entity types and role types are treated separately as they behave differently:
      * entity types only play the explicitly defined roles (not the relevant part of the hierarchy of the specified role)
-     * @return set of relation types this atom can have
+     * @return list of relation types this atom can have ordered by the number of compatible role types
      */
-    public Set<RelationType> inferPossibleRelationTypes() {
+    public List<RelationType> inferPossibleRelationTypes() {
         //look at available role types
-        Set<RelationType> compatibleTypesFromRoles = getCompatibleRelationTypes(getExplicitRoleTypes(), roleToRelationTypes);
+        Multimap<RelationType, RoleType> compatibleTypesFromRoles = getCompatibleRelationTypesWithRoles(getExplicitRoleTypes(), new RoleTypeConverter());
 
         //look at entity types
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
         Set<Type> types = getRolePlayers().stream()
-                    .filter(varTypeMap::containsKey)
-                    .map(varTypeMap::get)
-                    .collect(toSet());
+                .filter(varTypeMap::containsKey)
+                .map(varTypeMap::get)
+                .collect(toSet());
 
-        Set<RelationType> compatibleTypesFromTypes = getCompatibleRelationTypes(types, typeToRelationTypes);
+        Multimap<RelationType, RoleType> compatibleTypesFromTypes = getCompatibleRelationTypesWithRoles(types, new TypeConverterImpl());
 
-        Set<RelationType> compatibleTypes;
+        Multimap<RelationType, RoleType> compatibleTypes;
         //intersect relation types from roles and types
         if (compatibleTypesFromRoles.isEmpty()){
             compatibleTypes = compatibleTypesFromTypes;
         } else if (!compatibleTypesFromTypes.isEmpty()){
-            compatibleTypes = Sets.intersection(compatibleTypesFromTypes, compatibleTypesFromRoles);
+            compatibleTypes = multimapIntersection(compatibleTypesFromTypes, compatibleTypesFromRoles);
         } else {
             compatibleTypes = compatibleTypesFromRoles;
         }
 
         LOG.trace("Inferring relation type of atom: " + this + getTypeConstraints());
-        LOG.trace("Compatible relation types: " + compatibleTypes.stream().map(Type::getLabel).collect(Collectors.toSet()));
+        LOG.trace("Compatible relation types: " + compatibleTypes.asMap().entrySet().stream()
+                .sorted(Comparator.comparing(e -> -e.getValue().size()))
+                .map(e -> e.getKey().getLabel() + "[" + e.getValue().size() + "]").collect(Collectors.joining(", ")));
 
-        return ReasonerUtils.getTopTypes(compatibleTypes);
+        return compatibleTypes.asMap().entrySet().stream()
+                .sorted(Comparator.comparing(e -> -e.getValue().size()))
+                .map(Map.Entry::getKey)
+                .filter(t -> Sets.intersection(getSuperTypes(t), compatibleTypes.keySet()).isEmpty())
+                .collect(Collectors.toList());
     }
 
     private Relation inferRelationType(){
-        Set<RelationType> relationTypes = inferPossibleRelationTypes();
+        List<RelationType> relationTypes = inferPossibleRelationTypes();
         if (relationTypes.size() == 1) addType(relationTypes.iterator().next());
         return this;
     }
