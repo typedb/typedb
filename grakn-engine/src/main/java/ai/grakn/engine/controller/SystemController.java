@@ -69,12 +69,10 @@ import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
  */
 public class SystemController {
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
-    private final Properties graphProperties;
     private final EngineGraknGraphFactory factory;
 
-    public SystemController(Service spark, Properties graphProperties) {
-        this.graphProperties = graphProperties;
-        this.factory = EngineGraknGraphFactory.create(graphProperties);
+    public SystemController(EngineGraknGraphFactory factory, Service spark) {
+        this.factory = factory;
         spark.get(KEYSPACES,     this::getKeyspaces);
         spark.get(CONFIGURATION, this::getConfiguration);
     }
@@ -88,7 +86,7 @@ public class SystemController {
 
         // Make a copy of the properties object
         Properties properties = new Properties();
-        properties.putAll(graphProperties);
+        properties.putAll(factory.properties());
 
         // Get the correct factory based on the request
         switch ((graphConfig != null) ? graphConfig : DEFAULT) {

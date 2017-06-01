@@ -88,8 +88,8 @@ public class GraqlControllerGETTest {
     public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
 
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
-        new SystemController(spark, config.getProperties());
+    public static SparkContext sparkContext = SparkContext.withControllers(spark  -> {
+        new SystemController(mockFactory, spark);
         new GraqlController(mockFactory, spark);
     }).port(4567); // TODO: Don't use the default port when bug #15130 is fixed
 

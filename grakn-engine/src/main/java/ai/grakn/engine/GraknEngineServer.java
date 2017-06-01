@@ -136,7 +136,7 @@ public class GraknEngineServer implements AutoCloseable {
         new GraqlController(factory, spark);
         new ConceptController(factory, spark);
         new DashboardController(factory, spark);
-        new SystemController(spark, prop.getProperties());  // TODO: Only pass the necessary properties
+        new SystemController(factory, spark);
         new AuthController(spark, passwordProtected, jwtHandler, usersHandler);
         new UserController(spark, usersHandler);
         new CommitLogController(spark, prop.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY), taskManager);

@@ -59,6 +59,10 @@ public class EngineGraknGraphFactory {
     public GraknGraph getGraph(String keyspace, GraknTxType type){
         return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).open(type);
     }
+
+    public Properties properties() {
+        return properties;
+    }
 }
 
 

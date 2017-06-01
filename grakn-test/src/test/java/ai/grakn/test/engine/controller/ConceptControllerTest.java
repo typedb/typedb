@@ -61,8 +61,8 @@ public class ConceptControllerTest {
     public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
 
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
-        new SystemController(spark, config.getProperties());
+    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
+        new SystemController(mockFactory, spark);
         new ConceptController(mockFactory, spark);
     });
 

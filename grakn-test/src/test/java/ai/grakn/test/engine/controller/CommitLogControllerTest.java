@@ -30,6 +30,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.SystemController;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskManager;
@@ -79,7 +80,7 @@ public class CommitLogControllerTest {
     @ClassRule
     public static SparkContext ctx = SparkContext.withControllers((spark, config) -> {
         new CommitLogController(spark, config.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY), manager);
-        new SystemController(spark, config.getProperties());
+        new SystemController(EngineGraknGraphFactory.create(config.getProperties()), spark);
     });
 
     private Json commitLog;
