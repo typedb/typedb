@@ -18,7 +18,11 @@
 
 package ai.grakn.exception;
 
+import ai.grakn.engine.TaskId;
+import org.apache.commons.lang.exception.ExceptionUtils;
+
 import static ai.grakn.util.ErrorMessage.BACKEND_EXCEPTION;
+import static ai.grakn.util.ErrorMessage.STATE_STORAGE_ERROR;
 
 /**
  * <p>
@@ -39,11 +43,43 @@ public class GraknBackendException extends GraknException {
         super(error, e);
     }
 
+    protected GraknBackendException(String error){
+        super(error);
+    }
+
     /**
      * Thrown when the persistence layer throws an unexpected exception.
      * This can include timeouts
      */
     public static GraknBackendException unknown(Exception e){
         return new GraknBackendException(BACKEND_EXCEPTION.getMessage(), e);
+    }
+
+    /**
+     * Thrown when the task state storage cannot be accessed.
+     */
+    public static GraknBackendException stateStorage(Exception error){
+        return new GraknBackendException(STATE_STORAGE_ERROR.getMessage(), error);
+    }
+
+    /**
+     * Thrown when the task state storage cannot be accessed.
+     */
+    public static GraknBackendException stateStorage(String error){
+        return new GraknBackendException(STATE_STORAGE_ERROR.getMessage() + error);
+    }
+
+    /**
+     * Thrown when a task id is missing from the task state storage
+     */
+    public static GraknBackendException stateStorageMissingId(TaskId id){
+        return new GraknBackendException("Could not retrieve id " + id);
+    }
+
+    /**
+     * Thrown when a task id is missing from the task state storage
+     */
+    public static GraknBackendException stateStorageTaskRetreivalFailure(Exception e){
+        return new GraknBackendException("Could not get state from storage " + ExceptionUtils.getFullStackTrace(e));
     }
 }

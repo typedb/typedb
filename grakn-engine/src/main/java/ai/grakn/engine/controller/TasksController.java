@@ -18,14 +18,14 @@
 
 package ai.grakn.engine.controller;
 
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.exception.EngineStorageException;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -80,7 +80,7 @@ public class TasksController {
         spark.put(STOP,        this::stopTask);
         spark.post(TASKS,      this::createTask);
 
-        spark.exception(EngineStorageException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
+        spark.exception(GraknBackendException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
     }
 
     @GET
@@ -222,7 +222,7 @@ public class TasksController {
 
     /**
      * Error accessing or retrieving a task from storage. This throws a 404 Task Not Found to the user.
-     * @param exception {@link EngineStorageException} thrown by the server
+     * @param exception {@link GraknBackendException} thrown by the server
      * @param response The response object providing functionality for modifying the response
      */
     private void handleNotFoundInStorage(Exception exception, Response response){

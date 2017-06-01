@@ -21,13 +21,8 @@ package ai.grakn.client;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.EngineUnavailableException;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.time.Duration;
-import java.time.Instant;
+import ai.grakn.exception.GraknBackendException;
 import mjson.Json;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -40,6 +35,12 @@ import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Duration;
+import java.time.Instant;
+
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
@@ -48,8 +49,8 @@ import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import static java.lang.String.format;
-import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
+import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
@@ -122,7 +123,7 @@ public class TaskClient extends Client {
      *
      * @param id Identifier of the task to get status of
      * @return Status of the specified task
-     * @throws EngineStorageException When the specified task has not yet been stored by the server
+     * @throws GraknBackendException When the specified task has not yet been stored by the server
      */
     public TaskStatus getStatus(TaskId id){
         try {
@@ -138,7 +139,7 @@ public class TaskClient extends Client {
             // 404 Not found returned when task not yet stored
             boolean notFound = response.getStatusLine().getStatusCode() == SC_NOT_FOUND;
             if(notFound){
-                throw new EngineStorageException(exceptionFrom(response));
+                throw GraknBackendException.stateStorage(exceptionFrom(response));
             }
 
             // 200 Only returned when request successfully completed

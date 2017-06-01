@@ -18,13 +18,13 @@
 
 package ai.grakn.engine.tasks.storage;
 
-import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.exception.EngineStorageException;
+import ai.grakn.exception.GraknBackendException;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 
 import java.util.Set;
@@ -34,7 +34,6 @@ import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.SerializationUtils.deserialize;
 import static org.apache.commons.lang.SerializationUtils.serialize;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * <p>
@@ -68,7 +67,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
 
             return task.getId();
         } catch (Exception exception){
-            throw new EngineStorageException(exception);
+            throw GraknBackendException.stateStorage(exception);
         }
     }
 
@@ -93,7 +92,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
 
             return true;
         } catch (Exception e){
-            throw new EngineStorageException(e);
+            throw GraknBackendException.stateStorage(e);
         }
     }
 
@@ -109,7 +108,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
             byte[] stateInZk = zookeeper.connection().getData().forPath(taskPath(id));
             return (TaskState) deserialize(stateInZk);
         } catch (Exception exception){
-            throw new EngineStorageException(exception);
+            throw GraknBackendException.stateStorage(exception);
         }
     }
 
@@ -118,7 +117,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
         try {
             return zookeeper.connection().checkExists().forPath(taskPath(id)) != null;
         } catch (Exception exception){
-            throw new EngineStorageException(exception);
+            throw GraknBackendException.stateStorage(exception);
         }
     }
 
@@ -161,7 +160,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
 
             return stream.collect(toSet());
         } catch (Exception e){
-            throw new EngineStorageException("Could not get state from storage " + getFullStackTrace(e));
+            throw GraknBackendException.stateStorageTaskRetreivalFailure(e);
         }
     }
 
