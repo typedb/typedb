@@ -95,7 +95,7 @@ public class AuthController {
     @Path("/enabled")
     @ApiOperation(
             value = "Returns true if Engine endpoints are password protected. False otherwise.")
-    private String isPasswordProtected(Request req, Response res) {
-        return String.valueOf(isPasswordProtected);
+    private boolean isPasswordProtected(Request req, Response res) {
+        return isPasswordProtected;
     }
 }
