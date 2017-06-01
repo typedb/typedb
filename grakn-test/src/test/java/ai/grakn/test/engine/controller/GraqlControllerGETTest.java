@@ -108,6 +108,8 @@ public class GraqlControllerGETTest {
         when(mockGraph.graql()).thenReturn(mockQueryBuilder);
 
         when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
+
+        when(mockFactory.properties()).thenReturn(graphContext.factory().properties());
     }
 
     @Test

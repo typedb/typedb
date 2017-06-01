@@ -20,7 +20,6 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.controller.GraqlController;
-import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.QueryBuilder;
@@ -65,7 +64,6 @@ public class GraqlControllerPOSTTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(mockFactory, spark);
         new GraqlController(mockFactory, spark);
     });
 
