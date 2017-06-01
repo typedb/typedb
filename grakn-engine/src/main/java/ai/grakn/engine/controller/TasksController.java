@@ -191,10 +191,9 @@ public class TasksController {
         String intervalParam = request.queryParams(REST.Request.TASK_RUN_INTERVAL_PARAMETER);
         String priorityParam = request.queryParams(REST.Request.TASK_PRIORITY_PARAMETER);
 
-        Json body = bodyAsJson(request);
         TaskState taskState = processTask(className, createdBy, runAtTime, intervalParam,
                 priorityParam);
-        manager.addTask(taskState, TaskConfiguration.of(body));
+        manager.addTask(taskState, TaskConfiguration.of(bodyAsJson(request)));
         // Configure the response
         response.type(ContentType.APPLICATION_JSON.getMimeType());
         response.status(200);
@@ -210,15 +209,8 @@ public class TasksController {
             @ApiImplicitParam(name = REST.Request.CONFIGURATION_PARAM, value = "JSON Object that will be given to the task as configuration.", dataType = "String", paramType = "body")
     })
     private Json createTaskBulk(Request request, Response response) {
-        Json requestBodyAsJson = bodyAsJson(request);
-        Json configuration =
-                requestBodyAsJson.has(REST.Request.CONFIGURATION_PARAM) ? requestBodyAsJson.at(
-                        REST.Request.CONFIGURATION_PARAM) : Json.object();
-        if (!requestBodyAsJson.has(REST.Request.TASKS_PARAM) || requestBodyAsJson
-                .at(REST.Request.TASKS_PARAM).asList().isEmpty()) {
-            throw new GraknEngineServerException(400, MISSING_MANDATORY_REQUEST_PARAMETERS,
-                    REST.Request.TASKS_PARAM);
-        }
+        Json requestBodyAsJson = bodyAsJson(request).at("value");
+        Json configuration = extractConfiguration(requestBodyAsJson);
         List<Json> taskJsonList = requestBodyAsJson.at(REST.Request.TASKS_PARAM).asJsonList();
         Json responseJson = Json.array();
         response.type(ContentType.APPLICATION_JSON.getMimeType());
@@ -272,6 +264,18 @@ public class TasksController {
             response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             return Json.object();
         }
+    }
+
+    private Json extractConfiguration(Json requestBodyAsJson) {
+        Json configuration =
+                requestBodyAsJson.has(REST.Request.CONFIGURATION_PARAM) ? requestBodyAsJson.at(
+                        REST.Request.CONFIGURATION_PARAM) : Json.object();
+        if (!requestBodyAsJson.has(REST.Request.TASKS_PARAM) || requestBodyAsJson
+                .at(REST.Request.TASKS_PARAM).asList().isEmpty()) {
+            throw new GraknEngineServerException(400, MISSING_MANDATORY_REQUEST_PARAMETERS,
+                    REST.Request.TASKS_PARAM);
+        }
+        return configuration;
     }
 
     private Json addTaskToManager(Json configuration,
@@ -342,8 +346,11 @@ public class TasksController {
 
     private Json bodyAsJson(Request request) {
         String requestBody = request.body();
+        if (requestBody.isEmpty()) {
+            return Json.object();
+        }
         try {
-            return requestBody.isEmpty() ? Json.object() : Json.read(requestBody).at("value");
+            return Json.read(requestBody);
         } catch (Exception e) {
             LOG.error("Malformed json in body of request {}", requestBody);
             throw new GraknEngineServerException(400, e);
