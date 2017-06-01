@@ -29,6 +29,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import mjson.Json;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
@@ -131,6 +132,21 @@ public class TxCacheTest extends GraphTestBase{
 
         i1.delete();
         assertThat(graknGraph.getTxCache().getModifiedConcepts(), is(empty()));
+    }
+
+    @Test
+    public void whenNoOp_EnsureLogWellFormed() {
+        Json expected = Json.read("{\"concepts-to-fix\":{\"CASTING\":{},\"RESOURCE\":{}},\"types-with-new-counts\":[]}");
+        assertEquals("Unexpected graph logs", expected, graknGraph.getTxCache().getFormattedLog());
+    }
+
+    @Test
+    public void whenAddedEntities_EnsureLogNotEmpty() {
+        EntityType entityType = graknGraph.putEntityType("My Type");
+        entityType.addEntity();
+        entityType.addEntity();
+        Json expected = Json.read("{\"concepts-to-fix\":{\"CASTING\":{},\"RESOURCE\":{}},\"types-with-new-counts\":[{\"concept-id\":\"55\",\"sharding-count\":2}]}");
+        assertEquals("Unexpected graph logs", expected, graknGraph.getTxCache().getFormattedLog());
     }
 
     @Test

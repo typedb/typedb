@@ -66,7 +66,7 @@ public class TypeAtom extends Binary{
     @Override
     public int hashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + (this.typeId != null? this.typeId.hashCode() : 0);
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + this.getVarName().hashCode();
         return hashCode;
     }
@@ -76,7 +76,7 @@ public class TypeAtom extends Binary{
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         BinaryBase a2 = (BinaryBase) obj;
-        return Objects.equals(this.typeId, a2.getTypeId())
+        return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarName().equals(a2.getVarName());
     }
 

@@ -31,11 +31,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>${json.version}</version>
-        </dependency>
-        <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-core</artifactId>
             <version>${project.version}</version>

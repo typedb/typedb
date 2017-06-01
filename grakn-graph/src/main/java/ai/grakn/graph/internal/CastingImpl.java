@@ -74,7 +74,7 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
      */
     CastingImpl setHash(RoleTypeImpl role, InstanceImpl rolePlayer){
         String hash;
-        if(getGraknGraph().isBatchLoadingEnabled()) {
+        if(getGraknGraph().isBatchGraph()) {
             hash = "CastingBaseId_" + this.getId().getValue() + UUID.randomUUID().toString();
         } else {
             hash = generateNewHash(role, rolePlayer);

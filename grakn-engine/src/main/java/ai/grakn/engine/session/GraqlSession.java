@@ -272,7 +272,7 @@ class GraqlSession {
      */
     void clean() {
         queryExecutor.execute(() -> {
-            graph.clear();
+            graph.admin().delete();
             attemptRefresh();
         });
     }

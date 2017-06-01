@@ -17,10 +17,6 @@ relation1 sub relation
 	relates role1
 	relates role2;
 
-relation2 sub relation
-    relates role1
-    relates role2;
-
 #Rules
 
 isa inference-rule
@@ -37,4 +33,3 @@ isa inference-rule
 $x isa entity1;
 $y isa entity1;
 $z isa entity1;
-

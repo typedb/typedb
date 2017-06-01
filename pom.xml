@@ -92,7 +92,7 @@
         <quickcheck.version>0.7</quickcheck.version>
         <httpclient.version>4.5.3</httpclient.version>
         <findbugs.version>3.0.1</findbugs.version>
-        <redis.version>2.6.0</redis.version>
+        <redis.version>2.9.0</redis.version>
         <redis-test.version>0.6</redis-test.version>
         <main.basedir>${project.parent.basedir}</main.basedir>
     </properties>

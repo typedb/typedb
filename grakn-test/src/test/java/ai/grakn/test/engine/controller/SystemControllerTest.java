@@ -80,7 +80,7 @@ public class SystemControllerTest {
     @Test
     public void testGraknClientBatch() {
         GraknGraph batch = Grakn.session(Grakn.DEFAULT_URI, "grakntestagain").open(GraknTxType.BATCH);
-        assertTrue(((AbstractGraknGraph) batch).isBatchLoadingEnabled());
+        assertTrue(((AbstractGraknGraph) batch).isBatchGraph());
     }
 
     @Test
@@ -88,12 +88,12 @@ public class SystemControllerTest {
         AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.session(Grakn.DEFAULT_URI, "grakntest").open(GraknTxType.WRITE);
         AbstractGraknGraph graph2 = (AbstractGraknGraph) Grakn.session(Grakn.DEFAULT_URI, "grakntest2").open(GraknTxType.WRITE);
         assertNotEquals(0, graph.getTinkerPopGraph().traversal().V().toList().size());
-        assertFalse(graph.isBatchLoadingEnabled());
+        assertFalse(graph.isBatchGraph());
         assertNotEquals(graph, graph2);
         graph.close();
 
         AbstractGraknGraph batch = (AbstractGraknGraph) Grakn.session(Grakn.DEFAULT_URI, "grakntest").open(GraknTxType.BATCH);
-        assertTrue(batch.isBatchLoadingEnabled());
+        assertTrue(batch.isBatchGraph());
         assertNotEquals(graph, batch);
 
         graph.close();

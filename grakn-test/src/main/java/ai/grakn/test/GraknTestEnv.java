@@ -142,6 +142,10 @@ public abstract class GraknTestEnv {
         // There is no way to stop the embedded Casssandra, no such API offered.
     }
 
+    public static GraknGraph emptyGraph() {
+        return EngineGraknGraphFactory.getInstance().getGraph(randomKeyspace(), GraknTxType.WRITE);
+    }
+
     private static void clearGraphs() {
         // Drop all keyspaces
         EngineGraknGraphFactory engineGraknGraphFactory = EngineGraknGraphFactory.getInstance();
@@ -152,8 +156,7 @@ public abstract class GraknTestEnv {
                     .forEach(x -> x.values().forEach(y -> {
                         String name = y.asResource().getValue().toString();
                         GraknGraph graph = engineGraknGraphFactory.getGraph(name, GraknTxType.WRITE);
-                        graph.clear();
-                        graph.admin().commitNoLogs();
+                        graph.admin().delete();
                     }));
         }
         engineGraknGraphFactory.refreshConnections();

@@ -20,9 +20,9 @@ package ai.grakn.test.engine.user;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.user.Password;
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.EngineContext;
 import mjson.Json;
@@ -45,6 +45,7 @@ public class UserHandlerTest {
     private static String userName = "geralt";
     private static String password = "witcher";
 
+    // This is necessary because `UsersHandler` communicates with the system keyspace
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 

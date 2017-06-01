@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -53,7 +52,6 @@ public abstract class BinaryBase extends Atom {
     BinaryBase(BinaryBase a) {
         super(a);
         this.valueVariable = a.getValueVariable();
-        this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
     }
 
     protected abstract Var extractValueVariableName(VarPatternAdmin var);
@@ -67,7 +65,7 @@ public abstract class BinaryBase extends Atom {
     @Override
     public int hashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + (this.typeId != null? this.typeId.hashCode() : 0);
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + this.getVarName().hashCode();
         hashCode = hashCode * 37 + this.valueVariable.hashCode();
         return hashCode;
@@ -78,7 +76,7 @@ public abstract class BinaryBase extends Atom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         BinaryBase a2 = (BinaryBase) obj;
-        return Objects.equals(this.typeId, a2.getTypeId())
+        return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarName().equals(a2.getVarName())
                 && this.valueVariable.equals(a2.getValueVariable());
     }
@@ -88,7 +86,7 @@ public abstract class BinaryBase extends Atom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         BinaryBase a2 = (BinaryBase) obj;
-        return Objects.equals(this.typeId, a2.getTypeId())
+        return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && hasEquivalentPredicatesWith(a2);
     }
 

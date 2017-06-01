@@ -38,7 +38,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static ai.grakn.util.ErrorMessage.CLOSED_CLEAR;
 import static ai.grakn.util.ErrorMessage.GRAPH_CLOSED_ON_ACTION;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
@@ -56,7 +55,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
     @After
     public void cleanup(){
         if(!graknGraph.isClosed())
-            graknGraph.clear();
+            graknGraph.close();
     }
 
     @Test
@@ -110,16 +109,6 @@ public class GraknTitanGraphTest extends TitanTestBase{
         GraknTitanGraph case2 = factory2.open(GraknTxType.WRITE);
 
         assertEquals(case1.getKeyspace(), case2.getKeyspace());
-    }
-
-    @Test
-    public void whenClearingTheGraph_AllNonMetaConceptsAreRemoved(){
-        GraknTitanGraph graph = new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
-        graph.clear();
-        expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(CLOSED_CLEAR.getMessage());
-        //noinspection ResultOfMethodCallIgnored
-        graph.getEntityType("thing");
     }
 
     @Test
