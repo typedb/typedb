@@ -246,7 +246,7 @@ public class GraknEngineServer implements AutoCloseable {
      */
     private static void handleGraknServerError(Exception exception, Response response){
         LOG.error("REST error", exception);
-        response.status(((GraknBackendException) exception).getStatus().orElse(500));
+        response.status(((GraknBackendException) exception).getStatus());
         response.body(Json.object("exception", exception.getMessage()).toString());
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
