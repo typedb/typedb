@@ -26,6 +26,7 @@ import com.google.common.collect.Multimap;
  * <p>
  * TypeConverter interface for conversion between compatible types.
  * </p>
+ * @param <T> type to convert from
  *
  * @author Kasper Piskorski
  */
