@@ -71,7 +71,7 @@ import spark.Service;
 
 /**
  * <p>
- *     Endpoints used to query and control queued background tasks.
+ * Endpoints used to query and control queued background tasks.
  * </p>
  *
  * @author Denis Lobanov, alexandraorth
@@ -82,14 +82,17 @@ public class TasksController {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknVertexProgram.class);
     private static final TaskState.Priority DEFAULT_TASK_PRIORITY = TaskState.Priority.LOW;
-    public static final int MAX_THREADS = 20;
+
+    private static final int MAX_THREADS = 10;
+    private static final Duration MAX_EXECUTION_TIME = Duration.ofSeconds(10);
 
     private final TaskManager manager;
     private final ExecutorService executor;
 
     public TasksController(Service spark, TaskManager manager) {
-        if (manager==null) {
-            throw new GraknEngineServerException(500,"Task manager has not been instantiated.");
+        if (manager == null) {
+            throw new GraknEngineServerException(HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                    "Task manager has not been instantiated.");
         }
         this.manager = manager;
 
@@ -99,7 +102,8 @@ public class TasksController {
         spark.post(TASKS, this::createTask);
         spark.post(TASKS_BULK, this::createTaskBulk);
 
-        spark.exception(EngineStorageException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
+        spark.exception(EngineStorageException.class,
+                (e, req, res) -> handleNotFoundInStorage(e, res));
         this.executor = Executors.newFixedThreadPool(MAX_THREADS);
 
     }
@@ -108,11 +112,11 @@ public class TasksController {
     @Path("/")
     @ApiOperation(value = "Get tasks matching a specific TaskStatus.")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "status", value = "TaskStatus as string.", dataType = "string", paramType = "query"),
-        @ApiImplicitParam(name = "className", value = "Class name of BackgroundTask Object.", dataType = "string", paramType = "query"),
-        @ApiImplicitParam(name = "creator", value = "Who instantiated these tasks.", dataType = "string", paramType = "query"),
-        @ApiImplicitParam(name = "limit", value = "Limit the number of entries in the returned result.", dataType = "integer", paramType = "query"),
-        @ApiImplicitParam(name = "offset", value = "Use in conjunction with limit for pagination.", dataType = "integer", paramType = "query")
+            @ApiImplicitParam(name = "status", value = "TaskStatus as string.", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "className", value = "Class name of BackgroundTask Object.", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "creator", value = "Who instantiated these tasks.", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Limit the number of entries in the returned result.", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "offset", value = "Use in conjunction with limit for pagination.", dataType = "integer", paramType = "query")
     })
     private Json getTasks(Request request, Response response) {
         TaskStatus status = null;
@@ -121,15 +125,15 @@ public class TasksController {
         int limit = 0;
         int offset = 0;
 
-        if(request.queryParams(REST.Request.LIMIT_PARAM) != null) {
+        if (request.queryParams(REST.Request.LIMIT_PARAM) != null) {
             limit = Integer.parseInt(request.queryParams(REST.Request.LIMIT_PARAM));
         }
 
-        if(request.queryParams(REST.Request.OFFSET_PARAM) != null) {
+        if (request.queryParams(REST.Request.OFFSET_PARAM) != null) {
             offset = Integer.parseInt(request.queryParams(REST.Request.OFFSET_PARAM));
         }
 
-        if(request.queryParams(REST.Request.TASK_STATUS_PARAMETER) != null) {
+        if (request.queryParams(REST.Request.TASK_STATUS_PARAMETER) != null) {
             status = TaskStatus.valueOf(request.queryParams(REST.Request.TASK_STATUS_PARAMETER));
         }
 
@@ -176,7 +180,7 @@ public class TasksController {
             @ApiImplicitParam(name = "createdBy", value = "String representing the user scheduling this task", required = true, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "priority", value = "String representing priority of a task. Must be one of {high, low}. The default is \"low\"", required = false, dataType = "string", paramType = "query", access = "low", allowableValues = "high,low"),
             @ApiImplicitParam(name = "runAt", value = "Time to run at as milliseconds since the UNIX epoch", required = true, dataType = "long", paramType = "query"),
-            @ApiImplicitParam(name = "interval",value = "If set the task will be marked as recurring and the value will be the time in milliseconds between repeated executions of this task. Value should be as Long.",
+            @ApiImplicitParam(name = "interval", value = "If set the task will be marked as recurring and the value will be the time in milliseconds between repeated executions of this task. Value should be as Long.",
                     dataType = "long", paramType = "query"),
             @ApiImplicitParam(name = REST.Request.CONFIGURATION_PARAM, value = "JSON Object that will be given to the task as configuration.", dataType = "String", paramType = "body")
     })
@@ -188,7 +192,8 @@ public class TasksController {
         String priorityParam = request.queryParams(REST.Request.TASK_PRIORITY_PARAMETER);
 
         Json body = bodyAsJson(request);
-        TaskState taskState = processTask(className, createdBy, runAtTime, intervalParam, priorityParam);
+        TaskState taskState = processTask(className, createdBy, runAtTime, intervalParam,
+                priorityParam);
         manager.addTask(taskState, TaskConfiguration.of(body));
         // Configure the response
         response.type(ContentType.APPLICATION_JSON.getMimeType());
@@ -206,21 +211,26 @@ public class TasksController {
     })
     private Json createTaskBulk(Request request, Response response) {
         Json requestBodyAsJson = bodyAsJson(request);
-        Json configuration = requestBodyAsJson.has(REST.Request.CONFIGURATION_PARAM) ? requestBodyAsJson.at(
-                REST.Request.CONFIGURATION_PARAM) : Json.object();
-        if (!requestBodyAsJson.has(REST.Request.TASKS_PARAM) || requestBodyAsJson.at(REST.Request.TASKS_PARAM).asList().isEmpty()) {
-            throw new GraknEngineServerException(400, MISSING_MANDATORY_REQUEST_PARAMETERS, REST.Request.TASKS_PARAM);
+        Json configuration =
+                requestBodyAsJson.has(REST.Request.CONFIGURATION_PARAM) ? requestBodyAsJson.at(
+                        REST.Request.CONFIGURATION_PARAM) : Json.object();
+        if (!requestBodyAsJson.has(REST.Request.TASKS_PARAM) || requestBodyAsJson
+                .at(REST.Request.TASKS_PARAM).asList().isEmpty()) {
+            throw new GraknEngineServerException(400, MISSING_MANDATORY_REQUEST_PARAMETERS,
+                    REST.Request.TASKS_PARAM);
         }
         List<Json> taskJsonList = requestBodyAsJson.at(REST.Request.TASKS_PARAM).asJsonList();
         Json responseJson = Json.array();
         response.type(ContentType.APPLICATION_JSON.getMimeType());
         // We need to return the list of taskStates in order
         // so the client can relate the state to each element in the request.
-        List<IndexedTaskState> taskStates = new ArrayList<>();
+        List<TaskStateWithIndex> taskStates = new ArrayList<>();
         for (int i = 0; i < taskJsonList.size(); i++) {
             Json singleTaskJson = taskJsonList.get(i);
             try {
-                taskStates.add(new IndexedTaskState(extractParametersAndProcessTask(singleTaskJson), i));
+                taskStates
+                        .add(new TaskStateWithIndex(extractParametersAndProcessTask(singleTaskJson),
+                                i));
             } catch (Exception e) {
                 LOG.error("Malformed request at {}", singleTaskJson, e);
                 // We return a failure for the full request as this imply there is
@@ -229,14 +239,15 @@ public class TasksController {
                 return Json.object();
             }
         }
+
         List<CompletableFuture<Json>> futures = taskStates.stream()
-                .map(taskState -> CompletableFuture.supplyAsync(() -> addTaskToManager(configuration, taskState), executor))
+                .map(taskState -> CompletableFuture
+                        .supplyAsync(() -> addTaskToManager(configuration, taskState), executor))
                 .collect(toList());
-
         CompletableFuture<List<Json>> completableFuture = all(futures);
-
         try {
-            List<Json> results = completableFuture.get(10, TimeUnit.SECONDS);
+            List<Json> results = completableFuture
+                    .get(MAX_EXECUTION_TIME.getSeconds(), TimeUnit.SECONDS);
             boolean hasFailures = false;
             for (Json resultForTask : results) {
                 responseJson.add(resultForTask);
@@ -252,7 +263,7 @@ public class TasksController {
                 response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             }
             return responseJson;
-        } catch (TimeoutException|InterruptedException e) {
+        } catch (TimeoutException | InterruptedException e) {
             LOG.error("Task interrupted", e);
             response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             return Json.object();
@@ -264,7 +275,7 @@ public class TasksController {
     }
 
     private Json addTaskToManager(Json configuration,
-            IndexedTaskState iTaskState) {
+            TaskStateWithIndex iTaskState) {
         Json singleTaskReturnJson = Json.object().set("index", iTaskState.getIndex());
         try {
             manager.addTask(iTaskState.getTaskState(), TaskConfiguration.of(configuration));
@@ -302,20 +313,23 @@ public class TasksController {
                 priorityParam);
     }
 
-    private TaskState processTask(String className, String createdBy, String runAtTime, String intervalParam, String priorityParam) {
+    private TaskState processTask(String className, String createdBy, String runAtTime,
+            String intervalParam, String priorityParam) {
         TaskSchedule schedule;
         TaskState.Priority priority;
         try {
             // Get the schedule of the task
-            Optional<Duration> optionalInterval = Optional.ofNullable(intervalParam).map(Long::valueOf).map(Duration::ofMillis);
+            Optional<Duration> optionalInterval = Optional.ofNullable(intervalParam)
+                    .map(Long::valueOf).map(Duration::ofMillis);
             Instant time = ofEpochMilli(parseLong(runAtTime));
             schedule = optionalInterval
                     .map(interval -> recurring(time, interval))
                     .orElse(TaskSchedule.at(time));
 
             // Get the priority of a task (default is low)
-            priority = Optional.ofNullable(priorityParam).map(TaskState.Priority::valueOf).orElse(DEFAULT_TASK_PRIORITY);
-        } catch (Exception e){
+            priority = Optional.ofNullable(priorityParam).map(TaskState.Priority::valueOf)
+                    .orElse(DEFAULT_TASK_PRIORITY);
+        } catch (Exception e) {
             throw new GraknEngineServerException(400, e);
         }
 
@@ -330,38 +344,42 @@ public class TasksController {
         String requestBody = request.body();
         try {
             return requestBody.isEmpty() ? Json.object() : Json.read(requestBody).at("value");
-        } catch(Exception e) {
+        } catch (Exception e) {
             LOG.error("Malformed json in body of request {}", requestBody);
             throw new GraknEngineServerException(400, e);
         }
     }
 
     /**
-     * Use reflection to get a reference to the given class. Returns a 500 to the client if the class is
-     * unavailable.
+     * Use reflection to get a reference to the given class. Returns a 500 to the client if the
+     * class is unavailable.
      *
      * @param className class to retrieve
      * @return reference to the given class
      */
-    private Class<?> getClass(String className){
+    private Class<?> getClass(String className) {
         try {
             Class<?> clazz = Class.forName(className);
             if (!BackgroundTask.class.isAssignableFrom(clazz)) {
-                throw new GraknEngineServerException(400, ErrorMessage.UNAVAILABLE_TASK_CLASS, className);
+                throw new GraknEngineServerException(400, ErrorMessage.UNAVAILABLE_TASK_CLASS,
+                        className);
             }
 
             return clazz;
         } catch (ClassNotFoundException e) {
-            throw new GraknEngineServerException(400, ErrorMessage.UNAVAILABLE_TASK_CLASS, className);
+            throw new GraknEngineServerException(400, ErrorMessage.UNAVAILABLE_TASK_CLASS,
+                    className);
         }
     }
 
     /**
-     * Error accessing or retrieving a task from storage. This throws a 404 Task Not Found to the user.
+     * Error accessing or retrieving a task from storage. This throws a 404 Task Not Found to the
+     * user.
+     *
      * @param exception {@link EngineStorageException} thrown by the server
      * @param response The response object providing functionality for modifying the response
      */
-    private void handleNotFoundInStorage(Exception exception, Response response){
+    private void handleNotFoundInStorage(Exception exception, Response response) {
         response.status(404);
         response.body(Json.object("exception", exception.getMessage()).toString());
     }
@@ -386,12 +404,12 @@ public class TasksController {
                 .set("engineID", state.engineID() != null ? state.engineID().value() : null);
     }
 
-    private static class IndexedTaskState {
+    private static class TaskStateWithIndex {
 
         private final TaskState taskState;
         private final int index;
 
-        IndexedTaskState(TaskState taskState, int index) {
+        TaskStateWithIndex(TaskState taskState, int index) {
             this.taskState = taskState;
             this.index = index;
         }
