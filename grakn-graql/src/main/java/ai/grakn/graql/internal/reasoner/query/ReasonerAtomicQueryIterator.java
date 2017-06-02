@@ -112,16 +112,6 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         Set<Var> queryVars = query.getVarNames();
         Set<Var> headVars = rule.getHead().getVarNames();
 
-        /*
-        LinkedList<ReasonerAtomicQuery> resolutionPlan = rule.getBody().getResolutionPlan(headVars);
-
-        String plan = resolutionPlan.stream()
-                .map(ReasonerAtomicQuery::getAtom)
-                .map(AtomicBase::toString).collect(Collectors.joining("\n"));
-
-        LOG.debug("rule plan: " + plan);
-        */
-
         Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
         Iterable<Answer> baseIterable = () -> rule.getBody().iterator(partialSubPrime, subGoals, cache);
         Stream<Answer> iteratorStream = StreamSupport.stream(baseIterable.spliterator(), false);

@@ -546,8 +546,7 @@ public class RecursiveInferenceTest {
 
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal;";
 
-        List<Answer> answers = iqb.materialise(false).<MatchQuery>parse(queryString).execute();
-        assertEquals(answers.size(), 64);
+        assertEquals(iqb.materialise(false).<MatchQuery>parse(queryString).execute().size(), 64);
         assertEquals(iqb.materialise(true).<MatchQuery>parse(queryString).execute().size(), 64);
     }
 

@@ -54,7 +54,7 @@ public abstract class Atom extends AtomicBase {
 
     private Type type = null;
     protected ConceptId typeId = null;
-    protected int priority = Integer.MAX_VALUE;
+    private int basePriority = Integer.MAX_VALUE;
     protected Set<InferenceRule> applicableRules = null;
 
     protected Atom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
@@ -88,10 +88,19 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<IdPredicate> getPartialSubstitutions(){ return new HashSet<>();}
 
+    /**
+     * compute base resolution priority of this atom
+     * @return priority value
+     */
     public int computePriority(){
         return computePriority(getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet()));
     }
 
+    /**
+     * compute resolution priority based on provided substitution variables
+     * @param subbedVars variables having a substitution
+     * @return resolution priority value
+     */
     public int computePriority(Set<Var> subbedVars){
         int priority = 0;
         priority += Sets.intersection(getVarNames(), subbedVars).size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
@@ -110,11 +119,11 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return measure of priority with which this atom should be resolved
      */
-    public int resolutionPriority(){
-        if (priority == Integer.MAX_VALUE) {
-            priority = computePriority();
+    public int baseResolutionPriority(){
+        if (basePriority == Integer.MAX_VALUE) {
+            basePriority = computePriority();
         }
-        return priority;
+        return basePriority;
     }
 
     public abstract boolean isRuleApplicable(InferenceRule child);

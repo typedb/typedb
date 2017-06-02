@@ -140,7 +140,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public int resolutionPriority(){
         if (priority == Integer.MAX_VALUE) {
             Set<Atom> selectableAtoms = selectAtoms();
-            int totalPriority = selectableAtoms.stream().mapToInt(Atom::resolutionPriority).sum();
+            int totalPriority = selectableAtoms.stream().mapToInt(Atom::baseResolutionPriority).sum();
             priority = totalPriority/selectableAtoms.size();
         }
         return priority;
