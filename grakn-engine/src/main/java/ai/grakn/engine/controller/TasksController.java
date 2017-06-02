@@ -21,7 +21,6 @@ package ai.grakn.engine.controller;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
@@ -29,6 +28,7 @@ import static ai.grakn.util.REST.WebPath.Tasks.TASKS_BULK;
 import static java.lang.Long.parseLong;
 import static java.time.Instant.ofEpochMilli;
 import static java.util.stream.Collectors.toList;
+
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -36,11 +36,9 @@ import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-
-import ai.grakn.exception.EngineStorageException;
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -102,8 +100,7 @@ public class TasksController {
         spark.post(TASKS, this::createTask);
         spark.post(TASKS_BULK, this::createTaskBulk);
 
-        spark.exception(EngineStorageException.class,
-                (e, req, res) -> handleNotFoundInStorage(e, res));
+        spark.exception(GraknServerException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
         this.executor = Executors.newFixedThreadPool(MAX_THREADS);
         spark.exception(GraknBackendException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
     }
@@ -272,8 +269,7 @@ public class TasksController {
                         REST.Request.CONFIGURATION_PARAM) : Json.object();
         if (!requestBodyAsJson.has(REST.Request.TASKS_PARAM) || requestBodyAsJson
                 .at(REST.Request.TASKS_PARAM).asList().isEmpty()) {
-            throw new GraknEngineServerException(400, MISSING_MANDATORY_REQUEST_PARAMETERS,
-                    REST.Request.TASKS_PARAM);
+            throw GraknServerException.requestMissingParameters(REST.Request.TASKS_PARAM);
         }
         return configuration;
     }
@@ -353,7 +349,7 @@ public class TasksController {
             return Json.read(requestBody);
         } catch (Exception e) {
             LOG.error("Malformed json in body of request {}", requestBody);
-            throw new GraknEngineServerException(400, e);
+            throw GraknServerException.serverException(400, e);
         }
     }
 

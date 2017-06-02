@@ -42,7 +42,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RoleType;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.util.REST;

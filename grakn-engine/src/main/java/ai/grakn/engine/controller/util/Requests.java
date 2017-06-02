@@ -18,10 +18,7 @@
 
 package ai.grakn.engine.controller.util;
 
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
-import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
-
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknServerException;
 import java.util.Optional;
 import java.util.function.Function;
 import spark.Request;
@@ -51,7 +48,7 @@ public class Requests {
      */
     public static <T> T mandatoryQueryParameter(Function<String, Optional<T>> extractParameterFunction, String parameter) {
         return extractParameterFunction.apply(parameter).orElseThrow(() ->
-                new GraknEngineServerException(400, MISSING_MANDATORY_REQUEST_PARAMETERS, parameter));
+                GraknServerException.requestMissingParameters(parameter));
     }
 
     /**
@@ -73,7 +70,7 @@ public class Requests {
      * @return value of the request body as a string
      */
     public static String mandatoryBody(Request request){
-        return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(() ->
-                new GraknEngineServerException(400, MISSING_REQUEST_BODY));
+        return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(
+                GraknServerException::requestMissingBody);
     }
 }
