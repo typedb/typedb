@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Class for parsing query strings into valid queries
@@ -122,7 +123,7 @@ public class QueryParser {
      * @param queryString a string representing several queries
      * @return a list of queries
      */
-    public <T extends Query<?>> List<T> parseList(String queryString) {
+    public <T extends Query<?>> Stream<T> parseList(String queryString) {
         List<T> queries = parseQueryFragment(GraqlParser::queryList, (q, t) -> (List<T>) q.visitQueryList(t), queryString);
 
         // Merge any match...insert queries together
@@ -146,7 +147,7 @@ public class QueryParser {
 
         merged.add(previous);
 
-        return merged;
+        return merged.stream();
     }
 
     /**

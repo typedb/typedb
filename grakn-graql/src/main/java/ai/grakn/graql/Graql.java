@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Main class containing static methods for creating Graql queries.
@@ -127,7 +128,7 @@ public class Graql {
      * @return a list of queries
      */
     @CheckReturnValue
-    public static List<Query<?>> parseList(String queryString) {
+    public static Stream<Query<?>> parseList(String queryString) {
         return withoutGraph().parseList(queryString);
     }
 
@@ -139,7 +140,7 @@ public class Graql {
      * @return a query, the type will depend on the type indicated in the template
      */
     @CheckReturnValue
-    public static <T extends Query<?>> List<T> parseTemplate(String template, Map<String, Object> data){
+    public static <T extends Query<?>> Stream<T> parseTemplate(String template, Map<String, Object> data){
         return withoutGraph().parseTemplate(template, data);
     }
 

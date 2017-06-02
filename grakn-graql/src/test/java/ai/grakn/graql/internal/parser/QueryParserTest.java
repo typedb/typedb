@@ -78,6 +78,7 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Graql.withoutGraph;
 import static ai.grakn.graql.Order.desc;
 import static com.google.common.collect.Lists.newArrayList;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.AllOf.allOf;
@@ -669,7 +670,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseListEmpty() {
-        List<Query<?>> queries = parseList("");
+        List<Query<?>> queries = parseList("").collect(toList());
         assertEquals(0, queries.size());
     }
 
@@ -677,7 +678,7 @@ public class QueryParserTest {
     public void testParseListOneMatch() {
         String matchString = "match $y isa movie; limit 1;";
 
-        List<Query<?>> queries = parseList(matchString);
+        List<Query<?>> queries = parseList(matchString).collect(toList());
 
         assertEquals(ImmutableList.of(match(var("y").isa("movie")).limit(1)), queries);
     }
@@ -686,7 +687,7 @@ public class QueryParserTest {
     public void testParseListOneInsert() {
         String insertString = "insert $x isa movie;";
 
-        List<Query<?>> queries = parseList(insertString);
+        List<Query<?>> queries = parseList(insertString).collect(toList());
 
         assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
     }
@@ -696,7 +697,7 @@ public class QueryParserTest {
         String insertString = "insert $x isa movie;";
         String matchString = "match $y isa movie; limit 1;";
 
-        List<Query<?>> queries = parseList(insertString + matchString);
+        List<Query<?>> queries = parseList(insertString + matchString).collect(toList());
 
         assertEquals(ImmutableList.of(
                 insert(var("x").isa("movie")),
@@ -709,7 +710,7 @@ public class QueryParserTest {
         String matchString = "match $y isa movie; limit 1;";
         String insertString = "insert $x isa movie;";
 
-        List<Query<?>> queries = parseList(matchString + insertString);
+        List<Query<?>> queries = parseList(matchString + insertString).collect(toList());
 
         assertEquals(ImmutableList.of(
                 match(var("y").isa("movie")).limit(1).insert(var("x").isa("movie"))
@@ -730,7 +731,7 @@ public class QueryParserTest {
         );
 
         options.forEach(option -> {
-            List<Query<?>> queries = parseList(option);
+            List<Query<?>> queries = parseList(option).collect(toList());
             assertEquals(option, 2, queries.size());
         });
     }
@@ -742,7 +743,7 @@ public class QueryParserTest {
         String longQueryString = Strings.repeat(matchInsertString, numQueries);
         Query<?> matchInsert = match(var("x")).insert(var("y"));
 
-        List<Query<?>> queries = parseList(longQueryString);
+        List<Query<?>> queries = parseList(longQueryString).collect(toList());
 
         assertEquals(Collections.nCopies(numQueries, matchInsert), queries);
     }

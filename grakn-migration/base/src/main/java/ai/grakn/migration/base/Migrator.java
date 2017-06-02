@@ -36,6 +36,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
 
 /**
  * <p>
@@ -143,7 +144,7 @@ public class Migrator {
      */
     protected List<InsertQuery> template(String template, Map<String, Object> data){
         try {
-            return queryBuilder.parseTemplate(template, data);
+            return queryBuilder.<InsertQuery>parseTemplate(template, data).collect(toList());
 
             //TODO Graql should throw a GraqlParsingException so we do not need to catch IllegalArgumentException
         } catch (GraqlTemplateParsingException | IllegalArgumentException e){
