@@ -750,11 +750,20 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingAVeryLargeQuery_DontRunOutOfMemory() {
-        int bigNumber = 1 << 16;
-        String massiveQuery = Strings.repeat("match $x isa movie; insert ($x, $x) isa has-genre;", bigNumber);
+        int bigNumber = 1 << 17;
+        String queryText = "match $x isa movie; insert ($x, $x) isa has-genre;";
+        Query query = Graql.parse(queryText);
 
-        // Iterate over results, but don't do anything with them
-        Graql.parseList(massiveQuery).forEach(q -> {});
+        String massiveQuery = Strings.repeat(queryText, bigNumber);
+
+        final int[] count = {0};
+
+        Graql.parseList(massiveQuery).forEach(q -> {
+            assertEquals(query, q);
+            count[0]++;
+        });
+
+        assertEquals(bigNumber, count[0]);
     }
 
     @Test(expected = IllegalArgumentException.class)
