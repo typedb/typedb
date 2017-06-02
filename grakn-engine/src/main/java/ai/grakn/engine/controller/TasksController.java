@@ -25,6 +25,7 @@ import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
@@ -78,7 +79,7 @@ public class TasksController {
         spark.put(STOP,        this::stopTask);
         spark.post(TASKS,      this::createTask);
 
-        spark.exception(GraknServerException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
+        spark.exception(GraknBackendException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
     }
 
     @GET
