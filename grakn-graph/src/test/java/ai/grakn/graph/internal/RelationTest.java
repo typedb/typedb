@@ -43,7 +43,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.ErrorMessage.ROLE_IS_NULL;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -298,8 +297,7 @@ public class RelationTest extends GraphTestBase{
 
     @Test
     public void whenAddingNullRolePlayerToRelation_Throw(){
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(ROLE_IS_NULL.getMessage(rolePlayer1));
+        expectedException.expect(NullPointerException.class);
 
         relationType.addRelation().addRolePlayer(null, rolePlayer1);
     }
