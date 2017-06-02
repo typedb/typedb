@@ -45,11 +45,14 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -597,14 +600,16 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
         Relation atom2 = (Relation) query2.getAtom();
 
-        Set<RelationType> possibleTypes = Sets.newHashSet(
+        List<RelationType> possibleTypes = Lists.newArrayList(
                 graph.getType(TypeLabel.of("relation1")),
                 graph.getType(TypeLabel.of("relation3"))
         );
-        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
-        Set<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes();
-        assertEquals(relationTypes, possibleTypes);
-        assertEquals(relationTypes2, possibleTypes);
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes();
+
+        assertTrue(CollectionUtils.isEqualCollection(relationTypes, possibleTypes));
+        assertTrue(CollectionUtils.isEqualCollection(relationTypes2, possibleTypes));
+
         assertEquals(atom.getType(), null);
         assertEquals(atom2.getType(), null);
     }
@@ -619,11 +624,12 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
         Relation atom2 = (Relation) query2.getAtom();
 
-        Set<RelationType> possibleTypes = Collections.singleton(
+        List<RelationType> possibleTypes = Collections.singletonList(
                 graph.getType(TypeLabel.of("relation1"))
         );
-        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
-        Set<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes();
+
         assertEquals(relationTypes, possibleTypes);
         assertEquals(relationTypes2, possibleTypes);
         assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation1")));
@@ -637,13 +643,14 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
 
-        Set<RelationType> possibleTypes = Sets.newHashSet(
+        List<RelationType> possibleTypes = Lists.newArrayList(
                 graph.getType(TypeLabel.of("relation1")),
                 graph.getType(TypeLabel.of("relation2")),
                 graph.getType(TypeLabel.of("relation3"))
         );
-        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
-        assertEquals(relationTypes, possibleTypes);
+
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        assertTrue(CollectionUtils.isEqualCollection(relationTypes, possibleTypes));
         assertEquals(atom.getType(), null);
     }
 
@@ -654,10 +661,11 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
 
-        Set<RelationType> possibleTypes = Collections.singleton(
+        List<RelationType> possibleTypes = Collections.singletonList(
                 graph.getType(TypeLabel.of("relation3"))
         );
-        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+
         assertEquals(relationTypes, possibleTypes);
         assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation3")));
     }
@@ -672,14 +680,16 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
         Relation atom2 = (Relation) query2.getAtom();
 
-        Set<RelationType> possibleTypes = Sets.newHashSet(
+        List<RelationType> possibleTypes = Lists.newArrayList(
                 graph.getType(TypeLabel.of("relation1")),
                 graph.getType(TypeLabel.of("relation3"))
         );
-        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
-        Set<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes();
-        assertEquals(relationTypes, possibleTypes);
-        assertEquals(relationTypes2, possibleTypes);
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes();
+
+        assertTrue(CollectionUtils.isEqualCollection(relationTypes, possibleTypes));
+        assertTrue(CollectionUtils.isEqualCollection(relationTypes2, possibleTypes));
+
         assertEquals(atom.getType(), null);
         assertEquals(atom2.getType(), null);
     }
@@ -691,10 +701,11 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
 
-        Set<RelationType> possibleTypes = Collections.singleton(
+        List<RelationType> possibleTypes = Collections.singletonList(
                 graph.getType(TypeLabel.of("relation3"))
         );
-        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+
         assertEquals(relationTypes, possibleTypes);
         assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation3")));
     }
@@ -702,11 +713,12 @@ public class AtomicTest {
     @Test
     public void testTypeInference_singleRole_singleGuard_contradictionOnDifferentRelationPlayers() {
         GraknGraph graph = typeInferenceSet.graph();
-        String patternString = "{(role1: $x, $y); $y isa entity3;}";
+        String patternString = "{(role1: $x, $y); $y isa entity4;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
 
-        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+
         assertThat(relationTypes, empty());
         assertEquals(atom.getType(), null);
     }
@@ -714,11 +726,12 @@ public class AtomicTest {
     @Test
     public void testTypeInference_singleRole_singleGuard_contradictionOnSameRelationPlayer() {
         GraknGraph graph = typeInferenceSet.graph();
-        String patternString = "{(role1: $x, $y); $x isa entity3;}";
+        String patternString = "{(role1: $x, $y); $x isa entity4;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
 
-        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+
         assertThat(relationTypes, empty());
         assertEquals(atom.getType(), null);
     }
@@ -730,10 +743,10 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
 
-        Set<RelationType> possibleTypes = Collections.singleton(
+        List<RelationType> possibleTypes = Collections.singletonList(
                 graph.getType(TypeLabel.of("relation1"))
         );
-        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
         assertEquals(relationTypes, possibleTypes);
         assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation1")));
     }
@@ -745,22 +758,39 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
 
-        Set<RelationType> possibleTypes = Collections.singleton(
+        List<RelationType> possibleTypes = Collections.singletonList(
                 graph.getType(TypeLabel.of("relation1"))
         );
-        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+
         assertEquals(relationTypes, possibleTypes);
         assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation1")));
     }
 
     @Test
-    public void testTypeInference_doubleRole_doubleGuard_contradiction() {
+    public void testTypeInference_doubleRole_doubleGuard_multipleRelationsPossible() {
         GraknGraph graph = typeInferenceSet.graph();
-        String patternString = "{$x isa entity1;(role1: $x, role2: $y); $y isa entity3;}";
+        String patternString = "{$x isa entity3;(role2: $x, role3: $y); $y isa entity3;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
 
-        Set<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> possibleTypes = Lists.newArrayList(
+                graph.getType(TypeLabel.of("relation3")),
+                graph.getType(TypeLabel.of("relation2"))
+        );
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        assertEquals(relationTypes, possibleTypes);
+        assertEquals(atom.getType(), null);
+    }
+
+    @Test
+    public void testTypeInference_doubleRole_doubleGuard_contradiction() {
+        GraknGraph graph = typeInferenceSet.graph();
+        String patternString = "{$x isa entity1;(role1: $x, role2: $y); $y isa entity4;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        Relation atom = (Relation) query.getAtom();
+
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
         assertThat(relationTypes, empty());
         assertEquals(atom.getType(), null);
     }

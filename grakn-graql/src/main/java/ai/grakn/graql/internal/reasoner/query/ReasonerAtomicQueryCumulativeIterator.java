@@ -2,18 +2,13 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Created by kasper on 31/05/17.
@@ -35,7 +30,7 @@ public class ReasonerAtomicQueryCumulativeIterator extends ReasonerQueryIterator
         this.cache = cache;
         this.nextList = Lists.newLinkedList(qs);
 
-        ReasonerQueryIterator iterator = nextList.removeFirst().iterator(sub, subGoals, cache);
+        Iterator<Answer> iterator = nextList.removeFirst().iterator(sub, subGoals, cache);
 
         this.queryIterator = nextList.isEmpty()? iterator : Collections.emptyIterator();
         this.atomicQueryIterator = nextList.isEmpty()? Collections.emptyIterator() : iterator;

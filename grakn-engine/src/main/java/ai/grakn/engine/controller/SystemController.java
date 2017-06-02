@@ -69,8 +69,10 @@ import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
  */
 public class SystemController {
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
+    private final EngineGraknGraphFactory factory;
 
-    public SystemController(Service spark) {
+    public SystemController(EngineGraknGraphFactory factory, Service spark) {
+        this.factory = factory;
         spark.get(KEYSPACES,     this::getKeyspaces);
         spark.get(CONFIGURATION, this::getConfiguration);
     }
@@ -84,7 +86,7 @@ public class SystemController {
 
         // Make a copy of the properties object
         Properties properties = new Properties();
-        properties.putAll(GraknEngineConfig.getInstance().getProperties());
+        properties.putAll(factory.properties());
 
         // Get the correct factory based on the request
         switch ((graphConfig != null) ? graphConfig : DEFAULT) {
@@ -112,7 +114,7 @@ public class SystemController {
     @Path("/keyspaces")
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeyspaces(Request request, Response response) {
-        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getType(SystemKeyspace.KEYSPACE_RESOURCE);
             Json result = Json.array();
             if (graph.getType(SystemKeyspace.KEYSPACE_ENTITY) == null) {

@@ -617,7 +617,7 @@ public class GraqlShellIT {
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
 
-        PrintStream out = new PrintStream(bout);
+        PrintStream out = new PrintStream(new TeeOutputStream(bout, trueOut));
 
         // Intercept stderr, but make sure it is still printed using the TeeOutputStream
         PrintStream err = new PrintStream(new TeeOutputStream(berr, trueErr));

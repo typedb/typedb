@@ -61,7 +61,7 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         ReasonerQueryImpl query = new ReasonerQueryImpl(q);
         query.addSubstitution(sub);
 
-        LOG.trace("CQ: " + query);
+        //LOG.trace("CQ: " + query);
         //LOG.trace("CQ plan: " + query.getResolutionPlan());
 
         LinkedList<ReasonerAtomicQuery> queries = query.getResolutionPlan();

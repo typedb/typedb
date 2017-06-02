@@ -29,7 +29,6 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import java.util.Collection;
@@ -134,7 +133,7 @@ public class TypeAtom extends Binary{
                 //type atom corresponding to relation or resource
                 || getType() != null && (getType().isResourceType() ||getType().isRelationType())
                 //disjoint atom
-                || (!(parent instanceof ReasonerAtomicQuery) && parent.findNextJoinable(this) == null)
+                || parent.findNextJoinable(this) == null
                 || isRuleResolvable();
     }
 

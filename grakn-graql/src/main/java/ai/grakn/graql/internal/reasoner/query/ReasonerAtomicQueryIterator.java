@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 
+import java.util.stream.StreamSupport;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +71,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
         query.addSubstitution(sub);
 
-        LOG.trace("AQ: " + query);
+        //LOG.trace("AQ: " + query);
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
         this.queryIterator = streamUnifierPair.getKey()
@@ -99,7 +100,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         Unifier ruleUnifier = rc.getRuleUnifier();
         Unifier permutationUnifier = rc.getPermutationUnifier();
 
-        LOG.trace("Applying rule: " + rule.getRuleId());
+        //LOG.trace("Applying rule: " + rule.getRuleId());
 
         //delta' = theta . thetaP . delta
         Answer sub = query.getSubstitution();
@@ -110,10 +111,12 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
         Set<Var> queryVars = query.getVarNames();
         Set<Var> headVars = rule.getHead().getVarNames();
+
         Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
-        ReasonerQueryIterator baseIterator = rule.getBody().iterator(partialSubPrime, subGoals, cache);
+        Iterable<Answer> baseIterable = () -> rule.getBody().iterator(partialSubPrime, subGoals, cache);
+        Stream<Answer> iteratorStream = StreamSupport.stream(baseIterable.spliterator(), false);
         //transform the rule answer to the answer to the query
-        return baseIterator.hasStream()
+        return iteratorStream
                 .map(a -> a.filterVars(headVars))
                 .map(a -> a.unify(combinedUnifier))
                 .filter(a -> !a.isEmpty())
