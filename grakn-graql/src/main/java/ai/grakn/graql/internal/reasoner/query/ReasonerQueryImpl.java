@@ -84,7 +84,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private int priority = Integer.MAX_VALUE;
 
-    protected ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
+    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
         this.graph = graph;
         atomSet.addAll(AtomicFactory.createAtomSet(pattern, this));
         inferTypes();
@@ -96,7 +96,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         inferTypes();
     }
 
-    protected ReasonerQueryImpl(Atom atom) {
+    ReasonerQueryImpl(Atom atom) {
         if (atom.getParentQuery() == null) {
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         }
@@ -566,7 +566,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param materialise materialisation flag
      * @return stream of answers
      */
-    public Stream<Answer> resolve(boolean materialise, boolean explanation, LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
+    Stream<Answer> resolve(boolean materialise, boolean explanation, LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
 
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());

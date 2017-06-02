@@ -48,15 +48,6 @@ class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
         super(graknGraph, v, type);
     }
 
-    private RuleTypeImpl(RuleTypeImpl rule){
-        super(rule);
-    }
-
-    @Override
-    public RuleType copy(){
-        return new RuleTypeImpl(this);
-    }
-
     @Override
     public Rule putRule(Pattern lhs, Pattern rhs) {
         if(lhs == null) {

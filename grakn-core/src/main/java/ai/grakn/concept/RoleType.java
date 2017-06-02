@@ -154,12 +154,5 @@ public interface RoleType extends Type {
      */
     @CheckReturnValue
     Collection<Type> playedByTypes();
-
-    /**
-     *
-     * @return a deep copy of this concept.
-     */
-    @Override
-    RoleType copy();
 }
 

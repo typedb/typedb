@@ -163,31 +163,24 @@ public class InferenceRule {
 
     /**
      * @param parentAtom atom containing constraints (parent)
-     * @param ruleUnifier rule unifier
-     * @param permutationUnifier permutation unifier
+     * @param unifier unifier unifying parent with the rule
      * @return rule with propagated constraints from parent
      */
-    public InferenceRule propagateConstraints(Atom parentAtom, Unifier ruleUnifier, Unifier permutationUnifier){
+    public InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
         if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
 
         //only transfer value predicates if head has a user specified value variable
         Atom headAtom = head.getAtom();
         if(headAtom.isResource() && ((Resource) headAtom).getMultiPredicate().isEmpty()){
             Set<ValuePredicate> valuePredicates = parentAtom.getValuePredicates().stream()
-                    .map(ValuePredicate::copy)
-                    .map(type -> type.unify(permutationUnifier))
-                    .map(type -> type.unify(ruleUnifier))
-                    .map(type -> (ValuePredicate) type)
+                    .flatMap(vp -> vp.unify(unifier).stream())
                     .collect(toSet());
             head.addAtomConstraints(valuePredicates);
             body.addAtomConstraints(valuePredicates);
         }
 
         Set<TypeAtom> unifiedTypes = parentAtom.getTypeConstraints().stream()
-                .map(TypeAtom::copy)
-                .map(type -> type.unify(permutationUnifier))
-                .map(type -> type.unify(ruleUnifier))
-                .map(type -> (TypeAtom) type)
+                .flatMap(type -> type.unify(unifier).stream())
                 .collect(toSet());
 
         //set rule body types to sub types of combined query+rule types

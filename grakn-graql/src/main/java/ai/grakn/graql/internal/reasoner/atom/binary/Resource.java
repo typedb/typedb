@@ -143,12 +143,6 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
-    protected void setValueVariable(Var var) {
-        super.setValueVariable(var);
-        atomPattern = atomPattern.asVar().mapProperty(HasResourceProperty.class, prop -> prop.setResource(prop.getResource().setVarName(var)));
-    }
-
-    @Override
     public Atomic copy(){ return new Resource(this);}
 
     @Override

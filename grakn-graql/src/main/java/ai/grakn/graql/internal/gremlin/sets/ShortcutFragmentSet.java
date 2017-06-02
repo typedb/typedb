@@ -20,62 +20,85 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-import ai.grakn.util.Schema;
+import com.google.common.base.Preconditions;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDirectSubTypes;
+import static java.util.stream.Collectors.toSet;
 
 /**
- * A query can use a shortcut edge traversal when the following criteria are met:
- *
- * <ol>
- *  <li>There is a {@link CastingFragmentSet} from {@code r} to {@code c}</li>
- *  <li>There is a {@link RolePlayerFragmentSet} from {@code c} to {@code x}</li>
- *  <li>If there is a {@link IsaFragmentSet} from {@code c} to {@code C}, then {@code C} must have a
- *  {@link LabelFragmentSet}</li>
- *  <li>If there is a {@link IsaFragmentSet} from {@code r} to {@code R} then {@code R} must have no direct
- *  sub-types</li>
- * </ol>
- *
- * And optionally:
- *
- * <ol>
- *  <li>There is a {@link IsaFragmentSet} from {@code c} to a type with a {@link LabelFragmentSet} and no direct
- *  sub-types</li>
- *  <li>There is a {@link IsaFragmentSet} from {@code r} to a type with a {@link LabelFragmentSet}</li>
- * </ol>
- *
- * We assume that {@code c} is otherwise never referred to in the query, since it's a casting.
- *
- * When these criteria are met, all the fragments can be replaced with a {@link ShortcutFragmentSet} from {@code r}
- * to {@code x}, with optionally specified role- and relation-types.
+ * Describes the edge connecting a relation to a role-player.
+ * <p>
+ * Can be constrained with information about the possible role types or relation types.
  *
  * @author Felix Chapman
  */
 class ShortcutFragmentSet extends EquivalentFragmentSet {
 
+    private final Var relation;
+    private final Var edge;
+    private final Var rolePlayer;
+    private final Optional<Var> roleType;
+    private final Optional<Set<TypeLabel>> roleTypeLabels;
+    private final Optional<Set<TypeLabel>> relationTypeLabels;
+
     ShortcutFragmentSet(
-            Var relation, Var edge, Var rolePlayer, Optional<TypeLabel> roleType,
-            Optional<TypeLabel> relationType) {
+            Var relation, Var edge, Var rolePlayer, Optional<Var> roleType,
+            Optional<Set<TypeLabel>> roleTypeLabels, Optional<Set<TypeLabel>> relationTypeLabels) {
         super(
-                Fragments.inShortcut(rolePlayer, edge, relation, roleType, relationType),
-                Fragments.outShortcut(relation, edge, rolePlayer, roleType, relationType)
+                Fragments.inShortcut(rolePlayer, edge, relation, roleType, roleTypeLabels, relationTypeLabels),
+                Fragments.outShortcut(relation, edge, rolePlayer, roleType, roleTypeLabels, relationTypeLabels)
         );
+        this.relation = relation;
+        this.edge = edge;
+        this.rolePlayer = rolePlayer;
+        this.roleType = roleType;
+        this.roleTypeLabels = roleTypeLabels;
+        this.relationTypeLabels = relationTypeLabels;
     }
 
-    static boolean applyShortcutOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
-        Iterable<CastingFragmentSet> castingFragmentSets =
-                fragmentSetOfType(CastingFragmentSet.class, fragmentSets)::iterator;
+    /**
+     * A query can use the role-type labels on a shortcut edge when the following criteria are met:
+     * <ol>
+     *     <li>There is a {@link ShortcutFragmentSet} {@code $r-[shortcut:$e role:$R ...]->$p}
+     *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo]}
+     * </ol>
+     *
+     * When these criteria are met, the {@link ShortcutFragmentSet} can be filtered to the indirect sub-types of
+     * {@code foo} and will no longer need to navigate to the role-type directly:
+     * <p>
+     * {@code $r-[shortcut:$e roles:foo ...]->$p}
+     * <p>
+     *
+     * However, we must still retain the {@link LabelFragmentSet} because it is possible it is selected as a result or
+     * referred to elsewhere in the query.
+     */
+    static boolean applyShortcutRoleTypeOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+        Iterable<ShortcutFragmentSet> shortcuts = EquivalentFragmentSets.fragmentSetOfType(ShortcutFragmentSet.class, fragmentSets)::iterator;
 
-        for (CastingFragmentSet castingFragmentSet : castingFragmentSets) {
-            if (attemptOptimiseCasting(fragmentSets, graph, castingFragmentSet)) {
+        for (ShortcutFragmentSet shortcut : shortcuts) {
+            Optional<Var> roleVar = shortcut.roleType;
+
+            if (!roleVar.isPresent()) continue;
+
+            @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.typeLabelOf(roleVar.get(), fragmentSets);
+
+            if (roleLabel != null) {
+                RoleType roleType = graph.getType(roleLabel.label());
+
+                fragmentSets.remove(shortcut);
+                fragmentSets.add(shortcut.substituteRoleTypeLabel(roleType));
+
                 return true;
             }
         }
@@ -83,73 +106,82 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         return false;
     }
 
-    private static boolean attemptOptimiseCasting(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph, CastingFragmentSet castingFragmentSet) {
-        Var relation = castingFragmentSet.relation();
-        Var casting = castingFragmentSet.casting();
+    /**
+     * A query can use the relation-type labels on a shortcut edge when the following criteria are met:
+     * <ol>
+     *     <li>There is a {@link ShortcutFragmentSet} {@code $r-[shortcut:$e ...]->$p}
+     *         without any relation type labels specified
+     *     <li>There is a {@link IsaFragmentSet} {@code $r-[isa]->$R}
+     *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo]}
+     * </ol>
+     *
+     * When these criteria are met, the {@link ShortcutFragmentSet} can be filtered to the indirect sub-types of
+     * {@code foo}.
+     * <p>
+     * {@code $r-[shortcut:$e rels:foo]->$p}
+     * <p>
+     *
+     * However, we must still retain the {@link LabelFragmentSet} because it is possible it is selected as a result or
+     * referred to elsewhere in the query.
+     * <p>
+     * We also keep the {@link IsaFragmentSet}, although the results will still be correct without it. This is because
+     * it can help with performance: there are some instances where it makes sense to navigate from the relation-type
+     * {@code foo} to all instances. In order to do that, the {@link IsaFragmentSet} must be present.
+     */
+    static boolean applyShortcutRelationTypeOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+        Iterable<ShortcutFragmentSet> shortcuts = EquivalentFragmentSets.fragmentSetOfType(ShortcutFragmentSet.class, fragmentSets)::iterator;
 
-        RolePlayerFragmentSet rolePlayerFragmentSet = findRolePlayerFragmentSet(fragmentSets, casting);
+        for (ShortcutFragmentSet shortcut : shortcuts) {
 
-        // Try and get type of relation
-        Optional<IsaFragmentSet> relIsaFragment = fragmentSetOfType(IsaFragmentSet.class, fragmentSets)
-                .filter(isaFragmentSet -> isaFragmentSet.instance().equals(relation))
-                .findAny();
+            if (shortcut.relationTypeLabels.isPresent()) continue;
 
-        Optional<TypeLabel> relType = relIsaFragment
-                .map(IsaFragmentSet::type)
-                .flatMap(type -> findTypeLabel(fragmentSets, type));
+            @Nullable IsaFragmentSet isa = EquivalentFragmentSets.typeInformationOf(shortcut.relation, fragmentSets);
 
-        // We can't use the shortcut's relation type label if the relation type has sub-types, because we don't know
-        // precisely which type the shortcut edge label will have. However, we can still use the shortcut edge and
-        // check the type of the relation the old fashioned way.
-        relType = relType.filter(type -> !hasDirectSubTypes(graph, type));
+            if (isa == null) continue;
 
-        // Try and get role type
-        Optional<IsaCastingsFragmentSet> castingIsaFragment = fragmentSetOfType(IsaCastingsFragmentSet.class, fragmentSets)
-                .filter(isaFragmentSet -> isaFragmentSet.casting().equals(casting))
-                .findAny();
+            @Nullable LabelFragmentSet relationLabel = EquivalentFragmentSets.typeLabelOf(isa.type(), fragmentSets);
 
-        Optional<TypeLabel> roleType = castingIsaFragment
-                .map(IsaCastingsFragmentSet::roleType)
-                .flatMap(type -> findTypeLabel(fragmentSets, type));
+            if (relationLabel != null) {
+                RelationType relationType = graph.getType(relationLabel.label());
 
-        if (castingIsaFragment.isPresent() && !roleType.isPresent()) {
-            return false;
+                fragmentSets.remove(shortcut);
+                fragmentSets.add(shortcut.addRelationTypeLabel(relationType));
+
+                return true;
+            }
         }
 
-        // When the meta role-type is specified, it's the same as not specifying the role at all
-        if (roleType.isPresent() && roleType.get().equals(Schema.MetaSchema.ROLE.getLabel())) {
-            roleType = Optional.empty();
-        }
-
-        // We can't use the shortcut edge in the presence of role-type hierarchies, because we don't know precisely
-        // which type the shortcut edge label will have.
-        if (roleType.isPresent() && hasDirectSubTypes(graph, roleType.get())) {
-            return false;
-        }
-
-        fragmentSets.remove(castingFragmentSet);
-        fragmentSets.remove(rolePlayerFragmentSet);
-        castingIsaFragment.ifPresent(fragmentSets::remove);
-
-        Var rolePlayer = rolePlayerFragmentSet.rolePlayer();
-        fragmentSets.add(new ShortcutFragmentSet(relation, casting, rolePlayer, roleType, relType));
-        return true;
+        return false;
     }
 
-    private static Optional<TypeLabel> findTypeLabel(Collection<EquivalentFragmentSet> fragmentSets, Var type) {
-        return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
-                .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
-                .map(LabelFragmentSet::label)
-                .findAny();
+    /**
+     * Apply an optimisation where we check the role-type property instead of navigating to the role-type directly.
+     * @param roleType the role-type that this shortcut fragment must link to
+     * @return a new {@link ShortcutFragmentSet} with the same properties excepting role-types
+     */
+    private ShortcutFragmentSet substituteRoleTypeLabel(RoleType roleType) {
+        Preconditions.checkState(this.roleType.isPresent());
+        Preconditions.checkState(!roleTypeLabels.isPresent());
+
+        Set<TypeLabel> newRoleTypeLabels = roleType.subTypes().stream().map(Type::getLabel).collect(toSet());
+
+        return new ShortcutFragmentSet(
+                relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleTypeLabels), relationTypeLabels
+        );
     }
 
-    private static RolePlayerFragmentSet findRolePlayerFragmentSet(
-            Collection<EquivalentFragmentSet> fragmentSets, Var casting) {
-        // We can assume that this fragment set must exist
-        //noinspection OptionalGetWithoutIsPresent
-        return fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)
-                .filter(rp -> rp.casting().equals(casting))
-                .findAny()
-                .get();
+    /**
+     * Apply an optimisation where we check the relation-type property.
+     * @param relationType the relation-type that this shortcut fragment must link to
+     * @return a new {@link ShortcutFragmentSet} with the same properties excepting relation-type labels
+     */
+    private ShortcutFragmentSet addRelationTypeLabel(RelationType relationType) {
+        Preconditions.checkState(!relationTypeLabels.isPresent());
+
+        Set<TypeLabel> newRelationTypeLabels = relationType.subTypes().stream().map(Type::getLabel).collect(toSet());
+
+        return new ShortcutFragmentSet(
+                relation, edge, rolePlayer, roleType, roleTypeLabels, Optional.of(newRelationTypeLabels)
+        );
     }
 }

@@ -112,6 +112,11 @@
                     <groupId>org.eclipse.jetty.orbit</groupId>
                     <artifactId>javax.servlet</artifactId>
                 </exclusion>
+                <!--Excluded because we provide logback logger-->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-nop</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -171,7 +176,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <skip>${grakn.skip-bash-tests}</skip>
+                    <skip>${skipTests}</skip>
                 </configuration>
             </plugin>
             <plugin>
@@ -186,7 +191,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <skip>${grakn.skip-bash-tests}</skip>
+                            <skip>${skipTests}</skip>
                             <workingDirectory>${main.basedir}/grakn-dist/src/test/bash</workingDirectory>
                             <executable>${main.basedir}/grakn-dist/src/test/bash/bash-startup-test.sh</executable>
                         </configuration>

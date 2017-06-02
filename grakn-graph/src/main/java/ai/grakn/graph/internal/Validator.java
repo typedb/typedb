@@ -74,8 +74,6 @@ class Validator {
             } else if (nextToValidate.isCasting()) {
                 validateCasting((CastingImpl) nextToValidate);
             } else if (nextToValidate.isType() && !Schema.MetaSchema.isMetaLabel(nextToValidate.asType().getLabel())) {
-                validateType((TypeImpl) nextToValidate);
-
                 if (nextToValidate.isRoleType()) {
                     validateRoleType((RoleTypeImpl) nextToValidate);
                 } else if (nextToValidate.isRelationType()) {
@@ -111,14 +109,6 @@ class Validator {
      */
     private void validateCasting(CastingImpl casting){
         ValidateGlobalRules.validatePlaysStructure(casting).ifPresent(errorsFound::add);
-    }
-
-    /**
-     * Validation rules exclusive to types
-     * @param conceptType The type to validate
-     */
-    private void validateType(TypeImpl conceptType){
-        ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(conceptType).ifPresent(errorsFound::add);
     }
 
     /**

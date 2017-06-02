@@ -33,10 +33,10 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.SystemOutRule;
 
 import java.io.IOException;
 import java.util.Collection;
-import org.junit.contrib.java.lang.system.SystemOutRule;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
@@ -138,7 +138,7 @@ public class CSVMigratorTest {
         load(factory, getFile("csv", "pets/schema.gql"));
 
         // Only insert Puffball
-        String template = "if (<name> != \"Puffball\") do { insert $x isa pet; }";
+        String template = "if (<name> != \"Puffball\") do { insert $x isa cat; }";
         declareAndLoad(template, "pets/data/pets.quotes");
 
         GraknGraph graph = factory.open(GraknTxType.WRITE);//Re Open Transaction

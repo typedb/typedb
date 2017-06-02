@@ -203,13 +203,6 @@ public interface ResourceType<D> extends Type {
     String getRegex();
 
     /**
-     *
-     * @return a deep copy of this concept.
-     */
-    @Override
-    ResourceType<D> copy();
-
-    /**
      * A class used to hold the supported data types of resources and any other concepts.
      * This is used tp constrain value data types to only those we explicitly support.
      * @param <D> The data type.

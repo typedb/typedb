@@ -52,7 +52,7 @@ public class GraknOrientDBGraphFactoryTest {
     @After
     public void clear() throws GraknValidationException {
         GraknOrientDBGraph graph = orientGraphFactory.open(GraknTxType.WRITE);
-        graph.clear();
+        graph.admin().delete();
     }
 
     @Test
