@@ -222,7 +222,12 @@ public class TasksController {
      * @param response The response object providing functionality for modifying the response
      */
     private void handleNotFoundInStorage(Exception exception, Response response){
-        response.status(404);
+        //TODO: Fix this. This is needed because of a mixture of exceptions being thrown within the context of this controller
+        if(exception instanceof GraknServerException){
+            response.status(((GraknServerException) exception).getStatus());
+        } else {
+            response.status(404);
+        }
         response.body(Json.object("exception", exception.getMessage()).toString());
     }
 
