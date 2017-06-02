@@ -25,7 +25,7 @@ import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -69,7 +69,7 @@ public class TasksController {
 
     public TasksController(Service spark, TaskManager manager) {
         if (manager==null) {
-            throw GraknBackendException.internalError("Task manager has not been instantiated.");
+            throw GraknServerException.internalError("Task manager has not been instantiated.");
         }
         this.manager = manager;
 
@@ -78,7 +78,7 @@ public class TasksController {
         spark.put(STOP,        this::stopTask);
         spark.post(TASKS,      this::createTask);
 
-        spark.exception(GraknBackendException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
+        spark.exception(GraknServerException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
     }
 
     @GET
@@ -181,7 +181,7 @@ public class TasksController {
             // Get the configuration of the task
             configuration = TaskConfiguration.of(request.body().isEmpty() ? Json.object() : Json.read(request.body()));
         } catch (Exception e){
-            throw GraknBackendException.serverException(400, e);
+            throw GraknServerException.serverException(400, e);
         }
 
         // Get the class of this background task
@@ -208,21 +208,21 @@ public class TasksController {
     private Class<?> getClass(String className){
         try {
             Class<?> clazz = Class.forName(className);
-            if (!BackgroundTask.class.isAssignableFrom(clazz)) throw GraknBackendException.invalidTask(className);
+            if (!BackgroundTask.class.isAssignableFrom(clazz)) throw GraknServerException.invalidTask(className);
             return clazz;
         } catch (ClassNotFoundException e) {
-            throw GraknBackendException.invalidTask(className);
+            throw GraknServerException.invalidTask(className);
         }
     }
 
     /**
      * Error accessing or retrieving a task from storage. This throws a 404 Task Not Found to the user.
-     * @param exception {@link GraknBackendException} thrown by the server
+     * @param exception {@link GraknServerException} thrown by the server
      * @param response The response object providing functionality for modifying the response
      */
     private void handleNotFoundInStorage(Exception exception, Response response){
-        if(exception instanceof GraknBackendException){
-            response.status(((GraknBackendException) exception).getStatus());
+        if(exception instanceof GraknServerException){
+            response.status(((GraknServerException) exception).getStatus());
         } else {
             response.status(404);
         }

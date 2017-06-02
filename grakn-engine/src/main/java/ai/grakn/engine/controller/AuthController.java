@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.JWTHandler;
-import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -79,13 +79,13 @@ public class AuthController {
             user = jsonBody.at(USERNAME_KEY).asString();
             password = jsonBody.at(PASSWORD_KEY).asString();
         } catch (Exception e) {
-            throw GraknBackendException.serverException(400, e);
+            throw GraknServerException.serverException(400, e);
         }
 
         if (usersHandler.validateUser(user, password)) {
             return jwtHandler.signJWT(user);
         } else {
-            throw GraknBackendException.authenticationFailure();
+            throw GraknServerException.authenticationFailure();
         }
 
 

@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.util;
 
-import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknServerException;
 import com.auth0.jwt.JWTSigner;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.JWTVerifyException;
@@ -71,7 +71,7 @@ public class JWTHandler {
             Map<String, Object> claims = verifier.verify(jwt);
             return claims.get("username").toString();
         } catch (Exception e) {
-            throw GraknBackendException.serverException(500, e);
+            throw GraknServerException.serverException(500, e);
         }
     }
 

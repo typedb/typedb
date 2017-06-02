@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RoleType;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.util.REST;
@@ -177,7 +177,7 @@ public class DashboardController {
             body.set(ORIGINAL_QUERY, query.toString());
 
             if (!(query instanceof MatchQuery)) {
-                throw GraknBackendException.invalidQueryExplaination(query.getClass().getName());
+                throw GraknServerException.invalidQueryExplaination(query.getClass().getName());
             }
 
             int limitEmbedded = queryParameter(request, REST.Request.Graql.LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);

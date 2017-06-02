@@ -32,6 +32,7 @@ import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
@@ -217,7 +218,7 @@ public class GraknEngineServer implements AutoCloseable {
             boolean authenticated;
             try {
                 if (request.headers("Authorization") == null || !request.headers("Authorization").startsWith("Bearer ")) {
-                    throw GraknBackendException.authenticationFailure();
+                    throw GraknServerException.authenticationFailure();
                 }
 
                 String token = request.headers("Authorization").substring(7);
@@ -229,7 +230,7 @@ public class GraknEngineServer implements AutoCloseable {
             }
             catch (Exception e) {
                 //request is malformed, return 400
-                throw GraknBackendException.serverException(400, e);
+                throw GraknServerException.serverException(400, e);
             }
             if (!authenticated) {
                 spark.halt(401, "User not authenticated.");
@@ -246,7 +247,7 @@ public class GraknEngineServer implements AutoCloseable {
      */
     private static void handleGraknServerError(Exception exception, Response response){
         LOG.error("REST error", exception);
-        response.status(((GraknBackendException) exception).getStatus());
+        response.status(((GraknServerException) exception).getStatus());
         response.body(Json.object("exception", exception.getMessage()).toString());
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }

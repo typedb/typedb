@@ -24,7 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknServerException;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
@@ -129,7 +129,7 @@ public class ConceptController {
             responseObj.set(RESOURCES_JSON_FIELD, instances(graph.admin().getMetaResourceType()));
             return responseObj.toString();
         } catch (Exception e) {
-            throw GraknBackendException.serverException(500, e);
+            throw GraknServerException.serverException(500, e);
         }
     }
 
@@ -137,7 +137,7 @@ public class ConceptController {
         Concept concept = graph.getConcept(conceptId);
 
         if (notPresent(concept)) {
-            throw GraknBackendException.internalError(NO_CONCEPT_IN_KEYSPACE.getMessage(conceptId, graph.getKeyspace()));
+            throw GraknServerException.internalError(NO_CONCEPT_IN_KEYSPACE.getMessage(conceptId, graph.getKeyspace()));
         }
 
         return concept;
@@ -145,7 +145,7 @@ public class ConceptController {
 
     static void validateRequest(Request request){
         String acceptType = getAcceptType(request);
-        if(!acceptType.equals(APPLICATION_HAL)) throw GraknBackendException.unsupportedContentType(acceptType);
+        if(!acceptType.equals(APPLICATION_HAL)) throw GraknServerException.unsupportedContentType(acceptType);
     }
 
     private List<String> instances(Type type) {
@@ -161,7 +161,7 @@ public class ConceptController {
      * @return value of the given parameter
      */
     static String mandatoryRequestParameter(Request request, String parameter){
-        return Optional.ofNullable(request.params(parameter)).orElseThrow(() -> GraknBackendException.requestMissingParameters(parameter));
+        return Optional.ofNullable(request.params(parameter)).orElseThrow(() -> GraknServerException.requestMissingParameters(parameter));
     }
 
     /**

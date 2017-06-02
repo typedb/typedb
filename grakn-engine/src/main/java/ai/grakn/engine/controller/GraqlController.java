@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.AggregateQuery;
@@ -126,9 +126,9 @@ public class GraqlController {
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
 
-            if(!query.isReadOnly()) throw GraknBackendException.invalidQuery("\"read-only\"");
+            if(!query.isReadOnly()) throw GraknServerException.invalidQuery("\"read-only\"");
 
-            if(!validContentType(acceptType, query)) throw GraknBackendException.contentTypeQueryMismatch(acceptType, query);
+            if(!validContentType(acceptType, query)) throw GraknServerException.contentTypeQueryMismatch(acceptType, query);
 
             Json responseBody = executeReadQuery(request, query, acceptType);
             return respond(response, query, acceptType, responseBody);
@@ -150,7 +150,7 @@ public class GraqlController {
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
 
-            if(!(query instanceof InsertQuery)) throw GraknBackendException.invalidQuery("INSERT");
+            if(!(query instanceof InsertQuery)) throw GraknServerException.invalidQuery("INSERT");
 
             Json responseBody = executeInsertQuery((InsertQuery) query);
 
@@ -175,7 +175,7 @@ public class GraqlController {
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
 
-            if(!(query instanceof DeleteQuery)) throw GraknBackendException.invalidQuery("DELETE");
+            if(!(query instanceof DeleteQuery)) throw GraknServerException.invalidQuery("DELETE");
 
             // Execute the query
             ((DeleteQuery) query).execute();
@@ -196,7 +196,7 @@ public class GraqlController {
      * @return value of the given parameter
      */
     static String mandatoryQueryParameter(Request request, String parameter){
-        return queryParameter(request, parameter).orElseThrow(() -> GraknBackendException.requestMissingParameters(parameter));
+        return queryParameter(request, parameter).orElseThrow(() -> GraknServerException.requestMissingParameters(parameter));
     }
 
     /**
@@ -217,7 +217,7 @@ public class GraqlController {
      * @return value of the request body as a string
      */
     static String mandatoryBody(Request request){
-        return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(GraknBackendException::requestMissingBody);
+        return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(GraknServerException::requestMissingBody);
     }
 
     /**
@@ -308,7 +308,7 @@ public class GraqlController {
 
                 return Json.object(RESPONSE, formatAsHAL(query, keyspace, limitEmbedded));
             default:
-                throw GraknBackendException.unsupportedContentType(acceptType);
+                throw GraknServerException.unsupportedContentType(acceptType);
         }
 
     }
