@@ -63,6 +63,7 @@ public enum ErrorMessage {
     TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
     CONCEPT_HAS_NO_SHARD("Concept [%s] does not have any shard"),
     IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),
+    CLOSE_GRAPH_FAILURE("Unable to close graph [%s]"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),

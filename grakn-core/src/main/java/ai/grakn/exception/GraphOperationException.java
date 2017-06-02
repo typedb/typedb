@@ -31,6 +31,7 @@ import ai.grakn.util.Schema;
 
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.ErrorMessage.CLOSE_GRAPH_FAILURE;
 import static ai.grakn.util.ErrorMessage.HAS_INVALID;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 
@@ -199,6 +200,6 @@ public class GraphOperationException extends GraknException{
      * Thrown when the graph can not be closed due to an unknown reason.
      */
     public static GraphOperationException closingGraphFailed(GraknGraph graph, Exception e){
-        return new GraphOperationException("Unable to close graph [" + graph.getKeyspace() + "]", e);
+        return new GraphOperationException(CLOSE_GRAPH_FAILURE.getMessage(graph.getKeyspace()), e);
     }
 }
