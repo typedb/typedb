@@ -26,31 +26,45 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.GraknEngineConfig;
+import static ai.grakn.engine.GraknEngineConfig.FACTORY_ANALYTICS;
+import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
+import static ai.grakn.util.REST.GraphConfig.COMPUTER;
+import static ai.grakn.util.REST.GraphConfig.DEFAULT;
+import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
+import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
+import static ai.grakn.util.REST.WebPath.System.METRICS;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.json.MetricsModule;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.exporter.common.TextFormat;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiOperation;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.Collection;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Service;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import java.util.Collection;
-import java.util.Properties;
-
-import static ai.grakn.engine.GraknEngineConfig.FACTORY_ANALYTICS;
-import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
-import static ai.grakn.util.REST.GraphConfig.COMPUTER;
-import static ai.grakn.util.REST.GraphConfig.DEFAULT;
-import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
-import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
-import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
 
 
 /**
@@ -70,11 +84,32 @@ import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
 public class SystemController {
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
     private final EngineGraknGraphFactory factory;
+    private final MetricRegistry metricRegistry;
+    private final ObjectMapper mapper;
+    private final DropwizardExports prometheusMetricWrapper;
+    private final CollectorRegistry prometheusRegistry;
 
-    public SystemController(EngineGraknGraphFactory factory, Service spark) {
+    public SystemController(EngineGraknGraphFactory factory, Service spark,
+            MetricRegistry metricRegistry) {
         this.factory = factory;
+        this.metricRegistry = metricRegistry;
+        this.prometheusMetricWrapper = new DropwizardExports(metricRegistry);
+        this.prometheusRegistry = new CollectorRegistry();
+        prometheusRegistry.register(prometheusMetricWrapper);
         spark.get(KEYSPACES,     this::getKeyspaces);
         spark.get(CONFIGURATION, this::getConfiguration);
+        spark.get(METRICS, this::getMetrics);
+
+        final TimeUnit rateUnit = TimeUnit.SECONDS;
+        final TimeUnit durationUnit = TimeUnit.SECONDS;
+        final boolean showSamples = false;
+        MetricFilter filter = MetricFilter.ALL;
+
+        this.mapper = new ObjectMapper().registerModule(
+                new MetricsModule(rateUnit,
+                    durationUnit,
+                    showSamples,
+                    filter));
     }
 
     @GET
@@ -134,4 +169,25 @@ public class SystemController {
             throw GraknServerException.serverException(500, e);
         }
     }
+
+    @GET
+    @Path("/metrics")
+    @ApiOperation(value = "Exposes internal metrics")
+    private String getMetrics(Request request, Response response) throws IOException {
+        response.type(APPLICATION_JSON);
+        response.header("Cache-Control", "must-revalidate,no-cache,no-store");
+        response.status(HttpServletResponse.SC_OK);
+        if (request.queryParamOrDefault("format", "default").equals("prometheus")) {
+            final Writer writer1 = new StringWriter();
+            TextFormat.write004(writer1, this.prometheusRegistry.metricFamilySamples());
+            return writer1.toString();
+        } else {
+            final ObjectWriter writer = mapper.writer();
+            try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                writer.writeValue(output, this.metricRegistry);
+                return new String(output.toByteArray(), "UTF-8");
+            }
+        }
+    }
+
 }

@@ -18,6 +18,23 @@
 
 package ai.grakn.engine.controller;
 
+import static ai.grakn.GraknTxType.WRITE;
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
+import static ai.grakn.util.REST.Request.Graql.INFER;
+import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
+import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
+import static ai.grakn.util.REST.Request.Graql.QUERY;
+import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
+import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
+import static ai.grakn.util.REST.Response.Graql.RESPONSE;
+import static com.codahale.metrics.MetricRegistry.name;
+import static java.lang.Boolean.parseBoolean;
+
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -35,10 +52,21 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
@@ -46,31 +74,6 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Service;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static ai.grakn.GraknTxType.WRITE;
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
-import static ai.grakn.util.REST.Request.Graql.INFER;
-import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
-import static ai.grakn.util.REST.Request.Graql.QUERY;
-import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
-import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
-import static ai.grakn.util.REST.Response.Graql.RESPONSE;
-import static java.lang.Boolean.parseBoolean;
 
 /**
  * <p>
@@ -86,9 +89,16 @@ public class GraqlController {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private final EngineGraknGraphFactory factory;
+    private final Timer executeGraqlGetTimer;
+    private final Timer executeGraqlPostTimer;
+    private final Timer executeGraqlDeleteTimer;
 
-    public GraqlController(EngineGraknGraphFactory factory, Service spark) {
+    public GraqlController(EngineGraknGraphFactory factory, Service spark,
+            MetricRegistry metricRegistry) {
         this.factory = factory;
+        this.executeGraqlGetTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-get"));
+        this.executeGraqlPostTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-post"));
+        this.executeGraqlDeleteTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-delete"));
 
         spark.get(REST.WebPath.Graph.GRAQL,    this::executeGraqlGET);
         spark.post(REST.WebPath.Graph.GRAQL,   this::executeGraqlPOST);
@@ -123,6 +133,7 @@ public class GraqlController {
         boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
         String acceptType = getAcceptType(request);
 
+        final Timer.Context context = executeGraqlGetTimer.time();
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
 
@@ -132,6 +143,8 @@ public class GraqlController {
 
             Json responseBody = executeReadQuery(request, query, acceptType);
             return respond(response, query, acceptType, responseBody);
+        } finally {
+            context.stop();
         }
     }
 
@@ -147,6 +160,7 @@ public class GraqlController {
         String queryString = mandatoryBody(request);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
 
+        final Timer.Context context = executeGraqlPostTimer.time();
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
 
@@ -158,10 +172,12 @@ public class GraqlController {
             graph.commit();
 
             return respond(response, query, APPLICATION_JSON, responseBody);
+        } finally {
+            context.stop();
         }
     }
 
-    @POST
+    @DELETE
     @Path("/")
     @ApiOperation(value = "Executes graql delete query on the server.")
     @ApiImplicitParams({
@@ -172,6 +188,7 @@ public class GraqlController {
         String queryString = mandatoryBody(request);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
 
+        final Timer.Context context = executeGraqlDeleteTimer.time();
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
 
@@ -184,6 +201,8 @@ public class GraqlController {
             graph.commit();
 
             return respond(response, query, APPLICATION_JSON, Json.object());
+        } finally {
+            context.stop();
         }
     }
 

@@ -25,28 +25,28 @@ import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.SparkContext;
-import ai.grakn.util.REST;
-import com.jayway.restassured.response.Response;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.stringResponse;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
+import ai.grakn.util.REST;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
+import com.codahale.metrics.MetricRegistry;
 import static com.jayway.restassured.RestAssured.with;
+import com.jayway.restassured.response.Response;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.fail;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -62,8 +62,8 @@ public class ConceptControllerTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(mockFactory, spark);
-        new ConceptController(mockFactory, spark);
+        new SystemController(mockFactory, spark, metricRegistry);
+        new ConceptController(mockFactory, spark, new MetricRegistry());
     });
 
     @Before

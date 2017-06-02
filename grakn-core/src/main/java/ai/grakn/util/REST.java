@@ -55,6 +55,7 @@ public class REST {
          */
         public static class System {
             public static final String CONFIGURATION = "/configuration";
+            public static final String METRICS = "/metrics";
             public static final String KEYSPACES = "/keyspaces";
         }
 

@@ -20,39 +20,37 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
+import static ai.grakn.engine.controller.GraqlController.mandatoryQueryParameter;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
+import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
+import static ai.grakn.util.REST.WebPath.Tasks.GET;
+import static ai.grakn.util.REST.WebPath.Tasks.STOP;
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import static java.lang.Long.parseLong;
+import java.time.Duration;
+import java.time.Instant;
+import static java.time.Instant.ofEpochMilli;
+import java.util.Optional;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
 import spark.Request;
 import spark.Response;
 import spark.Service;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Optional;
-
-import static ai.grakn.engine.controller.GraqlController.mandatoryQueryParameter;
-import static ai.grakn.engine.tasks.TaskSchedule.recurring;
-import static ai.grakn.util.REST.WebPath.Tasks.GET;
-import static ai.grakn.util.REST.WebPath.Tasks.STOP;
-import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
-import static java.lang.Long.parseLong;
-import static java.time.Instant.ofEpochMilli;
 
 /**
  * <p>

@@ -35,7 +35,16 @@ import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.servlets.MetricsServlet;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+import javax.annotation.Nullable;
 import mjson.Json;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +83,7 @@ public class GraknEngineServer implements AutoCloseable {
     private final TaskManager taskManager;
     private final EngineGraknGraphFactory factory;
     private final RedisConnection redis;
+    private final MetricRegistry metricRegistry;
 
     private GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
@@ -84,6 +94,7 @@ public class GraknEngineServer implements AutoCloseable {
 
         factory = EngineGraknGraphFactory.create(prop.getProperties());
         taskManager = startTaskManager();
+        metricRegistry = new MetricRegistry();
 
         startHTTP();
         printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER), prop.getLogFilePath());
@@ -146,10 +157,10 @@ public class GraknEngineServer implements AutoCloseable {
         int postProcessingDelay = prop.getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
 
         // Start all the controllers
-        new GraqlController(factory, spark);
-        new ConceptController(factory, spark);
+        new GraqlController(factory, spark, metricRegistry);
+        new ConceptController(factory, spark, metricRegistry);
         new DashboardController(factory, spark);
-        new SystemController(factory, spark);
+        new SystemController(factory, spark, metricRegistry);
         new AuthController(spark, passwordProtected, jwtHandler, usersHandler);
         new UserController(spark, usersHandler);
         new CommitLogController(spark, defaultKeyspace, postProcessingDelay, taskManager);

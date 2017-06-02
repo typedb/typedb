@@ -39,6 +39,7 @@ import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.SparkContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.http.ContentType;
 import mjson.Json;
 import org.junit.After;
@@ -80,7 +81,7 @@ public class CommitLogControllerTest {
     @ClassRule
     public static SparkContext ctx = SparkContext.withControllers((spark, config) -> {
         new CommitLogController(spark, config.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY), 100, manager);
-        new SystemController(EngineGraknGraphFactory.create(config.getProperties()), spark);
+        new SystemController(EngineGraknGraphFactory.create(config.getProperties()), spark, new MetricRegistry());
     });
 
     private Json commitLog;

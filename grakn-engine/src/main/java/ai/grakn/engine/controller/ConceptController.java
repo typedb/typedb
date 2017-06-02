@@ -25,6 +25,10 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
+import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
@@ -71,9 +75,14 @@ public class ConceptController {
 
     private static final int separationDegree = 1;
     private final EngineGraknGraphFactory factory;
+    private final Timer conceptIdGetTimer;
+    private final Timer ontologyGetTimer;
 
-    public ConceptController(EngineGraknGraphFactory factory, Service spark){
+    public ConceptController(EngineGraknGraphFactory factory, Service spark,
+            MetricRegistry metricRegistry){
         this.factory = factory;
+        this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-id-get"));
+        this.ontologyGetTimer = metricRegistry.timer(name(ConceptController.class, "ontology-get"));
 
         spark.get(CONCEPT + ID_PARAMETER,  this::conceptByIdentifier);
         spark.get(ONTOLOGY,  this::ontology);
@@ -98,6 +107,7 @@ public class ConceptController {
         int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
+        Context context = conceptIdGetTimer.time();
         try(GraknGraph graph = factory.getGraph(keyspace, READ)){
             Json body = Json.object();
             Concept concept = retrieveExistingConcept(graph, conceptId);
@@ -108,6 +118,8 @@ public class ConceptController {
             body.set(RESPONSE,Json.read(renderHALConceptData(concept, separationDegree, keyspace, offset, limit)));
 
             return body;
+        } finally {
+            context.stop();
         }
     }
 
@@ -121,6 +133,7 @@ public class ConceptController {
     private String ontology(Request request, Response response) {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
 
+        Context context = ontologyGetTimer.time();
         try(GraknGraph graph = factory.getGraph(keyspace, READ)){
             Json responseObj = Json.object();
             responseObj.set(ROLES_JSON_FIELD, instances(graph.admin().getMetaRoleType()));
@@ -130,6 +143,8 @@ public class ConceptController {
             return responseObj.toString();
         } catch (Exception e) {
             throw GraknServerException.serverException(500, e);
+        } finally {
+            context.stop();
         }
     }
 
