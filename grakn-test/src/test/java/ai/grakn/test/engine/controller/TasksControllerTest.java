@@ -81,7 +81,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 public class TasksControllerTest {
-
+  
     public static final Json EMPTY_JSON = Json.object();
     private static TaskManager manager = mock(TaskManager.class);
     private final JsonMapper jsonMapper = new JsonMapper();
@@ -424,7 +424,7 @@ public class TasksControllerTest {
 
     private Response send(String configuration, Map<String, String> params){
         RequestSpecification request = with().queryParams(params).body(configuration);
-        return request.post(String.format("http://%s%s", ctx.uri(), TASKS));
+        return request.post(TASKS);
     }
 
     private Response sendBulk(String configuration, List<Map<String, String>> tasks){
@@ -434,7 +434,7 @@ public class TasksControllerTest {
     }
 
     private Response get(TaskId taskId){
-        return with().get(String.format("http://%s%s", ctx.uri(), GET.replace(ID_PARAMETER, taskId.getValue())));
+        return with().get(GET.replace(ID_PARAMETER, taskId.getValue()));
     }
 
     public static class JsonMapper implements ObjectMapper{

@@ -195,6 +195,13 @@
             <artifactId>titan-factory</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
+            <!--Excluded because we provide logback logger-->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-nop</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.cassandraunit</groupId>

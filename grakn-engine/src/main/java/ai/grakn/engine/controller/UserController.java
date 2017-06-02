@@ -48,9 +48,11 @@ import javax.ws.rs.Produces;
 @Produces({"application/json", "text/plain"})
 public class UserController {
     private final Logger LOG = LoggerFactory.getLogger(UserController.class);
-    private final UsersHandler users = UsersHandler.getInstance();
+    private final UsersHandler users;
 
-    public UserController(Service spark) {
+    public UserController(Service spark, UsersHandler usersHandler) {
+        this.users = usersHandler;
+
         spark.get(REST.WebPath.ALL_USERS, this::findUsers);
         spark.get(REST.WebPath.ONE_USER, this::getUser);
         spark.post(REST.WebPath.ONE_USER, this::createUser);

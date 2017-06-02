@@ -44,20 +44,6 @@
             <version>${logback.version}</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <!--JCL-over-SLF4J to migrate from java logger to slf4j (redis) -->
-            <groupId>org.slf4j</groupId>
-            <artifactId>jcl-over-slf4j</artifactId>
-            <version>${slf4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <!--log4J-over-SLF4J to migrate from log4j logger to slf4j (kafka) -->
-            <groupId>org.slf4j</groupId>
-            <artifactId>log4j-over-slf4j</artifactId>
-            <version>${slf4j.version}</version>
-            <scope>test</scope>
-        </dependency>
 
         <!--Core dependencies-->
         <dependency>
@@ -125,6 +111,11 @@
                 <exclusion>
                     <groupId>org.eclipse.jetty.orbit</groupId>
                     <artifactId>javax.servlet</artifactId>
+                </exclusion>
+                <!--Excluded because we provide logback logger-->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-nop</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
