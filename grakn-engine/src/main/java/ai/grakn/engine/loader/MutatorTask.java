@@ -19,6 +19,8 @@
 package ai.grakn.engine.loader;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.postprocessing.GraphMutators;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
@@ -51,12 +53,15 @@ import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
  */
 public class MutatorTask implements BackgroundTask {
 
+    private static final GraknEngineConfig CONFIG = GraknEngineConfig.getInstance();
+    private static final EngineGraknGraphFactory FACTORY = EngineGraknGraphFactory.create(CONFIG.getProperties());
+
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
         Collection<Query> inserts = getInserts(configuration);
-        GraphMutators.runBatchMutationWithRetry(configuration.json().at(REST.Request.KEYSPACE).asString(), (graph) ->
+        GraphMutators.runBatchMutationWithRetry(FACTORY, configuration.json().at(REST.Request.KEYSPACE).asString(), (graph) ->
                 insertQueriesInOneTransaction(graph, inserts, taskSubmitter)
         );
 

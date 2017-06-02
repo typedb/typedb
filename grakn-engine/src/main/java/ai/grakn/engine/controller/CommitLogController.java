@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
@@ -37,7 +36,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.util.Optional;
 
-import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
@@ -49,9 +47,11 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
  */
 //TODO Implement delete
 public class CommitLogController {
+    private final String defaultKeyspace;
     private final TaskManager manager;
 
-    public CommitLogController(Service spark, TaskManager manager){
+    public CommitLogController(Service spark, String defaultKeyspace, TaskManager manager){
+        this.defaultKeyspace = defaultKeyspace;
         this.manager = manager;
 
         spark.post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
@@ -77,8 +77,7 @@ public class CommitLogController {
         @ApiImplicitParam(name = COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
     private String submitConcepts(Request req, Response res) {
-        String keyspace = Optional.ofNullable(req.queryParams(KEYSPACE_PARAM))
-                .orElse(GraknEngineConfig.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY));
+        String keyspace = Optional.ofNullable(req.queryParams(KEYSPACE_PARAM)).orElse(defaultKeyspace);
 
         // Instances to post process
         TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass());

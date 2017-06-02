@@ -4,7 +4,6 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
@@ -67,7 +66,7 @@ public class GraphTest {
         String key = "mykeyspace";
         GraknGraph graph1 = Grakn.session(Grakn.DEFAULT_URI, key).open(GraknTxType.WRITE);
         graph1.close();
-        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(key, GraknTxType.WRITE);
+        GraknGraph graph2 = engine.server().factory().getGraph(key, GraknTxType.WRITE);
         assertEquals(graph1, graph2);
         graph1.close();
         graph2.close();

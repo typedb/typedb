@@ -19,7 +19,6 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
@@ -28,7 +27,6 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
@@ -625,7 +623,7 @@ public class MatchQueryTest {
 
     @Test
     public void testGraqlPlaysSemanticsMatchGraphAPI() {
-        GraknGraph graph = GraknTestEnv.emptyGraph();
+        GraknGraph graph = GraknTestEnv.emptyGraph(movieGraph.factory());  // TODO: Try and remove this call if possible
         QueryBuilder qb = graph.graql();
 
         TypeLabel a = TypeLabel.of("a");
@@ -879,9 +877,8 @@ public class MatchQueryTest {
         assertThat(query1, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
         List<Answer> results1 = query1.execute();
 
-        String keyspace = movieGraph.graph().getKeyspace();
         movieGraph.graph().close();
-        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE);
+        GraknGraph graph2 = movieGraph.graph();
 
         MatchQuery query2 = graph2.graql().match(var("x").sub("concept"));
         assertEquals(results1, query2.execute());

@@ -20,18 +20,15 @@ package ai.grakn.engine.session;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
-import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.util.REST;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -46,23 +43,25 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  *
  * @author Felix Chapman
  */
-@WebSocket
-public class RemoteSession {
+public class RemoteSession extends WebSocketAdapter {
     private final Map<Session, GraqlSession> sessions = new HashMap<>();
     private final Logger LOG = LoggerFactory.getLogger(RemoteSession.class);
+    private final @Nullable UsersHandler usersHandler;
 
-    //TODO dont use the default uri
-    // This constructor is magically invoked by spark's websocket stuff
-    @SuppressWarnings("unused")
-    public RemoteSession() {
+    private RemoteSession(@Nullable UsersHandler usersHandler) {
+        this.usersHandler = usersHandler;
     }
 
-    @OnWebSocketConnect
-    public void onConnect(Session session) {
+    public static RemoteSession create() {
+        return new RemoteSession(null);
     }
 
-    @OnWebSocketClose
-    public void onClose(Session session, int statusCode, String reason) {
+    public static RemoteSession passwordProtected(UsersHandler usersHandler) {
+        return new RemoteSession(usersHandler);
+    }
+
+    @Override
+    public void onWebSocketClose(int statusCode, String reason) {
         String message = "Websocket closed, code: " + statusCode + ", reason: " + reason;
         // 1000 = Normal close, 1001 = Going away
         if (statusCode == 1000 || statusCode == 1001) {
@@ -70,20 +69,20 @@ public class RemoteSession {
         } else {
             LOG.error(message);
         }
-        sessions.remove(session).close();
+        sessions.remove(getSession()).close();
     }
 
-    @OnWebSocketMessage
-    public void onMessage(Session session, String message) {
+    @Override
+    public void onWebSocketText(String message) {
         try {
             LOG.debug("Received message: " + message);
 
             Json json = Json.read(message);
 
             if (json.is(ACTION, ACTION_INIT)) {
-                startSession(session, json);
+                startSession(json);
             } else {
-                sessions.get(session).handleMessage(json);
+                sessions.get(getSession()).handleMessage(json);
             }
         } catch (Throwable e) {
             LOG.error("Exception",getFullStackTrace(e));
@@ -94,7 +93,7 @@ public class RemoteSession {
     /**
      * Start a new Graql shell session
      */
-    private void startSession(Session session, Json json) {
+    private void startSession(Json json) {
         if (sessionAuthorised(json)) {
             String keyspace = json.at(REST.RemoteShell.KEYSPACE).asString();
             String outputFormat = json.at(REST.RemoteShell.OUTPUT_FORMAT).asString();
@@ -103,23 +102,23 @@ public class RemoteSession {
             boolean materialise = json.at(REST.RemoteShell.MATERIALISE).asBoolean();
             GraknSession factory = Grakn.session(Grakn.DEFAULT_URI, keyspace);
             GraqlSession graqlSession = new GraqlSession(
-                    session, factory, outputFormat, showImplicitTypes, infer, materialise
+                    getSession(), factory, outputFormat, showImplicitTypes, infer, materialise
             );
-            sessions.put(session, graqlSession);
+            sessions.put(getSession(), graqlSession);
         } else {
-            session.close(1008, "Unauthorised: incorrect username or password");
+            getSession().close(1008, "Unauthorised: incorrect username or password");
         }
     }
 
     private boolean sessionAuthorised(Json json) {
-        if (!GraknEngineServer.isPasswordProtected) return true;
+        if (usersHandler == null) return true;
 
         Json username = json.at(USERNAME);
         Json password = json.at(PASSWORD);
 
         boolean credentialsProvided = username != null && password != null;
 
-        return credentialsProvided && UsersHandler.getInstance().validateUser(username.asString(), password.asString());
+        return credentialsProvided && usersHandler.validateUser(username.asString(), password.asString());
 
     }
 }

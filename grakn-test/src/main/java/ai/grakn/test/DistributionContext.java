@@ -32,29 +32,15 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.nio.file.attribute.PosixFilePermission;
-import java.util.EnumSet;
 import java.util.Properties;
-import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.engine.GraknEngineConfig.LOGGING_LEVEL;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.test.GraknTestEnv.startKafka;
 import static ai.grakn.test.GraknTestEnv.stopKafka;
 import static java.lang.System.currentTimeMillis;
-import static java.nio.file.Files.setPosixFilePermissions;
-import static java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE;
-import static java.nio.file.attribute.PosixFilePermission.GROUP_READ;
-import static java.nio.file.attribute.PosixFilePermission.GROUP_WRITE;
-import static java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE;
-import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
-import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -65,17 +51,11 @@ import static java.util.stream.Collectors.joining;
  */
 public class DistributionContext extends ExternalResource {
 
-    private static final String LOG_LEVEL = "INFO";
-
     private static final FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
     private static final String ZIP = "grakn-dist-" + GraknVersion.VERSION + ".zip";
     private static final String CURRENT_DIRECTORY = System.getProperty("user.dir");
     private static final String TARGET_DIRECTORY = CURRENT_DIRECTORY + "/../grakn-dist/target/";
     private static final String DIST_DIRECTORY = TARGET_DIRECTORY + "grakn-dist-" + GraknVersion.VERSION;
-    private static final Set<PosixFilePermission> permissions =  EnumSet.of(
-            OWNER_EXECUTE, OWNER_READ, OWNER_WRITE,
-            GROUP_EXECUTE, GROUP_WRITE, GROUP_READ,
-            OTHERS_EXECUTE, OTHERS_READ, OTHERS_WRITE);
     private final Class<? extends TaskManager> taskManagerClass;
 
     private Process engineProcess;
@@ -126,7 +106,7 @@ public class DistributionContext extends ExternalResource {
 
         ensureCassandraRunning();
 
-        startKafka();
+        startKafka(GraknEngineConfig.create());
 
         engineProcess = newEngineProcess(port);
         waitForEngine(port);
@@ -147,14 +127,11 @@ public class DistributionContext extends ExternalResource {
         // Unzip the distribution
         ZipFile zipped = new ZipFile( TARGET_DIRECTORY + ZIP);
         zipped.extractAll(TARGET_DIRECTORY);
-
-        setPosixFilePermissions(new File(DIST_DIRECTORY + "/bin/grakn-engine.sh").toPath(), permissions);
     }
 
     private Process newEngineProcess(Integer port) throws IOException {
         // Set correct port & task manager
-        Properties properties = GraknEngineConfig.getInstance().getProperties();
-        properties.setProperty(LOGGING_LEVEL, LOG_LEVEL);
+        Properties properties = GraknEngineConfig.create().getProperties();
         properties.setProperty(SERVER_PORT_NUMBER, port.toString());
         properties.setProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
 
@@ -182,7 +159,10 @@ public class DistributionContext extends ExternalResource {
      * Get the class path of all the jars in the /lib folder
      */
     private String getClassPath(){
-        return Stream.of(new File(DIST_DIRECTORY + "/lib").listFiles(jarFiles))
+        Stream<File> jars = Stream.of(new File(DIST_DIRECTORY + "/lib").listFiles(jarFiles));
+        File conf = new File(DIST_DIRECTORY + "/conf/main/");
+
+        return Stream.concat(jars, Stream.of(conf))
                 .filter(f -> !f.getName().contains("slf4j-log4j12"))
                 .map(File::getAbsolutePath)
                 .collect(joining(":"));

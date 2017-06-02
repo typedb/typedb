@@ -62,7 +62,7 @@ public class ConceptControllerTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(spark);
+        new SystemController(mockFactory, spark);
         new ConceptController(mockFactory, spark);
     });
 
