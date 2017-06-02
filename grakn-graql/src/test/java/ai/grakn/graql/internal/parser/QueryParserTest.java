@@ -42,6 +42,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -748,9 +749,11 @@ public class QueryParserTest {
         assertEquals(Collections.nCopies(numQueries, matchInsert), queries);
     }
 
+    // TODO: This takes a long time to run and is dependent on heap size. It should run separately from other tests.
+    @Ignore
     @Test
     public void whenParsingAVeryLargeQuery_DontRunOutOfMemory() {
-        int bigNumber = 1 << 17;
+        int bigNumber = 1 << 20;
         String queryText = "match $x isa movie; insert ($x, $x) isa has-genre;";
         Query query = Graql.parse(queryText);
 
