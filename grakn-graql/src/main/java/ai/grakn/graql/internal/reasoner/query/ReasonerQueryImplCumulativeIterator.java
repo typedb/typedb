@@ -11,9 +11,17 @@ import java.util.LinkedList;
 import java.util.Set;
 
 /**
- * Created by kasper on 31/05/17.
+ *
+ * <p>
+ * Answer iterator for resolution plans (list of atomic queries) coming from {@link ReasonerQueryImpl}.
+ * For an input resolution plan it recursively creates an answer iterator by combining each constituent {@link ReasonerAtomicQueryIterator}
+ * and merging the resultant answers.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
  */
-public class ReasonerAtomicQueryCumulativeIterator extends ReasonerQueryIterator{
+class ReasonerQueryImplCumulativeIterator extends ReasonerQueryIterator{
     private Answer partialSub = new QueryAnswer();
 
     private final LinkedList<ReasonerAtomicQuery> nextList;
@@ -23,9 +31,9 @@ public class ReasonerAtomicQueryCumulativeIterator extends ReasonerQueryIterator
     private final Iterator<Answer> atomicQueryIterator;
     private Iterator<Answer> queryIterator;
 
-    ReasonerAtomicQueryCumulativeIterator(Answer sub, LinkedList<ReasonerAtomicQuery> qs,
-                                          Set<ReasonerAtomicQuery> subGoals,
-                                          QueryCache<ReasonerAtomicQuery> cache){
+    ReasonerQueryImplCumulativeIterator(Answer sub, LinkedList<ReasonerAtomicQuery> qs,
+                                        Set<ReasonerAtomicQuery> subGoals,
+                                        QueryCache<ReasonerAtomicQuery> cache){
         this.subGoals = subGoals;
         this.cache = cache;
         this.nextList = Lists.newLinkedList(qs);
@@ -42,7 +50,7 @@ public class ReasonerAtomicQueryCumulativeIterator extends ReasonerQueryIterator
 
         if (atomicQueryIterator.hasNext() && !nextList.isEmpty()) {
             partialSub = atomicQueryIterator.next();
-            queryIterator = new ReasonerAtomicQueryCumulativeIterator(partialSub, nextList, subGoals, cache);
+            queryIterator = new ReasonerQueryImplCumulativeIterator(partialSub, nextList, subGoals, cache);
             return hasNext();
         }
         return false;

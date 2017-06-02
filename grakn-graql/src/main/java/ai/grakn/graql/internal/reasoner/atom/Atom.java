@@ -88,23 +88,31 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<IdPredicate> getPartialSubstitutions(){ return new HashSet<>();}
 
+    public int computePriority(){
+        return computePriority(getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet()));
+    }
+
+    public int computePriority(Set<Var> subbedVars){
+        int priority = 0;
+        priority += Sets.intersection(getVarNames(), subbedVars).size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
+        priority += isRuleResolvable()? ResolutionStrategy.RULE_RESOLVABLE_ATOM : 0;
+        priority += isRecursive()? ResolutionStrategy.RECURSIVE_ATOM : 0;
+
+        priority += getTypeConstraints().size() * ResolutionStrategy.GUARD;
+        Set<Var> otherVars = getParentQuery().getAtoms().stream()
+                .filter(a -> a != this)
+                .flatMap(at -> at.getVarNames().stream())
+                .collect(Collectors.toSet());
+        priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
+        return priority;
+    }
+
     /**
      * @return measure of priority with which this atom should be resolved
      */
     public int resolutionPriority(){
         if (priority == Integer.MAX_VALUE) {
-            priority = 0;
-            priority += getPartialSubstitutions().size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
-            priority += isRuleResolvable()? ResolutionStrategy.RULE_RESOLVABLE_ATOM : 0;
-            priority += isRecursive()? ResolutionStrategy.RECURSIVE_ATOM : 0;
-
-            priority += getTypeConstraints().size() * ResolutionStrategy.GUARD;
-            Set<Var> otherVars = getParentQuery().getAtoms().stream()
-                    .filter(a -> a != this)
-                    .flatMap(at -> at.getVarNames().stream())
-                    .collect(Collectors.toSet());
-            priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
-
+            priority = computePriority();
         }
         return priority;
     }

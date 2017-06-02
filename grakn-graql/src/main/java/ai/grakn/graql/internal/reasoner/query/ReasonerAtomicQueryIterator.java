@@ -71,7 +71,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
         query.addSubstitution(sub);
 
-        //LOG.trace("AQ: " + query);
+        LOG.trace("AQ: " + query);
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
         this.queryIterator = streamUnifierPair.getKey()
@@ -100,7 +100,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         Unifier ruleUnifier = rc.getRuleUnifier();
         Unifier permutationUnifier = rc.getPermutationUnifier();
 
-        //LOG.trace("Applying rule: " + rule.getRuleId());
+        LOG.trace("Applying rule: " + rule.getRuleId());
 
         //delta' = theta . thetaP . delta
         Answer sub = query.getSubstitution();
@@ -111,6 +111,16 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
         Set<Var> queryVars = query.getVarNames();
         Set<Var> headVars = rule.getHead().getVarNames();
+
+        /*
+        LinkedList<ReasonerAtomicQuery> resolutionPlan = rule.getBody().getResolutionPlan(headVars);
+
+        String plan = resolutionPlan.stream()
+                .map(ReasonerAtomicQuery::getAtom)
+                .map(AtomicBase::toString).collect(Collectors.joining("\n"));
+
+        LOG.debug("rule plan: " + plan);
+        */
 
         Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
         Iterable<Answer> baseIterable = () -> rule.getBody().iterator(partialSubPrime, subGoals, cache);

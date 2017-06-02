@@ -35,7 +35,6 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
-import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.binary.BinaryBase;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -65,7 +64,6 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javafx.util.Pair;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
@@ -84,7 +82,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
-
     private int priority = Integer.MAX_VALUE;
 
     ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
@@ -197,52 +194,29 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public Set<Atomic> getAtoms() { return atomSet;}
 
     /**
-     *
-     * @return
+     * compute the resolution plan - list of atomic queries ordered by their resolution priority
+     * @return list of prioritised atomic queries
      */
     LinkedList<ReasonerAtomicQuery> getResolutionPlan(){
         LinkedList<ReasonerAtomicQuery> queries = new LinkedList<>();
 
         LinkedList<Atom> atoms = selectAtoms().stream()
-                .sorted(Comparator.comparing(Atom::resolutionPriority).reversed())
+                .sorted(Comparator.comparing(at -> -at.computePriority()))
                 .collect(Collectors.toCollection(LinkedList::new));
 
         Atom top = atoms.getFirst();
 
-        while(!atoms.isEmpty()){
+        while (!atoms.isEmpty()) {
             queries.add(new ReasonerAtomicQuery(top));
             atoms.remove(top);
 
-            Set<Var> subbedvars = Sets.difference(top.getVarNames(), top.getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet()));
+            Set<Var> subbedVars = Sets.difference(top.getVarNames(), top.getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet()));
             top = atoms.stream()
-                .map(at -> {
-                            int priority = at.resolutionPriority();
-                            priority += ResolutionStrategy.PARTIAL_SUBSTITUTION * Sets.intersection(at.getVarNames(), subbedvars).size();
-                            return new Pair<>(at, priority);
-                })
-                .sorted(Comparator.comparing(p -> -p.getValue()))
-                    .map(Pair::getKey)
+                    .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
                     .findFirst().orElse(null);
         }
-
-
-        String plan = queries.stream()
-                .map(ReasonerAtomicQuery::getAtom)
-                .map(at -> at + "[" + at.resolutionPriority()+ "]").collect(Collectors.joining("\n"));
-
-        //System.out.println(plan);
-        //System.out.println();
         return queries;
     }
-
-    /**
-     * @return resolution plan in a form a atom[priority]->... string
-     */
-    /*
-    String getResolutionPlan(){
-        return getPrioritisedAtoms().stream().map(at -> at + "[" + at.resolutionPriority()+ "]").collect(Collectors.joining(" -> "));
-    }
-    */
 
     /**
      * @return set of id predicates contained in this query

@@ -234,11 +234,9 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public int resolutionPriority() {
-        if (priority == Integer.MAX_VALUE) {
-            priority = super.resolutionPriority();
-            priority += ResolutionStrategy.IS_RELATION_ATOM;
-        }
+    public int computePriority(Set<Var> subbedVars) {
+        int priority = super.computePriority(subbedVars);
+        priority += ResolutionStrategy.IS_RELATION_ATOM;
         return priority;
     }
 
@@ -532,7 +530,7 @@ public class Relation extends TypeAtom {
                     if (type != null && !Schema.MetaSchema.isMetaLabel(type.getLabel())) {
                         mappings.put(casting, ReasonerUtils.getCompatibleRoleTypes(type, possibleRoles));
                     } else {
-                        mappings.put(casting, ReasonerUtils.getTopTypes(possibleRoles).stream().map(t -> (RoleType) t).collect(toSet()));
+                        mappings.put(casting, ReasonerUtils.getTopTypes(possibleRoles));
                     }
                 });
 
