@@ -221,7 +221,11 @@ public class TasksController {
      * @param response The response object providing functionality for modifying the response
      */
     private void handleNotFoundInStorage(Exception exception, Response response){
-        response.status(404);
+        if(exception instanceof GraknBackendException){
+            response.status(((GraknBackendException) exception).getStatus());
+        } else {
+            response.status(404);
+        }
         response.body(Json.object("exception", exception.getMessage()).toString());
     }
 

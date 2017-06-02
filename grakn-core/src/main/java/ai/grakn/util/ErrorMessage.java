@@ -180,7 +180,7 @@ public enum ErrorMessage {
     INVALID_CONTENT_TYPE("Invalid combination of query [%s] and content type [%s]"),
     EXPLAIN_ONLY_MATCH("Cannot get explanation for non-match query, given: [%s]"),
     LOCK_ALREADY_INSTANTIATED("Lock provider can only be instantiated once"),
-    INVALID_QUERY_USAGE("Only [%s] queries are allowed."),
+    INVALID_QUERY_USAGE("Only %s queries are allowed."),
 
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),
