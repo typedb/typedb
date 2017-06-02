@@ -125,6 +125,10 @@ function flushPromises(promises:Object[]) {
   return Promise.all(promises).then((responses) => {
     responses.forEach((resp) => {
       const respObj = JSON.parse(resp).response;
+      // Check if some of the resources attached to this node are already drawn in the graph:
+      // if a resource is already in the graph (because explicitly asked for (e.g. all relations with weight > 0.5 ))
+      // we need to draw the edges connecting this node to the resource node.
+      onGraphResponse(resp, false, false);
       visualiser.updateNodeResources(respObj[API.KEY_ID], Utils.extractResources(respObj));
     });
     visualiser.flushUpdates();
