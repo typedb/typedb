@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  * <p>
- * Tuple-at-a-time iterator for {@link ReasonerQueryImpl}.
+ * Tuple-at-a-time iterator for {@link ReasonerQueryImpl}, wraps around a {@link ReasonerQueryImplCumulativeIterator}.
  * For a starting conjunctive query Q it constructs a resolution plan by decomposing it to atomic queries {@link ReasonerAtomicQuery}
  * ordering them by their resolution priority. The ordered list is then passed to {@link ReasonerQueryImplCumulativeIterator}
  * which takes care of substitution propagation leading to a final answer.
