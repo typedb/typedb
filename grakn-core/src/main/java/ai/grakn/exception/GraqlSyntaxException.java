@@ -20,6 +20,7 @@ package ai.grakn.exception;
 
 import java.util.Map;
 
+import static ai.grakn.util.ErrorMessage.INVALID_STATMENT;
 import static ai.grakn.util.ErrorMessage.TEMPLATE_MISSING_KEY;
 
 /**
@@ -49,8 +50,8 @@ public class GraqlSyntaxException extends GraknException {
     /**
      * Thrown when there is a syntactic error in a Graql template
      */
-    public static GraqlSyntaxException parsingTemplateError(String statmentType, String invalidText, Map<String, Object> data){
-        return new GraqlSyntaxException("Invalid " + statmentType + " statement: " + invalidText + " for data " + data);
+    public static GraqlSyntaxException parsingTemplateError(String statementType, String invalidText, Map<String, Object> data){
+        return new GraqlSyntaxException(INVALID_STATMENT.getMessage(statementType, invalidText, data));
     }
 
     /**

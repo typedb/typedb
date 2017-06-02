@@ -156,6 +156,8 @@ public enum ErrorMessage {
 
     NO_ANALYTICS_METHOD("No compute method exists with the name [%s]"),
 
+    INVALID_STATMENT("Invalid %s statement: %s for data %s"),
+
     //Templating
     TEMPLATE_MISSING_KEY("Key [%s] not present in data: [%s]"),
 
