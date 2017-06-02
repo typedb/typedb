@@ -14,8 +14,8 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
@@ -207,7 +207,7 @@ public class GraknGraphTest extends GraphTestBase {
         Future future = pool.submit(() -> {
             try{
                 graph.putEntityType("A Thing");
-            } catch (GraphRuntimeException e){
+            } catch (GraphOperationException e){
                 if(e.getMessage().equals(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()))){
                     errorThrown[0] = true;
                 }
@@ -219,14 +219,14 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
-    public void attemptingToUseClosedGraphFailingThenOpeningGraph_EnsureGraphIsUsable() throws GraknValidationException {
+    public void attemptingToUseClosedGraphFailingThenOpeningGraph_EnsureGraphIsUsable() throws InvalidGraphException {
         GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "testing-again").open(GraknTxType.WRITE);
         graph.close();
 
         boolean errorThrown = false;
         try{
             graph.putEntityType("A Thing");
-        } catch (GraphRuntimeException e){
+        } catch (GraphOperationException e){
             if(e.getMessage().equals(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))){
                 errorThrown = true;
             }
@@ -238,7 +238,7 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
-    public void checkThatMainCentralCacheIsNotAffectedByTransactionModifications() throws GraknValidationException, ExecutionException, InterruptedException {
+    public void checkThatMainCentralCacheIsNotAffectedByTransactionModifications() throws InvalidGraphException, ExecutionException, InterruptedException {
         //Check Central cache is empty
         assertCacheOnlyContainsMetaTypes();
 
@@ -339,7 +339,7 @@ public class GraknGraphTest extends GraphTestBase {
         }
 
         assertNotNull("No exception thrown when attempting to mutate a read only graph", caughtException);
-        assertThat(caughtException, instanceOf(GraphRuntimeException.class));
+        assertThat(caughtException, instanceOf(GraphOperationException.class));
         assertEquals(caughtException.getMessage(), ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.getKeyspace()));
         assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.admin().getTinkerTraversal().toList().size());
         assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.admin().getTinkerTraversal().bothE().toList().size());
@@ -365,11 +365,11 @@ public class GraknGraphTest extends GraphTestBase {
         try{
             //noinspection ResultOfMethodCallIgnored
             session.open(txType);
-        } catch (GraphRuntimeException e){
+        } catch (GraphOperationException e){
             exception = e;
         }
         assertNotNull(exception);
-        assertThat(exception, instanceOf(GraphRuntimeException.class));
+        assertThat(exception, instanceOf(GraphOperationException.class));
         assertEquals(exception.getMessage(), ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(keyspace));
     }
 
@@ -410,7 +410,7 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
-    public void checkComplexSampleOntologyCanLoad() throws GraknValidationException {
+    public void checkComplexSampleOntologyCanLoad() throws InvalidGraphException {
         graknGraph.graql().parse("insert\n" +
                 "user-interaction sub relation is-abstract;\n" +
                 "qa sub user-interaction\n" +

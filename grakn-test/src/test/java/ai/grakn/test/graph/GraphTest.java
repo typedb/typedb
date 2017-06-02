@@ -4,8 +4,8 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTinkerGraph;
 import ai.grakn.test.EngineContext;
@@ -62,7 +62,7 @@ public class GraphTest {
     }
 
     @Test
-    public void whenFetchingGraphsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureGraphsAreTheSame() throws GraknValidationException {
+    public void whenFetchingGraphsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureGraphsAreTheSame() throws InvalidGraphException {
         String key = "mykeyspace";
         GraknGraph graph1 = Grakn.session(Grakn.DEFAULT_URI, key).open(GraknTxType.WRITE);
         graph1.close();
@@ -125,7 +125,7 @@ public class GraphTest {
         GraknGraph graph = factory.open(GraknTxType.WRITE);
         factory.close();
 
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(graph.getKeyspace()));
 
         graph.putEntityType("A Thing");
@@ -144,7 +144,7 @@ public class GraphTest {
             }
         }
 
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(IS_ABSTRACT.getMessage(label));
 
         try(GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "abstractTest")){

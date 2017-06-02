@@ -19,7 +19,7 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
@@ -294,7 +294,7 @@ public class DeleteQueryTest {
         assertTrue(exists(movieType));
         assertTrue(exists(movie));
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(allOf(containsString("movie"), containsString("delet")));
         movieType.delete("x").execute();
     }
@@ -305,7 +305,7 @@ public class DeleteQueryTest {
 
         assertTrue(exists(productionType));
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(allOf(containsString("production"), containsString("delet")));
         productionType.delete("x").execute();
     }
@@ -316,7 +316,7 @@ public class DeleteQueryTest {
 
         assertTrue(exists(actor));
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(allOf(containsString("actor"), containsString("delet")));
         actor.delete("x").execute();
     }

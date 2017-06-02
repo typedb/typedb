@@ -21,10 +21,10 @@ package ai.grakn.engine.controller;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.GraknServerException;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DeleteQuery;
@@ -39,9 +39,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import java.util.Collection;
-import java.util.stream.Collectors;
-import javax.ws.rs.POST;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
@@ -51,18 +48,17 @@ import spark.Response;
 import spark.Service;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
-import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
-import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
-import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
@@ -105,8 +101,8 @@ public class GraqlController {
         spark.exception(IllegalArgumentException.class, (e, req, res) -> handleError(400, e, res));
 
         // Handle invalid type castings and invalid insertions
-        spark.exception(ConceptException.class, (e, req, res) -> handleError(422, e, res));
-        spark.exception(GraknValidationException.class, (e, req, res) -> handleError(422, e, res));
+        spark.exception(GraphOperationException.class, (e, req, res) -> handleError(422, e, res));
+        spark.exception(InvalidGraphException.class, (e, req, res) -> handleError(422, e, res));
     }
 
     @GET
@@ -130,13 +126,9 @@ public class GraqlController {
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
 
-            if(!query.isReadOnly()){
-                throw new GraknEngineServerException(405, "Only \"read-only\" queries are allowed.");
-            }
+            if(!query.isReadOnly()) throw GraknServerException.invalidQuery("\"read-only\"");
 
-            if(!validContentType(acceptType, query)){
-                throw new GraknEngineServerException(406, INVALID_CONTENT_TYPE, query.getClass().getName(), acceptType);
-            }
+            if(!validContentType(acceptType, query)) throw GraknServerException.contentTypeQueryMismatch(acceptType, query);
 
             Json responseBody = executeReadQuery(request, query, acceptType);
             return respond(response, query, acceptType, responseBody);
@@ -158,9 +150,7 @@ public class GraqlController {
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
 
-            if(!(query instanceof InsertQuery)){
-                throw new GraknEngineServerException(405, "Only INSERT queries are allowed.");
-            }
+            if(!(query instanceof InsertQuery)) throw GraknServerException.invalidQuery("INSERT");
 
             Json responseBody = executeInsertQuery((InsertQuery) query);
 
@@ -185,9 +175,7 @@ public class GraqlController {
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
 
-            if(!(query instanceof DeleteQuery)){
-                throw new GraknEngineServerException(405, "Only DELETE queries are allowed.");
-            }
+            if(!(query instanceof DeleteQuery)) throw GraknServerException.invalidQuery("DELETE");
 
             // Execute the query
             ((DeleteQuery) query).execute();
@@ -208,8 +196,7 @@ public class GraqlController {
      * @return value of the given parameter
      */
     static String mandatoryQueryParameter(Request request, String parameter){
-        return queryParameter(request, parameter).orElseThrow(() ->
-                new GraknEngineServerException(400, MISSING_MANDATORY_REQUEST_PARAMETERS, parameter));
+        return queryParameter(request, parameter).orElseThrow(() -> GraknServerException.requestMissingParameters(parameter));
     }
 
     /**
@@ -230,8 +217,7 @@ public class GraqlController {
      * @return value of the request body as a string
      */
     static String mandatoryBody(Request request){
-        return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(() ->
-                new GraknEngineServerException(400, MISSING_REQUEST_BODY));
+        return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(GraknServerException::requestMissingBody);
     }
 
     /**
@@ -322,7 +308,7 @@ public class GraqlController {
 
                 return Json.object(RESPONSE, formatAsHAL(query, keyspace, limitEmbedded));
             default:
-                throw new GraknEngineServerException(406, UNSUPPORTED_CONTENT_TYPE, acceptType);
+                throw GraknServerException.unsupportedContentType(acceptType);
         }
 
     }

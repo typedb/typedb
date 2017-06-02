@@ -29,7 +29,7 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -151,9 +151,9 @@ public interface GraknAdmin {
     /**
      * Commits to the graph without submitting any commit logs.
      * @return the commit log that would have been submitted if it is needed.
-     * @throws GraknValidationException when the graph does not conform to the object concept
+     * @throws InvalidGraphException when the graph does not conform to the object concept
      */
-    Optional<String> commitNoLogs() throws GraknValidationException;
+    Optional<String> commitNoLogs() throws InvalidGraphException;
 
     /**
      * Check if there are duplicates castings in the provided set of vertex IDs

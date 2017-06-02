@@ -34,7 +34,7 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.SparkContext;
 import ai.grakn.util.REST;
@@ -197,7 +197,7 @@ public class CommitLogControllerTest {
     }
 
     @Test
-    public void whenCommittingSystemGraph_CommitLogsNotSent() throws GraknValidationException {
+    public void whenCommittingSystemGraph_CommitLogsNotSent() throws InvalidGraphException {
         GraknGraph graph1 = Grakn.session(ctx.uri(), SystemKeyspace.SYSTEM_GRAPH_NAME).open(GraknTxType.WRITE);
         ResourceType<String> resourceType = graph1.putResourceType("New Resource Type", ResourceType.DataType.STRING);
         resourceType.putResource("a");
@@ -241,7 +241,7 @@ public class CommitLogControllerTest {
                 then().statusCode(200).extract().response().andReturn();
     }
 
-    private void addSomeData(GraknGraph graph) throws GraknValidationException, InterruptedException {
+    private void addSomeData(GraknGraph graph) throws InvalidGraphException, InterruptedException {
         CountDownLatch countDownLatch = new CountDownLatch(1);
 
         Mockito.doAnswer((answer) -> {

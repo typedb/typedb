@@ -23,9 +23,9 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.generator.AbstractTypeGenerator.Meta;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractTypeGenerator.Abstract;
+import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import com.google.common.collect.ImmutableSet;
@@ -74,7 +74,7 @@ public class RelationTypePropertyTest {
 
     @Property
     public void whenAddingARelationOfAMetaType_Throw(@Meta RelationType type) {
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.addRelation();
     }
@@ -117,7 +117,7 @@ public class RelationTypePropertyTest {
     @Property
     public void whenMakingTheMetaRelationTypeRelateARole_Throw(
             @Meta RelationType relationType, @FromGraph RoleType roleType) {
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relationType.getLabel()));
         relationType.relates(roleType);
     }
@@ -160,7 +160,7 @@ public class RelationTypePropertyTest {
     @Property
     public void whenDeletingARelatedRoleFromTheMetaRelationType_Throw(
             @Meta RelationType relationType, @FromGraph RoleType roleType) {
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relationType.getLabel()));
         relationType.deleteRelates(roleType);
     }

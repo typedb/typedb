@@ -169,7 +169,7 @@ public class TasksControllerTest {
                 )
         );
 
-        assertThat(exception(response), containsString(IllegalArgumentException.class.getName()));
+        assertThat(exception(response), containsString("Exception on Grakn engine"));
         assertThat(response.statusCode(), equalTo(400));
     }
 

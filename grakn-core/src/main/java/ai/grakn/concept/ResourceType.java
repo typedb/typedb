@@ -19,8 +19,7 @@
 package ai.grakn.concept;
 
 
-import ai.grakn.exception.InvalidConceptValueException;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 
@@ -251,7 +250,7 @@ public interface ResourceType<D> extends Type {
                 (o) -> {
                     if (o == null) return null;
                     if (!(o instanceof Long)) {
-                        throw new InvalidConceptValueException(ErrorMessage.INVALID_DATATYPE.getMessage(o, Long.class.getName()));
+                        throw GraphOperationException.invalidResourceValue(o, LONG);
                     }
                     return LocalDateTime.ofInstant(Instant.ofEpochMilli((long) o), ZoneId.of("Z"));
                 });

@@ -19,7 +19,7 @@
 package ai.grakn.migration.base;
 
 import ai.grakn.client.BatchMutatorClient;
-import ai.grakn.exception.GraqlTemplateParsingException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
@@ -146,7 +146,7 @@ public class Migrator {
             return queryBuilder.parseTemplate(template, data);
 
             //TODO Graql should throw a GraqlParsingException so we do not need to catch IllegalArgumentException
-        } catch (GraqlTemplateParsingException | IllegalArgumentException e){
+        } catch (GraqlSyntaxException | IllegalArgumentException e){
             LOG.warn("Query was not sent to loader- " + e.getMessage());
             LOG.warn("See the Grakn engine logs for more detail about loading status and any resulting stacktraces");
         }

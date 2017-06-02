@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraphOperationException;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -51,18 +51,18 @@ public interface Type extends Concept {
      * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
      * @return The concept itself
      *
-     * @throws ConceptException if this is a meta-type
+     * @throws GraphOperationException if this is a meta-type
      */
-    Type setAbstract(Boolean isAbstract) throws ConceptException;
+    Type setAbstract(Boolean isAbstract) throws GraphOperationException;
 
     /**
      *
      * @param roleType The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      *
-     * @throws ConceptException if this is a meta-type
+     * @throws GraphOperationException if this is a meta-type
      */
-    Type plays(RoleType roleType) throws ConceptException;
+    Type plays(RoleType roleType) throws GraphOperationException;
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
@@ -70,9 +70,9 @@ public interface Type extends Concept {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      *
-     * @throws ConceptException if this is a meta-type
+     * @throws GraphOperationException if this is a meta-type
      */
-    Type key(ResourceType resourceType) throws ConceptException;
+    Type key(ResourceType resourceType) throws GraphOperationException;
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked.
@@ -80,9 +80,9 @@ public interface Type extends Concept {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      *
-     * @throws ConceptException if this is a meta-type
+     * @throws GraphOperationException if this is a meta-type
      */
-     Type resource(ResourceType resourceType) throws ConceptException;
+     Type resource(ResourceType resourceType) throws GraphOperationException;
 
     /**
      * Classifies the type to a specific scope. This allows you to optionally categorise types.

@@ -32,7 +32,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
@@ -200,7 +200,7 @@ public class PostProcessingTest {
     }
 
     @Test
-    public void testMergeDuplicateResources() throws GraknValidationException, InterruptedException {
+    public void testMergeDuplicateResources() throws InvalidGraphException, InterruptedException {
         String value = "1";
         String sample = "Sample";
 
