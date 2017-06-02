@@ -27,7 +27,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.QueryBuilderImplMock;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.internal.query.ComputeQueryBuilderImplMock;
@@ -131,7 +131,7 @@ public class ScalingTestIT {
 
     @Ignore
     @Test
-    public void countIT() throws InterruptedException, ExecutionException, GraknValidationException, IOException {
+    public void countIT() throws InterruptedException, ExecutionException, InvalidGraphException, IOException {
         CSVPrinter printer = createCSVPrinter("countIT.txt");
 
         // Insert super nodes into graph
@@ -235,7 +235,7 @@ public class ScalingTestIT {
      */
     @Ignore
     @Test
-    public void testStatisticsWithConstantDegree() throws IOException, GraknValidationException {
+    public void testStatisticsWithConstantDegree() throws IOException, InvalidGraphException {
         int totalSteps = NUM_DIVS;
         int nodesPerStep = MAX_SIZE/NUM_DIVS/2;
         int v_m = totalSteps*nodesPerStep;
@@ -374,7 +374,7 @@ public class ScalingTestIT {
 
     }
 
-    private void simpleOntology(String keyspace) throws GraknValidationException {
+    private void simpleOntology(String keyspace) throws InvalidGraphException {
         GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
         EntityType thing = graph.putEntityType("thing");
         RoleType relation1 = graph.putRoleType("relation1");
@@ -388,7 +388,7 @@ public class ScalingTestIT {
         graph.commit();
     }
 
-    private Set<String> makeSuperNodes(String keyspace) throws GraknValidationException {
+    private Set<String> makeSuperNodes(String keyspace) throws InvalidGraphException {
         GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
         EntityType thing = graph.getEntityType("thing");
         Set<String> superNodes = new HashSet<>();

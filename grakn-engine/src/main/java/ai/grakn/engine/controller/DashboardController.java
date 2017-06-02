@@ -26,7 +26,6 @@ import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.graql.internal.hal.HALBuilder.HALExploreConcept;
 import static ai.grakn.graql.internal.hal.HALBuilder.explanationAnswersToHAL;
-import static ai.grakn.util.ErrorMessage.EXPLAIN_ONLY_MATCH;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Concept.OFFSET_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
@@ -177,7 +176,7 @@ public class DashboardController {
             body.set(ORIGINAL_QUERY, query.toString());
 
             if (!(query instanceof MatchQuery)) {
-                throw new GraknEngineServerException(405, EXPLAIN_ONLY_MATCH, query.getClass().getName());
+                throw GraknServerException.invalidQueryExplaination(query.getClass().getName());
             }
 
             int limitEmbedded = queryParameter(request, REST.Request.Graql.LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);

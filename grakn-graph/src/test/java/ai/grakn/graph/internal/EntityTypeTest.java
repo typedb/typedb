@@ -27,7 +27,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -38,7 +38,7 @@ import java.util.Set;
 
 import static ai.grakn.util.ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
-import static ai.grakn.util.ErrorMessage.ID_ALREADY_TAKEN;
+import static ai.grakn.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.is;
@@ -72,12 +72,12 @@ public class EntityTypeTest extends GraphTestBase{
     public void whenCreatingEntityTypeUsingLabelTakenByAnotherType_Throw(){
         RoleType original = graknGraph.putRoleType("Role Type");
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(ID_ALREADY_TAKEN.getMessage(original.getLabel(), original.toString()));
+        expectedException.expectMessage(UNIQUE_PROPERTY_TAKEN.getMessage(original.getLabel(), original.toString()));
         graknGraph.putEntityType(original.getLabel());
     }
 
     @Test
-    public void creatingAccessingDeletingScopes_Works() throws ConceptException {
+    public void creatingAccessingDeletingScopes_Works() throws GraphOperationException {
         EntityType entityType = graknGraph.putEntityType("entity type");
         Instance scope1 = entityType.addEntity();
         Instance scope2 = entityType.addEntity();
@@ -97,12 +97,12 @@ public class EntityTypeTest extends GraphTestBase{
     }
 
     @Test
-    public void whenDeletingEntityTypeWithSubTypes_Throw() throws ConceptException{
+    public void whenDeletingEntityTypeWithSubTypes_Throw() throws GraphOperationException{
         EntityType c1 = graknGraph.putEntityType("C1");
         EntityType c2 = graknGraph.putEntityType("C2");
         c1.superType(c2);
 
-        expectedException.expect(ConceptException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(c2.getLabel()));
 
         c2.delete();
@@ -219,7 +219,7 @@ public class EntityTypeTest extends GraphTestBase{
     @Test
     public void settingTheSuperTypeToItself_Throw(){
         EntityType entityType = graknGraph.putEntityType("Entity");
-        expectedException.expect(ConceptException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.SUPER_TYPE_LOOP_DETECTED.getMessage(entityType.getLabel(), entityType.getLabel()));
         entityType.superType(entityType);
     }
@@ -232,7 +232,7 @@ public class EntityTypeTest extends GraphTestBase{
         entityType1.superType(entityType2);
         entityType2.superType(entityType3);
 
-        expectedException.expect(ConceptException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.SUPER_TYPE_LOOP_DETECTED.getMessage(entityType3.getLabel(), entityType1.getLabel()));
 
         entityType3.superType(entityType1);
@@ -242,7 +242,7 @@ public class EntityTypeTest extends GraphTestBase{
     public void whenSettingMetaTypeToAbstract_Throw(){
         Type meta = graknGraph.getMetaRuleType();
 
-        expectedException.expect(ConceptException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(META_TYPE_IMMUTABLE.getMessage(meta.getLabel()));
 
         meta.setAbstract(true);
@@ -253,7 +253,7 @@ public class EntityTypeTest extends GraphTestBase{
         Type meta = graknGraph.getMetaRuleType();
         RoleType roleType = graknGraph.putRoleType("A Role");
 
-        expectedException.expect(ConceptException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(META_TYPE_IMMUTABLE.getMessage(meta.getLabel()));
 
         meta.plays(roleType);
@@ -340,7 +340,7 @@ public class EntityTypeTest extends GraphTestBase{
         entityTypeA.delete();
         assertNull(graknGraph.getEntityType("entityTypeA"));
 
-        expectedException.expect(ConceptException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(CANNOT_DELETE.getMessage(entityTypeB.getLabel()));
 
         entityTypeB.delete();
@@ -446,7 +446,7 @@ public class EntityTypeTest extends GraphTestBase{
 
         entityType.resource(resourceType);
 
-        expectedException.expect(ConceptException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), resourceType.getLabel()));
 
         entityType.key(resourceType);
@@ -459,7 +459,7 @@ public class EntityTypeTest extends GraphTestBase{
 
         entityType.key(resourceType);
 
-        expectedException.expect(ConceptException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), resourceType.getLabel()));
 
         entityType.resource(resourceType);

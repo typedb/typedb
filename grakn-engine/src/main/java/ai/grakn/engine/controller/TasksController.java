@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.controller;
 
+
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
@@ -28,7 +29,6 @@ import static ai.grakn.util.REST.WebPath.Tasks.TASKS_BULK;
 import static java.lang.Long.parseLong;
 import static java.time.Instant.ofEpochMilli;
 import static java.util.stream.Collectors.toList;
-
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -36,6 +36,7 @@ import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
+
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -90,9 +91,8 @@ public class TasksController {
     private final ExecutorService executor;
 
     public TasksController(Service spark, TaskManager manager) {
-        if (manager == null) {
-            throw new GraknEngineServerException(HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Task manager has not been instantiated.");
+        if (manager==null) {
+            throw GraknServerException.internalError("Task manager has not been instantiated.");
         }
         this.manager = manager;
 
@@ -105,7 +105,7 @@ public class TasksController {
         spark.exception(EngineStorageException.class,
                 (e, req, res) -> handleNotFoundInStorage(e, res));
         this.executor = Executors.newFixedThreadPool(MAX_THREADS);
-
+        spark.exception(GraknBackendException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
     }
 
     @GET
@@ -334,7 +334,7 @@ public class TasksController {
             priority = Optional.ofNullable(priorityParam).map(TaskState.Priority::valueOf)
                     .orElse(DEFAULT_TASK_PRIORITY);
         } catch (Exception e) {
-            throw new GraknEngineServerException(400, e);
+            throw GraknServerException.serverException(400, e);
         }
 
         // Get the class of this background task
@@ -368,26 +368,29 @@ public class TasksController {
         try {
             Class<?> clazz = Class.forName(className);
             if (!BackgroundTask.class.isAssignableFrom(clazz)) {
-                throw new GraknEngineServerException(400, ErrorMessage.UNAVAILABLE_TASK_CLASS,
-                        className);
+                throw GraknServerException.invalidTask(className);
             }
 
             return clazz;
         } catch (ClassNotFoundException e) {
-            throw new GraknEngineServerException(400, ErrorMessage.UNAVAILABLE_TASK_CLASS,
-                    className);
+            
+            throw GraknServerException.invalidTask(className);
+
         }
     }
 
     /**
-     * Error accessing or retrieving a task from storage. This throws a 404 Task Not Found to the
-     * user.
-     *
-     * @param exception {@link EngineStorageException} thrown by the server
+     * Error accessing or retrieving a task from storage. This throws a 404 Task Not Found to the user.
+     * @param exception {@link GraknServerException} thrown by the server
      * @param response The response object providing functionality for modifying the response
      */
-    private void handleNotFoundInStorage(Exception exception, Response response) {
-        response.status(404);
+    private void handleNotFoundInStorage(Exception exception, Response response){
+        //TODO: Fix this. This is needed because of a mixture of exceptions being thrown within the context of this controller
+        if(exception instanceof GraknServerException){
+            response.status(((GraknServerException) exception).getStatus());
+        } else {
+            response.status(404);
+        }
         response.body(Json.object("exception", exception.getMessage()).toString());
     }
 

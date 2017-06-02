@@ -19,7 +19,7 @@
 package ai.grakn.concept;
 
 
-import ai.grakn.exception.ConceptNotUniqueException;
+import ai.grakn.exception.PropertyNotUniqueException;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -87,7 +87,7 @@ public interface Relation extends Instance {
      * @param instance The new role player.
      * @return The Relation itself.
      *
-     * @throws ConceptNotUniqueException if the concept is only allowed to play this role once.
+     * @throws PropertyNotUniqueException if the concept is only allowed to play this role once.
      */
     Relation addRolePlayer(RoleType roleType, Instance instance);
 }

@@ -20,9 +20,9 @@
 package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
-import ai.grakn.exception.EngineStorageException;
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
+import ai.grakn.exception.GraknBackendException;
 import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +63,7 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
         for(TopicPartition partition : partitions){
             try {
                 consumer.seek(partition, externalOffsetStorage.getOffset(partition));
-            } catch (EngineStorageException e){
+            } catch (GraknBackendException e){
                 consumer.seekToBeginning(Collections.singletonList(partition));
                 LOG.debug("Could not retrieve offset for partition {}, seeking to beginning", partition);
             } finally {
@@ -83,7 +83,7 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
         for (TopicPartition partition : partitions) {
             try {
                 externalOffsetStorage.saveOffset(consumer, partition);
-            } catch (EngineStorageException e) {
+            } catch (GraknBackendException e) {
                 LOG.error("Error saving offset in Zookeeper", e);
             }
         }

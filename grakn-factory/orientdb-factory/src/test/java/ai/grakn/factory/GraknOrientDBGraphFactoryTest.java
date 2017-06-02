@@ -22,7 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknOrientDBGraph;
 import ai.grakn.util.Schema;
@@ -50,7 +50,7 @@ public class GraknOrientDBGraphFactoryTest {
     }
 
     @After
-    public void clear() throws GraknValidationException {
+    public void clear() throws InvalidGraphException {
         GraknOrientDBGraph graph = orientGraphFactory.open(GraknTxType.WRITE);
         graph.admin().delete();
     }
@@ -77,7 +77,7 @@ public class GraknOrientDBGraphFactoryTest {
     }
 
     @Test
-    public void testBuildGraph() throws GraknValidationException {
+    public void testBuildGraph() throws InvalidGraphException {
         GraknOrientDBGraph graknGraph = orientGraphFactory.open(GraknTxType.WRITE);
 
         assertEquals(8, graknGraph.getTinkerPopGraph().traversal().V().toList().size());

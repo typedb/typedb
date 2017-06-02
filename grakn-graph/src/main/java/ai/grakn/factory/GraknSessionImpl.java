@@ -23,7 +23,7 @@ import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknComputerImpl;
 import ai.grakn.util.ErrorMessage;
@@ -80,7 +80,7 @@ public class GraknSessionImpl implements GraknSession {
                 graphBatch = getConfiguredFactory().open(transactionType);
                 return graphBatch;
             default:
-                throw new GraphRuntimeException("Unknown type of transaction [" + transactionType.name() + "]");
+                throw GraphOperationException.transactionInvalid(transactionType);
         }
     }
 
@@ -99,19 +99,15 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     @Override
-    public void close() throws GraphRuntimeException {
+    public void close() throws GraphOperationException {
         int openTransactions = openTransactions(graph) + openTransactions(graphBatch);
         if(openTransactions > 0){
             LOG.warn(ErrorMessage.TRANSACTIONS_OPEN.getMessage(this.keyspace, openTransactions));
         }
 
         //Close the main graph connections
-        try {
-            if(graph != null) graph.admin().closeSession();
-            if(graphBatch != null) graphBatch.admin().closeSession();
-        } catch (Exception e) {
-            throw new GraphRuntimeException("Could not close graph.", e);
-        }
+        if(graph != null) graph.admin().closeSession();
+        if(graphBatch != null) graphBatch.admin().closeSession();
     }
 
     private int openTransactions(AbstractGraknGraph<?> graph){

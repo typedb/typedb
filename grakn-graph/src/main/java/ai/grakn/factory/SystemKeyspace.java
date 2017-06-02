@@ -25,7 +25,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.GraknVersion;
@@ -141,7 +141,7 @@ public class SystemKeyspace {
                     graph.<EntityType>getType(KEYSPACE_ENTITY).addEntity().resource(resource);
                 }
                 graph.admin().commitNoLogs();
-            } catch (GraknValidationException e) {
+            } catch (InvalidGraphException e) {
                 throw new RuntimeException("Could not add keyspace [" + keyspace + "] to system graph", e);
             }
             return true;
@@ -200,7 +200,7 @@ public class SystemKeyspace {
             graph.getResourceType("system-version").putResource(GraknVersion.VERSION);
             graph.admin().commitNoLogs();
             LOG.info("Loaded system ontology to system keyspace.");
-        } catch (IOException | GraknValidationException | NullPointerException e) {
+        } catch (IOException | InvalidGraphException | NullPointerException e) {
             e.printStackTrace(System.err);
             LOG.error("Could not load system ontology. The error was: " + e);
         }

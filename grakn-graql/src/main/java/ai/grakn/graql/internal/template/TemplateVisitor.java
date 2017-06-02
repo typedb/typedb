@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.template;
 
-import ai.grakn.exception.GraqlTemplateParsingException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.internal.antlr.GraqlTemplateBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
 import ai.grakn.graql.internal.template.macro.Unescaped;
@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import static ai.grakn.util.ErrorMessage.TEMPLATE_MISSING_KEY;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -175,7 +174,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         Object rValue = this.visit(ctx.expr(1));
 
         if(!(lValue instanceof Boolean) || !(rValue instanceof Boolean)){
-            throw new GraqlTemplateParsingException("Invalid OR statement: " + ctx.getText() + " for data " + originalContext);
+            throw GraqlSyntaxException.parsingTemplateError("OR", ctx.getText(), originalContext);
         }
 
         return ((Boolean) lValue) || ((Boolean) rValue);
@@ -188,7 +187,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         Object rValue = this.visit(ctx.expr(1));
 
         if(!(lValue instanceof Boolean) || !(rValue instanceof Boolean)){
-            throw new GraqlTemplateParsingException("Invalid AND statement: " + ctx.getText() + " for data " + originalContext);
+            throw GraqlSyntaxException.parsingTemplateError("AND", ctx.getText(), originalContext);
         }
 
         return ((Boolean) lValue) && ((Boolean) rValue);
@@ -200,7 +199,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         Object value = this.visit(ctx.expr());
 
         if(!(value instanceof Boolean)){
-            throw new GraqlTemplateParsingException("Invalid NOT statement: " + ctx.getText() + " for data " + originalContext);
+            throw GraqlSyntaxException.parsingTemplateError("NOT", ctx.getText(), originalContext);
         }
 
         return !((Boolean) value);
@@ -255,7 +254,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         Object rValue = this.visit(ctx.expr(1));
 
         if(!(lValue instanceof Number) || !(rValue instanceof Number)){
-            throw new GraqlTemplateParsingException("Invalid GREATER THAN expression " + ctx.getText() + " for data " + originalContext);
+            throw GraqlSyntaxException.parsingTemplateError("GREATER THAN", ctx.getText(), originalContext);
         }
 
         Number lNumber = (Number) lValue;
@@ -271,7 +270,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         Object rValue = this.visit(ctx.expr(1));
 
         if(!(lValue instanceof Number) || !(rValue instanceof Number)){
-            throw new GraqlTemplateParsingException("Invalid GREATER THAN EQUALS expression " + ctx.getText() + " for data " + originalContext);
+            throw GraqlSyntaxException.parsingTemplateError("GREATER THAN EQUALS", ctx.getText(), originalContext);
         }
 
         Number lNumber = (Number) lValue;
@@ -287,7 +286,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         Object rValue = this.visit(ctx.expr(1));
 
         if(!(lValue instanceof Number) || !(rValue instanceof Number)){
-            throw new GraqlTemplateParsingException("Invalid LESS THAN expression " + ctx.getText() + " for data " + originalContext);
+            throw GraqlSyntaxException.parsingTemplateError("LESS THAN", ctx.getText(), originalContext);
         }
 
         Number lNumber = (Number) lValue;
@@ -303,7 +302,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         Object rValue = this.visit(ctx.expr(1));
 
         if(!(lValue instanceof Number) || !(rValue instanceof Number)){
-            throw new GraqlTemplateParsingException("Invalid LESS THAN EQUALS expression " + ctx.getText() + " for data " + originalContext);
+            throw GraqlSyntaxException.parsingTemplateError("LESS THAN EQUALS", ctx.getText(), originalContext);
         }
 
         Number lNumber = (Number) lValue;
@@ -344,9 +343,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
             }
         }
 
-        if(value == ObjectUtils.NULL){
-            throw new GraqlTemplateParsingException(TEMPLATE_MISSING_KEY.getMessage(ctx.getText(), originalContext));
-        }
+        if(value == ObjectUtils.NULL) throw GraqlSyntaxException.parsingTemplateMissingKey(ctx.getText(), originalContext);
 
         Function<Object, String> formatToApply = ctx.DOLLAR() != null ? this::formatVar : this::format;
         String prepend = ctx.DOLLAR() != null ? ctx.DOLLAR().getText() : "";

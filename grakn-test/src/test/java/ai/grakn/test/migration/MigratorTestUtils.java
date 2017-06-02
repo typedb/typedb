@@ -30,7 +30,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
 import com.google.common.io.Files;
 
@@ -68,7 +68,7 @@ public class MigratorTestUtils {
                     .execute();
 
             graph.commit();
-        } catch (IOException |GraknValidationException e){
+        } catch (IOException |InvalidGraphException e){
             throw new RuntimeException(e);
         }
     }

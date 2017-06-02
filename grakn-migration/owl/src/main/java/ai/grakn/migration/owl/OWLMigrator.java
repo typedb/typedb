@@ -27,7 +27,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLClass;
@@ -93,7 +93,7 @@ public class OWLMigrator {
         return graph;
     }
     
-    public void migrate() throws GraknValidationException {
+    public void migrate() throws InvalidGraphException {
         OwlGraknGraphStoringVisitor visitor = new OwlGraknGraphStoringVisitor(this);
         visitor.prepareOWL();
         ontology.axioms().forEach(ax -> {
