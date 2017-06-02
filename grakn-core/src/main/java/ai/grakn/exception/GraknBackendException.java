@@ -25,8 +25,13 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 
 import java.io.IOException;
 
+import static ai.grakn.util.ErrorMessage.AUTHENTICATION_FAILURE;
 import static ai.grakn.util.ErrorMessage.BACKEND_EXCEPTION;
+import static ai.grakn.util.ErrorMessage.ENGINE_ERROR;
+import static ai.grakn.util.ErrorMessage.ENGINE_UNAVAILABLE;
+import static ai.grakn.util.ErrorMessage.MISSING_TASK_ID;
 import static ai.grakn.util.ErrorMessage.STATE_STORAGE_ERROR;
+import static ai.grakn.util.ErrorMessage.TASK_STATE_RETRIEVAL_FAILURE;
 
 /**
  * <p>
@@ -96,21 +101,21 @@ public class GraknBackendException extends GraknException {
      * Thrown when a task id is missing from the task state storage
      */
     public static GraknBackendException stateStorageMissingId(TaskId id){
-        return new GraknBackendException("Could not retrieve id " + id);
+        return new GraknBackendException(MISSING_TASK_ID.getMessage(id));
     }
 
     /**
      * Thrown when a task id is missing from the task state storage
      */
     public static GraknBackendException stateStorageTaskRetrievalFailure(Exception e){
-        return new GraknBackendException("Could not get state from storage " + ExceptionUtils.getFullStackTrace(e));
+        return new GraknBackendException(TASK_STATE_RETRIEVAL_FAILURE.getMessage(ExceptionUtils.getFullStackTrace(e)));
     }
 
     /**
      * Thrown when the task client cannot reach engine
      */
     public static GraknBackendException engineUnavailable(String host, int port, IOException e){
-        return new GraknBackendException("Cannot reach Grakn engine on [" + host + ":" + port + "]", e);
+        return new GraknBackendException(ENGINE_UNAVAILABLE.getMessage(host, port), e);
     }
 
     /**
@@ -118,7 +123,7 @@ public class GraknBackendException extends GraknException {
      * This is thrown upwards to be interpreted by clients
      */
     public static GraknBackendException serverException(int status, Exception e){
-        return new GraknBackendException("Exception on Grakn engine", e, status);
+        return new GraknBackendException(ENGINE_ERROR.getMessage(), e, status);
     }
 
     /**
@@ -174,7 +179,7 @@ public class GraknBackendException extends GraknException {
      * Thrown when an incorrect query is used with a REST endpoint
      */
     public static GraknBackendException authenticationFailure(){
-        return new GraknBackendException("Authentication parameters are incorrect or invalid", 401);
+        return new GraknBackendException(AUTHENTICATION_FAILURE.getMessage(), 401);
     }
 
     /**

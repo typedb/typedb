@@ -172,6 +172,7 @@ public enum ErrorMessage {
     READ_ONLY_QUERY("Invalid query: [%s]. LoaderClient only accepts queries that mutate the graph."),
 
     //Server Errors
+    ENGINE_ERROR("Exception on Grakn engine"),
     UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
     UNAVAILABLE_PROPERTY("Property requested [%s] has not been defined. See configuration file [%s] for configured properties."),
     MISSING_MANDATORY_REQUEST_PARAMETERS("Missing mandatory query parameter [%s]"),
@@ -181,6 +182,10 @@ public enum ErrorMessage {
     EXPLAIN_ONLY_MATCH("Cannot get explanation for non-match query, given: [%s]"),
     LOCK_ALREADY_INSTANTIATED("Lock provider can only be instantiated once"),
     INVALID_QUERY_USAGE("Only %s queries are allowed."),
+    MISSING_TASK_ID("Could not retrieve id %s"),
+    TASK_STATE_RETRIEVAL_FAILURE("Could not get state from storage %s"),
+    ENGINE_UNAVAILABLE("Cannot reach Grakn engine on [%s:%s]"),
+    AUTHENTICATION_FAILURE("Authentication parameters are incorrect or invalid"),
 
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),
