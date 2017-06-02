@@ -153,15 +153,14 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public boolean isRuleResolvable() {
-        return !this.getApplicableRules().isEmpty();
+        return !getApplicableRules().isEmpty();
     }
 
     @Override
     public boolean isRecursive(){
         if (isResource() || getType() == null) return false;
         Type type = getType();
-        return getPotentialRules().stream()
-                .map(rule -> new InferenceRule(rule, graph()))
+        return getApplicableRules().stream()
                 .filter(rule -> rule.getBody().selectAtoms().stream()
                         .filter(at -> Objects.nonNull(at.getType()))
                         .filter(at -> checkTypesCompatible(type, at.getType())).findFirst().isPresent())
