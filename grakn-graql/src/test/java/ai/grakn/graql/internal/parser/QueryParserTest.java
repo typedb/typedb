@@ -747,6 +747,15 @@ public class QueryParserTest {
         assertEquals(Collections.nCopies(numQueries, matchInsert), queries);
     }
 
+    @Test
+    public void whenParsingAVeryLargeQuery_DontRunOutOfMemory() {
+        int bigNumber = 1 << 16;
+        String massiveQuery = Strings.repeat("match $x isa movie; insert ($x, $x) isa has-genre;", bigNumber);
+
+        // Iterate over results, but don't do anything with them
+        Graql.parseList(massiveQuery).forEach(q -> {});
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void testMultipleQueriesThrowsIllegalArgumentException() {
         //noinspection ResultOfMethodCallIgnored
