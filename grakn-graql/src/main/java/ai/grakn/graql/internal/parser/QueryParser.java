@@ -31,19 +31,29 @@ import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ListTokenSource;
+import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.TokenSource;
+import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.UnbufferedTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Class for parsing query strings into valid queries
@@ -116,7 +126,7 @@ public class QueryParser {
         // The above will work at compile time AND runtime - it will only fail when the query is executed:
         // >> Boolean bool = q.execute();
         // java.lang.ClassCastException: java.lang.Long cannot be cast to java.lang.Boolean
-        return (T) parseQueryFragment(GraqlParser::queryEOF, QueryVisitor::visitQueryEOF, queryString);
+        return (T) parseQueryFragment(GraqlParser::queryEOF, QueryVisitor::visitQueryEOF, queryString, getLexer(queryString));
     }
 
     /**
@@ -124,30 +134,57 @@ public class QueryParser {
      * @return a list of queries
      */
     public <T extends Query<?>> Stream<T> parseList(String queryString) {
-        List<T> queries = parseQueryFragment(GraqlParser::queryList, (q, t) -> (List<T>) q.visitQueryList(t), queryString);
+        GraqlLexer lexer = getLexer(queryString);
+
+        GraqlErrorListener errorListener = new GraqlErrorListener(queryString);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(errorListener);
+
+        UnbufferedTokenStream tokenStream = new UnbufferedTokenStream(lexer);
 
         // Merge any match...insert queries together
         // TODO: Find a way to NOT do this horrid thing
-        List<T> merged = Lists.newArrayList();
+        AbstractIterator<T> iterator = new AbstractIterator<T>() {
+            @Nullable
+            T previous = null;
 
-        if (queries.isEmpty()) return queries;
+            @Override
+            protected T computeNext() {
+                if (tokenStream.LA(1) == GraqlLexer.EOF) {
+                    if (previous != null) {
+                        return swapPrevious(null);
+                    } else {
+                        endOfData();
+                        return null;
+                    }
+                }
 
-        T previous = queries.get(0);
+                TokenSource oneQuery = consumeOneQuery(tokenStream);
+                T current = parseQueryFragment(GraqlParser::query, (q, t) -> (T) q.visitQuery(t), oneQuery, errorListener);
 
-        for (int i = 1; i < queries.size(); i ++) {
-            T current = queries.get(i);
-
-            if (previous instanceof MatchQuery && current instanceof InsertQuery) {
-                previous = (T) ((MatchQuery) previous).insert(((InsertQuery) current).admin().getVars());
-            } else {
-                merged.add(previous);
-                previous = current;
+                if (previous == null) {
+                    previous = current;
+                    return computeNext();
+                } else if (previous instanceof MatchQuery && current instanceof InsertQuery) {
+                    return (T) joinMatchInsert((MatchQuery) swapPrevious(null), (InsertQuery) current);
+                } else {
+                    return swapPrevious(current);
+                }
             }
-        }
 
-        merged.add(previous);
+            private T swapPrevious(T newPrevious) {
+                T oldPrevious = previous;
+                previous = newPrevious;
+                return oldPrevious;
+            }
 
-        return merged.stream();
+            private InsertQuery joinMatchInsert(MatchQuery match, InsertQuery insert) {
+                return match.insert(insert.admin().getVars());
+            }
+        };
+
+        Iterable<T> iterable = () -> iterator;
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 
     /**
@@ -155,7 +192,7 @@ public class QueryParser {
      * @return a list of patterns
      */
     public List<Pattern> parsePatterns(String patternsString) {
-        return parseQueryFragment(GraqlParser::patterns, QueryVisitor::visitPatterns, patternsString);
+        return parseQueryFragment(GraqlParser::patterns, QueryVisitor::visitPatterns, patternsString, getLexer(patternsString));
     }
 
     /**
@@ -163,7 +200,7 @@ public class QueryParser {
      * @return a pattern
      */
     public Pattern parsePattern(String patternString){
-        return parseQueryFragment(GraqlParser::pattern, QueryVisitor::visitPattern, patternString);
+        return parseQueryFragment(GraqlParser::pattern, QueryVisitor::visitPattern, patternString, getLexer(patternString));
     }
 
     /**
@@ -171,20 +208,26 @@ public class QueryParser {
      * @param parseRule a method on GraqlParser that yields the parse rule you want to use (e.g. GraqlParser::variable)
      * @param visit a method on QueryVisitor that visits the parse rule you specified (e.g. QueryVisitor::visitVariable)
      * @param queryString the string to parse
+     * @param lexer
      * @param <T> The type the query is expected to parse to
      * @param <S> The type of the parse rule being used
      * @return the parsed result
      */
     private <T, S extends ParseTree> T parseQueryFragment(
-            Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit, String queryString
+            Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit, String queryString, GraqlLexer lexer
     ) {
-        GraqlLexer lexer = getLexer(queryString);
-
         GraqlErrorListener errorListener = new GraqlErrorListener(queryString);
         lexer.removeErrorListeners();
         lexer.addErrorListener(errorListener);
 
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        return parseQueryFragment(parseRule, visit, lexer, errorListener);
+    }
+
+    private <T, S extends ParseTree> T parseQueryFragment(
+            Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit,
+            TokenSource source, GraqlErrorListener errorListener
+    ) {
+        CommonTokenStream tokens = new CommonTokenStream(source);
 
         GraqlParser parser = new GraqlParser(tokens);
 
@@ -198,6 +241,25 @@ public class QueryParser {
         }
 
         return visit.apply(getQueryVisitor(), tree);
+    }
+
+    /**
+     * Consume a single query from the given token stream.
+     *
+     * @param tokenStream the {@link TokenStream} to consume
+     * @return a new {@link TokenSource} containing the tokens comprising the query
+     */
+    private TokenSource consumeOneQuery(TokenStream tokenStream) {
+        List<Token> tokens = new ArrayList<>();
+
+        Set<Integer> terminatorTokens = ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT, GraqlLexer.EOF);
+
+        do {
+            tokens.add(tokenStream.LT(1));
+            tokenStream.consume();
+        } while (!terminatorTokens.contains(tokenStream.LA(1)));
+
+        return new ListTokenSource(tokens);
     }
 
     private GraqlLexer getLexer(String queryString) {
