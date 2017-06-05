@@ -39,12 +39,18 @@ public abstract class BackgroundTask {
     /**
      * Called to stop execution of the task, may be called on a running or paused task.
      * Task should stop gracefully.
+     * <p>
+     * This implementation always throws {@link UnsupportedOperationException}.
      *
      * @return true if the task was successfully stopped, or false if it could not be stopped.
      *
+     * @throws UnsupportedOperationException if stopping the task is not supported
+     *
      * TODO: Should we allow start() to be called after stop()?
      */
-    public abstract boolean stop();
+    public boolean stop() {
+        throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be stopped while in progress");
+    }
 
     /**
      * Called to suspend the execution of a currently running task. The object may be destroyed after this call.

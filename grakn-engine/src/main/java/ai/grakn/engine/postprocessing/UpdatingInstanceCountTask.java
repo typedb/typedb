@@ -142,11 +142,6 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
     }
 
     @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be stopped while in progress");
-    }
-
-    @Override
     public void pause() {
         throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be paused while in progress");
     }

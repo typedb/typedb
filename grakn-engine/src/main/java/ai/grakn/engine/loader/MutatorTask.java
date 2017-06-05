@@ -69,11 +69,6 @@ public class MutatorTask extends BackgroundTask {
     }
 
     @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException("Loader task cannot be stopped while in progress");
-    }
-
-    @Override
     public void pause() {
         throw new UnsupportedOperationException("Loader task cannot be paused");
     }

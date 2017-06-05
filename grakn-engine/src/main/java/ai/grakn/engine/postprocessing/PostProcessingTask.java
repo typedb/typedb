@@ -79,11 +79,6 @@ public class PostProcessingTask extends BackgroundTask {
     }
 
     @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException("Delayed task cannot be stopped while in progress");
-    }
-
-    @Override
     public void pause() {
         throw new UnsupportedOperationException("Delayed task cannot be paused");
     }
