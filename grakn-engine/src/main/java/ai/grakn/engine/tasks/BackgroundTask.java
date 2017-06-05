@@ -25,7 +25,7 @@ import java.util.function.Consumer;
  *
  * @author Denis Lobanov
  */
-public interface BackgroundTask {
+public abstract class BackgroundTask {
     /**
      * Called to start execution of the task, may be called on a newly scheduled or previously stopped task.
      * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
@@ -34,7 +34,7 @@ public interface BackgroundTask {
      * @param taskSubmitter Allows followup tasks to be submitted for processing
      * @return true if the task successfully completed, or false if it was stopped.
      */
-    boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter);
+    public abstract boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter);
 
     /**
      * Called to stop execution of the task, may be called on a running or paused task.
@@ -44,14 +44,14 @@ public interface BackgroundTask {
      *
      * TODO: Should we allow start() to be called after stop()?
      */
-    boolean stop();
+    public abstract boolean stop();
 
     /**
      * Called to suspend the execution of a currently running task. The object may be destroyed after this call.
      *
      * TODO: stop running
      */
-    void pause();
+    public abstract void pause();
 
     /**
      * This method may be called when resuming from a paused state or recovering from a crash or failure of any kind.
@@ -59,6 +59,6 @@ public interface BackgroundTask {
      *                       the task to resume from this point should it crash.
      * @param lastCheckpoint The last checkpoint as sent to saveCheckpoint.
      */
-    boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint);
+    public abstract boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint);
 
 }

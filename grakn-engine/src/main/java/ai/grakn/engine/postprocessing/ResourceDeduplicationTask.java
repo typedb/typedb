@@ -52,7 +52,7 @@ import java.util.function.Consumer;
  * @author borislav
  *
  */
-public class ResourceDeduplicationTask implements BackgroundTask {
+public class ResourceDeduplicationTask extends BackgroundTask {
     
     public static final String KEYSPACE_CONFIG  = "keyspace";
     public static final String KEYSPACE_DEFAULT = "grakn"; 

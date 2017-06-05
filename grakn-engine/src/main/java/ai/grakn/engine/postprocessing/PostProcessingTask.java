@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
  *
  * @author alexandraorth, fppt
  */
-public class PostProcessingTask implements BackgroundTask {
+public class PostProcessingTask extends BackgroundTask {
     private static final GraknEngineConfig CONFIG = GraknEngineConfig.getInstance();
     private static final int PP_TASK_DELAY_MS = CONFIG.getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
     private static final EngineGraknGraphFactory FACTORY = EngineGraknGraphFactory.create(CONFIG.getProperties());

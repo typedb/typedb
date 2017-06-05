@@ -51,7 +51,7 @@ import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
  *
  * @author Alexandra Orth
  */
-public class MutatorTask implements BackgroundTask {
+public class MutatorTask extends BackgroundTask {
 
     private static final GraknEngineConfig CONFIG = GraknEngineConfig.getInstance();
     private static final EngineGraknGraphFactory FACTORY = EngineGraknGraphFactory.create(CONFIG.getProperties());

@@ -34,7 +34,7 @@ import java.util.function.Consumer;
  *
  * @author alexandraorth, Felix Chapman
  */
-public abstract class MockBackgroundTask implements BackgroundTask {
+public abstract class MockBackgroundTask extends BackgroundTask {
 
     private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();
     private static final ConcurrentHashMultiset<TaskId> CANCELLED_TASKS = ConcurrentHashMultiset.create();

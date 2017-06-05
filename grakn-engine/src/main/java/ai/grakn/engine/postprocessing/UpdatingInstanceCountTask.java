@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
  *
  * @author fppt
  */
-public class UpdatingInstanceCountTask implements BackgroundTask {
+public class UpdatingInstanceCountTask extends BackgroundTask {
     public static final RedisConnection redis = RedisConnection.getConnection();
     public static final GraknEngineConfig CONFIG = GraknEngineConfig.getInstance();
     private static final long SHARDING_THRESHOLD = CONFIG.getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
