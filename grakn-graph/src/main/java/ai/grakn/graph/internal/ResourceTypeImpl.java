@@ -20,8 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -57,24 +56,13 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
     }
 
-    private ResourceTypeImpl(ResourceTypeImpl resourceType){
-        //noinspection unchecked
-        super(resourceType);
-    }
-
-    @Override
-    public ResourceType<D> copy(){
-        //noinspection unchecked
-        return new ResourceTypeImpl(this);
-    }
-
     /**
      * This method is overridden so that we can check that the regex of the new super type (if it has a regex)
      * can be applied to all the existing instances.
      */
     @Override
     public ResourceType<D> superType(ResourceType<D> superType){
-        ((ResourceTypeImpl<D>) superType).superTypeSet().forEach(st -> checkInstancesMatchRegex(st.getLabel(), st.getRegex()));
+        ((ResourceTypeImpl<D>) superType).superTypeSet().forEach(st -> checkInstancesMatchRegex(st.getRegex()));
         return super.superType(superType);
     }
 
@@ -88,7 +76,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
             throw new UnsupportedOperationException(ErrorMessage.REGEX_NOT_STRING.getMessage(getLabel()));
         }
 
-        checkInstancesMatchRegex(getLabel(), regex);
+        checkInstancesMatchRegex(regex);
 
         return setProperty(Schema.ConceptProperty.REGEX, regex);
     }
@@ -96,11 +84,10 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     /**
      * Checks that existing instances match the provided regex.
      *
-     * @throws InvalidConceptValueException when an instance does not match the provided regex
-     * @param label The label of the resource type which either contains or will contain this regex
+     * @throws GraphOperationException when an instance does not match the provided regex
      * @param regex The regex to check against
      */
-    private void checkInstancesMatchRegex(TypeLabel label, String regex){
+    private void checkInstancesMatchRegex(String regex){
         if(regex != null) {
             Pattern pattern = Pattern.compile(regex);
             Matcher matcher;
@@ -108,7 +95,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
                 String value = (String) resource.getValue();
                 matcher = pattern.matcher(value);
                 if(!matcher.matches()){
-                    throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resource.getId(), value, label));
+                    throw GraphOperationException.regexFailure(resource, value, regex);
                 }
             }
         }
@@ -117,7 +104,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @SuppressWarnings("unchecked")
     @Override
     public Resource<D> putResource(D value) {
-        if(value == null) throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage("resource value"));
+        if(value == null) throw GraphOperationException.settingNullProperty(getDataType().getConceptProperty());
         return putInstance(Schema.BaseType.RESOURCE,
                 () -> getResource(value), (vertex, type) ->
                 getGraknGraph().getElementFactory().buildResource(vertex, type, value));

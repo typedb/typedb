@@ -19,12 +19,20 @@
 package ai.grakn.exception;
 
 /**
- * Thrown when the value of a resource does not match the resources datatype.
+ * <p>
+ *     Graql Query Exception
+ * </p>
  *
- * @author Filipe Teixeira
+ * <p>
+ *     Occurs when the query is syntactically correct but semantically incorrect.
+ *     For example limiting the results of a query -1
+ * </p>
+ *
+ * @author fppt
  */
-public class InvalidConceptValueException extends ConceptException {
-    public InvalidConceptValueException(String message) {
-        super(message);
+//TODO: Felix to integrate with Graql
+public class GraqlQueryException extends GraknException{
+    public GraqlQueryException(String error) {
+        super(error);
     }
 }

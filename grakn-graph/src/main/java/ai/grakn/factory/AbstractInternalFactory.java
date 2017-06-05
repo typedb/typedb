@@ -20,9 +20,8 @@ package ai.grakn.factory;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.CheckReturnValue;
@@ -59,28 +58,21 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     protected G graph = null;
     private G batchLoadingGraph = null;
 
-    private SystemKeyspace<G> systemKeyspace;
-
     AbstractInternalFactory(String keyspace, String engineUrl, Properties properties){
-        if(keyspace == null) {
-            throw new GraphRuntimeException(ErrorMessage.NULL_VALUE.getMessage("keyspace"));
-        }
+        if(keyspace == null) throw GraphOperationException.nullKeyspace();
 
         this.keyspace = keyspace.toLowerCase();
         this.engineUrl = engineUrl;
         this.properties = properties;
 
-        if(!keyspace.equals(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
-            systemKeyspace = new SystemKeyspace<>(getSystemFactory());
+        if(SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(keyspace)) {
+            SystemKeyspace.initialise(this);
+        } else {
+            SystemKeyspace.initialise(engineUrl, properties);
         }
     }
 
-    InternalFactory<G> getSystemFactory(){
-        //noinspection unchecked
-        return FactoryBuilder.getGraknGraphFactory(this.getClass().getName(), SystemKeyspace.SYSTEM_GRAPH_NAME, engineUrl, properties);
-    }
-
-    abstract M buildGraknGraphFromTinker(G graph, boolean batchLoading);
+    abstract M buildGraknGraphFromTinker(G graph);
 
     abstract G buildTinkerPopGraph(boolean batchLoading);
 
@@ -98,26 +90,22 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     }
 
     private void checkOtherGraphOpen(GraknGraph otherGraph){
-        if(otherGraph != null && !otherGraph.isClosed()){
-            throw new GraphRuntimeException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(otherGraph.getKeyspace()));
-        }
+        if(otherGraph != null && !otherGraph.isClosed()) throw GraphOperationException.transactionOpen(otherGraph);
     }
 
     protected M getGraph(M graknGraph, GraknTxType txType){
         boolean batchLoading = GraknTxType.BATCH.equals(txType);
 
         if(graknGraph == null){
-            graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
+            graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading));
             if (!SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(this.keyspace)) {
-                systemKeyspace.keyspaceOpened(this.keyspace);
+                SystemKeyspace.keyspaceOpened(this.keyspace);
             }
         } else {
-            if(!graknGraph.isClosed()){
-                throw new GraphRuntimeException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(graknGraph.getKeyspace()));
-            }
+            if(!graknGraph.isClosed()) throw GraphOperationException.transactionOpen(graknGraph);
 
             if(graknGraph.isSessionClosed()){
-                graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
+                graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading));
             }
         }
 

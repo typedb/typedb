@@ -18,7 +18,6 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
@@ -33,10 +32,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import javafx.util.Pair;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -65,13 +61,12 @@ public abstract class Atom extends AtomicBase {
     protected Atom(Atom a) {
         super(a);
         this.type = a.type;
-        this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
+        this.typeId = a.typeId;
+        this.applicableRules = a.applicableRules;
     }
 
     @Override
     public boolean isAtom(){ return true;}
-
-    public boolean isBinary(){return false;}
 
     /**
      * @return true if the atom corresponds to a atom
@@ -244,12 +239,6 @@ public abstract class Atom extends AtomicBase {
     public Set<TypeAtom> getUnmappedTypeConstraints(){ return new HashSet<>();}
     public Set<TypeAtom> getMappedTypeConstraints() { return new HashSet<>();}
     public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return new HashSet<>();}
-
-    //TODO move down to relation only
-    /**
-     * @return map of role type- (var name, var type) pairs
-     */
-    public Multimap<RoleType, Pair<Var, Type>> getRoleVarTypeMap() { return ArrayListMultimap.create();}
 
     /**
      * infers types (type, role types) fo the atom if applicable/possible

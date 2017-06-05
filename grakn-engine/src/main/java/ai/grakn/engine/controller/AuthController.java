@@ -19,9 +19,8 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.JWTHandler;
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -49,12 +48,17 @@ import javax.ws.rs.Produces;
 @Produces({"application/json", "text/plain"})
 public class AuthController {
 
-    private final static UsersHandler usersHandler = UsersHandler.getInstance();
     private final static String USERNAME_KEY = "username";
     private final static String PASSWORD_KEY = "password";
+    private final UsersHandler usersHandler;
+    private final JWTHandler jwtHandler;
+    private boolean isPasswordProtected;
 
+    public AuthController(Service spark, boolean isPasswordProtected, JWTHandler jwtHandler, UsersHandler usersHandler) {
+        this.isPasswordProtected = isPasswordProtected;
+        this.usersHandler = usersHandler;
+        this.jwtHandler = jwtHandler;
 
-    public AuthController(Service spark) {
         spark.post(REST.WebPath.NEW_SESSION_URI, this::newSession);
         spark.get(REST.WebPath.IS_PASSWORD_PROTECTED_URI,this::isPasswordProtected);
     }
@@ -75,13 +79,13 @@ public class AuthController {
             user = jsonBody.at(USERNAME_KEY).asString();
             password = jsonBody.at(PASSWORD_KEY).asString();
         } catch (Exception e) {
-            throw new GraknEngineServerException(400, e);
+            throw GraknServerException.serverException(400, e);
         }
 
         if (usersHandler.validateUser(user, password)) {
-            return JWTHandler.signJWT(user);
+            return jwtHandler.signJWT(user);
         } else {
-            throw new GraknEngineServerException(401,"Wrong authentication parameters have been provided.");
+            throw GraknServerException.authenticationFailure();
         }
 
 
@@ -91,7 +95,7 @@ public class AuthController {
     @Path("/enabled")
     @ApiOperation(
             value = "Returns true if Engine endpoints are password protected. False otherwise.")
-    private String isPasswordProtected(Request req, Response res) {
-        return GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY);
+    private boolean isPasswordProtected(Request req, Response res) {
+        return isPasswordProtected;
     }
 }

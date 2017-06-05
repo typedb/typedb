@@ -20,7 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.GraknTitanGraph;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.TitanGraph;
@@ -107,8 +107,8 @@ public class TitanInternalFactoryTest extends TitanTestBase{
         assertEquals(mg1, mg3);
         assertEquals(tinkerGraphMg1, mg3.getTinkerPopGraph());
 
-        assertTrue(mg1.isBatchLoadingEnabled());
-        assertFalse(mg2.isBatchLoadingEnabled());
+        assertTrue(mg1.isBatchGraph());
+        assertFalse(mg2.isBatchGraph());
 
         assertNotEquals(mg1, mg2);
         assertNotEquals(tinkerGraphMg1, tinkerGraphMg2);
@@ -149,7 +149,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
                 graph.putEntityType("A Thing");
                 try {
                     graph.close();
-                } catch (GraknValidationException e) {
+                } catch (InvalidGraphException e) {
                     e.printStackTrace();
                 }
             }));
@@ -171,7 +171,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
     }
 
     @Test
-    public void testGraphNotClosed() throws GraknValidationException {
+    public void testGraphNotClosed() throws InvalidGraphException {
         TitanInternalFactory factory = new TitanInternalFactory("stuff", Grakn.IN_MEMORY, TEST_PROPERTIES);
         GraknTitanGraph graph = factory.open(GraknTxType.WRITE);
         assertFalse(graph.getTinkerPopGraph().isClosed());

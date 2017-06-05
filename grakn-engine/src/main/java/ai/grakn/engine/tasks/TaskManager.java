@@ -31,13 +31,7 @@ import ai.grakn.engine.TaskId;
  *
  * @author Denis Lobanov, alexandraorth
  */
-public interface TaskManager {
-
-    /**
-     * Schedule a {@link BackgroundTask} for execution.
-     * @param taskState Task to execute
-     */
-    void addTask(TaskState taskState, TaskConfiguration configuration);
+public interface TaskManager extends TaskSubmitter{
 
     /**
      * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the

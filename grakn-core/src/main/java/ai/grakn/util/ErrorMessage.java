@@ -32,9 +32,8 @@ public enum ErrorMessage {
     //--------------------------------------------- Core Errors -----------------------------------------------
     CANNOT_DELETE("Type [%s] cannot be deleted as it still has incoming edges"),
     SUPER_TYPE_LOOP_DETECTED("By setting the super type of concept [%s] to [%s]. You will be creating a loop. This is prohibited"),
-    ID_NOT_UNIQUE("Failed to change the Id of Concept [%s] due to another concept already having an id of " +
-            "type [%s] with value [%s]"),
-    ID_ALREADY_TAKEN("The id [%s] is already taken by concept [%s]"),
+    INVALID_UNIQUE_PROPERTY_MUTATION("Property [%s] of Concept [%s] cannot be changed to [%s] as it is already taken by Concept [%s]"),
+    UNIQUE_PROPERTY_TAKEN("Property [%s] with value [%s] is already taken by concept [%s]"),
     TOO_MANY_CONCEPTS("Too many concepts found for key [%s] and value [%s]"),
     TOO_MANY_CASTINGS("More than one casting found between Role [%s] and Instance [%s]"),
     INVALID_DATATYPE("The value [%s] must be of datatype [%s]"),
@@ -43,8 +42,7 @@ public enum ErrorMessage {
     REGEX_INSTANCE_FAILURE("The regex [%s] cannot be applied because instance [%s] with value [%s] of the " +
             "Resource Type [%s] does not conform to the regular expression"),
     REGEX_NOT_STRING("The Resource Type [%s] is not of type String so it cannot support regular expressions"),
-    ROLE_IS_NULL("The provided role cannot be null with roleplayer [%s]"),
-    CLOSED_CLEAR("This graph has been closed due to clearing it"),
+    CLOSED_CLEAR("The session for graph has been closed due to deleting the graph"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The transaction was not %s. The graph was actually effected directly"),
     IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
@@ -53,7 +51,7 @@ public enum ErrorMessage {
     HAS_INVALID("The type [%s] is not allowed to have a %s of type [%s]"),
     INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
     ROLE_TYPE_ERROR("The role type [%s] cannot play itself"),
-    BACKEND_EXCEPTION("Unknown Backend Exception."),
+    BACKEND_EXCEPTION("Backend Exception."),
     GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
     SESSION_CLOSED("The session for graph [%s] was closed"),
     GRAPH_CLOSED_ON_ACTION("The transaction was %s and closed graph [%s]. Use the session to get a new transaction for the graph."),
@@ -63,6 +61,8 @@ public enum ErrorMessage {
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]"),
     TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
     CONCEPT_HAS_NO_SHARD("Concept [%s] does not have any shard"),
+    IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),
+    CLOSE_GRAPH_FAILURE("Unable to close graph [%s]"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -72,7 +72,6 @@ public enum ErrorMessage {
             "which it's type [%s] is not connecting to via a relates connection \n"),
 
     VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play RoleType [%s] \n"),
-    VALIDATION_IS_ABSTRACT("The abstract Type [%s] should not have any instances \n"),
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("RoleType [%s] does not have a relates connection to any Relation Type. \n"),
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
     VALIDATION_INSTANCE("Instance [%s] of type [%s] does not play the required role [%s] \n"),
@@ -157,6 +156,8 @@ public enum ErrorMessage {
 
     NO_ANALYTICS_METHOD("No compute method exists with the name [%s]"),
 
+    INVALID_STATMENT("Invalid %s statement: %s for data %s"),
+
     //Templating
     TEMPLATE_MISSING_KEY("Key [%s] not present in data: [%s]"),
 
@@ -173,13 +174,20 @@ public enum ErrorMessage {
     READ_ONLY_QUERY("Invalid query: [%s]. LoaderClient only accepts queries that mutate the graph."),
 
     //Server Errors
+    ENGINE_ERROR("Exception on Grakn engine"),
     UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
+    UNAVAILABLE_PROPERTY("Property requested [%s] has not been defined. See configuration file [%s] for configured properties."),
     MISSING_MANDATORY_REQUEST_PARAMETERS("Missing mandatory query parameter [%s]"),
     MISSING_REQUEST_BODY("Empty body- it should contain the Graql query to be executed."),
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
     INVALID_CONTENT_TYPE("Invalid combination of query [%s] and content type [%s]"),
     EXPLAIN_ONLY_MATCH("Cannot get explanation for non-match query, given: [%s]"),
     LOCK_ALREADY_INSTANTIATED("Lock provider can only be instantiated once"),
+    INVALID_QUERY_USAGE("Only %s queries are allowed."),
+    MISSING_TASK_ID("Could not retrieve id %s"),
+    TASK_STATE_RETRIEVAL_FAILURE("Could not get state from storage %s"),
+    ENGINE_UNAVAILABLE("Cannot reach Grakn engine on [%s:%s]"),
+    AUTHENTICATION_FAILURE("Authentication parameters are incorrect or invalid"),
 
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),

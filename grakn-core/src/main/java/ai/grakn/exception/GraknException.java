@@ -19,12 +19,23 @@
 package ai.grakn.exception;
 
 /**
- * This Exception is thrown when a concept is malformed or incorrect in some way.
+ * <p>
+ *     Root Grakn Exception
+ * </p>
  *
- * @author Filipe Teixeira
+ * <p>
+ *     Encapsulates any exception which is thrown by the Grakn stack.
+ *     This includes failures server side, failed graph mutations, and failed querying attempts
+ * </p>
+ *
+ * @author fppt
  */
-public class ConceptException extends GraphRuntimeException {
-    public ConceptException(String message) {
-        super(message);
+public class GraknException extends RuntimeException {
+    protected GraknException(String error){
+        super(error);
+    }
+
+    protected GraknException(String error, Exception e){
+        super(error, e);
     }
 }

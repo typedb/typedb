@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.stream.Stream;
 
@@ -61,12 +60,12 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         for (ValueFragmentSet valueSet : valueSets) {
             Var resource = valueSet.resource();
 
-            IsaFragmentSet isaSet = typeInformationOf(resource, fragmentSets);
+            IsaFragmentSet isaSet = EquivalentFragmentSets.typeInformationOf(resource, fragmentSets);
             if (isaSet == null) continue;
 
             Var type = isaSet.type();
 
-            LabelFragmentSet nameSet = typeLabelOf(type, fragmentSets);
+            LabelFragmentSet nameSet = EquivalentFragmentSets.typeLabelOf(type, fragmentSets);
             if (nameSet == null) continue;
 
             TypeLabel typeLabel = nameSet.label();
@@ -103,18 +102,4 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
                 });
     }
 
-    @Nullable
-    private static IsaFragmentSet typeInformationOf(Var resource, Collection<EquivalentFragmentSet> fragmentSets) {
-        return fragmentSetOfType(IsaFragmentSet.class, fragmentSets)
-                .filter(isaFragmentSet -> isaFragmentSet.instance().equals(resource))
-                .findAny()
-                .orElse(null);
-    }
-
-    private static LabelFragmentSet typeLabelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {
-        return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
-                .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
-                .findAny()
-                .orElse(null);
-    }
 }

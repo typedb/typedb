@@ -42,8 +42,8 @@ import java.util.Properties;
  * @author fppt
  */
 public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
-    public GraknOrientDBGraph(OrientGraph graph, String name, String engineUrl, boolean batchLoading, Properties properties){
-        super(graph, name, engineUrl, batchLoading, properties);
+    public GraknOrientDBGraph(OrientGraph graph, String name, String engineUrl, Properties properties){
+        super(graph, name, engineUrl, properties);
     }
 
     /**

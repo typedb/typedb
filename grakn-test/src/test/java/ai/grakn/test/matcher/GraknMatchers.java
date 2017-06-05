@@ -210,7 +210,7 @@ public class GraknMatchers {
     /**
      * Create a matcher to test that the concept has the given type name.
      */
-    static Matcher<MatchableConcept> type(String type) {
+    public static Matcher<MatchableConcept> type(String type) {
         return type(TypeLabel.of(type));
     }
 

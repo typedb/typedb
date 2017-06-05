@@ -16,13 +16,21 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.exception;
+package ai.grakn.graql.internal.template.macro;
 
-/**
- * Exception thrown by Graql templating when parsing fails
- * @author alexandraorth
- */
-public class GraqlTemplateParsingException extends RuntimeException {
-    public GraqlTemplateParsingException(String message) {
-        super(message);
-    }}
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Query;
+
+import java.util.List;
+import java.util.Map;
+
+import static ai.grakn.graql.Graql.parse;
+import static junit.framework.TestCase.assertEquals;
+
+public class MacroTestUtilities {
+
+    public static void assertParseEquals(String template, Map<String, Object> data, String expected){
+        List<Query> result = Graql.parseTemplate(template, data);
+        assertEquals(parse(expected), result.get(0));
+    }
+}

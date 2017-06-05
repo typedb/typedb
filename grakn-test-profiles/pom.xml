@@ -5,7 +5,7 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.13.0-SNAPSHOT</version>
+        <version>0.14.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -67,7 +67,6 @@
             </activation>
             <properties>
                 <grakn.test-profile>tinker</grakn.test-profile>
-                <grakn.skip-bash-tests>true</grakn.skip-bash-tests>
             </properties>
         </profile>
 
@@ -75,7 +74,6 @@
             <id>titan</id>
             <properties>
                 <grakn.test-profile>titan</grakn.test-profile>
-                <grakn.skip-bash-tests>false</grakn.skip-bash-tests>
             </properties>
             <dependencies>
                 <dependency>
@@ -90,6 +88,11 @@
                         <exclusion>
                             <groupId>ch.qos.logback</groupId>
                             <artifactId>logback-classic</artifactId>
+                        </exclusion>
+                        <!--Excluded because we provide logback logger-->
+                        <exclusion>
+                            <groupId>org.slf4j</groupId>
+                            <artifactId>slf4j-nop</artifactId>
                         </exclusion>
                     </exclusions>
                     <scope>test</scope>
@@ -173,6 +176,11 @@
                         <exclusion>
                             <groupId>ch.qos.logback</groupId>
                             <artifactId>logback-classic</artifactId>
+                        </exclusion>
+                        <!--Excluded because we provide logback logger-->
+                        <exclusion>
+                            <groupId>org.slf4j</groupId>
+                            <artifactId>slf4j-nop</artifactId>
                         </exclusion>
                     </exclusions>
                     <scope>test</scope>

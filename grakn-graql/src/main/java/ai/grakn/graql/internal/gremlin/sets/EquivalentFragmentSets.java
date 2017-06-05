@@ -29,13 +29,15 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.collect.ImmutableList;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.ResourceIndexFragmentSet.applyResourceIndexOptimisation;
-import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutOptimisation;
+import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutRelationTypeOptimisation;
+import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutRoleTypeOptimisation;
 
 /**
  * Factory class for producing instances of {@link EquivalentFragmentSet}.
@@ -55,31 +57,10 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is a relation with a casting.
-     */
-    public static EquivalentFragmentSet casting(Var relation, Var casting) {
-        return new CastingFragmentSet(relation, casting);
-    }
-
-    /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is a casting connected to a role-player.
-     */
-    public static EquivalentFragmentSet rolePlayer(Var casting, Var rolePlayer) {
-        return new RolePlayerFragmentSet(casting, rolePlayer);
-    }
-
-    /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is an instance of a role-type.
-     */
-    public static EquivalentFragmentSet isaCastings(Var casting, Var roleType) {
-        return new IsaCastingsFragmentSet(casting, roleType);
-    }
-
-    /**
      * An {@link EquivalentFragmentSet} that indicates a shortcut edge between two role-players.
      */
-    public static EquivalentFragmentSet shortcut(Var relation, Var edge, Var rolePlayer) {
-        return new ShortcutFragmentSet(relation, edge, rolePlayer, Optional.empty(), Optional.empty());
+    public static EquivalentFragmentSet shortcut(Var relation, Var edge, Var rolePlayer, Optional<Var> roleType) {
+        return new ShortcutFragmentSet(relation, edge, rolePlayer, roleType, Optional.empty(), Optional.empty());
     }
 
     /**
@@ -179,7 +160,8 @@ public class EquivalentFragmentSets {
         // TODO: Create a real interface for these when there are more of them
         ImmutableList<Supplier<Boolean>> optimisations = ImmutableList.of(
                 () -> applyResourceIndexOptimisation(fragmentSets, graph),
-                () -> applyShortcutOptimisation(fragmentSets, graph)
+                () -> applyShortcutRoleTypeOptimisation(fragmentSets, graph),
+                () -> applyShortcutRelationTypeOptimisation(fragmentSets, graph)
         );
 
         // Repeatedly apply optimisations until they don't alter the query
@@ -201,5 +183,20 @@ public class EquivalentFragmentSets {
     static boolean hasDirectSubTypes(GraknGraph graph, TypeLabel label) {
         Type type = graph.getType(label);
         return type != null && type.subTypes().size() != 1;
+    }
+
+    static @Nullable LabelFragmentSet typeLabelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {
+        return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
+                .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
+                .findAny()
+                .orElse(null);
+    }
+
+    @Nullable
+    static IsaFragmentSet typeInformationOf(Var instance, Collection<EquivalentFragmentSet> fragmentSets) {
+        return fragmentSetOfType(IsaFragmentSet.class, fragmentSets)
+                .filter(isaFragmentSet -> isaFragmentSet.instance().equals(instance))
+                .findAny()
+                .orElse(null);
     }
 }

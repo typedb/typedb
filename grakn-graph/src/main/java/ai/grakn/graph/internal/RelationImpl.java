@@ -22,7 +22,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -137,9 +138,8 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     @Override
     public Relation addRolePlayer(RoleType roleType, Instance instance) {
-        if(roleType == null){
-            throw new IllegalArgumentException(ErrorMessage.ROLE_IS_NULL.getMessage(instance));
-        }
+        Objects.requireNonNull(roleType);
+        if(Schema.MetaSchema.isMetaLabel(roleType.getLabel())) throw GraphOperationException.metaTypeImmutable(roleType.getLabel());
 
         //Do the actual put of the role and role player
         return addNewRolePlayer(roleType, instance);

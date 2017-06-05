@@ -53,25 +53,16 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         super(graknGraph, v, type, isImplicit);
     }
 
-    private RelationTypeImpl(RelationTypeImpl relationType){
-        super(relationType);
-    }
-
-    @Override
-    public RelationType copy(){
-        return new RelationTypeImpl(this);
-    }
-
-    @Override
-    void copyCachedConcepts(RelationType type){
-        super.copyCachedConcepts(type);
-        ((RelationTypeImpl) type).cachedRelates.ifPresent(value -> this.cachedRelates.set(getGraknGraph().getTxCache().cacheClone(value)));
-    }
-
     @Override
     public Relation addRelation() {
         return addInstance(Schema.BaseType.RELATION,
                 (vertex, type) -> getGraknGraph().getElementFactory().buildRelation(vertex, type));
+    }
+
+    @Override
+    public void flushTxCache(){
+        super.flushTxCache();
+        cachedRelates.flush();
     }
 
     /**

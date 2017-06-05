@@ -21,7 +21,7 @@ package ai.grakn.engine.tasks;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.exception.EngineStorageException;
+import ai.grakn.exception.GraknBackendException;
 
 import java.util.Set;
 
@@ -45,7 +45,7 @@ public interface TaskStateStorage {
      */
     //TODO call this addState
     //TODO return void
-    TaskId newState(TaskState state) throws EngineStorageException;
+    TaskId newState(TaskState state) throws GraknBackendException;
 
     /**
      * Used to update task state. With the exception of @id any other fields may individually be null, however all parameters
@@ -63,7 +63,7 @@ public interface TaskStateStorage {
      * @param id String id of task.
      * @return TaskState object or null if no TaskState with this id could be found.
      */
-    TaskState getState(TaskId id) throws EngineStorageException;
+    TaskState getState(TaskId id) throws GraknBackendException;
 
     /**
      * Returns whether the storage contains the given task

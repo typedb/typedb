@@ -16,27 +16,26 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.exception;
+package ai.grakn.engine.tasks;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
+import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 
 /**
- * This exception is thrown when two concepts attept to have the same unique id.
+ * <p>
+ *     Submits Background Tasks for processing
+ * </p>
  *
- * @author Filipe Teixeira
+ * <p>
+ *     Allows tasks to be submitted for processing. Any task submitted is added to {@link TaskStateStorage}
+ *     and is later executed by Task runner such as {@link SingleQueueTaskRunner}.
+ * </p>
+ *
+ * @author fppt
  */
-public class ConceptNotUniqueException extends ConceptException {
-    public ConceptNotUniqueException(Concept concept, Schema.ConceptProperty type, String id) {
-        super(ErrorMessage.ID_NOT_UNIQUE.getMessage(concept.toString(), type.name(), id));
-    }
-
-    public ConceptNotUniqueException(Concept concept, String id){
-        super(ErrorMessage.ID_ALREADY_TAKEN.getMessage(id, concept.toString()));
-    }
-
-    public ConceptNotUniqueException(String message){
-        super(message);
-    }
+public interface TaskSubmitter {
+    /**
+     * Schedule a {@link BackgroundTask} for execution.
+     * @param taskState Task to execute
+     */
+    void addTask(TaskState taskState, TaskConfiguration configuration);
 }

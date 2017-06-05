@@ -23,7 +23,8 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.generator.AbstractTypeGenerator.Abstract;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
@@ -73,35 +74,35 @@ public class RelationTypePropertyTest {
 
     @Property
     public void whenAddingARelationOfAMetaType_Throw(@Meta RelationType type) {
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.addRelation();
     }
 
     @Property
     public void whenAddingARelation_TheDirectTypeOfTheRelationIsTheTypeItWasCreatedFrom(
-            @Meta(false) RelationType type) {
+            @Meta(false) @Abstract(false) RelationType type) {
         Relation relation = type.addRelation();
 
         assertEquals(type, relation.type());
     }
 
     @Property
-    public void whenAddingARelation_TheRelationIsInNoRelations(@Meta(false) RelationType type) {
+    public void whenAddingARelation_TheRelationIsInNoRelations(@Meta(false) @Abstract(false) RelationType type) {
         Relation relation = type.addRelation();
 
         assertThat(relation.relations(), empty());
     }
 
     @Property
-    public void whenAddingARelation_TheRelationHasNoResources(@Meta(false) RelationType type) {
+    public void whenAddingARelation_TheRelationHasNoResources(@Meta(false) @Abstract(false) RelationType type) {
         Relation relation = type.addRelation();
 
         assertThat(relation.resources(), empty());
     }
 
     @Property
-    public void whenAddingARelation_TheRelationHasNoRolePlayers(@Meta(false) RelationType type) {
+    public void whenAddingARelation_TheRelationHasNoRolePlayers(@Meta(false) @Abstract(false) RelationType type) {
         Relation relation = type.addRelation();
 
         assertThat(relation.rolePlayers(), empty());
@@ -116,7 +117,7 @@ public class RelationTypePropertyTest {
     @Property
     public void whenMakingTheMetaRelationTypeRelateARole_Throw(
             @Meta RelationType relationType, @FromGraph RoleType roleType) {
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relationType.getLabel()));
         relationType.relates(roleType);
     }
@@ -159,7 +160,7 @@ public class RelationTypePropertyTest {
     @Property
     public void whenDeletingARelatedRoleFromTheMetaRelationType_Throw(
             @Meta RelationType relationType, @FromGraph RoleType roleType) {
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relationType.getLabel()));
         relationType.deleteRelates(roleType);
     }

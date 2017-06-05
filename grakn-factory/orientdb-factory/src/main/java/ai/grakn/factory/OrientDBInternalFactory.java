@@ -19,7 +19,6 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
-import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.GraknOrientDBGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -61,8 +60,8 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
     }
 
     @Override
-    GraknOrientDBGraph buildGraknGraphFromTinker(OrientGraph graph, boolean batchLoading) {
-        return new GraknOrientDBGraph(graph, super.keyspace, super.engineUrl, batchLoading, super.properties);
+    GraknOrientDBGraph buildGraknGraphFromTinker(OrientGraph graph) {
+        return new GraknOrientDBGraph(graph, super.keyspace, super.engineUrl, super.properties);
     }
 
     @Override
@@ -161,7 +160,7 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
         } else {
             String options = String.class.getName() + ", " + Long.class.getName() + ", " +
                     Double.class.getName() + ", or " + Boolean.class.getName();
-            throw new GraphRuntimeException(INVALID_DATATYPE.getMessage(propertyDataType.getName(), options));
+            throw new RuntimeException(INVALID_DATATYPE.getMessage(propertyDataType.getName(), options));
         }
     }
 

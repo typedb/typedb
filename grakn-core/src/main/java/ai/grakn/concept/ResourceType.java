@@ -19,8 +19,7 @@
 package ai.grakn.concept;
 
 
-import ai.grakn.exception.InvalidConceptValueException;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 
@@ -203,13 +202,6 @@ public interface ResourceType<D> extends Type {
     String getRegex();
 
     /**
-     *
-     * @return a deep copy of this concept.
-     */
-    @Override
-    ResourceType<D> copy();
-
-    /**
      * A class used to hold the supported data types of resources and any other concepts.
      * This is used tp constrain value data types to only those we explicitly support.
      * @param <D> The data type.
@@ -258,7 +250,7 @@ public interface ResourceType<D> extends Type {
                 (o) -> {
                     if (o == null) return null;
                     if (!(o instanceof Long)) {
-                        throw new InvalidConceptValueException(ErrorMessage.INVALID_DATATYPE.getMessage(o, Long.class.getName()));
+                        throw GraphOperationException.invalidResourceValue(o, LONG);
                     }
                     return LocalDateTime.ofInstant(Instant.ofEpochMilli((long) o), ZoneId.of("Z"));
                 });

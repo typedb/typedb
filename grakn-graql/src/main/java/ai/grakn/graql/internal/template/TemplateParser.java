@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.template;
 
-import ai.grakn.exception.GraqlParsingException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.internal.antlr.GraqlTemplateLexer;
 import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
 import ai.grakn.graql.internal.parser.GraqlErrorListener;
@@ -30,11 +30,11 @@ import ai.grakn.graql.internal.template.macro.EqualsMacro;
 import ai.grakn.graql.internal.template.macro.IntMacro;
 import ai.grakn.graql.internal.template.macro.LongMacro;
 import ai.grakn.graql.internal.template.macro.LowerMacro;
+import ai.grakn.graql.internal.template.macro.NoescpMacro;
 import ai.grakn.graql.internal.template.macro.SplitMacro;
+import ai.grakn.graql.internal.template.macro.StringMacro;
 import ai.grakn.graql.internal.template.macro.UpperMacro;
 import ai.grakn.graql.macro.Macro;
-import ai.grakn.graql.internal.template.macro.NoescpMacro;
-import ai.grakn.graql.internal.template.macro.StringMacro;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -111,7 +111,7 @@ public class TemplateParser {
         ParseTree tree = parser.template();
 
         if(errorListener.hasErrors()){
-            throw new GraqlParsingException(errorListener.toString());
+            throw GraqlSyntaxException.parsingError(errorListener.toString());
         }
 
         return tree;
