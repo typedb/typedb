@@ -22,7 +22,6 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeId;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -39,6 +38,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -80,6 +80,27 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
     /**
      *
+     * @param roleTypes The role which the roleplayers are playing
+     * @return The roleplayers which unify a {@link RoleType} and {@link Instance} with this {@link Relation}
+     */
+    Stream<RolePlayer> getRolePlayers(RoleType... roleTypes){
+        if(roleTypes.length == 0){
+            return getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
+                    map(edge -> getGraknGraph().getElementFactory().buildRolePlayer(edge));
+        }
+
+        //Traversal is used so we can potentially optimise on the index
+        Set<Integer> roleTypesIds = Arrays.stream(roleTypes).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
+        return getGraknGraph().getTinkerTraversal().
+                has(Schema.ConceptProperty.ID.name(), getId().getValue()).
+                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), type().getTypeId().getValue()).
+                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).
+                toStream().map(edge -> getGraknGraph().getElementFactory().buildRolePlayer(edge));
+    }
+
+    /**
+     *
      * @param relationType The type of this relation
      * @param roleMap The roles and their corresponding role players
      * @return A unique hash identifying this relation
@@ -113,29 +134,14 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
         //We add the role types explicitly so we can return them when there are no roleplayers
         type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
-
-        getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).forEach(shortcut -> {
-            RoleType roleType = getGraknGraph().getType(TypeId.of(shortcut.getProperty(Schema.EdgeProperty.ROLE_TYPE_ID)));
-            Instance rolePlayer = shortcut.getTarget();
-            roleMap.computeIfAbsent(roleType, (k) -> new HashSet<>()).add(rolePlayer);
-        });
+        getRolePlayers().forEach(rp -> roleMap.computeIfAbsent(rp.getRoleType(), (k) -> new HashSet<>()).add(rp.getInstance()));
 
         return roleMap;
     }
 
     @Override
     public Collection<Instance> rolePlayers(RoleType... roleTypes) {
-        if(roleTypes.length == 0){
-            return allRolePlayers().values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
-        }
-
-        //Traversal is used so we can use index on roleTypes
-        Set<Integer> roleTypesIds = Arrays.stream(roleTypes).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
-        return getGraknGraph().getTinkerTraversal().
-                has(Schema.ConceptProperty.ID.name(), getId().getValue()).
-                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).
-                inV().toStream().map(vertex -> getGraknGraph().<Instance>buildConcept(vertex)).collect(Collectors.toSet());
+        return getRolePlayers(roleTypes).map(RolePlayer::getInstance).collect(Collectors.toSet());
     }
 
 

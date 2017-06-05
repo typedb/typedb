@@ -216,4 +216,13 @@ final class ElementFactory {
     EdgeImpl buildEdge(Edge edge){
         return new EdgeImpl(edge, graknGraph);
     }
+
+    //TODO: Integrate with cache
+    RolePlayer buildRolePlayer(Edge edge){
+        return buildRolePlayer(buildEdge(edge));
+    }
+
+    RolePlayer buildRolePlayer(EdgeImpl edge) {
+        return new RolePlayer(graknGraph, edge);
+    }
 }
