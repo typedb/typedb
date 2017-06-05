@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 
+import java.util.List;
 import java.util.stream.StreamSupport;
 import javafx.util.Pair;
 import org.slf4j.Logger;
@@ -100,7 +101,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         Unifier ruleUnifier = rc.getRuleUnifier();
         Unifier permutationUnifier = rc.getPermutationUnifier();
 
-        LOG.trace("Applying rule: " + rule.getRuleId());
+        LOG.trace("Applying rule: " + rule.getRuleId() + " to " + query);
 
         //delta' = theta . thetaP . delta
         Answer sub = query.getSubstitution();
@@ -109,12 +110,49 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
                 .unify(permutationUnifier)
                 .unify(uInv);
 
-        Set<Var> queryVars = query.getVarNames();
         Set<Var> headVars = rule.getHead().getVarNames();
 
         Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
         Iterable<Answer> baseIterable = () -> rule.getBody().iterator(partialSubPrime, subGoals, cache);
         Stream<Answer> iteratorStream = StreamSupport.stream(baseIterable.spliterator(), false);
+
+        //TODO materialise
+        ReasonerAtomicQuery ruleHead = rule.getHead();
+        Set<Var> queryVars = query.getVarNames();
+        //Set<Var> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size()? combinedUnifier.keySet() : ruleHead.getVarNames();
+        if (ruleHead.getAtom().requiresMaterialisation()) {
+
+            return iteratorStream
+                    .map(a -> a.filterVars(headVars))
+                    .map(a -> {
+                        /*
+                        System.out.println("Query: " + query.getAtom());
+                        System.out.println("a: " + a);
+                        */
+
+                        ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(ruleHead);
+                        queryToMaterialise.addSubstitution(a.filterVars(ruleHead.getVarNames()));
+
+                        //if (cache.getAnswers(queryToMaterialise).isEmpty()) {
+                        Answer cacheAnswer = cache.getAnswer(ruleHead, a);
+                        if (cacheAnswer.isEmpty()){
+                            //System.out.println("Materialise: " + queryToMaterialise.getAtom());
+                            Answer materialisedSub = queryToMaterialise.insert().findFirst().orElse(null);
+                            //System.out.println("materialised: " + materialisedSub);
+                            cache.recordAnswer(ruleHead, materialisedSub);
+                            return materialisedSub;
+                        } else {
+                            return cacheAnswer;
+                        }
+                    })
+                    .map(a -> a.unify(combinedUnifier))
+                    .filter(a -> !a.isEmpty())
+                    .map(a -> a.merge(sub))
+                    .map(a -> a.filterVars(queryVars))
+                    .map(a -> a.explain(new RuleExplanation(query, rule)))
+                    .iterator();
+        }
+
         //transform the rule answer to the answer to the query
         return iteratorStream
                 .map(a -> a.filterVars(headVars))
@@ -141,7 +179,9 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
     @Override
     public Answer next() {
         Answer sub = queryIterator.next();
-        return cache.recordAnswerWithUnifier(query, sub, cacheUnifier);
+        //System.out.println("answer to : " + query + " " + sub);
+        sub  = cache.recordAnswerWithUnifier(query, sub, cacheUnifier);
+        return sub;
     }
 
 }

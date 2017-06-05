@@ -196,7 +196,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * execute insert on the query and return inserted answers
      */
-    private Stream<Answer> insert() {
+    Stream<Answer> insert() {
         return Graql.insert(getPattern().getVars()).withGraph(graph()).stream();
     }
 

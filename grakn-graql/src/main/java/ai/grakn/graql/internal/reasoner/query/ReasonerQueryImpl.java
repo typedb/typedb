@@ -533,11 +533,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Stream<Answer> resolve(boolean materialise, boolean explanation) {
+        /*
         if (materialise || requiresMaterialisation()) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
+        */
             return new QueryAnswerIterator(this).hasStream();
-        }
+        //}
     }
 
     /**

@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.cache;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
@@ -74,6 +75,30 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
         }
     }
 
+    /**
+     *
+     * @param query
+     * @param answer
+     * @return
+     */
+    public Answer getAnswer(Q query, Answer answer){
+        Pair<Q, QueryAnswers> match =  cache.get(query);
+        if (match != null) {
+            Q equivalentQuery = match.getKey();
+
+
+            Unifier unifier = equivalentQuery.getUnifier(query);
+
+            QueryAnswers answers =  match.getValue().unify(unifier);
+            Answer cacheAnswer = answers.stream()
+                    .filter(a -> a.containsAll(answer))
+                    .findFirst().orElse(new QueryAnswer());
+            return cacheAnswer;
+        } else {
+            return new QueryAnswer();
+        }
+    }
+
     public Answer recordAnswer(Q query, Answer answer){
         Pair<Q, QueryAnswers> match =  cache.get(query);
         if (match != null) {
@@ -87,6 +112,13 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
         return answer;
     }
 
+    /**
+     *
+     * @param query
+     * @param answer
+     * @param unifier
+     * @return
+     */
     public Answer recordAnswerWithUnifier(Q query, Answer answer, Unifier unifier){
         Pair<Q, QueryAnswers> match =  cache.get(query);
         if (match != null) {
