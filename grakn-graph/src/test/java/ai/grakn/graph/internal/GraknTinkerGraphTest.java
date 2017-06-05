@@ -21,8 +21,8 @@ package ai.grakn.graph.internal;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Test;
 
@@ -78,11 +78,11 @@ public class GraknTinkerGraphTest extends GraphTestBase{
     }
 
     @Test
-    public void whenMutatingClosedGraph_Throw() throws GraknValidationException {
+    public void whenMutatingClosedGraph_Throw() throws InvalidGraphException {
         AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, "new graph").open(GraknTxType.WRITE);
         graph.close();
 
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
 
         graph.putEntityType("thing");

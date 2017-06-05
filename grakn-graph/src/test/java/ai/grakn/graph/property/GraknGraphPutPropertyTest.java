@@ -27,8 +27,8 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.ConceptNotUniqueException;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.PutTypeFunctions;
@@ -104,8 +104,8 @@ public class GraknGraphPutPropertyTest {
             @Open GraknGraph graph, @FromGraph Type type) {
         assumeFalse(type.isEntityType());
 
-        exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getLabel(), type));
+        exception.expect(PropertyNotUniqueException.class);
+        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.ConceptProperty.TYPE_LABEL.name(), type.getLabel(), type));
 
         graph.putEntityType(type.getLabel());
     }
@@ -144,8 +144,8 @@ public class GraknGraphPutPropertyTest {
             @Open GraknGraph graph, @FromGraph Type type, ResourceType.DataType<?> dataType) {
         assumeFalse(type.isResourceType());
 
-        exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getLabel(), type));
+        exception.expect(PropertyNotUniqueException.class);
+        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.ConceptProperty.TYPE_LABEL.name(), type.getLabel(), type));
 
         graph.putResourceType(type.getLabel(), dataType);
     }
@@ -157,7 +157,7 @@ public class GraknGraphPutPropertyTest {
         assumeThat(dataType, not(is(resourceType.getDataType())));
         TypeLabel typeLabel = resourceType.getLabel();
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         if(isMetaLabel(typeLabel)) {
             exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeLabel));
         } else {
@@ -185,8 +185,8 @@ public class GraknGraphPutPropertyTest {
             @Open GraknGraph graph, @FromGraph Type type) {
         assumeFalse(type.isRuleType());
 
-        exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getLabel(), type));
+        exception.expect(PropertyNotUniqueException.class);
+        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.ConceptProperty.TYPE_LABEL.name(), type.getLabel(), type));
 
         graph.putRuleType(type.getLabel());
     }
@@ -218,8 +218,8 @@ public class GraknGraphPutPropertyTest {
             @Open GraknGraph graph, @FromGraph Type type) {
         assumeFalse(type.isRelationType());
 
-        exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getLabel(), type));
+        exception.expect(PropertyNotUniqueException.class);
+        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.ConceptProperty.TYPE_LABEL.name(), type.getLabel(), type));
 
         graph.putRelationType(type.getLabel());
     }
@@ -251,8 +251,8 @@ public class GraknGraphPutPropertyTest {
             @Open GraknGraph graph, @FromGraph Type type) {
         assumeFalse(type.isRoleType());
 
-        exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getLabel(), type));
+        exception.expect(PropertyNotUniqueException.class);
+        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.ConceptProperty.TYPE_LABEL.name(), type.getLabel(), type));
 
         graph.putRoleType(type.getLabel());
     }

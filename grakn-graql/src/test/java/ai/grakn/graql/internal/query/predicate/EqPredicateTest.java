@@ -19,9 +19,11 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
+import ai.grakn.graql.Graql;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class EqPredicateTest {
 
@@ -35,5 +37,11 @@ public class EqPredicateTest {
 
         assertEquals(intPredicate, longPredicate);
         assertEquals(intPredicate.hashCode(), longPredicate.hashCode());
+    }
+
+    @Test
+    public void whenAnEqPredicateContainsAVariable_ItIsNotSpecific() {
+        EqPredicate predicate = new EqPredicate(Graql.var("x"));
+        assertFalse(predicate.isSpecific());
     }
 }

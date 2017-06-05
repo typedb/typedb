@@ -20,9 +20,8 @@ package ai.grakn.factory;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.CheckReturnValue;
@@ -60,9 +59,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     private G batchLoadingGraph = null;
 
     AbstractInternalFactory(String keyspace, String engineUrl, Properties properties){
-        if(keyspace == null) {
-            throw new GraphRuntimeException(ErrorMessage.NULL_VALUE.getMessage("keyspace"));
-        }
+        if(keyspace == null) throw GraphOperationException.nullKeyspace();
 
         this.keyspace = keyspace.toLowerCase();
         this.engineUrl = engineUrl;
@@ -93,9 +90,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     }
 
     private void checkOtherGraphOpen(GraknGraph otherGraph){
-        if(otherGraph != null && !otherGraph.isClosed()){
-            throw new GraphRuntimeException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(otherGraph.getKeyspace()));
-        }
+        if(otherGraph != null && !otherGraph.isClosed()) throw GraphOperationException.transactionOpen(otherGraph);
     }
 
     protected M getGraph(M graknGraph, GraknTxType txType){
@@ -107,9 +102,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
                 SystemKeyspace.keyspaceOpened(this.keyspace);
             }
         } else {
-            if(!graknGraph.isClosed()){
-                throw new GraphRuntimeException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(graknGraph.getKeyspace()));
-            }
+            if(!graknGraph.isClosed()) throw GraphOperationException.transactionOpen(graknGraph);
 
             if(graknGraph.isSessionClosed()){
                 graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading));

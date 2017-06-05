@@ -21,7 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -103,14 +103,14 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
 
             return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type().getLabel(), value.toString()));
         } catch (ClassCastException e) {
-            throw new InvalidConceptValueException(ErrorMessage.INVALID_DATATYPE.getMessage(value, dataType().getName()));
+            throw GraphOperationException.invalidResourceValue(value, dataType());
         }
     }
 
     /**
      * Checks if all the regex's of the types of this resource conforms to the value provided.
      *
-     * @throws InvalidConceptValueException when the value does not conform to the regex of its types
+     * @throws GraphOperationException when the value does not conform to the regex of its types
      * @param value The value to check the regexes against.
      */
     private void checkConformsToRegexes(D value){
@@ -118,7 +118,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
         for (ResourceType rt : ((ResourceTypeImpl<D>) type()).superTypeSet()) {
             String regex = rt.getRegex();
             if (regex != null && !Pattern.matches(regex, (String) value)) {
-                throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, getId(), value, rt.getLabel()));
+                throw GraphOperationException.regexFailure(this, (String) value, regex);
             }
         }
     }

@@ -28,8 +28,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -225,7 +224,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         RoleType hasResourceValue = getGraknGraph().getType(hasValue.getLabel(label));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
-            throw new ConceptException(ErrorMessage.HAS_INVALID.getMessage(type().getLabel(), type, resource.type().getLabel()));
+            throw GraphOperationException.hasNotAllowed(this, resource, type);
         }
 
         Relation relation = hasResource.addRelation();

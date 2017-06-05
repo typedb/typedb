@@ -19,10 +19,20 @@
 package ai.grakn.exception;
 
 /**
- * Exception thrown by Graql templating when parsing fails
- * @author alexandraorth
+ * <p>
+ *     Graql Query Exception
+ * </p>
+ *
+ * <p>
+ *     Occurs when the query is syntactically correct but semantically incorrect.
+ *     For example limiting the results of a query -1
+ * </p>
+ *
+ * @author fppt
  */
-public class GraqlTemplateParsingException extends RuntimeException {
-    public GraqlTemplateParsingException(String message) {
-        super(message);
-    }}
+//TODO: Felix to integrate with Graql
+public class GraqlQueryException extends GraknException{
+    public GraqlQueryException(String error) {
+        super(error);
+    }
+}

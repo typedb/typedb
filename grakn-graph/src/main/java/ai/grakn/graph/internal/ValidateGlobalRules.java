@@ -24,7 +24,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.ConceptNotUniqueException;
+import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -270,7 +270,7 @@ class ValidateGlobalRules {
         try{
             relation.setHash();
             return Optional.empty();
-        } catch (ConceptNotUniqueException e){
+        } catch (PropertyNotUniqueException e){
             return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relation));
         }
     }

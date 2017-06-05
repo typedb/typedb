@@ -18,25 +18,24 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
-
 /**
- * This exception is thrown when two concepts attept to have the same unique id.
+ * <p>
+ *     Root Grakn Exception
+ * </p>
  *
- * @author Filipe Teixeira
+ * <p>
+ *     Encapsulates any exception which is thrown by the Grakn stack.
+ *     This includes failures server side, failed graph mutations, and failed querying attempts
+ * </p>
+ *
+ * @author fppt
  */
-public class ConceptNotUniqueException extends ConceptException {
-    public ConceptNotUniqueException(Concept concept, Schema.ConceptProperty type, String id) {
-        super(ErrorMessage.ID_NOT_UNIQUE.getMessage(concept.toString(), type.name(), id));
+public class GraknException extends RuntimeException {
+    protected GraknException(String error){
+        super(error);
     }
 
-    public ConceptNotUniqueException(Concept concept, String id){
-        super(ErrorMessage.ID_ALREADY_TAKEN.getMessage(id, concept.toString()));
-    }
-
-    public ConceptNotUniqueException(String message){
-        super(message);
+    protected GraknException(String error, Exception e){
+        super(error, e);
     }
 }
