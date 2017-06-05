@@ -38,7 +38,6 @@ import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -79,7 +78,7 @@ import spark.Service;
 @Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
 public class TasksController {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GraknVertexProgram.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TasksController.class);
     private static final TaskState.Priority DEFAULT_TASK_PRIORITY = TaskState.Priority.LOW;
 
     private static final int MAX_THREADS = 10;
@@ -100,19 +99,19 @@ public class TasksController {
         spark.post(TASKS_BULK, this::createTaskBulk);
 
         spark.exception(GraknServerException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
-        this.executor = Executors.newFixedThreadPool(MAX_THREADS);
         spark.exception(GraknBackendException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
+        this.executor = Executors.newFixedThreadPool(MAX_THREADS);
     }
 
     @GET
     @Path("/")
     @ApiOperation(value = "Get tasks matching a specific TaskStatus.")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "status", value = "TaskStatus as string.", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "className", value = "Class name of BackgroundTask Object.", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "creator", value = "Who instantiated these tasks.", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Limit the number of entries in the returned result.", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "offset", value = "Use in conjunction with limit for pagination.", dataType = "integer", paramType = "query")
+            @ApiImplicitParam(name = REST.Request.TASK_STATUS_PARAMETER, value = "TaskStatus as string.", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = REST.Request.TASK_CLASS_NAME_PARAMETER, value = "Class name of BackgroundTask Object.", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = REST.Request.TASK_CREATOR_PARAMETER, value = "Who instantiated these tasks.", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = REST.Request.LIMIT_PARAM, value = "Limit the number of entries in the returned result.", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = REST.Request.OFFSET_PARAM, value = "Use in conjunction with limit for pagination.", dataType = "integer", paramType = "query")
     })
     private Json getTasks(Request request, Response response) {
         TaskStatus status = null;
@@ -148,7 +147,7 @@ public class TasksController {
     @GET
     @Path("/{id}")
     @ApiOperation(value = "Get the state of a specific task by its ID.", produces = "application/json")
-    @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = REST.Request.UUID_PARAMETER, value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private Json getTask(Request request, Response response) {
         String id = request.params("id");
 
@@ -161,7 +160,7 @@ public class TasksController {
     @PUT
     @Path("/{id}/stop")
     @ApiOperation(value = "Stop a running or paused task.")
-    @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = REST.Request.UUID_PARAMETER, value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private Json stopTask(Request request, Response response) {
         String id = request.params(REST.Request.ID_PARAMETER);
         manager.stopTask(TaskId.of(id));
@@ -193,8 +192,7 @@ public class TasksController {
                 LOG.error("Malformed request at {}", singleTaskJson, e);
                 // We return a failure for the full request as this imply there is
                 // something wrong in the client logic that needs to be addressed
-                response.status(HttpStatus.SC_BAD_REQUEST);
-                return Json.object();
+                throw e;
             }
         }
 
@@ -232,15 +230,17 @@ public class TasksController {
         }
     }
 
-    private Json extractConfiguration(Json requestBodyAsJson) {
-        Json configuration =
-                requestBodyAsJson.has(REST.Request.CONFIGURATION_PARAM) ? requestBodyAsJson.at(
-                        REST.Request.CONFIGURATION_PARAM) : Json.object();
-        if (!requestBodyAsJson.has(REST.Request.TASKS_PARAM) || requestBodyAsJson
-                .at(REST.Request.TASKS_PARAM).asList().isEmpty()) {
-            throw GraknServerException.requestMissingParameters(REST.Request.TASKS_PARAM);
+    private Json extractConfiguration(Json taskJson) {
+        if (taskJson.has(REST.Request.CONFIGURATION_PARAM)) {
+            Json config = taskJson.at(REST.Request.CONFIGURATION_PARAM);
+            if (!config.isObject()) {
+                throw GraknServerException.requestMissingParameters(REST.Request.CONFIGURATION_PARAM);
+            } else {
+                return config;
+            }
+        } else {
+            return Json.object();
         }
-        return configuration;
     }
 
     private Json addTaskToManager(TaskStateWithConfiguration taskState) {

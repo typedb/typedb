@@ -26,6 +26,7 @@ import static ai.grakn.util.ErrorMessage.EXPLAIN_ONLY_MATCH;
 import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
 import static ai.grakn.util.ErrorMessage.INVALID_QUERY_USAGE;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
+import static ai.grakn.util.ErrorMessage.MISSING_MALFORMED_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
@@ -81,6 +82,13 @@ public class GraknServerException extends GraknBackendException {
      */
     public static GraknServerException requestMissingParameters(String parameter){
         return new GraknServerException(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(parameter), 400);
+    }
+
+    /**
+     * Thrown when a request is missing mandatory parameters
+     */
+    public static GraknServerException requestMalformedParameters(String parameter){
+        return new GraknServerException(MISSING_MALFORMED_REQUEST_PARAMETERS.getMessage(parameter), 400);
     }
 
     /**

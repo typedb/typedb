@@ -107,6 +107,7 @@ public class REST {
         public static final String TASKS_PARAM = "tasks";
         public static final String CONFIGURATION_PARAM = "configuration";
         public static final String KEYSPACE = "keyspace";
+        public static final String UUID_PARAMETER = "uuid";
 
         //Commit Logs
         public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
