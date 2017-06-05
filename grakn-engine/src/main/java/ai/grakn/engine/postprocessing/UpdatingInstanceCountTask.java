@@ -23,7 +23,6 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
@@ -36,7 +35,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -57,7 +55,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
     private static final EngineGraknGraphFactory FACTORY = EngineGraknGraphFactory.create(CONFIG.getProperties());
 
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint) {
+    public boolean start() {
         Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
         String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
 

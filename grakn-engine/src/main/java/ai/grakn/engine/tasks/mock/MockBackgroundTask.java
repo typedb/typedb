@@ -94,11 +94,11 @@ public abstract class MockBackgroundTask extends BackgroundTask {
     private TaskId id;
 
     @Override
-    public final boolean start(Consumer<TaskCheckpoint> saveCheckpoint) {
+    public final boolean start() {
         id = TaskId.of(configuration().json().at("id").asString());
         onTaskStart(id);
 
-        saveCheckpoint.accept(TaskCheckpoint.of(configuration().json()));
+        saveCheckpoint(TaskCheckpoint.of(configuration().json()));
 
         boolean wasCancelled = cancelled.get();
 
@@ -130,7 +130,7 @@ public abstract class MockBackgroundTask extends BackgroundTask {
     }
 
     @Override
-    public final boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint){
+    public final boolean resume(TaskCheckpoint lastCheckpoint){
         onTaskResume(lastCheckpoint);
 
         executeResumeInner(lastCheckpoint);

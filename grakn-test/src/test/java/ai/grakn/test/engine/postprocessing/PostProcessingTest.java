@@ -149,9 +149,9 @@ public class PostProcessingTest {
                                 Schema.BaseType.RESOURCE.name(), Json.object()
                         ))
         );
-        task.initialize(configuration, (x, y) -> {});
+        task.initialize(null, configuration, (x, y) -> {});
 
-        task.start(null);
+        task.start();
 
         graph = session.open(GraknTxType.READ);
 
@@ -249,9 +249,9 @@ public class PostProcessingTest {
                                 Schema.BaseType.RESOURCE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))
         );
-        task.initialize(configuration, (x, y) -> {});
+        task.initialize(null, configuration, (x, y) -> {});
 
-        task.start(null);
+        task.start();
 
         graph = session.open(GraknTxType.READ);
 

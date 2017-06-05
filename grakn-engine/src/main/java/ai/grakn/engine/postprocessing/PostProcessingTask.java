@@ -24,7 +24,6 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
@@ -40,7 +39,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -65,11 +63,10 @@ public class PostProcessingTask extends BackgroundTask {
     /**
      * Apply CASTING and RESOURCE post processing jobs the concept ids in the provided configuration
      *
-     * @param saveCheckpoint Checkpointing is not implemented in this task, so this parameter is not used.
      * @return True if successful.
      */
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint) {
+    public boolean start() {
         runPostProcessingMethod(configuration(), Schema.BaseType.CASTING, this::duplicateCastingsExist, this::runCastingFix);
         runPostProcessingMethod(configuration(), Schema.BaseType.RESOURCE, this::duplicateResourcesExist, this::runResourceFix);
 

@@ -32,25 +32,28 @@ public abstract class BackgroundTask {
 
     private @Nullable TaskSubmitter taskSubmitter = null;
     private @Nullable TaskConfiguration configuration = null;
+    private @Nullable Consumer<TaskCheckpoint> saveCheckpoint = null;
 
     /**
      * Initialize the {@link BackgroundTask}. This must be called prior to any other call to {@link BackgroundTask}.
      *
+     * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
+     *                       the task to resume from this point should it crash.
      * @param configuration The configuration needed to execute the task
      * @param taskSubmitter Allows followup tasks to be submitted for processing
      */
-    public final void initialize(TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
+    public final void initialize(
+            Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
+        this.saveCheckpoint = saveCheckpoint;
     }
 
     /**
      * Called to start execution of the task, may be called on a newly scheduled or previously stopped task.
-     * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
-     *                       the task to resume from this point should it crash.
      * @return true if the task successfully completed, or false if it was stopped.
      */
-    public abstract boolean start(Consumer<TaskCheckpoint> saveCheckpoint);
+    public abstract boolean start();
 
     /**
      * Called to stop execution of the task, may be called on a running or paused task.
@@ -86,14 +89,17 @@ public abstract class BackgroundTask {
      * <p>
      * This implementation always throws {@link UnsupportedOperationException}.
      *
-     * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
-     *                       the task to resume from this point should it crash.
      * @param lastCheckpoint The last checkpoint as sent to saveCheckpoint.
      *
      * @throws UnsupportedOperationException if resuming the task is not supported
      */
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
+    public boolean resume(TaskCheckpoint lastCheckpoint) {
         throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be resumed");
+    }
+
+    public final void saveCheckpoint(TaskCheckpoint checkpoint) {
+        Preconditions.checkNotNull(saveCheckpoint, "BackgroundTask#initialise must be called before saving checkpoints");
+        saveCheckpoint.accept(checkpoint);
     }
 
     /**

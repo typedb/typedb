@@ -211,7 +211,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             runningTaskId = task.getId();
             runningTask = task.taskClass().newInstance();
 
-            runningTask.initialize(configuration, manager);
+            runningTask.initialize(saveCheckpoint(task), configuration, manager);
 
             boolean completed;
 
@@ -224,7 +224,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
                 putState(task);
 
-                completed = runningTask.resume(saveCheckpoint(task), task.checkpoint());
+                completed = runningTask.resume(task.checkpoint());
             } else {
                 //Mark as running
                 task.markRunning(engineID);
@@ -233,7 +233,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
                 LOG.debug("{}\tmarked as running", task);
 
-                completed = runningTask.start(saveCheckpoint(task));
+                completed = runningTask.start();
             }
 
             if (completed) {
