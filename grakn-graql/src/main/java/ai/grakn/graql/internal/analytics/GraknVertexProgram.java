@@ -70,6 +70,11 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
     static final Set<MessageScope> messageScopeSetCasting =
             Sets.newHashSet(messageScopeInCasting, messageScopeOutRolePlayer);
 
+    static final MessageScope.Local<?> messageScopeShortCutIn = MessageScope.Local.of(() -> __.<Vertex>inE(
+            Schema.EdgeLabel.SHORTCUT.getLabel()));
+    static final MessageScope.Local<?> messageScopeShortCutOut = MessageScope.Local.of(() -> __.<Vertex>outE(
+            Schema.EdgeLabel.SHORTCUT.getLabel()));
+
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
         return messageScopeSet;
@@ -124,6 +129,11 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
             throw new IllegalStateException(
                     ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(), e.getMessage()), e);
         }
+    }
+
+    void degreeMessagePassing(Vertex vertex, Messenger<Long> messenger) {
+        messenger.sendMessage(messageScopeShortCutIn, 1L);
+        messenger.sendMessage(messageScopeShortCutIn, 1L);
     }
 
     void degreeStepInstance(Vertex vertex, Messenger<Long> messenger) {

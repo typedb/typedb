@@ -97,17 +97,11 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
             case 0:
                 if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                    degreeStepInstance(vertex, messenger);
+                    degreeMessagePassing(vertex, messenger);
                 }
                 break;
 
             case 1:
-                if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
-                    degreeStepCasting(messenger);
-                }
-                break;
-
-            case 2:
                 TypeId typeId = Utility.getVertexTypeId(vertex);
                 if (selectedTypes.contains(typeId) && ofTypeIds.contains(typeId)) {
                     vertex.property(degreePropertyKey, getMessageCount(messenger));
