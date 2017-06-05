@@ -18,10 +18,11 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
+import ai.grakn.graphs.AdmissionsGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graphs.AdmissionsGraph;
 import ai.grakn.test.GraphContext;
+
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;

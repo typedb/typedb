@@ -27,7 +27,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
@@ -403,7 +403,6 @@ public class InsertQueryTest {
         String roleTypeLabel = HAS_OWNER.getLabel("title").getValue();
         qb.insert(
                 label("new-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("new-type").isAbstract(),
                 label("new-type").plays(roleTypeLabel),
                 var("x").isa("new-type")
         ).execute();
@@ -416,7 +415,6 @@ public class InsertQueryTest {
         //noinspection OptionalGetWithoutIsPresent
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
-        assertTrue(newType.asEntityType().isAbstract());
         assertTrue(newType.plays().contains(movieGraph.graph().getRoleType(roleTypeLabel)));
 
         assertTrue(qb.match(var().isa("new-type")).ask().execute());
@@ -527,7 +525,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testKeyCorrectUsage() throws GraknValidationException {
+    public void testKeyCorrectUsage() throws InvalidGraphException {
         // This should only run on tinker because it commits
         assumeTrue(usingTinker());
 
@@ -539,7 +537,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testKeyUniqueOwner() throws GraknValidationException {
+    public void testKeyUniqueOwner() throws InvalidGraphException {
         assumeTrue(usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
@@ -548,13 +546,13 @@ public class InsertQueryTest {
                 var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
         ).execute();
 
-        exception.expect(GraknValidationException.class);
+        exception.expect(InvalidGraphException.class);
         movieGraph.graph().commit();
     }
 
     @Ignore // TODO: Un-ignore this when constraints are designed and implemented
     @Test
-    public void testKeyUniqueValue() throws GraknValidationException {
+    public void testKeyUniqueValue() throws InvalidGraphException {
         assumeTrue(usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
@@ -564,12 +562,12 @@ public class InsertQueryTest {
                 var("y").isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
 
-        exception.expect(GraknValidationException.class);
+        exception.expect(InvalidGraphException.class);
         movieGraph.graph().commit();
     }
 
     @Test
-    public void testKeyRequiredOwner() throws GraknValidationException {
+    public void testKeyRequiredOwner() throws InvalidGraphException {
         assumeTrue(usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
@@ -578,7 +576,7 @@ public class InsertQueryTest {
                 var().isa("a-new-type")
         ).execute();
 
-        exception.expect(GraknValidationException.class);
+        exception.expect(InvalidGraphException.class);
         movieGraph.graph().commit();
     }
 

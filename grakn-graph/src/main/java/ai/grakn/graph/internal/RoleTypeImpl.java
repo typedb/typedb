@@ -22,8 +22,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -66,20 +65,11 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         super(graknGraph, v, type, isImplicit);
     }
 
-    private RoleTypeImpl(RoleTypeImpl role){
-        super(role);
-    }
-
     @Override
-    public RoleType copy(){
-        return new RoleTypeImpl(this);
-    }
-
-    @Override
-    void copyCachedConcepts(RoleType type){
-        super.copyCachedConcepts(type);
-        ((RoleTypeImpl) type).cachedDirectPlayedByTypes.ifPresent(value -> this.cachedDirectPlayedByTypes.set(getGraknGraph().getTxCache().cacheClone(value)));
-        ((RoleTypeImpl) type).cachedRelationTypes.ifPresent(value -> this.cachedRelationTypes.set(getGraknGraph().getTxCache().cacheClone(value)));
+    public void flushTxCache(){
+        super.flushTxCache();
+        cachedDirectPlayedByTypes.flush();
+        cachedRelationTypes.flush();
     }
 
     /**
@@ -156,7 +146,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     @Override
     public RoleType plays(RoleType roleType) {
         if(equals(roleType)){
-            throw new ConceptException(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getLabel()));
+            throw GraphOperationException.invalidPlays(roleType);
         }
         return super.plays(roleType, false);
     }
@@ -167,7 +157,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         boolean hasPlays = getVertex().edges(Direction.IN, Schema.EdgeLabel.PLAYS.getLabel()).hasNext();
 
         if(hasRelates || hasPlays){
-            throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getLabel()));
+            throw GraphOperationException.typeCannotBeDeleted(getLabel());
         } else {
             super.delete();
 

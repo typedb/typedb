@@ -23,12 +23,12 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
-import com.google.common.collect.Iterators;
+
+import java.util.stream.StreamSupport;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,10 +76,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
         this.queryIterator = streamUnifierPair.getKey()
-                .map(a -> {
-                    if (!a.getExplanation().isLookupExplanation()) return a;
-                    else return a.explain(new LookupExplanation(query));
-                })
+                .map(a -> a.explain(a.getExplanation().setQuery(query)))
                 .iterator();
         this.cacheUnifier = streamUnifierPair.getValue().inverse();
 
@@ -103,35 +100,34 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         InferenceRule rule = rc.getRule();
         Unifier ruleUnifier = rc.getRuleUnifier();
         Unifier permutationUnifier = rc.getPermutationUnifier();
+
         LOG.trace("Applying rule to: " + query +
                 rule + "\n" +
                 "t = " + ruleUnifier + "\n" +
                 "tp = " + permutationUnifier);
 
         //delta' = theta . thetaP . delta
+        Answer sub = query.getSubstitution();
         Unifier uInv = ruleUnifier.inverse();
-        Answer partialSubPrime = query.getSubstitution()
+        Answer partialSubPrime = sub
                 .unify(permutationUnifier)
                 .unify(uInv);
 
+        Set<Var> queryVars = query.getVarNames();
         Set<Var> headVars = rule.getHead().getVarNames();
-        Iterator<Answer> baseIterator = rule.getBody().iterator(partialSubPrime, subGoals, cache);
 
+        Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
+        Iterable<Answer> baseIterable = () -> rule.getBody().iterator(partialSubPrime, subGoals, cache);
+        Stream<Answer> iteratorStream = StreamSupport.stream(baseIterable.spliterator(), false);
         //transform the rule answer to the answer to the query
-        return Iterators.transform(
-                baseIterator,
-                a -> {
-                    if (a == null) return null;
-                    else {
-                        return a
-                                .filterVars(headVars)
-                                .unify(ruleUnifier)
-                                .unify(permutationUnifier)
-                                .merge(query.getSubstitution())
-                                .filterVars(query.getVarNames())
-                                .explain(new RuleExplanation(rule));
-                    }
-                });
+        return iteratorStream
+                .map(a -> a.filterVars(headVars))
+                .map(a -> a.unify(combinedUnifier))
+                .filter(a -> !a.isEmpty())
+                .map(a -> a.merge(sub))
+                .map(a -> a.filterVars(queryVars))
+                .map(a -> a.explain(new RuleExplanation(query, rule)))
+                .iterator();
     }
 
     @Override

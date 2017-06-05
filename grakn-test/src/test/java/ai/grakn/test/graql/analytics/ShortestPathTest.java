@@ -9,7 +9,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
@@ -102,89 +102,79 @@ public class ShortestPathTest {
         assumeFalse(usingTinker());
 
         List<String> correctPath;
-        List<String> result;
+        List<String> computedPath;
         addOntologyAndEntities();
 
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             // directly connected vertices
             correctPath = Lists.newArrayList(entityId1.getValue(), relationId12.getValue());
-            result = graph.graql().compute().path().from(entityId1).to(relationId12).execute()
+            computedPath = graph.graql().compute().path().from(entityId1).to(relationId12).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
-            assertEquals(correctPath.size(), result.size());
-            for (int i = 0; i < result.size(); i++) {
-                assertEquals(correctPath.get(i), result.get(i));
-            }
+            checkPath(correctPath, computedPath);
+
             Collections.reverse(correctPath);
-            result = Graql.compute().withGraph(graph).path().to(entityId1).from(relationId12).execute()
+            computedPath = Graql.compute().withGraph(graph).path().to(entityId1).from(relationId12).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
-            assertEquals(correctPath.size(), result.size());
-            for (int i = 0; i < result.size(); i++) {
-                assertEquals(correctPath.get(i), result.get(i));
-            }
+            checkPath(correctPath, computedPath);
 
             // entities connected by a relation
             correctPath = Lists.newArrayList(entityId1.getValue(), relationId12.getValue(), entityId2.getValue());
-            result = graph.graql().compute().path().from(entityId1).to(entityId2).execute()
+            computedPath = graph.graql().compute().path().from(entityId1).to(entityId2).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
-            assertEquals(correctPath.size(), result.size());
-            for (int i = 0; i < result.size(); i++) {
-                assertEquals(correctPath.get(i), result.get(i));
-            }
+            checkPath(correctPath, computedPath);
+
             Collections.reverse(correctPath);
-            result = graph.graql().compute().path().to(entityId1).from(entityId2).execute()
+            computedPath = graph.graql().compute().path().to(entityId1).from(entityId2).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
-            assertEquals(correctPath.size(), result.size());
-            for (int i = 0; i < result.size(); i++) {
-                assertEquals(correctPath.get(i), result.get(i));
-            }
+            checkPath(correctPath, computedPath);
 
             // only one path exists with given subtypes
-            correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(), entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
-            result = Graql.compute().withGraph(graph).path().to(entityId3).from(entityId2).in(thing, related).execute()
+            correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(),
+                    entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
+            computedPath = Graql.compute().withGraph(graph).path().to(entityId3).from(entityId2).in(thing, related).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
-            assertEquals(correctPath.size(), result.size());
-            for (int i = 0; i < result.size(); i++) {
-                assertEquals(correctPath.get(i), result.get(i));
-            }
+            checkPath(correctPath, computedPath);
+
             Collections.reverse(correctPath);
-            result = graph.graql().compute().path().in(thing, related).to(entityId2).from(entityId3).execute()
+            computedPath = graph.graql().compute().path().in(thing, related).to(entityId2).from(entityId3).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
-            assertEquals(correctPath.size(), result.size());
-            for (int i = 0; i < result.size(); i++) {
-                assertEquals(correctPath.get(i), result.get(i));
-            }
+            checkPath(correctPath, computedPath);
 
             correctPath = Lists.newArrayList(entityId1.getValue(), relationId12.getValue(), entityId2.getValue());
-            result = graph.graql().compute().path().in(thing, related).to(entityId2).from(entityId1).execute()
+            computedPath = graph.graql().compute().path().in(thing, related).to(entityId2).from(entityId1).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
-            assertEquals(correctPath.size(), result.size());
-            for (int i = 0; i < result.size(); i++) {
-                assertEquals(correctPath.get(i), result.get(i));
-            }
-            Collections.reverse(correctPath);
-            result = graph.graql().compute().path().in(thing, related).from(entityId2).to(entityId1).execute()
-                    .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
-            assertEquals(correctPath.size(), result.size());
-            for (int i = 0; i < result.size(); i++) {
-                assertEquals(correctPath.get(i), result.get(i));
-            }
+            checkPath(correctPath, computedPath);
 
-            int expectedSize = correctPath.size();
-            List<Long> list = new ArrayList<>(2);
-            for (long i = 0L; i < 2L; i++) {
-                list.add(i);
-            }
-            GraknSparkComputer.clear();
-            graph.close();
-            list.parallelStream().forEach(i -> {
-                try (GraknGraph graph1 = factory.open(GraknTxType.READ)) {
-                    int size = graph1.graql().compute().path().in(thing, related).from(entityId2).to(entityId1)
-                            .execute().get().stream().map(Concept::getId).map(ConceptId::getValue)
-                            .collect(Collectors.toList()).size();
-                    assertEquals(expectedSize, size);
-                }
-            });
+            Collections.reverse(correctPath);
+            computedPath = graph.graql().compute().path().in(thing, related).from(entityId2).to(entityId1).execute()
+                    .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+            checkPath(correctPath, computedPath);
         }
+    }
+
+    @Test
+    public void testShortestPathConcurrency() {
+        // TODO: Fix in TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        List<String> correctPath;
+        addOntologyAndEntities();
+        GraknSparkComputer.clear();
+
+        correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(), entityId1.getValue());
+
+        List<Long> list = new ArrayList<>(2);
+        for (long i = 0L; i < 2L; i++) {
+            list.add(i);
+        }
+        Set<List<String>> result = list.parallelStream().map(i -> {
+            try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+                return graph.graql().compute().path().in(thing, related).from(entityId2).to(entityId1)
+                        .execute().get().stream().map(concept -> concept.getId().getValue())
+                        .collect(Collectors.toList());
+            }
+        }).collect(Collectors.toSet());
+        result.forEach(path -> checkPath(correctPath, path));
     }
 
     @Test
@@ -193,44 +183,36 @@ public class ShortestPathTest {
         assumeFalse(usingTinker());
 
         List<String> correctPath;
-        List<String> result;
+        List<String> computedPath;
         addOntologyAndEntities2();
 
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
-            correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(), entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
-            result = graph.graql().compute().path().from(entityId2).to(entityId3).execute()
+            correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(),
+                    entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
+            computedPath = graph.graql().compute().path().from(entityId2).to(entityId3).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
-            assertEquals(correctPath.size(), result.size());
-            for (int i = 0; i < result.size(); i++) {
-                assertEquals(correctPath.get(i), result.get(i));
-            }
-            Collections.reverse(correctPath);
-            result = graph.graql().compute().path().to(entityId2).from(entityId3).execute()
-                    .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
-            assertEquals(correctPath.size(), result.size());
-            for (int i = 0; i < result.size(); i++) {
-                assertEquals(correctPath.get(i), result.get(i));
-            }
+            checkPath(correctPath, computedPath);
 
-            correctPath = Lists.newArrayList(relationId1A12.getValue(), entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
-            result = graph.graql().compute().path().from(relationId1A12).to(entityId3).execute()
-                    .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
-            assertEquals(correctPath.size(), result.size());
-            for (int i = 0; i < result.size(); i++) {
-                assertEquals(correctPath.get(i), result.get(i));
-            }
             Collections.reverse(correctPath);
-            result = graph.graql().compute().path().to(relationId1A12).from(entityId3).execute()
+            computedPath = graph.graql().compute().path().to(entityId2).from(entityId3).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
-            assertEquals(correctPath.size(), result.size());
-            for (int i = 0; i < result.size(); i++) {
-                assertEquals(correctPath.get(i), result.get(i));
-            }
+            checkPath(correctPath, computedPath);
+
+            correctPath = Lists.newArrayList(relationId1A12.getValue(), entityId1.getValue(),
+                    relationId13.getValue(), entityId3.getValue());
+            computedPath = graph.graql().compute().path().from(relationId1A12).to(entityId3).execute()
+                    .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+            checkPath(correctPath, computedPath);
+
+            Collections.reverse(correctPath);
+            computedPath = graph.graql().compute().path().to(relationId1A12).from(entityId3).execute()
+                    .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+            checkPath(correctPath, computedPath);
         }
     }
 
     @Test
-    public void testMultipleIndependentShortestPaths() throws GraknValidationException {
+    public void testMultipleIndependentShortestPaths() throws InvalidGraphException {
         assumeFalse(usingTinker());
         Set<List<ConceptId>> validPaths = new HashSet<>();
         ConceptId startId;
@@ -303,7 +285,14 @@ public class ShortestPathTest {
         }
     }
 
-    private void addOntologyAndEntities() throws GraknValidationException {
+    private void checkPath(List<String> correctPath, List<String> computedPath) {
+        assertEquals(correctPath.size(), computedPath.size());
+        for (int i = 0; i < correctPath.size(); i++) {
+            assertEquals(correctPath.get(i), computedPath.get(i));
+        }
+    }
+
+    private void addOntologyAndEntities() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
@@ -343,7 +332,7 @@ public class ShortestPathTest {
         }
     }
 
-    private void addOntologyAndEntities2() throws GraknValidationException {
+    private void addOntologyAndEntities2() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 

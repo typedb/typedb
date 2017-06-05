@@ -20,13 +20,15 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
-import com.google.common.collect.Maps;
-
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javafx.util.Pair;
 
 /**
  *
@@ -38,19 +40,18 @@ import java.util.stream.Collectors;
  *
  */
 public class UnifierImpl implements Unifier {
-
-    //TODO turn it to multimap to accommodate all cases
-    private final Map<Var, Var> unifier = new HashMap<>();
+    
+    private final Multimap<Var, Var> unifier = ArrayListMultimap.create();
 
     /**
      * Identity unifier.
      */
     public UnifierImpl(){}
     public UnifierImpl(Map<Var, Var> map){
-        unifier.putAll(map);
+        map.entrySet().forEach(m -> unifier.put(m.getKey(), m.getValue()));
     }
     public UnifierImpl(Unifier u){
-        unifier.putAll(u.map());
+        merge(u);
     }
 
     @Override
@@ -63,7 +64,7 @@ public class UnifierImpl implements Unifier {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         UnifierImpl u2 = (UnifierImpl) obj;
-        return unifier.equals(u2.map());
+        return this.map().equals(u2.map());
     }
 
     @Override
@@ -77,8 +78,8 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Map<Var, Var> map() {
-        return Maps.newHashMap(unifier);
+    public Map<Var, Collection<Var>> map() {
+        return unifier.asMap();
     }
 
     @Override
@@ -92,14 +93,15 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Set<Map.Entry<Var, Var>> mappings(){ return unifier.entrySet();}
+    public Collection<Map.Entry<Var, Var>> mappings(){ return unifier.entries();}
 
-    public Var addMapping(Var key, Var value){
+    @Override
+    public boolean addMapping(Var key, Var value){
         return unifier.put(key, value);
     }
 
     @Override
-    public Var get(Var key) {
+    public Collection<Var> get(Var key) {
         return unifier.get(key);
     }
 
@@ -118,26 +120,47 @@ public class UnifierImpl implements Unifier {
 
     @Override
     public Unifier merge(Unifier d) {
-        unifier.putAll(d.map());
+        d.mappings().forEach(m -> unifier.put(m.getKey(), m.getValue()));
         return this;
     }
 
     @Override
+    public Unifier combine(Unifier d) {
+        if (Collections.disjoint(this.values(), d.keySet())){
+            return new UnifierImpl(this).merge(d);
+        }
+        Unifier merged = new UnifierImpl();
+        Unifier inverse = this.inverse();
+        this.mappings().stream().filter(m -> !d.containsKey(m.getValue())).forEach(m -> merged.addMapping(m.getKey(), m.getValue()));
+        d.mappings().stream()
+                .flatMap(m -> {
+                    Var lVar = m.getKey();
+                    if (inverse.containsKey(lVar)){
+                        return inverse.get(lVar).stream()
+                                .map(v -> new Pair<>(v, m.getValue()));
+                    } else {
+                        return Stream.of(new Pair<>(m.getKey(), m.getValue()));
+                    }
+                })
+                .forEach(m -> merged.addMapping(m.getKey(), m.getValue()));
+        return merged;
+    }
+
+    @Override
     public Unifier removeTrivialMappings() {
-        Set<Var> toRemove = unifier.entrySet().stream()
+        Set<Var> toRemove = unifier.entries().stream()
                 .filter(e -> e.getKey() == e.getValue())
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
-        toRemove.forEach(unifier::remove);
+        toRemove.forEach(unifier::removeAll);
         return this;
     }
 
     @Override
     public Unifier inverse() {
-        return new UnifierImpl(
-                unifier.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey))
-        );
+        Unifier inverse = new UnifierImpl();
+        unifier.entries().forEach(e -> inverse.addMapping(e.getValue(), e.getKey()));
+        return inverse;
     }
 
     @Override

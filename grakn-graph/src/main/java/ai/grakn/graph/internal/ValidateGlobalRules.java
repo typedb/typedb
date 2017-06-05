@@ -24,7 +24,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.ConceptNotUniqueException;
+import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
 import static ai.grakn.util.ErrorMessage.VALIDATION_INSTANCE;
-import static ai.grakn.util.ErrorMessage.VALIDATION_IS_ABSTRACT;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_MORE_CASTING_THAN_ROLES;
@@ -181,21 +180,6 @@ class ValidateGlobalRules {
 
     /**
      *
-     * @param conceptType The concept type to be validated
-     * @return An error message if the conceptType  abstract and has incoming isa edges
-     */
-    static Optional<String> validateIsAbstractHasNoIncomingIsaEdges(TypeImpl<?, ?> conceptType){
-        if(conceptType.isAbstract() &&
-                conceptType.<TypeImpl>getIncomingNeighbours(Schema.EdgeLabel.SHARD).anyMatch(thing ->
-                thing.getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().isPresent())){
-
-            return Optional.of(VALIDATION_IS_ABSTRACT.getMessage(conceptType.getLabel()));
-        }
-        return Optional.empty();
-    }
-
-    /**
-     *
      * @param relationType the relation type to be validated
      * @return Error messages if the role type sub structure does not match the relation type sub structure
      */
@@ -286,7 +270,7 @@ class ValidateGlobalRules {
         try{
             relation.setHash();
             return Optional.empty();
-        } catch (ConceptNotUniqueException e){
+        } catch (PropertyNotUniqueException e){
             return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relation));
         }
     }

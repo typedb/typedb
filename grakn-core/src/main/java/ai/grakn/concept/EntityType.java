@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraphOperationException;
 
 import java.util.Collection;
 
@@ -53,8 +53,8 @@ public interface EntityType extends Type{
      * @param type The supertype of this EntityType
      * @return The EntityType itself
      *
-     * @throws ConceptException if this is a meta type
-     * @throws ConceptException if the given supertype is already an indirect subtype of this type
+     * @throws GraphOperationException if this is a meta type
+     * @throws GraphOperationException if the given supertype is already an indirect subtype of this type
      */
     EntityType superType(EntityType type);
 
@@ -64,8 +64,8 @@ public interface EntityType extends Type{
      * @param type The sub type of this entity type
      * @return The EntityType itself
      *
-     * @throws ConceptException if the sub type is a meta type
-     * @throws ConceptException if the given subtype is already an indirect supertype of this type
+     * @throws GraphOperationException if the sub type is a meta type
+     * @throws GraphOperationException if the given subtype is already an indirect supertype of this type
      */
     EntityType subType(EntityType type);
 
@@ -93,7 +93,7 @@ public interface EntityType extends Type{
      *
      * @return a new empty entity.
      *
-     * @throws ConceptException if this is a meta type
+     * @throws GraphOperationException if this is a meta type
      */
     Entity addEntity();
 
@@ -159,11 +159,4 @@ public interface EntityType extends Type{
      */
     @Override
     Collection<Entity> instances();
-
-    /**
-     *
-     * @return a deep copy of this concept.
-     */
-    @Override
-    EntityType copy();
 }

@@ -87,7 +87,10 @@ public class REST {
      * Class containing request fields and content types.
      */
     public static class Request {
-        public static final String QUERY_FIELD = "query";
+        // Attributes set and used on the server-side
+        public static final String USER_ATTR = "user";
+        
+        // Request parameters
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
         public static final String GRAPH_CONFIG_PARAM = "graphConfig";
@@ -95,6 +98,7 @@ public class REST {
         public static final String TASK_CLASS_NAME_PARAMETER = "className";
         public static final String TASK_CREATOR_PARAMETER = "creator";
         public static final String TASK_RUN_AT_PARAMETER = "runAt";
+        public static final String TASK_PRIORITY_PARAMETER = "priority";
         public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
         public static final String TASK_LOADER_MUTATIONS = "mutations";
         public static final String LIMIT_PARAM = "limit";
@@ -104,8 +108,8 @@ public class REST {
         //Commit Logs
         public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
         public static final String COMMIT_LOG_COUNTING = "types-with-new-counts";
-        public static final String COMMIT_LOG_TYPE_NAME = "type-name";
-        public static final String COMMIT_LOG_INSTANCE_COUNT = "instance-count";
+        public static final String COMMIT_LOG_CONCEPT_ID = "concept-id";
+        public static final String COMMIT_LOG_SHARDING_COUNT = "sharding-count";
 
         /**
          * Concept controller request parameters

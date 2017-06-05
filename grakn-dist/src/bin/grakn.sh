@@ -51,6 +51,9 @@ clean_grakn() {
         cd - >/dev/null
     fi
 
+    #Clear redis and stop it
+    "${GRAKN_HOME}/bin/grakn-redis.sh" clean
+
     if [ $USE_KAFKA ]; then
         local DEFAULT_KAFKA_LOGS=/tmp/grakn-kafka-logs/
         if [ -e "${DEFAULT_KAFKA_LOGS}" ]; then
@@ -72,6 +75,7 @@ case "$1" in
 
 start)
 
+    "${GRAKN_HOME}/bin/grakn-redis.sh" start
     if [ "$USE_CASSANDRA" ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" start
     fi
@@ -84,6 +88,7 @@ start)
 
 stop)
 
+    "${GRAKN_HOME}/bin/grakn-redis.sh" stop
     "${GRAKN_HOME}/bin/grakn-engine.sh" stop
     if [ "$USE_KAFKA" ]; then
         "${GRAKN_HOME}/bin/kafka-server-stop.sh"
@@ -108,7 +113,7 @@ clean)
     ;;
 
 status)
-
+    "${GRAKN_HOME}/bin/grakn-redis.sh" status
     "${GRAKN_HOME}/bin/grakn-engine.sh" status
     if [ "$USE_KAFKA" ]; then
         "${GRAKN_HOME}/bin/kafka-server-status.sh"

@@ -20,8 +20,8 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
 import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
@@ -142,7 +143,7 @@ public class QueryErrorTest {
     }
 
     @Test
-    public void testExceptionWhenNoHasResourceRelation() throws GraknValidationException {
+    public void testExceptionWhenNoHasResourceRelation() throws InvalidGraphException {
         // Create a fresh graph, with no has between person and name
         QueryBuilder emptyQb = empty.graph().graql();
         emptyQb.insert(
@@ -150,7 +151,7 @@ public class QueryErrorTest {
                 label("name").sub("resource").datatype(ResourceType.DataType.STRING)
         ).execute();
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(allOf(
                 containsString("person"),
                 containsString("name")
@@ -191,5 +192,12 @@ public class QueryErrorTest {
 
         //noinspection ResultOfMethodCallIgnored
         concepts.count();
+    }
+
+    @Test
+    public void whenUsingInvalidResourceValue_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(INVALID_VALUE.getMessage(qb.getClass()));
+        qb.match(var("x").val(qb));
     }
 }

@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuery<T> {
@@ -56,7 +55,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         Set<TypeLabel> withResourceRelationTypes = getHasResourceRelationTypes();
         withResourceRelationTypes.addAll(subTypeLabels);
 
-        String randomId = Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
+        String randomId = getRandomJobId();
 
         Set<TypeId> withResourceRelationTypeIds =
                 withResourceRelationTypes.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());

@@ -27,7 +27,8 @@ import ai.grakn.concept.Resource;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.exception.GraknLockingException;
+import ai.grakn.engine.tasks.TaskSubmitter;
+import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -67,7 +68,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
                 work.accept(graph);
                 return;
             }
-            catch (GraknLockingException ex) {
+            catch (TemporaryWriteException ex) {
                 // Ignore - this exception means we must eventually succeed.
             }
             catch (Throwable t) {
@@ -198,7 +199,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     }
     
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
         LOG.info("Starting ResourceDeduplicationTask : " + configuration.json());
         
         String keyspace = configuration.json().at("keyspace", KEYSPACE_DEFAULT).asString();

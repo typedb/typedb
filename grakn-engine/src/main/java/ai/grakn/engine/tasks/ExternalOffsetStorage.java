@@ -18,10 +18,10 @@
 
 package ai.grakn.engine.tasks;
 
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.exception.EngineStorageException;
-import org.apache.kafka.common.TopicPartition;
+import ai.grakn.engine.tasks.connection.ZookeeperConnection;
+import ai.grakn.exception.GraknBackendException;
 import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,10 +57,8 @@ public class ExternalOffsetStorage {
             LOG.trace("Offset {} read for partition %{}", offset, partitionPath);
 
             return offset;
-        } catch (RuntimeException e) {
-            throw new EngineStorageException(e);
-        } catch (Exception e){
-            throw new EngineStorageException("Error retrieving offset");
+        } catch (Exception e) {
+            throw GraknBackendException.stateStorage(e);
         }
     }
 
@@ -83,10 +81,8 @@ public class ExternalOffsetStorage {
                         .creatingParentContainersIfNeeded()
                         .forPath(partitionPath, serialize(currentOffset));
             }
-        } catch (RuntimeException e) {
-            throw new EngineStorageException(e);
         } catch (Exception e){
-            throw new EngineStorageException("Error saving offset");
+            throw GraknBackendException.stateStorage(e);
         }
     }
 

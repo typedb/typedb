@@ -25,8 +25,8 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.graql.internal.reasoner.ReasonerUtils;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import javafx.util.Pair;
 import org.semanticweb.owlapi.model.AsOWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
@@ -356,7 +356,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
                      .addRolePlayer(entityRole, entity)
                      .addRolePlayer(resourceRole, resource);
         }
-        catch (ConceptException ex) {
+        catch (GraphOperationException ex) {
             if (ex.getMessage().contains("The Relation with the provided role players already exists")) {
                 System.err.println("[WARN] Grakn does not support multiple values per data property/resource, ignoring axiom " + axiom);
             } else {

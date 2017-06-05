@@ -32,10 +32,9 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.exception.GraphRuntimeException;
-import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.generator.AbstractTypeGenerator.Abstract;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
@@ -97,7 +96,7 @@ public class GraknGraphPropertyTest {
         Object[] params = mockParamsOf(method);
 
         exception.expect(InvocationTargetException.class);
-        exception.expectCause(isA(GraphRuntimeException.class));
+        exception.expectCause(isA(GraphOperationException.class));
         exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
 
         method.invoke(graph, params);
@@ -161,7 +160,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingGetResourcesByValueAfterAddingAResource_TheResultIncludesTheResource(
             @Open GraknGraph graph,
-            @FromGraph @Meta(false) ResourceType resourceType, @From(ResourceValues.class) Object value) {
+            @FromGraph @Meta(false) @Abstract(false)  ResourceType resourceType, @From(ResourceValues.class) Object value) {
         assumeThat(value.getClass().getName(), is(resourceType.getDataType().getName()));
 
         Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(value);
@@ -201,7 +200,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingGetResourcesByValueWithAnUnsupportedDataType_Throw(@Open GraknGraph graph, List value) {
         String supported = ResourceType.DataType.SUPPORTED_TYPES.keySet().stream().collect(Collectors.joining(","));
-        exception.expect(InvalidConceptValueException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(ErrorMessage.INVALID_DATATYPE.getMessage(value.getClass().getName(), supported));
         //noinspection ResultOfMethodCallIgnored
         graph.getResourcesByValue(value);
@@ -251,13 +250,13 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingClear_TheGraphCloses(@Open GraknGraph graph) {
-        graph.clear();
+        graph.admin().delete();
         assertTrue(graph.isClosed());
     }
 
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
-        graph.clear();
+        graph.admin().delete();
         graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
@@ -268,8 +267,8 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeLabels.class) TypeLabel typeLabel) {
-        graph.clear();
+    public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeLabels.class) TypeLabel typeLabel) {
+        graph.admin().delete();
         graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
         assertNotNull(graph.getType(typeLabel));
         graph.close();
@@ -286,7 +285,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingClose_TheGraphIsClosed(GraknGraph graph) throws GraknValidationException {
+    public void whenCallingClose_TheGraphIsClosed(GraknGraph graph) throws InvalidGraphException {
         graph.close();
         assertTrue(graph.isClosed());
     }
@@ -309,7 +308,7 @@ public class GraknGraphPropertyTest {
             @Open GraknGraph graph, @From(ResourceValues.class) Object value) {
         ResourceType resource = graph.admin().getMetaResourceType();
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resource.getLabel()));
 
         resource.putResource(value);
@@ -321,7 +320,7 @@ public class GraknGraphPropertyTest {
         ResourceType resource = graph.admin().getMetaResourceType();
 
         // TODO: Test for a better error message
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(GraphOperationException.class);
 
         //noinspection ResultOfMethodCallIgnored
         resource.superType();
@@ -332,7 +331,7 @@ public class GraknGraphPropertyTest {
             @Open GraknGraph graph, @FromGraph Type type) {
         ResourceType resource = graph.admin().getMetaResourceType();
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())) {
             exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         } else {

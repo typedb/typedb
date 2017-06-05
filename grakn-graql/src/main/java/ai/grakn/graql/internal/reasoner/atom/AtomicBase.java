@@ -23,17 +23,11 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
 import java.util.Set;
-
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
-
 
 /**
  *
@@ -46,7 +40,7 @@ import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
  */
 public abstract class AtomicBase implements Atomic {
 
-    protected Var varName;
+    private final Var varName;
     protected PatternAdmin atomPattern;
     private ReasonerQuery parent = null;
 
@@ -97,43 +91,6 @@ public abstract class AtomicBase implements Atomic {
      * @param q query this atom is supposed to belong to
      */
     public void setParentQuery(ReasonerQuery q){ parent = q;}
-    public GraknGraph graph(){ return getParentQuery().graph();}
-
-    private void setVarName(Var var){
-        varName = var;
-        atomPattern = atomPattern.asVar().setVarName(var);
-    }
-
-    /**
-     * perform unification on the atom by applying unifiers
-     * @param unifier contain variable mappings to be applied
-     */
-    @Override
-    public Atomic unify(Unifier unifier){
-        Var var = getVarName();
-        if (unifier.containsKey(var)) {
-            setVarName(unifier.get(var));
-        } else if (unifier.containsValue(var)) {
-            setVarName(capture(var));
-        }
-        return this;
-    }
-
-    /**
-     * get unifiers by comparing this atom with parent
-     * @param parentAtom atom defining variable names
-     * @return unifier
-     */
-    @Override
-    public Unifier getUnifier(Atomic parentAtom) {
-        if (parentAtom.getClass() != this.getClass()) {
-            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
-        }
-        Unifier unifier = new UnifierImpl();
-        if (!this.getVarName().equals(parentAtom.getVarName())) {
-            unifier.addMapping(this.getVarName(), parentAtom.getVarName());
-        }
-        return unifier;
-    }
+    protected GraknGraph graph(){ return getParentQuery().graph();}
 }
 

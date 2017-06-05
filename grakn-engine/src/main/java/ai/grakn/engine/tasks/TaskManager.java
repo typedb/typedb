@@ -18,13 +18,6 @@
 
 package ai.grakn.engine.tasks;
 
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
-import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
-import ai.grakn.engine.GraknEngineConfig;
-
-import static ai.grakn.engine.GraknEngineConfig.USE_ZOOKEEPER_STORAGE;
-
 import ai.grakn.engine.TaskId;
 
 /**
@@ -38,18 +31,7 @@ import ai.grakn.engine.TaskId;
  *
  * @author Denis Lobanov, alexandraorth
  */
-public interface TaskManager extends AutoCloseable {
-    /**
-     * Schedule a {@link BackgroundTask} for execution, giving it priority to run after all other tasks
-     * @param taskState Task to execute
-     */
-    void addLowPriorityTask(TaskState taskState, TaskConfiguration configuration);
-
-    /**
-     * Schedule a {@link BackgroundTask} for execution, giving it priority to run before all other tasks
-     * @param taskState Task to execute
-     */
-    void addHighPriorityTask(TaskState taskState, TaskConfiguration configuration);
+public interface TaskManager extends TaskSubmitter{
 
     /**
      * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the
@@ -66,11 +48,5 @@ public interface TaskManager extends AutoCloseable {
 
     // TODO: Add 'pause' and 'restart' methods
 
-    default TaskStateStorage chooseStorage(GraknEngineConfig properties, ZookeeperConnection zookeeper){
-        if(properties.getPropertyAsBool(USE_ZOOKEEPER_STORAGE)){
-            return new TaskStateZookeeperStore(zookeeper);
-        } else {
-            return new TaskStateGraphStore();
-        }
-    }
+    void close();
 }

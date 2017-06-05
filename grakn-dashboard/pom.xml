@@ -23,7 +23,7 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.13.0-SNAPSHOT</version>
+        <version>0.14.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -63,20 +63,7 @@
                                 <argument>run</argument>
                                 <argument>test-coverage</argument>
                             </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>npm coverage</id>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <phase>verify</phase>
-                        <configuration>
-                            <executable>npm</executable>
-                            <arguments>
-                                <argument>run</argument>
-                                <argument>coverage</argument>
-                            </arguments>
+                            <skip>${skipTests}</skip>
                         </configuration>
                     </execution>
                     <execution>

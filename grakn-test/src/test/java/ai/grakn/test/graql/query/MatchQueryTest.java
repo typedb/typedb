@@ -19,7 +19,6 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
@@ -28,7 +27,6 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
@@ -38,6 +36,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.test.GraknTestEnv;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
@@ -85,6 +84,7 @@ import static ai.grakn.test.matcher.GraknMatchers.isShard;
 import static ai.grakn.test.matcher.GraknMatchers.resource;
 import static ai.grakn.test.matcher.GraknMatchers.results;
 import static ai.grakn.test.matcher.GraknMatchers.rule;
+import static ai.grakn.test.matcher.GraknMatchers.type;
 import static ai.grakn.test.matcher.GraknMatchers.variable;
 import static ai.grakn.test.matcher.MovieMatchers.aRuleType;
 import static ai.grakn.test.matcher.MovieMatchers.action;
@@ -218,6 +218,15 @@ public class MatchQueryTest {
     }
 
     @Test
+    public void whenQueryingForRole_ResultContainsAllValidRoles() {
+        MatchQuery query = qb.match(var().rel(x, var().has("name", "Michael Corleone"))).distinct();
+
+        assertThat(query, variable("x", containsInAnyOrder(
+                type("concept"), type("role"), type("character-being-played")
+        )));
+    }
+
+    @Test
     public void testPredicateQuery1() {
         MatchQuery query = qb.match(
                 x.isa("movie").has("title", t),
@@ -246,7 +255,7 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testValueEqualsVarQuery() {
+    public void whenQueryingForResourcesWithEqualValues_ResultsAreCorrect() {
         MatchQuery query = qb.match(x.val(y));
 
         assertThat(query.execute(), hasSize(greaterThan(10)));
@@ -255,6 +264,20 @@ public class MatchQueryTest {
             Concept cx = result.get(x);
             Concept cy = result.get(y);
             assertEquals(cx.asResource().getValue(), cy.asResource().getValue());
+        });
+    }
+
+    @Test
+    public void whenQueryingForTitlesWithEqualValues_ResultsAreCorrect() {
+        // This is an edge-case which fooled the resource-index optimiser
+        MatchQuery query = qb.match(var("x").isa("title").val(var("y")));
+
+        assertThat(query.execute(), hasSize(greaterThan(3)));
+
+        query.forEach(result -> {
+            Concept x = result.get("x");
+            Concept y = result.get("y");
+            assertEquals(x.asResource().getValue(), y.asResource().getValue());
         });
     }
 
@@ -515,6 +538,31 @@ public class MatchQueryTest {
     }
 
     @Test
+    public void whenQueryingForSuperRolesAndRelations_TheResultsAreTheSame() {
+        assertEquals(
+                Sets.newHashSet(qb.match(var("x").rel("work", "y").rel("author", "z").isa("authored-by"))),
+                Sets.newHashSet(qb.match(var("x").rel("production-being-directed", "y").rel("director", "z").isa("directed-by")))
+        );
+    }
+
+    @Test
+    public void whenQueryingForSuperRolesAndRelationsWithOneRolePlayer_TheResultsAreTheSame() {
+        // This is a special case which can cause comparisons between shortcut edges and castings
+        assertEquals(
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("author", "z").isa("authored-by"))),
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("director", "z").isa("directed-by")))
+        );
+    }
+
+    @Test
+    public void whenQueryingForSuperRelationTypes_TheResultsAreTheSame() {
+        assertEquals(
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("z").isa("authored-by"))),
+                Sets.newHashSet(qb.match(var("x").rel("y").rel("z").isa("directed-by")))
+        );
+    }
+
+    @Test
     public void testMatchDataType() {
         MatchQuery query = qb.match(x.datatype(ResourceType.DataType.DOUBLE));
         assertThat(query, variable("x", contains(tmdbVoteAverage)));
@@ -559,29 +607,9 @@ public class MatchQueryTest {
 
     @Test
     public void testSubRelationType() {
-        qb.insert(
-                label("ownership").sub("relation").relates("owner").relates("possession"),
-                label("organization-with-shares").sub("possession"),
-                label("possession").sub("role"),
-
-                label("share-ownership").sub("ownership").relates("shareholder").relates("organization-with-shares"),
-                label("shareholder").sub("owner"),
-                label("owner").sub("role"),
-
-                label("person").sub("entity").plays("shareholder"),
-                label("company").sub("entity").plays("organization-with-shares"),
-
-                var("apple").isa("company"),
-                var("bob").isa("person"),
-
-                var().rel("organization-with-shares", "apple").rel("shareholder", "bob").isa("share-ownership")
-        ).execute();
-
         // This method should work despite subs
         //noinspection ResultOfMethodCallIgnored
-        qb.match(var().rel(x).rel("shareholder", y).isa("ownership")).stream().count();
-
-        movieGraph.rollback();
+        qb.match(var().rel(x).rel("director", y).isa("authored-by")).stream().count();
     }
 
     @Test
@@ -598,6 +626,9 @@ public class MatchQueryTest {
 
     @Test
     public void testGraqlPlaysSemanticsMatchGraphAPI() {
+        GraknGraph graph = GraknTestEnv.emptyGraph(movieGraph.factory());  // TODO: Try and remove this call if possible
+        QueryBuilder qb = graph.graql();
+
         TypeLabel a = TypeLabel.of("a");
         TypeLabel b = TypeLabel.of("b");
         TypeLabel c = TypeLabel.of("c");
@@ -610,8 +641,6 @@ public class MatchQueryTest {
                 Graql.label(f).sub(Graql.label(e).sub(Graql.label(d).sub("role"))),
                 Graql.label(b).plays(Graql.label(e))
         ).execute();
-
-        GraknGraph graph = movieGraph.graph();
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
             Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(x)).get("x").collect(Collectors.toSet());
@@ -626,8 +655,6 @@ public class MatchQueryTest {
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });
-
-        movieGraph.rollback();
     }
 
     @Test
@@ -853,9 +880,8 @@ public class MatchQueryTest {
         assertThat(query1, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
         List<Answer> results1 = query1.execute();
 
-        String keyspace = movieGraph.graph().getKeyspace();
         movieGraph.graph().close();
-        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE);
+        GraknGraph graph2 = movieGraph.graph();
 
         MatchQuery query2 = graph2.graql().match(x.sub("concept"));
         assertEquals(results1, query2.execute());

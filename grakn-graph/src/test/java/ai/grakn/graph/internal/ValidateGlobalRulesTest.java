@@ -23,32 +23,18 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Type;
 import org.junit.Test;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ValidateGlobalRulesTest extends GraphTestBase{
 
-    @Test(expected = InvocationTargetException.class)
-    public void testConstructor() throws Exception { //Checks that you cannot initialise it.
-        Constructor<ValidateGlobalRules> c = ValidateGlobalRules.class.getDeclaredConstructor();
-        c.setAccessible(true);
-        ValidateGlobalRules u = c.newInstance();
-    }
-
-
     @Test
     public void testValidatePlaysStructure() throws Exception {
-        Type fakeType = graknGraph.putEntityType("Fake Concept");
         EntityTypeImpl wolf = (EntityTypeImpl) graknGraph.putEntityType("wolf");
         EntityTypeImpl creature = (EntityTypeImpl) graknGraph.putEntityType("creature");
         EntityTypeImpl hunter = (EntityTypeImpl) graknGraph.putEntityType("hunter");
-        RoleType animal = graknGraph.putRoleType("animal");
         RelationType hunts = graknGraph.putRelationType("hunts");
         RoleTypeImpl witcher = (RoleTypeImpl) graknGraph.putRoleType("witcher");
         RoleTypeImpl monster = (RoleTypeImpl) graknGraph.putRoleType("monster");
@@ -171,38 +157,5 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
 
         assertFalse(ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(roleType).isPresent());
         assertFalse(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());
-    }
-
-    @Test
-    public void testAbstractInstancesDoNotValidateSubTypes(){
-        RoleType r1 = graknGraph.putRoleType("r1");
-        RoleType r2 = graknGraph.putRoleType("r2");
-        EntityType entityType = graknGraph.putEntityType("entityType").plays(r1).plays(r2);
-        RelationType relationType = graknGraph.putRelationType("relationTypes").setAbstract(true);
-        RelationType hasCast = graknGraph.putRelationType("has cast").superType(relationType).relates(r1).relates(r2);
-
-        Entity e1 = entityType.addEntity();
-        Entity e2 = entityType.addEntity();
-
-        hasCast.addRelation().addRolePlayer(r1, e1).addRolePlayer(r2, e2);
-
-        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges((TypeImpl) relationType).isPresent());
-    }
-
-    @Test
-    public void validateIsAbstractHasNoIncomingIsaEdges() {
-        EntityTypeImpl x1 = (EntityTypeImpl) graknGraph.putEntityType("x1");
-        EntityTypeImpl x2 = (EntityTypeImpl) graknGraph.putEntityType("x2'");
-        EntityTypeImpl x3 = (EntityTypeImpl) graknGraph.putEntityType("x3");
-        EntityTypeImpl x4 = (EntityTypeImpl) graknGraph.putEntityType("x4'");
-
-        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1).isPresent());
-        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x2).isPresent());
-        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x3).isPresent());
-        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x4).isPresent());
-
-        x2.superType(x1);
-
-        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1).isPresent());
     }
 }

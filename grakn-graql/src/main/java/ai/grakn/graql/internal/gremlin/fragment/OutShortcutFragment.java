@@ -27,9 +27,11 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
+import java.util.Set;
 
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelToTraversal;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabel;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelsToTraversal;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabels;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.traverseRoleTypeFromShortcutEdge;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_ID;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
@@ -45,36 +47,45 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
 class OutShortcutFragment extends AbstractFragment {
 
     private final Var edge;
-    private final Optional<TypeLabel> roleType;
-    private final Optional<TypeLabel> relationType;
+
+    private final Optional<Var> roleType;
+    private final Optional<Set<TypeLabel>> roleTypeLabels;
+    private final Optional<Set<TypeLabel>> relationTypeLabels;
 
     OutShortcutFragment(
-            Var relation, Var edge, Var rolePlayer, Optional<TypeLabel> roleType,
-            Optional<TypeLabel> relationType) {
-            super(relation, rolePlayer, edge);
+            Var relation, Var edge, Var rolePlayer, Optional<Var> roleType, Optional<Set<TypeLabel>> roleTypeLabels,
+            Optional<Set<TypeLabel>> relationTypeLabels) {
+            super(relation, rolePlayer, edge, optionalVarToArray(roleType));
             this.edge = edge;
             this.roleType = roleType;
-            this.relationType = relationType;
+            this.roleTypeLabels = roleTypeLabels;
+            this.relationTypeLabels = relationTypeLabels;
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
         GraphTraversal<Vertex, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel()).as(edge.getValue());
-        applyTypeLabelToTraversal(edgeTraversal, ROLE_TYPE_ID, roleType, graph);
-        applyTypeLabelToTraversal(edgeTraversal, RELATION_TYPE_ID, relationType, graph);
+
+        // Filter by any provided type labels
+        applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleTypeLabels, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_ID, relationTypeLabels, graph);
+
+        traverseRoleTypeFromShortcutEdge(edgeTraversal, roleType);
+
         edgeTraversal.inV();
     }
 
     @Override
     public String getName() {
-        String rel = displayOptionalTypeLabel(relationType);
-        String role = displayOptionalTypeLabel(roleType);
-        return "-[shortcut:" + edge.shortName() + rel + role + "]->";
+        String role = roleType.map(rt -> " role:" + rt.shortName()).orElse("");
+        String rels = displayOptionalTypeLabels("rels", relationTypeLabels);
+        String roles = displayOptionalTypeLabels("roles", roleTypeLabels);
+        return "-[shortcut:" + edge.shortName() + role + rels + roles + "]->";
     }
 
     @Override
     public double fragmentCost(double previousCost) {
-        long numRolePlayers = roleType.isPresent() ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
+        long numRolePlayers = roleTypeLabels.isPresent() ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
         return previousCost * numRolePlayers;
     }
 
@@ -87,16 +98,16 @@ class OutShortcutFragment extends AbstractFragment {
         OutShortcutFragment that = (OutShortcutFragment) o;
 
         if (!edge.equals(that.edge)) return false;
-        if (!roleType.equals(that.roleType)) return false;
-        return relationType.equals(that.relationType);
+        if (!roleTypeLabels.equals(that.roleTypeLabels)) return false;
+        return relationTypeLabels.equals(that.relationTypeLabels);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + edge.hashCode();
-        result = 31 * result + roleType.hashCode();
-        result = 31 * result + relationType.hashCode();
+        result = 31 * result + roleTypeLabels.hashCode();
+        result = 31 * result + relationTypeLabels.hashCode();
         return result;
     }
 }

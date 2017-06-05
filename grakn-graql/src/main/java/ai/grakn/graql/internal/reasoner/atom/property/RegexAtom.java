@@ -59,7 +59,7 @@ public class RegexAtom extends AtomicBase {
     @Override
     public int hashCode(){
         int hashCode = equivalenceHashCode();
-        hashCode = hashCode * 37 + this.varName.hashCode();
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
         return hashCode;
     }
 

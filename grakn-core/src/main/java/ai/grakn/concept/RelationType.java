@@ -18,8 +18,6 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.ConceptException;
-
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
@@ -44,7 +42,7 @@ public interface RelationType extends Type {
      *
      * @return a new empty relation.
      *
-     * @throws ConceptException if this is a meta type
+     * @throws GraphOperationException if this is a meta type
      */
     Relation addRelation();
 
@@ -183,11 +181,4 @@ public interface RelationType extends Type {
      */
     @Override
     Collection<Relation> instances();
-
-    /**
-     *
-     * @return a deep copy of this concept.
-     */
-    @Override
-    RelationType copy();
 }

@@ -29,8 +29,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graph.internal.computer.GraknSparkComputer;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
@@ -243,17 +242,19 @@ public class ClusteringTest {
         for (long i = 0L; i < 4L; i++) {
             list.add(i);
         }
-        GraknSparkComputer.clear();
-        list.parallelStream().forEach(i -> {
-            try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-                Map<String, Long> sizeMap1 = Graql.compute().withGraph(graph).cluster().execute();
-                assertEquals(1, sizeMap1.size());
-                assertEquals(7L, sizeMap1.values().iterator().next().longValue());
+
+        Set<Map<String, Long>> result = list.parallelStream().map(i -> {
+            try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+                return Graql.compute().withGraph(graph).cluster().execute();
             }
+        }).collect(Collectors.toSet());
+        result.forEach(map -> {
+            assertEquals(1, map.size());
+            assertEquals(7L, map.values().iterator().next().longValue());
         });
     }
 
-    private void addOntologyAndEntities() throws GraknValidationException {
+    private void addOntologyAndEntities() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
 
             EntityType entityType1 = graph.putEntityType(thing);
@@ -354,7 +355,7 @@ public class ClusteringTest {
         }
     }
 
-    private void addResourceRelations() throws GraknValidationException {
+    private void addResourceRelations() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
 
             Entity entity1 = graph.getConcept(entityId1);

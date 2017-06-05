@@ -20,6 +20,7 @@ package ai.grakn.test.migration.export;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.migration.export.GraphWriter;
 import ai.grakn.test.GraphContext;
+
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;

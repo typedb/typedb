@@ -23,6 +23,7 @@ import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.test.GraphContext;
+
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;

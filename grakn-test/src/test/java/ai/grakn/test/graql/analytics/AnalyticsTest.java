@@ -28,7 +28,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import org.junit.Before;
@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -72,7 +73,7 @@ public class AnalyticsTest {
     }
 
     @Test
-    public void testInferredResourceRelation() throws GraknValidationException {
+    public void testInferredResourceRelation() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -101,7 +102,7 @@ public class AnalyticsTest {
     }
 
     @Test
-    public void testNullResourceDoesntBreakAnalytics() throws GraknValidationException {
+    public void testNullResourceDoesntBreakAnalytics() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -146,14 +147,15 @@ public class AnalyticsTest {
         queryList.add("compute degrees;");
         queryList.add("compute path from \"" + entityId1 + "\" to \"" + entityId4 + "\";");
 
-        queryList.parallelStream().forEach(query -> {
+        Set<?> result = queryList.parallelStream().map(query -> {
             try (GraknGraph graph = factory.open(GraknTxType.READ)) {
-                graph.graql().parse(query).execute();
+                return graph.graql().parse(query).execute();
             }
-        });
+        }).collect(Collectors.toSet());
+        assertEquals(queryList.size(), result.size());
     }
 
-    private void addOntologyAndEntities() throws GraknValidationException {
+    private void addOntologyAndEntities() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);

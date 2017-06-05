@@ -44,7 +44,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesDisjoint;
 
 /**
  *
@@ -65,7 +65,6 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
         a.getMultiPredicate().stream()
                 .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
                 .forEach(multiPredicate::add);
-        this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
     }
 
     @Override
@@ -145,12 +144,6 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
-    protected void setValueVariable(Var var) {
-        super.setValueVariable(var);
-        atomPattern = atomPattern.asVar().mapProperty(HasResourceProperty.class, prop -> prop.setResource(prop.getResource().setVarName(var)));
-    }
-
-    @Override
     public Atomic copy(){ return new Resource(this);}
 
     @Override
@@ -173,25 +166,33 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
     @Override
     public int resolutionPriority(){
-        int priority = super.resolutionPriority();
-        ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-        Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(Collectors.toSet());
+        if (priority == Integer.MAX_VALUE) {
+            priority = super.resolutionPriority();
+            ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
+            Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(Collectors.toSet());
 
-        priority += ResolutionStrategy.IS_RESOURCE_ATOM;
+            priority += ResolutionStrategy.IS_RESOURCE_ATOM;
 
-        if (vps.isEmpty()){
-            if (parent.getIdPredicate(getValueVariable()) != null) priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
-            else priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
-        } else {
-            for (ValuePredicateAdmin vp : vps) {
-                if (vp.isSpecific()) {
+            if (vps.isEmpty()) {
+                if (parent.getIdPredicate(getValueVariable()) != null) {
                     priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
-                } else if (vp.getInnerVar().isPresent()) {
-                    VarPatternAdmin innerVar = vp.getInnerVar().orElse(null);
-                    if (parent.getIdPredicate(innerVar.getVarName()) != null) priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
-                    else priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
-                } else {
-                    priority += ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
+                } else{
+                    priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
+                }
+            } else {
+                for (ValuePredicateAdmin vp : vps) {
+                    if (vp.isSpecific()) {
+                        priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+                    } else if (vp.getInnerVar().isPresent()) {
+                        VarPatternAdmin innerVar = vp.getInnerVar().orElse(null);
+                        if (parent.getIdPredicate(innerVar.getVarName()) != null) {
+                            priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+                        } else {
+                            priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
+                        }
+                    } else {
+                        priority += ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
+                    }
                 }
             }
         }

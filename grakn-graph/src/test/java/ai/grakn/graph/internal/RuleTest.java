@@ -21,8 +21,8 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
@@ -35,7 +35,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class RuleTest extends GraphTestBase{
     private Pattern lhs;
@@ -54,21 +53,21 @@ public class RuleTest extends GraphTestBase{
         assertEquals(lhs, rule.getLHS());
         assertEquals(rhs, rule.getRHS());
 
-        expectedException.expect(InvalidConceptValueException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(NULL_VALUE.getMessage(RULE_LHS));
 
         conceptType.putRule(null, null);
     }
 
     @Test
-    public void whenCreatingRulesWithNonExistentEntityType_Throw() throws GraknValidationException {
+    public void whenCreatingRulesWithNonExistentEntityType_Throw() throws InvalidGraphException {
         graknGraph.putEntityType("My-Type");
 
         lhs = graknGraph.graql().parsePattern("$x isa Your-Type");
         rhs = graknGraph.graql().parsePattern("$x isa My-Type");
         Rule rule = graknGraph.admin().getMetaRuleInference().putRule(lhs, rhs);
 
-        expectedException.expect(GraknValidationException.class);
+        expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(
                 ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage("LHS", rule.getId(), rule.type().getLabel(), "Your-Type"));
 
@@ -76,7 +75,7 @@ public class RuleTest extends GraphTestBase{
     }
 
     @Test
-    public void whenCreatingRules_EnsureHypothesisAndConclusionTypesAreFilledOnCommit() throws GraknValidationException{
+    public void whenCreatingRules_EnsureHypothesisAndConclusionTypesAreFilledOnCommit() throws InvalidGraphException{
         EntityType t1 = graknGraph.putEntityType("type1");
         EntityType t2 = graknGraph.putEntityType("type2");
 

@@ -24,7 +24,6 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graphs.GeoGraph;
-import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
@@ -34,12 +33,14 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.ReasonerUtils;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraphContext;
+import ai.grakn.test.SNBGraph;
+
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
@@ -623,52 +624,6 @@ public class ReasonerTest {
         assertQueriesEqual(query, query2);
     }
 
-    @Ignore
-    @Test
-    public void testReasoningWithRuleContainingVarContraction(){
-        ReasonerUtils.createReflexiveRule(
-                snbGraph.graph().getRelationType("knows"),
-                snbGraph.graph().getRoleType("acquaintance1").getLabel(),
-                snbGraph.graph().getRoleType("acquaintance2").getLabel(),
-                snbGraph.graph());
-        String queryString = "match ($x, $y) isa knows;select $y;";
-        String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
-        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(query, query2);
-    }
-
-    @Ignore
-    @Test
-    //propagated sub [x/Bob] prevents from capturing the right inference
-    public void testReasoningWithRuleContainingVarContraction2(){
-        ReasonerUtils.createReflexiveRule(
-                snbGraph.graph().getRelationType("knows"),
-                snbGraph.graph().getRoleType("acquaintance1").getLabel(),
-                snbGraph.graph().getRoleType("acquaintance2").getLabel(),
-                snbGraph.graph());
-        String queryString = "match ($x, $y) isa knows;$x has name 'Bob';select $y;";
-        String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
-        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(query, query2);
-    }
-
-    @Ignore
-    @Test
-    //Bug with unification, perhaps should unify select vars not atom vars
-    public void testReasoningWithRuleContainingVarContraction3(){
-        Pattern body = snbGraph.graph().graql().parsePattern("$x isa person");
-        Pattern head = snbGraph.graph().graql().parsePattern("(acquaintance1: $x, acquaintance2: $x) isa knows");
-        snbGraph.graph().admin().getMetaRuleInference().putRule(body, head);
-
-        String queryString = "match ($x, $y) isa knows;$x has name 'Bob';";
-        String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
-        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(query, query2);
-    }
-
     @Test
     public void testReasoningWithQueryContainingTypeVariable(){
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
@@ -784,6 +739,8 @@ public class ReasonerTest {
         assertEquals(answers2.iterator().next().get("a").asResource().getValue().toString(), "23");
     }
 
+    //obsolete, should be handled by type inference
+    @Ignore
     @Test
     public void testReasoningWithQueryContainingRelates() {
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
@@ -797,6 +754,8 @@ public class ReasonerTest {
         assertQueriesEqual(query, query2);
     }
 
+    //obsolete, should be handled by type inference
+    @Ignore
     @Test
     public void testReasoningWithQueryContainingRelates2() {
         String queryString = "match ($x, $y) isa $rel;$rel relates $role;";

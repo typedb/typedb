@@ -20,10 +20,9 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.Pattern;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -48,24 +47,10 @@ class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
         super(graknGraph, v, type);
     }
 
-    private RuleTypeImpl(RuleTypeImpl rule){
-        super(rule);
-    }
-
-    @Override
-    public RuleType copy(){
-        return new RuleTypeImpl(this);
-    }
-
     @Override
     public Rule putRule(Pattern lhs, Pattern rhs) {
-        if(lhs == null) {
-            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_LHS.name()));
-        }
-
-        if(rhs == null) {
-            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_RHS.name()));
-        }
+        if(lhs == null) throw GraphOperationException.settingNullProperty(Schema.ConceptProperty.RULE_LHS);
+        if(rhs == null) throw GraphOperationException.settingNullProperty(Schema.ConceptProperty.RULE_RHS);
 
         return putInstance(Schema.BaseType.RULE,
                 () -> getRule(lhs, rhs), (vertex, type) ->

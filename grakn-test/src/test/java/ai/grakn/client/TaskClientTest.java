@@ -25,20 +25,19 @@ import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.exception.EngineStorageException;
-import ai.grakn.exception.EngineUnavailableException;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import java.time.Duration;
-import java.time.Instant;
+import ai.grakn.exception.GraknBackendException;
+import ai.grakn.test.SparkContext;
 import mjson.Json;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import spark.Service;
 
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
+import java.time.Duration;
+import java.time.Instant;
+
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static java.time.Instant.now;
@@ -57,41 +56,20 @@ import static org.mockito.Mockito.when;
 public class TaskClientTest {
 
     private static TaskClient client;
-    private static TaskManager manager;
-    private static Service spark;
+    private static TaskManager manager = mock(TaskManager.class);
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    @BeforeClass
-    public static void setupSpark() {
-        client = TaskClient.of("localhost", 4567);
-
-        spark = Service.ignite();
-        configureSpark(spark, 4567);
-
-        manager = mock(TaskManager.class);
-        when(manager.storage()).thenReturn(mock(TaskStateStorage.class));
-
+    @ClassRule
+    public static final SparkContext ctx = SparkContext.withControllers(spark -> {
         new TasksController(spark, manager);
+    });
 
-        spark.awaitInitialization();
-    }
-
-    @AfterClass
-    public static void shutdownSpark() {
-        spark.stop();
-
-        // Block until server is truly stopped
-        // This occurs when there is no longer a port assigned to the Spark server
-        boolean running = true;
-        while (running) {
-            try {
-                spark.port();
-            } catch(IllegalStateException e){
-                running = false;
-            }
-        }
+    @BeforeClass
+    public static void setUp() {
+        client = TaskClient.of("localhost", ctx.port());
+        when(manager.storage()).thenReturn(mock(TaskStateStorage.class));
     }
 
     @Test
@@ -104,7 +82,7 @@ public class TaskClientTest {
 
         TaskId identifier = client.sendTask(taskClass, creator, runAt, interval, configuration);
 
-        verify(manager).addLowPriorityTask(argThat(argument ->
+        verify(manager).addTask(argThat(argument ->
                 argument.getId().equals(identifier)
                 && argument.taskClass().equals(taskClass)
                 && argument.schedule().runAt().equals(runAt)
@@ -114,7 +92,7 @@ public class TaskClientTest {
 
     @Test
     public void whenSendingATaskAndServerIsUnavailable_TheClientThrowsAnUnavailableException(){
-        shutdownSpark();
+        ctx.stop();
 
         try {
             Class taskClass = ShortExecutionMockTask.class;
@@ -122,24 +100,24 @@ public class TaskClientTest {
             Instant runAt = now();
             Json configuration = Json.nil();
 
-            exception.expect(EngineUnavailableException.class);
+            exception.expect(GraknBackendException.class);
             client.sendTask(taskClass, creator, runAt, null, configuration);
         } finally {
-            setupSpark();
+            ctx.start();
         }
     }
 
     @Test
     public void whenGettingStatusOfATaskAndServerIsUnavailable_TheClientThrowsAnUnavailableException(){
-        shutdownSpark();
+        ctx.stop();
 
         try {
             TaskState task = createTask();
 
-            exception.expect(EngineUnavailableException.class);
+            exception.expect(GraknBackendException.class);
             client.getStatus(task.getId());
         } finally {
-            setupSpark();
+            ctx.start();
         }
     }
 
@@ -147,9 +125,9 @@ public class TaskClientTest {
     public void whenGettingStatusOfATaskAndSeverHasNotStoredTask_TheClientThrowsStorageException(){
         TaskState task = createTask();
         when(manager.storage().getState(task.getId()))
-                .thenThrow(new EngineStorageException(task.getId().getValue()));
+                .thenThrow(GraknBackendException.stateStorage(task.getId().getValue()));
 
-        exception.expect(EngineStorageException.class);
+        exception.expect(GraknBackendException.class);
         exception.expectMessage(containsString(task.getId().getValue()));
 
         client.getStatus(task.getId());

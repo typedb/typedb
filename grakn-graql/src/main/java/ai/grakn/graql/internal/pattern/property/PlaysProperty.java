@@ -37,7 +37,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getIdPredicate;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
  * Reperesents the {@code plays} property on a {@link ai.grakn.concept.Type}.

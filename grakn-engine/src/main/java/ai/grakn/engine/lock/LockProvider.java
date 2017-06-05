@@ -22,7 +22,7 @@ import ai.grakn.util.ErrorMessage;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,9 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * <p>
- *     Instantiate a {@link LockProvider} with a function that will create a lock to lock on the provided key.
+ *     Instantiate a {@link LockProvider} with a function that will create a lock to lock on the provided key. The provided
+ *     function is a {@link BiFunction}. THe first argument to the function is the name of the lock the user asked for,
+ *     the second argument is the existing lock from the {@link LockProvider} map.
  * </p>
  *
  * @author alexandraorth
@@ -42,12 +44,14 @@ public class LockProvider {
 
     private final static Logger LOG = LoggerFactory.getLogger(LockProvider.class);
 
-    private static Function<String, Lock> lockProvider;
+    private static BiFunction<String, Lock, Lock> lockProvider;
+
+    //TODO THIS IS A POTENTIAL MASSIVE MEMORY LEAK MAP IS NEVER EMPTIED
     private static Map<String, Lock> locks = new ConcurrentHashMap<>();
 
     private LockProvider(){}
 
-    public static void instantiate(Function<String, Lock> provider){
+    public static void instantiate(BiFunction<String, Lock, Lock> provider){
         if(lockProvider == null){
             lockProvider = provider;
             return;
@@ -57,13 +61,13 @@ public class LockProvider {
     }
 
     /**
-     * Uses the named lock supplier to retrieve the correct lock
+     * Uses the named lock function to retrieve the correct lock
      *
      * @param lockToObtain Name of the lock to obtain from the supplier
      * @return An initialized lock
      */
     public static Lock getLock(String lockToObtain){
-        return locks.computeIfAbsent(lockToObtain, (lockName) -> lockProvider.apply(lockName));
+        return locks.compute(lockToObtain, (existingLockName, existingLock) -> lockProvider.apply(lockToObtain, existingLock));
     }
 
     public static void clear(){

@@ -30,7 +30,10 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -40,6 +43,7 @@ import java.io.InputStream;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.stream;
@@ -60,6 +64,8 @@ import static java.util.Arrays.stream;
 final public class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, TitanGraph> {
     private final static String DEFAULT_CONFIG = "backend-default";
 
+    private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
+
     TitanInternalFactory(String keyspace, String engineUrl, Properties properties) {
         super(keyspace, engineUrl, properties);
     }
@@ -75,8 +81,8 @@ final public class TitanInternalFactory extends AbstractInternalFactory<GraknTit
     }
 
     @Override
-    GraknTitanGraph buildGraknGraphFromTinker(TitanGraph graph, boolean batchLoading) {
-        return new GraknTitanGraph(graph, super.keyspace, super.engineUrl, batchLoading, super.properties);
+    GraknTitanGraph buildGraknGraphFromTinker(TitanGraph graph) {
+        return new GraknTitanGraph(graph, super.keyspace, super.engineUrl, super.properties);
     }
 
     @Override
@@ -88,6 +94,14 @@ final public class TitanInternalFactory extends AbstractInternalFactory<GraknTit
         TitanGraph titanGraph = configureGraph(name, address, properties, batchLoading);
         buildTitanIndexes(titanGraph);
         titanGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
+
+        if (!strategiesApplied.getAndSet(true)) {
+            TraversalStrategies strategies = TraversalStrategies.GlobalCache.getStrategies(StandardTitanGraph.class);
+            strategies = strategies.clone().addStrategies(new TitanPreviousPropertyStepStrategy());
+            TraversalStrategies.GlobalCache.registerStrategies(StandardTitanGraph.class, strategies);
+            TraversalStrategies.GlobalCache.registerStrategies(StandardTitanTx.class, strategies);
+        }
+
         return titanGraph;
     }
 

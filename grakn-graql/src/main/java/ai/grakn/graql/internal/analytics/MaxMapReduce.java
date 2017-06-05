@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeId;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -34,14 +35,14 @@ import java.util.Set;
  * @author Sheldon Hall
  */
 
-public class MaxMapReduce extends GraknMapReduce<Number> {
+public class MaxMapReduce extends StatisticsMapReduce<Number> {
 
     // Needed internally for OLAP tasks
     public MaxMapReduce() {
     }
 
-    public MaxMapReduce(Set<TypeId> selectedTypeIds, String resourceDataType) {
-        super(selectedTypeIds, resourceDataType);
+    public MaxMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreePropertyKey) {
+        super(selectedTypeIds, resourceDataType, degreePropertyKey);
     }
 
     @Override

@@ -30,9 +30,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import static ai.grakn.graph.internal.AbstractGraknGraph.BATCH_CACHE_TIMEOUT_MS;
-import static ai.grakn.graph.internal.AbstractGraknGraph.NORMAL_CACHE_TIMEOUT_MS;
-
 /**
  * <p>
  *     Tracks Graph Specific Variables
@@ -57,11 +54,10 @@ class GraphCache {
     private final Cache<TypeLabel, Type> cachedTypes;
     private final Map<TypeLabel, TypeId> cachedLabels;
 
-    GraphCache(Properties properties, boolean batchLoadingEnabled){
+    GraphCache(Properties properties){
         cachedLabels = new ConcurrentHashMap<>();
 
-        int cacheTimeout = Integer.parseInt(
-                properties.get(batchLoadingEnabled ? BATCH_CACHE_TIMEOUT_MS : NORMAL_CACHE_TIMEOUT_MS).toString());
+        int cacheTimeout = Integer.parseInt(properties.get(AbstractGraknGraph.NORMAL_CACHE_TIMEOUT_MS).toString());
         cachedTypes = CacheBuilder.newBuilder()
                 .maximumSize(1000)
                 .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
@@ -99,6 +95,9 @@ class GraphCache {
         //TODO: The difference between the caches need to be taken into account. For example if a type is delete then it should be removed from the cachedLabels
         cachedLabels.putAll(txCache.getLabelCache());
         cachedTypes.putAll(txCache.getTypeCache());
+
+        //Flush All The Internal Transaction Caches
+        txCache.getTypeCache().values().forEach(TypeImpl::flushTxCache);
     }
 
     /**

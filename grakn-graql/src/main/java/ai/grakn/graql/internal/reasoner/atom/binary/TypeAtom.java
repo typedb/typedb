@@ -22,14 +22,19 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -52,7 +57,27 @@ public class TypeAtom extends Binary{
 
     public TypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
     public TypeAtom(VarPatternAdmin pattern, IdPredicate p, ReasonerQuery par) { super(pattern, p, par);}
+    public TypeAtom(Var var, Var valueVar, IdPredicate p, ReasonerQuery par){
+        this(var.isa(valueVar).admin(), p, par);
+    }
     protected TypeAtom(TypeAtom a) { super(a);}
+
+    @Override
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
+        return hashCode;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        BinaryBase a2 = (BinaryBase) obj;
+        return Objects.equals(this.getTypeId(), a2.getTypeId())
+                && this.getVarName().equals(a2.getVarName());
+    }
 
     @Override
     public String toString(){
@@ -81,6 +106,14 @@ public class TypeAtom extends Binary{
         return new TypeAtom(this);
     }
 
+    public Set<TypeAtom> unify(Unifier u){
+        Collection<Var> vars = u.get(getVarName());
+        Var valueVar = getValueVariable();
+        return vars.isEmpty()?
+                Collections.singleton(this) :
+                vars.stream().map(v -> new TypeAtom(v, valueVar, getPredicate(), this.getParentQuery())).collect(Collectors.toSet());
+    }
+
     @Override
     public boolean isType(){ return true;}
 
@@ -100,7 +133,7 @@ public class TypeAtom extends Binary{
                 //type atom corresponding to relation or resource
                 || getType() != null && (getType().isResourceType() ||getType().isRelationType())
                 //disjoint atom
-                || (!(parent instanceof ReasonerAtomicQuery) && parent.findNextJoinable(this) == null)
+                || parent.findNextJoinable(this) == null
                 || isRuleResolvable();
     }
 
@@ -116,9 +149,11 @@ public class TypeAtom extends Binary{
 
     @Override
     public int resolutionPriority(){
-        int priority = super.resolutionPriority();
-        priority += ResolutionStrategy.IS_TYPE_ATOM;
-        priority += getType() == null? ResolutionStrategy.NON_SPECIFIC_TYPE_ATOM : 0;
+        if (priority == Integer.MAX_VALUE) {
+            priority = super.resolutionPriority();
+            priority += ResolutionStrategy.IS_TYPE_ATOM;
+            priority += getType() == null && !isRelation()? ResolutionStrategy.NON_SPECIFIC_TYPE_ATOM : 0;
+        }
         return priority;
     }
 

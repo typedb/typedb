@@ -27,6 +27,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
+
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,6 +48,16 @@ public class GeoInferenceTest {
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
+    }
+
+    @Test
+    public void testEntitiesLocatedInThemselves(){
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        String queryString = "match (geo-entity: $x, entity-location: $x) isa is-located-in;";
+
+        MatchQuery query = iqb.materialise(false).parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
+        assertEquals(answers.size(), 0);
     }
 
     @Test

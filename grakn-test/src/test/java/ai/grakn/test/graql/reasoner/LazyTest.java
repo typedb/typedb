@@ -28,7 +28,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.ReasonerUtils;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
@@ -37,6 +37,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraphContext;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
@@ -144,7 +145,7 @@ public class LazyTest {
                 )
                 .map(a -> a.filterVars(rule.getHead().getVarNames()))
                 .distinct()
-                .map(ans -> ans.explain(new RuleExplanation(rule)));
+                .map(ans -> ans.explain(new RuleExplanation(query, rule)));
 
         cache.record(rule.getHead(), join);
 

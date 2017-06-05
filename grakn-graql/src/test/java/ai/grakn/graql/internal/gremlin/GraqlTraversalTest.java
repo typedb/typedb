@@ -21,6 +21,9 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Graql;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -51,14 +54,10 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.gremlin.GraqlMatchers.feature;
 import static ai.grakn.graql.internal.gremlin.GraqlMatchers.satisfies;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.id;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inIsa;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRelates;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsa;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outRelates;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outRolePlayer;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.value;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -68,6 +67,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class GraqlTraversalTest {
 
@@ -92,6 +92,28 @@ public class GraqlTraversalTest {
     @BeforeClass
     public static void setUp() {
         graph = mock(GraknGraph.class);
+
+        // We have to mock out the `subTypes` call because the shortcut edge optimisation checks it
+
+        TypeLabel wifeLabel = TypeLabel.of("wife");
+        RoleType wife = mock(RoleType.class);
+
+        when(graph.getType(wifeLabel)).thenAnswer(invocation -> {
+            //noinspection unchecked
+            when(wife.subTypes()).thenReturn((Collection) ImmutableSet.of(wife));
+            when(wife.getLabel()).thenReturn(wifeLabel);
+            return wife;
+        });
+
+        TypeLabel marriageLabel = TypeLabel.of("marriage");
+        RelationType marriage = mock(RelationType.class);
+
+        when(graph.getType(marriageLabel)).thenAnswer(invocation -> {
+            //noinspection unchecked
+            when(marriage.subTypes()).thenReturn((Collection) ImmutableSet.of(marriage));
+            when(marriage.getLabel()).thenReturn(marriageLabel);
+            return marriage;
+        });
     }
 
     @Test
@@ -142,26 +164,6 @@ public class GraqlTraversalTest {
         GraqlTraversal shortcutFirst = traversal(outIsa(y, z), inShortcut(y, b), outShortcut(b, x), value(x, gt(1).admin()));
 
         assertFaster(valueFilterFirst, shortcutFirst);
-    }
-
-    @Test
-    public void testCheckDistinctCastingEarlyFaster() {
-        Var c1 = Graql.var("c1");
-        Var c2 = Graql.var("c2");
-        Var r = Graql.var("r");
-
-        Fragment neq = Fragments.neq(c2, c1);
-        Fragment inRolePlayer = inRolePlayer(x, c1);
-        Fragment inCasting = inCasting(c1, r);
-        Fragment outCasting = outCasting(r, c2);
-        Fragment outRolePlayer = outRolePlayer(c2, y);
-
-        GraqlTraversal distinctEarly =
-                traversal(xId, inRolePlayer, inCasting, outCasting, neq, outRolePlayer);
-        GraqlTraversal distinctLate =
-                traversal(xId, inRolePlayer, inCasting, outCasting, outRolePlayer, neq);
-
-        assertFaster(distinctEarly, distinctLate);
     }
 
     @Test
@@ -258,8 +260,8 @@ public class GraqlTraversalTest {
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
-                matches(".*\\$x-\\[shortcut:\\$.* marriage]->\\$.* \\$x-\\[shortcut:\\$.* marriage]->\\$.* \\$.*\\[neq:\\$.*].*"),
-                matches(".*\\$.*<-\\[shortcut:\\$.* marriage]-\\$x-\\[shortcut:\\$.* marriage]->\\$.* \\$.*\\[neq:\\$.*].*")
+                matches(".*\\$x-\\[shortcut:\\$.* rels:marriage]->\\$.* \\$x-\\[shortcut:\\$.* rels:marriage]->\\$.* \\$.*\\[neq:\\$.*].*"),
+                matches(".*\\$.*<-\\[shortcut:\\$.* rels:marriage]-\\$x-\\[shortcut:\\$.* rels:marriage]->\\$.* \\$.*\\[neq:\\$.*].*")
         ));
     }
 
@@ -270,8 +272,8 @@ public class GraqlTraversalTest {
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
-                matches(".*\\$x-\\[shortcut:\\$.* wife]->\\$.* \\$x-\\[shortcut:\\$.*]->\\$.* \\$.*\\[neq:\\$.*].*"),
-                matches(".*\\$.*<-\\[shortcut:\\$.* wife]-\\$x-\\[shortcut:\\$.*]->\\$.* \\$.*\\[neq:\\$.*].*")
+                matches(".*\\$x-\\[shortcut:\\$.* roles:wife]->\\$.* \\$x-\\[shortcut:\\$.*]->\\$.* \\$.*\\[neq:\\$.*].*"),
+                matches(".*\\$.*<-\\[shortcut:\\$.* roles:wife]-\\$x-\\[shortcut:\\$.*]->\\$.* \\$.*\\[neq:\\$.*].*")
         ));
     }
 
@@ -325,11 +327,11 @@ public class GraqlTraversalTest {
     }
 
     private static Fragment outShortcut(Var relation, Var rolePlayer) {
-        return Fragments.outShortcut(relation, a, rolePlayer, Optional.empty(), Optional.empty());
+        return Fragments.outShortcut(relation, a, rolePlayer, Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     private static Fragment inShortcut(Var rolePlayer, Var relation) {
-        return Fragments.inShortcut(rolePlayer, c, relation, Optional.empty(), Optional.empty());
+        return Fragments.inShortcut(rolePlayer, c, relation, Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     private static void assertNearlyOptimal(Pattern pattern) {

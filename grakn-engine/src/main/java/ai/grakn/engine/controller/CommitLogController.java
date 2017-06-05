@@ -18,18 +18,15 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import mjson.Json;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -39,10 +36,8 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.util.Optional;
 
-import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 
 /**
@@ -52,9 +47,11 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
  */
 //TODO Implement delete
 public class CommitLogController {
+    private final String defaultKeyspace;
     private final TaskManager manager;
 
-    public CommitLogController(Service spark, TaskManager manager){
+    public CommitLogController(Service spark, String defaultKeyspace, TaskManager manager){
+        this.defaultKeyspace = defaultKeyspace;
         this.manager = manager;
 
         spark.post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
@@ -80,30 +77,22 @@ public class CommitLogController {
         @ApiImplicitParam(name = COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
     private String submitConcepts(Request req, Response res) {
-        String keyspace = Optional.ofNullable(req.queryParams(KEYSPACE_PARAM))
-                .orElse(GraknEngineConfig.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY));
+        String keyspace = Optional.ofNullable(req.queryParams(KEYSPACE_PARAM)).orElse(defaultKeyspace);
 
         // Instances to post process
-        Json postProcessingConfiguration = Json.object();
-        postProcessingConfiguration.set(KEYSPACE, keyspace);
-        postProcessingConfiguration.set(COMMIT_LOG_FIXING, Json.read(req.body()).at(COMMIT_LOG_FIXING));
-
-        // TODO Make interval configurable
-        TaskState postProcessingTask = TaskState.of(
-                PostProcessingTask.class, this.getClass().getName(), TaskSchedule.now());
+        TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass());
+        TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(keyspace, req.body());
 
         //Instances to count
-        Json countingConfiguration = Json.object();
-        countingConfiguration.set(KEYSPACE, keyspace);
-        countingConfiguration.set(COMMIT_LOG_COUNTING, Json.read(req.body()).at(COMMIT_LOG_COUNTING));
-
-        TaskState countingTask = TaskState.of(
-                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now());
+        TaskState countingTaskState = UpdatingInstanceCountTask.createTask(this.getClass());
+        TaskConfiguration countingTaskConfiguration = UpdatingInstanceCountTask.createConfig(keyspace, req.body());
 
         // Send two tasks to the pipeline
-        manager.addLowPriorityTask(postProcessingTask, TaskConfiguration.of(postProcessingConfiguration));
-        manager.addHighPriorityTask(countingTask, TaskConfiguration.of(countingConfiguration));
+        manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration);
+        manager.addTask(countingTaskState, countingTaskConfiguration);
 
-        return "PP Task [ " + postProcessingTask.getId().getValue() + " ] and Counting task [" + countingTask.getId().getValue() + "] created for graph [" + keyspace + "]";
+
+
+        return "PP Task [ " + postProcessingTaskState.getId().getValue() + " ] and Counting task [" + countingTaskState.getId().getValue() + "] created for graph [" + keyspace + "]";
     }
 }

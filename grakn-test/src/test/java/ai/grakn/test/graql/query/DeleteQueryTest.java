@@ -19,7 +19,7 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
@@ -229,23 +229,31 @@ public class DeleteQueryTest {
 
     @Test
     public void testDeleteResource() {
-        MatchQuery godfather = qb.match(var().has("title", "Godfather"));
-        ConceptId id = qb.match(
-                var("x").has("title", "Godfather"),
-                var("a").rel("x").rel("y").isa(Schema.ImplicitType.HAS.getLabel("tmdb-vote-count").getValue())
-        ).get("a").findFirst().get().getId();
-        MatchQuery relation = qb.match(var().id(id));
-        MatchQuery voteCount = qb.match(var().val(1000L).isa("tmdb-vote-count"));
+        boolean implicitConcepts = movieGraph.graph().implicitConceptsVisible();
 
-        assertTrue(exists(godfather));
-        assertTrue(exists(relation));
-        assertTrue(exists(voteCount));
+        try {
+            movieGraph.graph().showImplicitConcepts(true);
 
-        qb.match(var("x").val(1000L).isa("tmdb-vote-count")).delete("x").execute();
+            MatchQuery godfather = qb.match(var().has("title", "Godfather"));
+            ConceptId id = qb.match(
+                    var("x").has("title", "Godfather"),
+                    var("a").rel("x").rel("y").isa(Schema.ImplicitType.HAS.getLabel("tmdb-vote-count").getValue())
+            ).get("a").findFirst().get().getId();
+            MatchQuery relation = qb.match(var().id(id));
+            MatchQuery voteCount = qb.match(var().val(1000L).isa("tmdb-vote-count"));
 
-        assertTrue(exists(godfather));
-        assertFalse(exists(relation)); //Relation is implicit it was deleted
-        assertFalse(exists(voteCount));
+            assertTrue(exists(godfather));
+            assertTrue(exists(relation));
+            assertTrue(exists(voteCount));
+
+            qb.match(var("x").val(1000L).isa("tmdb-vote-count")).delete("x").execute();
+
+            assertTrue(exists(godfather));
+            assertFalse(exists(relation)); //Relation is implicit it was deleted
+            assertFalse(exists(voteCount));
+        } finally {
+            movieGraph.graph().showImplicitConcepts(implicitConcepts);
+        }
     }
 
     @Test
@@ -286,7 +294,7 @@ public class DeleteQueryTest {
         assertTrue(exists(movieType));
         assertTrue(exists(movie));
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(allOf(containsString("movie"), containsString("delet")));
         movieType.delete("x").execute();
     }
@@ -297,7 +305,7 @@ public class DeleteQueryTest {
 
         assertTrue(exists(productionType));
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(allOf(containsString("production"), containsString("delet")));
         productionType.delete("x").execute();
     }
@@ -308,7 +316,7 @@ public class DeleteQueryTest {
 
         assertTrue(exists(actor));
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(allOf(containsString("actor"), containsString("delet")));
         actor.delete("x").execute();
     }

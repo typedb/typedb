@@ -48,7 +48,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getValuePredicates;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static java.util.stream.Collectors.joining;
 
@@ -122,8 +122,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                shortcut(relation, edge1, start),
-                shortcut(relation, edge2, resource.getVarName()),
+                shortcut(relation, edge1, start, Optional.empty()),
+                shortcut(relation, edge2, resource.getVarName(), Optional.empty()),
                 neq(edge1, edge2)
         );
     }

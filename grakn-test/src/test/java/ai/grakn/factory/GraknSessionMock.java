@@ -35,8 +35,8 @@ public class GraknSessionMock extends GraknSessionImpl {
     }
 
     public GraknComputer getGraphComputer(int numberOfWorkers) {
-        ConfiguredFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.COMPUTER);
-        Graph graph = configuredFactory.factory.getTinkerPopGraph(false);
-        return new GraknComputerMock(graph, configuredFactory.graphComputer, numberOfWorkers);
+        InternalFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.COMPUTER);
+        Graph graph = configuredFactory.getTinkerPopGraph(false);
+        return new GraknComputerMock(graph, numberOfWorkers);
     }
 }

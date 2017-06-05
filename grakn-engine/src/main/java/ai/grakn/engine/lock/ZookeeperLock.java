@@ -18,14 +18,14 @@
 
 package ai.grakn.engine.lock;
 
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.exception.EngineStorageException;
-import java.util.regex.Pattern;
+import ai.grakn.engine.tasks.connection.ZookeeperConnection;
+import ai.grakn.exception.GraknBackendException;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.regex.Pattern;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -60,14 +60,14 @@ public class ZookeeperLock implements Lock {
      * Acquires the lock. If the lock is not available, stalls the current thread until it is available.
      * See {@link InterProcessSemaphoreMutex#acquire()} for more information.
      *
-     * @throws EngineStorageException when there are Zookeeper connection issues.
+     * @throws GraknBackendException when there are Zookeeper connection issues.
      */
     @Override
     public void lock() {
         try {
             mutex.acquire();
         } catch (Exception e) {
-            throw new EngineStorageException(e);
+            throw GraknBackendException.stateStorage(e);
         }
     }
 
@@ -90,7 +90,7 @@ public class ZookeeperLock implements Lock {
                 return true;
             }
         } catch (Exception e) {
-            throw new EngineStorageException(e);
+            throw GraknBackendException.stateStorage(e);
         }
 
         return false;
@@ -112,7 +112,7 @@ public class ZookeeperLock implements Lock {
                 return true;
             }
         } catch (Exception e) {
-            throw new EngineStorageException(e);
+            throw GraknBackendException.stateStorage(e);
         }
 
         return false;
@@ -120,15 +120,14 @@ public class ZookeeperLock implements Lock {
 
     /**
      *
-     *
-     * @throws EngineStorageException when there are Zookeeper connection issues.
+     * @throws GraknBackendException when there are Zookeeper connection issues.
      */
     @Override
     public void unlock() {
         try {
             mutex.release();
         } catch (Exception e) {
-            throw new EngineStorageException(e);
+            throw GraknBackendException.stateStorage(e);
         }
     }
 

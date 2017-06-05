@@ -23,11 +23,9 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graphs.AdmissionsGraph;
 import ai.grakn.graphs.CWGraph;
 import ai.grakn.graphs.GeoGraph;
-import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -43,6 +41,8 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.test.GraphContext;
+import ai.grakn.test.SNBGraph;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
@@ -108,6 +108,19 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
         assertEquals(atomicQuery, copy);
         assertEquals(atomicQuery.hashCode(), copy.hashCode());
+    }
+
+    @Test
+    public void testAlphaEquivalence_RepeatingVariables(){
+        GraknGraph graph = snbGraph.graph();
+        String patternString = "{(recommended-customer: $x, recommended-product: $y);}";
+        String patternString2 = "{(recommended-customer: $x, recommended-product: $x);}";
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
+        assertNotEquals(query, query2);
     }
 
     @Test

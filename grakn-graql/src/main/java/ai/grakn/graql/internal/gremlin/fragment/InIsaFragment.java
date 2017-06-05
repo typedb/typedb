@@ -30,48 +30,24 @@ import static ai.grakn.util.Schema.EdgeLabel.SHARD;
 
 class InIsaFragment extends AbstractFragment {
 
-    private final boolean allowCastings;
-
-    InIsaFragment(Var start, Var end, boolean allowCastings) {
+    InIsaFragment(Var start, Var end) {
         super(start, end);
-        this.allowCastings = allowCastings;
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
         Fragments.inSubs(traversal).in(SHARD.getLabel()).in(ISA.getLabel());
-        if (!allowCastings) {
-            // Make sure we never get any castings
-            traversal.not(__.hasLabel(Schema.BaseType.CASTING.name()));
-        }
+        // Make sure we never get any castings
+        traversal.not(__.hasLabel(Schema.BaseType.CASTING.name()));
     }
 
     @Override
     public String getName() {
-        return "<-[isa" + (allowCastings ? ":allow-castings" : "") + "]-";
+        return "<-[isa]-";
     }
 
     @Override
     public double fragmentCost(double previousCost) {
         return previousCost * NUM_INSTANCES_PER_TYPE;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        InIsaFragment that = (InIsaFragment) o;
-
-        return allowCastings == that.allowCastings;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (allowCastings ? 1 : 0);
-        return result;
     }
 }

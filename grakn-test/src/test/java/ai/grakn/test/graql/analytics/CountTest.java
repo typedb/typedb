@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
@@ -32,8 +31,9 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static org.junit.Assume.assumeFalse;
@@ -44,7 +44,6 @@ public class CountTest {
     public static final EngineContext rule = EngineContext.startInMemoryServer();
 
     private GraknSession factory;
-    private GraknGraph graph;
 
     @Before
     public void setUp() {
@@ -52,65 +51,74 @@ public class CountTest {
         assumeFalse(usingOrientDB());
 
         factory = rule.factoryWithNewKeyspace();
-        graph = factory.open(GraknTxType.WRITE);
     }
 
     @Test
-    public void testCount() throws Exception {
-        // assert the graph is empty
-        long startTime = System.currentTimeMillis();
-        Assert.assertEquals(0L, Graql.compute().count().withGraph(graph).execute().longValue());
-        System.out.println(System.currentTimeMillis() - startTime + " ms");
-        Assert.assertEquals(0L, graph.graql().compute().count().execute().longValue());
-
-        // create 3 instances
+    public void testCountAfterCommit() throws Exception {
         String nameThing = "thing";
         String nameAnotherThing = "another";
-        EntityType thing = graph.putEntityType(nameThing);
-        EntityType anotherThing = graph.putEntityType(nameAnotherThing);
-        thing.addEntity();
-        thing.addEntity();
-        anotherThing.addEntity();
-        graph.commit();
-        graph = factory.open(GraknTxType.WRITE);
 
-        // assert computer returns the correct count of instances
-        startTime = System.currentTimeMillis();
-        Assert.assertEquals(2L,
-                graph.graql().compute().count().in(Collections.singleton(TypeLabel.of(nameThing))).execute().longValue());
-        System.out.println(System.currentTimeMillis() - startTime + " ms");
-        startTime = System.currentTimeMillis();
-        Assert.assertEquals(2L,
-                Graql.compute().withGraph(graph).count().in(nameThing).execute().longValue());
-        System.out.println(System.currentTimeMillis() - startTime + " ms");
+        // assert the graph is empty
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            Assert.assertEquals(0L, Graql.compute().count().withGraph(graph).execute().longValue());
+            Assert.assertEquals(0L, graph.graql().compute().count().execute().longValue());
+        }
 
-        startTime = System.currentTimeMillis();
-        Assert.assertEquals(3L, graph.graql().compute().count().execute().longValue());
-        System.out.println(System.currentTimeMillis() - startTime + " ms");
+        // add 2 instances
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+            EntityType thing = graph.putEntityType(nameThing);
+            thing.addEntity().getId();
+            thing.addEntity().getId();
+            graph.commit();
+        }
+
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            Assert.assertEquals(2L,
+                    Graql.compute().withGraph(graph).count().in(nameThing).execute().longValue());
+        }
+
+        // create 1 more, rdd is refreshed
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+            EntityType anotherThing = graph.putEntityType(nameAnotherThing);
+            anotherThing.addEntity().getId();
+            graph.commit();
+        }
+
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            // assert computer returns the correct count of instances
+            Assert.assertEquals(2L,
+                    Graql.compute().withGraph(graph).count().in(nameThing).execute().longValue());
+            Assert.assertEquals(3L, graph.graql().compute().count().execute().longValue());
+            GraknSparkComputer.clear();
+            Assert.assertEquals(3L, Graql.compute().count().withGraph(graph).execute().longValue());
+        }
+
         GraknSparkComputer.clear();
-        startTime = System.currentTimeMillis();
-        Assert.assertEquals(3L, Graql.compute().count().withGraph(graph).execute().longValue());
-        System.out.println(System.currentTimeMillis() - startTime + " ms");
-
         List<Long> list = new ArrayList<>(4);
         for (long i = 0L; i < 4L; i++) {
             list.add(i);
         }
-        GraknSparkComputer.clear();
 
-        graph.close();
         // running 4 jobs at the same time
-        list.parallelStream()
+        // collecting the result in the end so engine won't stop before the test finishes
+        Set<Long> result;
+        result = list.parallelStream()
                 .map(i -> executeCount(factory))
-                .forEach(i -> Assert.assertEquals(3L, i.longValue()));
-        list.parallelStream()
+                .collect(Collectors.toSet());
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(3L, result.iterator().next().longValue());
+
+        result = list.parallelStream()
                 .map(i -> executeCount(factory))
-                .forEach(i -> Assert.assertEquals(3L, i.longValue()));
+                .collect(Collectors.toSet());
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(3L, result.iterator().next().longValue());
+
     }
-    private Long executeCount(GraknSession factory){
-        GraknGraph graph = factory.open(GraknTxType.READ);
-        Long result = graph.graql().compute().count().execute();
-        graph.close();
-        return result;
+
+    private Long executeCount(GraknSession factory) {
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            return graph.graql().compute().count().execute();
+        }
     }
 }

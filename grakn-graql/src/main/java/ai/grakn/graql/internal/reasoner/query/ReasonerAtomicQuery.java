@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.RelationType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -44,7 +45,9 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import java.util.Comparator;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,8 +63,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getListPermutations;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUnifiersFromPermutations;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getListPermutations;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilterWithInverse;
 
@@ -247,8 +250,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @return answers from rule resolution
      */
     private Stream<Answer> resolveViaRule(InferenceRule rule,
-                                          Unifier u,
-                                          Unifier pu,
+                                          Unifier ruleUnifier,
+                                          Unifier permutationUnifier,
                                           Set<ReasonerAtomicQuery> subGoals,
                                           Cache<ReasonerAtomicQuery, ?> cache,
                                           Cache<ReasonerAtomicQuery, ?> dCache,
@@ -258,8 +261,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Atom atom = this.getAtom();
 
         LOG.trace("Applying rule to: " + this + rule);
-        LOG.trace("t: " + u);
-        LOG.trace("tp: " + pu);
+        LOG.trace("t: " + ruleUnifier);
+        LOG.trace("tp: " + permutationUnifier);
 
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
@@ -270,7 +273,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .computeJoin(subGoals, cache, dCache, materialise, explanation, differentialJoin)
                 .map(a -> a.filterVars(varsToRetain))
                 .distinct()
-                .map(ans -> ans.explain(new RuleExplanation(rule)));
+                .map(ans -> ans.explain(new RuleExplanation(this, rule)));
 
         if (materialise || rule.requiresMaterialisation(atom)) {
             if (!cache.contains(ruleHead)) dCache.record(ruleHead, ruleHead.lookup(cache));
@@ -286,14 +289,14 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             answers = dCache.record(ruleHead, answers);
         }
 
-
         //unify answers
         boolean isHeadEquivalent = this.isEquivalent(ruleHead);
-        Set<Var> queryVars = this.getVarNames().size() < ruleHead.getVarNames().size()? u.keySet() : ruleHead.getVarNames();
+        Set<Var> queryVars = this.getVarNames().size() < ruleHead.getVarNames().size()? ruleUnifier.keySet() : ruleHead.getVarNames();
         answers = answers
                 .map(a -> a.filterVars(queryVars))
-                .map(a -> a.unify(u))
-                .map(a -> a.unify(pu));
+                .map(a -> a.unify(ruleUnifier))
+                .map(a -> a.unify(permutationUnifier))
+                .filter(a -> !a.isEmpty());
 
         //if query not exactly equal to the rule head, do some conversion
         return  isHeadEquivalent? dCache.record(this, answers) : dCache.record(this, getFilteredAnswerStream(answers));
@@ -349,19 +352,47 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ReasonerQueryIterator iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return new ReasonerAtomicQueryIterator(this, sub, subGoals, cache);
+    public Iterator<Answer> iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        Iterator<ReasonerAtomicQueryIterator> qIterator = getQueryStream()
+                .map(q -> new ReasonerAtomicQueryIterator(q, sub, subGoals, cache))
+                .iterator();
+        return Iterators.concat(qIterator);
     }
 
+    /**
+     * @return stream of atomic query obtained by inserting all inferred possible types (if ambiguous)
+     */
+    Stream<ReasonerAtomicQuery> getQueryStream(){
+        Atom atom = getAtom();
+        if (!atom.isRelation() || atom.getType() != null) return Stream.of(this);
+        else{
+            List<RelationType> relationTypes = ((Relation) atom).inferPossibleRelationTypes();
+            return relationTypes.stream()
+                    .map(type -> ((Relation) AtomicFactory.create(atom, atom.getParentQuery())).addType(type))
+                    .map(ReasonerAtomicQuery::new);
+        }
+    }
+
+    /**
+     * @return iterator of all rules applicable to this atomic query including permuted cases when the role types are blank
+     */
     Iterator<RuleTuple> getRuleIterator(){
         return getAtom().getApplicableRules().stream()
                 .flatMap(r -> {
                     r.rewriteToUserDefined(getAtom());
                     Unifier ruleUnifier = r.getUnifier(getAtom());
+                    Unifier ruleUnifierInv = ruleUnifier.inverse();
                     return getPermutationUnifiers(r.getHead().getAtom()).stream()
-                            .map(pu -> new RuleTuple(new InferenceRule(r).propagateConstraints(getAtom(), ruleUnifier.inverse(), pu), ruleUnifier, pu));
-                }).iterator();
+                            .map(permutationUnifier ->
+                                    new RuleTuple(new InferenceRule(r)
+                                            .propagateConstraints(getAtom(), permutationUnifier.combine(ruleUnifierInv)),
+                                            ruleUnifier,
+                                            permutationUnifier));
+                })
+                .sorted(Comparator.comparing(rt -> -rt.getRule().resolutionPriority()))
+                .iterator();
     }
+
     /**
      *
      * <p>

@@ -44,9 +44,25 @@ public class TaskState implements Serializable {
     private static final long serialVersionUID = -7301340972479426653L;
 
     /**
+     * The priority of the task which decides which queue the task should go into
+     */
+    public enum Priority{
+        LOW,
+        HIGH;
+
+        public String queue(){
+            return name() + "-priority-queue";
+        }
+    }
+
+    /**
      * Id of this task.
      */
     private final String taskId;
+    /**
+     * The priority of the task which decides which queue the task should go into
+     */
+    private final Priority priority;
     /**
      * Task status, @see TaskStatus.
      */
@@ -81,17 +97,18 @@ public class TaskState implements Serializable {
      */
     private TaskCheckpoint taskCheckpoint;
 
-    public static TaskState of(Class<?> taskClass, String creator, TaskSchedule schedule) {
-        return new TaskState(taskClass, creator, schedule, TaskId.generate());
+    public static TaskState of(Class<?> taskClass, String creator, TaskSchedule schedule, Priority priority) {
+        return new TaskState(taskClass, creator, schedule, TaskId.generate(), priority);
     }
 
-    private TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, TaskId id) {
+    private TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, TaskId id, Priority priority) {
         this.status = CREATED;
         this.statusChangeTime = now();
         this.taskClassName = taskClass != null ? taskClass.getName() : null;
         this.creator = creator;
         this.schedule = schedule;
         this.taskId = id.getValue();
+        this.priority = priority;
     }
 
     private TaskState(TaskState taskState) {
@@ -105,6 +122,7 @@ public class TaskState implements Serializable {
         this.stackTrace = taskState.stackTrace;
         this.exception = taskState.exception;
         this.taskCheckpoint = taskState.taskCheckpoint;
+        this.priority = taskState.priority;
     }
 
     public TaskId getId() {
@@ -199,6 +217,10 @@ public class TaskState implements Serializable {
     public TaskState checkpoint(TaskCheckpoint taskCheckpoint) {
         this.taskCheckpoint = taskCheckpoint;
         return this;
+    }
+
+    public Priority priority(){
+        return priority;
     }
 
     public TaskCheckpoint checkpoint() {

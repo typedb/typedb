@@ -24,8 +24,8 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
@@ -222,11 +222,11 @@ class GraqlSession {
 
                 // Return results unless query is cancelled
                 queries.stream().flatMap(query -> query.resultsString(printer)).forEach(this::sendQueryResult);
-            } catch (IllegalArgumentException | IllegalStateException | ConceptException e) {
+            } catch (IllegalArgumentException | IllegalStateException | GraphOperationException e) {
                 errorMessage = e.getMessage();
                 LOG.error(errorMessage,e);
             } catch (Throwable e) {
-                errorMessage = "An unexpected error occurred";
+                errorMessage = getFullStackTrace(e);
                 LOG.error(errorMessage,e);
             } finally {
                 if (errorMessage != null) {
@@ -248,7 +248,7 @@ class GraqlSession {
         queryExecutor.execute(() -> {
             try {
                 graph.commit();
-            } catch (GraknValidationException e) {
+            } catch (InvalidGraphException e) {
                 sendError(e.getMessage());
             } finally {
                 sendEnd();
@@ -272,7 +272,7 @@ class GraqlSession {
      */
     void clean() {
         queryExecutor.execute(() -> {
-            graph.clear();
+            graph.admin().delete();
             attemptRefresh();
         });
     }

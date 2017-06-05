@@ -31,11 +31,8 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.ConceptNotUniqueException;
-import ai.grakn.exception.InvalidConceptTypeException;
-import ai.grakn.exception.InvalidConceptValueException;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -111,36 +108,26 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     /**
      * Deletes the concept.
-     * @throws ConceptException Throws an exception if the node has any edges attached to it.
+     * @throws GraphOperationException Throws an exception if the node has any edges attached to it.
      */
     @Override
-    public void delete() throws ConceptException {
+    public void delete() throws GraphOperationException {
         deleteNode();
     }
 
     /**
      *
      * @param key The key of the unique property to mutate
-     * @param id The new value of the unique property
+     * @param value The new value of the unique property
      * @return The concept itself casted to the correct interface itself
      */
-    T setUniqueProperty(Schema.ConceptProperty key, String id){
-        if(graknGraph.isBatchLoadingEnabled() || updateAllowed(key, id)) {
-            return setProperty(key, id);
-        } else {
-            throw new ConceptNotUniqueException(this, key, id);
+    T setUniqueProperty(Schema.ConceptProperty key, String value){
+        if(!graknGraph.isBatchGraph()) {
+            Concept fetchedConcept = graknGraph.getConcept(key, value);
+            if (fetchedConcept != null) throw PropertyNotUniqueException.cannotChangeProperty(this, fetchedConcept, key, value);
         }
-    }
 
-    /**
-     *
-     * @param key The key of the unique property to mutate
-     * @param value The value to check
-     * @return True if the concept can be updated. I.e. the value is unique for the property.
-     */
-    private boolean updateAllowed(Schema.ConceptProperty key, String value) {
-        Concept fetchedConcept = graknGraph.getConcept(key, value);
-        return fetchedConcept == null || this.equals(fetchedConcept);
+        return setProperty(key, value);
     }
 
     /**
@@ -157,13 +144,13 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param type The type to cast to
      * @param <E> The type of the interface we are casting to.
      * @return The concept itself casted to the defined interface
-     * @throws InvalidConceptTypeException when casting a concept incorrectly
+     * @throws GraphOperationException when casting a concept incorrectly
      */
     private <E extends Concept> E castConcept(Class<E> type){
         try {
             return type.cast(this);
         } catch(ClassCastException e){
-            throw new InvalidConceptTypeException(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(this, type));
+            throw GraphOperationException.invalidConceptCasting(this, type);
         }
     }
 
@@ -537,8 +524,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     public boolean equals(Object object) {
         //Compare Concept
         //based on id because vertex comparisons are equivalent
-        if (this == object) return true;
-        return object instanceof ConceptImpl && ((ConceptImpl) object).getId().equals(getId());
+        return this == object || object instanceof ConceptImpl && ((ConceptImpl) object).getId().equals(getId());
     }
 
     @Override
@@ -563,12 +549,12 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     <X> void setImmutableProperty(Schema.ConceptProperty conceptProperty, X newValue, X foundValue, Function<X, Object> converter){
         if(newValue == null){
-            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(conceptProperty.name()));
+            throw GraphOperationException.settingNullProperty(conceptProperty);
         }
 
         if(foundValue != null){
             if(!foundValue.equals(newValue)){
-                throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(foundValue, this, newValue, conceptProperty.name()));
+                throw GraphOperationException.immutableProperty(foundValue, newValue, this, conceptProperty);
             }
         } else {
             setProperty(conceptProperty, converter.apply(newValue));
@@ -600,8 +586,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     //TODO: Return implementation rather than interface
     T currentShard(){
         String currentShardId = getProperty(Schema.ConceptProperty.CURRENT_SHARD);
-        if(currentShardId == null) throw new ConceptException(ErrorMessage.CONCEPT_HAS_NO_SHARD.getMessage(this));
-
         return getGraknGraph().getConcept(ConceptId.of(currentShardId));
     }
 
@@ -612,5 +596,15 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     void isShard(Boolean isShard){
         if(isShard) setProperty(Schema.ConceptProperty.IS_SHARD, isShard);
         cachedIsShard.set(isShard);
+    }
+
+    long getShardCount(){
+        Long value = getProperty(Schema.ConceptProperty.SHARD_COUNT);
+        if(value == null) return 0L;
+        return value;
+    }
+
+    void setShardCount(Long instanceCount){
+        setProperty(Schema.ConceptProperty.SHARD_COUNT, instanceCount);
     }
 }

@@ -14,16 +14,14 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.junit.Test;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -45,13 +43,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class GraknGraphTest extends GraphTestBase {
-
-    @Test
-    public void whenGettingConceptByRawID_ReturnTheConcept(){
-        EntityType c1 = graknGraph.putEntityType("c1");
-        Concept c2 = graknGraph.getConceptRawId(c1.getId());
-        assertEquals(c1, c2);
-    }
 
     @Test
     public void whenGettingConceptById_ReturnTheConcept(){
@@ -216,7 +207,7 @@ public class GraknGraphTest extends GraphTestBase {
         Future future = pool.submit(() -> {
             try{
                 graph.putEntityType("A Thing");
-            } catch (GraphRuntimeException e){
+            } catch (GraphOperationException e){
                 if(e.getMessage().equals(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()))){
                     errorThrown[0] = true;
                 }
@@ -228,14 +219,14 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
-    public void attemptingToUseClosedGraphFailingThenOpeningGraph_EnsureGraphIsUsable() throws GraknValidationException {
+    public void attemptingToUseClosedGraphFailingThenOpeningGraph_EnsureGraphIsUsable() throws InvalidGraphException {
         GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "testing-again").open(GraknTxType.WRITE);
         graph.close();
 
         boolean errorThrown = false;
         try{
             graph.putEntityType("A Thing");
-        } catch (GraphRuntimeException e){
+        } catch (GraphOperationException e){
             if(e.getMessage().equals(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))){
                 errorThrown = true;
             }
@@ -247,7 +238,7 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
-    public void checkThatMainCentralCacheIsNotAffectedByTransactionModifications() throws GraknValidationException, ExecutionException, InterruptedException {
+    public void checkThatMainCentralCacheIsNotAffectedByTransactionModifications() throws InvalidGraphException, ExecutionException, InterruptedException {
         //Check Central cache is empty
         assertCacheOnlyContainsMetaTypes();
 
@@ -348,7 +339,7 @@ public class GraknGraphTest extends GraphTestBase {
         }
 
         assertNotNull("No exception thrown when attempting to mutate a read only graph", caughtException);
-        assertThat(caughtException, instanceOf(GraphRuntimeException.class));
+        assertThat(caughtException, instanceOf(GraphOperationException.class));
         assertEquals(caughtException.getMessage(), ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.getKeyspace()));
         assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.admin().getTinkerTraversal().toList().size());
         assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.admin().getTinkerTraversal().bothE().toList().size());
@@ -374,17 +365,16 @@ public class GraknGraphTest extends GraphTestBase {
         try{
             //noinspection ResultOfMethodCallIgnored
             session.open(txType);
-        } catch (GraphRuntimeException e){
+        } catch (GraphOperationException e){
             exception = e;
         }
         assertNotNull(exception);
-        assertThat(exception, instanceOf(GraphRuntimeException.class));
+        assertThat(exception, instanceOf(GraphOperationException.class));
         assertEquals(exception.getMessage(), ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(keyspace));
     }
 
     @Test
     public void whenShardingSuperNode_EnsureNewInstancesGoToNewShard(){
-        Map<TypeLabel, Long> counts = new HashMap<>();
         EntityTypeImpl entityType = (EntityTypeImpl) graknGraph.putEntityType("The Special Type");
         EntityType s1 = entityType.currentShard();
 
@@ -392,23 +382,18 @@ public class GraknGraphTest extends GraphTestBase {
         Entity s1_e1 = entityType.addEntity();
         Entity s1_e2 = entityType.addEntity();
         Entity s1_e3 = entityType.addEntity();
-        counts.put(entityType.getLabel(), 200_000L); //Fake the creation of a super node
+        graknGraph.admin().shard(entityType.getId());
 
-        graknGraph.admin().updateTypeShards(counts); //Shard
         EntityType s2 = entityType.currentShard();
 
         //Add 5 instances to second shard
         Entity s2_e1 = entityType.addEntity();
         Entity s2_e2 = entityType.addEntity();
-
-        counts.put(entityType.getLabel(), 90_000L);
-        graknGraph.admin().updateTypeShards(counts); //Don't Shard because we not near super nodes
-
         Entity s2_e3 = entityType.addEntity();
         Entity s2_e4 = entityType.addEntity();
         Entity s2_e5 = entityType.addEntity();
 
-        graknGraph.admin().updateTypeShards(counts); //Shard Again
+        graknGraph.admin().shard(entityType.getId());
         EntityType s3 = entityType.currentShard();
 
         //Add 2 instances to 3rd shard
@@ -425,7 +410,7 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
-    public void checkComplexSampleOntologyCanLoad() throws GraknValidationException {
+    public void checkComplexSampleOntologyCanLoad() throws InvalidGraphException {
         graknGraph.graql().parse("insert\n" +
                 "user-interaction sub relation is-abstract;\n" +
                 "qa sub user-interaction\n" +

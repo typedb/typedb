@@ -24,6 +24,8 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.test.graphs.TestGraph;
+
 import java.util.function.Consumer;
 
 public class DiagonalGraph extends TestGraph {

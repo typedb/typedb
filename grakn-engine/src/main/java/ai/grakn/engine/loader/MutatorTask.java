@@ -19,18 +19,25 @@
 package ai.grakn.engine.loader;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.postprocessing.GraphMutators;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.util.REST;
+import mjson.Json;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import mjson.Json;
 
 import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
 import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
@@ -46,13 +53,16 @@ import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
  */
 public class MutatorTask implements BackgroundTask {
 
+    private static final GraknEngineConfig CONFIG = GraknEngineConfig.getInstance();
+    private static final EngineGraknGraphFactory FACTORY = EngineGraknGraphFactory.create(CONFIG.getProperties());
+
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
         Collection<Query> inserts = getInserts(configuration);
-        GraphMutators.runBatchMutationWithRetry(configuration, (graph) ->
-                insertQueriesInOneTransaction(graph, inserts)
+        GraphMutators.runBatchMutationWithRetry(FACTORY, configuration.json().at(REST.Request.KEYSPACE).asString(), (graph) ->
+                insertQueriesInOneTransaction(graph, inserts, taskSubmitter)
         );
 
         return true;
@@ -77,16 +87,22 @@ public class MutatorTask implements BackgroundTask {
      * Execute the given queries against the given graph. Return if the operation was successfully completed.
      * @param graph grakn graph in which to insert the data
      * @param inserts graql queries to insert into the graph
+     * @param taskSubmitter allows new commit logs to be submitted for post processing
      * @return true if the data was inserted, false otherwise
      */
-    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts) {
+    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts, TaskSubmitter taskSubmitter) {
         graph.showImplicitConcepts(true);
 
         inserts.forEach(q -> q.withGraph(graph).execute());
 
-        // commit the transaction
-        //TODO This commit uses the rest API, it shouldn't
-        graph.commit();
+        Optional<String> result = graph.admin().commitNoLogs();
+        if(result.isPresent()){ //Submit more tasks if commit resulted in created commit logs
+            String logs = result.get();
+            taskSubmitter.addTask(PostProcessingTask.createTask(this.getClass()),
+                    PostProcessingTask.createConfig(graph.getKeyspace(), logs));
+            taskSubmitter.addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
+                    UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));
+        }
 
         return true;
     }

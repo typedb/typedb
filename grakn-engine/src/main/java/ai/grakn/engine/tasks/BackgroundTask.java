@@ -30,10 +30,11 @@ public interface BackgroundTask {
      * Called to start execution of the task, may be called on a newly scheduled or previously stopped task.
      * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
      *                       the task to resume from this point should it crash.
-     *
+     * @param configuration The configuration needed to execute the task
+     * @param taskSubmitter Allows followup tasks to be submitted for processing
      * @return true if the task successfully completed, or false if it was stopped.
      */
-    boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration);
+    boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter);
 
     /**
      * Called to stop execution of the task, may be called on a running or paused task.

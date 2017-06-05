@@ -18,15 +18,15 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
-import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.test.GraphContext;
+import ai.grakn.test.SNBGraph;
+
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
