@@ -168,6 +168,8 @@ public class StandaloneTaskManager implements TaskManager {
         return () -> {
             try {
                 BackgroundTask runningTask = task.taskClass().newInstance();
+                runningTask.initialize(this);
+
                 runningTasks.put(task.getId(), runningTask);
 
                 boolean completed;
@@ -180,7 +182,7 @@ public class StandaloneTaskManager implements TaskManager {
 
                     saveState(task);
 
-                    completed = runningTask.start(saveCheckpoint(task), configuration, this);
+                    completed = runningTask.start(saveCheckpoint(task), configuration);
                 }
 
                 if (completed) {

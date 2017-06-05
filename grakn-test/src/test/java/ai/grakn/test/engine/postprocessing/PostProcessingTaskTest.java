@@ -24,8 +24,6 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskSubmitter;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
@@ -57,14 +55,12 @@ public class PostProcessingTaskTest {
     private Set<ConceptId> mockResourceSet;
     private TaskConfiguration mockConfiguration;
     private Consumer<TaskCheckpoint> mockConsumer;
-    private TaskSubmitter mockTaskSubmitter;
 
     @Before
     public void mockPostProcessing(){
         mockConsumer = mock(Consumer.class);
         mockCastingIndex = UUID.randomUUID().toString();
         mockResourceIndex = UUID.randomUUID().toString();
-        mockTaskSubmitter = mock(StandaloneTaskManager.class);
         mockCastingSet = Sets.newHashSet();
         mockResourceSet = Sets.newHashSet();
         mockConfiguration = mock(TaskConfiguration.class);
@@ -83,7 +79,7 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.start(mockConsumer, mockConfiguration, mockTaskSubmitter);
+        task.start(mockConsumer, mockConfiguration);
 
         verify(mockConfiguration, times(4)).json();
     }
@@ -92,7 +88,7 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.start(mockConsumer, mockConfiguration, mockTaskSubmitter);
+        task.start(mockConsumer, mockConfiguration);
 
         verify(mockConfiguration, times(4)).json();
     }
@@ -103,8 +99,8 @@ public class PostProcessingTaskTest {
         PostProcessingTask task1 = new PostProcessingTask();
         PostProcessingTask task2 = new PostProcessingTask();
 
-        Thread pp1 = new Thread(() -> task1.start(mockConsumer, mockConfiguration, mockTaskSubmitter));
-        Thread pp2 = new Thread(() -> task2.start(mockConsumer, mockConfiguration, mockTaskSubmitter));
+        Thread pp1 = new Thread(() -> task1.start(mockConsumer, mockConfiguration));
+        Thread pp2 = new Thread(() -> task2.start(mockConsumer, mockConfiguration));
 
         pp1.start();
         pp2.start();

@@ -18,6 +18,9 @@
 
 package ai.grakn.engine.tasks;
 
+import com.google.common.base.Preconditions;
+
+import javax.annotation.Nullable;
 import java.util.function.Consumer;
 
 /**
@@ -26,15 +29,26 @@ import java.util.function.Consumer;
  * @author Denis Lobanov
  */
 public abstract class BackgroundTask {
+
+    private @Nullable TaskSubmitter taskSubmitter = null;
+
+    /**
+     * Initialize the {@link BackgroundTask}. This must be called prior to any other call to {@link BackgroundTask}.
+     *
+     * @param taskSubmitter Allows followup tasks to be submitted for processing
+     */
+    public final void initialize(TaskSubmitter taskSubmitter) {
+        this.taskSubmitter = taskSubmitter;
+    }
+
     /**
      * Called to start execution of the task, may be called on a newly scheduled or previously stopped task.
      * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
      *                       the task to resume from this point should it crash.
      * @param configuration The configuration needed to execute the task
-     * @param taskSubmitter Allows followup tasks to be submitted for processing
      * @return true if the task successfully completed, or false if it was stopped.
      */
-    public abstract boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter);
+    public abstract boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration);
 
     /**
      * Called to stop execution of the task, may be called on a running or paused task.
@@ -78,6 +92,16 @@ public abstract class BackgroundTask {
      */
     public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
         throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be resumed");
+    }
+
+    /**
+     * Submit a new task for execution
+     * @param taskState state describing the task
+     * @param configuration any configuration options for the task
+     */
+    public final void addTask(TaskState taskState, TaskConfiguration configuration) {
+        Preconditions.checkNotNull(taskSubmitter, "BackgroundTask#initialise must be called before adding tasks");
+        taskSubmitter.addTask(taskState, configuration);
     }
 
 }

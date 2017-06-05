@@ -211,6 +211,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             runningTaskId = task.getId();
             runningTask = task.taskClass().newInstance();
 
+            runningTask.initialize(manager);
+
             boolean completed;
 
             //TODO pass a method to retrieve checkpoint from storage to task and remove "resume" method in interface
@@ -231,7 +233,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
                 LOG.debug("{}\tmarked as running", task);
 
-                completed = runningTask.start(saveCheckpoint(task), configuration, manager);
+                completed = runningTask.start(saveCheckpoint(task), configuration);
             }
 
             if (completed) {

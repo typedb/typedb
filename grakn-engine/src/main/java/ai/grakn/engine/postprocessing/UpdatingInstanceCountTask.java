@@ -27,7 +27,6 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.REST;
@@ -58,7 +57,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
     private static final EngineGraknGraphFactory FACTORY = EngineGraknGraphFactory.create(CONFIG.getProperties());
 
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
         Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration);
         String keyspace = configuration.json().at(REST.Request.KEYSPACE).asString();
 

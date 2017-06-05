@@ -28,7 +28,6 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -71,7 +70,7 @@ public class PostProcessingTask extends BackgroundTask {
      * @return True if successful.
      */
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
         runPostProcessingMethod(configuration, Schema.BaseType.CASTING, this::duplicateCastingsExist, this::runCastingFix);
         runPostProcessingMethod(configuration, Schema.BaseType.RESOURCE, this::duplicateResourcesExist, this::runResourceFix);
 

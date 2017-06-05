@@ -27,7 +27,6 @@ import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -59,10 +58,10 @@ public class MutatorTask extends BackgroundTask {
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
         Collection<Query> inserts = getInserts(configuration);
         GraphMutators.runBatchMutationWithRetry(FACTORY, configuration.json().at(REST.Request.KEYSPACE).asString(), (graph) ->
-                insertQueriesInOneTransaction(graph, inserts, taskSubmitter)
+                insertQueriesInOneTransaction(graph, inserts)
         );
 
         return true;
@@ -72,10 +71,9 @@ public class MutatorTask extends BackgroundTask {
      * Execute the given queries against the given graph. Return if the operation was successfully completed.
      * @param graph grakn graph in which to insert the data
      * @param inserts graql queries to insert into the graph
-     * @param taskSubmitter allows new commit logs to be submitted for post processing
      * @return true if the data was inserted, false otherwise
      */
-    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts, TaskSubmitter taskSubmitter) {
+    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts) {
         graph.showImplicitConcepts(true);
 
         inserts.forEach(q -> q.withGraph(graph).execute());
@@ -83,9 +81,9 @@ public class MutatorTask extends BackgroundTask {
         Optional<String> result = graph.admin().commitNoLogs();
         if(result.isPresent()){ //Submit more tasks if commit resulted in created commit logs
             String logs = result.get();
-            taskSubmitter.addTask(PostProcessingTask.createTask(this.getClass()),
+            addTask(PostProcessingTask.createTask(this.getClass()),
                     PostProcessingTask.createConfig(graph.getKeyspace(), logs));
-            taskSubmitter.addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
+            addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
                     UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));
         }
 

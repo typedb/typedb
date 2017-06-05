@@ -27,7 +27,6 @@ import ai.grakn.concept.Resource;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
@@ -199,7 +198,7 @@ public class ResourceDeduplicationTask extends BackgroundTask {
     }
     
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
         LOG.info("Starting ResourceDeduplicationTask : " + configuration.json());
         
         String keyspace = configuration.json().at("keyspace", KEYSPACE_DEFAULT).asString();
