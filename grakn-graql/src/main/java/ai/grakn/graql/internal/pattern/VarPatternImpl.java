@@ -296,7 +296,7 @@ class VarPatternImpl implements VarPatternAdmin {
         if (name.isUserDefinedName()) {
             return name.toString();
         } else {
-            return getTypeLabel().map(StringConverter::typeLabelToString).orElse(name.toString());
+            return getTypeLabel().map(StringConverter::typeLabelToString).orElse("'" + toString() + "'");
         }
     }
 
