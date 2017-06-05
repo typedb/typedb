@@ -46,6 +46,4 @@ public class EndlessExecutionMockTask extends MockBackgroundTask {
 
     @Override
     protected void executeResumeInner(TaskCheckpoint checkpoint) {}
-
-    public void pause() {}
 }

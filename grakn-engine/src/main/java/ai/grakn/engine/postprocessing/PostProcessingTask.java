@@ -79,11 +79,6 @@ public class PostProcessingTask extends BackgroundTask {
     }
 
     @Override
-    public void pause() {
-        throw new UnsupportedOperationException("Delayed task cannot be paused");
-    }
-
-    @Override
     public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
         throw new UnsupportedOperationException("Delayed task cannot be resumed");
     }

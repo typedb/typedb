@@ -142,11 +142,6 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
     }
 
     @Override
-    public void pause() {
-        throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be paused while in progress");
-    }
-
-    @Override
     public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
         throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be resumed");
     }

@@ -54,10 +54,16 @@ public abstract class BackgroundTask {
 
     /**
      * Called to suspend the execution of a currently running task. The object may be destroyed after this call.
+     * <p>
+     * This implementation always throws {@link UnsupportedOperationException}.
+     *
+     * @throws UnsupportedOperationException if pausing the task is not supported
      *
      * TODO: stop running
      */
-    public abstract void pause();
+    public void pause() {
+        throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be paused");
+    }
 
     /**
      * This method may be called when resuming from a paused state or recovering from a crash or failure of any kind.

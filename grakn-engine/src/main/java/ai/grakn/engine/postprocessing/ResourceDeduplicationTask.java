@@ -220,11 +220,6 @@ public class ResourceDeduplicationTask extends BackgroundTask {
         return true;
     }
 
-    @Override
-    public void pause() {
-        throw new UnsupportedOperationException();
-    }
-
     public Long totalElimintated() {
         return this.totalEliminated;
     }
