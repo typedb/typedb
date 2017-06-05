@@ -102,26 +102,6 @@ public class PostProcessingTest extends GraphTestBase{
     }
 
     @Test
-    public void whenMergingCastingWhichResultInDuplicateRelations_MergeDuplicateRelations() {
-        Set<ConceptId> castingVertexIds = new HashSet<>();
-
-        CastingImpl mainCasting = (CastingImpl) instance1.castings().iterator().next();
-        castingVertexIds.add(mainCasting.getId());
-        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(mainCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance2).getId().getValue()));
-        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(mainCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue()));
-
-        assertEquals(3, instance1.relations().size());
-        assertEquals(2, instance2.relations().size());
-        assertEquals(1, instance3.relations().size());
-
-        graknGraph.fixDuplicateCastings(mainCasting.getIndex(), castingVertexIds);
-
-        assertEquals(2, instance1.relations().size());
-        assertEquals(1, instance2.relations().size());
-        assertEquals(1, instance3.relations().size());
-    }
-
-    @Test
     public void whenMergingDuplicateResources_EnsureSingleResourceRemains(){
         ResourceTypeImpl<String> resourceType = (ResourceTypeImpl<String>) graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 

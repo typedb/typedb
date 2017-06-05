@@ -30,6 +30,8 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
@@ -166,20 +168,17 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     @Override
     public Collection<Relation> relations(RoleType... roleTypes) {
         Set<Relation> relations = new HashSet<>();
-        Set<TypeLabel> roleTypeLabels = Arrays.stream(roleTypes).map(RoleType::getLabel).collect(Collectors.toSet());
+        GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerTraversal().
+                has(Schema.ConceptProperty.ID.name(), getId().getValue());
 
-        InstanceImpl<?, ?> parent = this;
-
-        parent.castings().forEach(c -> {
-            CastingImpl casting = c.asCasting();
-            if (roleTypeLabels.size() != 0) {
-                if (roleTypeLabels.contains(casting.getInternalType())) {
-                    relations.addAll(casting.getRelations());
-                }
-            } else {
-                relations.addAll(casting.getRelations());
-            }
-        });
+        if(roleTypes.length == 0){
+            traversal.in(Schema.EdgeLabel.SHORTCUT.getLabel());
+        } else {
+            Set<Integer> roleTypesIds = Arrays.stream(roleTypes).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
+            traversal.inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                    has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).outV();
+        }
+        traversal.forEachRemaining(v -> relations.add(getGraknGraph().buildConcept(v)));
 
         return relations;
     }
