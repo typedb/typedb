@@ -25,6 +25,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeId;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -37,6 +38,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -105,6 +107,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      *
      * @return A list of all the role types and the instances playing them in this relation.
      */
+    @Override
     public Map<RoleType, Set<Instance>> allRolePlayers(){
         HashMap<RoleType, Set<Instance>> roleMap = new HashMap<>();
 
@@ -122,17 +125,19 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
     @Override
     public Collection<Instance> rolePlayers(RoleType... roleTypes) {
-        Set<Instance> rolePlayers = new HashSet<>();
-        Set<RoleType> validRoleTypes = new HashSet<>(Arrays.asList(roleTypes));
+        if(roleTypes.length == 0){
+            return allRolePlayers().values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
+        }
 
-        getMappingCasting().forEach(casting -> {
-            if(validRoleTypes.isEmpty() || validRoleTypes.contains(casting.getRole())){
-                rolePlayers.add(casting.getRolePlayer());
-            }
-        });
-
-        return rolePlayers;
+        //Traversal is used so we can use index on roleTypes
+        Set<Integer> roleTypesIds = Arrays.stream(roleTypes).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
+        return getGraknGraph().getTinkerTraversal().
+                has(Schema.ConceptProperty.ID.name(), getId().getValue()).
+                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).
+                inV().toStream().map(vertex -> getGraknGraph().<Instance>buildConcept(vertex)).collect(Collectors.toSet());
     }
+
 
     /**
      * Expands this Relation to include a new role player which is playing a specific role.
