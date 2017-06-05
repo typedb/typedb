@@ -681,8 +681,7 @@ public class TemplateParserTest {
     public void testGraqlParsingException(){
         exception.expect(IllegalArgumentException.class);
         String template = "<<<<<<<";
-        //noinspection ResultOfMethodCallIgnored
-        Graql.parseTemplate(template, new HashMap<>());
+        Graql.parseTemplate(template, new HashMap<>()).forEach(q -> {});
     }
 
     @Test
