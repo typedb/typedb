@@ -37,6 +37,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.IntStream;
 import org.antlr.v4.runtime.ListTokenSource;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenSource;
@@ -72,6 +73,8 @@ public class QueryParser {
             "boolean", ResourceType.DataType.BOOLEAN,
             "date", ResourceType.DataType.DATE
     );
+
+    private static final Set<Integer> NEW_QUERY_TOKENS = ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT);
 
     /**
      * Create a query parser with the specified graph
@@ -252,16 +255,21 @@ public class QueryParser {
     private TokenSource consumeOneQuery(TokenStream tokenStream) {
         List<Token> tokens = new ArrayList<>();
 
-        Set<Integer> terminatorTokens = ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT, GraqlLexer.EOF);
+        boolean startedQuery = false;
 
-        do {
-            Token token;
-            do {
-                token = tokenStream.LT(1);
-                tokenStream.consume();
-            } while (tokenStream.LA(1) != GraqlLexer.EOF && token.getChannel() != Token.DEFAULT_CHANNEL);
+        while (true) {
+            Token token = tokenStream.LT(1);
+            boolean isNewQuery = NEW_QUERY_TOKENS.contains(token.getType());
+            boolean endOfTokens = token.getType() == IntStream.EOF;
+            boolean endOfFirstQuery = startedQuery && isNewQuery;
+
+            if (endOfTokens || endOfFirstQuery) break;
+
+            if (isNewQuery) startedQuery = true;
+
             tokens.add(token);
-        } while (!terminatorTokens.contains(tokenStream.LA(1)));
+            tokenStream.consume();
+        }
 
         return new ListTokenSource(tokens);
     }
