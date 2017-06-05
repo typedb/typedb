@@ -29,7 +29,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.MaxQuery;
@@ -89,7 +89,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testGraqlCount() throws GraknValidationException, InterruptedException, ExecutionException {
+    public void testGraqlCount() throws InvalidGraphException, InterruptedException, ExecutionException {
         addOntologyAndEntities();
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             assertEquals(6L,
@@ -134,7 +134,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testStatisticsMethods() throws GraknValidationException {
+    public void testStatisticsMethods() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -183,7 +183,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testConnectedComponents() throws GraknValidationException {
+    public void testConnectedComponents() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -198,7 +198,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testPath() throws GraknValidationException {
+    public void testPath() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -220,7 +220,7 @@ public class GraqlTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testNonResourceTypeAsSubgraphForAnalytics() throws GraknValidationException {
+    public void testNonResourceTypeAsSubgraphForAnalytics() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.putEntityType(thing);
             graph.commit();
@@ -232,7 +232,7 @@ public class GraqlTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testErrorWhenNoSubgrapForAnalytics() throws GraknValidationException {
+    public void testErrorWhenNoSubgrapForAnalytics() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum;").execute();
             graph.graql().parse("compute min;").execute();
@@ -243,7 +243,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testAnalyticsDoesNotCommitByMistake() throws GraknValidationException {
+    public void testAnalyticsDoesNotCommitByMistake() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
@@ -271,7 +271,7 @@ public class GraqlTest {
         });
     }
 
-    private void addOntologyAndEntities() throws GraknValidationException {
+    private void addOntologyAndEntities() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);

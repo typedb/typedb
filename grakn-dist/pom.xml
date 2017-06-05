@@ -24,7 +24,7 @@
         <artifactId>grakn-test-profiles</artifactId>
         <relativePath>../grakn-test-profiles</relativePath>
         <groupId>ai.grakn</groupId>
-        <version>0.13.0-SNAPSHOT</version>
+        <version>0.14.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -162,6 +162,18 @@
                 <artifactId>download-maven-plugin</artifactId>
                 <version>1.2.1</version>
                 <executions>
+                    <execution><!-- Get redis and package into the distribution -->
+                        <id>download-redis</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://github.com/burukuru/redis-prebuilt/archive/redis-3.2.9.tar.gz</url>
+                            <unpack>true</unpack>
+                            <outputDirectory>${main.basedir}/grakn-dist/target</outputDirectory>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>install-shunit2</id>
                         <phase>integration-test</phase>
@@ -172,12 +184,10 @@
                             <url>https://github.com/burukuru/shunit2/archive/master.zip</url>
                             <unpack>true</unpack>
                             <outputDirectory>${main.basedir}/grakn-dist/target/lib</outputDirectory>
+                            <skip>${skipTests}</skip>
                         </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <skip>${skipTests}</skip>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -194,17 +204,6 @@
                             <skip>${skipTests}</skip>
                             <workingDirectory>${main.basedir}/grakn-dist/src/test/bash</workingDirectory>
                             <executable>${main.basedir}/grakn-dist/src/test/bash/bash-startup-test.sh</executable>
-                        </configuration>
-                    </execution>
-                    <execution><!-- Get redis, compile it and package into the distribution -->
-                        <id>redis-packager</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>${main.basedir}/grakn-dist/src/main/bash/get-redis.sh</executable>
-                            <workingDirectory>${main.basedir}/grakn-dist/target/redis</workingDirectory>
                         </configuration>
                     </execution>
                 </executions>
