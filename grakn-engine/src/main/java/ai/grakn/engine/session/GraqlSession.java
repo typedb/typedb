@@ -233,7 +233,7 @@ class GraqlSession {
                     if (queries != null && !queries.stream().allMatch(Query::isReadOnly)) {
                         attemptRefresh();
                     }
-                    sendQueryError(errorMessage);
+                    sendError(errorMessage);
                 }
 
                 sendEnd();
@@ -321,7 +321,7 @@ class GraqlSession {
     /**
      * Tell the client about an error in their query
      */
-    private void sendQueryError(String errorMessage) {
+    private void sendError(String errorMessage) {
         // Split error into chunks
         Iterable<String> splitError = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(errorMessage + "\n");
 
@@ -331,16 +331,6 @@ class GraqlSession {
                     ERROR, errorChunk
             ));
         }
-    }
-
-    /**
-     * Tell the client about an error
-     */
-    private void sendError(String errorMessage) {
-        sendJson(Json.object(
-                ACTION, ACTION_ERROR,
-                ERROR, errorMessage
-        ));
     }
 
     /**
