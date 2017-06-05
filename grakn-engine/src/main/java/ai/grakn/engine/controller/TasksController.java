@@ -97,7 +97,6 @@ public class TasksController {
         spark.get(TASKS, this::getTasks);
         spark.get(GET, this::getTask);
         spark.put(STOP, this::stopTask);
-        spark.post(TASKS, this::createTask);
         spark.post(TASKS_BULK, this::createTaskBulk);
 
         spark.exception(GraknServerException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
@@ -171,55 +170,25 @@ public class TasksController {
 
     @POST
     @Path("/")
-    @ApiOperation(value = "Schedule a task.")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "className", value = "Class name of object implementing the BackgroundTask interface", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "createdBy", value = "String representing the user scheduling this task", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "priority", value = "String representing priority of a task. Must be one of {high, low}. The default is \"low\"", required = false, dataType = "string", paramType = "query", access = "low", allowableValues = "high,low"),
-            @ApiImplicitParam(name = "runAt", value = "Time to run at as milliseconds since the UNIX epoch", required = true, dataType = "long", paramType = "query"),
-            @ApiImplicitParam(name = "interval", value = "If set the task will be marked as recurring and the value will be the time in milliseconds between repeated executions of this task. Value should be as Long.",
-                    dataType = "long", paramType = "query"),
-            @ApiImplicitParam(name = REST.Request.CONFIGURATION_PARAM, value = "JSON Object that will be given to the task as configuration.", dataType = "String", paramType = "body")
-    })
-    private Json createTask(Request request, Response response) {
-        String className = mandatoryQueryParameter(request, REST.Request.TASK_CLASS_NAME_PARAMETER);
-        String createdBy = mandatoryQueryParameter(request, REST.Request.TASK_CREATOR_PARAMETER);
-        String runAtTime = mandatoryQueryParameter(request, REST.Request.TASK_RUN_AT_PARAMETER);
-        String intervalParam = request.queryParams(REST.Request.TASK_RUN_INTERVAL_PARAMETER);
-        String priorityParam = request.queryParams(REST.Request.TASK_PRIORITY_PARAMETER);
-
-        TaskState taskState = processTask(className, createdBy, runAtTime, intervalParam,
-                priorityParam);
-        manager.addTask(taskState, TaskConfiguration.of(bodyAsJson(request)));
-        // Configure the response
-        response.type(ContentType.APPLICATION_JSON.getMimeType());
-        response.status(200);
-
-        return Json.object("id", taskState.getId().getValue());
-    }
-
-    @POST
-    @Path("/bulk")
     @ApiOperation(value = "Schedule a set of tasks.")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = REST.Request.TASKS_PARAM, value = "JSON Array containing an ordered list of tasks (see single task endpoint). The response references the order the task appears in the list as an index.", required = true, dataType = "List", paramType = "body"),
-            @ApiImplicitParam(name = REST.Request.CONFIGURATION_PARAM, value = "JSON Object that will be given to the task as configuration.", dataType = "String", paramType = "body")
+            @ApiImplicitParam(name = REST.Request.TASKS_PARAM, value = "JSON Array containing an ordered list of task parameters and comfigurations.", required = true, dataType = "List", paramType = "body")
     })
     private Json createTaskBulk(Request request, Response response) {
         Json requestBodyAsJson = bodyAsJson(request).at("value");
-        Json configuration = extractConfiguration(requestBodyAsJson);
         List<Json> taskJsonList = requestBodyAsJson.at(REST.Request.TASKS_PARAM).asJsonList();
         Json responseJson = Json.array();
         response.type(ContentType.APPLICATION_JSON.getMimeType());
         // We need to return the list of taskStates in order
         // so the client can relate the state to each element in the request.
-        List<TaskStateWithIndex> taskStates = new ArrayList<>();
+        List<TaskStateWithConfiguration> taskStates = new ArrayList<>();
         for (int i = 0; i < taskJsonList.size(); i++) {
             Json singleTaskJson = taskJsonList.get(i);
             try {
                 taskStates
-                        .add(new TaskStateWithIndex(extractParametersAndProcessTask(singleTaskJson),
-                                i));
+                        .add(new TaskStateWithConfiguration(
+                                extractParametersAndProcessTask(singleTaskJson),
+                                extractConfiguration(singleTaskJson), i));
             } catch (Exception e) {
                 LOG.error("Malformed request at {}", singleTaskJson, e);
                 // We return a failure for the full request as this imply there is
@@ -230,8 +199,8 @@ public class TasksController {
         }
 
         List<CompletableFuture<Json>> futures = taskStates.stream()
-                .map(taskState -> CompletableFuture
-                        .supplyAsync(() -> addTaskToManager(configuration, taskState), executor))
+                .map(taskStateWithConfiguration -> CompletableFuture
+                        .supplyAsync(() -> addTaskToManager(taskStateWithConfiguration), executor))
                 .collect(toList());
         CompletableFuture<List<Json>> completableFuture = all(futures);
         try {
@@ -274,12 +243,11 @@ public class TasksController {
         return configuration;
     }
 
-    private Json addTaskToManager(Json configuration,
-            TaskStateWithIndex iTaskState) {
-        Json singleTaskReturnJson = Json.object().set("index", iTaskState.getIndex());
+    private Json addTaskToManager(TaskStateWithConfiguration taskState) {
+        Json singleTaskReturnJson = Json.object().set("index", taskState.getIndex());
         try {
-            manager.addTask(iTaskState.getTaskState(), TaskConfiguration.of(configuration));
-            singleTaskReturnJson.set("id", iTaskState.getTaskState().getId().getValue());
+            manager.addTask(taskState.getTaskState(), TaskConfiguration.of(taskState.getConfiguration()));
+            singleTaskReturnJson.set("id", taskState.getTaskState().getId().getValue());
             singleTaskReturnJson.set("code", HttpStatus.SC_OK);
         } catch (Exception e) {
             LOG.error("Server error while adding the task", e);
@@ -309,8 +277,7 @@ public class TasksController {
                 .map(Json::asString).orElse(null);
         String priorityParam = extractor.apply(REST.Request.TASK_PRIORITY_PARAMETER)
                 .map(Json::asString).orElse(null);
-        return processTask(className, createdBy, runAtTime, intervalParam,
-                priorityParam);
+        return processTask(className, createdBy, runAtTime, intervalParam, priorityParam);
     }
 
     private TaskState processTask(String className, String createdBy, String runAtTime,
@@ -335,8 +302,6 @@ public class TasksController {
 
         // Get the class of this background task
         Class<?> clazz = getClass(className);
-
-        // Create and schedule the task
         return TaskState.of(clazz, createdBy, schedule, priority);
     }
 
@@ -410,13 +375,15 @@ public class TasksController {
                 .set("engineID", state.engineID() != null ? state.engineID().value() : null);
     }
 
-    private static class TaskStateWithIndex {
+    private static class TaskStateWithConfiguration {
 
         private final TaskState taskState;
+        private Json configuration;
         private final int index;
 
-        TaskStateWithIndex(TaskState taskState, int index) {
+        TaskStateWithConfiguration(TaskState taskState, Json configuration, int index) {
             this.taskState = taskState;
+            this.configuration = configuration;
             this.index = index;
         }
 
@@ -426,6 +393,10 @@ public class TasksController {
 
         public int getIndex() {
             return index;
+        }
+
+        public Json getConfiguration() {
+            return configuration;
         }
     }
 }
