@@ -694,6 +694,24 @@ public class QueryParserTest {
     }
 
     @Test
+    public void testParseListOneInsertWithWhitespacePrefix() {
+        String insertString = " insert $x isa movie;";
+
+        List<Query<?>> queries = parseList(insertString).collect(toList());
+
+        assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
+    }
+
+    @Test
+    public void testParseListOneInsertWithPrefixComment() {
+        String insertString = "#hola\ninsert $x isa movie;";
+
+        List<Query<?>> queries = parseList(insertString).collect(toList());
+
+        assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
+    }
+
+    @Test
     public void testParseList() {
         String insertString = "insert $x isa movie;";
         String matchString = "match $y isa movie; limit 1;";

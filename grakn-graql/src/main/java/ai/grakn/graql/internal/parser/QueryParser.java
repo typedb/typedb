@@ -255,8 +255,12 @@ public class QueryParser {
         Set<Integer> terminatorTokens = ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT, GraqlLexer.EOF);
 
         do {
-            tokens.add(tokenStream.LT(1));
-            tokenStream.consume();
+            Token token;
+            do {
+                token = tokenStream.LT(1);
+                tokenStream.consume();
+            } while (tokenStream.LA(1) != GraqlLexer.EOF && token.getChannel() != Token.DEFAULT_CHANNEL);
+            tokens.add(token);
         } while (!terminatorTokens.contains(tokenStream.LA(1)));
 
         return new ListTokenSource(tokens);
