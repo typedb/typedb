@@ -27,8 +27,6 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.var;
-
 /**
  *
  * <p>
