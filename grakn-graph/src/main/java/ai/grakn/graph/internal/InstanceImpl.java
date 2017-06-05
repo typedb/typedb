@@ -144,6 +144,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      *
      * @return All the {@link CastingImpl} that this Instance is linked with
      */
+    @Deprecated //Actually not needed anymore. Only ever used to mess with castings
     public Set<CastingImpl> castings(){
         Set<CastingImpl> castings = new HashSet<>();
         getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(casting -> castings.add((CastingImpl) casting));

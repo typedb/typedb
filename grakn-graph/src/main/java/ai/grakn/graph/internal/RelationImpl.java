@@ -22,8 +22,10 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeId;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
@@ -104,14 +106,16 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @return A list of all the role types and the instances playing them in this relation.
      */
     public Map<RoleType, Set<Instance>> allRolePlayers(){
-        Set<CastingImpl> castings = getMappingCasting();
         HashMap<RoleType, Set<Instance>> roleMap = new HashMap<>();
 
-        //Gets roles based on all roles of the relation type
+        //We add the role types explicitly so we can return them when there are no roleplayers
         type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
 
-        //Now iterate over castings
-        castings.forEach(c -> roleMap.computeIfAbsent(c.getRole(), (k) -> new HashSet<>()).add(c.getRolePlayer()));
+        getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).forEach(shortcut -> {
+            RoleType roleType = getGraknGraph().getType(TypeId.of(shortcut.getProperty(Schema.EdgeProperty.ROLE_TYPE_ID)));
+            Instance rolePlayer = shortcut.getTarget();
+            roleMap.computeIfAbsent(roleType, (k) -> new HashSet<>()).add(rolePlayer);
+        });
 
         return roleMap;
     }

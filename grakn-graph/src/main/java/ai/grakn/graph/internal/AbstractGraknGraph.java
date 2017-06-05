@@ -529,7 +529,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Type type = buildType(label, ()-> getType(convertToId(label)));
         return validateConceptType(type, baseType, () -> null);
     }
-    private <T extends Type> T getType(TypeId id){
+    <T extends Type> T getType(TypeId id){
         if(!id.isValid()) return null;
         return getConcept(Schema.ConceptProperty.TYPE_ID, id.getValue());
     }

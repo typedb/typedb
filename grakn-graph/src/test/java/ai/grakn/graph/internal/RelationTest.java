@@ -43,8 +43,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -58,12 +58,8 @@ public class RelationTest extends GraphTestBase{
     private RoleTypeImpl role2;
     private InstanceImpl rolePlayer2;
     private RoleTypeImpl role3;
-    private InstanceImpl rolePlayer3;
     private EntityType type;
     private RelationType relationType;
-
-    private CastingImpl casting1;
-    private CastingImpl casting2;
 
     @Before
     public void buildGraph(){
@@ -76,24 +72,22 @@ public class RelationTest extends GraphTestBase{
 
         rolePlayer1 = (InstanceImpl) type.addEntity();
         rolePlayer2 = (InstanceImpl) type.addEntity();
-        rolePlayer3 = null;
 
         relation = (RelationImpl) relationType.addRelation();
 
-        casting1 = graknGraph.addCasting(role1, rolePlayer1, relation);
-        casting2 = graknGraph.addCasting(role2, rolePlayer2, relation);
+        relation.addRolePlayer(role1, rolePlayer1);
+        relation.addRolePlayer(role2, rolePlayer2);
     }
 
     @Test
     public void whenAddingRolePlayerToRelation_RelationIsExpanded(){
         Relation relation = relationType.addRelation();
         RoleType roleType = graknGraph.putRoleType("A role");
-        Instance instance = type.addEntity();
+        Entity entity1 = type.addEntity();
 
-        relation.addRolePlayer(roleType, instance);
-        assertEquals(4, relation.allRolePlayers().size());
-        assertTrue(relation.allRolePlayers().keySet().contains(roleType));
-        assertTrue(relation.rolePlayers().contains(instance));
+        relation.addRolePlayer(roleType, entity1);
+        assertThat(relation.allRolePlayers().keySet(), containsInAnyOrder(role1, role2, role3, roleType));
+        assertThat(relation.allRolePlayers().get(roleType), containsInAnyOrder(entity1));
     }
 
     @Test
@@ -145,11 +139,6 @@ public class RelationTest extends GraphTestBase{
                 out(Schema.EdgeLabel.SHORTCUT.getLabel()).toList();
 
         return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).asInstance()).collect(Collectors.toSet());
-    }
-
-    @Test
-    public void whenGettingTheCastingsViaRelation_ReturnCastings() throws Exception {
-        assertThat(relation.getMappingCasting(), containsInAnyOrder(casting1, casting2));
     }
 
     @Test
@@ -208,25 +197,13 @@ public class RelationTest extends GraphTestBase{
         Instance instance1 = type.addEntity();
         Instance instance2 = type.addEntity();
 
-        Relation relation1 = relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
-        Relation relation2 = relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
+        relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
+        relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
 
-        String exceptionThrown = null;
-        try{
-            graknGraph.commit();
-        } catch(InvalidGraphException e){
-            exceptionThrown = e.getMessage();
-        }
-        boolean flag = exceptionThrown != null && (exceptionThrown.contains(VALIDATION_RELATION_DUPLICATE.getMessage(relation1.toString())) ||
-                exceptionThrown.contains(VALIDATION_RELATION_DUPLICATE.getMessage(relation2.toString())));
-        assertTrue("Incorrect exception thrown expected: \n [" + VALIDATION_RELATION_DUPLICATE.getMessage("Something") + "] but got: \n [" + exceptionThrown +  "]", flag);
-    }
+        expectedException.expect(InvalidGraphException.class);
+        expectedException.expectMessage(containsString("You have created one or more relations"));
 
-    @Test
-    public void whenDeletingRelation_CastingsStayBehind(){
-        relation.delete();
-        assertNotNull(graknGraph.getConcept(casting1.getId()));
-        assertNotNull(graknGraph.getConcept(casting2.getId()));
+        graknGraph.commit();
     }
 
     @Test
