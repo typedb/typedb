@@ -152,18 +152,18 @@ class ValidateGlobalRules {
      */
     static Optional<String> validateRelationshipStructure(RelationImpl relation){
         RelationType relationType = relation.type();
-        Set<CastingImpl> castings = relation.getMappingCasting();
+        Collection<RolePlayer> rolePlayers = relation.getRolePlayers().collect(Collectors.toSet());
         Collection<RoleType> roleTypes = relationType.relates();
 
-        Set<RoleType> rolesViaCastings = castings.stream().map(CastingImpl::getRole).collect(Collectors.toSet());
+        Set<RoleType> rolesViaRolePlayers = rolePlayers.stream().map(RolePlayer::getRoleType).collect(Collectors.toSet());
 
-        if(rolesViaCastings.size() > roleTypes.size()) {
-            return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), castings.size(), relationType.getLabel(), roleTypes.size()));
+        if(rolesViaRolePlayers.size() > roleTypes.size()) {
+            return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), rolesViaRolePlayers.size(), relationType.getLabel(), roleTypes.size()));
         }
 
-        for(CastingImpl casting: castings){
+        for(RolePlayer rolePlayer: rolePlayers){
             boolean notFound = true;
-            for (RelationType innerRelationType : casting.getRole().relationTypes()) {
+            for (RelationType innerRelationType : rolePlayer.getRoleType().relationTypes()) {
                 if(innerRelationType.getLabel().equals(relationType.getLabel())){
                     notFound = false;
                     break;
@@ -171,7 +171,7 @@ class ValidateGlobalRules {
             }
 
             if(notFound) {
-                return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRole().getLabel(), relationType.getLabel()));
+                return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), rolePlayer.getRoleType().getLabel(), relationType.getLabel()));
             }
         }
 
