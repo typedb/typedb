@@ -57,9 +57,9 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
     private static final EngineGraknGraphFactory FACTORY = EngineGraknGraphFactory.create(CONFIG.getProperties());
 
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
-        Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration);
-        String keyspace = configuration.json().at(REST.Request.KEYSPACE).asString();
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint) {
+        Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
+        String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
 
         //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
         //The graph cannot be used because each engine can have it's own snapshot of the graph with caching which makes

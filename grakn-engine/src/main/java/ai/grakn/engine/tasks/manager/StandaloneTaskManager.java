@@ -168,7 +168,7 @@ public class StandaloneTaskManager implements TaskManager {
         return () -> {
             try {
                 BackgroundTask runningTask = task.taskClass().newInstance();
-                runningTask.initialize(this);
+                runningTask.initialize(configuration, this);
 
                 runningTasks.put(task.getId(), runningTask);
 
@@ -182,7 +182,7 @@ public class StandaloneTaskManager implements TaskManager {
 
                     saveState(task);
 
-                    completed = runningTask.start(saveCheckpoint(task), configuration);
+                    completed = runningTask.start(saveCheckpoint(task));
                 }
 
                 if (completed) {

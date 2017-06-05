@@ -58,9 +58,9 @@ public class MutatorTask extends BackgroundTask {
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
-        Collection<Query> inserts = getInserts(configuration);
-        GraphMutators.runBatchMutationWithRetry(FACTORY, configuration.json().at(REST.Request.KEYSPACE).asString(), (graph) ->
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint) {
+        Collection<Query> inserts = getInserts(configuration());
+        GraphMutators.runBatchMutationWithRetry(FACTORY, configuration().json().at(REST.Request.KEYSPACE).asString(), (graph) ->
                 insertQueriesInOneTransaction(graph, inserts)
         );
 

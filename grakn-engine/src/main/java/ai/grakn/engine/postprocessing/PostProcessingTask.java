@@ -66,13 +66,12 @@ public class PostProcessingTask extends BackgroundTask {
      * Apply CASTING and RESOURCE post processing jobs the concept ids in the provided configuration
      *
      * @param saveCheckpoint Checkpointing is not implemented in this task, so this parameter is not used.
-     * @param configuration Configuration containing the IDs to be post processed.
      * @return True if successful.
      */
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
-        runPostProcessingMethod(configuration, Schema.BaseType.CASTING, this::duplicateCastingsExist, this::runCastingFix);
-        runPostProcessingMethod(configuration, Schema.BaseType.RESOURCE, this::duplicateResourcesExist, this::runResourceFix);
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint) {
+        runPostProcessingMethod(configuration(), Schema.BaseType.CASTING, this::duplicateCastingsExist, this::runCastingFix);
+        runPostProcessingMethod(configuration(), Schema.BaseType.RESOURCE, this::duplicateResourcesExist, this::runResourceFix);
 
         return true;
     }

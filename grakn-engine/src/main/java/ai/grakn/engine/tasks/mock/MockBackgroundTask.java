@@ -21,7 +21,6 @@ package ai.grakn.engine.tasks.mock;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
-import ai.grakn.engine.tasks.TaskConfiguration;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
 
@@ -95,11 +94,11 @@ public abstract class MockBackgroundTask extends BackgroundTask {
     private TaskId id;
 
     @Override
-    public final boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
-        id = TaskId.of(configuration.json().at("id").asString());
+    public final boolean start(Consumer<TaskCheckpoint> saveCheckpoint) {
+        id = TaskId.of(configuration().json().at("id").asString());
         onTaskStart(id);
 
-        saveCheckpoint.accept(TaskCheckpoint.of(configuration.json()));
+        saveCheckpoint.accept(TaskCheckpoint.of(configuration().json()));
 
         boolean wasCancelled = cancelled.get();
 

@@ -31,13 +31,16 @@ import java.util.function.Consumer;
 public abstract class BackgroundTask {
 
     private @Nullable TaskSubmitter taskSubmitter = null;
+    private @Nullable TaskConfiguration configuration = null;
 
     /**
      * Initialize the {@link BackgroundTask}. This must be called prior to any other call to {@link BackgroundTask}.
      *
+     * @param configuration The configuration needed to execute the task
      * @param taskSubmitter Allows followup tasks to be submitted for processing
      */
-    public final void initialize(TaskSubmitter taskSubmitter) {
+    public final void initialize(TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
+        this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
     }
 
@@ -45,10 +48,9 @@ public abstract class BackgroundTask {
      * Called to start execution of the task, may be called on a newly scheduled or previously stopped task.
      * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
      *                       the task to resume from this point should it crash.
-     * @param configuration The configuration needed to execute the task
      * @return true if the task successfully completed, or false if it was stopped.
      */
-    public abstract boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration);
+    public abstract boolean start(Consumer<TaskCheckpoint> saveCheckpoint);
 
     /**
      * Called to stop execution of the task, may be called on a running or paused task.
@@ -97,11 +99,18 @@ public abstract class BackgroundTask {
     /**
      * Submit a new task for execution
      * @param taskState state describing the task
-     * @param configuration any configuration options for the task
      */
     public final void addTask(TaskState taskState, TaskConfiguration configuration) {
         Preconditions.checkNotNull(taskSubmitter, "BackgroundTask#initialise must be called before adding tasks");
         taskSubmitter.addTask(taskState, configuration);
+    }
+
+    /**
+     * Get the configuration needed to execute the task
+     */
+    public final TaskConfiguration configuration() {
+        Preconditions.checkNotNull(configuration, "BackgroundTask#initialise must be called before retrieving configuration");
+        return configuration;
     }
 
 }
