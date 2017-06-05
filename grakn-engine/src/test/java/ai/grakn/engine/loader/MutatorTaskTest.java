@@ -44,5 +44,6 @@ public class MutatorTaskTest {
         mutatorTask.initialize((x) -> System.out.println(x.toString()), taskConfiguration, (x, y) -> {});
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(READ_ONLY_QUERY.getMessage(readOnlyQuery));
+        mutatorTask.start();
     }
 }
