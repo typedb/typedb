@@ -172,7 +172,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
-        Var varName = var.getVarName();
+        Var varName = var.getVarName().asUserDefined();
         TypeLabel typeLabel = this.getResourceType().getTypeLabel().orElse(null);
         //isa part
         VarPatternAdmin resVar = varName.has(Graql.label(typeLabel)).admin();

@@ -121,9 +121,9 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName();
+        Var varName = var.getVarName().asUserDefined();
         VarPatternAdmin typeVar = this.getSuperType();
-        Var typeVariable = typeVar.getVarName();
+        Var typeVariable = typeVar.getVarName().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarPatternAdmin resVar = varName.sub(typeVariable).admin();

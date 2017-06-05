@@ -696,7 +696,7 @@ public class Relation extends TypeAtom {
 
     @Override
     public Atom rewriteToUserDefined(){
-        VarPattern newVar = Graql.var().pattern();
+        VarPattern newVar = Graql.var().asUserDefined().pattern();
         VarPattern relVar = getPattern().asVar().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.getType()))
                 .orElse(newVar);
@@ -720,7 +720,7 @@ public class Relation extends TypeAtom {
     @Override
     public Pair<Atom, Unifier> rewriteToUserDefinedWithUnifiers() {
         Unifier unifier = new UnifierImpl();
-        VarPattern newVar = Graql.var().pattern();
+        VarPattern newVar = Graql.var().asUserDefined().pattern();
         VarPattern relVar = getPattern().asVar().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.getType()))
                 .orElse(newVar);

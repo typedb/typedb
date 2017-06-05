@@ -235,7 +235,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
                 .filter(prop -> !IsaProperty.class.isInstance(prop))
                 .count() > 0;
-        VarPatternBuilder relVar = (var.getVarName().isUserDefinedName() || isReified)? var.getVarName() : Graql.var();
+        VarPatternBuilder relVar = (var.getVarName().isUserDefinedName() || isReified)? var.getVarName().asUserDefined() : Graql.var();
         Set<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(toSet());
 
         for (RelationPlayer rp : relationPlayers) {
@@ -252,7 +252,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         if (isaProp != null) {
             VarPatternAdmin isaVar = isaProp.getType();
             TypeLabel typeLabel = isaVar.getTypeLabel().orElse(null);
-            Var typeVariable = typeLabel == null ? isaVar.getVarName() : Graql.var("rel-" + UUID.randomUUID().toString());
+            Var typeVariable = typeLabel == null ? isaVar.getVarName() : Graql.var().asUserDefined();
             relVar = relVar.isa(typeVariable);
             if (typeLabel != null) {
                 GraknGraph graph = parent.graph();

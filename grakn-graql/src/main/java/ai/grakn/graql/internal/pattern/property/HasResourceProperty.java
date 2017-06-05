@@ -195,10 +195,10 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName();
+        Var varName = var.getVarName().asUserDefined();
         TypeLabel type = this.getType();
         VarPatternAdmin valueVar = this.getResource();
-        Var valueVariable = valueVar.getVarName();
+        Var valueVariable = valueVar.getVarName().asUserDefined();
         Set<ValuePredicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);
 
         //add resource atom
