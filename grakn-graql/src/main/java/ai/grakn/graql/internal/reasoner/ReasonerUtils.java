@@ -404,7 +404,7 @@ public class ReasonerUtils {
         VarPattern childVar = var().isa(Graql.label(child.getLabel()));
 
         for (Map.Entry<TypeLabel, TypeLabel> entry : roleMappings.entrySet()) {
-            Var varName = var();
+            Var varName = var().asUserDefined();
             parentVar = parentVar.rel(Graql.label(entry.getKey()), varName);
             childVar = childVar.rel(Graql.label(entry.getValue()), varName);
         }
@@ -426,7 +426,7 @@ public class ReasonerUtils {
         varNames.push(var("x"));
         Set<VarPatternAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
-            Var varName = var();
+            Var varName = var().asUserDefined();
             VarPatternAdmin var = var().isa(Graql.label(relType.getLabel()))
                     .rel(Graql.label(rolePair.getKey()), varNames.peek())
                     .rel(Graql.label(rolePair.getValue()), varName).admin();
