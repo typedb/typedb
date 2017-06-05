@@ -68,11 +68,6 @@ public class MutatorTask extends BackgroundTask {
         return true;
     }
 
-    @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
-        throw new UnsupportedOperationException("Loader task cannot be resumed");
-    }
-
     /**
      * Execute the given queries against the given graph. Return if the operation was successfully completed.
      * @param graph grakn graph in which to insert the data

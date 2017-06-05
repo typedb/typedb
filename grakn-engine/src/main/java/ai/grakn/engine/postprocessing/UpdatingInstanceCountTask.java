@@ -141,11 +141,6 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
         return "/updating-instance-count-lock/" + keyspace + "/" + conceptId.getValue();
     }
 
-    @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
-        throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be resumed");
-    }
-
     /**
      * Helper method which creates PP Task States.
      *

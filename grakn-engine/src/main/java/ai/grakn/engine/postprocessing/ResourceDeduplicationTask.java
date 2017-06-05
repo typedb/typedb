@@ -211,11 +211,6 @@ public class ResourceDeduplicationTask extends BackgroundTask {
     }
 
     @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
-        throw new UnsupportedOperationException();
-    }
-    
-    @Override
     public boolean stop() {
         return true;
     }

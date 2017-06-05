@@ -67,10 +67,17 @@ public abstract class BackgroundTask {
 
     /**
      * This method may be called when resuming from a paused state or recovering from a crash or failure of any kind.
+     * <p>
+     * This implementation always throws {@link UnsupportedOperationException}.
+     *
      * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
      *                       the task to resume from this point should it crash.
      * @param lastCheckpoint The last checkpoint as sent to saveCheckpoint.
+     *
+     * @throws UnsupportedOperationException if resuming the task is not supported
      */
-    public abstract boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint);
+    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
+        throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be resumed");
+    }
 
 }

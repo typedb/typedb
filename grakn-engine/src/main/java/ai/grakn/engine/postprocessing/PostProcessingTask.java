@@ -78,11 +78,6 @@ public class PostProcessingTask extends BackgroundTask {
         return true;
     }
 
-    @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
-        throw new UnsupportedOperationException("Delayed task cannot be resumed");
-    }
-
     /**
      * Main method which attempts to run all post processing jobs.
      *
