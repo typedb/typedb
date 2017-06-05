@@ -97,7 +97,7 @@ public class GraknEngineServerIT {
         assertEquals(completableTasks(allTasks), completedTasks());
     }
 
-    @Property
+    @Property(trials=10)
     public void whenEngine1StopsATaskBeforeExecution_TheTaskIsStopped(TaskState task) {
         assertTrue(TaskClient.of("localhost", PORT1).stopTask(task.getId()));
 
@@ -108,7 +108,7 @@ public class GraknEngineServerIT {
         assertThat(completedTasks(), empty());
     }
 
-    @Property
+    @Property(trials=10)
     public void whenEngine2StopsATaskBeforeExecution_TheTaskIsStopped(TaskState task) {
         assertTrue(TaskClient.of("localhost", PORT2).stopTask(task.getId()));
 
