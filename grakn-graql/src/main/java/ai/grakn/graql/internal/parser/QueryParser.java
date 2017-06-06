@@ -260,10 +260,11 @@ public class QueryParser {
         while (true) {
             Token token = tokenStream.LT(1);
             boolean isNewQuery = NEW_QUERY_TOKENS.contains(token.getType());
-            boolean endOfTokens = token.getType() == IntStream.EOF;
-            boolean endOfFirstQuery = startedQuery && isNewQuery;
+            boolean isEndOfTokenStream = token.getType() == IntStream.EOF;
+            boolean isEndOfFirstQuery = startedQuery && isNewQuery;
 
-            if (endOfTokens || endOfFirstQuery) break;
+            // Stop parsing tokens after reaching the end of the first query
+            if (isEndOfTokenStream || isEndOfFirstQuery) break;
 
             if (isNewQuery) startedQuery = true;
 
