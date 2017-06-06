@@ -38,13 +38,9 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  *
  * @author fppt
  */
-class RolePlayer {
-    private final AbstractGraknGraph graph;
-    private final EdgeImpl edge;
-
-    RolePlayer(AbstractGraknGraph graph, EdgeImpl edge){
-        this.graph = graph;
-        this.edge = edge;
+class RolePlayer extends EdgeImpl{
+    RolePlayer(AbstractGraknGraph graph, Edge edge){
+        super(graph, edge);
     }
 
     /**
@@ -52,7 +48,7 @@ class RolePlayer {
      * @return The role the instance is playing
      */
     public RoleType getRoleType(){
-        return (RoleType) graph.getType(TypeId.of(edge.getProperty(Schema.EdgeProperty.ROLE_TYPE_ID)));
+        return (RoleType) getGraknGraph().getType(TypeId.of(getProperty(Schema.EdgeProperty.ROLE_TYPE_ID)));
     }
 
     /**
@@ -60,7 +56,7 @@ class RolePlayer {
      * @return The relation type the instance is taking part in
      */
     public RelationType getRelationType(){
-        return (RelationType) graph.getType(TypeId.of(edge.getProperty(Schema.EdgeProperty.RELATION_TYPE_ID)));
+        return (RelationType) getGraknGraph().getType(TypeId.of(getProperty(Schema.EdgeProperty.RELATION_TYPE_ID)));
     }
 
     /**
@@ -68,7 +64,7 @@ class RolePlayer {
      * @return The relation which is linking the role and the instance
      */
     public Relation getRelation(){
-        return edge.getSource();
+        return getSource();
     }
 
     /**
@@ -76,6 +72,6 @@ class RolePlayer {
      * @return The instance playing the role
      */
     public Instance getInstance(){
-        return edge.getTarget();
+        return getTarget();
     }
 }

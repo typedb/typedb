@@ -43,6 +43,12 @@ class EdgeImpl extends Element{
         this.graknGraph = graknGraph;
     }
 
+    EdgeImpl(AbstractGraknGraph graknGraph, Edge e){
+        super(graknGraph, e.id());
+        edge = e;
+        this.graknGraph = graknGraph;
+    }
+
     /**
      * Deletes the edge between two concepts and adds both those concepts for re-validation in case something goes wrong
      */
