@@ -107,8 +107,9 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         deleteEdgeTo(Schema.EdgeLabel.RELATES, roleType);
 
         RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
-        //Add castings of roleType to make sure relations are still valid
-        roleTypeImpl.castings().forEach(casting -> getGraknGraph().getTxCache().trackForValidation(casting));
+        //Add roleplayers of roleType to make sure relations are still valid
+        roleTypeImpl.rolePlayers().forEach(rolePlayer -> getGraknGraph().getTxCache().trackForValidation(rolePlayer));
+
 
         //Add the Role Type itself
         getGraknGraph().getTxCache().trackForValidation(roleTypeImpl);

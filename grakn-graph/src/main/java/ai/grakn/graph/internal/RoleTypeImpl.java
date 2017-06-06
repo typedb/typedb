@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -131,11 +132,12 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
 
     /**
      *
-     * @return The castings of this role
+     * @return Get all the roleplayers of this role type
      */
-    public Set<CastingImpl> castings(){
-        return shards().stream().flatMap(shard ->
-                ((TypeImpl<?,?>) shard).<CastingImpl>getIncomingNeighbours(Schema.EdgeLabel.ISA)).collect(Collectors.toSet());
+    public Stream<RolePlayer> rolePlayers(){
+        return relationTypes().stream().
+                flatMap(relationType -> relationType.instances().stream()).
+                flatMap(relation -> ((RelationImpl)relation).getRolePlayers(this));
     }
 
     /**
@@ -158,13 +160,8 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
 
         boolean deletionNotAllowed = hasRelates || hasPlays;
 
-        if(!deletionNotAllowed) { //This check is independent as it is slower than the ones above
-            deletionNotAllowed = relationTypes().stream().filter(
-                    relationType -> relationType.instances().stream().filter(
-                            relation -> ((RelationImpl) relation).getRolePlayers(this).findAny().isPresent()).
-                            findAny().isPresent()).
-                    findAny().isPresent();
-        }
+        //This check is independent as it is slower than the ones above
+        if(!deletionNotAllowed) deletionNotAllowed = rolePlayers().findAny().isPresent();
 
         if(deletionNotAllowed){
             throw GraphOperationException.typeCannotBeDeleted(getLabel());
