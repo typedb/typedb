@@ -83,7 +83,8 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.start(mockConsumer, mockConfiguration, mockTaskSubmitter);
+        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter);
+        task.start();
 
         verify(mockConfiguration, times(4)).json();
     }
@@ -92,7 +93,8 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.start(mockConsumer, mockConfiguration, mockTaskSubmitter);
+        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter);
+        task.start();
 
         verify(mockConfiguration, times(4)).json();
     }
@@ -102,9 +104,11 @@ public class PostProcessingTaskTest {
         // Add a bunch of jobs to the cache
         PostProcessingTask task1 = new PostProcessingTask();
         PostProcessingTask task2 = new PostProcessingTask();
+        task1.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter);
+        task2.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter);
 
-        Thread pp1 = new Thread(() -> task1.start(mockConsumer, mockConfiguration, mockTaskSubmitter));
-        Thread pp2 = new Thread(() -> task2.start(mockConsumer, mockConfiguration, mockTaskSubmitter));
+        Thread pp1 = new Thread(task1::start);
+        Thread pp2 = new Thread(task2::start);
 
         pp1.start();
         pp2.start();
