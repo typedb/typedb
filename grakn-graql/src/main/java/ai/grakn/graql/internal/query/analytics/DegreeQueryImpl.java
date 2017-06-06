@@ -148,8 +148,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
 
         DegreeQueryImpl that = (DegreeQueryImpl) o;
 
-        if (ofTypeLabelsSet != that.ofTypeLabelsSet) return false;
-        return ofTypeLabels.equals(that.ofTypeLabels);
+        return ofTypeLabelsSet == that.ofTypeLabelsSet && ofTypeLabels.equals(that.ofTypeLabels);
     }
 
     @Override
