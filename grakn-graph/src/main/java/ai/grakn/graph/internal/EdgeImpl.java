@@ -33,11 +33,12 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  *
  * @author fppt
  */
-class EdgeImpl {
+class EdgeImpl extends Element{
     private Edge edge;
     private final AbstractGraknGraph graknGraph;
 
     EdgeImpl(Edge e, AbstractGraknGraph graknGraph){
+        super(graknGraph, e.id());
         edge = e;
         this.graknGraph = graknGraph;
     }

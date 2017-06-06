@@ -22,7 +22,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
-import ai.grakn.concept.Type;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.Test;
@@ -104,7 +103,7 @@ public class ConceptTest extends GraphTestBase{
         Entity thing = thingType.addEntity();
 
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(INVALID_OBJECT_TYPE.getMessage(thing, Type.class));
+        expectedException.expectMessage(INVALID_OBJECT_TYPE.getMessage(thing, TypeImpl.class));
 
         //noinspection ResultOfMethodCallIgnored
         thing.asType();

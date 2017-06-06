@@ -112,7 +112,7 @@ public class GraphOperationException extends GraknException{
      * Thrown when casting concepts incorrectly. For example when doing {@link Concept#asEntityType()} on a
      * {@link ai.grakn.concept.Entity}
      */
-    public static GraphOperationException invalidConceptCasting(Concept concept, Class type){
+    public static GraphOperationException invalidCasting(Object concept, Class type){
         throw new GraphOperationException(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(concept, type));
     }
 
