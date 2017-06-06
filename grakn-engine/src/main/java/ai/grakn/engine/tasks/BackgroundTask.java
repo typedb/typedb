@@ -34,7 +34,7 @@ public abstract class BackgroundTask {
     private @Nullable TaskSubmitter taskSubmitter = null;
     private @Nullable TaskConfiguration configuration = null;
     private @Nullable Consumer<TaskCheckpoint> saveCheckpoint = null;
-    private @Nullable GraknEngineConfig engineConfig;
+    private @Nullable GraknEngineConfig engineConfig = null;
 
     /**
      * Initialize the {@link BackgroundTask}. This must be called prior to any other call to {@link BackgroundTask}.
