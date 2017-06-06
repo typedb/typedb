@@ -29,6 +29,8 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.util.REST;
+import ai.grakn.util.Schema;
 import mjson.Json;
 import org.hamcrest.Matcher;
 import org.junit.Test;
@@ -155,7 +157,9 @@ public class TxCacheTest extends GraphTestBase{
 
     @Test
     public void whenNoOp_EnsureLogWellFormed() {
-        Json expected = Json.read("{\"concepts-to-fix\":{\"CASTING\":{},\"RESOURCE\":{}},\"types-with-new-counts\":[]}");
+        Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
+                "\":{\"" + Schema.BaseType.RESOURCE.name() + "\":{}},\"" +
+                REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
         assertEquals("Unexpected graph logs", expected, graknGraph.getTxCache().getFormattedLog());
     }
 
@@ -164,7 +168,11 @@ public class TxCacheTest extends GraphTestBase{
         EntityType entityType = graknGraph.putEntityType("My Type");
         entityType.addEntity();
         entityType.addEntity();
-        Json expected = Json.read("{\"concepts-to-fix\":{\"CASTING\":{},\"RESOURCE\":{}},\"types-with-new-counts\":[{\"concept-id\":\"55\",\"sharding-count\":2}]}");
+        Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
+                "\":{\"" + Schema.BaseType.RESOURCE.name() +
+                "\":{}},\"" + REST.Request.COMMIT_LOG_COUNTING  +
+                "\":[{\"" + REST.Request.COMMIT_LOG_CONCEPT_ID +
+                "\":\"" + entityType.getId() + "\",\"" + REST.Request.COMMIT_LOG_SHARDING_COUNT + "\":2}]}");
         assertEquals("Unexpected graph logs", expected, graknGraph.getTxCache().getFormattedLog());
     }
 
@@ -213,12 +221,12 @@ public class TxCacheTest extends GraphTestBase{
 
         //Check the caches are not empty
         assertThat(cache.getConceptCache().keySet(), not(empty()));
-        assertThat(cache.getModifiedCastings(), not(empty()));
         assertThat(cache.getTypeCache().keySet(), not(empty()));
         assertThat(cache.getLabelCache().keySet(), not(empty()));
         assertThat(cache.getRelationIndexCache().keySet(), not(empty()));
         assertThat(cache.getModifiedResources(), not(empty()));
         assertThat(cache.getShardingCount().keySet(), not(empty()));
+        assertThat(cache.getModifiedRolePlayers(), not(empty()));
 
         //Close the transaction
         graknGraph.commit();
@@ -231,11 +239,11 @@ public class TxCacheTest extends GraphTestBase{
         assertThat(cache.getShardingCount().keySet(), empty());
         assertThat(cache.getModifiedEntities(), empty());
         assertThat(cache.getModifiedRoleTypes(), empty());
-        assertThat(cache.getModifiedCastings(), empty());
         assertThat(cache.getModifiedRelationTypes(), empty());
         assertThat(cache.getModifiedRelations(), empty());
         assertThat(cache.getModifiedRules(), empty());
         assertThat(cache.getModifiedResources(), empty());
+        assertThat(cache.getModifiedRolePlayers(), empty());
     }
 
     @Test

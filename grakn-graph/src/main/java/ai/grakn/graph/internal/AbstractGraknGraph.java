@@ -767,7 +767,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         validateGraph();
 
         boolean submissionNeeded = !getTxCache().getShardingCount().isEmpty() ||
-                !getTxCache().getModifiedCastings().isEmpty() ||
                 !getTxCache().getModifiedResources().isEmpty();
         Json conceptLog = getTxCache().getFormattedLog();
 
@@ -816,11 +815,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
-    @Override
-    public boolean duplicateCastingsExist(String index, Set<ConceptId> castingVertexIds){
-        CastingImpl mainCasting = (CastingImpl) getMainConcept(index);
-        return getDuplicates(mainCasting, castingVertexIds).size() > 0;
-    }
 
     /**
      * Returns the duplicates of the given concept
@@ -850,98 +844,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private ConceptImpl getMainConcept(String index){
         //This is done to ensure we merge into the indexed casting.
         return getConcept(Schema.ConceptProperty.INDEX, index);
-    }
-
-    /**
-     * Merges the provided duplicate castings.
-     *
-     * @param castingVertexIds The vertex Ids of the duplicate castings
-     * @return if castings were merged, a commit is required and the casting index exists
-     */
-    @Override
-    public boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds){
-        CastingImpl mainCasting = (CastingImpl) getMainConcept(index);
-        Set<CastingImpl> duplicated = (Set<CastingImpl>) getDuplicates(mainCasting, castingVertexIds);
-
-        if (duplicated.size() > 0) {
-            //Fix the duplicates
-            Set<Relation> duplicateRelations = mergeCastings(mainCasting, duplicated);
-
-            //Remove Redundant Relations
-            duplicateRelations.forEach(relation -> ((ConceptImpl) relation).deleteNode());
-
-            //Restore the index
-            String newIndex = mainCasting.getIndex();
-            mainCasting.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     *
-     * @param mainCasting The main casting to absorb all of the edges
-     * @param castings The castings to whose edges will be transferred to the main casting and deleted.
-     * @return A set of possible duplicate relations.
-     */
-    private Set<Relation> mergeCastings(CastingImpl mainCasting, Set<CastingImpl> castings){
-        RoleType role = mainCasting.getRole();
-        Set<Relation> relations = mainCasting.getRelations();
-        Set<Relation> relationsToClean = new HashSet<>();
-        Set<RelationImpl> relationsRequiringReIndexing = new HashSet<>();
-
-        for (CastingImpl otherCasting : castings) {
-            //Transfer assertion edges
-            for(Relation rel : otherCasting.getRelations()){
-                RelationImpl otherRelation = (RelationImpl) rel;
-                boolean transferEdge = true;
-
-                //Check if an equivalent Relation is already connected to this casting. This could be a slow process
-                for(Relation originalRelation: relations){
-                    if(relationsEqual(originalRelation, otherRelation)){
-                        relationsToClean.add(otherRelation);
-                        transferEdge = false;
-                        break;
-                    }
-                }
-
-                //Perform the transfer
-                if(transferEdge) {
-                    //Delete index so we can reset it when things are finalised.
-                    otherRelation.setProperty(Schema.ConceptProperty.INDEX, null);
-                    EdgeElement assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
-                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId().getValue());
-                    relations = mainCasting.getRelations();
-                    relationsRequiringReIndexing.add(otherRelation);
-                }
-            }
-
-            getTxCache().remove(otherCasting);
-            getTinkerPopGraph().traversal().V(otherCasting.getId().getRawValue()).next().remove();
-        }
-
-        relationsRequiringReIndexing.forEach(RelationImpl::setHash);
-
-        return relationsToClean;
-    }
-
-    /**
-     *
-     * @param mainRelation The main relation to compare
-     * @param otherRelation The relation to compare it with
-     * @return True if the roleplayers of the relations are the same.
-     */
-    private boolean relationsEqual(Relation mainRelation, Relation otherRelation){
-        String mainIndex = getRelationIndex((RelationImpl) mainRelation);
-        String otherIndex = getRelationIndex((RelationImpl) otherRelation);
-        return mainIndex.equals(otherIndex);
-    }
-    private String getRelationIndex(RelationImpl relation){
-        String index = relation.getIndex();
-        if(index == null) index = RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers());
-        return index;
     }
 
     /**

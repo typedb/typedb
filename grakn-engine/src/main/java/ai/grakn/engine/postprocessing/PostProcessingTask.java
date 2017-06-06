@@ -64,7 +64,6 @@ public class PostProcessingTask extends BackgroundTask {
      */
     @Override
     public boolean start() {
-        runPostProcessingMethod(configuration(), Schema.BaseType.CASTING, this::duplicateCastingsExist, this::runCastingFix);
         runPostProcessingMethod(configuration(), Schema.BaseType.RESOURCE, this::duplicateResourcesExist, this::runResourceFix);
 
         return true;
@@ -74,11 +73,9 @@ public class PostProcessingTask extends BackgroundTask {
      * Main method which attempts to run all post processing jobs.
      *
      * @param duplicatesExistMethod Method to determine if there are duplicates to be post processed.
-     *                      Either {@link ai.grakn.engine.postprocessing.PostProcessingTask#duplicateCastingsExist(GraknGraph, String, Set)} or
      *                      {@link ai.grakn.engine.postprocessing.PostProcessingTask#duplicateResourcesExist(GraknGraph, String, Set)}
      * @param postProcessingMethod The post processing job to be executed if duplicates exist
-     *                      Either {@link ai.grakn.engine.postprocessing.PostProcessingTask#runResourceFix(GraknGraph, String, Set)} or
-     *                      {@link ai.grakn.engine.postprocessing.PostProcessingTask#runCastingFix(GraknGraph, String, Set)}.
+     *                      Either {@link ai.grakn.engine.postprocessing.PostProcessingTask#runResourceFix(GraknGraph, String, Set)}
      */
     private void runPostProcessingMethod(TaskConfiguration configuration, Schema.BaseType baseType,
                                          TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> duplicatesExistMethod,
@@ -197,28 +194,6 @@ public class PostProcessingTask extends BackgroundTask {
     private boolean runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
         return graph.admin().fixDuplicateResources(index, conceptIds);
     }
-
-
-    /**
-     * Run a casting duplication merge job on the provided concepts
-     * @param graph Graph on which to apply the fixes
-     * @param index The unique index of the concept which must exist at the end
-     * @param conceptIds The conceptIds which effectively need to be merged.
-     */
-    private boolean runCastingFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
-        return graph.admin().fixDuplicateCastings(index, conceptIds);
-    }
-
-    /**
-     * Check if there are duplicate castings for the given index
-     * @param graph Graph on which to apply the fixes
-     * @param index The unique index of the concept that may have duplicates
-     * @param conceptIds The conceptIds which may be the duplicates
-     */
-    private boolean duplicateCastingsExist(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
-        return graph.admin().duplicateCastingsExist(index, conceptIds);
-    }
-
 
     /**
      * Check if there are duplicate resources for the given index

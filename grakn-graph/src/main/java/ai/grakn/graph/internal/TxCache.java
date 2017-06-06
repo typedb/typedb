@@ -65,7 +65,6 @@ class TxCache {
     private final Set<EntityImpl> modifiedEntities = new HashSet<>();
 
     private final Set<RoleTypeImpl> modifiedRoleTypes = new HashSet<>();
-    private final Set<CastingImpl> modifiedCastings = new HashSet<>();
     private final Set<RolePlayer> modifiedRolePlayers = new HashSet<>();
 
     private final Set<RelationTypeImpl> modifiedRelationTypes = new HashSet<>();
@@ -140,8 +139,6 @@ class TxCache {
             modifiedEntities.add((EntityImpl) element);
         } else if (element.isRoleType()) {
             modifiedRoleTypes.add((RoleTypeImpl) element);
-        } else if (element.isCasting()) {
-            modifiedCastings.add((CastingImpl) element);
         } else if (element.isRelationType()) {
             modifiedRelationTypes.add((RelationTypeImpl) element);
         } else if (element.isRelation()){
@@ -209,7 +206,6 @@ class TxCache {
     void remove(Element element){
         modifiedEntities.remove(element);
         modifiedRoleTypes.remove(element);
-        modifiedCastings.remove(element);
         modifiedRelationTypes.remove(element);
         modifiedRelations.remove(element);
         modifiedRules.remove(element);
@@ -331,8 +327,6 @@ class TxCache {
     Json getFormattedLog(){
         //Concepts In Need of Inspection
         Json conceptsForInspection = Json.object();
-        conceptsForInspection.set(Schema.BaseType.CASTING.name(), loadConceptsForFixing(getModifiedCastings()));
-
         conceptsForInspection.set(Schema.BaseType.RESOURCE.name(), loadConceptsForFixing(getModifiedResources()));
 
         //Types with instance changes
@@ -367,9 +361,6 @@ class TxCache {
     Set<RoleTypeImpl> getModifiedRoleTypes() {
         return modifiedRoleTypes;
     }
-    Set<CastingImpl> getModifiedCastings() {
-        return modifiedCastings;
-    }
 
     Set<RelationTypeImpl> getModifiedRelationTypes() {
         return modifiedRelationTypes;
@@ -396,7 +387,6 @@ class TxCache {
         this.closedReason = closedReason;
         modifiedEntities.clear();
         modifiedRoleTypes.clear();
-        modifiedCastings.clear();
         modifiedRelationTypes.clear();
         modifiedRelations.clear();
         modifiedRules.clear();

@@ -51,9 +51,7 @@ public class PostProcessingTaskTest {
     @ClassRule
     public static EngineContext engine = EngineContext.startInMemoryServer();
 
-    private String mockCastingIndex;
     private String mockResourceIndex;
-    private Set<ConceptId> mockCastingSet;
     private Set<ConceptId> mockResourceSet;
     private TaskConfiguration mockConfiguration;
     private Consumer<TaskCheckpoint> mockConsumer;
@@ -62,16 +60,13 @@ public class PostProcessingTaskTest {
     @Before
     public void mockPostProcessing(){
         mockConsumer = mock(Consumer.class);
-        mockCastingIndex = UUID.randomUUID().toString();
         mockResourceIndex = UUID.randomUUID().toString();
         mockTaskSubmitter = mock(StandaloneTaskManager.class);
-        mockCastingSet = Sets.newHashSet();
         mockResourceSet = Sets.newHashSet();
         mockConfiguration = mock(TaskConfiguration.class);
         when(mockConfiguration.json()).thenReturn(Json.object(
                 KEYSPACE, "testing",
                 REST.Request.COMMIT_LOG_FIXING, Json.object(
-                        Schema.BaseType.CASTING.name(), Json.object(mockCastingIndex, mockCastingSet),
                         Schema.BaseType.RESOURCE.name(), Json.object(mockResourceIndex, mockResourceSet)
                 )));
 
@@ -86,7 +81,7 @@ public class PostProcessingTaskTest {
         task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null);
         task.start();
 
-        verify(mockConfiguration, times(4)).json();
+        verify(mockConfiguration, times(2)).json();
     }
 
     @Test
@@ -96,7 +91,7 @@ public class PostProcessingTaskTest {
         task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null);
         task.start();
 
-        verify(mockConfiguration, times(4)).json();
+        verify(mockConfiguration, times(2)).json();
     }
 
     @Test
@@ -116,6 +111,6 @@ public class PostProcessingTaskTest {
         pp1.join();
         pp2.join();
 
-        verify(mockConfiguration, times(8)).json();
+        verify(mockConfiguration, times(4)).json();
     }
 }
