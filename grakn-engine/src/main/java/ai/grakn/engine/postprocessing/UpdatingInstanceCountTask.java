@@ -19,7 +19,6 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -50,12 +49,12 @@ import java.util.stream.Collectors;
  */
 public class UpdatingInstanceCountTask extends BackgroundTask {
     public static final RedisConnection redis = RedisConnection.getConnection();
-    public static final GraknEngineConfig CONFIG = GraknEngineConfig.getInstance();
-    private static final long SHARDING_THRESHOLD = CONFIG.getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
-    private static final EngineGraknGraphFactory FACTORY = EngineGraknGraphFactory.create(CONFIG.getProperties());
 
     @Override
     public boolean start() {
+        long shardingThreshold = engineConfiguration().getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
+        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
+
         Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
         String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
 
@@ -66,11 +65,11 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
 
         //Update counts
         jobs.forEach((key, value) -> {
-            if(updateShardCounts(keyspace, key, value)) conceptToShard.add(key);
+            if(updateShardCounts(keyspace, key, value, shardingThreshold)) conceptToShard.add(key);
         });
 
         //Shard anything which requires sharding
-        conceptToShard.forEach(type -> shardConcept(keyspace, type));
+        conceptToShard.forEach(type -> shardConcept(factory, keyspace, type, shardingThreshold));
 
         return true;
     }
@@ -95,11 +94,11 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @param value The number of instances which the type has gained/lost
      * @return true if sharding is needed.
      */
-    private static boolean updateShardCounts(String keyspace, ConceptId conceptId, long value){
+    private static boolean updateShardCounts(String keyspace, ConceptId conceptId, long value, long shardingThreshold){
         long numShards = redis.getCount(RedisConnection.getKeyNumShards(keyspace, conceptId));
         if(numShards == 0) numShards = 1;
         long numInstances = redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace, conceptId), value);
-        return numInstances > SHARDING_THRESHOLD * numShards;
+        return numInstances > shardingThreshold * numShards;
     }
 
     /**
@@ -112,16 +111,17 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @param keyspace The graph containing the type to shard
      * @param conceptId The id of the concept to shard
      */
-    private static void shardConcept(String keyspace, ConceptId conceptId){
+    private static void shardConcept(
+            EngineGraknGraphFactory factory, String keyspace, ConceptId conceptId, long shardingThreshold){
         Lock engineLock = LockProvider.getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
 
         try {
             //Check if sharding is still needed. Another engine could have sharded whilst waiting for lock
-            if (updateShardCounts(keyspace, conceptId, 0)) {
+            if (updateShardCounts(keyspace, conceptId, 0, shardingThreshold)) {
 
                 //Shard
-                GraphMutators.runGraphMutationWithRetry(FACTORY, keyspace, graph -> {
+                GraphMutators.runGraphMutationWithRetry(factory, keyspace, graph -> {
                     graph.admin().shard(conceptId);
                     graph.admin().commitNoLogs();
                 });
