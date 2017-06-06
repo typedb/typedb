@@ -31,6 +31,19 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 
+/**
+ * <p>
+ *     Graph Element
+ * </p>
+ *
+ * <p>
+ *     Base class used to represent a construct in the graph. This includes exposed constructs such as {@link Concept}
+ *     and hidden constructs such as {@link EdgeElement} and {@link RolePlayer}
+ * </p>
+ *
+ * @author fppt
+ *
+ */
 public abstract class Element {
     private final Object id;
     private final AbstractGraknGraph graknGraph;
