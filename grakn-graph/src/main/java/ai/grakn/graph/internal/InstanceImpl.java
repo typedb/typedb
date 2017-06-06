@@ -61,13 +61,13 @@ import java.util.stream.Stream;
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
-    private ConceptCache<TypeLabel> cachedInternalType = new ConceptCache<>(() -> {
+    private ElementCache<TypeLabel> cachedInternalType = new ElementCache<>(() -> {
         int typeId = getProperty(Schema.ConceptProperty.INSTANCE_TYPE_ID);
         Type type = getGraknGraph().getConcept(Schema.ConceptProperty.TYPE_ID, typeId);
         return type.getLabel();
     });
 
-    private ConceptCache<V> cachedType = new ConceptCache<>(() -> {
+    private ElementCache<V> cachedType = new ElementCache<>(() -> {
         ConceptImpl<?> currentType = (ConceptImpl) this.getOutgoingNeighbours(Schema.EdgeLabel.ISA).findFirst().orElse(null);
 
         while (currentType.isShard()){

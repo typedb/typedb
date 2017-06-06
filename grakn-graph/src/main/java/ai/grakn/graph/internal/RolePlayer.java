@@ -39,6 +39,11 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  * @author fppt
  */
 class RolePlayer extends EdgeElement {
+    private ElementCache<RoleType> cachedRoleType = new ElementCache<>(() -> (RoleType) getGraknGraph().getType(TypeId.of(getProperty(Schema.EdgeProperty.ROLE_TYPE_ID))));
+    private ElementCache<RelationType> cachedRelationType = new ElementCache<>(() -> (RelationType) getGraknGraph().getType(TypeId.of(getProperty(Schema.EdgeProperty.RELATION_TYPE_ID))));
+    private ElementCache<Instance> cachedInstance = new ElementCache<>(this::getTarget);
+    private ElementCache<Relation> cachedRelation = new ElementCache<>(this::getSource);
+
     RolePlayer(AbstractGraknGraph graph, Edge edge){
         super(graph, edge);
     }
@@ -48,7 +53,7 @@ class RolePlayer extends EdgeElement {
      * @return The role the instance is playing
      */
     public RoleType getRoleType(){
-        return (RoleType) getGraknGraph().getType(TypeId.of(getProperty(Schema.EdgeProperty.ROLE_TYPE_ID)));
+        return cachedRoleType.get();
     }
 
     /**
@@ -56,7 +61,7 @@ class RolePlayer extends EdgeElement {
      * @return The relation type the instance is taking part in
      */
     public RelationType getRelationType(){
-        return (RelationType) getGraknGraph().getType(TypeId.of(getProperty(Schema.EdgeProperty.RELATION_TYPE_ID)));
+        return cachedRelationType.get();
     }
 
     /**
@@ -64,7 +69,7 @@ class RolePlayer extends EdgeElement {
      * @return The relation which is linking the role and the instance
      */
     public Relation getRelation(){
-        return getSource();
+        return cachedRelation.get();
     }
 
     /**
@@ -72,7 +77,7 @@ class RolePlayer extends EdgeElement {
      * @return The instance playing the role
      */
     public Instance getInstance(){
-        return getTarget();
+        return cachedInstance.get();
     }
 
     /**

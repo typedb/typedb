@@ -50,8 +50,8 @@ import java.util.stream.Collectors;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    private ConceptCache<Set<Type>> cachedDirectPlayedByTypes = new ConceptCache<>(() -> this.<Type>getIncomingNeighbours(Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private ConceptCache<Set<RelationType>> cachedRelationTypes = new ConceptCache<>(() -> this.<RelationType>getIncomingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private ElementCache<Set<Type>> cachedDirectPlayedByTypes = new ElementCache<>(() -> this.<Type>getIncomingNeighbours(Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
+    private ElementCache<Set<RelationType>> cachedRelationTypes = new ElementCache<>(() -> this.<RelationType>getIncomingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);

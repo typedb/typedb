@@ -31,7 +31,7 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 
-public class Element {
+public abstract class Element {
     private final Object id;
     private final AbstractGraknGraph graknGraph;
 
