@@ -40,15 +40,18 @@ import java.util.function.Function;
  */
 public class RedisConnection {
     private static final GraknEngineConfig config = GraknEngineConfig.getInstance();
-    private static final RedisConnection redis = new RedisConnection();
+    private static final RedisConnection redis = create(config.getProperty(GraknEngineConfig.REDIS_SERVER_URL), config.getPropertyAsInt(GraknEngineConfig.REDIS_SERVER_PORT));
 
     private JedisPool jedisPool;
 
-    private RedisConnection(){
+    private RedisConnection(String url, int port){
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(128);
-        jedisPool = new JedisPool(poolConfig, config.getProperty(GraknEngineConfig.REDIS_SERVER_URL),
-                config.getPropertyAsInt(GraknEngineConfig.REDIS_SERVER_PORT));
+        jedisPool = new JedisPool(poolConfig, url, port);
+    }
+
+    public static RedisConnection create(String url, int port) {
+        return new RedisConnection(url, port);
     }
 
     /**
