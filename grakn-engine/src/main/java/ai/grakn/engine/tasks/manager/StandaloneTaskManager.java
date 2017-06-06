@@ -31,6 +31,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import org.slf4j.Logger;
@@ -73,10 +74,12 @@ public class StandaloneTaskManager implements TaskManager {
     private final ScheduledExecutorService schedulingService;
     private final EngineID engineID;
     private final GraknEngineConfig config;
+    private final RedisConnection redis;
 
-    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config) {
+    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis) {
         this.engineID = engineId;
         this.config = config;
+        this.redis = redis;
 
         runningTasks = new ConcurrentHashMap<>();
         scheduledTasks = new ConcurrentHashMap<>();
@@ -170,7 +173,7 @@ public class StandaloneTaskManager implements TaskManager {
         return () -> {
             try {
                 BackgroundTask runningTask = task.taskClass().newInstance();
-                runningTask.initialize(saveCheckpoint(task), configuration, this, config);
+                runningTask.initialize(saveCheckpoint(task), configuration, this, config, redis);
 
                 runningTasks.put(task.getId(), runningTask);
 

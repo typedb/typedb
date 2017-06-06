@@ -28,6 +28,7 @@ import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
@@ -43,6 +44,7 @@ import spark.Response;
 import spark.Service;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -71,9 +73,14 @@ public class GraknEngineServer implements AutoCloseable {
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
     private final EngineGraknGraphFactory factory;
+    private final RedisConnection redis;
 
     private GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
+
+        String redisUrl = prop.getProperty(GraknEngineConfig.REDIS_SERVER_URL);
+        int redisPort = prop.getPropertyAsInt(GraknEngineConfig.REDIS_SERVER_PORT);
+        redis = RedisConnection.create(redisUrl, redisPort);
 
         factory = EngineGraknGraphFactory.create(prop.getProperties());
         taskManager = startTaskManager();
@@ -110,7 +117,9 @@ public class GraknEngineServer implements AutoCloseable {
 
         try {
             Class<TaskManager> taskManagerClass = (Class<TaskManager>) Class.forName(taskManagerClassName);
-            return taskManagerClass.getConstructor(EngineID.class, GraknEngineConfig.class).newInstance(engineId, prop);
+            Constructor<TaskManager> constructor =
+                    taskManagerClass.getConstructor(EngineID.class, GraknEngineConfig.class, RedisConnection.class);
+            return constructor.newInstance(engineId, prop, redis);
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException e) {
             throw new IllegalArgumentException("Invalid or unavailable TaskManager class", e);
         } catch (InvocationTargetException e) {

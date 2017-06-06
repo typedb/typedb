@@ -27,6 +27,7 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.util.EngineID;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -64,6 +65,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
     private final EngineID engineID;
     private final GraknEngineConfig engineConfig;
+    private final RedisConnection redis;
 
     private TaskId runningTaskId = null;
     private BackgroundTask runningTask = null;
@@ -81,13 +83,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param offsetStorage a place to externally store kafka offsets
      */
     public SingleQueueTaskRunner(
-            SingleQueueTaskManager manager, EngineID engineID, GraknEngineConfig config,
+            SingleQueueTaskManager manager, EngineID engineID, GraknEngineConfig config, RedisConnection redis,
             ExternalOffsetStorage offsetStorage, int timeUntilBackoff, Consumer<TaskState, TaskConfiguration> consumer){
         this.manager = manager;
         this.storage = manager.storage();
         this.consumer = consumer;
         this.engineID = engineID;
         this.engineConfig = config;
+        this.redis = redis;
         this.offsetStorage = offsetStorage;
         this.MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF = timeUntilBackoff;
     }
@@ -216,7 +219,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             runningTaskId = task.getId();
             runningTask = task.taskClass().newInstance();
 
-            runningTask.initialize(saveCheckpoint(task), configuration, manager, engineConfig);
+            runningTask.initialize(saveCheckpoint(task), configuration, manager, engineConfig, redis);
 
             boolean completed;
 
