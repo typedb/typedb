@@ -21,7 +21,6 @@ package ai.grakn.client;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.EngineContext;
 import org.junit.Test;
@@ -42,7 +41,7 @@ public class ClientTest {
         assertTrue(running);
 
         // Check that we've loaded the ontology
-        try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)){
+        try(GraknGraph graph = engine.server().factory().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)){
             assertEquals(1, graph.graql().match(var("x").label("scheduled-task")).execute().size());
         }
 

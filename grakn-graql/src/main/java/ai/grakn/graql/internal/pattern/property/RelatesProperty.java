@@ -24,7 +24,6 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -40,7 +39,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.relates;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getIdPredicate;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
  * Represents the {@code relates} property on a {@link RelationType}.
@@ -119,12 +118,12 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName();
+        Var varName = var.getVarName().asUserDefined();
         VarPatternAdmin roleVar = this.getRole();
-        Var roleVariable = roleVar.getVarName();
+        Var roleVariable = roleVar.getVarName().asUserDefined();
         IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent);
 
-        VarPatternAdmin hrVar = Graql.var(varName).relates(Graql.var(roleVariable)).admin();
+        VarPatternAdmin hrVar = varName.relates(roleVariable).admin();
         return new TypeAtom(hrVar, rolePredicate, parent);
     }
 }

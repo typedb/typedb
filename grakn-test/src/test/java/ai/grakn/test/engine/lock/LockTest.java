@@ -22,8 +22,6 @@ import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.lock.ZookeeperLock;
 import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.test.EngineContext;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -34,6 +32,8 @@ import org.junit.experimental.theories.Theory;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -53,7 +53,7 @@ public class LockTest {
 
     @BeforeClass
     public static void setupZK(){
-        zookeeperConnection = new ZookeeperConnection();
+        zookeeperConnection = new ZookeeperConnection(kafka.config());
     }
 
     @AfterClass

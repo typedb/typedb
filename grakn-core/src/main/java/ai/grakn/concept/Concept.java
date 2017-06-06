@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraphOperationException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
@@ -230,7 +230,7 @@ public interface Concept extends Comparable<Concept>{
     /**
      * Delete the Concept.
      *
-     * @throws ConceptException Throws an exception if this is a type with incoming concepts.
+     * @throws GraphOperationException Throws an exception if this is a type with incoming concepts.
      */
-    void delete() throws ConceptException;
+    void delete() throws GraphOperationException;
 }

@@ -43,7 +43,6 @@ import static ai.grakn.engine.GraknEngineConfig.ZK_SESSION_TIMEOUT;
  */
 public class ZookeeperConnection {
 
-    private static final GraknEngineConfig CONFIGURATION = GraknEngineConfig.getInstance();
     private static final AtomicInteger CONNECTION_COUNTER = new AtomicInteger(0);
 
     private static CuratorFramework zookeeperConnection;
@@ -52,8 +51,9 @@ public class ZookeeperConnection {
     /**
      * Start the connection to zookeeper. This method is blocking.
      */
-    public ZookeeperConnection() {
-        openClient();
+    // TODO: Don't pass entire configuration into here
+    public ZookeeperConnection(GraknEngineConfig config) {
+        openClient(config);
     }
 
     /**
@@ -70,16 +70,16 @@ public class ZookeeperConnection {
         return zookeeperConnection;
     }
 
-    private static void openClient() {
+    private static void openClient(GraknEngineConfig config) {
         if (CONNECTION_COUNTER.getAndIncrement() == 0) {
-            int sleep = CONFIGURATION.getPropertyAsInt(ZK_BACKOFF_BASE_SLEEP_TIME);
-            int retries = CONFIGURATION.getPropertyAsInt(ZK_BACKOFF_MAX_RETRIES);
+            int sleep = config.getPropertyAsInt(ZK_BACKOFF_BASE_SLEEP_TIME);
+            int retries = config.getPropertyAsInt(ZK_BACKOFF_MAX_RETRIES);
 
             zookeeperConnection = CuratorFrameworkFactory.builder()
-                    .connectString(CONFIGURATION.getProperty(ZK_SERVERS))
-                    .namespace(CONFIGURATION.getProperty(ZK_NAMESPACE))
-                    .sessionTimeoutMs(CONFIGURATION.getPropertyAsInt(ZK_SESSION_TIMEOUT))
-                    .connectionTimeoutMs(CONFIGURATION.getPropertyAsInt(ZK_CONNECTION_TIMEOUT))
+                    .connectString(config.getProperty(ZK_SERVERS))
+                    .namespace(config.getProperty(ZK_NAMESPACE))
+                    .sessionTimeoutMs(config.getPropertyAsInt(ZK_SESSION_TIMEOUT))
+                    .connectionTimeoutMs(config.getPropertyAsInt(ZK_CONNECTION_TIMEOUT))
                     .retryPolicy(new ExponentialBackoffRetry(sleep, retries))
                     .build();
 
@@ -87,7 +87,7 @@ public class ZookeeperConnection {
 
             try {
                 if(!zookeeperConnection.blockUntilConnected(
-                        CONFIGURATION.getPropertyAsInt(ZK_CONNECTION_TIMEOUT), TimeUnit.MILLISECONDS)){
+                        config.getPropertyAsInt(ZK_CONNECTION_TIMEOUT), TimeUnit.MILLISECONDS)){
                     throw new RuntimeException("Could not connect to zookeeper");
                 }
             } catch (InterruptedException e) {

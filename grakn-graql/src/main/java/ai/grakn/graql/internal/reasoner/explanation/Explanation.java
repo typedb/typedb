@@ -40,16 +40,16 @@ public class Explanation implements AnswerExplanation {
 
     public Explanation(){ answers = new HashSet<>();}
     Explanation(ReasonerQuery q){
-        this.query = q.copy();
+        this.query = q;
         answers = new HashSet<>();
     }
     Explanation(ReasonerQuery q, Set<Answer> ans){
-        this.query = q.copy();
-        this.answers = new HashSet<>(ans);
+        this.query = q;
+        this.answers = ans;
     }
     Explanation(Explanation e){
-        this.answers = new HashSet<>(e.answers);
-        this.query = e.getQuery().copy();
+        this.answers = e.answers;
+        this.query = e.getQuery();
     }
 
     @Override

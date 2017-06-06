@@ -24,7 +24,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.Query;
 import com.google.common.io.Files;
 
@@ -88,7 +88,7 @@ public abstract class TestGraph {
             graph.graql()
                     .parseList(Files.readLines(graql, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .forEach(Query::execute);
-        } catch (IOException |GraknValidationException e){
+        } catch (IOException |InvalidGraphException e){
             throw new RuntimeException(e);
         }
     }

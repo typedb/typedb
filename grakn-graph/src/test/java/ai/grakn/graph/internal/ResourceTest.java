@@ -24,6 +24,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.exception.GraphOperationException;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
@@ -106,7 +107,7 @@ public class ResourceTest extends GraphTestBase{
     @Test
     public void whenCreatingResourceWithAnInvalidDataType_Throw(){
         ResourceType longResourceType = graknGraph.putResourceType("long", ResourceType.DataType.LONG);
-        expectedException.expect(RuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(INVALID_DATATYPE.getMessage("Invalid Thing", Long.class.getName()));
         longResourceType.putResource("Invalid Thing");
     }

@@ -21,13 +21,12 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -40,7 +39,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -54,8 +52,10 @@ import java.util.stream.Collectors;
  *
  * @author alexandraorth, fppt
  */
-public class PostProcessingTask implements BackgroundTask {
-    private static final int PP_TASK_DELAY_MS = GraknEngineConfig.getInstance().getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
+public class PostProcessingTask extends BackgroundTask {
+    private static final GraknEngineConfig CONFIG = GraknEngineConfig.getInstance();
+    private static final int PP_TASK_DELAY_MS = CONFIG.getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
+    private static final EngineGraknGraphFactory FACTORY = EngineGraknGraphFactory.create(CONFIG.getProperties());
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
     private static final String JOB_FINISHED = "Post processing Job [{}] completed for indeces and ids: [{}]";
     private static final String LOCK_KEY = "/post-processing-lock";
@@ -63,31 +63,14 @@ public class PostProcessingTask implements BackgroundTask {
     /**
      * Apply CASTING and RESOURCE post processing jobs the concept ids in the provided configuration
      *
-     * @param saveCheckpoint Checkpointing is not implemented in this task, so this parameter is not used.
-     * @param configuration Configuration containing the IDs to be post processed.
      * @return True if successful.
      */
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
-        runPostProcessingMethod(configuration, Schema.BaseType.CASTING, this::duplicateCastingsExist, this::runCastingFix);
-        runPostProcessingMethod(configuration, Schema.BaseType.RESOURCE, this::duplicateResourcesExist, this::runResourceFix);
+    public boolean start() {
+        runPostProcessingMethod(configuration(), Schema.BaseType.CASTING, this::duplicateCastingsExist, this::runCastingFix);
+        runPostProcessingMethod(configuration(), Schema.BaseType.RESOURCE, this::duplicateResourcesExist, this::runResourceFix);
 
         return true;
-    }
-
-    @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException("Delayed task cannot be stopped while in progress");
-    }
-
-    @Override
-    public void pause() {
-        throw new UnsupportedOperationException("Delayed task cannot be paused");
-    }
-
-    @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
-        throw new UnsupportedOperationException("Delayed task cannot be resumed");
     }
 
     /**
@@ -110,7 +93,7 @@ public class PostProcessingTask implements BackgroundTask {
             String conceptIndex = e.getKey();
             Set<ConceptId> conceptIds = e.getValue();
 
-            GraphMutators.runGraphMutationWithRetry(configuration.json().at(REST.Request.KEYSPACE).asString(),
+            GraphMutators.runGraphMutationWithRetry(FACTORY, configuration.json().at(REST.Request.KEYSPACE).asString(),
                     (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds, duplicatesExistMethod, postProcessingMethod));
 
         });

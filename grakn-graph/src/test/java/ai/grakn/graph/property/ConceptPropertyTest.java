@@ -25,8 +25,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphRuntimeException;
-import ai.grakn.exception.InvalidConceptTypeException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
@@ -91,7 +90,7 @@ public class ConceptPropertyTest {
         Object[] params = mockParamsOf(method);
 
         exception.expect(InvocationTargetException.class);
-        exception.expectCause(isA(GraphRuntimeException.class));
+        exception.expectCause(isA(GraphOperationException.class));
         exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
 
         method.invoke(concept, params);
@@ -158,7 +157,7 @@ public class ConceptPropertyTest {
     @Property
     public void whenConceptIsNotAType_TheConceptCannotBeConvertedToAType(Concept concept) {
         assumeFalse(concept.isType());
-        exception.expect(InvalidConceptTypeException.class);
+        exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asType();
     }
@@ -166,7 +165,7 @@ public class ConceptPropertyTest {
     @Property
     public void whenConceptIsNotAnEntityType_TheConceptCannotBeConvertedToAnEntityType(Concept concept) {
         assumeFalse(concept.isEntityType());
-        exception.expect(InvalidConceptTypeException.class);
+        exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asEntityType();
     }
@@ -174,7 +173,7 @@ public class ConceptPropertyTest {
     @Property
     public void whenConceptIsNotARelationType_TheConceptCannotBeConvertedToARelationType(Concept concept) {
         assumeFalse(concept.isRelationType());
-        exception.expect(InvalidConceptTypeException.class);
+        exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asRelationType();
     }
@@ -182,7 +181,7 @@ public class ConceptPropertyTest {
     @Property
     public void whenConceptIsNotARoleType_TheConceptCannotBeConvertedToARoleType(Concept concept) {
         assumeFalse(concept.isRoleType());
-        exception.expect(InvalidConceptTypeException.class);
+        exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asRoleType();
     }
@@ -190,7 +189,7 @@ public class ConceptPropertyTest {
     @Property
     public void whenConceptIsNotAResourceType_TheConceptCannotBeConvertedToAResourceType(Concept concept) {
         assumeFalse(concept.isResourceType());
-        exception.expect(InvalidConceptTypeException.class);
+        exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asResourceType();
     }
@@ -198,7 +197,7 @@ public class ConceptPropertyTest {
     @Property
     public void whenConceptIsNotARuleType_TheConceptCannotBeConvertedToARuleType(Concept concept) {
         assumeFalse(concept.isRuleType());
-        exception.expect(InvalidConceptTypeException.class);
+        exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asRuleType();
     }
@@ -206,7 +205,7 @@ public class ConceptPropertyTest {
     @Property
     public void whenConceptIsNotAnInstance_TheConceptCannotBeConvertedToAnInstance(Concept concept) {
         assumeFalse(concept.isInstance());
-        exception.expect(InvalidConceptTypeException.class);
+        exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asInstance();
     }
@@ -214,7 +213,7 @@ public class ConceptPropertyTest {
     @Property
     public void whenConceptIsNotAnEntity_TheConceptCannotBeConvertedToAnEntity(Concept concept) {
         assumeFalse(concept.isEntity());
-        exception.expect(InvalidConceptTypeException.class);
+        exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asEntity();
     }
@@ -222,7 +221,7 @@ public class ConceptPropertyTest {
     @Property
     public void whenConceptIsNotARelation_TheConceptCannotBeConvertedToARelation(Concept concept) {
         assumeFalse(concept.isRelation());
-        exception.expect(InvalidConceptTypeException.class);
+        exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asRelation();
     }
@@ -230,7 +229,7 @@ public class ConceptPropertyTest {
     @Property
     public void whenConceptIsNotAResource_TheConceptCannotBeConvertedToAResource(Concept concept) {
         assumeFalse(concept.isResource());
-        exception.expect(InvalidConceptTypeException.class);
+        exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asResource();
     }
@@ -238,7 +237,7 @@ public class ConceptPropertyTest {
     @Property
     public void whenConceptIsNotARule_TheConceptCannotBeConvertedToARule(Concept concept) {
         assumeFalse(concept.isRule());
-        exception.expect(InvalidConceptTypeException.class);
+        exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asRule();
     }

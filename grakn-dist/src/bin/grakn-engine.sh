@@ -38,6 +38,9 @@ for jar in "${GRAKN_HOME}"/lib/*.jar; do
     fi
 done
 
+# Add path containing logback.xml
+CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf/main/
+
 case "$1" in
 
 start)

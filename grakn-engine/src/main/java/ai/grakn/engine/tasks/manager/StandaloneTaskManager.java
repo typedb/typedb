@@ -73,7 +73,7 @@ public class StandaloneTaskManager implements TaskManager {
     private final ScheduledExecutorService schedulingService;
     private final EngineID engineID;
 
-    public StandaloneTaskManager(EngineID engineId) {
+    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config) {
         this.engineID = engineId;
 
         runningTasks = new ConcurrentHashMap<>();
@@ -82,9 +82,8 @@ public class StandaloneTaskManager implements TaskManager {
         storage = new TaskStateInMemoryStore();
         stateUpdateLock = new NonReentrantLock();
 
-        GraknEngineConfig properties = GraknEngineConfig.getInstance();
         schedulingService = Executors.newScheduledThreadPool(1);
-        executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
+        executorService = Executors.newFixedThreadPool(config.getAvailableThreads());
 
         LockProvider.instantiate((lockName, existingLock) -> {
             if(existingLock != null){
@@ -169,19 +168,21 @@ public class StandaloneTaskManager implements TaskManager {
         return () -> {
             try {
                 BackgroundTask runningTask = task.taskClass().newInstance();
+                runningTask.initialize(saveCheckpoint(task), configuration, this);
+
                 runningTasks.put(task.getId(), runningTask);
 
                 boolean completed;
 
                 if(taskShouldResume(task)){
-                    completed = runningTask.resume(saveCheckpoint(task), task.checkpoint());
+                    completed = runningTask.resume(task.checkpoint());
                 } else {
                     //Mark as running
                     task.markRunning(engineID);
 
                     saveState(task);
 
-                    completed = runningTask.start(saveCheckpoint(task), configuration, this);
+                    completed = runningTask.start();
                 }
 
                 if (completed) {

@@ -20,6 +20,7 @@ package ai.grakn.test;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
@@ -27,6 +28,9 @@ import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import org.junit.rules.ExternalResource;
 
+import javax.annotation.Nullable;
+
+import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
 import static ai.grakn.test.GraknTestEnv.startEngine;
@@ -49,7 +53,7 @@ public class EngineContext extends ExternalResource {
     private final boolean startKafka;
     private final boolean startSingleQueueEngine;
     private final boolean startStandaloneEngine;
-    private int port = 4567;
+    private final GraknEngineConfig config = GraknEngineConfig.create();
 
     private EngineContext(boolean startKafka, boolean startSingleQueueEngine, boolean startStandaloneEngine){
         this.startSingleQueueEngine = startSingleQueueEngine;
@@ -70,12 +74,16 @@ public class EngineContext extends ExternalResource {
     }
 
     public EngineContext port(int port) {
-        this.port = port;
+        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(port));
         return this;
     }
 
     public GraknEngineServer server() {
         return server;
+    }
+
+    public GraknEngineConfig config() {
+        return config;
     }
 
     public TaskManager getTaskManager(){
@@ -84,23 +92,30 @@ public class EngineContext extends ExternalResource {
 
     //TODO Rename this method to "sessionWithNewKeyspace"
     public GraknSession factoryWithNewKeyspace() {
-        return Grakn.session("localhost:" + port, randomKeyspace());
+        return Grakn.session(GraknTestEnv.getUri(config), randomKeyspace());
     }
 
     @Override
     public void before() throws Throwable {
         if(startKafka){
-            startKafka();
+            startKafka(config);
         }
 
-        startRedis();
+        startRedis(config);
+
+        @Nullable Class<? extends TaskManager> taskManagerClass = null;
 
         if(startSingleQueueEngine){
-            server = startEngine(SingleQueueTaskManager.class.getName(), port);
+            taskManagerClass = SingleQueueTaskManager.class;
         }
 
         if (startStandaloneEngine){
-            server = startEngine(StandaloneTaskManager.class.getName(), port);
+            taskManagerClass = StandaloneTaskManager.class;
+        }
+
+        if (taskManagerClass != null) {
+            config.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
+            server = startEngine(config);
         }
     }
 
