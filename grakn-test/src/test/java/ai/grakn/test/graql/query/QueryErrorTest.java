@@ -114,7 +114,7 @@ public class QueryErrorTest {
     public void testErrorHasGenreQuery() {
         // 'has genre' is not allowed because genre is an entity type
         exception.expect(IllegalStateException.class);
-        exception.expectMessage(allOf(containsString("genre"), containsString("resource")));
+        exception.expectMessage(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage("genre"));
         //noinspection ResultOfMethodCallIgnored
         qb.match(var("x").isa("movie").has("genre", "Drama")).stream();
     }
