@@ -106,6 +106,7 @@ public class CommitLogControllerTest {
     }
 
     @Test
+    @Ignore
     public void whenCommittingGraph_TaskManagerReceivesPPTask() throws InterruptedException {
 
         final String BOB = "bob";
