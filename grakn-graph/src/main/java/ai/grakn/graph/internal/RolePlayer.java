@@ -74,4 +74,23 @@ class RolePlayer extends EdgeElement {
     public Instance getInstance(){
         return getTarget();
     }
+
+    /**
+     *
+     * @return The hash code of the underlying vertex
+     */
+    public int hashCode() {
+        return getElementId().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
+    }
+
+    /**
+     *
+     * @return true if the elements equal each other
+     */
+    @Override
+    public boolean equals(Object object) {
+        //Compare Concept
+        //based on id because vertex comparisons are equivalent
+        return this == object || object instanceof RolePlayer && ((RolePlayer) object).getElementId().equals(getElementId());
+    }
 }

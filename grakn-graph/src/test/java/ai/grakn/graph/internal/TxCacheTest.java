@@ -44,6 +44,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -85,7 +86,7 @@ public class TxCacheTest extends GraphTestBase{
                 addRolePlayer(r2, e2)).
                 getRolePlayers().collect(Collectors.toSet());
 
-        assertThat(graknGraph.getTxCache().getModifiedRolePlayers(), containsInAnyOrder(rolePlayers));
+        assertTrue(graknGraph.getTxCache().getModifiedRolePlayers().containsAll(rolePlayers));
     }
 
     @Test

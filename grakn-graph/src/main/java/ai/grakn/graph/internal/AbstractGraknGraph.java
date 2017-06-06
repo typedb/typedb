@@ -673,6 +673,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             EdgeElement edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.SHORTCUT);
             edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getTypeId().getValue());
             edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getTypeId().getValue());
+            getTxCache().trackForValidation(getElementFactory().buildRolePlayer(edge));
         }
     }
 
