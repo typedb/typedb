@@ -170,12 +170,8 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     abstract String graqlString();
 
     final String subtypeString() {
-        if (subTypeLabels.isEmpty()) {
-            return ";";
-        } else {
-            return " in "
-                    + subTypeLabels.stream().map(StringConverter::typeLabelToString).collect(joining(", ")) + ";";
-        }
+        return subTypeLabels.isEmpty() ? ";" : " in "
+                + subTypeLabels.stream().map(StringConverter::typeLabelToString).collect(joining(", ")) + ";";
     }
 
     @Override
@@ -197,8 +193,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
         AbstractComputeQuery<?> that = (AbstractComputeQuery<?>) o;
 
-        if (!graph.equals(that.graph)) return false;
-        return subTypeLabels.equals(that.subTypeLabels);
+        return graph.equals(that.graph) && subTypeLabels.equals(that.subTypeLabels);
     }
 
     @Override

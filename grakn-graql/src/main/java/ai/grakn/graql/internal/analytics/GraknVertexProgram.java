@@ -48,14 +48,6 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
 
     static final Logger LOGGER = LoggerFactory.getLogger(GraknVertexProgram.class);
 
-    static final MessageScope.Local<?> messageScopeIn = MessageScope.Local.of(() -> __.inE(
-            Schema.EdgeLabel.CASTING.getLabel(),
-            Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
-    static final MessageScope.Local<?> messageScopeOut = MessageScope.Local.of(() -> __.outE(
-            Schema.EdgeLabel.CASTING.getLabel(),
-            Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
-    private static final Set<MessageScope> messageScopeSet = Sets.newHashSet(messageScopeIn, messageScopeOut);
-
     static final MessageScope.Local<?> messageScopeInCasting = MessageScope.Local.of(() -> __.inE(
             Schema.EdgeLabel.CASTING.getLabel()));
     static final MessageScope.Local<?> messageScopeOutCasting = MessageScope.Local.of(() -> __.outE(
@@ -78,7 +70,7 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        return messageScopeSet;
+        return messageScopeSetShortcut;
     }
 
     @Override
