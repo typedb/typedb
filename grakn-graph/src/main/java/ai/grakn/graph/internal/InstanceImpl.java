@@ -32,6 +32,7 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
@@ -39,6 +40,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -149,6 +151,15 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         Set<CastingImpl> castings = new HashSet<>();
         getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(casting -> castings.add((CastingImpl) casting));
         return castings;
+    }
+
+    /**
+     *
+     * @return All the {@link RolePlayer} which this instance is cast into the role
+     */
+    public Stream<RolePlayer> getPlayingRoles(){
+        return getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).
+                map(edge -> getGraknGraph().getElementFactory().buildRolePlayer(edge));
     }
 
     <X extends Instance> Set<X> getShortcutNeighbours(){

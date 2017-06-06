@@ -81,13 +81,13 @@ class ValidateGlobalRules {
      * This method checks if the plays edge has been added successfully. It does so By checking
      * Casting -CAST-> ConceptInstance -ISA-> Concept -PLAYS-> X =
      * Casting -ISA-> X
-     * @param casting The casting to be validated
+     * @param rolePlayer The casting to be validated
      * @return A specific error if one is found.
      */
-    static Optional<String> validatePlaysStructure(CastingImpl casting) {
-        Instance rolePlayer = casting.getRolePlayer();
-        TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) rolePlayer.type();
-        RoleType roleType = casting.getRole();
+    static Optional<String> validatePlaysStructure(RolePlayer rolePlayer) {
+        Instance instance = rolePlayer.getInstance();
+        TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) instance.type();
+        RoleType roleType = rolePlayer.getRoleType();
 
         boolean satisfiesPlays = false;
 
@@ -101,8 +101,8 @@ class ValidateGlobalRules {
                     satisfiesPlays = true;
 
                     // Assert unique relation for this role type
-                    if (required && rolePlayer.relations(roleType).size() != 1) {
-                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(rolePlayer.getId(), rolePlayer.type().getLabel(), roleType.getLabel(), rolePlayer.relations(roleType).size()));
+                    if (required && instance.relations(roleType).size() != 1) {
+                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(instance.getId(), instance.type().getLabel(), roleType.getLabel(), instance.relations(roleType).size()));
                     }
                 }
             }
@@ -112,7 +112,7 @@ class ValidateGlobalRules {
         if(satisfiesPlays) {
             return Optional.empty();
         } else {
-            return Optional.of(VALIDATION_CASTING.getMessage(rolePlayer.type().getLabel(), rolePlayer.getId(), casting.getRole().getLabel()));
+            return Optional.of(VALIDATION_CASTING.getMessage(instance.type().getLabel(), instance.getId(), rolePlayer.getRoleType().getLabel()));
         }
     }
 

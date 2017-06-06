@@ -505,8 +505,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             //Track any existing data if there is some
             instances().forEach(concept -> {
                 if (concept.isInstance()) {
-                    ((InstanceImpl<?, ?>) concept).castings().forEach(
-                            instance -> getGraknGraph().getTxCache().trackForValidation(instance));
+                    ((InstanceImpl<?, ?>) concept).getPlayingRoles().forEach(
+                            rolePlayer -> getGraknGraph().getTxCache().trackForValidation(rolePlayer));
                 }
             });
         }
@@ -579,12 +579,13 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         cachedDirectPlays.ifPresent(set -> set.remove(roleType));
         ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(this);
 
-        //Add castings to tracking to make sure they can still be played.
+        //Add roleplayers to tracking to make sure they can still be played.
         instances().forEach(concept -> {
             if (concept.isInstance()) {
-                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> getGraknGraph().getTxCache().trackForValidation(casting));
+                ((InstanceImpl<?, ?>) concept).getPlayingRoles().forEach(rolePlayer -> getGraknGraph().getTxCache().trackForValidation(rolePlayer));
             }
         });
+
 
         return getThis();
     }
