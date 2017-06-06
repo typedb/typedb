@@ -38,28 +38,28 @@ public interface QueryBuilder {
      * @return a match query that will find matches of the given patterns
      */
     @CheckReturnValue
-    MatchQuery match(Pattern... patterns);
+    MatchQuery match(PatternBuilder... patterns);
 
     /**
      * @param patterns a collection of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
     @CheckReturnValue
-    MatchQuery match(Collection<? extends Pattern> patterns);
+    MatchQuery match(Collection<? extends PatternBuilder> patterns);
 
     /**
      * @param vars an array of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
     @CheckReturnValue
-    InsertQuery insert(VarPattern... vars);
+    InsertQuery insert(VarPatternBuilder... vars);
 
     /**
      * @param vars a collection of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
     @CheckReturnValue
-    InsertQuery insert(Collection<? extends VarPattern> vars);
+    InsertQuery insert(Collection<? extends VarPatternBuilder> vars);
 
     /**
      * @return a compute query builder for building analytics query

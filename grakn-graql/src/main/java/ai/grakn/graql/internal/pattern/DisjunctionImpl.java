@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.pattern;
 
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
@@ -86,6 +87,11 @@ class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
 
     @Override
     public PatternAdmin admin() {
+        return this;
+    }
+
+    @Override
+    public Pattern pattern() {
         return this;
     }
 }

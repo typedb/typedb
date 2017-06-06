@@ -23,9 +23,9 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
@@ -188,7 +188,7 @@ public class QueryErrorTest {
         Stream<Concept> concepts = query.get("y");
 
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(Var.of("y")));
+        exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("y")));
 
         //noinspection ResultOfMethodCallIgnored
         concepts.count();

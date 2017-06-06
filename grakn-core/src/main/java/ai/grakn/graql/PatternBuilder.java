@@ -17,22 +17,22 @@
  *
  */
 
-package ai.grakn.generator;
+package ai.grakn.graql;
 
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.RuleType;
+import javax.annotation.CheckReturnValue;
 
-import static ai.grakn.graql.Graql.var;
+/**
+ * An interface representing something that is or can be transformed into a {@link Pattern}.
+ *
+ * @author Felix Chapman
+ */
+public interface PatternBuilder {
 
-public class Rules extends AbstractInstanceGenerator<Rule, RuleType> {
-
-    public Rules() {
-        super(Rule.class, RuleTypes.class);
-    }
-
-    @Override
-    protected Rule newInstance(RuleType type) {
-        // TODO: generate more complicated rules
-        return type.putRule(var("x").pattern(), var("x").pattern());
-    }
+    /**
+     * Change this into a {@link Pattern}. Does not modify the existing object.
+     *
+     * @return a {@link Pattern} from this object.
+     */
+    @CheckReturnValue
+    Pattern pattern();
 }

@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.predicate;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.VarPatternBuilder;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -55,10 +56,10 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
      * @param value the value that this predicate is testing against
      */
     ComparatorPredicate(Object value) {
-        if (value instanceof VarPatternAdmin) {
+        if (value instanceof VarPatternBuilder) {
             this.originalValue = Optional.empty();
             this.value = Optional.empty();
-            this.var = Optional.of((VarPatternAdmin) value);
+            this.var = Optional.of(((VarPatternBuilder) value).pattern().admin());
         } else {
             // Convert integers to longs for consistency
             if (value instanceof Integer) {
