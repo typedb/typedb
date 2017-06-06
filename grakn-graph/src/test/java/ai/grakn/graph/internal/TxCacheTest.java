@@ -33,7 +33,9 @@ import mjson.Json;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -64,6 +66,26 @@ public class TxCacheTest extends GraphTestBase{
         // verify the concepts that we expected are returned in the set
         assertThat(graknGraph.getTxCache().getModifiedRoleTypes(), containsInAnyOrder(t3));
         assertThat(graknGraph.getTxCache().getModifiedRelationTypes(), containsInAnyOrder(t2));
+    }
+
+    @Test
+    public void whenCreatingRelations_EnsureRolePlayersAreCached(){
+        RoleType r1 = graknGraph.putRoleType("r1");
+        RoleType r2 = graknGraph.putRoleType("r2");
+        EntityType t1 = graknGraph.putEntityType("t1").plays(r1).plays(r2);
+        RelationType rt1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
+
+        Entity e1 = t1.addEntity();
+        Entity e2 = t1.addEntity();
+
+        assertThat(graknGraph.getTxCache().getModifiedRolePlayers(), empty());
+
+        Set<RolePlayer> rolePlayers = ((RelationImpl) rt1.addRelation().
+                addRolePlayer(r1, e1).
+                addRolePlayer(r2, e2)).
+                getRolePlayers().collect(Collectors.toSet());
+
+        assertThat(graknGraph.getTxCache().getModifiedRolePlayers(), containsInAnyOrder(rolePlayers));
     }
 
     @Test

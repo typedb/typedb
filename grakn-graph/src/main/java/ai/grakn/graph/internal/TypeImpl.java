@@ -291,7 +291,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             cachedDirectPlays.clear();
 
             //Clear Global ConceptCache
-            getGraknGraph().getTxCache().removeConcept(this);
+            getGraknGraph().getTxCache().remove(this);
         }
     }
 
@@ -506,7 +506,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             instances().forEach(concept -> {
                 if (concept.isInstance()) {
                     ((InstanceImpl<?, ?>) concept).castings().forEach(
-                            instance -> getGraknGraph().getTxCache().trackConceptForValidation(instance));
+                            instance -> getGraknGraph().getTxCache().trackForValidation(instance));
                 }
             });
         }
@@ -549,7 +549,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         //Update the cache of types played by the role
         ((RoleTypeImpl) roleType).addCachedDirectPlaysByType(this);
 
-        EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS);
+        EdgeElement edge = putEdge(roleType, Schema.EdgeLabel.PLAYS);
 
         if (required) {
             edge.setProperty(Schema.EdgeProperty.REQUIRED, true);
@@ -582,7 +582,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         //Add castings to tracking to make sure they can still be played.
         instances().forEach(concept -> {
             if (concept.isInstance()) {
-                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> getGraknGraph().getTxCache().trackConceptForValidation(casting));
+                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> getGraknGraph().getTxCache().trackForValidation(casting));
             }
         });
 

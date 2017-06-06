@@ -311,7 +311,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     //----------------------------------------------General Functionality-----------------------------------------------
-    private EdgeImpl addEdge(Concept from, Concept to, Schema.EdgeLabel type){
+    private EdgeElement addEdge(Concept from, Concept to, Schema.EdgeLabel type){
         return ((ConceptImpl)from).addEdge((ConceptImpl) to, type);
     }
 
@@ -632,7 +632,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private CastingImpl addCasting(RoleTypeImpl role, InstanceImpl rolePlayer){
         CastingImpl casting = getElementFactory().buildCasting(addVertex(Schema.BaseType.CASTING), role.currentShard()).setHash(role, rolePlayer);
         if(rolePlayer != null) {
-            EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
+            EdgeElement castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
             castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId().getValue());
         }
         return casting;
@@ -648,9 +648,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         // Relation To Casting
-        EdgeImpl relationToCasting = relation.putEdge(foundCasting, Schema.EdgeLabel.CASTING);
+        EdgeElement relationToCasting = relation.putEdge(foundCasting, Schema.EdgeLabel.CASTING);
         relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId().getValue());
-        getTxCache().trackConceptForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
+        getTxCache().trackForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
 
         //TODO: Only execute this if we need to. I.e if the above relation.putEdge() actually added a new edge.
         if(rolePlayer != null) putShortcutEdge(rolePlayer, relation, role);
@@ -670,7 +670,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 hasId(toInstance.getId().getRawValue()).hasNext();
 
         if(!exists){
-            EdgeImpl edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.SHORTCUT);
+            EdgeElement edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.SHORTCUT);
             edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getTypeId().getValue());
             edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getTypeId().getValue());
         }
@@ -910,14 +910,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 if(transferEdge) {
                     //Delete index so we can reset it when things are finalised.
                     otherRelation.setProperty(Schema.ConceptProperty.INDEX, null);
-                    EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
+                    EdgeElement assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
                     assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId().getValue());
                     relations = mainCasting.getRelations();
                     relationsRequiringReIndexing.add(otherRelation);
                 }
             }
 
-            getTxCache().removeConcept(otherCasting);
+            getTxCache().remove(otherCasting);
             getTinkerPopGraph().traversal().V(otherCasting.getId().getRawValue()).next().remove();
         }
 

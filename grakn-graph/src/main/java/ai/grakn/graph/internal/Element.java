@@ -17,6 +17,7 @@
  */
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -87,7 +88,15 @@ public class Element {
 
     /**
      *
-     * @return A Type if the concept is a Type
+     * @return true if the element is a Concept
+     */
+    public ConceptImpl asConcept(){
+        return castConcept(ConceptImpl.class);
+    }
+
+    /**
+     *
+     * @return A Type if the element is a Type
      */
     public Type asType() {
         return castConcept(TypeImpl.class);
@@ -95,7 +104,7 @@ public class Element {
 
     /**
      *
-     * @return An Instance if the concept is an Instance
+     * @return An Instance if the element is an Instance
      */
     public Instance asInstance() {
         return castConcept(InstanceImpl.class);
@@ -103,7 +112,7 @@ public class Element {
 
     /**
      *
-     * @return A Entity Type if the concept is a Entity Type
+     * @return A Entity Type if the element is a Entity Type
      */
     public EntityType asEntityType() {
         return castConcept(EntityTypeImpl.class);
@@ -111,7 +120,7 @@ public class Element {
 
     /**
      *
-     * @return A Role Type if the concept is a Role Type
+     * @return A Role Type if the element is a Role Type
      */
     public RoleType asRoleType() {
         return castConcept(RoleTypeImpl.class);
@@ -119,7 +128,7 @@ public class Element {
 
     /**
      *
-     * @return A Relation Type if the concept is a Relation Type
+     * @return A Relation Type if the element is a Relation Type
      */
     public RelationType asRelationType() {
         return castConcept(RelationTypeImpl.class);
@@ -127,7 +136,7 @@ public class Element {
 
     /**
      *
-     * @return A Resource Type if the concept is a Resource Type
+     * @return A Resource Type if the element is a Resource Type
      */
     @SuppressWarnings("unchecked")
     public <D> ResourceType<D> asResourceType() {
@@ -136,7 +145,7 @@ public class Element {
 
     /**
      *
-     * @return A Rule Type if the concept is a Rule Type
+     * @return A Rule Type if the element is a Rule Type
      */
     public RuleType asRuleType() {
         return castConcept(RuleTypeImpl.class);
@@ -144,7 +153,7 @@ public class Element {
 
     /**
      *
-     * @return An Entity if the concept is an Instance
+     * @return An Entity if the element is an Instance
      */
     public Entity asEntity() {
         return castConcept(EntityImpl.class);
@@ -152,7 +161,7 @@ public class Element {
 
     /**
      *
-     * @return A Relation if the concept is a Relation
+     * @return A Relation if the element is a Relation
      */
     public Relation asRelation() {
         return castConcept(RelationImpl.class);
@@ -160,7 +169,7 @@ public class Element {
 
     /**
      *
-     * @return A Resource if the concept is a Resource
+     * @return A Resource if the element is a Resource
      */
     @SuppressWarnings("unchecked")
     public <D> Resource<D> asResource() {
@@ -169,7 +178,7 @@ public class Element {
 
     /**
      *
-     * @return A Rule if the concept is a Rule
+     * @return A Rule if the element is a Rule
      */
     public Rule asRule() {
         return castConcept(RuleImpl.class);
@@ -177,7 +186,7 @@ public class Element {
 
     /**
      *
-     * @return A casting if the concept is a casting
+     * @return A casting if the element is a casting
      */
     public CastingImpl asCasting(){
         return castConcept(CastingImpl.class);
@@ -185,7 +194,23 @@ public class Element {
 
     /**
      *
-     * @return true if the concept is a Type
+     * @return A roleplayer if the element is a roleplayer
+     */
+    public RolePlayer asRolePlayer(){
+        return castConcept(RolePlayer.class);
+    }
+
+    /**
+     *
+     * @return true if the element is a Concept
+     */
+    public boolean isConcept(){
+        return this instanceof Concept;
+    }
+
+    /**
+     *
+     * @return true if the element is a Type
      */
     public boolean isType() {
         return this instanceof Type;
@@ -193,7 +218,7 @@ public class Element {
 
     /**
      *
-     * @return true if the concept is an Instance
+     * @return true if the element is an Instance
      */
     public boolean isInstance() {
         return this instanceof Instance;
@@ -201,7 +226,7 @@ public class Element {
 
     /**
      *
-     * @return true if the concept is a Entity Type
+     * @return true if the element is a Entity Type
      */
     public boolean isEntityType() {
         return this instanceof EntityType;
@@ -209,7 +234,7 @@ public class Element {
 
     /**
      *
-     * @return true if the concept is a Role Type
+     * @return true if the element is a Role Type
      */
     public boolean isRoleType() {
         return this instanceof RoleType;
@@ -217,7 +242,7 @@ public class Element {
 
     /**
      *
-     * @return true if the concept is a Relation Type
+     * @return true if the element is a Relation Type
      */
     public boolean isRelationType() {
         return this instanceof RelationType;
@@ -225,7 +250,7 @@ public class Element {
 
     /**
      *
-     * @return true if the concept is a Resource Type
+     * @return true if the element is a Resource Type
      */
     public boolean isResourceType() {
         return this instanceof ResourceType;
@@ -233,7 +258,7 @@ public class Element {
 
     /**
      *
-     * @return true if the concept is a Rule Type
+     * @return true if the element is a Rule Type
      */
     public boolean isRuleType() {
         return this instanceof RuleType;
@@ -241,7 +266,7 @@ public class Element {
 
     /**
      *
-     * @return true if the concept is a Entity
+     * @return true if the element is a Entity
      */
     public boolean isEntity() {
         return this instanceof Entity;
@@ -249,7 +274,7 @@ public class Element {
 
     /**
      *
-     * @return true if the concept is a Relation
+     * @return true if the element is a Relation
      */
     public boolean isRelation() {
         return this instanceof Relation;
@@ -257,7 +282,7 @@ public class Element {
 
     /**
      *
-     * @return true if the concept is a Resource
+     * @return true if the element is a Resource
      */
     public boolean isResource() {
         return this instanceof Resource;
@@ -265,7 +290,7 @@ public class Element {
 
     /**
      *
-     * @return true if the concept is a Rule
+     * @return true if the element is a Rule
      */
     public boolean isRule() {
         return this instanceof Rule;
@@ -273,9 +298,17 @@ public class Element {
 
     /**
      *
-     * @return true if the concept is a casting
+     * @return true if the element is a casting
      */
     public boolean isCasting(){
         return this instanceof CastingImpl;
+    }
+
+    /**
+     *
+     * @return true if the element is a RolePlayer
+     */
+    public boolean isRolePlayer(){
+        return this instanceof RolePlayer;
     }
 }

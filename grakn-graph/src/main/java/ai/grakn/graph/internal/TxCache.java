@@ -66,6 +66,7 @@ class TxCache {
 
     private final Set<RoleTypeImpl> modifiedRoleTypes = new HashSet<>();
     private final Set<CastingImpl> modifiedCastings = new HashSet<>();
+    private final Set<RolePlayer> modifiedRolePlayers = new HashSet<>();
 
     private final Set<RelationTypeImpl> modifiedRelationTypes = new HashSet<>();
     private final Set<RelationImpl> modifiedRelations = new HashSet<>();
@@ -132,28 +133,30 @@ class TxCache {
 
     /**
      *
-     * @param concept The concept to be later validated
+     * @param element The element to be later validated
      */
-    void trackConceptForValidation(ConceptImpl concept) {
-if (concept.isEntity()) {
-            modifiedEntities.add((EntityImpl) concept);
-        } else if (concept.isRoleType()) {
-            modifiedRoleTypes.add((RoleTypeImpl) concept);
-        } else if (concept.isCasting()) {
-            modifiedCastings.add((CastingImpl) concept);
-        } else if (concept.isRelationType()) {
-            modifiedRelationTypes.add((RelationTypeImpl) concept);
-        } else if (concept.isRelation()){
-            modifiedRelations.add((RelationImpl) concept);
-        } else if (concept.isRule()){
-            modifiedRules.add((RuleImpl) concept);
-        } else if (concept.isResource()){
-            modifiedResources.add((ResourceImpl) concept);
+    void trackForValidation(Element element) {
+        if (element.isEntity()) {
+            modifiedEntities.add((EntityImpl) element);
+        } else if (element.isRoleType()) {
+            modifiedRoleTypes.add((RoleTypeImpl) element);
+        } else if (element.isCasting()) {
+            modifiedCastings.add((CastingImpl) element);
+        } else if (element.isRelationType()) {
+            modifiedRelationTypes.add((RelationTypeImpl) element);
+        } else if (element.isRelation()){
+            modifiedRelations.add((RelationImpl) element);
+        } else if (element.isRule()){
+            modifiedRules.add((RuleImpl) element);
+        } else if (element.isResource()){
+            modifiedResources.add((ResourceImpl) element);
+        } else if (element.isRolePlayer()){
+            modifiedRolePlayers.add(element.asRolePlayer());
         }
 
         //Caching of relations in memory so they can be retrieved without needing a commit
-        if (concept.isRelation()) {
-            RelationImpl relation = (RelationImpl) concept;
+        if (element.isRelation()) {
+            RelationImpl relation = (RelationImpl) element;
             relationIndexCache.put(RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
         }
     }
@@ -200,23 +203,26 @@ if (concept.isEntity()) {
 
     /**
      *
-     * @param concept The concept to nio longer track
+     * @param element The concept to nio longer track
      */
     @SuppressWarnings("SuspiciousMethodCalls")
-    void removeConcept(ConceptImpl concept){
-        modifiedEntities.remove(concept);
-        modifiedRoleTypes.remove(concept);
-        modifiedCastings.remove(concept);
-        modifiedRelationTypes.remove(concept);
-        modifiedRelations.remove(concept);
-        modifiedRules.remove(concept);
-        modifiedResources.remove(concept);
+    void remove(Element element){
+        modifiedEntities.remove(element);
+        modifiedRoleTypes.remove(element);
+        modifiedCastings.remove(element);
+        modifiedRelationTypes.remove(element);
+        modifiedRelations.remove(element);
+        modifiedRules.remove(element);
+        modifiedResources.remove(element);
+        modifiedRolePlayers.remove(element);
 
-        conceptCache.remove(concept.getId());
-        if(concept.isType()){
-            TypeLabel label = ((TypeImpl) concept).getLabel();
-            typeCache.remove(label);
-            labelCache.remove(label);
+        if(element.isConcept()) {
+            conceptCache.remove(element.asConcept().getId());
+            if (element.isType()) {
+                TypeLabel label = ((TypeImpl) element).getLabel();
+                typeCache.remove(label);
+                labelCache.remove(label);
+            }
         }
     }
 
@@ -380,6 +386,10 @@ if (concept.isEntity()) {
         return modifiedResources;
     }
 
+    Set<RolePlayer> getModifiedRolePlayers() {
+        return modifiedRolePlayers;
+    }
+
     //--------------------------------------- Transaction Specific Meta Data -------------------------------------------
     void closeTx(String closedReason){
         isTxOpen = false;
@@ -391,6 +401,7 @@ if (concept.isEntity()) {
         modifiedRelations.clear();
         modifiedRules.clear();
         modifiedResources.clear();
+        modifiedRolePlayers.clear();
         relationIndexCache.clear();
         shardingCount.clear();
         conceptCache.clear();

@@ -43,7 +43,7 @@ import java.util.function.Function;
  *
  * <p>
  *     This class turns Tinkerpop {@link Vertex} and {@link org.apache.tinkerpop.gremlin.structure.Edge}
- *     into Grakn {@link Concept} and {@link EdgeImpl}.
+ *     into Grakn {@link Concept} and {@link EdgeElement}.
  *
  *     Construction is only successful if the vertex and edge properties contain the needed information.
  *     A concept must include a label which is a {@link ai.grakn.util.Schema.BaseType}.
@@ -72,7 +72,7 @@ final class ElementFactory {
 
         //Only track concepts which have been modified.
         if(graknGraph.isConceptModified(concept)) {
-            graknGraph.getTxCache().trackConceptForValidation(concept);
+            graknGraph.getTxCache().trackForValidation(concept);
         }
 
         return concept;
@@ -213,16 +213,16 @@ final class ElementFactory {
         throw new IllegalStateException("Could not determine the base type of vertex [" + vertex + "]");
     }
 
-    EdgeImpl buildEdge(Edge edge){
-        return new EdgeImpl(edge, graknGraph);
+    EdgeElement buildEdge(Edge edge){
+        return new EdgeElement(edge, graknGraph);
     }
 
-    //TODO: Integrate with cache
+    //TODO: Integrate with cache and cleanup
     RolePlayer buildRolePlayer(Edge edge){
         return buildRolePlayer(buildEdge(edge));
     }
 
-    RolePlayer buildRolePlayer(EdgeImpl edge) {
-        return new RolePlayer(graknGraph, edge);
+    RolePlayer buildRolePlayer(EdgeElement edge) {
+        return new RolePlayer(graknGraph, edge.getEdge());
     }
 }

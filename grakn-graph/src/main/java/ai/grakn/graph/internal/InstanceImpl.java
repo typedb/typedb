@@ -96,14 +96,14 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         deleteNode();
         for(CastingImpl casting: castings){
             Set<Relation> relations = casting.getRelations();
-            getGraknGraph().getTxCache().trackConceptForValidation(casting);
+            getGraknGraph().getTxCache().trackForValidation(casting);
 
             for(Relation relation : relations) {
                 if(relation.type().isImplicit()){//For now implicit relations die
                     relation.delete();
                 } else {
                     RelationImpl rel = (RelationImpl) relation;
-                    getGraknGraph().getTxCache().trackConceptForValidation(rel);
+                    getGraknGraph().getTxCache().trackForValidation(rel);
                     rel.cleanUp();
                 }
             }

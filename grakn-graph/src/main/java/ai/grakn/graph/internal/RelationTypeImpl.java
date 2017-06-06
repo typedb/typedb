@@ -91,7 +91,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         ((RoleTypeImpl) roleType).addCachedRelationType(this);
 
         //Put all the instance back in for tracking because their unique hashes need to be regenerated
-        instances().forEach(instance -> getGraknGraph().getTxCache().trackConceptForValidation((ConceptImpl) instance));
+        instances().forEach(instance -> getGraknGraph().getTxCache().trackForValidation((ConceptImpl) instance));
 
         return this;
     }
@@ -108,13 +108,13 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
 
         RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
         //Add castings of roleType to make sure relations are still valid
-        roleTypeImpl.castings().forEach(casting -> getGraknGraph().getTxCache().trackConceptForValidation(casting));
+        roleTypeImpl.castings().forEach(casting -> getGraknGraph().getTxCache().trackForValidation(casting));
 
         //Add the Role Type itself
-        getGraknGraph().getTxCache().trackConceptForValidation(roleTypeImpl);
+        getGraknGraph().getTxCache().trackForValidation(roleTypeImpl);
 
         //Add the Relation Type
-        getGraknGraph().getTxCache().trackConceptForValidation(roleTypeImpl);
+        getGraknGraph().getTxCache().trackForValidation(roleTypeImpl);
 
         //Remove from internal cache
         cachedRelates.ifPresent(set -> set.remove(roleType));
@@ -123,7 +123,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         ((RoleTypeImpl) roleType).deleteCachedRelationType(this);
 
         //Put all the instance back in for tracking because their unique hashes need to be regenerated
-        instances().forEach(instance -> getGraknGraph().getTxCache().trackConceptForValidation((ConceptImpl) instance));
+        instances().forEach(instance -> getGraknGraph().getTxCache().trackForValidation((ConceptImpl) instance));
 
         return this;
     }

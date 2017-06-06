@@ -121,7 +121,7 @@ abstract class ConceptImpl<T extends Concept> extends Element implements Concept
      * Deletes the node and adds it neighbours for validation
      */
     void deleteNode(){
-        getGraknGraph().getTxCache().removeConcept(this);
+        getGraknGraph().getTxCache().remove(this);
         // delete node
         getVertex().remove();
     }
@@ -132,7 +132,7 @@ abstract class ConceptImpl<T extends Concept> extends Element implements Concept
      * @return The neighbouring concepts found by traversing outgoing edges of a specific type
      */
     <X extends Concept> Stream<X> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
-        return getEdgesOfType(Direction.OUT, edgeType).map(EdgeImpl::getTarget);
+        return getEdgesOfType(Direction.OUT, edgeType).map(EdgeElement::getTarget);
     }
 
     /**
@@ -141,7 +141,7 @@ abstract class ConceptImpl<T extends Concept> extends Element implements Concept
      * @return The neighbouring concepts found by traversing incoming edges of a specific type
      */
     <X extends Concept> Stream<X> getIncomingNeighbours(Schema.EdgeLabel edgeType){
-        return getEdgesOfType(Direction.IN, edgeType).map(EdgeImpl::getSource);
+        return getEdgesOfType(Direction.IN, edgeType).map(EdgeElement::getSource);
     }
 
     /**
@@ -205,7 +205,7 @@ abstract class ConceptImpl<T extends Concept> extends Element implements Concept
      * @param type The type of the edges to retrieve
      * @return A collection of edges from this concept in a particular direction of a specific type
      */
-    Stream<EdgeImpl> getEdgesOfType(Direction direction, Schema.EdgeLabel type){
+    Stream<EdgeElement> getEdgesOfType(Direction direction, Schema.EdgeLabel type){
         Iterable<Edge> iterable = () -> getVertex().edges(direction, type.getLabel());
         return StreamSupport.stream(iterable.spliterator(), false).
                 map(edge -> getGraknGraph().getElementFactory().buildEdge(edge));
@@ -216,7 +216,7 @@ abstract class ConceptImpl<T extends Concept> extends Element implements Concept
      *  @param to the target concept
      * @param type the type of the edge to create
      */
-    EdgeImpl putEdge(Concept to, Schema.EdgeLabel type){
+    EdgeElement putEdge(Concept to, Schema.EdgeLabel type){
         ConceptImpl toConcept = (ConceptImpl) to;
         GraphTraversal<Vertex, Edge> traversal = getGraknGraph().getTinkerPopGraph().traversal().V(getId().getRawValue()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getId().getRawValue()).select("edge");
         if(!traversal.hasNext()) {
@@ -232,7 +232,7 @@ abstract class ConceptImpl<T extends Concept> extends Element implements Concept
      * @param type the type of the edge to create
      * @return The edge created
      */
-    EdgeImpl addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
+    EdgeElement addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
         return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(getVertex(), type.getLabel()));
     }
 

@@ -33,17 +33,17 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  *
  * @author fppt
  */
-class EdgeImpl extends Element{
+class EdgeElement extends Element{
     private Edge edge;
     private final AbstractGraknGraph graknGraph;
 
-    EdgeImpl(Edge e, AbstractGraknGraph graknGraph){
+    EdgeElement(Edge e, AbstractGraknGraph graknGraph){
         super(graknGraph, e.id());
         edge = e;
         this.graknGraph = graknGraph;
     }
 
-    EdgeImpl(AbstractGraknGraph graknGraph, Edge e){
+    EdgeElement(AbstractGraknGraph graknGraph, Edge e){
         super(graknGraph, e.id());
         edge = e;
         this.graknGraph = graknGraph;
@@ -57,6 +57,14 @@ class EdgeImpl extends Element{
         edge = null;
     }
 
+    /**
+     *
+     * @return The internal tinkerpop edge
+     */
+    public Edge getEdge(){
+        return edge;
+    }
+
     @Override
     public int hashCode() {
         return edge.hashCode();
@@ -64,7 +72,7 @@ class EdgeImpl extends Element{
 
     @Override
     public boolean equals(Object object) {
-        return object instanceof EdgeImpl && ((EdgeImpl) object).edge.equals(edge);
+        return object instanceof EdgeElement && ((EdgeElement) object).edge.equals(edge);
     }
 
     /**

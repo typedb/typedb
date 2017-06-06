@@ -38,7 +38,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  *
  * @author fppt
  */
-class RolePlayer extends EdgeImpl{
+class RolePlayer extends EdgeElement {
     RolePlayer(AbstractGraknGraph graph, Edge edge){
         super(graph, edge);
     }
