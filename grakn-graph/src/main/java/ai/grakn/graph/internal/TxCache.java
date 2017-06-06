@@ -62,7 +62,6 @@ class TxCache {
     private final Map<TypeLabel, TypeId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
-    private final Set<EntityTypeImpl> modifiedEntityTypes = new HashSet<>();
     private final Set<EntityImpl> modifiedEntities = new HashSet<>();
 
     private final Set<RoleTypeImpl> modifiedRoleTypes = new HashSet<>();
@@ -71,10 +70,8 @@ class TxCache {
     private final Set<RelationTypeImpl> modifiedRelationTypes = new HashSet<>();
     private final Set<RelationImpl> modifiedRelations = new HashSet<>();
 
-    private final Set<RuleTypeImpl> modifiedRuleTypes = new HashSet<>();
     private final Set<RuleImpl> modifiedRules = new HashSet<>();
 
-    private final Set<ResourceTypeImpl> modifiedResourceTypes = new HashSet<>();
     private final Set<ResourceImpl> modifiedResources = new HashSet<>();
 
     //We Track Relations so that we can look them up before they are completely defined and indexed on commit
@@ -138,9 +135,7 @@ class TxCache {
      * @param concept The concept to be later validated
      */
     void trackConceptForValidation(ConceptImpl concept) {
-        if(concept.isEntityType()) {
-            modifiedEntityTypes.add((EntityTypeImpl) concept);
-        } else if (concept.isEntity()) {
+if (concept.isEntity()) {
             modifiedEntities.add((EntityImpl) concept);
         } else if (concept.isRoleType()) {
             modifiedRoleTypes.add((RoleTypeImpl) concept);
@@ -150,12 +145,8 @@ class TxCache {
             modifiedRelationTypes.add((RelationTypeImpl) concept);
         } else if (concept.isRelation()){
             modifiedRelations.add((RelationImpl) concept);
-        } else if (concept.isRuleType()) {
-            modifiedRuleTypes.add((RuleTypeImpl) concept);
         } else if (concept.isRule()){
             modifiedRules.add((RuleImpl) concept);
-        } else if (concept.isResourceType()){
-            modifiedResourceTypes.add((ResourceTypeImpl) concept);
         } else if (concept.isResource()){
             modifiedResources.add((ResourceImpl) concept);
         }
@@ -213,15 +204,12 @@ class TxCache {
      */
     @SuppressWarnings("SuspiciousMethodCalls")
     void removeConcept(ConceptImpl concept){
-        modifiedEntityTypes.remove(concept);
         modifiedEntities.remove(concept);
         modifiedRoleTypes.remove(concept);
         modifiedCastings.remove(concept);
         modifiedRelationTypes.remove(concept);
         modifiedRelations.remove(concept);
-        modifiedRuleTypes.remove(concept);
         modifiedRules.remove(concept);
-        modifiedResourceTypes.remove(concept);
         modifiedResources.remove(concept);
 
         conceptCache.remove(concept.getId());
@@ -366,9 +354,6 @@ class TxCache {
     }
 
     //--------------------------------------- Concepts Needed For Validation -------------------------------------------
-    Set<EntityTypeImpl> getModifiedEntityTypes() {
-        return modifiedEntityTypes;
-    }
     Set<EntityImpl> getModifiedEntities() {
         return modifiedEntities;
     }
@@ -387,16 +372,10 @@ class TxCache {
         return modifiedRelations;
     }
 
-    Set<RuleTypeImpl> getModifiedRuleTypes() {
-        return modifiedRuleTypes;
-    }
     Set<RuleImpl> getModifiedRules() {
         return modifiedRules;
     }
 
-    Set<ResourceTypeImpl> getModifiedResourceTypes() {
-        return modifiedResourceTypes;
-    }
     Set<ResourceImpl> getModifiedResources() {
         return modifiedResources;
     }
@@ -405,15 +384,12 @@ class TxCache {
     void closeTx(String closedReason){
         isTxOpen = false;
         this.closedReason = closedReason;
-        modifiedEntityTypes.clear();
         modifiedEntities.clear();
         modifiedRoleTypes.clear();
         modifiedCastings.clear();
         modifiedRelationTypes.clear();
         modifiedRelations.clear();
-        modifiedRuleTypes.clear();
         modifiedRules.clear();
-        modifiedResourceTypes.clear();
         modifiedResources.clear();
         relationIndexCache.clear();
         shardingCount.clear();

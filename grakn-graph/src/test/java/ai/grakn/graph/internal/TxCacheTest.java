@@ -62,11 +62,8 @@ public class TxCacheTest extends GraphTestBase{
         ResourceType t5 = graknGraph.putResourceType("5", ResourceType.DataType.STRING);
 
         // verify the concepts that we expected are returned in the set
-        assertThat(graknGraph.getTxCache().getModifiedEntityTypes(), containsInAnyOrder(t1));
         assertThat(graknGraph.getTxCache().getModifiedRoleTypes(), containsInAnyOrder(t3));
         assertThat(graknGraph.getTxCache().getModifiedRelationTypes(), containsInAnyOrder(t2));
-        assertThat(graknGraph.getTxCache().getModifiedRuleTypes(), containsInAnyOrder(t4));
-        assertThat(graknGraph.getTxCache().getModifiedResourceTypes(), containsInAnyOrder(t5));
     }
 
     @Test
@@ -216,15 +213,12 @@ public class TxCacheTest extends GraphTestBase{
         assertThat(cache.getLabelCache().keySet(), empty());
         assertThat(cache.getRelationIndexCache().keySet(), empty());
         assertThat(cache.getShardingCount().keySet(), empty());
-        assertThat(cache.getModifiedEntityTypes(), empty());
         assertThat(cache.getModifiedEntities(), empty());
         assertThat(cache.getModifiedRoleTypes(), empty());
         assertThat(cache.getModifiedCastings(), empty());
         assertThat(cache.getModifiedRelationTypes(), empty());
         assertThat(cache.getModifiedRelations(), empty());
-        assertThat(cache.getModifiedRuleTypes(), empty());
         assertThat(cache.getModifiedRules(), empty());
-        assertThat(cache.getModifiedResourceTypes(), empty());
         assertThat(cache.getModifiedResources(), empty());
     }
 
