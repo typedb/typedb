@@ -123,7 +123,7 @@ public class TxCacheTest extends GraphTestBase{
     }
 
     @Test
-    public void whenCreatingRelations_EnsureLogContainsRelationAndCastings(){
+    public void whenCreatingRelations_EnsureLogContainsRelation(){
         RoleType r1 = graknGraph.putRoleType("r1");
         RoleType r2 = graknGraph.putRoleType("r2");
         EntityType t1 = graknGraph.putEntityType("t1").plays(r1).plays(r2);
@@ -135,13 +135,8 @@ public class TxCacheTest extends GraphTestBase{
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         assertThat(graknGraph.getTxCache().getModifiedRelations(), is(empty()));
-        assertThat(graknGraph.getTxCache().getModifiedCastings(), is(empty()));
-
         Relation rel1 = rt1.addRelation().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
-        CastingImpl c1 = ((EntityImpl) i1).castings().iterator().next();
-        CastingImpl c2 = ((EntityImpl) i2).castings().iterator().next();
         assertThat(graknGraph.getTxCache().getModifiedRelations(), containsInAnyOrder(rel1));
-        assertThat(graknGraph.getTxCache().getModifiedCastings(), containsInAnyOrder(c1, c2));
     }
 
     @Test

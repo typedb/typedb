@@ -93,25 +93,23 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     @Override
     public void delete() {
         InstanceImpl<?, ?> parent = this;
-        Set<CastingImpl> castings = parent.castings();
+        Set<Relation> relations = parent.getPlayingRoles().map(rolePlayer -> {
+            getGraknGraph().getTxCache().trackForValidation(rolePlayer);
+            return rolePlayer.getRelation();
+        }).collect(Collectors.toSet());
+
         getGraknGraph().getTxCache().removedInstance(type().getId());
         deleteNode();
-        for(CastingImpl casting: castings){
-            Set<Relation> relations = casting.getRelations();
-            getGraknGraph().getTxCache().trackForValidation(casting);
 
-            for(Relation relation : relations) {
-                if(relation.type().isImplicit()){//For now implicit relations die
-                    relation.delete();
-                } else {
-                    RelationImpl rel = (RelationImpl) relation;
-                    getGraknGraph().getTxCache().trackForValidation(rel);
-                    rel.cleanUp();
-                }
+        relations.forEach(relation -> {
+            if(relation.type().isImplicit()){//For now implicit relations die
+                relation.delete();
+            } else {
+                RelationImpl rel = (RelationImpl) relation;
+                getGraknGraph().getTxCache().trackForValidation(rel);
+                rel.cleanUp();
             }
-
-            casting.deleteNode();
-        }
+        });
     }
 
     /**
