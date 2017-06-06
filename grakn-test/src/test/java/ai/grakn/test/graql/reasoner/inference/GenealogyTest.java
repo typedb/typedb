@@ -44,6 +44,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class GenealogyTest {
 
     private static QueryBuilder qb;
@@ -524,6 +525,9 @@ public class GenealogyTest {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().stream().collect(toSet()));
+        long start = System.currentTimeMillis();
+        QueryAnswers answers = new QueryAnswers(query.admin().stream().collect(toSet()));
+        System.out.println(System.currentTimeMillis() - start);
+        return answers;
     }
 }

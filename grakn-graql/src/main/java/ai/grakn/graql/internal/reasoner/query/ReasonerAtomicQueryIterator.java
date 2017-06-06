@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
@@ -110,41 +111,83 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
                 .unify(permutationUnifier)
                 .unify(uInv);
 
-        Set<Var> headVars = rule.getHead().getVarNames();
-
+        ReasonerAtomicQuery ruleHead = rule.getHead();
+        ReasonerQueryImpl ruleBody = rule.getBody();
+        Set<Var> headVars = ruleHead.getVarNames();
+        //Set<Var> varsToRetain = rule.hasDisconnectedHead()? ruleBody.getVarNames() : ruleHead.getVarNames();
         Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
+
         Iterable<Answer> baseIterable = () -> rule.getBody().iterator(partialSubPrime, subGoals, cache);
-        Stream<Answer> iteratorStream = StreamSupport.stream(baseIterable.spliterator(), false);
+        Stream<Answer> baseStream = StreamSupport
+                .stream(baseIterable.spliterator(), false)
+                .map(a -> a.filterVars(headVars));
 
         //TODO materialise
-        ReasonerAtomicQuery ruleHead = rule.getHead();
-        Set<Var> queryVars = query.getVarNames();
-        //Set<Var> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size()? combinedUnifier.keySet() : ruleHead.getVarNames();
+        //Set<Var> queryVars = query.getVarNames();
+        Set<Var> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size()? combinedUnifier.keySet() : ruleHead.getVarNames();
         if (ruleHead.getAtom().requiresMaterialisation()) {
 
-            return iteratorStream
-                    .map(a -> a.filterVars(headVars))
+            baseStream = baseStream
+                    .distinct()
                     .map(a -> {
-                        /*
-                        System.out.println("Query: " + query.getAtom());
-                        System.out.println("a: " + a);
-                        */
 
-                        ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(ruleHead);
-                        queryToMaterialise.addSubstitution(a.filterVars(ruleHead.getVarNames()));
+                        //TODO if rulehead not present in cache, do a specific ask
 
-                        //if (cache.getAnswers(queryToMaterialise).isEmpty()) {
-                        Answer cacheAnswer = cache.getAnswer(ruleHead, a);
-                        if (cacheAnswer.isEmpty()){
-                            //System.out.println("Materialise: " + queryToMaterialise.getAtom());
-                            Answer materialisedSub = queryToMaterialise.insert().findFirst().orElse(null);
-                            //System.out.println("materialised: " + materialisedSub);
+                        Answer cacheQueryAnswer = cache.getAnswer(query, a.unify(combinedUnifier));
+                        Answer cacheHeadAnswer = cacheQueryAnswer.isEmpty()? cache.getAnswer(ruleHead, a) : new QueryAnswer();
+
+                        List<Answer> headAsk = new ReasonerAtomicQuery(ruleHead).addSubstitution(a).getMatchQuery().execute();
+                        List<Answer> queryAsk = query.isEquivalent(ruleHead)?
+                                Collections.emptyList() :
+                                new ReasonerAtomicQuery(query).addSubstitution(a.unify(combinedUnifier)).getMatchQuery().execute();
+
+                        if (headAsk.isEmpty()
+                                && queryAsk.isEmpty()
+                                && cacheQueryAnswer.isEmpty()
+                                && cacheHeadAnswer.isEmpty()){
+                            Answer materialisedSub = ruleHead.materialise(a).findFirst().orElse(null);
                             cache.recordAnswer(ruleHead, materialisedSub);
-                            return materialisedSub;
+                            return materialisedSub
+                                    .filterVars(queryVars)
+                                    .unify(combinedUnifier);
                         } else {
-                            return cacheAnswer;
+                            return headAsk.isEmpty()?
+                                    queryAsk.isEmpty()?
+                                            cacheHeadAnswer.isEmpty()?
+                                                    cacheQueryAnswer :
+                                                    cacheHeadAnswer
+                                                            .filterVars(queryVars)
+                                                            .unify(combinedUnifier)
+                                            :
+                                            queryAsk.iterator().next()
+                                    :
+                                    headAsk.iterator().next()
+                                            .filterVars(queryVars)
+                                            .unify(combinedUnifier);
+                            /*
+                                    queryAsk.iterator().next() :
+                                    headAsk.iterator().next()
+                                        .filterVars(queryVars)
+                                        .unify(combinedUnifier);
+                                        */
+                            /*
+                            return cacheHeadAnswer.isEmpty()?
+                                    cacheQueryAnswer :
+                                    cacheHeadAnswer
+                                            .filterVars(queryVars)
+                                            .unify(combinedUnifier);
+                                            */
                         }
-                    })
+                    });
+            return baseStream
+                    .filter(a -> !a.isEmpty())
+                    .map(a -> a.merge(sub))
+                    .map(a -> a.explain(new RuleExplanation(query, rule)))
+                    .iterator();
+        } else {
+
+            //transform the rule answer to the answer to the query
+            return baseStream
                     .map(a -> a.unify(combinedUnifier))
                     .filter(a -> !a.isEmpty())
                     .map(a -> a.merge(sub))
@@ -152,16 +195,6 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
                     .map(a -> a.explain(new RuleExplanation(query, rule)))
                     .iterator();
         }
-
-        //transform the rule answer to the answer to the query
-        return iteratorStream
-                .map(a -> a.filterVars(headVars))
-                .map(a -> a.unify(combinedUnifier))
-                .filter(a -> !a.isEmpty())
-                .map(a -> a.merge(sub))
-                .map(a -> a.filterVars(queryVars))
-                .map(a -> a.explain(new RuleExplanation(query, rule)))
-                .iterator();
     }
 
     @Override

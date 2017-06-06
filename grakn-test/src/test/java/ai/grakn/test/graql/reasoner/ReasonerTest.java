@@ -834,7 +834,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testReasoningWithQueryContainingRelationVariableWithMaterialisation(){
+    public void testReasoningWithQueryContainingRelationVariableWithMaterialisation_requeryingDoesntCreateDuplicates(){
         String queryString = "match $x isa is-located-in;";
         String queryString2 = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in; select $x;";
         String queryString3 = "match $x ($x1, $x2) isa is-located-in; select $x;";
