@@ -30,7 +30,6 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import mjson.Json;
-import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,40 +63,23 @@ public class PostProcessingTask extends BackgroundTask {
      */
     @Override
     public boolean start() {
-        runPostProcessingMethod(configuration(), Schema.BaseType.RESOURCE, this::duplicateResourcesExist, this::runResourceFix);
-
-        return true;
-    }
-
-    /**
-     * Main method which attempts to run all post processing jobs.
-     *
-     * @param duplicatesExistMethod Method to determine if there are duplicates to be post processed.
-     *                      {@link ai.grakn.engine.postprocessing.PostProcessingTask#duplicateResourcesExist(GraknGraph, String, Set)}
-     * @param postProcessingMethod The post processing job to be executed if duplicates exist
-     *                      Either {@link ai.grakn.engine.postprocessing.PostProcessingTask#runResourceFix(GraknGraph, String, Set)}
-     */
-    private void runPostProcessingMethod(TaskConfiguration configuration, Schema.BaseType baseType,
-                                         TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> duplicatesExistMethod,
-                                         TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> postProcessingMethod){
-
         EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
-
-        Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(baseType, configuration);
+        Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.RESOURCE, configuration());
 
         allToPostProcess.entrySet().forEach(e -> {
             String conceptIndex = e.getKey();
             Set<ConceptId> conceptIds = e.getValue();
 
-            String keyspace = configuration.json().at(REST.Request.KEYSPACE).asString();
+            String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
             int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
             GraphMutators.runGraphMutationWithRetry(factory, keyspace, maxRetry,
-                    (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds, duplicatesExistMethod, postProcessingMethod));
-
+                    (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
         });
 
-        LOG.debug(JOB_FINISHED, baseType.name(), allToPostProcess);
+        LOG.debug(JOB_FINISHED, Schema.BaseType.RESOURCE.name(), allToPostProcess);
+
+        return true;
     }
 
     /**
@@ -120,14 +102,10 @@ public class PostProcessingTask extends BackgroundTask {
      * @param graph
      * @param conceptIndex
      * @param conceptIds
-     * @param duplicatesExistMethod
-     * @param postProcessingMethod
      */
-    private void runPostProcessingMethod(GraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds,
-                                         TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> duplicatesExistMethod,
-                                         TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> postProcessingMethod){
+    private void runPostProcessingMethod(GraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds){
 
-        if(duplicatesExistMethod.apply(graph, conceptIndex, conceptIds)){
+        if(graph.admin().duplicateResourcesExist(conceptIndex, conceptIds)){
 
             // Acquire a lock when you post process on an index to prevent race conditions
             // Lock is acquired after checking for duplicates to reduce runtime
@@ -136,7 +114,7 @@ public class PostProcessingTask extends BackgroundTask {
 
             try {
                 // execute the provided post processing method
-                postProcessingMethod.apply(graph, conceptIndex, conceptIds);
+                graph.admin().fixDuplicateResources(conceptIndex, conceptIds);
 
                 // ensure post processing was correctly executed
                 validateMerged(graph, conceptIndex, conceptIds).
@@ -183,27 +161,6 @@ public class PostProcessingTask extends BackgroundTask {
         }
 
         return Optional.empty();
-    }
-
-    /**
-     * Run a a resource duplication merge on the provided concepts
-     * @param graph Graph on which to apply the fixes
-     * @param index The unique index of the concept which must exist at the end
-     * @param conceptIds The conceptIds which effectively need to be merged.
-     */
-    private boolean runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
-        return graph.admin().fixDuplicateResources(index, conceptIds);
-    }
-
-    /**
-     * Check if there are duplicate resources for the given index
-
-     * @param graph Graph on which to apply the fixes
-     * @param index The unique index of the concept that may have duplicates
-     * @param conceptIds The conceptIds which may be the duplicates
-     */
-    private boolean duplicateResourcesExist(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
-        return graph.admin().duplicateResourcesExist(index, conceptIds);
     }
 
     /**
