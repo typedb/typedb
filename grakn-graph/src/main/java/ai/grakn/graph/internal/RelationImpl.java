@@ -62,16 +62,6 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     }
 
     /**
-     *
-     * @return All the castings this relation is connected with
-     */
-    Set<CastingImpl> getMappingCasting() {
-        Set<CastingImpl> castings = new HashSet<>();
-        getOutgoingNeighbours(Schema.EdgeLabel.CASTING).forEach(casting -> castings.add(((CastingImpl) casting)));
-        return castings;
-    }
-
-    /**
      * Sets the internal hash in order to perform a faster lookup
      */
     void setHash(){
