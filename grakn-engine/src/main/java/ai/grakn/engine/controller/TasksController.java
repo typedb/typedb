@@ -24,7 +24,6 @@ import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
-import static ai.grakn.util.REST.WebPath.Tasks.TASKS_BULK;
 import static java.lang.Long.parseLong;
 import static java.time.Instant.ofEpochMilli;
 import static java.util.stream.Collectors.toList;
@@ -96,7 +95,7 @@ public class TasksController {
         spark.get(TASKS, this::getTasks);
         spark.get(GET, this::getTask);
         spark.put(STOP, this::stopTask);
-        spark.post(TASKS_BULK, this::createTaskBulk);
+        spark.post(TASKS, this::createTasks);
 
         spark.exception(GraknServerException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
         spark.exception(GraknBackendException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
@@ -173,8 +172,17 @@ public class TasksController {
     @ApiImplicitParams({
             @ApiImplicitParam(name = REST.Request.TASKS_PARAM, value = "JSON Array containing an ordered list of task parameters and comfigurations.", required = true, dataType = "List", paramType = "body")
     })
-    private Json createTaskBulk(Request request, Response response) {
-        Json requestBodyAsJson = bodyAsJson(request).at("value");
+    private Json createTasks(Request request, Response response) {
+        Json requestBodyAsJson = bodyAsJson(request);
+        // This covers the previous behaviour. It looks like a quirk of the testing
+        // client library we are using. Consider deprecating it.
+        if (requestBodyAsJson.has("value")) {
+            requestBodyAsJson = requestBodyAsJson.at("value");
+        }
+        if (!requestBodyAsJson.has(REST.Request.TASKS_PARAM)) {
+            LOG.error("Malformed request body: {}", requestBodyAsJson);
+            throw GraknServerException.requestMissingBodyParameters(REST.Request.TASKS_PARAM);
+        }
         List<Json> taskJsonList = requestBodyAsJson.at(REST.Request.TASKS_PARAM).asJsonList();
         Json responseJson = Json.array();
         response.type(ContentType.APPLICATION_JSON.getMimeType());
@@ -184,8 +192,7 @@ public class TasksController {
         for (int i = 0; i < taskJsonList.size(); i++) {
             Json singleTaskJson = taskJsonList.get(i);
             try {
-                taskStates
-                        .add(new TaskStateWithConfiguration(
+                taskStates.add(new TaskStateWithConfiguration(
                                 extractParametersAndProcessTask(singleTaskJson),
                                 extractConfiguration(singleTaskJson), i));
             } catch (Exception e) {
@@ -233,6 +240,9 @@ public class TasksController {
     private Json extractConfiguration(Json taskJson) {
         if (taskJson.has(REST.Request.CONFIGURATION_PARAM)) {
             Json config = taskJson.at(REST.Request.CONFIGURATION_PARAM);
+            if (config.isNull()) {
+                return Json.nil();
+            }
             if (!config.isObject()) {
                 throw GraknServerException.requestMissingParameters(REST.Request.CONFIGURATION_PARAM);
             } else {

@@ -86,7 +86,8 @@ public class TaskClientTest {
                 && argument.taskClass().equals(taskClass)
                 && argument.schedule().runAt().equals(runAt)
                 && argument.schedule().interval().get().equals(interval)
-                && argument.creator().equals(creator)), argThat(argument -> argument.json().toString().equals(configuration.toString())));
+                && argument.creator().equals(creator)),
+                argThat(argument -> argument.json().toString().equals(configuration.toString())));
     }
 
     @Test

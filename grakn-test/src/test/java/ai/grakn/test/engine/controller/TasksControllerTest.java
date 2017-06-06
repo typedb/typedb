@@ -33,7 +33,6 @@ import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
-import static ai.grakn.util.REST.WebPath.Tasks.TASKS_BULK;
 import static com.jayway.restassured.RestAssured.with;
 import static java.time.Instant.now;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
@@ -67,7 +66,6 @@ import com.jayway.restassured.response.Response;
 import com.jayway.restassured.specification.RequestSpecification;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -77,7 +75,6 @@ import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -438,7 +435,7 @@ public class TasksControllerTest {
     private Response send(List<Json> tasks){
         RequestSpecification request = with().body(
                 Json.object().set("tasks", tasks));
-        return request.post(String.format("http://%s%s", ctx.uri(), TASKS_BULK));
+        return request.post(String.format("http://%s%s", ctx.uri(), TASKS));
     }
 
     private Response get(TaskId taskId){
@@ -447,10 +444,6 @@ public class TasksControllerTest {
 
     private Json makeJsonTask(Map<String, String> configuration, Map<String, String> params) {
         return Json.make(params).set(CONFIGURATION_PARAM, Json.make(configuration));
-    }
-
-    private Json makeJsonTask(String configuration, Map<String, String> params) {
-        return Json.make(params).set(CONFIGURATION_PARAM, Json.read(configuration));
     }
 
     public static class JsonMapper implements ObjectMapper{

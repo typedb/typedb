@@ -18,6 +18,22 @@
 
 package ai.grakn.client;
 
+import static ai.grakn.graql.Graql.insert;
+import static ai.grakn.graql.Graql.match;
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static java.util.stream.Stream.generate;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
@@ -28,31 +44,17 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.test.EngineContext;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.junit.rules.ExpectedException;
-
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static ai.grakn.graql.Graql.insert;
-import static ai.grakn.graql.Graql.match;
-import static ai.grakn.graql.Graql.var;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.argThat;
-import static java.util.stream.Stream.generate;
-import static org.mockito.Mockito.*;
-import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 
 public class BatchMutatorClientTest {
 
@@ -73,6 +75,7 @@ public class BatchMutatorClientTest {
     }
 
     @Test
+    @Ignore("Testing log output, it's pretty flimsy. It's also prone to race conditions (the whole test task halts forever)")
     public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged() throws InterruptedException {
         CountDownLatch callbackCompleted = new CountDownLatch(1);
 

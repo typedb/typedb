@@ -46,7 +46,6 @@ public class REST {
          */
         public static class Tasks {
             public static final String TASKS = "/tasks";
-            public static final String TASKS_BULK = "/tasks/bulk";
             public static final String GET = "/tasks/:id";
             public static final String STOP = "/tasks/:id/stop";
         }
@@ -102,6 +101,7 @@ public class REST {
         public static final String TASK_PRIORITY_PARAMETER = "priority";
         public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
         public static final String TASK_LOADER_MUTATIONS = "mutations";
+        public static final String BATCH_NUMBER = "batchNumber";
         public static final String LIMIT_PARAM = "limit";
         public static final String OFFSET_PARAM = "offset";
         public static final String TASKS_PARAM = "tasks";
@@ -153,7 +153,6 @@ public class REST {
         public static final String POST_METHOD = "POST";
         public static final String DELETE_METHOD = "DELETE";
         public static final String GET_METHOD = "GET";
-        public static final String APPLICATION_POST_TYPE = "application/POST";
     }
 
     /**
