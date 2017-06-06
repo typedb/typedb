@@ -90,7 +90,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public static void main(String[] args) {
-        GraknEngineConfig prop = GraknEngineConfig.getInstance();
+        GraknEngineConfig prop = GraknEngineConfig.create();
         // Start Engine
         GraknEngineServer server = start(prop);
 
