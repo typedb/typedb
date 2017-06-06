@@ -72,7 +72,7 @@ class EdgeElement extends Element{
 
     @Override
     public boolean equals(Object object) {
-        return object instanceof EdgeElement && ((EdgeElement) object).edge.equals(edge);
+        return this == object || object instanceof EdgeElement && ((EdgeElement) object).getElementId().equals(getElementId());
     }
 
     /**
