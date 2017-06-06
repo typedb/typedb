@@ -164,6 +164,7 @@ public class CommitLogControllerTest {
     }
 
     @Test
+    @Ignore
     public void whenCommittingGraph_TaskManagerReceivesCountTask() throws InterruptedException {
         final String BOB = "bob";
         final String TIM = "tim";
