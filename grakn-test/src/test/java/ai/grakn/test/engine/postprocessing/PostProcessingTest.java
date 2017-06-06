@@ -115,7 +115,6 @@ public class PostProcessingTest {
                 Json.object(
                         KEYSPACE, graph.getKeyspace(),
                         REST.Request.COMMIT_LOG_FIXING, Json.object(
-                                Schema.BaseType.CASTING.name(), Json.object(),
                                 Schema.BaseType.RESOURCE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))
         );

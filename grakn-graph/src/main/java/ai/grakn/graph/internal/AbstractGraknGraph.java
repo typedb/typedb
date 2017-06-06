@@ -849,8 +849,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                     copyRelation(mainResource, otherResource, (RelationImpl) otherRelation);
                 }
 
-                //Delete the node and it's castings directly so we don't accidentally delete copied relations
-                otherResource.castings().forEach(ConceptImpl::deleteNode);
+                //Delete the node
                 otherResource.deleteNode();
             }
 

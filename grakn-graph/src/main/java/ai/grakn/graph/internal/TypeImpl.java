@@ -388,9 +388,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
             traversal.forEachRemaining(vertex -> {
                 ConceptImpl<Concept> concept = getGraknGraph().getElementFactory().buildConcept(vertex);
-                if (concept != null && !concept.isCasting()) {
-                    instances.add((V) concept);
-                }
+                if (concept != null) instances.add((V) concept);
             });
         }
 

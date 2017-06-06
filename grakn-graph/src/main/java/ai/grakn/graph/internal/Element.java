@@ -199,14 +199,6 @@ public abstract class Element {
 
     /**
      *
-     * @return A casting if the element is a casting
-     */
-    public CastingImpl asCasting(){
-        return castConcept(CastingImpl.class);
-    }
-
-    /**
-     *
      * @return A roleplayer if the element is a roleplayer
      */
     public RolePlayer asRolePlayer(){
@@ -307,14 +299,6 @@ public abstract class Element {
      */
     public boolean isRule() {
         return this instanceof Rule;
-    }
-
-    /**
-     *
-     * @return true if the element is a casting
-     */
-    public boolean isCasting(){
-        return this instanceof CastingImpl;
     }
 
     /**

@@ -78,11 +78,6 @@ final class ElementFactory {
         return concept;
     }
 
-    // ------------------------------------------- Building Castings  --------------------------------------------------
-    CastingImpl buildCasting(Vertex vertex, RoleType type){
-        return getOrBuildConcept(vertex, (v) -> new CastingImpl(graknGraph, v, type));
-    }
-
     // ---------------------------------------- Building Resource Types  -----------------------------------------------
     <V> ResourceTypeImpl<V> buildResourceType(Vertex vertex, ResourceType<V> type, ResourceType.DataType<V> dataType){
         return getOrBuildConcept(vertex, (v) -> new ResourceTypeImpl<>(graknGraph, v, type, dataType));
@@ -153,9 +148,6 @@ final class ElementFactory {
                 case RELATION:
                     concept = new RelationImpl(graknGraph, v);
                     break;
-                case CASTING:
-                    concept = new CastingImpl(graknGraph, v);
-                    break;
                 case TYPE:
                     concept = new TypeImpl<>(graknGraph, v);
                     break;
@@ -204,7 +196,6 @@ final class ElementFactory {
                 Vertex typeVertex = shardVertex.edges(Direction.OUT, Schema.EdgeLabel.ISA.getLabel()).next().inVertex();
                 String label = typeVertex.label();
                 if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
-                if(label.equals(Schema.BaseType.ROLE_TYPE.name())) return Schema.BaseType.CASTING;
                 if(label.equals(Schema.BaseType.RELATION_TYPE.name())) return Schema.BaseType.RELATION;
                 if(label.equals(Schema.BaseType.RESOURCE_TYPE.name())) return Schema.BaseType.RESOURCE;
                 if(label.equals(Schema.BaseType.RULE_TYPE.name())) return Schema.BaseType.RULE;
