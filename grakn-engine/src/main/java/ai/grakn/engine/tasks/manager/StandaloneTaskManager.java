@@ -72,9 +72,11 @@ public class StandaloneTaskManager implements TaskManager {
     private final ExecutorService executorService;
     private final ScheduledExecutorService schedulingService;
     private final EngineID engineID;
+    private final GraknEngineConfig config;
 
     public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config) {
         this.engineID = engineId;
+        this.config = config;
 
         runningTasks = new ConcurrentHashMap<>();
         scheduledTasks = new ConcurrentHashMap<>();
@@ -168,7 +170,7 @@ public class StandaloneTaskManager implements TaskManager {
         return () -> {
             try {
                 BackgroundTask runningTask = task.taskClass().newInstance();
-                runningTask.initialize(saveCheckpoint(task), configuration, this);
+                runningTask.initialize(saveCheckpoint(task), configuration, this, config);
 
                 runningTasks.put(task.getId(), runningTask);
 

@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.tasks;
 
+import ai.grakn.engine.GraknEngineConfig;
 import com.google.common.base.Preconditions;
 
 import javax.annotation.Nullable;
@@ -33,6 +34,7 @@ public abstract class BackgroundTask {
     private @Nullable TaskSubmitter taskSubmitter = null;
     private @Nullable TaskConfiguration configuration = null;
     private @Nullable Consumer<TaskCheckpoint> saveCheckpoint = null;
+    private GraknEngineConfig engineConfig;
 
     /**
      * Initialize the {@link BackgroundTask}. This must be called prior to any other call to {@link BackgroundTask}.
@@ -43,10 +45,12 @@ public abstract class BackgroundTask {
      * @param taskSubmitter Allows followup tasks to be submitted for processing
      */
     public final void initialize(
-            Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
+            Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter,
+            GraknEngineConfig engineConfig) {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
         this.saveCheckpoint = saveCheckpoint;
+        this.engineConfig = engineConfig;
     }
 
     /**
@@ -117,6 +121,11 @@ public abstract class BackgroundTask {
     public final TaskConfiguration configuration() {
         Preconditions.checkNotNull(configuration, "BackgroundTask#initialise must be called before retrieving configuration");
         return configuration;
+    }
+
+    public final GraknEngineConfig engineConfiguration() {
+        Preconditions.checkNotNull(engineConfig, "BackgroundTask#initialise must be called before retrieving engine configuration");
+        return engineConfig;
     }
 
 }

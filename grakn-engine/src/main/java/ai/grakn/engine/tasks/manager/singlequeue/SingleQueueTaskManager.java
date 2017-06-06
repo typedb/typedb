@@ -230,6 +230,6 @@ public class SingleQueueTaskManager implements TaskManager {
      * @return New instance of a SingleQueueTaskRunner
      */
     private SingleQueueTaskRunner newTaskRunner(EngineID engineId, String priority){
-        return new SingleQueueTaskRunner(this, engineId, offsetStorage, TIME_UNTIL_BACKOFF, newConsumer(priority));
+        return new SingleQueueTaskRunner(this, engineId, config, offsetStorage, TIME_UNTIL_BACKOFF, newConsumer(priority));
     }
 }

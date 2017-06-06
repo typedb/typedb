@@ -81,7 +81,7 @@ public class ResourceDeduplicationMapReduceIT {
     }
 
     private void initTask(ResourceDeduplicationTask task) {
-        task.initialize(checkpoint -> { throw new RuntimeException("No checkpoint expected.");}, configuration(), (x, y) -> {});
+        task.initialize(checkpoint -> { throw new RuntimeException("No checkpoint expected.");}, configuration(), (x, y) -> {}, null);
     }
 
     private void miniOntology(GraknGraph graph) {
@@ -393,7 +393,8 @@ public class ResourceDeduplicationMapReduceIT {
         task.initialize(
                 checkpoint -> { throw new RuntimeException("No checkpoint expected."); },
                 TaskConfiguration.of(Json.object(ResourceDeduplicationTask.KEYSPACE_CONFIG, keyspace(),
-                ResourceDeduplicationTask.DELETE_UNATTACHED_CONFIG, true)), (x, y) -> {}
+                ResourceDeduplicationTask.DELETE_UNATTACHED_CONFIG, true)), (x, y) -> {},
+                null
         );
         task.start();
         Assert.assertEquals(new Long(3), task.totalElimintated());        
