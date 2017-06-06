@@ -94,8 +94,11 @@ class RolePlayer extends EdgeElement {
      */
     @Override
     public boolean equals(Object object) {
-        //Compare Concept
-        //based on id because vertex comparisons are equivalent
-        return this == object || object instanceof RolePlayer && ((RolePlayer) object).getElementId().equals(getElementId());
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+
+        RolePlayer rolePlayer = (RolePlayer) object;
+
+        return getElementId().equals(rolePlayer.getElementId());
     }
 }

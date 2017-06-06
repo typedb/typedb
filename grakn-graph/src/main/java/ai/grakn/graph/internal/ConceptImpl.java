@@ -272,9 +272,13 @@ abstract class ConceptImpl<T extends Concept> extends Element implements Concept
 
     @Override
     public boolean equals(Object object) {
-        //Compare Concept
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+
+        ConceptImpl concept = (ConceptImpl) object;
+
         //based on id because vertex comparisons are equivalent
-        return this == object || object instanceof ConceptImpl && ((ConceptImpl) object).getId().equals(getId());
+        return getId().equals(concept.getId());
     }
 
     @Override
