@@ -133,6 +133,9 @@ public class GraknEngineServer implements AutoCloseable {
         RemoteSession graqlWebSocket = passwordProtected ? RemoteSession.passwordProtected(usersHandler) : RemoteSession.create();
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
+        String defaultKeyspace = prop.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY);
+        int postProcessingDelay = prop.getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
+
         // Start all the controllers
         new GraqlController(factory, spark);
         new ConceptController(factory, spark);
@@ -140,7 +143,7 @@ public class GraknEngineServer implements AutoCloseable {
         new SystemController(factory, spark);
         new AuthController(spark, passwordProtected, jwtHandler, usersHandler);
         new UserController(spark, usersHandler);
-        new CommitLogController(spark, prop.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY), taskManager);
+        new CommitLogController(spark, defaultKeyspace, postProcessingDelay, taskManager);
         new TasksController(spark, taskManager);
 
         // This method will block until all the controllers are ready to serve requests

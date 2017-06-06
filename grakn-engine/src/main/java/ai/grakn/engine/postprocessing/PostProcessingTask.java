@@ -20,7 +20,6 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -53,9 +52,6 @@ import java.util.stream.Collectors;
  * @author alexandraorth, fppt
  */
 public class PostProcessingTask extends BackgroundTask {
-    private static final GraknEngineConfig CONFIG = GraknEngineConfig.getInstance();
-    private static final int PP_TASK_DELAY_MS = CONFIG.getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
-    private static final EngineGraknGraphFactory FACTORY = EngineGraknGraphFactory.create(CONFIG.getProperties());
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
     private static final String JOB_FINISHED = "Post processing Job [{}] completed for indeces and ids: [{}]";
     private static final String LOCK_KEY = "/post-processing-lock";
@@ -87,13 +83,15 @@ public class PostProcessingTask extends BackgroundTask {
                                          TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> duplicatesExistMethod,
                                          TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> postProcessingMethod){
 
+        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
+
         Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(baseType, configuration);
 
         allToPostProcess.entrySet().forEach(e -> {
             String conceptIndex = e.getKey();
             Set<ConceptId> conceptIds = e.getValue();
 
-            GraphMutators.runGraphMutationWithRetry(FACTORY, configuration.json().at(REST.Request.KEYSPACE).asString(),
+            GraphMutators.runGraphMutationWithRetry(factory, configuration.json().at(REST.Request.KEYSPACE).asString(),
                     (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds, duplicatesExistMethod, postProcessingMethod));
 
         });
@@ -235,10 +233,10 @@ public class PostProcessingTask extends BackgroundTask {
      * @param creator The class which is creating the task
      * @return The executable postprocessing task state
      */
-    public static TaskState createTask(Class creator){
+    public static TaskState createTask(Class creator, int delay) {
         return TaskState.of(PostProcessingTask.class,
                 creator.getName(),
-                TaskSchedule.at(Instant.now().plusMillis(PP_TASK_DELAY_MS)),
+                TaskSchedule.at(Instant.now().plusMillis(delay)),
                 TaskState.Priority.LOW);
     }
 

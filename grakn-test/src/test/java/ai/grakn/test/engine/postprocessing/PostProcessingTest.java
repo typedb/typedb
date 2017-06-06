@@ -149,7 +149,7 @@ public class PostProcessingTest {
                                 Schema.BaseType.RESOURCE.name(), Json.object()
                         ))
         );
-        task.initialize(null, configuration, (x, y) -> {}, null);
+        task.initialize(null, configuration, (x, y) -> {}, engine.config());
 
         task.start();
 
@@ -249,7 +249,7 @@ public class PostProcessingTest {
                                 Schema.BaseType.RESOURCE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))
         );
-        task.initialize(null, configuration, (x, y) -> {}, null);
+        task.initialize(null, configuration, (x, y) -> {}, engine.config());
 
         task.start();
 
