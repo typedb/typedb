@@ -138,8 +138,8 @@ public class SystemKeyspaceUsers extends UsersHandler {
             }
             Json user = Json.object();
             L.forEach(property -> {
-                TypeLabel label = property.get("property").asInstance().type().getLabel();
-                Object value = property.get("property").asResource().getValue();
+                TypeLabel label = property.get(resource).asInstance().type().getLabel();
+                Object value = property.get(resource).asResource().getValue();
                 user.set(label.getValue(), value);
             });
             return user;
