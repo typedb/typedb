@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * A starting point for creating queries.
@@ -167,7 +168,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     @Override
-    public <T extends Query<?>> List<T> parseList(String queryString) {
+    public <T extends Query<?>> Stream<T> parseList(String queryString) {
         return queryParser.parseList(queryString);
     }
 
@@ -177,7 +178,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return a resolved graql query
      */
     @Override
-    public <T extends Query<?>> List<T> parseTemplate(String template, Map<String, Object> data){
+    public <T extends Query<?>> Stream<T> parseTemplate(String template, Map<String, Object> data){
         return parseList(templateParser.parseTemplate(template, data));
     }
 

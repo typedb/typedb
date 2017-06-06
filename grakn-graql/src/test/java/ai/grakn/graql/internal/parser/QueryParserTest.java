@@ -42,6 +42,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -78,6 +79,7 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Graql.withoutGraph;
 import static ai.grakn.graql.Order.desc;
 import static com.google.common.collect.Lists.newArrayList;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.AllOf.allOf;
@@ -669,7 +671,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseListEmpty() {
-        List<Query<?>> queries = parseList("");
+        List<Query<?>> queries = parseList("").collect(toList());
         assertEquals(0, queries.size());
     }
 
@@ -677,7 +679,7 @@ public class QueryParserTest {
     public void testParseListOneMatch() {
         String matchString = "match $y isa movie; limit 1;";
 
-        List<Query<?>> queries = parseList(matchString);
+        List<Query<?>> queries = parseList(matchString).collect(toList());
 
         assertEquals(ImmutableList.of(match(var("y").isa("movie")).limit(1)), queries);
     }
@@ -686,7 +688,25 @@ public class QueryParserTest {
     public void testParseListOneInsert() {
         String insertString = "insert $x isa movie;";
 
-        List<Query<?>> queries = parseList(insertString);
+        List<Query<?>> queries = parseList(insertString).collect(toList());
+
+        assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
+    }
+
+    @Test
+    public void testParseListOneInsertWithWhitespacePrefix() {
+        String insertString = " insert $x isa movie;";
+
+        List<Query<?>> queries = parseList(insertString).collect(toList());
+
+        assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
+    }
+
+    @Test
+    public void testParseListOneInsertWithPrefixComment() {
+        String insertString = "#hola\ninsert $x isa movie;";
+
+        List<Query<?>> queries = parseList(insertString).collect(toList());
 
         assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
     }
@@ -696,7 +716,7 @@ public class QueryParserTest {
         String insertString = "insert $x isa movie;";
         String matchString = "match $y isa movie; limit 1;";
 
-        List<Query<?>> queries = parseList(insertString + matchString);
+        List<Query<?>> queries = parseList(insertString + matchString).collect(toList());
 
         assertEquals(ImmutableList.of(
                 insert(var("x").isa("movie")),
@@ -709,7 +729,7 @@ public class QueryParserTest {
         String matchString = "match $y isa movie; limit 1;";
         String insertString = "insert $x isa movie;";
 
-        List<Query<?>> queries = parseList(matchString + insertString);
+        List<Query<?>> queries = parseList(matchString + insertString).collect(toList());
 
         assertEquals(ImmutableList.of(
                 match(var("y").isa("movie")).limit(1).insert(var("x").isa("movie"))
@@ -730,7 +750,7 @@ public class QueryParserTest {
         );
 
         options.forEach(option -> {
-            List<Query<?>> queries = parseList(option);
+            List<Query<?>> queries = parseList(option).collect(toList());
             assertEquals(option, 2, queries.size());
         });
     }
@@ -742,9 +762,29 @@ public class QueryParserTest {
         String longQueryString = Strings.repeat(matchInsertString, numQueries);
         Query<?> matchInsert = match(var("x")).insert(var("y").pattern());
 
-        List<Query<?>> queries = parseList(longQueryString);
+        List<Query<?>> queries = parseList(longQueryString).collect(toList());
 
         assertEquals(Collections.nCopies(numQueries, matchInsert), queries);
+    }
+
+    // TODO: This takes a long time to run and is dependent on heap size. It should run separately from other tests.
+    @Ignore
+    @Test
+    public void whenParsingAVeryLargeQuery_DontRunOutOfMemory() {
+        int bigNumber = 1 << 20;
+        String queryText = "match $x isa movie; insert ($x, $x) isa has-genre;";
+        Query query = Graql.parse(queryText);
+
+        String massiveQuery = Strings.repeat(queryText, bigNumber);
+
+        final int[] count = {0};
+
+        Graql.parseList(massiveQuery).forEach(q -> {
+            assertEquals(query, q);
+            count[0]++;
+        });
+
+        assertEquals(bigNumber, count[0]);
     }
 
     @Test(expected = IllegalArgumentException.class)
