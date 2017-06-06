@@ -508,7 +508,7 @@ public class QueryParserTest {
 
         qb.registerAggregate("get-any", args -> new GetAny((Var) args.get(0)));
 
-        AggregateQuery<Concept> expected = qb.match(var("x").isa("movie")).aggregate(new GetAny(Var.of("x")));
+        AggregateQuery<Concept> expected = qb.match(var("x").isa("movie")).aggregate(new GetAny(Graql.var("x")));
         AggregateQuery<Concept> parsed = qb.parse("match $x isa movie; aggregate get-any $x;");
 
         assertEquals(expected, parsed);
@@ -740,7 +740,7 @@ public class QueryParserTest {
         int numQueries = 10_000;
         String matchInsertString = "match $x; insert $y;";
         String longQueryString = Strings.repeat(matchInsertString, numQueries);
-        Query<?> matchInsert = match(var("x")).insert(var("y"));
+        Query<?> matchInsert = match(var("x")).insert(var("y").pattern());
 
         List<Query<?>> queries = parseList(longQueryString);
 

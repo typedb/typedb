@@ -14,28 +14,25 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.engine.tasks.mock;
+package ai.grakn.graql;
 
-import ai.grakn.engine.TaskId;
-
-import ai.grakn.engine.tasks.TaskCheckpoint;
+import javax.annotation.CheckReturnValue;
 
 /**
- * Mocked task that will throw exception
+ * An interface representing something that is or can be transformed into a {@link Pattern}.
  *
- * @author alexandraorth, Felix Chapman
+ * @author Felix Chapman
  */
-public class FailingMockTask extends MockBackgroundTask {
+public interface PatternBuilder {
 
-    @Override
-    protected void executeStartInner(TaskId id) {
-        throw new RuntimeException("deliberate test failure");
-    }
-
-    @Override
-    protected void executeResumeInner(TaskCheckpoint checkpoint) {
-        throw new RuntimeException("deliberate test failure");
-    }
+    /**
+     * Change this into a {@link Pattern}. Does not modify the existing object.
+     *
+     * @return a {@link Pattern} from this object.
+     */
+    @CheckReturnValue
+    Pattern pattern();
 }
