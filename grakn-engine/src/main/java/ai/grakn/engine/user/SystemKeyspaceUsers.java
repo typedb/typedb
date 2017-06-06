@@ -127,8 +127,9 @@ public class SystemKeyspaceUsers extends UsersHandler {
         if (superUsername().equals(username)) {
             return Json.object(USER_NAME, username);
         }
-        try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {VarPattern lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
-        Var resource = var("property");
+        try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
+            VarPattern lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
+            Var resource = var("property");
 
             MatchQuery query = graph.graql().match(lookup.has(RESOURCE.getLabel(), resource));
             List<Answer> L = query.execute();
