@@ -208,7 +208,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         return result;
     }
 
-    Set<TypeId> convertToIdSet(Set<TypeLabel> TypeLabelSet) {
+    Set<TypeId> convertLabelsToIds(Set<TypeLabel> TypeLabelSet) {
         return TypeLabelSet.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
     }
 

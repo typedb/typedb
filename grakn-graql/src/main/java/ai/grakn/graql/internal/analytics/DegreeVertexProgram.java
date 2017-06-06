@@ -80,7 +80,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        return memory.isInitialIteration() ? messageScopeSetShortCut : Collections.emptySet();
+        return memory.isInitialIteration() ? messageScopeSetShortcut : Collections.emptySet();
     }
 
     @Override
@@ -105,8 +105,8 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     void degreeMessagePassing(Vertex vertex, Messenger<Long> messenger) {
         if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-            messenger.sendMessage(messageScopeShortCutIn, 1L);
-            messenger.sendMessage(messageScopeShortCutOut, 1L);
+            messenger.sendMessage(messageScopeShortcutIn, 1L);
+            messenger.sendMessage(messageScopeShortcutOut, 1L);
         }
     }
 

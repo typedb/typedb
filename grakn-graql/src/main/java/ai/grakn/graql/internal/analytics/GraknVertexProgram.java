@@ -69,12 +69,12 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
     static final Set<MessageScope> messageScopeSetCasting =
             Sets.newHashSet(messageScopeInCasting, messageScopeOutRolePlayer);
 
-    static final MessageScope.Local<?> messageScopeShortCutIn = MessageScope.Local.of(() -> __.inE(
+    static final MessageScope.Local<?> messageScopeShortcutIn = MessageScope.Local.of(() -> __.inE(
             Schema.EdgeLabel.SHORTCUT.getLabel()));
-    static final MessageScope.Local<?> messageScopeShortCutOut = MessageScope.Local.of(() -> __.outE(
+    static final MessageScope.Local<?> messageScopeShortcutOut = MessageScope.Local.of(() -> __.outE(
             Schema.EdgeLabel.SHORTCUT.getLabel()));
-    static final Set<MessageScope> messageScopeSetShortCut =
-            Sets.newHashSet(messageScopeShortCutIn, messageScopeShortCutOut);
+    static final Set<MessageScope> messageScopeSetShortcut =
+            Sets.newHashSet(messageScopeShortcutIn, messageScopeShortcutOut);
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {

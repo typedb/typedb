@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
@@ -156,10 +155,6 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         allSubTypes.addAll(subTypeLabels);
         allSubTypes.addAll(statisticsResourceTypeLabels);
         return allSubTypes;
-    }
-
-    Set<TypeId> convertLabelsToIds(Set<TypeLabel> labelSet) {
-        return labelSet.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
     }
 
     @Override

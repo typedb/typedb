@@ -78,8 +78,8 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
         Set<TypeLabel> withResourceRelationTypes = getHasResourceRelationTypes();
         withResourceRelationTypes.addAll(subTypeLabels);
 
-        Set<TypeId> withResourceRelationTypeIds = convertToIdSet(withResourceRelationTypes);
-        Set<TypeId> ofTypeIds = convertToIdSet(ofTypeLabels);
+        Set<TypeId> withResourceRelationTypeIds = convertLabelsToIds(withResourceRelationTypes);
+        Set<TypeId> ofTypeIds = convertLabelsToIds(ofTypeLabels);
 
         String randomId = getRandomJobId();
 
