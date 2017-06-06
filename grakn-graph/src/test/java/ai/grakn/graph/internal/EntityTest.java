@@ -94,12 +94,10 @@ public class EntityTest extends GraphTestBase{
         EntityType type = graknGraph.putEntityType("Concept Type");
         RelationType relationType = graknGraph.putRelationType("relationTypes");
         RoleType role1 = graknGraph.putRoleType("role1");
-        RoleType role2 = graknGraph.putRoleType("role2");
         Instance rolePlayer1 = type.addEntity();
 
         Relation relation = relationType.addRelation().
-                addRolePlayer(role1, rolePlayer1).
-                addRolePlayer(role2, null);
+                addRolePlayer(role1, rolePlayer1);
 
         assertNotNull(graknGraph.getConcept(relation.getId()));
 

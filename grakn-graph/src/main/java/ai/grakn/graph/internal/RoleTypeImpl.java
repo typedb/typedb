@@ -156,7 +156,17 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         boolean hasRelates = getVertex().edges(Direction.IN, Schema.EdgeLabel.RELATES.getLabel()).hasNext();
         boolean hasPlays = getVertex().edges(Direction.IN, Schema.EdgeLabel.PLAYS.getLabel()).hasNext();
 
-        if(hasRelates || hasPlays){
+        boolean deletionNotAllowed = hasRelates || hasPlays;
+
+        if(!deletionNotAllowed) { //This check is independent as it is slower than the ones above
+            deletionNotAllowed = relationTypes().stream().filter(
+                    relationType -> relationType.instances().stream().filter(
+                            relation -> ((RelationImpl) relation).getRolePlayers(this).findAny().isPresent()).
+                            findAny().isPresent()).
+                    findAny().isPresent();
+        }
+
+        if(deletionNotAllowed){
             throw GraphOperationException.typeCannotBeDeleted(getLabel());
         } else {
             super.delete();

@@ -144,6 +144,8 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     @Override
     public Relation addRolePlayer(RoleType roleType, Instance instance) {
         Objects.requireNonNull(roleType);
+        Objects.requireNonNull(instance);
+
         if(Schema.MetaSchema.isMetaLabel(roleType.getLabel())) throw GraphOperationException.metaTypeImmutable(roleType.getLabel());
 
         //Do the actual put of the role and role player

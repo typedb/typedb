@@ -162,7 +162,6 @@ public class RelationTest extends GraphTestBase{
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
 
         roleType1 = graknGraph.putRoleType("role type 1");
-        roleType2 = graknGraph.putRoleType("role type 2");
         Instance instance1 = type.addEntity();
 
         TreeMap<RoleType, Instance> roleMap = new TreeMap<>();
@@ -170,7 +169,6 @@ public class RelationTest extends GraphTestBase{
         roleMap.put(roleType2, null);
 
         relation.addRolePlayer(roleType1, instance1);
-        relation.addRolePlayer(roleType2, null);
 
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
@@ -182,8 +180,7 @@ public class RelationTest extends GraphTestBase{
         String itemIdentifier = "RelationType_" + relationType.getId() + "_Relation";
         for(Map.Entry<RoleType, Instance> entry: roleMap.entrySet()){
             itemIdentifier = itemIdentifier + "_" + entry.getKey().getId();
-            if(entry.getValue() != null)
-                itemIdentifier = itemIdentifier + "_" + entry.getValue().getId();
+            if(entry.getValue() != null) itemIdentifier += "_" + entry.getValue().getId();
         }
         return itemIdentifier;
     }
