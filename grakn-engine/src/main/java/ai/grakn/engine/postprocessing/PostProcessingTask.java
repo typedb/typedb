@@ -20,6 +20,7 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -91,7 +92,10 @@ public class PostProcessingTask extends BackgroundTask {
             String conceptIndex = e.getKey();
             Set<ConceptId> conceptIds = e.getValue();
 
-            GraphMutators.runGraphMutationWithRetry(factory, configuration.json().at(REST.Request.KEYSPACE).asString(),
+            String keyspace = configuration.json().at(REST.Request.KEYSPACE).asString();
+            int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+
+            GraphMutators.runGraphMutationWithRetry(factory, keyspace, maxRetry,
                     (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds, duplicatesExistMethod, postProcessingMethod));
 
         });

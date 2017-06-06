@@ -58,7 +58,9 @@ public class MutatorTask extends BackgroundTask {
     @Override
     public boolean start() {
         Collection<Query> inserts = getInserts(configuration());
-        GraphMutators.runBatchMutationWithRetry(FACTORY, configuration().json().at(REST.Request.KEYSPACE).asString(), (graph) ->
+        String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
+        int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+        GraphMutators.runBatchMutationWithRetry(FACTORY, keyspace, maxRetry, (graph) ->
                 insertQueriesInOneTransaction(graph, inserts)
         );
 
