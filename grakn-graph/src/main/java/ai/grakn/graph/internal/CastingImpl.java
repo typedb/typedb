@@ -59,14 +59,6 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
     }
 
     /**
-     *
-     * @return The {@link Instance} which is the roleplayer in this casting
-     */
-    Instance getRolePlayer() {
-        return this.<Instance>getOutgoingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).findFirst().orElse(null);
-    }
-
-    /**
      * Sets thew internal index of this casting toi allow for faster lookup.
      * @param role The {@link RoleType} this casting is linked with
      * @param rolePlayer The {@link Instance} which is the roleplayer in this casting
