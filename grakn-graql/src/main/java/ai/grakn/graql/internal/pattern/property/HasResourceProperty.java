@@ -28,7 +28,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
@@ -108,7 +107,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         repr.add(typeLabelToString(resourceType));
 
-        if (resource.isUserDefinedName()) {
+        if (resource.getVarName().isUserDefinedName()) {
             repr.add(resource.getPrintableName());
         } else {
             resource.getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.getPredicate().toString()));
@@ -118,9 +117,9 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        Var relation = Var.anon();
-        Var edge1 = Var.anon();
-        Var edge2 = Var.anon();
+        Var relation = Graql.var();
+        Var edge1 = Graql.var();
+        Var edge2 = Graql.var();
 
         return ImmutableSet.of(
                 shortcut(relation, edge1, start, Optional.empty()),
@@ -196,15 +195,14 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName();
+        Var varName = var.getVarName().asUserDefined();
         TypeLabel type = this.getType();
         VarPatternAdmin valueVar = this.getResource();
-        Var valueVariable = valueVar.getVarName();
+        Var valueVariable = valueVar.getVarName().asUserDefined();
         Set<ValuePredicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);
 
         //add resource atom
-        VarPattern resource = Graql.var(valueVariable);
-        VarPatternAdmin resVar = Graql.var(varName).has(type, resource).admin();
+        VarPatternAdmin resVar = varName.has(type, valueVariable).admin();
         return new ai.grakn.graql.internal.reasoner.atom.binary.Resource(resVar, predicates, parent);
     }
 }

@@ -660,7 +660,7 @@ public class ReasonerTest {
         MatchQuery query2 = iqb.parse(queryString2);
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers answers2 = queryAnswers(query2);
-        assertEquals(answers.filterVars(Sets.newHashSet(Var.of("x"))), answers2);
+        assertEquals(answers.filterVars(Sets.newHashSet(Graql.var("x"))), answers2);
     }
 
     @Test
@@ -730,8 +730,8 @@ public class ReasonerTest {
 
         final int offset = 4;
         List<Answer> fullAnswers = query.execute();
-        List<Answer> answers = query.orderBy(Var.of("a")).execute();
-        List<Answer> answers2 = query.orderBy(Var.of("a")).offset(offset).execute();
+        List<Answer> answers = query.orderBy(Graql.var("a")).execute();
+        List<Answer> answers2 = query.orderBy(Graql.var("a")).offset(offset).execute();
 
         assertEquals(fullAnswers.size(), answers2.size() + offset);
         assertEquals(answers.size(), answers2.size() + offset);

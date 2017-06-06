@@ -14,29 +14,25 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.exception;
+package ai.grakn.graql;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
+import javax.annotation.CheckReturnValue;
 
 /**
- * This exception is thrown when two concepts attept to have the same unique id.
+ * An interface representing something that is or can be transformed into a {@link Pattern}.
  *
- * @author Filipe Teixeira
+ * @author Felix Chapman
  */
-public class ConceptNotUniqueException extends ConceptException {
-    public ConceptNotUniqueException(Concept concept, Schema.ConceptProperty type, String id) {
-        super(ErrorMessage.ID_NOT_UNIQUE.getMessage(concept.toString(), type.name(), id));
-    }
+public interface PatternBuilder {
 
-    public ConceptNotUniqueException(Concept concept, String id){
-        super(ErrorMessage.ID_ALREADY_TAKEN.getMessage(id, concept.toString()));
-    }
-
-    public ConceptNotUniqueException(String message){
-        super(message);
-    }
+    /**
+     * Change this into a {@link Pattern}. Does not modify the existing object.
+     *
+     * @return a {@link Pattern} from this object.
+     */
+    @CheckReturnValue
+    Pattern pattern();
 }

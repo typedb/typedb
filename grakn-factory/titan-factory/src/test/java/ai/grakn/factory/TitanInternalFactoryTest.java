@@ -20,7 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.GraknTitanGraph;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.TitanGraph;
@@ -149,7 +149,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
                 graph.putEntityType("A Thing");
                 try {
                     graph.close();
-                } catch (GraknValidationException e) {
+                } catch (InvalidGraphException e) {
                     e.printStackTrace();
                 }
             }));
@@ -171,7 +171,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
     }
 
     @Test
-    public void testGraphNotClosed() throws GraknValidationException {
+    public void testGraphNotClosed() throws InvalidGraphException {
         TitanInternalFactory factory = new TitanInternalFactory("stuff", Grakn.IN_MEMORY, TEST_PROPERTIES);
         GraknTitanGraph graph = factory.open(GraknTxType.WRITE);
         assertFalse(graph.getTinkerPopGraph().isClosed());

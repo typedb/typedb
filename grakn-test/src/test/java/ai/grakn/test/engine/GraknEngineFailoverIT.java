@@ -27,7 +27,7 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
-import ai.grakn.exception.EngineStorageException;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.test.DistributionContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.google.common.collect.ImmutableList;
@@ -165,7 +165,7 @@ public class GraknEngineFailoverIT {
         try {
             TaskStatus status = storage.getState(taskId).status();
             return status == FAILED || status == COMPLETED || status == STOPPED;
-        } catch (EngineStorageException e){
+        } catch (GraknBackendException e){
             return false;
         }
     }

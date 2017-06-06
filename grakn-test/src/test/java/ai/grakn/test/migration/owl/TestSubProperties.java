@@ -18,7 +18,7 @@
 
 package ai.grakn.test.migration.owl;
 
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -40,7 +40,7 @@ public class TestSubProperties extends TestOwlGraknBase {
 
 	@Ignore //TODO: Fix this test. Not sure why it is not working remotely
 	@Before
-	public void loadShakespeare() throws GraknValidationException {
+	public void loadShakespeare() throws InvalidGraphException {
         shakespeare = loadOntologyFromResource("owl", "shakespeare.owl");
         migrator.ontology(shakespeare).graph(graph).migrate();
         migrator.graph().commit();

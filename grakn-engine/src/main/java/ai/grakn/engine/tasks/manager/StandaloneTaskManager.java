@@ -168,19 +168,21 @@ public class StandaloneTaskManager implements TaskManager {
         return () -> {
             try {
                 BackgroundTask runningTask = task.taskClass().newInstance();
+                runningTask.initialize(saveCheckpoint(task), configuration, this);
+
                 runningTasks.put(task.getId(), runningTask);
 
                 boolean completed;
 
                 if(taskShouldResume(task)){
-                    completed = runningTask.resume(saveCheckpoint(task), task.checkpoint());
+                    completed = runningTask.resume(task.checkpoint());
                 } else {
                     //Mark as running
                     task.markRunning(engineID);
 
                     saveState(task);
 
-                    completed = runningTask.start(saveCheckpoint(task), configuration, this);
+                    completed = runningTask.start();
                 }
 
                 if (completed) {
