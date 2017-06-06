@@ -20,29 +20,23 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  *
  * <p>
- * Tuple-at-a-time iterator for {@link ReasonerQueryImpl}.
- * For a starting query Q it removes the top (highest priority) atom A, constructs a corresponding atomic query
- * AQ and uses it to feed the the remaining query Q' = Q\AQ with partial substitutions. The behaviour proceeds
- * in recursive fashion.
+ * Tuple-at-a-time iterator for {@link ReasonerQueryImpl}, wraps around a {@link ReasonerQueryImplCumulativeIterator}.
+ * For a starting conjunctive query Q it constructs a resolution plan by decomposing it to atomic queries {@link ReasonerAtomicQuery}
+ * ordering them by their resolution priority. The ordered list is then passed to {@link ReasonerQueryImplCumulativeIterator}
+ * which takes care of substitution propagation leading to a final answer.
  * </p>
  *
  * @author Kasper Piskorski
@@ -61,11 +55,16 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         ReasonerQueryImpl query = new ReasonerQueryImpl(q);
         query.addSubstitution(sub);
 
-        LOG.trace("CQ: " + query);
-        //LOG.trace("CQ plan: " + query.getResolutionPlan());
-
         LinkedList<ReasonerAtomicQuery> queries = query.getResolutionPlan();
-        this.queryIterator = new ReasonerAtomicQueryCumulativeIterator(new QueryAnswer(), queries, subGoals, cache);
+
+        LOG.trace("CQ: " + query);
+        LOG.trace("CQ plan: " + queries.stream()
+                .map(ReasonerAtomicQuery::getAtom)
+                .map(AtomicBase::toString)
+                .collect(Collectors.joining("\n"))
+        );
+
+        this.queryIterator = new ReasonerQueryImplCumulativeIterator(new QueryAnswer(), queries, subGoals, cache);
     }
 
     @Override

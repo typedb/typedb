@@ -48,7 +48,6 @@ import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import java.util.Comparator;
-import java.util.LinkedList;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -363,7 +362,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * @return stream of atomic query obtained by inserting all inferred possible types (if ambiguous)
      */
-    Stream<ReasonerAtomicQuery> getQueryStream(){
+    private Stream<ReasonerAtomicQuery> getQueryStream(){
         Atom atom = getAtom();
         if (!atom.isRelation() || atom.getType() != null) return Stream.of(this);
         else{

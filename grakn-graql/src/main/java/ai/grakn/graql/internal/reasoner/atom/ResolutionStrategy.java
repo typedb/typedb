@@ -69,9 +69,9 @@ public final class ResolutionStrategy {
     public static final int GUARD = 1;
 
     /**
-     * priority modifier for guard (type atom) the atom has
+     * priority modifier for guard (type atom) the atom has - favour boundary rather than bulk atoms
      */
-    public static final int BOUND_VARIABLE = 2;
+    public static final int BOUND_VARIABLE = -2;
 
     /**
      * priority modifier for each specific value predicate a given atom (resource) has
