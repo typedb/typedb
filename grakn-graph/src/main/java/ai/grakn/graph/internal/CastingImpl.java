@@ -19,14 +19,11 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.RoleType;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -48,14 +45,6 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
 
     CastingImpl(AbstractGraknGraph graknGraph, Vertex v, RoleType type) {
         super(graknGraph, v, type);
-    }
-
-    /**
-     *
-     * @return The {@link RoleType} this casting is linked with
-     */
-    public RoleType getRole() {
-       return type();
     }
 
     /**
@@ -83,13 +72,5 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
      */
     static String generateNewHash(RoleTypeImpl role, InstanceImpl rolePlayer){
         return "Casting-Role-" + role.getId() + "-RolePlayer-" + rolePlayer.getId();
-    }
-
-    /**
-     *
-     * @return All the {@link Relation} this casting is linked with.
-     */
-    public Set<Relation> getRelations() {
-        return this.<Relation>getIncomingNeighbours(Schema.EdgeLabel.CASTING).collect(Collectors.toSet());
     }
 }
