@@ -59,10 +59,14 @@ public class TxCacheTest extends GraphTestBase{
         RelationType t2 = graknGraph.putRelationType("2");
         RoleType t3 = graknGraph.putRoleType("3");
         RuleType t4 = graknGraph.putRuleType("4");
-        EntityType t5 = graknGraph.putEntityType("5");
+        ResourceType t5 = graknGraph.putResourceType("5", ResourceType.DataType.STRING);
 
         // verify the concepts that we expected are returned in the set
-        assertThat(graknGraph.getTxCache().getModifiedConcepts(), containsInAnyOrder(t1, t2, t3, t4, t5));
+        assertThat(graknGraph.getTxCache().getModifiedEntityTypes(), containsInAnyOrder(t1));
+        assertThat(graknGraph.getTxCache().getModifiedRoleTypes(), containsInAnyOrder(t3));
+        assertThat(graknGraph.getTxCache().getModifiedRelationTypes(), containsInAnyOrder(t2));
+        assertThat(graknGraph.getTxCache().getModifiedRuleTypes(), containsInAnyOrder(t4));
+        assertThat(graknGraph.getTxCache().getModifiedResourceTypes(), containsInAnyOrder(t5));
     }
 
     @Test
@@ -81,10 +85,10 @@ public class TxCacheTest extends GraphTestBase{
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(graknGraph.getTxCache().getModifiedConcepts(), is(empty()));
+        assertThat(graknGraph.getTxCache().getModifiedCastings(), is(empty()));
 
         t1.superType(t2);
-        assertThat(graknGraph.getTxCache().getModifiedConcepts(), containsInAnyOrder(c1, c2));
+        assertThat(graknGraph.getTxCache().getModifiedCastings(), containsInAnyOrder(c1, c2));
     }
 
     @Test
@@ -94,10 +98,10 @@ public class TxCacheTest extends GraphTestBase{
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(graknGraph.getTxCache().getModifiedConcepts(), is(empty()));
+        assertThat(graknGraph.getTxCache().getModifiedEntities(), is(empty()));
 
         Entity i1 = t1.addEntity();
-        assertThat(graknGraph.getTxCache().getModifiedConcepts(), containsInAnyOrder(i1));
+        assertThat(graknGraph.getTxCache().getModifiedEntities(), containsInAnyOrder(i1));
     }
 
     @Test
@@ -112,12 +116,14 @@ public class TxCacheTest extends GraphTestBase{
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(graknGraph.getTxCache().getModifiedConcepts(), is(empty()));
+        assertThat(graknGraph.getTxCache().getModifiedRelations(), is(empty()));
+        assertThat(graknGraph.getTxCache().getModifiedCastings(), is(empty()));
 
         Relation rel1 = rt1.addRelation().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
         CastingImpl c1 = ((EntityImpl) i1).castings().iterator().next();
         CastingImpl c2 = ((EntityImpl) i2).castings().iterator().next();
-        assertThat(graknGraph.getTxCache().getModifiedConcepts(), containsInAnyOrder(rel1, c1, c2));
+        assertThat(graknGraph.getTxCache().getModifiedRelations(), containsInAnyOrder(rel1));
+        assertThat(graknGraph.getTxCache().getModifiedCastings(), containsInAnyOrder(c1, c2));
     }
 
     @Test
@@ -128,10 +134,10 @@ public class TxCacheTest extends GraphTestBase{
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(graknGraph.getTxCache().getModifiedConcepts(), is(empty()));
+        assertThat(graknGraph.getTxCache().getModifiedEntities(), is(empty()));
 
         i1.delete();
-        assertThat(graknGraph.getTxCache().getModifiedConcepts(), is(empty()));
+        assertThat(graknGraph.getTxCache().getModifiedEntities(), is(empty()));
     }
 
     @Test
@@ -194,11 +200,10 @@ public class TxCacheTest extends GraphTestBase{
 
         //Check the caches are not empty
         assertThat(cache.getConceptCache().keySet(), not(empty()));
-        assertThat(cache.getModifiedConcepts(), not(empty()));
         assertThat(cache.getModifiedCastings(), not(empty()));
         assertThat(cache.getTypeCache().keySet(), not(empty()));
         assertThat(cache.getLabelCache().keySet(), not(empty()));
-        assertThat(cache.getModifiedRelations().keySet(), not(empty()));
+        assertThat(cache.getRelationIndexCache().keySet(), not(empty()));
         assertThat(cache.getModifiedResources(), not(empty()));
         assertThat(cache.getShardingCount().keySet(), not(empty()));
 
@@ -207,13 +212,20 @@ public class TxCacheTest extends GraphTestBase{
 
         //Check the caches are empty
         assertThat(cache.getConceptCache().keySet(), empty());
-        assertThat(cache.getModifiedConcepts(), empty());
-        assertThat(cache.getModifiedCastings(), empty());
         assertThat(cache.getTypeCache().keySet(), empty());
         assertThat(cache.getLabelCache().keySet(), empty());
-        assertThat(cache.getModifiedRelations().keySet(), empty());
-        assertThat(cache.getModifiedResources(), empty());
+        assertThat(cache.getRelationIndexCache().keySet(), empty());
         assertThat(cache.getShardingCount().keySet(), empty());
+        assertThat(cache.getModifiedEntityTypes(), empty());
+        assertThat(cache.getModifiedEntities(), empty());
+        assertThat(cache.getModifiedRoleTypes(), empty());
+        assertThat(cache.getModifiedCastings(), empty());
+        assertThat(cache.getModifiedRelationTypes(), empty());
+        assertThat(cache.getModifiedRelations(), empty());
+        assertThat(cache.getModifiedRuleTypes(), empty());
+        assertThat(cache.getModifiedRules(), empty());
+        assertThat(cache.getModifiedResourceTypes(), empty());
+        assertThat(cache.getModifiedResources(), empty());
     }
 
     @Test

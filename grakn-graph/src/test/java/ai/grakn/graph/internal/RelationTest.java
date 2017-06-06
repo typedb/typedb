@@ -197,8 +197,8 @@ public class RelationTest extends GraphTestBase{
         Instance instance1 = type.addEntity();
         Instance instance2 = type.addEntity();
 
-        relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
-        relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
+        Relation rel1 = relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
+        Relation rel2 = relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(containsString("You have created one or more relations"));

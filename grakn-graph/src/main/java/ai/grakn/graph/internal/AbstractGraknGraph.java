@@ -1014,7 +1014,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         //Explicitly track this new relation so we don't create duplicates
-        getTxCache().getModifiedRelations().put(newIndex, foundRelation);
+        getTxCache().getRelationIndexCache().put(newIndex, foundRelation);
     }
 
     @Override
