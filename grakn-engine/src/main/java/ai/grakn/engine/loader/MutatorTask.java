@@ -50,15 +50,17 @@ import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
  */
 public class MutatorTask extends BackgroundTask {
 
-    private static final GraknEngineConfig CONFIG = GraknEngineConfig.getInstance();
-    private static final EngineGraknGraphFactory FACTORY = EngineGraknGraphFactory.create(CONFIG.getProperties());
-
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
     public boolean start() {
         Collection<Query> inserts = getInserts(configuration());
-        GraphMutators.runBatchMutationWithRetry(FACTORY, configuration().json().at(REST.Request.KEYSPACE).asString(), (graph) ->
+
+        String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
+        int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
+
+        GraphMutators.runBatchMutationWithRetry(factory, keyspace, maxRetry, (graph) ->
                 insertQueriesInOneTransaction(graph, inserts)
         );
 
@@ -79,7 +81,7 @@ public class MutatorTask extends BackgroundTask {
         Optional<String> result = graph.admin().commitNoLogs();
         if(result.isPresent()){ //Submit more tasks if commit resulted in created commit logs
             String logs = result.get();
-            addTask(PostProcessingTask.createTask(this.getClass()),
+            addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration().getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY)),
                     PostProcessingTask.createConfig(graph.getKeyspace(), logs));
             addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
                     UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));
