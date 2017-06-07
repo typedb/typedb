@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -81,7 +82,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
-
     private int priority = Integer.MAX_VALUE;
 
     ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
@@ -140,7 +140,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public int resolutionPriority(){
         if (priority == Integer.MAX_VALUE) {
             Set<Atom> selectableAtoms = selectAtoms();
-            int totalPriority = selectableAtoms.stream().mapToInt(Atom::resolutionPriority).sum();
+            int totalPriority = selectableAtoms.stream().mapToInt(Atom::baseResolutionPriority).sum();
             priority = totalPriority/selectableAtoms.size();
         }
         return priority;
@@ -193,24 +193,29 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public Set<Atomic> getAtoms() { return atomSet;}
 
-    private List<Atom> getPrioritisedAtoms(){
-        return selectAtoms().stream()
-                .sorted(Comparator.comparing(Atom::resolutionPriority).reversed())
-                .collect(Collectors.toList());
-    }
-
     /**
-     * @return atom that should be prioritised for resolution
+     * compute the resolution plan - list of atomic queries ordered by their resolution priority
+     * @return list of prioritised atomic queries
      */
-    Atom getTopAtom() {
-        return getPrioritisedAtoms().stream().findFirst().orElse(null);
-    }
+    LinkedList<ReasonerAtomicQuery> getResolutionPlan(){
+        LinkedList<ReasonerAtomicQuery> queries = new LinkedList<>();
 
-    /**
-     * @return resolution plan in a form a atom[priority]->... string
-     */
-    String getResolutionPlan(){
-        return getPrioritisedAtoms().stream().map(at -> at + "[" + at.resolutionPriority()+ "]").collect(Collectors.joining(" -> "));
+        LinkedList<Atom> atoms = selectAtoms().stream()
+                .sorted(Comparator.comparing(at -> -at.computePriority()))
+                .collect(Collectors.toCollection(LinkedList::new));
+
+        Atom top = atoms.getFirst();
+
+        while (!atoms.isEmpty()) {
+            queries.add(new ReasonerAtomicQuery(top));
+            atoms.remove(top);
+
+            Set<Var> subbedVars = Sets.difference(top.getVarNames(), top.getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet()));
+            top = atoms.stream()
+                    .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
+                    .findFirst().orElse(null);
+        }
+        return queries;
     }
 
     /**
