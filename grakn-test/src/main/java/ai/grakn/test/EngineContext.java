@@ -55,7 +55,7 @@ public class EngineContext extends ExternalResource {
     private final boolean startKafka;
     private final boolean startSingleQueueEngine;
     private final boolean startStandaloneEngine;
-    private final GraknEngineConfig config = GraknEngineConfig.create();
+    private final GraknEngineConfig config = GraknTestEnv.createTestConfig();
 
     private EngineContext(boolean startKafka, boolean startSingleQueueEngine, boolean startStandaloneEngine){
         this.startSingleQueueEngine = startSingleQueueEngine;
@@ -96,9 +96,13 @@ public class EngineContext extends ExternalResource {
         return server.getTaskManager();
     }
 
+    public String uri() {
+        return config.uri();
+    }
+
     //TODO Rename this method to "sessionWithNewKeyspace"
     public GraknSession factoryWithNewKeyspace() {
-        return Grakn.session(GraknTestEnv.getUri(config), randomKeyspace());
+        return Grakn.session(uri(), randomKeyspace());
     }
 
     @Override
