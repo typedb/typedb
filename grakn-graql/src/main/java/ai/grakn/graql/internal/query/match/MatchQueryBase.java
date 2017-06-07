@@ -49,6 +49,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.util.CommonUtil.optionalToStream;
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
@@ -159,7 +160,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
                 .map(var -> var.getProperty(IdProperty.class))
                 .flatMap(CommonUtil::optionalToStream)
                 .map(IdProperty::getId)
-                .map(graph::<Concept>getConcept)
+                .flatMap(id -> optionalToStream(Optional.ofNullable(graph.<Concept>getConcept(id))))
                 .filter(Concept::isType)
                 .map(Concept::asType)
                 .map(Type::getLabel);
