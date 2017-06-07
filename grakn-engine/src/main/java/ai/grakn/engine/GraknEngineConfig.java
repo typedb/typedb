@@ -63,7 +63,6 @@ public class GraknEngineConfig {
 
     private static final String SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY = "grakn.dir";
     private static final String SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE = "grakn.conf";
-    private static final String SYSTEM_PROPERTY_GRAKN_LOG_DIRECTORY = "grakn.log.dirs";
 
     // Engine Config
     public static final String TASK_MANAGER_IMPLEMENTATION = "taskmanager.implementation";
