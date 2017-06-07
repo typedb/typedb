@@ -254,7 +254,7 @@ public class BatchMutatorClient {
         Retryer<TaskId> retryer = RetryerBuilder.<TaskId>newBuilder()
                 .retryIfExceptionOfType(IOException.class)
                 .retryIfRuntimeException()
-                .withStopStrategy(StopStrategies.stopAfterAttempt(MAX_RETRIES))
+                .withStopStrategy(StopStrategies.stopAfterAttempt(retry ? MAX_RETRIES : 1))
                 .build();
 
         TaskId taskId;
