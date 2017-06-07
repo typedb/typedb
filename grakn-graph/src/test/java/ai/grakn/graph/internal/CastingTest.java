@@ -33,7 +33,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class RolePlayerTest extends GraphTestBase {
+public class CastingTest extends GraphTestBase {
 
     private RelationType relationType;
     private EntityType entityType;
@@ -57,9 +57,9 @@ public class RolePlayerTest extends GraphTestBase {
         RelationImpl relation = (RelationImpl) relationType.addRelation().
                 addRolePlayer(role1, e1);
 
-        Set<RolePlayer> rolePlayers = relation.getRolePlayers().collect(Collectors.toSet());
+        Set<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
 
-        rolePlayers.forEach(rolePlayer -> {
+        castings.forEach(rolePlayer -> {
             assertEquals(e1, rolePlayer.getInstance());
             assertEquals(role1, rolePlayer.getRoleType());
             assertEquals(relationType, rolePlayer.getRelationType());
@@ -75,16 +75,16 @@ public class RolePlayerTest extends GraphTestBase {
         RelationImpl relation = (RelationImpl) relationType.addRelation().
                 addRolePlayer(role1, e1);
 
-        Set<Instance> instances = relation.getRolePlayers().map(RolePlayer::getInstance).collect(Collectors.toSet());
-        Set<RoleType> roles = relation.getRolePlayers().map(RolePlayer::getRoleType).collect(Collectors.toSet());
+        Set<Instance> instances = relation.castingsRelation().map(Casting::getInstance).collect(Collectors.toSet());
+        Set<RoleType> roles = relation.castingsRelation().map(Casting::getRoleType).collect(Collectors.toSet());
         assertThat(instances, containsInAnyOrder(e1));
         assertThat(roles, containsInAnyOrder(role1));
 
         //Now Update
         relation.addRolePlayer(role2, e1).addRolePlayer(role3, e3);
 
-        instances = relation.getRolePlayers().map(RolePlayer::getInstance).collect(Collectors.toSet());
-        roles = relation.getRolePlayers().map(RolePlayer::getRoleType).collect(Collectors.toSet());
+        instances = relation.castingsRelation().map(Casting::getInstance).collect(Collectors.toSet());
+        roles = relation.castingsRelation().map(Casting::getRoleType).collect(Collectors.toSet());
         assertThat(instances, containsInAnyOrder(e1, e3));
         assertThat(roles, containsInAnyOrder(role1, role2, role3));
     }

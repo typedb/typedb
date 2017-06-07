@@ -81,14 +81,14 @@ public class TxCacheTest extends GraphTestBase{
         Entity e1 = t1.addEntity();
         Entity e2 = t1.addEntity();
 
-        assertThat(graknGraph.getTxCache().getModifiedRolePlayers(), empty());
+        assertThat(graknGraph.getTxCache().getModifiedCastings(), empty());
 
-        Set<RolePlayer> rolePlayers = ((RelationImpl) rt1.addRelation().
+        Set<Casting> castings = ((RelationImpl) rt1.addRelation().
                 addRolePlayer(r1, e1).
                 addRolePlayer(r2, e2)).
-                getRolePlayers().collect(Collectors.toSet());
+                castingsRelation().collect(Collectors.toSet());
 
-        assertTrue(graknGraph.getTxCache().getModifiedRolePlayers().containsAll(rolePlayers));
+        assertTrue(graknGraph.getTxCache().getModifiedCastings().containsAll(castings));
     }
 
     @Test
@@ -105,10 +105,10 @@ public class TxCacheTest extends GraphTestBase{
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(graknGraph.getTxCache().getModifiedRolePlayers(), is(empty()));
+        assertThat(graknGraph.getTxCache().getModifiedCastings(), is(empty()));
 
         t1.superType(t2);
-        assertTrue(graknGraph.getTxCache().getModifiedRolePlayers().containsAll(relation.getRolePlayers().collect(Collectors.toSet())));
+        assertTrue(graknGraph.getTxCache().getModifiedCastings().containsAll(relation.castingsRelation().collect(Collectors.toSet())));
     }
 
     @Test
@@ -226,7 +226,7 @@ public class TxCacheTest extends GraphTestBase{
         assertThat(cache.getRelationIndexCache().keySet(), not(empty()));
         assertThat(cache.getModifiedResources(), not(empty()));
         assertThat(cache.getShardingCount().keySet(), not(empty()));
-        assertThat(cache.getModifiedRolePlayers(), not(empty()));
+        assertThat(cache.getModifiedCastings(), not(empty()));
 
         //Close the transaction
         graknGraph.commit();
@@ -243,7 +243,7 @@ public class TxCacheTest extends GraphTestBase{
         assertThat(cache.getModifiedRelations(), empty());
         assertThat(cache.getModifiedRules(), empty());
         assertThat(cache.getModifiedResources(), empty());
-        assertThat(cache.getModifiedRolePlayers(), empty());
+        assertThat(cache.getModifiedCastings(), empty());
     }
 
     @Test

@@ -209,11 +209,11 @@ final class ElementFactory {
     }
 
     //TODO: Integrate with cache and cleanup
-    RolePlayer buildRolePlayer(Edge edge){
+    Casting buildRolePlayer(Edge edge){
         return buildRolePlayer(buildEdge(edge));
     }
 
-    RolePlayer buildRolePlayer(EdgeElement edge) {
-        return new RolePlayer(graknGraph, edge.getEdge());
+    Casting buildRolePlayer(EdgeElement edge) {
+        return new Casting(graknGraph, edge.getEdge());
     }
 }

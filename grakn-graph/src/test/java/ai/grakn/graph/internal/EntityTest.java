@@ -75,18 +75,18 @@ public class EntityTest extends GraphTestBase{
                 addRolePlayer(role2, rolePlayer2).
                 addRolePlayer(role3, rolePlayer3);
 
-        RolePlayer rp1 = rolePlayer1.getPlayingRoles().findAny().get();
-        RolePlayer rp2 = rolePlayer2.getPlayingRoles().findAny().get();
-        RolePlayer rp3 = rolePlayer3.getPlayingRoles().findAny().get();
+        Casting rp1 = rolePlayer1.castingsInstance().findAny().get();
+        Casting rp2 = rolePlayer2.castingsInstance().findAny().get();
+        Casting rp3 = rolePlayer3.castingsInstance().findAny().get();
 
-        assertThat(relation.getRolePlayers().collect(Collectors.toSet()), containsInAnyOrder(rp1, rp2, rp3));
+        assertThat(relation.castingsRelation().collect(Collectors.toSet()), containsInAnyOrder(rp1, rp2, rp3));
 
         //Delete And Check Again
         ConceptId idOfDeleted = rolePlayer1.getId();
         rolePlayer1.delete();
 
         assertNull(graknGraph.getConcept(idOfDeleted));
-        assertThat(relation.getRolePlayers().collect(Collectors.toSet()), containsInAnyOrder(rp2, rp3));
+        assertThat(relation.castingsRelation().collect(Collectors.toSet()), containsInAnyOrder(rp2, rp3));
     }
 
     @Test

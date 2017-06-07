@@ -503,7 +503,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             //Track any existing data if there is some
             instances().forEach(concept -> {
                 if (concept.isInstance()) {
-                    ((InstanceImpl<?, ?>) concept).getPlayingRoles().forEach(
+                    ((InstanceImpl<?, ?>) concept).castingsInstance().forEach(
                             rolePlayer -> getGraknGraph().getTxCache().trackForValidation(rolePlayer));
                 }
             });
@@ -580,7 +580,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         //Add roleplayers to tracking to make sure they can still be played.
         instances().forEach(concept -> {
             if (concept.isInstance()) {
-                ((InstanceImpl<?, ?>) concept).getPlayingRoles().forEach(rolePlayer -> getGraknGraph().getTxCache().trackForValidation(rolePlayer));
+                ((InstanceImpl<?, ?>) concept).castingsInstance().forEach(rolePlayer -> getGraknGraph().getTxCache().trackForValidation(rolePlayer));
             }
         });
 

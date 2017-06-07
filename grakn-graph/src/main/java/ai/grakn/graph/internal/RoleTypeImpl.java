@@ -134,10 +134,10 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      *
      * @return Get all the roleplayers of this role type
      */
-    public Stream<RolePlayer> rolePlayers(){
+    public Stream<Casting> rolePlayers(){
         return relationTypes().stream().
                 flatMap(relationType -> relationType.instances().stream()).
-                flatMap(relation -> ((RelationImpl)relation).getRolePlayers(this));
+                flatMap(relation -> ((RelationImpl)relation).castingsRelation(this));
     }
 
     /**

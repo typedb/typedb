@@ -92,7 +92,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     @Override
     public void delete() {
-        Set<Relation> relations = getPlayingRoles().map(RolePlayer::getRelation).collect(Collectors.toSet());
+        Set<Relation> relations = castingsInstance().map(Casting::getRelation).collect(Collectors.toSet());
 
         getGraknGraph().getTxCache().removedInstance(type().getId());
         deleteNode();
@@ -137,10 +137,11 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     }
 
     /**
+     * Castings are retrieved from the perspective of the {@link Instance} which is a role player in a {@link Relation}
      *
-     * @return All the {@link RolePlayer} which this instance is cast into the role
+     * @return All the {@link Casting} which this instance is cast into the role
      */
-    Stream<RolePlayer> getPlayingRoles(){
+    Stream<Casting> castingsInstance(){
         return getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).
                 map(edge -> getGraknGraph().getElementFactory().buildRolePlayer(edge));
     }
@@ -184,7 +185,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     @Override
     public Collection<RoleType> plays() {
-        return getPlayingRoles().map(RolePlayer::getRoleType).collect(Collectors.toSet());
+        return castingsInstance().map(Casting::getRoleType).collect(Collectors.toSet());
     }
 
 

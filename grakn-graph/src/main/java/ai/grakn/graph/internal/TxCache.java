@@ -65,7 +65,7 @@ class TxCache {
     private final Set<EntityImpl> modifiedEntities = new HashSet<>();
 
     private final Set<RoleTypeImpl> modifiedRoleTypes = new HashSet<>();
-    private final Set<RolePlayer> modifiedRolePlayers = new HashSet<>();
+    private final Set<Casting> modifiedCastings = new HashSet<>();
 
     private final Set<RelationTypeImpl> modifiedRelationTypes = new HashSet<>();
     private final Set<RelationImpl> modifiedRelations = new HashSet<>();
@@ -148,7 +148,7 @@ class TxCache {
         } else if (element.isResource()){
             modifiedResources.add((ResourceImpl) element);
         } else if (element.isRolePlayer()){
-            modifiedRolePlayers.add(element.asRolePlayer());
+            modifiedCastings.add(element.asRolePlayer());
         }
 
         //Caching of relations in memory so they can be retrieved without needing a commit
@@ -210,7 +210,7 @@ class TxCache {
         modifiedRelations.remove(element);
         modifiedRules.remove(element);
         modifiedResources.remove(element);
-        modifiedRolePlayers.remove(element);
+        modifiedCastings.remove(element);
 
         if(element.isConcept()) {
             conceptCache.remove(element.asConcept().getId());
@@ -377,8 +377,8 @@ class TxCache {
         return modifiedResources;
     }
 
-    Set<RolePlayer> getModifiedRolePlayers() {
-        return modifiedRolePlayers;
+    Set<Casting> getModifiedCastings() {
+        return modifiedCastings;
     }
 
     //--------------------------------------- Transaction Specific Meta Data -------------------------------------------
@@ -391,7 +391,7 @@ class TxCache {
         modifiedRelations.clear();
         modifiedRules.clear();
         modifiedResources.clear();
-        modifiedRolePlayers.clear();
+        modifiedCastings.clear();
         relationIndexCache.clear();
         shardingCount.clear();
         conceptCache.clear();

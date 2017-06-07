@@ -38,7 +38,7 @@ import ai.grakn.exception.GraphOperationException;
  *
  * <p>
  *     Base class used to represent a construct in the graph. This includes exposed constructs such as {@link Concept}
- *     and hidden constructs such as {@link EdgeElement} and {@link RolePlayer}
+ *     and hidden constructs such as {@link EdgeElement} and {@link Casting}
  * </p>
  *
  * @author fppt
@@ -201,8 +201,8 @@ public abstract class Element {
      *
      * @return A roleplayer if the element is a roleplayer
      */
-    public RolePlayer asRolePlayer(){
-        return castConcept(RolePlayer.class);
+    public Casting asRolePlayer(){
+        return castConcept(Casting.class);
     }
 
     /**
@@ -303,9 +303,9 @@ public abstract class Element {
 
     /**
      *
-     * @return true if the element is a RolePlayer
+     * @return true if the element is a Casting
      */
     public boolean isRolePlayer(){
-        return this instanceof RolePlayer;
+        return this instanceof Casting;
     }
 }

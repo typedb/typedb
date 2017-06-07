@@ -68,7 +68,7 @@ class Validator {
         //Validate RoleTypes
         graknGraph.getTxCache().getModifiedRoleTypes().forEach(this::validateRoleType);
         //Validate Role Players
-        graknGraph.getTxCache().getModifiedRolePlayers().forEach(this::validateRolePlayer);
+        graknGraph.getTxCache().getModifiedCastings().forEach(this::validateCasting);
 
         //Validate Relation Types
         graknGraph.getTxCache().getModifiedRelationTypes().forEach(this::validateRelationType);
@@ -110,10 +110,10 @@ class Validator {
 
     /**
      * Validation rules exclusive to role players
-     * @param rolePlayer The Role player to validate
+     * @param casting The Role player to validate
      */
-    private void validateRolePlayer(RolePlayer rolePlayer){
-        ValidateGlobalRules.validatePlaysStructure(rolePlayer).ifPresent(errorsFound::add);
+    private void validateCasting(Casting casting){
+        ValidateGlobalRules.validatePlaysStructure(casting).ifPresent(errorsFound::add);
     }
 
     /**

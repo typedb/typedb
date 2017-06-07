@@ -32,19 +32,19 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  * </p>
  *
  * <p>
- *    Wraps a tinkerpop {@link Edge} which contains the information unifying an {@link Instance},
- *    {@link Relation} and {@link RoleType}
+ *    Wraps the shortcut {@link Edge} which contains the information unifying an {@link Instance},
+ *    {@link Relation} and {@link RoleType}.
  * </p>
  *
  * @author fppt
  */
-class RolePlayer extends EdgeElement {
+class Casting extends EdgeElement {
     private ElementCache<RoleType> cachedRoleType = new ElementCache<>(() -> (RoleType) getGraknGraph().getType(TypeId.of(getProperty(Schema.EdgeProperty.ROLE_TYPE_ID))));
     private ElementCache<RelationType> cachedRelationType = new ElementCache<>(() -> (RelationType) getGraknGraph().getType(TypeId.of(getProperty(Schema.EdgeProperty.RELATION_TYPE_ID))));
     private ElementCache<Instance> cachedInstance = new ElementCache<>(this::getTarget);
     private ElementCache<Relation> cachedRelation = new ElementCache<>(this::getSource);
 
-    RolePlayer(AbstractGraknGraph graph, Edge edge){
+    Casting(AbstractGraknGraph graph, Edge edge){
         super(graph, edge);
     }
 
@@ -97,8 +97,8 @@ class RolePlayer extends EdgeElement {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
 
-        RolePlayer rolePlayer = (RolePlayer) object;
+        Casting casting = (Casting) object;
 
-        return getElementId().equals(rolePlayer.getElementId());
+        return getElementId().equals(casting.getElementId());
     }
 }

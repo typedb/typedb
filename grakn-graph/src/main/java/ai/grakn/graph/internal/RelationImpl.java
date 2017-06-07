@@ -69,11 +69,12 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     }
 
     /**
+     * Castings are retrieved from the perspective of the {@link Relation}
      *
-     * @param roleTypes The role which the roleplayers are playing
-     * @return The roleplayers which unify a {@link RoleType} and {@link Instance} with this {@link Relation}
+     * @param roleTypes The role which the instances are playing
+     * @return The {@link Casting} which unify a {@link RoleType} and {@link Instance} with this {@link Relation}
      */
-    Stream<RolePlayer> getRolePlayers(RoleType... roleTypes){
+    Stream<Casting> castingsRelation(RoleType... roleTypes){
         if(roleTypes.length == 0){
             return getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
                     map(edge -> getGraknGraph().getElementFactory().buildRolePlayer(edge));
@@ -124,14 +125,14 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
         //We add the role types explicitly so we can return them when there are no roleplayers
         type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
-        getRolePlayers().forEach(rp -> roleMap.computeIfAbsent(rp.getRoleType(), (k) -> new HashSet<>()).add(rp.getInstance()));
+        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRoleType(), (k) -> new HashSet<>()).add(rp.getInstance()));
 
         return roleMap;
     }
 
     @Override
     public Collection<Instance> rolePlayers(RoleType... roleTypes) {
-        return getRolePlayers(roleTypes).map(RolePlayer::getInstance).collect(Collectors.toSet());
+        return castingsRelation(roleTypes).map(Casting::getInstance).collect(Collectors.toSet());
     }
 
 
