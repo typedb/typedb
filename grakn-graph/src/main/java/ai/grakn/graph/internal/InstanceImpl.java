@@ -92,11 +92,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     @Override
     public void delete() {
-        InstanceImpl<?, ?> parent = this;
-        Set<Relation> relations = parent.getPlayingRoles().map(rolePlayer -> {
-            getGraknGraph().getTxCache().trackForValidation(rolePlayer);
-            return rolePlayer.getRelation();
-        }).collect(Collectors.toSet());
+        Set<Relation> relations = getPlayingRoles().map(RolePlayer::getRelation).collect(Collectors.toSet());
 
         getGraknGraph().getTxCache().removedInstance(type().getId());
         deleteNode();
