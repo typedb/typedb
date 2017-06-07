@@ -53,7 +53,7 @@ public class GraphTest {
     }
 
     private void addThingToBatch(String keyspace){
-        try(GraknGraph graphBatchLoading = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)) {
+        try(GraknGraph graphBatchLoading = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)) {
             graphBatchLoading.getEntityType("thing").addEntity();
             graphBatchLoading.commit();
         } catch (Exception e){
@@ -64,7 +64,7 @@ public class GraphTest {
     @Test
     public void whenFetchingGraphsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureGraphsAreTheSame() throws InvalidGraphException {
         String key = "mykeyspace";
-        GraknGraph graph1 = Grakn.session(Grakn.DEFAULT_URI, key).open(GraknTxType.WRITE);
+        GraknGraph graph1 = Grakn.session(engine.uri(), key).open(GraknTxType.WRITE);
         graph1.close();
         GraknGraph graph2 = engine.server().factory().getGraph(key, GraknTxType.WRITE);
         assertEquals(graph1, graph2);
@@ -137,7 +137,7 @@ public class GraphTest {
 
         String label = "An Abstract Thing";
 
-        try(GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "abstractTest")){
+        try(GraknSession session = Grakn.session(engine.uri(), "abstractTest")){
             try(GraknGraph graph = session.open(GraknTxType.WRITE)){
                 graph.putEntityType(label).setAbstract(true);
                 graph.commit();
@@ -147,7 +147,7 @@ public class GraphTest {
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(IS_ABSTRACT.getMessage(label));
 
-        try(GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "abstractTest")){
+        try(GraknSession session = Grakn.session(engine.uri(), "abstractTest")){
             try(GraknGraph graph = session.open(GraknTxType.WRITE)){
                 graph.getEntityType(label).addEntity();
             }

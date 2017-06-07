@@ -65,12 +65,12 @@ public class JsonMigratorMainTest {
 
     @Test
     public void jsonMigratorMainTest(){
-        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void jsonMainDistributedLoaderTest(){
-        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace(), "-uri", "localhost:4567");
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace());
     }
 
     @Test
@@ -106,12 +106,12 @@ public class JsonMigratorMainTest {
 
     @Test
     public void jsonMainBatchSizeArgumentTest(){
-        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void jsonMainActiveTasksArgumentTest(){
-        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-a", "2", "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-a", "2", "-keyspace", graph.getKeyspace());
     }
 
     @Test

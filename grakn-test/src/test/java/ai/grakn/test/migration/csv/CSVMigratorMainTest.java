@@ -56,46 +56,46 @@ public class CSVMigratorMainTest {
 
     @Test
     public void csvMainTest(){
-        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void tsvMainTest(){
         String tsvFile = getFile("csv", "pets/data/pets.tsv").getAbsolutePath();
-        runAndAssertDataCorrect("-input", tsvFile, "-template", templateFile, "-separator", "\t", "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", tsvFile, "-template", templateFile, "-separator", "\t", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void spacesMainTest(){
         String tsvFile = getFile("csv", "pets/data/pets.spaces").getAbsolutePath();
-        runAndAssertDataCorrect("-input", tsvFile, "-template", templateFile, "-separator", " ", "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", tsvFile, "-template", templateFile, "-separator", " ", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void quoteMainTest(){
         String quoteFile = getFile("csv", "pets/data/pets.singlequotes").getAbsolutePath();
-        runAndAssertDataCorrect("-input", quoteFile, "-template", templateFile, "-quote", "\'", "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", quoteFile, "-template", templateFile, "-quote", "\'", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void nullMainTest(){
         String nullTemplate = getFile("csv", "pets/template-null.gql").getAbsolutePath();
-        runAndAssertDataCorrect("-input", dataFile, "-template", nullTemplate, "-keyspace", graph.getKeyspace(), "-null", "");
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", nullTemplate, "-keyspace", graph.getKeyspace(), "-null", "");
     }
 
     @Test
     public void csvMainTestDistributedLoader(){
-        runAndAssertDataCorrect("csv", "-input", dataFile, "-template", templateFile, "-uri", "localhost:4567", "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("csv", "-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-uri", "localhost:4567", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void csvMainDifferentBatchSizeTest(){
-        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void csvMainDifferentNumActiveTest(){
-        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-a", "2", "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-a", "2", "-keyspace", graph.getKeyspace());
     }
 
     @Test
@@ -103,7 +103,7 @@ public class CSVMigratorMainTest {
         graph.close();
         load(factory, getFile("csv", "multi-file/schema.gql"));
         String configurationFile = getFile("csv", "multi-file/migration.yaml").getAbsolutePath();
-        run("csv", "-config", configurationFile, "-keyspace", graph.getKeyspace());
+        run("csv", "-u", engine.uri(), "-config", configurationFile, "-keyspace", graph.getKeyspace());
         graph = factory.open(GraknTxType.WRITE);
         assertPokemonGraphCorrect(graph);
     }
