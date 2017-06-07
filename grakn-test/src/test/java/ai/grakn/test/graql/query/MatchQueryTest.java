@@ -33,6 +33,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.printer.Printers;
@@ -137,6 +138,8 @@ import static ai.grakn.test.matcher.MovieMatchers.tmdbVoteCount;
 import static ai.grakn.test.matcher.MovieMatchers.war;
 import static ai.grakn.util.ErrorMessage.MATCH_INVALID;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
+import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
+import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -865,6 +868,18 @@ public class MatchQueryTest {
     public void testDontHideImplicitTypesIfExplicitlyMentioned() {
         MatchQuery query = qb.match(x.sub("concept").label(HAS.getLabel("title")));
         assertThat(query, variable("x", (Matcher) hasItem(hasTitle)));
+    }
+
+    @Test
+    public void whenReferringToImplicitRelationsAndRoles_DontHideResults() {
+        VarPattern hasTitle = label(HAS.getLabel("title"));
+        VarPattern titleOwner = label(HAS_OWNER.getLabel("title"));
+        VarPattern titleValue = label(HAS_VALUE.getLabel("title"));
+
+        MatchQuery hasQuery = qb.match(y.has("title", z));
+        MatchQuery explicitQuery = qb.match(var().isa(hasTitle).rel(titleOwner, y).rel(titleValue, z));
+
+        assertEquals(hasQuery.stream().collect(toSet()), explicitQuery.stream().collect(toSet()));
     }
 
     @Test
