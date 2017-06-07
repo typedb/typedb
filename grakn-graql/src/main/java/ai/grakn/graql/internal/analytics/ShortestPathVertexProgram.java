@@ -144,12 +144,9 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                         memory.set(PREDECESSOR_FROM_DESTINATION, vertex.value(PREDECESSOR));
                         vertex.property(FOUND_IN_ITERATION, memory.getIteration());
                     }
-                } else {
-                    if (messenger.receiveMessages().hasNext()) {
-                        if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                            updateInstance(vertex, messenger, memory);
-                        }
-                    }
+                } else if (selectedTypes.contains(Utility.getVertexTypeId(vertex)) &&
+                        messenger.receiveMessages().hasNext()) {
+                    updateInstance(vertex, messenger, memory);
                 }
                 break;
         }
