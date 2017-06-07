@@ -205,7 +205,7 @@ final class ElementFactory {
     }
 
     EdgeElement buildEdge(Edge edge){
-        return new EdgeElement(edge, graknGraph);
+        return new EdgeElement(graknGraph, edge);
     }
 
     //TODO: Integrate with cache and cleanup

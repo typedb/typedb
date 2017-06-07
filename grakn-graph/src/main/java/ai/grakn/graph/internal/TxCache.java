@@ -142,19 +142,16 @@ class TxCache {
         } else if (element.isRelationType()) {
             modifiedRelationTypes.add((RelationTypeImpl) element);
         } else if (element.isRelation()){
-            modifiedRelations.add((RelationImpl) element);
+            RelationImpl relation = (RelationImpl) element;
+            modifiedRelations.add(relation);
+            //Caching of relations in memory so they can be retrieved without needing a commit
+            relationIndexCache.put(RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
         } else if (element.isRule()){
             modifiedRules.add((RuleImpl) element);
         } else if (element.isResource()){
             modifiedResources.add((ResourceImpl) element);
         } else if (element.isRolePlayer()){
             modifiedCastings.add(element.asRolePlayer());
-        }
-
-        //Caching of relations in memory so they can be retrieved without needing a commit
-        if (element.isRelation()) {
-            RelationImpl relation = (RelationImpl) element;
-            relationIndexCache.put(RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
         }
     }
 

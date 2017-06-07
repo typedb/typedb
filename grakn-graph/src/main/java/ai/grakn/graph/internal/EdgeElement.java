@@ -37,12 +37,6 @@ class EdgeElement extends Element{
     private Edge edge;
     private final AbstractGraknGraph graknGraph;
 
-    EdgeElement(Edge e, AbstractGraknGraph graknGraph){
-        super(graknGraph, e.id());
-        edge = e;
-        this.graknGraph = graknGraph;
-    }
-
     EdgeElement(AbstractGraknGraph graknGraph, Edge e){
         super(graknGraph, e.id());
         edge = e;
