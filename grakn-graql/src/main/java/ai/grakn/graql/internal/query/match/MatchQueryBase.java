@@ -30,6 +30,7 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
+import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.util.CommonUtil;
@@ -62,7 +63,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
     protected final Logger LOG = LoggerFactory.getLogger(MatchQueryBase.class);
 
     private final Conjunction<PatternAdmin> pattern;
-    private final ImmutableSet<TypeLabel> typeLabels;
+    private ImmutableSet<TypeLabel> typeLabels;
 
     /**
      * @param pattern a pattern to match in the graph
@@ -73,8 +74,6 @@ public class MatchQueryBase extends AbstractMatchQuery {
         }
 
         this.pattern = pattern;
-
-        this.typeLabels = getAllTypeLabels();
     }
 
 
@@ -84,6 +83,8 @@ public class MatchQueryBase extends AbstractMatchQuery {
         GraknGraph graph = optionalGraph.orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
+
+        this.typeLabels = getAllTypeLabels(graph);
 
         for (VarPatternAdmin var : pattern.getVars()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
@@ -147,12 +148,23 @@ public class MatchQueryBase extends AbstractMatchQuery {
         return new MatchQueryInfer(this, materialise);
     }
 
-    private ImmutableSet<TypeLabel> getAllTypeLabels() {
-        return pattern.getVars().stream()
+    private ImmutableSet<TypeLabel> getAllTypeLabels(GraknGraph graph) {
+        Stream<TypeLabel> explicitTypeLabels = pattern.getVars().stream()
                 .flatMap(var -> var.getInnerVars().stream())
                 .map(VarPatternAdmin::getTypeLabel)
+                .flatMap(CommonUtil::optionalToStream);
+
+        Stream<TypeLabel> typeLabelsFromIds = pattern.getVars().stream()
+                .flatMap(var -> var.getInnerVars().stream())
+                .map(var -> var.getProperty(IdProperty.class))
                 .flatMap(CommonUtil::optionalToStream)
-                .collect(toImmutableSet());
+                .map(IdProperty::getId)
+                .map(graph::<Concept>getConcept)
+                .filter(Concept::isType)
+                .map(Concept::asType)
+                .map(Type::getLabel);
+
+        return Stream.concat(explicitTypeLabels, typeLabelsFromIds).collect(toImmutableSet());
     }
 
     /**
