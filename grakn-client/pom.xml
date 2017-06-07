@@ -43,7 +43,7 @@
       <dependency>
         <groupId>com.github.rholder</groupId>
         <artifactId>guava-retrying</artifactId>
-        <version>RELEASE</version>
+        <version>${guava-retrying.version}</version>
       </dependency>
     </dependencies>
 </project>

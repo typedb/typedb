@@ -94,7 +94,7 @@ public class BatchMutatorClient {
     private int blockerSize;
     private boolean retry = false;
 
-    public BatchMutatorClient(String keyspace, String uri)  {
+    public BatchMutatorClient(String keyspace, String uri) {
         this(keyspace, uri, (Json t) -> {});
     }
 
@@ -105,8 +105,8 @@ public class BatchMutatorClient {
         this.futures = new ConcurrentHashMap<>();
         this.onCompletionOfTask = onCompletionOfTask;
         this.batchNumber = new AtomicInteger(0);
+        // Some extra logic here since we don't provide a well formed URI by default
         if (uri.startsWith("http")) {
-            // It's a well formed uri
             try {
                 URI parsedUri = new URI(uri);
                 this.taskClient = TaskClient.of(parsedUri.getHost(), parsedUri.getPort());
