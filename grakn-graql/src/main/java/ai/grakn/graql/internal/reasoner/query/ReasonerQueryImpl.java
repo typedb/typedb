@@ -201,7 +201,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         LinkedList<ReasonerAtomicQuery> queries = new LinkedList<>();
 
         LinkedList<Atom> atoms = selectAtoms().stream()
-                .sorted(Comparator.comparing(at -> -at.computePriority()))
+                .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
                 .collect(Collectors.toCollection(LinkedList::new));
 
         Atom top = atoms.getFirst();
@@ -215,19 +215,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     top.getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet())
             );
 
-            //try neighbours
-            top = top.getNeighbours()
-                    .filter(atoms::contains)
-                    //.sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
+            top = atoms.stream()
+                    .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
                     .findFirst().orElse(null);
-
-            //disjoint case
-            if (top == null){
-                top = atoms.stream()
-                        .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                        .findFirst().orElse(null);
-            }
-
         }
         return queries;
     }
