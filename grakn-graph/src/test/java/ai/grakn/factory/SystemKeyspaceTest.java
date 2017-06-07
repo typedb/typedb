@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.factory.SystemKeyspace.SYSTEM_GRAPH_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -32,9 +33,10 @@ public class SystemKeyspaceTest {
 
     @Before
     public void cleanSystemKeySpaceGraph(){
-        try(GraknSession system = Grakn.session(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+        try(GraknSession system = Grakn.session(Grakn.IN_MEMORY, SYSTEM_GRAPH_NAME)) {
             try (GraknGraph graph = system.open(GraknTxType.WRITE)) {
                 graph.getEntityType("keyspace").instances().forEach(Concept::delete);
+                graph.commit();
             }
         }
     }
@@ -44,8 +46,12 @@ public class SystemKeyspaceTest {
         String versionResourceType = "system-version";
         String rubbishVersion = "Hippo Version";
         //Insert fake version number
-        try(GraknSession system = Grakn.session(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+        try(GraknSession system = Grakn.session(Grakn.IN_MEMORY, SYSTEM_GRAPH_NAME)) {
             try(GraknGraph graph = system.open(GraknTxType.WRITE)){
+                //Check original version number is correct
+                assertEquals(GraknVersion.VERSION,
+                        graph.getResourceType("system-version").instances().iterator().next().getValue().toString());
+
                 //Delete old version number
                 graph.getResourceType(versionResourceType).instances().forEach(Concept::delete);
                 //Add Fake Version
@@ -57,9 +63,8 @@ public class SystemKeyspaceTest {
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.VERSION_MISMATCH.getMessage(GraknVersion.VERSION, rubbishVersion));
 
-        try(GraknSession session = Grakn.session(Grakn.IN_MEMORY, "mykeyspace")){
-            session.open(GraknTxType.WRITE);
-        }
+        //This simulates accessing the system for the first time
+        SystemKeyspace.loadSystemOntology();
     }
 
     @Test
@@ -78,18 +83,8 @@ public class SystemKeyspaceTest {
     }
 
     @Test
-    public void ensureVersionIsLoadedIntoSystemGraph(){
-        try(GraknSession system = Grakn.session(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME)){
-            try(GraknGraph graph = system.open(GraknTxType.WRITE)) {
-                assertEquals(GraknVersion.VERSION,
-                        graph.getResourceType("system-version").instances().iterator().next().getValue().toString());
-            }
-        }
-    }
-
-    @Test
     public void ensureUserOntologyIsLoadedIntoSystemGraph(){
-        GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME).open(GraknTxType.WRITE);
+        GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, SYSTEM_GRAPH_NAME).open(GraknTxType.WRITE);
         graph.showImplicitConcepts(true);
 
         EntityType user = graph.getEntityType("user");
@@ -146,7 +141,7 @@ public class SystemKeyspaceTest {
     }
 
     private Set<String> getSystemKeyspaces(){
-        GraknSession system = Grakn.session(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME);
+        GraknSession system = Grakn.session(Grakn.IN_MEMORY, SYSTEM_GRAPH_NAME);
         try(GraknGraph graph = system.open(GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getResourceType("keyspace-name");
             return graph.getEntityType("keyspace").instances().
