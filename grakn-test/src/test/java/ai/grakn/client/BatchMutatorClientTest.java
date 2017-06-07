@@ -55,6 +55,7 @@ import static java.util.stream.Stream.generate;
 import static org.mockito.Mockito.*;
 import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 
+@Ignore
 public class BatchMutatorClientTest {
 
     private GraknSession session;

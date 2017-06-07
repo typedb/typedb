@@ -23,6 +23,7 @@ import ai.grakn.graql.Query;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.parse;
 import static junit.framework.TestCase.assertEquals;
@@ -30,7 +31,7 @@ import static junit.framework.TestCase.assertEquals;
 public class MacroTestUtilities {
 
     public static void assertParseEquals(String template, Map<String, Object> data, String expected){
-        List<Query> result = Graql.parseTemplate(template, data);
+        List<Query> result = Graql.parseTemplate(template, data).collect(Collectors.toList());
         assertEquals(parse(expected), result.get(0));
     }
 }

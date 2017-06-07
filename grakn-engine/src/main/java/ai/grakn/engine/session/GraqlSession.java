@@ -218,7 +218,7 @@ class GraqlSession {
                 String queryString = queryStringBuilder.toString();
                 queryStringBuilder = new StringBuilder();
 
-                queries = graph.graql().infer(infer).materialise(materialise).parseList(queryString);
+                queries = graph.graql().infer(infer).materialise(materialise).parseList(queryString).collect(toList());
 
                 // Return results unless query is cancelled
                 queries.stream().flatMap(query -> query.resultsString(printer)).forEach(this::sendQueryResult);

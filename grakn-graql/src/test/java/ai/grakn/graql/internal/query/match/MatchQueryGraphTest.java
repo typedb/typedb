@@ -32,7 +32,7 @@ import static org.mockito.Mockito.mock;
 public class MatchQueryGraphTest {
 
     private final AbstractMatchQuery query =
-            new MatchQueryBase(Patterns.conjunction(Sets.newHashSet(var("x").admin())));
+            new MatchQueryBase(Patterns.conjunction(Sets.newHashSet(var("x").pattern().admin())));
 
     @Test
     public void matchQueriesContainingTheSameGraphAndMatchQueryBaseAreEqual() {

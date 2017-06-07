@@ -25,6 +25,7 @@ import ai.grakn.test.SparkContext;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -32,6 +33,7 @@ import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class UserControllerTest {
     private UsersHandler users;
 

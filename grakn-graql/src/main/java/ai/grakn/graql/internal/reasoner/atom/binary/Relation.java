@@ -25,6 +25,7 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.VarPatternBuilder;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
@@ -124,7 +125,7 @@ public class Relation extends TypeAtom {
     @Override
     protected Var extractValueVariableName(VarPatternAdmin var) {
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
-        return isaProp != null ? isaProp.getType().getVarName() : Var.of("");
+        return isaProp != null ? isaProp.getType().getVarName() : Graql.var("");
     }
 
     @Override
@@ -155,14 +156,14 @@ public class Relation extends TypeAtom {
      * @return corresponding {@link VarPatternAdmin}
      */
     private static VarPatternAdmin constructRelationVar(Var varName, Var typeVariable, List<Pair<Var, VarPattern>> rolePlayerMappings) {
-        VarPattern var = !varName.getValue().isEmpty()? Graql.var(varName) : Graql.var();
+        VarPatternBuilder var = !varName.getValue().isEmpty()? varName : Graql.var();
         for (Pair<Var, VarPattern> mapping : rolePlayerMappings) {
             Var rp = mapping.getKey();
             VarPattern role = mapping.getValue();
-            var = role == null? var.rel(Graql.var(rp)) : var.rel(role, Graql.var(rp));
+            var = role == null? var.rel(rp) : var.rel(role, rp);
         }
-        var = var.isa(Graql.var(typeVariable));
-        return var.admin().asVar();
+        var = var.isa(typeVariable);
+        return var.pattern().admin();
     }
 
     @Override
@@ -329,7 +330,7 @@ public class Relation extends TypeAtom {
 
         //try indirectly
         roleVars.stream()
-                .filter(VarPatternAdmin::isUserDefinedName)
+                .filter(v -> v.getVarName().isUserDefinedName())
                 .map(VarPatternAdmin::getVarName)
                 .map(parent::getIdPredicate)
                 .filter(Objects::nonNull)
@@ -342,9 +343,9 @@ public class Relation extends TypeAtom {
     public Relation addType(Type type) {
         typeId = type.getId();
         Var typeVariable = getValueVariable().getValue().isEmpty() ?
-                Var.of("rel-" + UUID.randomUUID().toString()) : getValueVariable();
-        setPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin(), getParentQuery()));
-        atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
+                Graql.var("rel-" + UUID.randomUUID().toString()) : getValueVariable();
+        setPredicate(new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery()));
+        atomPattern = atomPattern.asVar().isa(typeVariable).admin();
         setValueVariable(typeVariable);
         return this;
     }
@@ -410,7 +411,7 @@ public class Relation extends TypeAtom {
         getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
                 .flatMap(CommonUtil::optionalToStream)
-                .filter(VarPatternAdmin::isUserDefinedName)
+                .filter(v -> v.getVarName().isUserDefinedName())
                 .forEach(r -> vars.add(r.getVarName()));
         return vars;
     }
@@ -506,7 +507,7 @@ public class Relation extends TypeAtom {
                 TypeLabel typeLabel = role.getTypeLabel().orElse(null);
                 RoleType roleType = typeLabel != null ? graph.getType(typeLabel) : null;
                 //try indirectly
-                if (roleType == null && role.isUserDefinedName()) {
+                if (roleType == null && role.getVarName().isUserDefinedName()) {
                     IdPredicate rolePredicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(role.getVarName());
                     if (rolePredicate != null) roleType = graph.getConcept(rolePredicate.getPredicate());
                 }
@@ -564,7 +565,7 @@ public class Relation extends TypeAtom {
                 });
 
         //pattern mutation!
-        atomPattern = constructRelationVar(isUserDefinedName() ? getVarName() : Var.of(""), getValueVariable(), rolePlayerMappings);
+        atomPattern = constructRelationVar(isUserDefinedName() ? getVarName() : Graql.var(""), getValueVariable(), rolePlayerMappings);
         relationPlayers = null;
         return roleVarMap;
     }
@@ -695,7 +696,7 @@ public class Relation extends TypeAtom {
 
     @Override
     public Atom rewriteToUserDefined(){
-        VarPattern newVar = Graql.var(Var.anon());
+        VarPattern newVar = Graql.var().asUserDefined().pattern();
         VarPattern relVar = getPattern().asVar().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.getType()))
                 .orElse(newVar);

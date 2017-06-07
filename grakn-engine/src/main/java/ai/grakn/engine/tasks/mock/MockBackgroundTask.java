@@ -21,8 +21,6 @@ package ai.grakn.engine.tasks.mock;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
-import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskSubmitter;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
 
@@ -34,7 +32,7 @@ import java.util.function.Consumer;
  *
  * @author alexandraorth, Felix Chapman
  */
-public abstract class MockBackgroundTask implements BackgroundTask {
+public abstract class MockBackgroundTask extends BackgroundTask {
 
     private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();
     private static final ConcurrentHashMultiset<TaskId> CANCELLED_TASKS = ConcurrentHashMultiset.create();
@@ -96,11 +94,11 @@ public abstract class MockBackgroundTask implements BackgroundTask {
     private TaskId id;
 
     @Override
-    public final boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
-        id = TaskId.of(configuration.json().at("id").asString());
+    public final boolean start() {
+        id = TaskId.of(configuration().json().at("id").asString());
         onTaskStart(id);
 
-        saveCheckpoint.accept(TaskCheckpoint.of(configuration.json()));
+        saveCheckpoint(TaskCheckpoint.of(configuration().json()));
 
         boolean wasCancelled = cancelled.get();
 
@@ -132,7 +130,7 @@ public abstract class MockBackgroundTask implements BackgroundTask {
     }
 
     @Override
-    public final boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint){
+    public final boolean resume(TaskCheckpoint lastCheckpoint){
         onTaskResume(lastCheckpoint);
 
         executeResumeInner(lastCheckpoint);

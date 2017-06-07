@@ -25,9 +25,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskCheckpoint;
-import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
@@ -52,7 +49,7 @@ import java.util.function.Consumer;
  * @author borislav
  *
  */
-public class ResourceDeduplicationTask implements BackgroundTask {
+public class ResourceDeduplicationTask extends BackgroundTask {
     
     public static final String KEYSPACE_CONFIG  = "keyspace";
     public static final String KEYSPACE_DEFAULT = "grakn"; 
@@ -199,30 +196,20 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     }
     
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
-        LOG.info("Starting ResourceDeduplicationTask : " + configuration.json());
+    public boolean start() {
+        LOG.info("Starting ResourceDeduplicationTask : " + configuration().json());
         
-        String keyspace = configuration.json().at("keyspace", KEYSPACE_DEFAULT).asString();
+        String keyspace = configuration().json().at("keyspace", KEYSPACE_DEFAULT).asString();
         GraknComputer computer = Grakn.session(Grakn.DEFAULT_URI, keyspace).getGraphComputer();
         Job job = new Job().keyspace(keyspace)
-                           .deleteUnattached(configuration.json().at("deletedUnattached", DELETE_UNATTACHED_DEFAULT ).asBoolean());
+                           .deleteUnattached(configuration().json().at("deletedUnattached", DELETE_UNATTACHED_DEFAULT ).asBoolean());
         this.totalEliminated = computer.compute(job).memory().get(job.getMemoryKey());
         return true;
     }
 
     @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
-        throw new UnsupportedOperationException();
-    }
-    
-    @Override
     public boolean stop() {
         return true;
-    }
-
-    @Override
-    public void pause() {
-        throw new UnsupportedOperationException();
     }
 
     public Long totalElimintated() {
