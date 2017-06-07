@@ -55,6 +55,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletResponse;
@@ -177,7 +178,8 @@ public class SystemController {
     private String getMetrics(Request request, Response response) throws IOException {
         response.header("Cache-Control", "must-revalidate,no-cache,no-store");
         response.status(HttpServletResponse.SC_OK);
-        if (request.queryParamOrDefault("format", "").equals("prometheus")) {
+        Optional<String> format = Optional.ofNullable(request.queryParams("format"));
+        if (format.orElse("").equals("prometheus")) {
             // Prometheus format for the metrics
             response.type(APPLICATION_TEXT);
             final Writer writer1 = new StringWriter();

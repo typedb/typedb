@@ -29,12 +29,6 @@
 
     <artifactId>grakn-engine</artifactId>
 
-    <properties>
-        <!-- Don't run these, the would make the submodule build fail as they use relative paths -->
-        <checkstyle.skip>true</checkstyle.skip>
-        <findbugs.skip>true</findbugs.skip>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.auth0</groupId>
