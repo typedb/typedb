@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
@@ -54,6 +55,7 @@ import static java.util.stream.Stream.generate;
 import static org.mockito.Mockito.*;
 import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 
+@Ignore
 public class BatchMutatorClientTest {
 
     private GraknSession session;
