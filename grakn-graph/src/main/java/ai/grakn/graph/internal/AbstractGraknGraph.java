@@ -626,13 +626,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return getType(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
-    //-----------------------------------------------Casting Functionality----------------------------------------------
-    //------------------------------------ Construction
-    void addCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
-        putShortcutEdge(rolePlayer, relation, role);
-    }
-
-    private void putShortcutEdge(InstanceImpl toInstance, RelationImpl fromRelation, RoleTypeImpl roleType){
+    void putShortcutEdge(InstanceImpl toInstance, RelationImpl fromRelation, RoleTypeImpl roleType){
         boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getTypeId().getValue()).
@@ -882,7 +876,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             foundRelation = otherRelation;
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
             otherRelation.allRolePlayers().forEach((roleType, instances) -> {
-                if(instances.contains(other)) addCasting((RoleTypeImpl) roleType, main, otherRelation);
+                if(instances.contains(other)) putShortcutEdge(main, otherRelation, (RoleTypeImpl) roleType);
             });
         }
 

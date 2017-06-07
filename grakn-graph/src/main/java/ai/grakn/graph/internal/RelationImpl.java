@@ -160,9 +160,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @return The Relation itself
      */
     private Relation addNewRolePlayer(RoleType roleType, Instance instance){
-        if(instance != null) {
-            getGraknGraph().addCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
-        }
+        getGraknGraph().putShortcutEdge((InstanceImpl) instance, this, (RoleTypeImpl) roleType);
         return this;
     }
 
