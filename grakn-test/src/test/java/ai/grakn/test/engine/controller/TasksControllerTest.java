@@ -41,7 +41,6 @@ import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
-import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableMap;
 import static com.jayway.restassured.RestAssured.with;
 import com.jayway.restassured.mapper.ObjectMapper;
@@ -78,7 +77,7 @@ public class TasksControllerTest {
 
     @ClassRule
     public static final SparkContext ctx = SparkContext.withControllers(spark -> {
-        new TasksController(spark, manager, new MetricRegistry());
+        new TasksController(spark, manager);
     });
 
     @Before
