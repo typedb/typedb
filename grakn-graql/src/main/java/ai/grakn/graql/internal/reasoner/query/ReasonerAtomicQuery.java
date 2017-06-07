@@ -362,7 +362,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * @return stream of atomic query obtained by inserting all inferred possible types (if ambiguous)
      */
-    Stream<ReasonerAtomicQuery> getQueryStream(){
+    private Stream<ReasonerAtomicQuery> getQueryStream(){
         Atom atom = getAtom();
         if (!atom.isRelation() || atom.getType() != null) return Stream.of(this);
         else{

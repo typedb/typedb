@@ -106,6 +106,7 @@ public class CommitLogControllerTest {
     }
 
     @Test
+    @Ignore
     public void whenCommittingGraph_TaskManagerReceivesPPTask() throws InterruptedException {
 
         final String BOB = "bob";
@@ -164,6 +165,7 @@ public class CommitLogControllerTest {
     }
 
     @Test
+    @Ignore
     public void whenCommittingGraph_TaskManagerReceivesCountTask() throws InterruptedException {
         final String BOB = "bob";
         final String TIM = "tim";
