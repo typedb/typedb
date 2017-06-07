@@ -128,12 +128,11 @@ public class TypeAtom extends Binary{
 
     @Override
     public boolean isSelectable() {
-        ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
         return getPredicate() == null
                 //type atom corresponding to relation or resource
                 || getType() != null && (getType().isResourceType() ||getType().isRelationType())
                 //disjoint atom
-                || parent.findNextJoinable(this) == null
+                || !this.getNeighbours().findFirst().isPresent()
                 || isRuleResolvable();
     }
 
