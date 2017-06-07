@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.analytics;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeId;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -31,10 +30,7 @@ import org.javatuples.Pair;
 import org.javatuples.Tuple;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -49,11 +45,13 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     private static final int MAX_ITERATION = 50;
 
+    private static final int ID = 0;
+    private static final int DIRECTION = 1;
     private static final String DIVIDER = "\t";
 
     // element key
-    private static final String IS_ACTIVE_CASTING = "shortestPathVertexProgram.isActiveCasting";
     private static final String PREDECESSOR = "shortestPathVertexProgram.fromVertex";
+    private static final String VISITED_IN_ITERATION = "shortestPathVertexProgram.visitedInIteration";
     public static final String FOUND_IN_ITERATION = "shortestPathVertexProgram.foundInIteration";
 
     // memory key
@@ -66,13 +64,10 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     public static final String MIDDLE = "shortestPathVertexProgram.middle";
 
     private static final Set<String> ELEMENT_COMPUTE_KEYS =
-            Sets.newHashSet(IS_ACTIVE_CASTING, PREDECESSOR, FOUND_IN_ITERATION);
+            Sets.newHashSet(PREDECESSOR, VISITED_IN_ITERATION, FOUND_IN_ITERATION);
     private static final Set<String> MEMORY_COMPUTE_KEYS =
             Sets.newHashSet(VOTE_TO_HALT_SOURCE, VOTE_TO_HALT_DESTINATION, FOUND_PATH,
                     PREDECESSOR_FROM_SOURCE, PREDECESSOR_FROM_DESTINATION, PREDECESSORS, MIDDLE);
-
-    private static final String MESSAGE_FROM_ROLE_PLAYER = "R";
-    private static final String MESSAGE_FROM_ASSERTION = "A";
 
     private static final String SOURCE = "shortestPathVertexProgram.startId";
     private static final String DESTINATION = "shortestPathVertexProgram.endId";
@@ -99,8 +94,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        if (memory.<Boolean>get(FOUND_PATH)) return Collections.emptySet();
-        return memory.getIteration() % 2 == 0 ? messageScopeSetInstance : messageScopeSetCasting;
+        return memory.<Boolean>get(FOUND_PATH) ? Collections.emptySet() : messageScopeSetShortcut;
     }
 
     @Override
@@ -118,53 +112,22 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     @Override
     public void safeExecute(final Vertex vertex, Messenger<Tuple> messenger, final Memory memory) {
         switch (memory.getIteration()) {
-            // the first two iterations mark castings in subgraph active
             case 0:
                 if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                    String type = vertex.label();
-                    if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
-                        messenger.sendMessage(messageScopeInRolePlayer, Pair.with(MESSAGE_FROM_ROLE_PLAYER, 0));
-                    } else if (type.equals(Schema.BaseType.RELATION.name())) {
-                        messenger.sendMessage(messageScopeInRolePlayer, Pair.with(MESSAGE_FROM_ROLE_PLAYER, 0));
-                        messenger.sendMessage(messageScopeOutCasting, Pair.with(MESSAGE_FROM_ASSERTION, 0));
-                    }
-                    // send message from both source and destination vertex
-                    // message 1/-1 from role player to casting
-                    // message 2/-2 from assertion to casting
+                    // send message from both source(1) and destination(-1) vertex
                     String id = vertex.id().toString();
                     if (persistentProperties.get(SOURCE).equals(id)) {
                         LOGGER.debug("Found source vertex");
                         vertex.property(PREDECESSOR, "");
-                        messenger.sendMessage(messageScopeInRolePlayer, Pair.with(id, 1));
-                        messenger.sendMessage(messageScopeOutCasting, Pair.with(id, 2));
+                        vertex.property(VISITED_IN_ITERATION, 1);
+                        messenger.sendMessage(messageScopeShortcutIn, Pair.with(id, 1));
+                        messenger.sendMessage(messageScopeShortcutOut, Pair.with(id, 1));
                     } else if (persistentProperties.get(DESTINATION).equals(id)) {
                         LOGGER.debug("Found destination vertex");
                         vertex.property(PREDECESSOR, "");
-                        messenger.sendMessage(messageScopeInRolePlayer, Pair.with(id, -1));
-                        messenger.sendMessage(messageScopeOutCasting, Pair.with(id, -2));
-                    }
-                }
-                break;
-            case 1:
-                if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
-                    Set<String> messageSet = new HashSet<>();
-                    Map<Integer, Tuple> messageMap = new HashMap<>();
-                    Iterator<Tuple> iterator = messenger.receiveMessages();
-                    int i = 0;
-                    while (iterator.hasNext()) {
-                        Tuple message = iterator.next();
-                        String messageContent = (String) message.getValue(0);
-                        int messageDirection = (int) message.getValue(1);
-                        LOGGER.debug("Message " + i++ + ": " + messageContent);
-
-                        if (messageDirection == 0) messageSet.add(messageContent);
-                        else messageMap.put(messageDirection, message);
-                    }
-                    // casting is active if both its assertion and role-player is in the subgraph
-                    if (messageSet.size() == 2) {
-                        LOGGER.debug("Considering casting " + vertex.id().toString());
-                        vertex.property(IS_ACTIVE_CASTING, true);
-                        sendMessagesFromCasting(messenger, memory, messageMap);
+                        vertex.property(VISITED_IN_ITERATION, -1);
+                        messenger.sendMessage(messageScopeShortcutIn, Pair.with(id, -1));
+                        messenger.sendMessage(messageScopeShortcutOut, Pair.with(id, -1));
                     }
                 }
                 break;
@@ -183,16 +146,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                     }
                 } else {
                     if (messenger.receiveMessages().hasNext()) {
-                        // split because shortcut edges cannot be filtered out
-                        if (memory.getIteration() % 2 == 0) {
-                            if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                                updateInstance(vertex, messenger, memory);
-                            }
-                        } else {
-                            if (vertex.label().equals(Schema.BaseType.CASTING.name()) &&
-                                    vertex.property(IS_ACTIVE_CASTING).isPresent()) {
-                                updateCasting(vertex, messenger, memory);
-                            }
+                        if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
+                            updateInstance(vertex, messenger, memory);
                         }
                     }
                 }
@@ -210,116 +165,74 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
             boolean hasMessageDestination = false;
             String predecessorFromSource = null;
             String predecessorFromDestination = null;
+
             while (iterator.hasNext()) {
                 Tuple message = iterator.next();
-                int messageDirection = (int) message.getValue(1);
+                int messageDirection = (int) message.getValue(DIRECTION);
+
                 if (messageDirection > 0) {
                     if (!hasMessageSource) {
                         LOGGER.debug("Received a message from source vertex");
                         hasMessageSource = true;
-                        predecessorFromSource = (String) message.getValue(0);
-                        messenger.sendMessage(messageScopeInRolePlayer, Pair.with(id, 1));
-                        messenger.sendMessage(messageScopeOutCasting, Pair.with(id, 2));
+                        predecessorFromSource = (String) message.getValue(ID);
                         vertex.property(PREDECESSOR, predecessorFromSource);
+                        vertex.property(VISITED_IN_ITERATION, memory.getIteration() + 1);
                         memory.and(VOTE_TO_HALT_SOURCE, false);
+                        if (hasMessageDestination) {
+                            LOGGER.debug("Found path");
+                            memory.or(FOUND_PATH, true);
+                            memory.set(PREDECESSORS, predecessorFromSource + DIVIDER + predecessorFromDestination +
+                                    DIVIDER + id);
+                            return;
+                        }
                     }
                 } else {
                     if (!hasMessageDestination) {
                         LOGGER.debug("Received a message from destination vertex");
                         hasMessageDestination = true;
-                        predecessorFromDestination = (String) message.getValue(0);
-                        messenger.sendMessage(messageScopeInRolePlayer, Pair.with(id, -1));
-                        messenger.sendMessage(messageScopeOutCasting, Pair.with(id, -2));
+                        predecessorFromDestination = (String) message.getValue(ID);
                         vertex.property(PREDECESSOR, predecessorFromDestination);
+                        vertex.property(VISITED_IN_ITERATION, -1 * memory.getIteration() - 1);
                         memory.and(VOTE_TO_HALT_DESTINATION, false);
+                        if (hasMessageSource) {
+                            LOGGER.debug("Found path");
+                            memory.or(FOUND_PATH, true);
+                            memory.set(PREDECESSORS, predecessorFromSource + DIVIDER + predecessorFromDestination +
+                                    DIVIDER + id);
+                            return;
+                        }
                     }
                 }
-                if (hasMessageSource && hasMessageDestination) {
-                    LOGGER.debug("Found path");
-                    memory.or(FOUND_PATH, true);
-                    memory.set(PREDECESSORS, predecessorFromSource + DIVIDER + predecessorFromDestination +
-                            DIVIDER + id);
-                    return;
+            }
+
+            int message = hasMessageSource ? 1 : -1;
+            messenger.sendMessage(messageScopeShortcutIn, Pair.with(id, message));
+            messenger.sendMessage(messageScopeShortcutOut, Pair.with(id, message));
+
+        } else {
+            int messageDirection = memory.getIteration() / (int) vertex.value(VISITED_IN_ITERATION);
+            if (messageDirection == 1) {
+                Iterator<Tuple> iterator = messenger.receiveMessages();
+                while (iterator.hasNext()) {
+                    Tuple message = iterator.next();
+                    if ((int) message.getValue(DIRECTION) == -1) {
+                        LOGGER.debug("Found path");
+                        memory.or(FOUND_PATH, true);
+                        memory.set(PREDECESSORS, vertex.id().toString() + DIVIDER + message.getValue(ID));
+                        return;
+                    }
                 }
-            }
-        }
-    }
-
-    private void updateCasting(Vertex vertex, Messenger<Tuple> messenger, Memory memory) {
-        LOGGER.debug("Considering casting " + vertex.id().toString());
-        Map<Integer, Tuple> messageMap = new HashMap<>();
-        Iterator<Tuple> iterator = messenger.receiveMessages();
-        int i = 0;
-        while (iterator.hasNext()) {
-            Tuple message = iterator.next();
-            LOGGER.debug("Message " + i++ + ": " + message.getValue(0));
-            messageMap.put((Integer) message.getValue(1), message);
-        }
-        sendMessagesFromCasting(messenger, memory, messageMap);
-    }
-
-    private void sendMessagesFromCasting(Messenger<Tuple> messenger, Memory memory, Map<Integer, Tuple> messageMap) {
-        int sum = messageMap.keySet().stream().mapToInt(Integer::intValue).sum();
-        if (messageMap.size() == 3) {
-            LOGGER.debug("3 messages received, message sum = " + sum);
-            LOGGER.debug("Found path");
-            memory.or(FOUND_PATH, true);
-            if (sum == 1) {
-                memory.set(PREDECESSORS, messageMap.get(1).getValue(0) + DIVIDER +
-                        messageMap.get(-2).getValue(0));
-            } else {
-                memory.set(PREDECESSORS, messageMap.get(2).getValue(0) + DIVIDER +
-                        messageMap.get(-1).getValue(0));
-            }
-            return;
-        }
-        if (messageMap.size() == 2) {
-            LOGGER.debug("2 messages received, message sum = " + sum);
-            switch (sum) {
-                case 0: // -2 and 2
-                    messenger.sendMessage(messageScopeOutRolePlayer, messageMap.get(2));
-                    messenger.sendMessage(messageScopeOutRolePlayer, messageMap.get(-2));
-                    break;
-                case 3: // 1 and 2
-                    messenger.sendMessage(messageScopeInCasting, messageMap.get(1));
-                    messenger.sendMessage(messageScopeOutRolePlayer, messageMap.get(2));
-                    break;
-                case -3: // -1 and -2
-                    messenger.sendMessage(messageScopeInCasting, messageMap.get(-1));
-                    messenger.sendMessage(messageScopeOutRolePlayer, messageMap.get(-2));
-                    break;
-                case 1:
-                    LOGGER.debug("Found path");
-                    memory.or(FOUND_PATH, true);
-                    memory.set(PREDECESSORS, messageMap.get(2).getValue(0) + DIVIDER +
-                            messageMap.get(-1).getValue(0));
-                    break;
-                case -1:
-                    LOGGER.debug("Found path");
-                    memory.or(FOUND_PATH, true);
-                    memory.set(PREDECESSORS, messageMap.get(1).getValue(0) + DIVIDER +
-                            messageMap.get(-2).getValue(0));
-                    break;
-                default:
-                    throw new RuntimeException("unreachable");
-            }
-        } else if (messageMap.size() == 1) {
-            LOGGER.debug("1 message received, message sum = " + sum);
-            switch (sum) {
-                case 1:
-                    messenger.sendMessage(messageScopeInCasting, messageMap.get(1));
-                    break;
-                case -1:
-                    messenger.sendMessage(messageScopeInCasting, messageMap.get(-1));
-                    break;
-                case 2:
-                    messenger.sendMessage(messageScopeOutRolePlayer, messageMap.get(2));
-                    break;
-                case -2:
-                    messenger.sendMessage(messageScopeOutRolePlayer, messageMap.get(-2));
-                    break;
-                default:
-                    throw new RuntimeException("unreachable");
+            } else if (messageDirection == -1) {
+                Iterator<Tuple> iterator = messenger.receiveMessages();
+                while (iterator.hasNext()) {
+                    Tuple message = iterator.next();
+                    if ((int) message.getValue(DIRECTION) == 1) {
+                        LOGGER.debug("Found path");
+                        memory.or(FOUND_PATH, true);
+                        memory.set(PREDECESSORS, message.getValue(ID) + DIVIDER + vertex.id().toString());
+                        return;
+                    }
+                }
             }
         }
     }
@@ -342,8 +255,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
             return memory.get(PREDECESSOR_FROM_SOURCE).equals(persistentProperties.get(SOURCE));
         }
 
-        if (memory.getIteration() % 2 == 0 &&
-                (memory.<Boolean>get(VOTE_TO_HALT_SOURCE) || memory.<Boolean>get(VOTE_TO_HALT_DESTINATION))) {
+        if (memory.<Boolean>get(VOTE_TO_HALT_SOURCE) || memory.<Boolean>get(VOTE_TO_HALT_DESTINATION)) {
             LOGGER.debug("There is no path between the given instances");
             throw new IllegalStateException(ErrorMessage.NO_PATH_EXIST.getMessage());
         }
