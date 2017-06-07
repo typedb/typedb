@@ -28,7 +28,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import org.junit.Before;
@@ -73,7 +73,7 @@ public class AnalyticsTest {
     }
 
     @Test
-    public void testInferredResourceRelation() throws GraknValidationException {
+    public void testInferredResourceRelation() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -102,7 +102,7 @@ public class AnalyticsTest {
     }
 
     @Test
-    public void testNullResourceDoesntBreakAnalytics() throws GraknValidationException {
+    public void testNullResourceDoesntBreakAnalytics() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -155,7 +155,7 @@ public class AnalyticsTest {
         assertEquals(queryList.size(), result.size());
     }
 
-    private void addOntologyAndEntities() throws GraknValidationException {
+    private void addOntologyAndEntities() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);

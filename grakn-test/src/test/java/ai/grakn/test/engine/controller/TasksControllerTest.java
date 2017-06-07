@@ -74,7 +74,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class TasksControllerTest {
-    private static final int PORT = 4567;
     private static TaskManager manager = mock(TaskManager.class);
     private final JsonMapper jsonMapper = new JsonMapper();
 
@@ -170,7 +169,7 @@ public class TasksControllerTest {
                 )
         );
 
-        assertThat(exception(response), containsString(IllegalArgumentException.class.getName()));
+        assertThat(exception(response), containsString("Exception on Grakn engine"));
         assertThat(response.statusCode(), equalTo(400));
     }
 
@@ -365,11 +364,11 @@ public class TasksControllerTest {
 
     private Response send(String configuration, Map<String, String> params){
         RequestSpecification request = with().queryParams(params).body(configuration);
-        return request.post(String.format("http://%s%s", ctx.uri(), TASKS));
+        return request.post(TASKS);
     }
 
     private Response get(TaskId taskId){
-        return with().get(String.format("http://%s%s", ctx.uri(), GET.replace(ID_PARAMETER, taskId.getValue())));
+        return with().get(GET.replace(ID_PARAMETER, taskId.getValue()));
     }
 
     public static class JsonMapper implements ObjectMapper{

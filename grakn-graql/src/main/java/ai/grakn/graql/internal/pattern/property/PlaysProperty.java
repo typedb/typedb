@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -38,7 +37,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getIdPredicate;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
  * Reperesents the {@code plays} property on a {@link ai.grakn.concept.Type}.
@@ -120,12 +119,12 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName();
+        Var varName = var.getVarName().asUserDefined();
         VarPatternAdmin typeVar = this.getRole();
-        Var typeVariable = typeVar.getVarName();
+        Var typeVariable = typeVar.getVarName().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
-        VarPatternAdmin resVar = Graql.var(varName).plays(Graql.var(typeVariable)).admin();
+        VarPatternAdmin resVar = varName.plays(typeVariable).admin();
         return new TypeAtom(resVar, predicate, parent);
     }
 }

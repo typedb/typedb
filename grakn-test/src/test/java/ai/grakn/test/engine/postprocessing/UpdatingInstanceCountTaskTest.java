@@ -35,7 +35,7 @@ public class UpdatingInstanceCountTaskTest {
 
     @Test
     public void whenUpdatingInstanceCounts_EnsureRedisIsUpdated() throws InterruptedException {
-        RedisConnection redis = RedisConnection.getConnection();
+        RedisConnection redis = engine.redis();
         String keyspace = UUID.randomUUID().toString();
         String entityType1 = "e1";
         String entityType2 = "e2";

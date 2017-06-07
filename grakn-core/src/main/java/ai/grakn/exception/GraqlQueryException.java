@@ -19,12 +19,20 @@
 package ai.grakn.exception;
 
 /**
- * This Exception is thrown when a concept is malformed or incorrect in some way.
+ * <p>
+ *     Graql Query Exception
+ * </p>
  *
- * @author Filipe Teixeira
+ * <p>
+ *     Occurs when the query is syntactically correct but semantically incorrect.
+ *     For example limiting the results of a query -1
+ * </p>
+ *
+ * @author fppt
  */
-public class ConceptException extends GraphRuntimeException {
-    public ConceptException(String message) {
-        super(message);
+//TODO: Felix to integrate with Graql
+public class GraqlQueryException extends GraknException{
+    public GraqlQueryException(String error) {
+        super(error);
     }
 }

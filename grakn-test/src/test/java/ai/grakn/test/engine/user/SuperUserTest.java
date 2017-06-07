@@ -17,14 +17,13 @@
  */
 package ai.grakn.test.engine.user;
 
+import ai.grakn.engine.user.UsersHandler;
+import ai.grakn.test.GraphContext;
+import mjson.Json;
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
-
-import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.test.EngineContext;
-import mjson.Json;
 
 /**
  * Testing behavior of admin/super user.
@@ -32,13 +31,15 @@ import mjson.Json;
  * @author borislav
  *
  */
+@Ignore
 public class SuperUserTest {
-    
-    private static UsersHandler users = UsersHandler.getInstance();
-    
+
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
-    
+    public static final GraphContext graph = GraphContext.empty();
+
+    private static final String adminPassword = "top secret";
+    private final UsersHandler users = UsersHandler.create(adminPassword, graph.factory());
+
     @Test
     public void testSuperuserPresent() {
         Assert.assertNotNull(users.getUser(users.superUsername()));
@@ -46,8 +47,7 @@ public class SuperUserTest {
     
     @Test
     public void testSuperuserLogin() {        
-        Assert.assertTrue(users.validateUser(users.superUsername(), 
-                          GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.ADMIN_PASSWORD_PROPERTY)));
+        Assert.assertTrue(users.validateUser(users.superUsername(), adminPassword));
         Assert.assertFalse(users.validateUser(users.superUsername(), "asgasgdsfgdsf"));
     }
 

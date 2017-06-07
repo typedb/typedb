@@ -18,12 +18,12 @@
 
 package ai.grakn.engine.tasks.storage;
 
-import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.exception.EngineStorageException;
+import ai.grakn.exception.GraknBackendException;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -64,7 +64,7 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
         Optional<TaskState> taskState = Optional.ofNullable(storage.get(id));
 
         if(!taskState.isPresent()) {
-            throw new EngineStorageException("Could not retrieve id " + id);
+            throw GraknBackendException.stateStorageMissingId(id);
         }
 
         return taskState.get().copy();

@@ -30,7 +30,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.test.EngineContext;
 import com.google.common.collect.Sets;
@@ -227,7 +227,7 @@ public class DegreeTest {
     }
 
     @Test
-    public void testDegreeIsCorrect() throws GraknValidationException, ExecutionException, InterruptedException {
+    public void testDegreeIsCorrect() throws InvalidGraphException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -358,7 +358,7 @@ public class DegreeTest {
 
     @Test
     public void testDegreeAssertionAboutAssertion()
-            throws GraknValidationException, ExecutionException, InterruptedException {
+            throws InvalidGraphException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -446,7 +446,7 @@ public class DegreeTest {
 
     @Test
     public void testDegreeTernaryRelationships()
-            throws GraknValidationException, ExecutionException, InterruptedException {
+            throws InvalidGraphException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -485,7 +485,7 @@ public class DegreeTest {
 
     @Test
     public void testDegreeOneRolePlayerMultipleRoles()
-            throws GraknValidationException, ExecutionException, InterruptedException {
+            throws InvalidGraphException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -529,7 +529,7 @@ public class DegreeTest {
 
     @Test
     public void testDegreeRolePlayerWrongType()
-            throws GraknValidationException, ExecutionException, InterruptedException {
+            throws InvalidGraphException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 

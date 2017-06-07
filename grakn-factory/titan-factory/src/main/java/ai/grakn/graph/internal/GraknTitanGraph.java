@@ -20,7 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraknLockingException;
+import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.TitanException;
@@ -121,9 +121,9 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
             return method.get();
         } catch (TitanException e){
             if(e.isCausedBy(TemporaryLockingException.class) || e.isCausedBy(PermanentLockingException.class)){
-                throw new GraknLockingException(e);
+                throw TemporaryWriteException.temporaryLock(e);
             } else {
-                throw new GraknBackendException(e);
+                throw GraknBackendException.unknown(e);
             }
         }
     }

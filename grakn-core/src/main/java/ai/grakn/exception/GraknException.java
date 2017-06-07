@@ -19,10 +19,23 @@
 package ai.grakn.exception;
 
 /**
- * Exception thrown by Graql templating when parsing fails
- * @author alexandraorth
+ * <p>
+ *     Root Grakn Exception
+ * </p>
+ *
+ * <p>
+ *     Encapsulates any exception which is thrown by the Grakn stack.
+ *     This includes failures server side, failed graph mutations, and failed querying attempts
+ * </p>
+ *
+ * @author fppt
  */
-public class GraqlTemplateParsingException extends RuntimeException {
-    public GraqlTemplateParsingException(String message) {
-        super(message);
-    }}
+public class GraknException extends RuntimeException {
+    protected GraknException(String error){
+        super(error);
+    }
+
+    protected GraknException(String error, Exception e){
+        super(error, e);
+    }
+}

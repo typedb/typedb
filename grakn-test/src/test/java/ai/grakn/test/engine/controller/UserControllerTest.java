@@ -18,21 +18,33 @@
 
 package ai.grakn.test.engine.controller;
 
+import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.SparkContext;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class UserControllerTest {
-    private UsersHandler users = UsersHandler.getInstance();
+    private UsersHandler users;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final GraphContext graph = GraphContext.empty();
+
+    @Rule
+    public final SparkContext ctx = SparkContext.withControllers(spark -> {
+        users = UsersHandler.create("top secret", graph.factory());
+        new UserController(spark, users);
+    });
 
     @Test
     public void testAddNewUser(){

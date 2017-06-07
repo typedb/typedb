@@ -27,7 +27,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
@@ -35,7 +35,6 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraphContext;
@@ -323,7 +322,7 @@ public class InsertQueryTest {
         Set<Answer> results = insert.stream().collect(Collectors.toSet());
         assertEquals(1, results.size());
         Answer result = results.iterator().next();
-        assertEquals(ImmutableSet.of(Var.of("x"), Var.of("z")), result.keySet());
+        assertEquals(ImmutableSet.of(Graql.var("x"), Graql.var("z")), result.keySet());
         assertThat(result.values(), Matchers.everyItem(notNullValue(Concept.class)));
     }
 
@@ -343,7 +342,7 @@ public class InsertQueryTest {
         assertFalse(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
 
         Answer result1 = results.next();
-        assertEquals(ImmutableSet.of(Var.of("x")), result1.keySet());
+        assertEquals(ImmutableSet.of(Graql.var("x")), result1.keySet());
 
         AskQuery query123 = qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask();
         AskQuery query456 = qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask();
@@ -359,7 +358,7 @@ public class InsertQueryTest {
 
         //Check that both are inserted correctly
         Answer result2 = results.next();
-        assertEquals(ImmutableSet.of(Var.of("x")), result1.keySet());
+        assertEquals(ImmutableSet.of(Graql.var("x")), result1.keySet());
         assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
         assertTrue(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
         assertFalse(results.hasNext());
@@ -526,7 +525,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testKeyCorrectUsage() throws GraknValidationException {
+    public void testKeyCorrectUsage() throws InvalidGraphException {
         // This should only run on tinker because it commits
         assumeTrue(usingTinker());
 
@@ -538,7 +537,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testKeyUniqueOwner() throws GraknValidationException {
+    public void testKeyUniqueOwner() throws InvalidGraphException {
         assumeTrue(usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
@@ -547,13 +546,13 @@ public class InsertQueryTest {
                 var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
         ).execute();
 
-        exception.expect(GraknValidationException.class);
+        exception.expect(InvalidGraphException.class);
         movieGraph.graph().commit();
     }
 
     @Ignore // TODO: Un-ignore this when constraints are designed and implemented
     @Test
-    public void testKeyUniqueValue() throws GraknValidationException {
+    public void testKeyUniqueValue() throws InvalidGraphException {
         assumeTrue(usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
@@ -563,12 +562,12 @@ public class InsertQueryTest {
                 var("y").isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
 
-        exception.expect(GraknValidationException.class);
+        exception.expect(InvalidGraphException.class);
         movieGraph.graph().commit();
     }
 
     @Test
-    public void testKeyRequiredOwner() throws GraknValidationException {
+    public void testKeyRequiredOwner() throws InvalidGraphException {
         assumeTrue(usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
@@ -577,7 +576,7 @@ public class InsertQueryTest {
                 var().isa("a-new-type")
         ).execute();
 
-        exception.expect(GraknValidationException.class);
+        exception.expect(InvalidGraphException.class);
         movieGraph.graph().commit();
     }
 
@@ -596,7 +595,7 @@ public class InsertQueryTest {
         List<Answer> results = query.execute();
         assertEquals(1, results.size());
         Answer result = results.get(0);
-        assertEquals(Sets.newHashSet(Var.of("x")), result.keySet());
+        assertEquals(Sets.newHashSet(Graql.var("x")), result.keySet());
         Entity x = result.get("x").asEntity();
         assertEquals("movie", x.type().getLabel().getValue());
     }
@@ -733,14 +732,14 @@ public class InsertQueryTest {
     public void testInsertNonRuleWithLhs() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("lhs", RULE.getLabel()));
-        qb.insert(var().isa("movie").lhs(var("x"))).execute();
+        qb.insert(var().isa("movie").lhs(var("x").pattern())).execute();
     }
 
     @Test
     public void testInsertNonRuleWithRHS() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("rhs", RULE.getLabel()));
-        qb.insert(label("thing").sub("movie").rhs(var("x"))).execute();
+        qb.insert(label("thing").sub("movie").rhs(var("x").pattern())).execute();
     }
 
     @Test
@@ -796,7 +795,7 @@ public class InsertQueryTest {
 
         // Delete all vars
         for (VarPattern var : vars) {
-            qb.match(var).delete(var(var.admin().getVarName())).execute();
+            qb.match(var).delete(var.admin().getVarName()).execute();
         }
 
         // Make sure vars don't exist

@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import redis.embedded.RedisServer;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,8 +52,6 @@ public abstract class GraknTestEnv {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestEnv.class);
 
-    private static final GraknEngineConfig properties = GraknEngineConfig.getInstance();
-
     private static String CONFIG = System.getProperty("grakn.test-profile");
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
     private static AtomicInteger KAFKA_COUNTER = new AtomicInteger(0);
@@ -71,7 +71,7 @@ public abstract class GraknTestEnv {
     /**
      * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
      */
-    static GraknEngineServer startEngine(String taskManagerClass, int port) throws Exception {
+    static GraknEngineServer startEngine(GraknEngineConfig config) throws Exception {
         // To ensure consistency b/w test profiles and configuration files, when not using Titan
         // for a unit tests in an IDE, add the following option:
         // -Dgrakn.conf=../conf/test/tinker/grakn.properties
@@ -86,31 +86,31 @@ public abstract class GraknTestEnv {
         ensureCassandraRunning();
 
         // start engine
-        RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
-        GraknEngineServer server = GraknEngineServer.start(taskManagerClass, port);
+        setRestAssuredUri(config);
+        GraknEngineServer server = GraknEngineServer.start(config);
 
         LOG.info("engine started.");
 
         return server;
     }
 
-    static void startRedis() throws IOException {
+    static void startRedis(GraknEngineConfig config) throws IOException {
         if(REDIS_COUNTER.getAndIncrement() == 0) {
             LOG.info("Starting redis...");
-            redisServer = new RedisServer(properties.getPropertyAsInt(REDIS_SERVER_PORT));
+            redisServer = new RedisServer(config.getPropertyAsInt(REDIS_SERVER_PORT));
             redisServer.start();
             LOG.info("Redis started.");
         }
     }
 
-    static void startKafka() throws Exception {
+    static void startKafka(GraknEngineConfig config) throws Exception {
         // Clean-up ironically uses a lot of memory
         if (KAFKA_COUNTER.getAndIncrement() == 0) {
             LOG.info("Starting kafka...");
             kafkaUnit.setKafkaBrokerConfig("log.cleaner.enable", "false");
             kafkaUnit.startup();
-            kafkaUnit.createTopic(TaskState.Priority.HIGH.queue(), properties.getAvailableThreads() * 2);
-            kafkaUnit.createTopic(TaskState.Priority.LOW.queue(), properties.getAvailableThreads() * 2);
+            kafkaUnit.createTopic(TaskState.Priority.HIGH.queue(), config.getAvailableThreads() * 2);
+            kafkaUnit.createTopic(TaskState.Priority.LOW.queue(), config.getAvailableThreads() * 2);
             LOG.info("Kafka started.");
         }
     }
@@ -135,37 +135,38 @@ public abstract class GraknTestEnv {
         LOG.info("stopping engine...");
 
         server.close();
-        clearGraphs();
+        clearGraphs(server.factory());
 
         LOG.info("engine stopped.");
 
         // There is no way to stop the embedded Casssandra, no such API offered.
     }
 
-    public static GraknGraph emptyGraph() {
-        return EngineGraknGraphFactory.getInstance().getGraph(randomKeyspace(), GraknTxType.WRITE);
+    public static GraknGraph emptyGraph(EngineGraknGraphFactory factory) {
+        return factory.getGraph(randomKeyspace(), GraknTxType.WRITE);
     }
 
-    private static void clearGraphs() {
+    private static void clearGraphs(EngineGraknGraphFactory engineGraknGraphFactory) {
         // Drop all keyspaces
-        EngineGraknGraphFactory engineGraknGraphFactory = EngineGraknGraphFactory.getInstance();
-
+        final Set<String> keyspaceNames = new HashSet<String>();
         try(GraknGraph systemGraph = engineGraknGraphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .execute()
                     .forEach(x -> x.values().forEach(y -> {
-                        String name = y.asResource().getValue().toString();
-                        GraknGraph graph = engineGraknGraphFactory.getGraph(name, GraknTxType.WRITE);
-                        graph.admin().delete();
+                        keyspaceNames.add(y.asResource().getValue().toString());
                     }));
         }
+        keyspaceNames.forEach(name -> {
+            GraknGraph graph = engineGraknGraphFactory.getGraph(name, GraknTxType.WRITE);
+            graph.admin().delete();            
+        });
         engineGraknGraphFactory.refreshConnections();
     }
 
     static void startEmbeddedCassandra() {
         try {
             // We have to use reflection here because the cassandra dependency is only included when testing the titan profile.
-            Class cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
+            Class<?> cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
 
             //noinspection unchecked
             cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
@@ -180,6 +181,14 @@ public abstract class GraknTestEnv {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    static String getUri(GraknEngineConfig config) {
+        return config.getProperty("server.host") + ":" + config.getProperty("server.port");
+    }
+
+    static void setRestAssuredUri(GraknEngineConfig config) {
+        RestAssured.baseURI = "http://" + getUri(config);
     }
 
     public static String randomKeyspace(){

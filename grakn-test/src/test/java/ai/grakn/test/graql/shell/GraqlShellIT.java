@@ -413,6 +413,18 @@ public class GraqlShellIT {
     }
 
     @Test
+    public void whenErrorIsLarge_UserStillSeesEntireErrorMessage() throws Exception {
+        String value = Strings.repeat("really-", 100000) + "long-value";
+
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+
+        // Query has a syntax error
+        testShell("insert X sub resource datatype string; value '" + value + "' isa X;\n", err);
+
+        assertThat(err.toString(), allOf(containsString("syntax error"), containsString(value)));
+    }
+
+    @Test
     public void testCommitError() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         String out = testShell("insert bob sub relation;\ncommit;\nmatch $x sub relation;\n", err);
@@ -617,7 +629,7 @@ public class GraqlShellIT {
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
 
-        PrintStream out = new PrintStream(bout);
+        PrintStream out = new PrintStream(new TeeOutputStream(bout, trueOut));
 
         // Intercept stderr, but make sure it is still printed using the TeeOutputStream
         PrintStream err = new PrintStream(new TeeOutputStream(berr, trueErr));

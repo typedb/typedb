@@ -31,6 +31,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import org.slf4j.Logger;
@@ -75,9 +76,13 @@ public class StandaloneTaskManager implements TaskManager {
     private final ExecutorService executorService;
     private final ScheduledExecutorService schedulingService;
     private final EngineID engineID;
+    private final GraknEngineConfig config;
+    private final RedisConnection redis;
 
-    public StandaloneTaskManager(EngineID engineId) {
+    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis) {
         this.engineID = engineId;
+        this.config = config;
+        this.redis = redis;
 
         stoppedTasks = new HashSet<>();
         runningTasks = new ConcurrentHashMap<>();
@@ -86,9 +91,8 @@ public class StandaloneTaskManager implements TaskManager {
         storage = new TaskStateInMemoryStore();
         stateUpdateLock = new NonReentrantLock();
 
-        GraknEngineConfig properties = GraknEngineConfig.getInstance();
         schedulingService = Executors.newScheduledThreadPool(1);
-        executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
+        executorService = Executors.newFixedThreadPool(config.getAvailableThreads());
 
         LockProvider.instantiate((lockName, existingLock) -> {
             if(existingLock != null){
@@ -177,19 +181,21 @@ public class StandaloneTaskManager implements TaskManager {
         return () -> {
             try {
                 BackgroundTask runningTask = task.taskClass().newInstance();
+                runningTask.initialize(saveCheckpoint(task), configuration, this, config, redis);
+
                 runningTasks.put(task.getId(), runningTask);
 
                 boolean completed;
 
                 if(taskShouldResume(task)){
-                    completed = runningTask.resume(saveCheckpoint(task), task.checkpoint());
+                    completed = runningTask.resume(task.checkpoint());
                 } else {
                     //Mark as running
                     task.markRunning(engineID);
 
                     saveState(task);
 
-                    completed = runningTask.start(saveCheckpoint(task), configuration, this);
+                    completed = runningTask.start();
                 }
 
                 if (completed) {

@@ -24,8 +24,8 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
@@ -218,11 +218,11 @@ class GraqlSession {
                 String queryString = queryStringBuilder.toString();
                 queryStringBuilder = new StringBuilder();
 
-                queries = graph.graql().infer(infer).materialise(materialise).parseList(queryString);
+                queries = graph.graql().infer(infer).materialise(materialise).parseList(queryString).collect(toList());
 
                 // Return results unless query is cancelled
                 queries.stream().flatMap(query -> query.resultsString(printer)).forEach(this::sendQueryResult);
-            } catch (IllegalArgumentException | IllegalStateException | ConceptException e) {
+            } catch (IllegalArgumentException | IllegalStateException | GraphOperationException e) {
                 errorMessage = e.getMessage();
                 LOG.error(errorMessage,e);
             } catch (Throwable e) {
@@ -233,7 +233,7 @@ class GraqlSession {
                     if (queries != null && !queries.stream().allMatch(Query::isReadOnly)) {
                         attemptRefresh();
                     }
-                    sendQueryError(errorMessage);
+                    sendError(errorMessage);
                 }
 
                 sendEnd();
@@ -248,7 +248,7 @@ class GraqlSession {
         queryExecutor.execute(() -> {
             try {
                 graph.commit();
-            } catch (GraknValidationException e) {
+            } catch (InvalidGraphException e) {
                 sendError(e.getMessage());
             } finally {
                 sendEnd();
@@ -321,7 +321,7 @@ class GraqlSession {
     /**
      * Tell the client about an error in their query
      */
-    private void sendQueryError(String errorMessage) {
+    private void sendError(String errorMessage) {
         // Split error into chunks
         Iterable<String> splitError = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(errorMessage + "\n");
 
@@ -331,16 +331,6 @@ class GraqlSession {
                     ERROR, errorChunk
             ));
         }
-    }
-
-    /**
-     * Tell the client about an error
-     */
-    private void sendError(String errorMessage) {
-        sendJson(Json.object(
-                ACTION, ACTION_ERROR,
-                ERROR, errorMessage
-        ));
     }
 
     /**

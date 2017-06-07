@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Starting point for creating queries
@@ -38,28 +39,28 @@ public interface QueryBuilder {
      * @return a match query that will find matches of the given patterns
      */
     @CheckReturnValue
-    MatchQuery match(Pattern... patterns);
+    MatchQuery match(PatternBuilder... patterns);
 
     /**
      * @param patterns a collection of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
     @CheckReturnValue
-    MatchQuery match(Collection<? extends Pattern> patterns);
+    MatchQuery match(Collection<? extends PatternBuilder> patterns);
 
     /**
      * @param vars an array of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
     @CheckReturnValue
-    InsertQuery insert(VarPattern... vars);
+    InsertQuery insert(VarPatternBuilder... vars);
 
     /**
      * @param vars a collection of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
     @CheckReturnValue
-    InsertQuery insert(Collection<? extends VarPattern> vars);
+    InsertQuery insert(Collection<? extends VarPatternBuilder> vars);
 
     /**
      * @return a compute query builder for building analytics query
@@ -93,7 +94,7 @@ public interface QueryBuilder {
      * @return a list of queries
      */
     @CheckReturnValue
-    <T extends Query<?>> List<T> parseList(String queryString);
+    <T extends Query<?>> Stream<T> parseList(String queryString);
 
     /**
      * @param template a string representing a templated graql query
@@ -101,7 +102,7 @@ public interface QueryBuilder {
      * @return a query, the type will depend on the type of template.
      */
     @CheckReturnValue
-    <T extends Query<?>> List<T> parseTemplate(String template, Map<String, Object> data);
+    <T extends Query<?>> Stream<T> parseTemplate(String template, Map<String, Object> data);
 
     /**
      * Register an aggregate that can be used when parsing a Graql query

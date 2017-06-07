@@ -26,8 +26,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.exception.EngineStorageException;
-import ai.grakn.exception.EngineUnavailableException;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.test.SparkContext;
 import mjson.Json;
 import org.junit.BeforeClass;
@@ -101,7 +100,7 @@ public class TaskClientTest {
             Instant runAt = now();
             Json configuration = Json.nil();
 
-            exception.expect(EngineUnavailableException.class);
+            exception.expect(GraknBackendException.class);
             client.sendTask(taskClass, creator, runAt, null, configuration);
         } finally {
             ctx.start();
@@ -115,7 +114,7 @@ public class TaskClientTest {
         try {
             TaskState task = createTask();
 
-            exception.expect(EngineUnavailableException.class);
+            exception.expect(GraknBackendException.class);
             client.getStatus(task.getId());
         } finally {
             ctx.start();
@@ -126,9 +125,9 @@ public class TaskClientTest {
     public void whenGettingStatusOfATaskAndSeverHasNotStoredTask_TheClientThrowsStorageException(){
         TaskState task = createTask();
         when(manager.storage().getState(task.getId()))
-                .thenThrow(new EngineStorageException(task.getId().getValue()));
+                .thenThrow(GraknBackendException.stateStorage(task.getId().getValue()));
 
-        exception.expect(EngineStorageException.class);
+        exception.expect(GraknBackendException.class);
         exception.expectMessage(containsString(task.getId().getValue()));
 
         client.getStatus(task.getId());

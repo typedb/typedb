@@ -19,7 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -48,9 +48,11 @@ import javax.ws.rs.Produces;
 @Produces({"application/json", "text/plain"})
 public class UserController {
     private final Logger LOG = LoggerFactory.getLogger(UserController.class);
-    private final UsersHandler users = UsersHandler.getInstance();
+    private final UsersHandler users;
 
-    public UserController(Service spark) {
+    public UserController(Service spark, UsersHandler usersHandler) {
+        this.users = usersHandler;
+
         spark.get(REST.WebPath.ALL_USERS, this::findUsers);
         spark.get(REST.WebPath.ONE_USER, this::getUser);
         spark.post(REST.WebPath.ONE_USER, this::createUser);
@@ -100,7 +102,7 @@ public class UserController {
             return true;
         } catch(Exception e){
             LOG.error("Error during creating new user", e);
-            throw new GraknEngineServerException(500,e);
+            throw GraknServerException.serverException(500, e);
         }
     }
     

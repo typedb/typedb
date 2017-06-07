@@ -16,10 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner;
+package ai.grakn.graql.internal.reasoner.utils;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
@@ -36,12 +35,17 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import java.util.stream.Stream;
 import javafx.util.Pair;
 
 import java.util.ArrayList;
@@ -53,7 +57,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.function.Function;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
@@ -149,7 +152,7 @@ public class ReasonerUtils {
     public static IdPredicate getIdPredicate(Var typeVariable, VarPatternAdmin typeVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
         IdPredicate predicate = null;
         //look for id predicate among vars
-        if(typeVar.isUserDefinedName()) {
+        if(typeVar.getVarName().isUserDefinedName()) {
             predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
         } else {
             LabelProperty nameProp = typeVar.getProperty(LabelProperty.class).orElse(null);
@@ -169,7 +172,7 @@ public class ReasonerUtils {
      */
     public static Set<ValuePredicate> getValuePredicates(Var valueVariable, VarPatternAdmin valueVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
         Set<ValuePredicate> predicates = new HashSet<>();
-        if(valueVar.isUserDefinedName()){
+        if(valueVar.getVarName().isUserDefinedName()){
             vars.stream()
                     .filter(v -> v.getVarName().equals(valueVariable))
                     .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.getVarName(), vp.getPredicate(), parent)))
@@ -182,24 +185,6 @@ public class ReasonerUtils {
                             .add(new ValuePredicate(createValueVar(valueVariable, vp.getPredicate()), parent)));
         }
         return predicates;
-    }
-
-    /**
-     * Provides more readable answer output.
-     * @param answers set of answers to be printed
-     */
-    public static void printAnswers(Set<Map<String, Concept>> answers) {
-        answers.forEach(result -> {
-            result.entrySet().forEach(entry -> {
-                Concept concept = entry.getValue();
-                System.out.print(entry.getKey() + ": " + concept.getId() + " : ");
-                if (concept.isResource()) {
-                    System.out.print(concept.asResource().getValue() + " ");
-                }
-            });
-            System.out.println();
-        });
-        System.out.println();
     }
 
     /**
@@ -251,17 +236,30 @@ public class ReasonerUtils {
     }
 
     /**
-     * @param role input role type
+     * @param type input type
      * @return set of all non-meta super types of the role
      */
-    public static Set<Type> getSuperTypes(Type role){
+    public static Set<Type> getSuperTypes(Type type){
         Set<Type> superTypes = new HashSet<>();
-        Type superType = role.superType();
+        Type superType = type.superType();
         while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
             superTypes.add(superType);
             superType = superType.superType();
         }
         return superTypes;
+    }
+
+    /**
+     *
+     * @param type for which top type is to be found
+     * @return non-meta top type of the type
+     */
+    public static Type getTopType(Type type){
+        Type superType = type;
+        while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
+            superType = superType.superType();
+        }
+        return superType;
     }
 
     /**
@@ -287,38 +285,37 @@ public class ReasonerUtils {
     }
 
     /**
-     * convert a given role type to a set of relation types in which it can appear including  the role type hierarchy
+     * calculates map intersection by doing an intersection on key sets and accumulating the keys
+     * @param m1 first operand
+     * @param m2 second operand
+     * @param <K> map key type
+     * @param <V> map value type
+     * @return map intersection
      */
-    public static final Function<RoleType, Set<RelationType>> roleToRelationTypes =
-            role -> role.subTypes().stream()
-                    .flatMap(r -> r.relationTypes().stream())
-                    .filter(rt -> !rt.isImplicit())
-                    .collect(toSet());
+    public static <K, V> Multimap<K, V> multimapIntersection(Multimap<K, V> m1, Multimap<K, V> m2){
+        Multimap<K, V> intersection = HashMultimap.create();
+        Sets.SetView<K> keyIntersection = Sets.intersection(m1.keySet(), m2.keySet());
+        Stream.concat(m1.entries().stream(), m2.entries().stream())
+                .filter(e -> keyIntersection.contains(e.getKey()))
+                .forEach(e -> intersection.put(e.getKey(), e.getValue()));
+        return intersection;
+    }
 
     /**
-     * convert a given entity type to a set of relation types in which it can play roles including entity type hierarchy
-     */
-    public static final Function<Type, Set<RelationType>> typeToRelationTypes =
-            type -> type.subTypes().stream()
-                    .flatMap(t -> t.plays().stream())
-                    .flatMap(roleType -> roleType.relationTypes().stream())
-                    .filter(rt -> !rt.isImplicit())
-                    .collect(toSet());
-
-    /**
-     * compute the set of compatible relation types for given types (intersection of allowed sets of relation types for each entry type)
+     * compute the map of compatible relation types for given types (intersection of allowed sets of relation types for each entry type)
+     * and compatible role types
      * @param types for which the set of compatible relation types is to be computed
-     * @param typeMapper function mapping a type to the set of compatible relation types
+     //* @param typeMapper function mapping a type to the set of compatible relation types
      * @param <T> type generic
-     * @return set of compatible relation types
+     * @return map of compatible relation types and their corresponding role types
      */
-    public static <T extends Type> Set<RelationType> getCompatibleRelationTypes(Set<T> types, Function<T, Set<RelationType>> typeMapper) {
-        Set<RelationType> compatibleTypes = new HashSet<>();
+    public static <T extends Type> Multimap<RelationType, RoleType> getCompatibleRelationTypesWithRoles(Set<T> types, TypeConverter<T> typeConverter) {
+        Multimap<RelationType, RoleType> compatibleTypes = HashMultimap.create();
         if (types.isEmpty()) return compatibleTypes;
         Iterator<T> it = types.iterator();
-        compatibleTypes.addAll(typeMapper.apply(it.next()));
+        compatibleTypes.putAll(typeConverter.toRelationMultimap(it.next()));
         while(it.hasNext() && compatibleTypes.size() > 1) {
-            compatibleTypes.retainAll(typeMapper.apply(it.next()));
+            compatibleTypes = multimapIntersection(compatibleTypes, typeConverter.toRelationMultimap(it.next()));
         }
         return compatibleTypes;
     }
@@ -408,9 +405,9 @@ public class ReasonerUtils {
         VarPattern childVar = var().isa(Graql.label(child.getLabel()));
 
         for (Map.Entry<TypeLabel, TypeLabel> entry : roleMappings.entrySet()) {
-            Var varName = Var.anon();
-            parentVar = parentVar.rel(Graql.label(entry.getKey()), var(varName));
-            childVar = childVar.rel(Graql.label(entry.getValue()), var(varName));
+            Var varName = var().asUserDefined();
+            parentVar = parentVar.rel(Graql.label(entry.getKey()), varName);
+            childVar = childVar.rel(Graql.label(entry.getValue()), varName);
         }
         return graph.admin().getMetaRuleInference().putRule(childVar, parentVar);
     }
@@ -427,33 +424,19 @@ public class ReasonerUtils {
     public static Rule createPropertyChainRule(RelationType relation, TypeLabel fromRoleLabel, TypeLabel toRoleLabel,
                                                LinkedHashMap<RelationType, Pair<TypeLabel, TypeLabel>> chain, GraknGraph graph){
         Stack<Var> varNames = new Stack<>();
-        varNames.push(Var.of("x"));
+        varNames.push(var("x"));
         Set<VarPatternAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
-            Var varName = Var.anon();
+            Var varName = var().asUserDefined();
             VarPatternAdmin var = var().isa(Graql.label(relType.getLabel()))
-                    .rel(Graql.label(rolePair.getKey()), var(varNames.peek()))
-                    .rel(Graql.label(rolePair.getValue()), var(varName)).admin();
+                    .rel(Graql.label(rolePair.getKey()), varNames.peek())
+                    .rel(Graql.label(rolePair.getValue()), varName).admin();
             varNames.push(varName);
             bodyVars.add(var);
         });
 
-        VarPattern headVar = var().isa(Graql.label(relation.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), var(varNames.peek()));
+        VarPattern headVar = var().isa(Graql.label(relation.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), varNames.peek());
         return graph.admin().getMetaRuleInference().putRule(Patterns.conjunction(bodyVars), headVar);
-    }
-    
-    /**
-     * @param role in question
-     * @return top non-meta super role of the role
-     */
-    public static RoleType getNonMetaTopRole(RoleType role){
-        RoleType topRole = role;
-        RoleType superRole = topRole.superType();
-        while(!Schema.MetaSchema.isMetaLabel(superRole.getLabel())) {
-            topRole = superRole;
-            superRole = superRole.superType();
-        }
-        return topRole;
     }
 
     /**

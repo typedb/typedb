@@ -28,6 +28,7 @@ import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.EngineID;
@@ -42,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -67,7 +69,6 @@ public class SingleQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskManager.class);
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
-    private final static int CAPACITY = GraknEngineConfig.getInstance().getAvailableThreads();
     private final static int TIME_UNTIL_BACKOFF = 60_000;
     private final static String TASKS_STOPPED = "/stopped/%s";
     private final static String TASKS_STOPPED_PREFIX = "/stopped";
@@ -77,6 +78,8 @@ public class SingleQueueTaskManager implements TaskManager {
     private final TaskStateStorage storage;
     private final PathChildrenCache stoppedTasks;
     private final ExternalOffsetStorage offsetStorage;
+    private final GraknEngineConfig config;
+    private final RedisConnection redis;
 
     private Set<SingleQueueTaskRunner> taskRunners;
     private ExecutorService taskRunnerThreadPool;
@@ -92,23 +95,29 @@ public class SingleQueueTaskManager implements TaskManager {
      *  + Create and run an instance of SingleQueueTaskRunner
      *  + Add oneself to the leader elector by instantiating failoverelector
      */
-    public SingleQueueTaskManager(EngineID engineId) {
-        this.zookeeper = new ZookeeperConnection();
+    public SingleQueueTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis) {
+        this.config = config;
+        this.redis = redis;
+        this.zookeeper = new ZookeeperConnection(config);
         this.storage = new TaskStateZookeeperStore(zookeeper);
         this.offsetStorage = new ExternalOffsetStorage(zookeeper);
 
         //TODO check that the number of partitions is at least the capacity
-        this.producer = kafkaProducer();
+        //TODO only pass necessary Kafka properties
+        this.producer = kafkaProducer(config.getProperties());
 
         // Create thread pool for the task runners
         ThreadFactory taskRunnerPoolFactory = new ThreadFactoryBuilder()
                 .setNameFormat(TASK_RUNNER_THREAD_POOL_NAME)
                 .build();
-        this.taskRunnerThreadPool = newFixedThreadPool(CAPACITY * 2, taskRunnerPoolFactory);
+
+        int capacity = config.getAvailableThreads();
+
+        this.taskRunnerThreadPool = newFixedThreadPool(capacity * 2, taskRunnerPoolFactory);
 
         // Create and start the task runners
-        Set<SingleQueueTaskRunner> highPriorityTaskRunners = generate(() -> newTaskRunner(engineId, TaskState.Priority.HIGH.queue())).limit(CAPACITY).collect(toSet());
-        Set<SingleQueueTaskRunner> lowPriorityTaskRunners = generate(() -> newTaskRunner(engineId, TaskState.Priority.LOW.queue())).limit(CAPACITY).collect(toSet());
+        Set<SingleQueueTaskRunner> highPriorityTaskRunners = generate(() -> newTaskRunner(engineId, TaskState.Priority.HIGH.queue())).limit(capacity).collect(toSet());
+        Set<SingleQueueTaskRunner> lowPriorityTaskRunners = generate(() -> newTaskRunner(engineId, TaskState.Priority.LOW.queue())).limit(capacity).collect(toSet());
 
         this.taskRunners = Stream.concat(highPriorityTaskRunners.stream(), lowPriorityTaskRunners.stream()).collect(toSet());
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
@@ -191,7 +200,8 @@ public class SingleQueueTaskManager implements TaskManager {
      * Get a new kafka consumer listening on the given topic
      */
     private Consumer<TaskState, TaskConfiguration> newConsumer(String topic){
-        Consumer<TaskState, TaskConfiguration> consumer = kafkaConsumer("task-runners-" + topic);
+        Properties properties = config.getProperties();  // TODO: Only pass necessary kafka properties
+        Consumer<TaskState, TaskConfiguration> consumer = kafkaConsumer("task-runners-" + topic, properties);
         consumer.subscribe(ImmutableList.of(topic), rebalanceListener(consumer, offsetStorage));
         return consumer;
     }
@@ -230,6 +240,6 @@ public class SingleQueueTaskManager implements TaskManager {
      * @return New instance of a SingleQueueTaskRunner
      */
     private SingleQueueTaskRunner newTaskRunner(EngineID engineId, String priority){
-        return new SingleQueueTaskRunner(this, engineId, offsetStorage, TIME_UNTIL_BACKOFF, newConsumer(priority));
+        return new SingleQueueTaskRunner(this, engineId, config, redis, offsetStorage, TIME_UNTIL_BACKOFF, newConsumer(priority));
     }
 }

@@ -20,11 +20,15 @@ package ai.grakn.test.engine.tasks;
 
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.connection.ZookeeperConnection;
-import ai.grakn.exception.EngineStorageException;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.test.EngineContext;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.common.TopicPartition;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static org.junit.Assert.assertEquals;
@@ -44,7 +48,7 @@ public class ExternalOffsetStorageTest {
 
     @BeforeClass
     public static void setupStorage(){
-        zookeeper = new ZookeeperConnection();
+        zookeeper = new ZookeeperConnection(kafkaServer.config());
         offsetStorage = new ExternalOffsetStorage(zookeeper);
     }
 
@@ -97,7 +101,7 @@ public class ExternalOffsetStorageTest {
     @Test
     public void whenGettingNonExistingOffset_StorageExceptionIsThrown(){
         TopicPartition partition = new TopicPartition("goodbye", 4);
-        exception.expect(EngineStorageException.class);
+        exception.expect(GraknBackendException.class);
         offsetStorage.getOffset(partition);
     }
 }

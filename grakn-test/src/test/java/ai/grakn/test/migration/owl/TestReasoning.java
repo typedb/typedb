@@ -19,10 +19,10 @@
 package ai.grakn.test.migration.owl;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
@@ -56,7 +56,7 @@ public class TestReasoning extends TestOwlGraknBase {
     private OWLReasoner hermit;
 
     @Before
-    public void loadOwlFiles() throws GraknValidationException {
+    public void loadOwlFiles() throws InvalidGraphException {
         OWLOntology family = loadOntologyFromResource("owl", "family.owl");
         migrator.ontology(family).graph(graph).migrate();
         migrator.graph().commit();
@@ -81,7 +81,7 @@ public class TestReasoning extends TestOwlGraknBase {
         QueryAnswers OWLanswers = new QueryAnswers();
         owlResult.forEach(result -> {
             Answer resultMap = new QueryAnswer();
-            resultMap.put(Var.of("x"), migrator.entity(result));
+            resultMap.put(Graql.var("x"), migrator.entity(result));
             OWLanswers.add(resultMap);
         });
 

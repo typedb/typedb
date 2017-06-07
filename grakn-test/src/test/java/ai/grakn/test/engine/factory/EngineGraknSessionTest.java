@@ -3,7 +3,6 @@ package ai.grakn.test.engine.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.test.EngineContext;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -22,7 +21,7 @@ public class EngineGraknSessionTest {
 
         GraknGraph graph1 = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
         graph1.close();
-        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE);
+        GraknGraph graph2 = engine.server().factory().getGraph(keyspace, GraknTxType.WRITE);
 
         assertEquals(graph1, graph2);
         graph2.close();
@@ -31,9 +30,9 @@ public class EngineGraknSessionTest {
     @Test
     public void testBatchLoadingGraphsInitialisedCorrectly(){
         String keyspace = "mykeyspace";
-        GraknGraph graph1 = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE);
+        GraknGraph graph1 = engine.server().factory().getGraph(keyspace, GraknTxType.WRITE);
         graph1.close();
-        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.BATCH);
+        GraknGraph graph2 = engine.server().factory().getGraph(keyspace, GraknTxType.BATCH);
 
         assertFalse(graph1.admin().isBatchGraph());
         assertTrue(graph2.admin().isBatchGraph());

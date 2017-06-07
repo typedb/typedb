@@ -18,13 +18,17 @@
 
 package ai.grakn.generator;
 
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.util.EngineID;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,9 +60,13 @@ public class TaskManagers extends Generator<TaskManager> {
     public TaskManager generate(SourceOfRandomness random, GenerationStatus status) {
         Class<? extends TaskManager> taskManagerToReturn = random.choose(taskManagerClasses);
 
+        GraknEngineConfig config = GraknEngineConfig.create();
+
         if(!taskManagers.containsKey(taskManagerToReturn)){
             try {
-                taskManagers.put(taskManagerToReturn, taskManagerToReturn.getConstructor(EngineID.class).newInstance(EngineID.me()));
+                Constructor<? extends TaskManager> constructor =
+                        taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class, RedisConnection.class);
+                taskManagers.put(taskManagerToReturn, constructor.newInstance(EngineID.me(), config, null));
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
                 throw new RuntimeException(e);
             }

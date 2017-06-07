@@ -25,7 +25,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
@@ -75,7 +75,7 @@ public class TypePropertyTest {
 
     @Property
     public void whenSettingAMetaTypeAsAbstract_Throw(@Meta Type type, boolean isAbstract) {
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.setAbstract(isAbstract);
     }
@@ -84,28 +84,28 @@ public class TypePropertyTest {
     public void whenMakingAMetaTypePlayRole_Throw(@Meta Type type, RoleType roleType) {
         assumeThat(type, not(is(roleType)));
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.plays(roleType);
     }
 
     @Property
     public void whenGivingAMetaTypeAKey_Throw(@Meta Type type, ResourceType resourceType) {
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.key(resourceType);
     }
 
     @Property
     public void whenGivingAMetaTypeAResource_Throw(@Meta Type type, ResourceType resourceType) {
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.resource(resourceType);
     }
 
     @Property
     public void whenDeletingAMetaType_Throw(@Meta Type type) {
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(isOneOf(
                 META_TYPE_IMMUTABLE.getMessage(type.getLabel()),
                 CANNOT_DELETE.getMessage(type.getLabel())
@@ -118,7 +118,7 @@ public class TypePropertyTest {
         Type superType = type.superType();
         assumeFalse(isMetaLabel(superType.getLabel()));
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(CANNOT_DELETE.getMessage(superType.getLabel()));
         superType.delete();
     }
@@ -127,7 +127,7 @@ public class TypePropertyTest {
     public void whenDeletingATypeWithIndirectInstances_Throw(@Meta(false) Type type) {
         assumeThat(type.instances(), not(empty()));
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(CANNOT_DELETE.getMessage(type.getLabel()));
         type.delete();
     }
@@ -137,7 +137,7 @@ public class TypePropertyTest {
     public void whenDeletingATypeWithHypothesisRules_Throw(Type type) {
         assumeThat(type.getRulesOfHypothesis(), not(empty()));
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(CANNOT_DELETE.getMessage(type.getLabel()));
         type.delete();
     }
@@ -147,7 +147,7 @@ public class TypePropertyTest {
     public void whenDeletingATypeWithConclusionRules_Throw(Type type) {
         assumeThat(type.getRulesOfConclusion(), not(empty()));
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(CANNOT_DELETE.getMessage(type.getLabel()));
         type.delete();
     }
@@ -239,7 +239,7 @@ public class TypePropertyTest {
             @Meta Type subType, @FromGraph Type superType) {
         assumeTrue(sameType(subType, superType));
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getLabel()));
         setDirectSuperType(subType, superType);
     }
@@ -249,7 +249,7 @@ public class TypePropertyTest {
             @Meta(false) Type type, long seed) {
         Type newSuperType = choose(type.subTypes(), seed);
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(type.getLabel(), newSuperType.getLabel()));
         setDirectSuperType(type, newSuperType);
     }
@@ -270,7 +270,7 @@ public class TypePropertyTest {
             Type superType, @Meta @FromGraph Type subType) {
         assumeTrue(sameType(subType, superType));
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getLabel()));
         addDirectSubType(superType, subType);
     }
@@ -280,7 +280,7 @@ public class TypePropertyTest {
             @Meta(false) Type newSubType, long seed) {
         Type type = choose(newSubType.subTypes(), seed);
 
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(newSubType.getLabel(), type.getLabel()));
         addDirectSubType(type, newSubType);
     }

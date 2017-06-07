@@ -52,7 +52,6 @@ class QueryAnswerIterator extends ReasonerQueryIterator {
     QueryAnswerIterator(ReasonerQueryImpl q){
         this.query = q;
         this.cache = new QueryCache<>();
-        LOG.trace(query.getResolutionPlan());
         this.answerIterator = query.iterator(new QueryAnswer(), new HashSet<>(), cache);
     }
 
