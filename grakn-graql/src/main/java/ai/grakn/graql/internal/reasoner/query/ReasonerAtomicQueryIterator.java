@@ -113,29 +113,29 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
         ReasonerAtomicQuery ruleHead = rule.getHead();
         ReasonerQueryImpl ruleBody = rule.getBody();
-        Set<Var> headVars = ruleHead.getVarNames();
-        //Set<Var> varsToRetain = rule.hasDisconnectedHead()? ruleBody.getVarNames() : ruleHead.getVarNames();
+        //Set<Var> headVars = ruleHead.getVarNames();
+        Set<Var> varsToRetain = rule.hasDisconnectedHead()? ruleBody.getVarNames() : ruleHead.getVarNames();
         Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
 
         Iterable<Answer> baseIterable = () -> rule.getBody().iterator(partialSubPrime, subGoals, cache);
         Stream<Answer> baseStream = StreamSupport
                 .stream(baseIterable.spliterator(), false)
-                .map(a -> a.filterVars(headVars));
+                .map(a -> a.filterVars(varsToRetain));
 
         //TODO materialise
-        //Set<Var> queryVars = query.getVarNames();
-        Set<Var> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size()? combinedUnifier.keySet() : ruleHead.getVarNames();
-        if (ruleHead.getAtom().requiresMaterialisation()) {
-
+        if (rule.requiresMaterialisation(query.getAtom())) {
+            Set<Var> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size()? combinedUnifier.keySet() : ruleHead.getVarNames();
             baseStream = baseStream
                     .distinct()
                     .map(a -> {
 
                         //TODO if rulehead not present in cache, do a specific ask
 
+                        //check cache, might be empty if there are query-head differences
                         Answer cacheQueryAnswer = cache.getAnswer(query, a.unify(combinedUnifier));
                         Answer cacheHeadAnswer = cacheQueryAnswer.isEmpty()? cache.getAnswer(ruleHead, a) : new QueryAnswer();
 
+                        //check db
                         List<Answer> headAsk = new ReasonerAtomicQuery(ruleHead).addSubstitution(a).getMatchQuery().execute();
                         List<Answer> queryAsk = query.isEquivalent(ruleHead)?
                                 Collections.emptyList() :
@@ -185,6 +185,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
                     .map(a -> a.explain(new RuleExplanation(query, rule)))
                     .iterator();
         } else {
+            Set<Var> queryVars = query.getVarNames();
 
             //transform the rule answer to the answer to the query
             return baseStream

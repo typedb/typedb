@@ -196,13 +196,14 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * execute insert on the query and return inserted answers
      */
-    Stream<Answer> insert() {
+    private Stream<Answer> insert() {
         return Graql.insert(getPattern().getVars()).withGraph(graph()).stream();
     }
 
     public Stream<Answer> materialise(Answer answer) {
         ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
         queryToMaterialise.addSubstitution(answer);
+        //System.out.println("Materialise : " + queryToMaterialise);
         return queryToMaterialise.insert()
                 .map(ans -> ans.setExplanation(answer.getExplanation()));
     }
