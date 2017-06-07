@@ -212,7 +212,14 @@ public class SingleQueueTaskManager implements TaskManager {
      * @return true if the task has been marked stopped
      */
     boolean isTaskMarkedStopped(TaskId taskId) {
-        return stoppedTasks.getCurrentData(String.format(TASKS_STOPPED, taskId)) != null;
+        // We don't use the cache `stoppedTasks` because it isn't guaranteed to be up-to-date.
+        try {
+            return zookeeper.connection().checkExists().forPath(String.format(TASKS_STOPPED, taskId)) != null;
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

@@ -39,7 +39,9 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -64,6 +66,7 @@ import java.util.function.Consumer;
 public class StandaloneTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(StandaloneTaskManager.class);
 
+    private final Set<TaskId> stoppedTasks;
     private final Map<TaskId, ScheduledFuture> scheduledTasks;
     private final Map<TaskId, BackgroundTask> runningTasks;
 
@@ -81,6 +84,7 @@ public class StandaloneTaskManager implements TaskManager {
         this.config = config;
         this.redis = redis;
 
+        stoppedTasks = new HashSet<>();
         runningTasks = new ConcurrentHashMap<>();
         scheduledTasks = new ConcurrentHashMap<>();
 
@@ -137,8 +141,12 @@ public class StandaloneTaskManager implements TaskManager {
     }
 
     public void stopTask(TaskId id) {
-        TaskState state = storage.getState(id);
+        if(!storage.containsTask(id)){
+            stoppedTasks.add(id);
+            return;
+        }
 
+        TaskState state = storage.getState(id);
         try {
 
             if (taskShouldRun(state)) {
@@ -210,7 +218,9 @@ public class StandaloneTaskManager implements TaskManager {
     private Runnable submitTaskForExecution(TaskState taskState, TaskConfiguration configuration) {
         return () -> {
             TaskState stateFromStorage = storage.getState(taskState.getId());
-            if (taskShouldRun(stateFromStorage) || taskShouldResume(taskState)) {
+            if(taskIsStopped(taskState)){
+                saveState(taskState.markStopped());
+            } else if (taskShouldRun(stateFromStorage) || taskShouldResume(taskState)) {
                 executorService.submit(executeTask(taskState, configuration));
             }
         };
@@ -224,6 +234,15 @@ public class StandaloneTaskManager implements TaskManager {
      */
     private boolean taskShouldRun(TaskState task){
         return task.status() == TaskStatus.CREATED || task.schedule().isRecurring() && task.status() == TaskStatus.COMPLETED;
+    }
+
+    /**
+     * Determine if the task has previously been stopped.
+     * @param task Task that should be checked
+     * @return If the gievn task has been stopped.
+     */
+    private boolean taskIsStopped(TaskState task){
+        return stoppedTasks.contains(task.getId());
     }
 
     /**

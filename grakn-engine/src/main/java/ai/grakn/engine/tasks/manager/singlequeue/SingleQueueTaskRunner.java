@@ -316,6 +316,12 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         return task.status() == RUNNING;
     }
 
+    /**
+     * Checks whether the task should be stopped.
+     *
+     * This is decided by inspecting the current status of the task, or by contacting the
+     * {@link SingleQueueTaskManager} to see whether the task has been requested to be stopped.
+     */
     private boolean shouldStopTask(TaskState task) {
         return task.status() == STOPPED || manager.isTaskMarkedStopped(task.getId());
     }
