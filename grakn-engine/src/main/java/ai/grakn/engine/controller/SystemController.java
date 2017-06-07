@@ -36,6 +36,7 @@ import static ai.grakn.util.REST.GraphConfig.COMPUTER;
 import static ai.grakn.util.REST.GraphConfig.DEFAULT;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
 import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
 import static ai.grakn.util.REST.WebPath.System.METRICS;
@@ -174,14 +175,17 @@ public class SystemController {
     @Path("/metrics")
     @ApiOperation(value = "Exposes internal metrics")
     private String getMetrics(Request request, Response response) throws IOException {
-        response.type(APPLICATION_JSON);
         response.header("Cache-Control", "must-revalidate,no-cache,no-store");
         response.status(HttpServletResponse.SC_OK);
-        if (request.queryParamOrDefault("format", "default").equals("prometheus")) {
+        if (request.queryParamOrDefault("format", "").equals("prometheus")) {
+            // Prometheus format for the metrics
+            response.type(APPLICATION_TEXT);
             final Writer writer1 = new StringWriter();
             TextFormat.write004(writer1, this.prometheusRegistry.metricFamilySamples());
             return writer1.toString();
         } else {
+            // Json/Dropwizard format
+            response.type(APPLICATION_JSON);
             final ObjectWriter writer = mapper.writer();
             try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
                 writer.writeValue(output, this.metricRegistry);

@@ -36,7 +36,7 @@ import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.servlets.MetricsServlet;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -51,16 +51,6 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Service;
-
-import javax.annotation.Nullable;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
