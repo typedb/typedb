@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import redis.embedded.RedisServer;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -146,22 +148,25 @@ public abstract class GraknTestEnv {
 
     private static void clearGraphs(EngineGraknGraphFactory engineGraknGraphFactory) {
         // Drop all keyspaces
+        final Set<String> keyspaceNames = new HashSet<String>();
         try(GraknGraph systemGraph = engineGraknGraphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .execute()
                     .forEach(x -> x.values().forEach(y -> {
-                        String name = y.asResource().getValue().toString();
-                        GraknGraph graph = engineGraknGraphFactory.getGraph(name, GraknTxType.WRITE);
-                        graph.admin().delete();
+                        keyspaceNames.add(y.asResource().getValue().toString());
                     }));
         }
+        keyspaceNames.forEach(name -> {
+            GraknGraph graph = engineGraknGraphFactory.getGraph(name, GraknTxType.WRITE);
+            graph.admin().delete();            
+        });
         engineGraknGraphFactory.refreshConnections();
     }
 
     static void startEmbeddedCassandra() {
         try {
             // We have to use reflection here because the cassandra dependency is only included when testing the titan profile.
-            Class cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
+            Class<?> cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
 
             //noinspection unchecked
             cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
