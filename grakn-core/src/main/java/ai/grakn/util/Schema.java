@@ -53,6 +53,7 @@ public final class Schema {
         RELATES("relates"),
         PLAYS("plays"),
         HAS_SCOPE("has-scope"),
+        //TODO: Remove Casting and Role Player edges
         CASTING("casting"),
         ROLE_PLAYER("role-player"),
         HYPOTHESIS("hypothesis"),
@@ -138,6 +139,7 @@ public final class Schema {
 
         //Instances
         RELATION(Relation.class),
+        //TODO: Remove Casting Base Type
         CASTING(Instance.class),
         ENTITY(Entity.class),
         RESOURCE(Resource.class),
