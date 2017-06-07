@@ -27,6 +27,7 @@ import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import mjson.Json;
@@ -64,10 +65,10 @@ public class SystemKeyspaceUsers extends UsersHandler {
      */
     @Override
     public boolean addUser(Json userJson) {
-        final String username = userJson.at(USER_NAME).asString();        
+        final String username = userJson.at(USER_NAME).asString();
         if (userExists(username)) {
             return false;
-        }            
+        }
         try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             VarPattern user = var().isa(USER_ENTITY);
             for (Map.Entry<String, Json> entry : userJson.asJsonMap().entrySet()) {
@@ -128,7 +129,8 @@ public class SystemKeyspaceUsers extends UsersHandler {
         }
         try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
             VarPattern lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
-            VarPattern resource = var("property");
+            Var resource = var("property");
+
             MatchQuery query = graph.graql().match(lookup.has(RESOURCE.getLabel(), resource));
             List<Answer> L = query.execute();
             if (L.isEmpty()) {
@@ -136,8 +138,8 @@ public class SystemKeyspaceUsers extends UsersHandler {
             }
             Json user = Json.object();
             L.forEach(property -> {
-                TypeLabel label = property.get("property").asInstance().type().getLabel();
-                Object value = property.get("property").asResource().getValue();
+                TypeLabel label = property.get(resource).asInstance().type().getLabel();
+                Object value = property.get(resource).asResource().getValue();
                 user.set(label.getValue(), value);
             });
             return user;
@@ -249,5 +251,5 @@ public class SystemKeyspaceUsers extends UsersHandler {
      */
     public boolean updateUser(Json user) {
         throw new UnsupportedOperationException();
-    }    
+    }
 }

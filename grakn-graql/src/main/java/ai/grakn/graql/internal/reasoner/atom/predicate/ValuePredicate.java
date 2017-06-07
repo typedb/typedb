@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -63,7 +62,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     }
 
     public static VarPatternAdmin createValueVar(Var name, ValuePredicateAdmin pred) {
-        return Graql.var(name).val(pred).admin();
+        return name.val(pred).admin();
     }
 
     @Override
@@ -122,7 +121,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     public Set<Var> getVarNames(){
         Set<Var> vars = super.getVarNames();
         VarPatternAdmin innerVar = getPredicate().getInnerVar().orElse(null);
-        if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
+        if(innerVar != null && innerVar.getVarName().isUserDefinedName()) vars.add(innerVar.getVarName());
         return vars;
     }
 }

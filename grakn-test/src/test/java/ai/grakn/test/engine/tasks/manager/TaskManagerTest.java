@@ -23,6 +23,7 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
@@ -125,7 +126,6 @@ public class TaskManagerTest {
         );
     }
 
-    @Ignore// Failing randomly - may be a race condition
     @Property(trials=10)
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(TaskState task, TaskManager manager) {
         manager.stopTask(task.getId());
@@ -137,7 +137,6 @@ public class TaskManagerTest {
         assertThat(completedTasks(), empty());
     }
 
-    @Ignore// Failing randomly - may be a race condition
     @Property(trials=10)
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(TaskState task, TaskManager manager) {
         manager.stopTask(task.getId());

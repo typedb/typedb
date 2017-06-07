@@ -56,6 +56,23 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.junit.rules.ExpectedException;
 
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static ai.grakn.graql.Graql.insert;
+import static ai.grakn.graql.Graql.match;
+import static ai.grakn.graql.Graql.var;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
+import static java.util.stream.Stream.generate;
+import static org.mockito.Mockito.*;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+
 public class BatchMutatorClientTest {
 
     private GraknSession session;

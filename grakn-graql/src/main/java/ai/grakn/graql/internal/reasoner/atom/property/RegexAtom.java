@@ -18,12 +18,11 @@
 
 package ai.grakn.graql.internal.reasoner.atom.property;
 
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
-import ai.grakn.graql.admin.Atomic;
 
 /**
  *
@@ -39,7 +38,7 @@ public class RegexAtom extends AtomicBase {
     private final String regex;
 
     public RegexAtom(Var varName, RegexProperty prop, ReasonerQuery parent){
-        super(Graql.var(varName).regex(prop.getRegex()).admin(), parent);
+        super(varName.regex(prop.getRegex()).admin(), parent);
         this.regex = prop.getRegex();
     }
 

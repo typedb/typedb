@@ -11,7 +11,7 @@ queryEOF       : query EOF ;
 query          : matchQuery | insertQuery | simpleQuery ;
 simpleQuery    : askQuery | deleteQuery | aggregateQuery | computeQuery ;
 
-matchQuery     : 'match' patterns                                 # matchBase
+matchQuery     : MATCH patterns                                   # matchBase
                | matchQuery 'select' VARIABLE (',' VARIABLE)* ';' # matchSelect
                | matchQuery 'limit' INTEGER                   ';' # matchLimit
                | matchQuery 'offset' INTEGER                  ';' # matchOffset
@@ -21,8 +21,8 @@ matchQuery     : 'match' patterns                                 # matchBase
 
 askQuery       : matchQuery 'ask' ';' ;
 insertQuery    : matchInsert | insertOnly ;
-insertOnly     : 'insert' varPatterns ;
-matchInsert    : matchQuery 'insert' varPatterns ;
+insertOnly     : INSERT varPatterns ;
+matchInsert    : matchQuery INSERT varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
@@ -133,6 +133,8 @@ CLUSTER        : 'cluster' ;
 DEGREES        : 'degrees' ;
 MEMBERS        : 'members' ;
 SIZE           : 'size' ;
+MATCH          : 'match' ;
+INSERT         : 'insert' ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' | 'date' ;
 ORDER          : 'asc' | 'desc' ;

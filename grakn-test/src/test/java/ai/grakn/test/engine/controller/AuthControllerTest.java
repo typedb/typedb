@@ -16,6 +16,7 @@ import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class AuthControllerTest{
 
     private static final JWTHandler jwtHandler = JWTHandler.create("secret token");
