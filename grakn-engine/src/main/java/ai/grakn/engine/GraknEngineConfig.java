@@ -157,13 +157,6 @@ public class GraknEngineConfig {
     // Getters
 
     /**
-     * @return The path to the grakn.log file in use.
-     */
-    String getLogFilePath() {
-        return System.getProperty(SYSTEM_PROPERTY_GRAKN_LOG_DIRECTORY);
-    }
-
-    /**
      * @return Number of available threads to be used to instantiate new threadpools.
      */
     public int getAvailableThreads() {

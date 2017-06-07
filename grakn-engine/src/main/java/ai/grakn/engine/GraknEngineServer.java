@@ -79,7 +79,7 @@ public class GraknEngineServer implements AutoCloseable {
         taskManager = startTaskManager();
 
         startHTTP();
-        printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER), prop.getLogFilePath());
+        printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
     }
 
     public static void main(String[] args) {
@@ -270,11 +270,9 @@ public class GraknEngineServer implements AutoCloseable {
      *
      * @param host        Host address to which Grakn Engine is bound to
      * @param port        Web server port number
-     * @param logFilePath Path to the LOG file.
      */
-    private static void printStartMessage(String host, String port, String logFilePath) {
+    private static void printStartMessage(String host, String port) {
         String address = "http://" + host + ":" + port;
-        LOG.info("\nGrakn LOG file located at [" + logFilePath + "]");
         LOG.info("\n==================================================");
         LOG.info("\n" + String.format(GraknEngineConfig.GRAKN_ASCII, address));
         LOG.info("\n==================================================");
