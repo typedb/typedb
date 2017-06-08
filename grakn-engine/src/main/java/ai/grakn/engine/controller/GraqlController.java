@@ -37,7 +37,6 @@ import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
 import static ai.grakn.util.REST.Response.Graql.RESPONSE;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.lang.Boolean.parseBoolean;
-
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
