@@ -18,7 +18,6 @@
 
 package ai.grakn.test.engine.controller;
 
-<<<<<<< HEAD
 import ai.grakn.engine.TaskId;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import ai.grakn.engine.controller.TasksController;
@@ -29,9 +28,6 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.SparkContext;
-=======
-import static ai.grakn.engine.TaskStatus.FAILED;
->>>>>>> bulk-task-endpoint
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
@@ -46,6 +42,8 @@ import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
+import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import static com.jayway.restassured.RestAssured.with;
 import com.jayway.restassured.mapper.ObjectMapper;
@@ -56,10 +54,13 @@ import com.jayway.restassured.specification.RequestSpecification;
 import java.time.Duration;
 import java.time.Instant;
 import static java.time.Instant.now;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import mjson.Json;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -77,36 +78,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import ai.grakn.engine.TaskId;
-import ai.grakn.engine.controller.TasksController;
-import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.TaskSchedule;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.engine.util.EngineID;
-import ai.grakn.test.SparkContext;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.jayway.restassured.mapper.ObjectMapper;
-import com.jayway.restassured.mapper.ObjectMapperDeserializationContext;
-import com.jayway.restassured.mapper.ObjectMapperSerializationContext;
-import com.jayway.restassured.response.Response;
-import com.jayway.restassured.specification.RequestSpecification;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import mjson.Json;
-import org.apache.http.HttpStatus;
-import org.apache.http.entity.ContentType;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.Mockito;
-
 public class TasksControllerTest {
   
     public static final Json EMPTY_JSON = Json.object();
@@ -115,7 +86,7 @@ public class TasksControllerTest {
 
     @ClassRule
     public static final SparkContext ctx = SparkContext.withControllers(spark -> {
-        new TasksController(spark, manager);
+        new TasksController(spark, manager, new MetricRegistry());
     });
 
     @Before

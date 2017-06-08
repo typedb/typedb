@@ -107,12 +107,8 @@ public class REST {
         public static final String TASKS_PARAM = "tasks";
         public static final String CONFIGURATION_PARAM = "configuration";
         public static final String KEYSPACE = "keyspace";
-<<<<<<< HEAD
         public static final String FORMAT = "format";
-
-=======
         public static final String UUID_PARAMETER = "uuid";
->>>>>>> bulk-task-endpoint
 
         //Commit Logs
         public static final String COMMIT_LOG_FIXING = "concepts-to-fix";

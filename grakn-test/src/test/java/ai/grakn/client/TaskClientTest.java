@@ -21,6 +21,7 @@ package ai.grakn.client;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
+import com.codahale.metrics.MetricRegistry;
 import static java.time.Instant.now;
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -62,7 +63,7 @@ public class TaskClientTest {
 
     @ClassRule
     public static final SparkContext ctx = SparkContext.withControllers(spark -> {
-        new TasksController(spark, manager);
+        new TasksController(spark, manager, new MetricRegistry());
     });
 
     @BeforeClass

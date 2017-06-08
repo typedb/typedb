@@ -34,6 +34,10 @@ import ai.grakn.util.REST;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
+import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -84,12 +88,23 @@ public class TasksController {
 
     private final TaskManager manager;
     private final ExecutorService executor;
+    private final Timer createTasksTimer;
+    private final Timer createTasksExecutionTimer;
+    private final Timer stopTaskTimer;
+    private final Timer getTaskTimer;
+    private final Timer getTasksTimer;
 
-    public TasksController(Service spark, TaskManager manager) {
+    public TasksController(Service spark, TaskManager manager, MetricRegistry metricRegistry) {
         if (manager==null) {
             throw GraknServerException.internalError("Task manager has not been instantiated.");
         }
         this.manager = manager;
+
+        this.getTasksTimer = metricRegistry.timer(name(TasksController.class, "get-tasks"));
+        this.getTaskTimer = metricRegistry.timer(name(TasksController.class, "get-task"));
+        this.stopTaskTimer = metricRegistry.timer(name(TasksController.class, "stop-task"));
+        this.createTasksTimer = metricRegistry.timer(name(TasksController.class, "create-tasks"));
+        this.createTasksExecutionTimer = metricRegistry.timer(name(TasksController.class, "create-tasks-execution"));
 
         spark.get(TASKS, this::getTasks);
         spark.get(GET, this::getTask);
@@ -130,16 +145,20 @@ public class TasksController {
             status = TaskStatus.valueOf(request.queryParams(REST.Request.TASK_STATUS_PARAMETER));
         }
 
-        Json result = Json.array();
-        manager.storage()
-                .getTasks(status, className, creator, null, limit, offset).stream()
-                .map(this::serialiseStateSubset)
-                .forEach(result::add);
+        Context context = getTasksTimer.time();
+        try {
+            Json result = Json.array();
+            manager.storage()
+                    .getTasks(status, className, creator, null, limit, offset).stream()
+                    .map(this::serialiseStateSubset)
+                    .forEach(result::add);
 
-        response.status(200);
-        response.type(ContentType.APPLICATION_JSON.getMimeType());
-
-        return result;
+            response.status(200);
+            response.type(ContentType.APPLICATION_JSON.getMimeType());
+            return result;
+        } finally {
+            context.stop();
+        }
     }
 
     @GET
@@ -149,10 +168,14 @@ public class TasksController {
     private Json getTask(Request request, Response response) {
         String id = request.params("id");
 
-        response.status(200);
-        response.type("application/json");
-
-        return serialiseStateFull(manager.storage().getState(TaskId.of(id)));
+        Context context = getTaskTimer.time();
+        try {
+            response.status(200);
+            response.type("application/json");
+            return serialiseStateFull(manager.storage().getState(TaskId.of(id)));
+        } finally {
+            context.stop();
+        }
     }
 
     @PUT
@@ -161,8 +184,13 @@ public class TasksController {
     @ApiImplicitParam(name = REST.Request.UUID_PARAMETER, value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private Json stopTask(Request request, Response response) {
         String id = request.params(REST.Request.ID_PARAMETER);
-        manager.stopTask(TaskId.of(id));
-        return Json.object();
+        Context context = stopTaskTimer.time();
+        try {
+            manager.stopTask(TaskId.of(id));
+            return Json.object();
+        } finally {
+            context.stop();
+        }
     }
 
     @POST
@@ -187,53 +215,61 @@ public class TasksController {
         response.type(ContentType.APPLICATION_JSON.getMimeType());
         // We need to return the list of taskStates in order
         // so the client can relate the state to each element in the request.
-        List<TaskStateWithConfiguration> taskStates = new ArrayList<>();
-        for (int i = 0; i < taskJsonList.size(); i++) {
-            Json singleTaskJson = taskJsonList.get(i);
-            try {
-                taskStates.add(new TaskStateWithConfiguration(
-                                extractParametersAndProcessTask(singleTaskJson),
-                                extractConfiguration(singleTaskJson), i));
-            } catch (Exception e) {
-                LOG.error("Malformed request at {}", singleTaskJson, e);
-                // We return a failure for the full request as this imply there is
-                // something wrong in the client logic that needs to be addressed
-                throw e;
-            }
-        }
-
-        List<CompletableFuture<Json>> futures = taskStates.stream()
-                .map(taskStateWithConfiguration -> CompletableFuture
-                        .supplyAsync(() -> addTaskToManager(taskStateWithConfiguration), executor))
-                .collect(toList());
-        CompletableFuture<List<Json>> completableFuture = all(futures);
+        final Timer.Context context = createTasksTimer.time();
         try {
-            List<Json> results = completableFuture
-                    .get(MAX_EXECUTION_TIME.getSeconds(), TimeUnit.SECONDS);
-            boolean hasFailures = false;
-            for (Json resultForTask : results) {
-                responseJson.add(resultForTask);
-                if (resultForTask.at("code").asInteger() != HttpStatus.SC_OK) {
-                    hasFailures = true;
+            List<TaskStateWithConfiguration> taskStates = new ArrayList<>();
+            for (int i = 0; i < taskJsonList.size(); i++) {
+                Json singleTaskJson = taskJsonList.get(i);
+                try {
+                    taskStates.add(new TaskStateWithConfiguration(
+                            extractParametersAndProcessTask(singleTaskJson),
+                            extractConfiguration(singleTaskJson), i));
+                } catch (Exception e) {
+                    LOG.error("Malformed request at {}", singleTaskJson, e);
+                    // We return a failure for the full request as this imply there is
+                    // something wrong in the client logic that needs to be addressed
+                    throw e;
                 }
             }
-            if (!hasFailures) {
-                response.status(HttpStatus.SC_OK);
-            } else if (responseJson.asJsonList().size() > 0) {
-                response.status(HttpStatus.SC_ACCEPTED);
-            } else {
+            List<CompletableFuture<Json>> futures = taskStates.stream()
+                    .map(taskStateWithConfiguration -> CompletableFuture
+                            .supplyAsync(() -> addTaskToManager(taskStateWithConfiguration), executor))
+                    .collect(toList());
+            CompletableFuture<List<Json>> completableFuture = all(futures);
+            Context executionContext = createTasksExecutionTimer.time();
+            try {
+                List<Json> results = completableFuture
+                        .get(MAX_EXECUTION_TIME.getSeconds(), TimeUnit.SECONDS);
+                boolean hasFailures = false;
+                for (Json resultForTask : results) {
+                    responseJson.add(resultForTask);
+                    if (resultForTask.at("code").asInteger() != HttpStatus.SC_OK) {
+                        hasFailures = true;
+                    }
+                }
+                if (!hasFailures) {
+                    response.status(HttpStatus.SC_OK);
+                } else if (responseJson.asJsonList().size() > 0) {
+                    response.status(HttpStatus.SC_ACCEPTED);
+                } else {
+                    response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+                }
+                return responseJson;
+            } catch (TimeoutException | InterruptedException e) {
+                LOG.error("Task interrupted", e);
                 response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+                return Json.object();
+            } catch (Exception e) {
+                LOG.error("Exception while processing batch of tasks", e);
+                response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+                return Json.object();
+            } finally {
+                executionContext.stop();
             }
-            return responseJson;
-        } catch (TimeoutException | InterruptedException e) {
-            LOG.error("Task interrupted", e);
-            response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            return Json.object();
-        } catch (Exception e) {
-            LOG.error("Exception while processing batch of tasks", e);
-            response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            return Json.object();
+        } finally {
+            context.stop();
         }
+
     }
 
     private Json extractConfiguration(Json taskJson) {

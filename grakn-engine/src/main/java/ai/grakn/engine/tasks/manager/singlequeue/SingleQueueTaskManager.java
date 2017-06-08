@@ -32,6 +32,10 @@ import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.EngineID;
+import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -81,6 +85,8 @@ public class SingleQueueTaskManager implements TaskManager {
     private final GraknEngineConfig config;
     private final RedisConnection redis;
 
+    private final Timer addTaskTimer;
+
     private Set<SingleQueueTaskRunner> taskRunners;
     private ExecutorService taskRunnerThreadPool;
 
@@ -95,7 +101,7 @@ public class SingleQueueTaskManager implements TaskManager {
      *  + Create and run an instance of SingleQueueTaskRunner
      *  + Add oneself to the leader elector by instantiating failoverelector
      */
-    public SingleQueueTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis) {
+    public SingleQueueTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis, MetricRegistry metricRegistry) {
         this.config = config;
         this.redis = redis;
         this.zookeeper = new ZookeeperConnection(config);
@@ -106,6 +112,7 @@ public class SingleQueueTaskManager implements TaskManager {
         //TODO only pass necessary Kafka properties
         this.producer = kafkaProducer(config.getProperties());
 
+        addTaskTimer = metricRegistry.timer(name(SingleQueueTaskManager.class, "add-task-timer"));
         // Create thread pool for the task runners
         ThreadFactory taskRunnerPoolFactory = new ThreadFactoryBuilder()
                 .setNameFormat(TASK_RUNNER_THREAD_POOL_NAME)
@@ -229,8 +236,13 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     @Override
     public void addTask(TaskState taskState, TaskConfiguration configuration){
-        producer.send(new ProducerRecord<>(taskState.priority().queue(), taskState, configuration));
-        producer.flush();
+        Context context = addTaskTimer.time();
+        try{
+            producer.send(new ProducerRecord<>(taskState.priority().queue(), taskState, configuration));
+            producer.flush();
+        } finally {
+            context.stop();
+        }
     }
 
     /**
