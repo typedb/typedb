@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.parser;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -240,7 +241,7 @@ public class QueryParser {
         S tree = parseRule.apply(parser);
 
         if (errorListener.hasErrors()) {
-            throw new IllegalArgumentException(errorListener.toString());
+            throw GraqlSyntaxException.parsingError(errorListener.toString());
         }
 
         return visit.apply(getQueryVisitor(), tree);
