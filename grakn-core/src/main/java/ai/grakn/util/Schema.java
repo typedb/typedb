@@ -135,8 +135,6 @@ public final class Schema {
 
         //Instances
         RELATION(Relation.class),
-        //TODO: Remove Casting Base Type
-        CASTING(Instance.class),
         ENTITY(Entity.class),
         RESOURCE(Resource.class),
         RULE(Rule.class);

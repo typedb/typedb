@@ -37,8 +37,6 @@ class InIsaFragment extends AbstractFragment {
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
         Fragments.inSubs(traversal).in(SHARD.getLabel()).in(ISA.getLabel());
-        // Make sure we never get any castings
-        traversal.not(__.hasLabel(Schema.BaseType.CASTING.name()));
     }
 
     @Override
