@@ -53,14 +53,10 @@ public final class Schema {
         RELATES("relates"),
         PLAYS("plays"),
         HAS_SCOPE("has-scope"),
-        //TODO: Remove Casting and Role Player edges
-        CASTING("casting"),
-        ROLE_PLAYER("role-player"),
         HYPOTHESIS("hypothesis"),
         CONCLUSION("conclusion"),
         SHORTCUT("shortcut"),
         SHARD("shard");
-
 
         private final String label;
 
