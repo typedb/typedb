@@ -44,6 +44,13 @@ public class CommonUtil {
 
     private CommonUtil() {}
 
+    public static void withImplicitConceptsVisible(GraknGraph graph, Runnable function) {
+        withImplicitConceptsVisible(graph, g -> {
+            function.run();
+            return null;
+        });
+    }
+
     public static <T> T withImplicitConceptsVisible(GraknGraph graph, Supplier<T> function) {
         return withImplicitConceptsVisible(graph, g -> function.get());
     }
@@ -51,8 +58,12 @@ public class CommonUtil {
     public static <T> T withImplicitConceptsVisible(GraknGraph graph, Function<GraknGraph, T> function) {
         boolean implicitFlag = graph.implicitConceptsVisible();
         graph.showImplicitConcepts(true);
-        T result = function.apply(graph);
-        graph.showImplicitConcepts(implicitFlag);
+        T result;
+        try {
+            result = function.apply(graph);
+        } finally {
+            graph.showImplicitConcepts(implicitFlag);
+        }
         return result;
     }
 

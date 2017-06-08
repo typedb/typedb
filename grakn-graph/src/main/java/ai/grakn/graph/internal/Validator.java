@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 
 import java.util.ArrayList;
@@ -60,28 +61,27 @@ class Validator {
      * @return True if the data and schema conforms to our concept.
      */
     public boolean validate(){
-        boolean originalValue = graknGraph.implicitConceptsVisible();
-        graknGraph.showImplicitConcepts(true);
-        Set<ConceptImpl> validationList = new HashSet<>(graknGraph.getTxCache().getModifiedConcepts());
-        for(ConceptImpl nextToValidate: validationList){
-            if (nextToValidate.isInstance() && !nextToValidate.isCasting()) {
-                validateInstance((InstanceImpl) nextToValidate);
-                if (nextToValidate.isRelation()) {
-                    validateRelation((RelationImpl) nextToValidate);
-                } else if(nextToValidate.isRule()){
-                    validateRule(graknGraph, (RuleImpl) nextToValidate);
-                }
-            } else if (nextToValidate.isCasting()) {
-                validateCasting((CastingImpl) nextToValidate);
-            } else if (nextToValidate.isType() && !Schema.MetaSchema.isMetaLabel(nextToValidate.asType().getLabel())) {
-                if (nextToValidate.isRoleType()) {
-                    validateRoleType((RoleTypeImpl) nextToValidate);
-                } else if (nextToValidate.isRelationType()) {
-                    validateRelationType((RelationTypeImpl) nextToValidate);
+        CommonUtil.withImplicitConceptsVisible(graknGraph, () -> {
+            Set<ConceptImpl> validationList = new HashSet<>(graknGraph.getTxCache().getModifiedConcepts());
+            for(ConceptImpl nextToValidate: validationList){
+                if (nextToValidate.isInstance() && !nextToValidate.isCasting()) {
+                    validateInstance((InstanceImpl) nextToValidate);
+                    if (nextToValidate.isRelation()) {
+                        validateRelation((RelationImpl) nextToValidate);
+                    } else if(nextToValidate.isRule()){
+                        validateRule(graknGraph, (RuleImpl) nextToValidate);
+                    }
+                } else if (nextToValidate.isCasting()) {
+                    validateCasting((CastingImpl) nextToValidate);
+                } else if (nextToValidate.isType() && !Schema.MetaSchema.isMetaLabel(nextToValidate.asType().getLabel())) {
+                    if (nextToValidate.isRoleType()) {
+                        validateRoleType((RoleTypeImpl) nextToValidate);
+                    } else if (nextToValidate.isRelationType()) {
+                        validateRelationType((RelationTypeImpl) nextToValidate);
+                    }
                 }
             }
-        }
-        graknGraph.showImplicitConcepts(originalValue);
+        });
         return errorsFound.size() == 0;
     }
 

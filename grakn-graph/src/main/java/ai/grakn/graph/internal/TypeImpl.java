@@ -28,6 +28,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -225,27 +226,26 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     }
 
     private Collection<ResourceType> resources(Schema.ImplicitType implicitType){
-        boolean implicitFlag = getGraknGraph().implicitConceptsVisible();
+        return CommonUtil.withImplicitConceptsVisible(getGraknGraph(), () -> {
+            //TODO: Make this less convoluted
+            String [] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
+            String prefix = implicitIdentifiers[0] + "-";
+            String suffix = "-" + implicitIdentifiers[1];
 
-        //TODO: Make this less convoluted
-        String [] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
-        String prefix = implicitIdentifiers[0] + "-";
-        String suffix = "-" + implicitIdentifiers[1];
+            getGraknGraph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retrieved
 
-        getGraknGraph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retrieved
+            Set<ResourceType> resourceTypes = new HashSet<>();
+            //A traversal is not used in this caching so that ontology caching can be taken advantage of.
+            plays().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
+                String roleTypeLabel = roleType.getLabel().getValue();
+                if(roleTypeLabel.startsWith(prefix) && roleTypeLabel.endsWith(suffix)){ //This is the implicit type we want
+                    String resourceTypeLabel = roleTypeLabel.replace(prefix, "").replace(suffix, "");
+                    resourceTypes.add(getGraknGraph().getResourceType(resourceTypeLabel));
+                }
+            }));
 
-        Set<ResourceType> resourceTypes = new HashSet<>();
-        //A traversal is not used in this caching so that ontology caching can be taken advantage of.
-        plays().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
-            String roleTypeLabel = roleType.getLabel().getValue();
-            if(roleTypeLabel.startsWith(prefix) && roleTypeLabel.endsWith(suffix)){ //This is the implicit type we want
-                String resourceTypeLabel = roleTypeLabel.replace(prefix, "").replace(suffix, "");
-                resourceTypes.add(getGraknGraph().getResourceType(resourceTypeLabel));
-            }
-        }));
-
-        getGraknGraph().showImplicitConcepts(implicitFlag);
-        return resourceTypes;
+            return resourceTypes;
+        });
     }
 
     Map<RoleType, Boolean> directPlays(){

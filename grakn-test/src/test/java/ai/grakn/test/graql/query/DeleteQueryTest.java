@@ -26,6 +26,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.test.GraphContext;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.junit.After;
 import org.junit.Before;
@@ -229,11 +230,7 @@ public class DeleteQueryTest {
 
     @Test
     public void testDeleteResource() {
-        boolean implicitConcepts = movieGraph.graph().implicitConceptsVisible();
-
-        try {
-            movieGraph.graph().showImplicitConcepts(true);
-
+        CommonUtil.withImplicitConceptsVisible(movieGraph.graph(), () -> {
             MatchQuery godfather = qb.match(var().has("title", "Godfather"));
             ConceptId id = qb.match(
                     var("x").has("title", "Godfather"),
@@ -251,9 +248,7 @@ public class DeleteQueryTest {
             assertTrue(exists(godfather));
             assertFalse(exists(relation)); //Relation is implicit it was deleted
             assertFalse(exists(voteCount));
-        } finally {
-            movieGraph.graph().showImplicitConcepts(implicitConcepts);
-        }
+        });
     }
 
     @Test
