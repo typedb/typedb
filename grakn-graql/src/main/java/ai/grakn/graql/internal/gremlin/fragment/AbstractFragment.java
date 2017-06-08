@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Optional;
@@ -72,11 +73,8 @@ abstract class AbstractFragment implements Fragment{
 
     @Override
     public final EquivalentFragmentSet getEquivalentFragmentSet() {
-        if (equivalentFragmentSet != null) {
-            return equivalentFragmentSet;
-        } else {
-            throw new IllegalStateException("Should not call getEquivalentFragmentSet before setEquivalentFragmentSet");
-        }
+        Preconditions.checkNotNull(equivalentFragmentSet, "Should not call getEquivalentFragmentSet before setEquivalentFragmentSet");
+        return equivalentFragmentSet;
     }
 
     @Override

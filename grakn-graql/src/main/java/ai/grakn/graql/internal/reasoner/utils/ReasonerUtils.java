@@ -24,6 +24,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
@@ -39,13 +40,11 @@ import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import java.util.stream.Stream;
 import javafx.util.Pair;
 
 import java.util.ArrayList;
@@ -57,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
@@ -360,7 +360,7 @@ public class ReasonerUtils {
      */
     public static Rule createTransitiveRule(RelationType relType, TypeLabel fromRoleLabel, TypeLabel toRoleLabel, GraknGraph graph){
         final int arity = relType.relates().size();
-        if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
+        if (arity != 2) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPatternAdmin startVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "z").admin();
         VarPatternAdmin endVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "z").rel(Graql.label(toRoleLabel), "y").admin();
@@ -379,7 +379,7 @@ public class ReasonerUtils {
      */
     public static Rule createReflexiveRule(RelationType relType, TypeLabel fromRoleLabel, TypeLabel toRoleLabel, GraknGraph graph){
         final int arity = relType.relates().size();
-        if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
+        if (arity != 2) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPattern body = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y");
         VarPattern head = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "x");
@@ -399,7 +399,7 @@ public class ReasonerUtils {
         final int parentArity = parent.relates().size();
         final int childArity = child.relates().size();
         if (parentArity != childArity || parentArity != roleMappings.size()) {
-            throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
+            throw GraqlQueryException.ruleCreationArityMismatch();
         }
         VarPattern parentVar = var().isa(Graql.label(parent.getLabel()));
         VarPattern childVar = var().isa(Graql.label(child.getLabel()));

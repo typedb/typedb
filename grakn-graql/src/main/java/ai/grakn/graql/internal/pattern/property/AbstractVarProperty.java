@@ -19,12 +19,11 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
 
 import java.util.stream.Stream;
 
@@ -36,7 +35,7 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
 
         getInnerVars().map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
             if (graph.getType(label) == null) {
-                throw new IllegalStateException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
+                throw GraqlQueryException.labelNotFound(label);
             }
         });
     }
@@ -51,7 +50,7 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        throw failDelete(this);
+        throw GraqlQueryException.failDelete(this);
     }
 
     @Override
@@ -64,9 +63,4 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
         return getInnerVars();
     }
 
-    static IllegalStateException failDelete(VarProperty property) {
-        StringBuilder builder = new StringBuilder();
-        property.buildString(builder);
-        return new IllegalStateException(ErrorMessage.DELETE_UNSUPPORTED_PROPERTY.getMessage(builder.toString()));
-    }
 }

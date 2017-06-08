@@ -24,6 +24,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -33,7 +34,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
 import java.util.Collection;
@@ -76,9 +76,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         this.resourceType = resourceType;
         this.required = required;
 
-        TypeLabel resourceTypeLabel = resourceType.getTypeLabel().orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_LABEL_SPECIFIED_FOR_HAS.getMessage())
-        );
+        TypeLabel resourceTypeLabel = resourceType.getTypeLabel().orElseThrow(GraqlQueryException::noLabelSpecifiedForHas);
 
         VarPattern role = Graql.label(Schema.MetaSchema.ROLE.getLabel());
 

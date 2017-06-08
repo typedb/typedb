@@ -26,6 +26,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -35,7 +36,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 
@@ -137,7 +137,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     void checkValidProperty(GraknGraph graph, VarPatternAdmin var) {
         Type type = graph.getType(resourceType);
         if(type == null || !type.isResourceType()) {
-            throw new IllegalStateException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
+            throw GraqlQueryException.mustBeResourceType(resourceType);
         }
     }
 

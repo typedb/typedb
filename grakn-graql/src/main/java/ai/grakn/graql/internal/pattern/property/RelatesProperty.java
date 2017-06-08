@@ -24,6 +24,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -96,7 +97,7 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        TypeLabel roleLabel = role.getTypeLabel().orElseThrow(() -> failDelete(this));
+        TypeLabel roleLabel = role.getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
         concept.asRelationType().deleteRelates(graph.getType(roleLabel));
     }
 

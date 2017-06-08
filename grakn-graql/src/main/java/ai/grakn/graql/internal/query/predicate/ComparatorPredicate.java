@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.predicate;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.VarPatternBuilder;
@@ -37,7 +38,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static ai.grakn.concept.ResourceType.DataType.SUPPORTED_TYPES;
-import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
 
 abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
@@ -72,7 +72,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
             ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getName());
 
             if (dataType == null) {
-                throw new IllegalArgumentException(INVALID_VALUE.getMessage(value.getClass()));
+                throw GraqlQueryException.invalidValueClass(value);
             }
 
             // We can trust the `SUPPORTED_TYPES` map to store things with the right type

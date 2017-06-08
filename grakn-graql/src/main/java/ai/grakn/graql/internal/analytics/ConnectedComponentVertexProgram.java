@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.TypeId;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.exception.GraqlQueryException;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -123,11 +123,11 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         }
         if (memory.getIteration() == MAX_ITERATION) {
             LOGGER.debug("Reached Max Iteration: " + MAX_ITERATION + " !!!!!!!!");
-            throw new IllegalStateException(ErrorMessage.MAX_ITERATION_REACHED
-                    .getMessage(this.getClass().toString()));
+            throw GraqlQueryException.maxIterationsReached(this.getClass());
         }
 
         memory.or(VOTE_TO_HALT, true);
         return false;
     }
+
 }
