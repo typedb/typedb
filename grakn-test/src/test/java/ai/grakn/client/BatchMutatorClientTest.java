@@ -25,11 +25,24 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Graql;
+import static ai.grakn.graql.Graql.insert;
+import static ai.grakn.graql.Graql.match;
+import static ai.grakn.graql.Graql.var;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.test.EngineContext;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import static java.util.stream.Stream.generate;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -37,25 +50,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.junit.rules.ExpectedException;
-
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static ai.grakn.graql.Graql.insert;
-import static ai.grakn.graql.Graql.match;
-import static ai.grakn.graql.Graql.var;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
-import static java.util.stream.Stream.generate;
-import static org.mockito.Mockito.*;
-import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
-@Ignore
 public class BatchMutatorClientTest {
 
     private GraknSession session;
@@ -75,7 +74,7 @@ public class BatchMutatorClientTest {
     }
 
     @Test
-    @Ignore // ignored until bug fix so PRs can pass
+    @Ignore("Testing log output, it's pretty flimsy. It's also prone to race conditions. Ignored until bug fix so PRs can pass")
     public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged() throws InterruptedException {
         CountDownLatch callbackCompleted = new CountDownLatch(1);
 
@@ -207,7 +206,8 @@ public class BatchMutatorClientTest {
 
         BatchMutatorClient loader = loader();
         loader.setRetryPolicy(false);
-        loader.setBatchSize(5);
+        int batchSize = 5;
+        loader.setBatchSize(batchSize);
         loader.setTaskCompletionConsumer((json) -> {
             if (json != null) {
                 tasksCompletedWithoutError.incrementAndGet();
@@ -216,9 +216,13 @@ public class BatchMutatorClientTest {
             }
         });
 
-
-        for(int i = 0; i < 20; i++){
-            loader.add(query());
+        int queries = 20;
+        for(int i = 0; i < queries; i++){
+            try {
+                loader.add(query());
+            } catch(RuntimeException e) {
+                // Swallowing exceptions, there's a count of successful tasks anyway
+            }
 
             if(i%10 == 0) {
                 engine.server().stopHTTP();
@@ -228,8 +232,9 @@ public class BatchMutatorClientTest {
 
         loader.waitToFinish();
 
-        assertThat(tasksCompletedWithoutError.get(), lessThanOrEqualTo(4));
-        assertThat(tasksCompletedWithoutError.get() + tasksCompletedWithError.get(), equalTo(4));
+        int expectedTotal = queries/batchSize;
+        assertThat(tasksCompletedWithoutError.get(), lessThanOrEqualTo(expectedTotal));
+        assertThat(tasksCompletedWithoutError.get() + tasksCompletedWithError.get(), equalTo(expectedTotal));
     }
 
     @Test
