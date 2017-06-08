@@ -63,6 +63,7 @@ public enum ErrorMessage {
     CONCEPT_HAS_NO_SHARD("Concept [%s] does not have any shard"),
     IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),
     CLOSE_GRAPH_FAILURE("Unable to close graph [%s]"),
+    VERSION_MISMATCH("You are attempting to use Grakn Version [%s] with a graph build using version [%s], this is not supported."),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
