@@ -152,7 +152,7 @@ public class ReasonerUtils {
     public static IdPredicate getIdPredicate(Var typeVariable, VarPatternAdmin typeVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
         IdPredicate predicate = null;
         //look for id predicate among vars
-        if(typeVar.isUserDefinedName()) {
+        if(typeVar.getVarName().isUserDefinedName()) {
             predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
         } else {
             LabelProperty nameProp = typeVar.getProperty(LabelProperty.class).orElse(null);
@@ -172,7 +172,7 @@ public class ReasonerUtils {
      */
     public static Set<ValuePredicate> getValuePredicates(Var valueVariable, VarPatternAdmin valueVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
         Set<ValuePredicate> predicates = new HashSet<>();
-        if(valueVar.isUserDefinedName()){
+        if(valueVar.getVarName().isUserDefinedName()){
             vars.stream()
                     .filter(v -> v.getVarName().equals(valueVariable))
                     .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.getVarName(), vp.getPredicate(), parent)))
@@ -405,9 +405,9 @@ public class ReasonerUtils {
         VarPattern childVar = var().isa(Graql.label(child.getLabel()));
 
         for (Map.Entry<TypeLabel, TypeLabel> entry : roleMappings.entrySet()) {
-            Var varName = Var.anon();
-            parentVar = parentVar.rel(Graql.label(entry.getKey()), var(varName));
-            childVar = childVar.rel(Graql.label(entry.getValue()), var(varName));
+            Var varName = var().asUserDefined();
+            parentVar = parentVar.rel(Graql.label(entry.getKey()), varName);
+            childVar = childVar.rel(Graql.label(entry.getValue()), varName);
         }
         return graph.admin().getMetaRuleInference().putRule(childVar, parentVar);
     }
@@ -424,18 +424,18 @@ public class ReasonerUtils {
     public static Rule createPropertyChainRule(RelationType relation, TypeLabel fromRoleLabel, TypeLabel toRoleLabel,
                                                LinkedHashMap<RelationType, Pair<TypeLabel, TypeLabel>> chain, GraknGraph graph){
         Stack<Var> varNames = new Stack<>();
-        varNames.push(Var.of("x"));
+        varNames.push(var("x"));
         Set<VarPatternAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
-            Var varName = Var.anon();
+            Var varName = var().asUserDefined();
             VarPatternAdmin var = var().isa(Graql.label(relType.getLabel()))
-                    .rel(Graql.label(rolePair.getKey()), var(varNames.peek()))
-                    .rel(Graql.label(rolePair.getValue()), var(varName)).admin();
+                    .rel(Graql.label(rolePair.getKey()), varNames.peek())
+                    .rel(Graql.label(rolePair.getValue()), varName).admin();
             varNames.push(varName);
             bodyVars.add(var);
         });
 
-        VarPattern headVar = var().isa(Graql.label(relation.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), var(varNames.peek()));
+        VarPattern headVar = var().isa(Graql.label(relation.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), varNames.peek());
         return graph.admin().getMetaRuleInference().putRule(Patterns.conjunction(bodyVars), headVar);
     }
 

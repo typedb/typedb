@@ -35,12 +35,12 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("unchecked")
 public class PatternImplTest {
 
-    private final VarPatternAdmin x = Graql.var("x").admin();
-    private final VarPatternAdmin y = Graql.var("y").admin();
-    private final VarPatternAdmin z = Graql.var("z").admin();
-    private final VarPatternAdmin a = Graql.var("a").admin();
-    private final VarPatternAdmin b = Graql.var("b").admin();
-    private final VarPatternAdmin c = Graql.var("c").admin();
+    private final VarPatternAdmin x = Graql.var("x").pattern().admin();
+    private final VarPatternAdmin y = Graql.var("y").pattern().admin();
+    private final VarPatternAdmin z = Graql.var("z").pattern().admin();
+    private final VarPatternAdmin a = Graql.var("a").pattern().admin();
+    private final VarPatternAdmin b = Graql.var("b").pattern().admin();
+    private final VarPatternAdmin c = Graql.var("c").pattern().admin();
 
     @Test
     public void testVarDNF() {

@@ -19,6 +19,7 @@
 
 package ai.grakn.engine.tasks.manager.singlequeue;
 
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
@@ -26,6 +27,7 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.util.EngineID;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -62,6 +64,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final AtomicBoolean wakeUp = new AtomicBoolean(false);
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
     private final EngineID engineID;
+    private final GraknEngineConfig engineConfig;
+    private final RedisConnection redis;
 
     private TaskId runningTaskId = null;
     private BackgroundTask runningTask = null;
@@ -78,11 +82,15 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param manager a place to control the lifecycle of tasks
      * @param offsetStorage a place to externally store kafka offsets
      */
-    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID, ExternalOffsetStorage offsetStorage, int timeUntilBackoff, Consumer<TaskState, TaskConfiguration> consumer){
+    public SingleQueueTaskRunner(
+            SingleQueueTaskManager manager, EngineID engineID, GraknEngineConfig config, RedisConnection redis,
+            ExternalOffsetStorage offsetStorage, int timeUntilBackoff, Consumer<TaskState, TaskConfiguration> consumer){
         this.manager = manager;
         this.storage = manager.storage();
         this.consumer = consumer;
         this.engineID = engineID;
+        this.engineConfig = config;
+        this.redis = redis;
         this.offsetStorage = offsetStorage;
         this.MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF = timeUntilBackoff;
     }
@@ -211,6 +219,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             runningTaskId = task.getId();
             runningTask = task.taskClass().newInstance();
 
+            runningTask.initialize(saveCheckpoint(task), configuration, manager, engineConfig, redis);
+
             boolean completed;
 
             //TODO pass a method to retrieve checkpoint from storage to task and remove "resume" method in interface
@@ -222,7 +232,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
                 putState(task);
 
-                completed = runningTask.resume(saveCheckpoint(task), task.checkpoint());
+                completed = runningTask.resume(task.checkpoint());
             } else {
                 //Mark as running
                 task.markRunning(engineID);
@@ -231,7 +241,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
                 LOG.debug("{}\tmarked as running", task);
 
-                completed = runningTask.start(saveCheckpoint(task), configuration, manager);
+                completed = runningTask.start();
             }
 
             if (completed) {
@@ -306,6 +316,12 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         return task.status() == RUNNING;
     }
 
+    /**
+     * Checks whether the task should be stopped.
+     *
+     * This is decided by inspecting the current status of the task, or by contacting the
+     * {@link SingleQueueTaskManager} to see whether the task has been requested to be stopped.
+     */
     private boolean shouldStopTask(TaskState task) {
         return task.status() == STOPPED || manager.isTaskMarkedStopped(task.getId());
     }

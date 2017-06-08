@@ -49,9 +49,11 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 public class CommitLogController {
     private final String defaultKeyspace;
     private final TaskManager manager;
+    private final int postProcessingDelay;
 
-    public CommitLogController(Service spark, String defaultKeyspace, TaskManager manager){
+    public CommitLogController(Service spark, String defaultKeyspace, int postProcessingDelay, TaskManager manager){
         this.defaultKeyspace = defaultKeyspace;
+        this.postProcessingDelay = postProcessingDelay;
         this.manager = manager;
 
         spark.post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
@@ -80,7 +82,7 @@ public class CommitLogController {
         String keyspace = Optional.ofNullable(req.queryParams(KEYSPACE_PARAM)).orElse(defaultKeyspace);
 
         // Instances to post process
-        TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass());
+        TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass(), postProcessingDelay);
         TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(keyspace, req.body());
 
         //Instances to count

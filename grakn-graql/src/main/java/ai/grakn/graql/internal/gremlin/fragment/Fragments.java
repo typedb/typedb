@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -177,8 +178,8 @@ public class Fragments {
     static void traverseRoleTypeFromShortcutEdge(GraphTraversal<Vertex, Edge> traversal, Optional<Var> roleType) {
         roleType.ifPresent(var -> {
             // Access role-type ID from edge
-            Var roleTypeIdProperty = Var.anon();
-            Var edge = Var.anon();
+            Var roleTypeIdProperty = Graql.var();
+            Var edge = Graql.var();
             traversal.as(edge.getValue()).values(ROLE_TYPE_ID.name()).as(roleTypeIdProperty.getValue());
 
             // Look up direct role-type using ID

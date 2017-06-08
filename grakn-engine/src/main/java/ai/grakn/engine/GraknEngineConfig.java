@@ -83,13 +83,7 @@ public class GraknEngineConfig {
 
     private final int MAX_NUMBER_OF_THREADS = 120;
     private final Properties prop;
-    private static GraknEngineConfig instance = null;
     private int numOfThreads = -1;
-
-    public synchronized static GraknEngineConfig getInstance() {
-        if (instance == null) instance = GraknEngineConfig.create();
-        return instance;
-    }
 
     public static GraknEngineConfig create() {
         return GraknEngineConfig.read(getConfigFilePath());
@@ -238,7 +232,7 @@ public class GraknEngineConfig {
                                           : defaultValue;
     }
 
-    boolean getPropertyAsBool(String property, boolean defaultValue) {
+    public boolean getPropertyAsBool(String property, boolean defaultValue) {
         return prop.containsKey(property) ? Boolean.parseBoolean(prop.getProperty(property))
                                           : defaultValue;
     }

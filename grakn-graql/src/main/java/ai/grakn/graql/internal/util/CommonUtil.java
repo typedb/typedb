@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.util;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Var;
 import com.google.common.collect.ImmutableList;
@@ -47,6 +48,18 @@ import static java.util.stream.Collectors.toMap;
 public class CommonUtil {
 
     private CommonUtil() {}
+
+    public static <T> T withImplicitConceptsVisible(GraknGraph graph, Supplier<T> function) {
+        return withImplicitConceptsVisible(graph, g -> function.get());
+    }
+
+    public static <T> T withImplicitConceptsVisible(GraknGraph graph, Function<GraknGraph, T> function) {
+        boolean implicitFlag = graph.implicitConceptsVisible();
+        graph.showImplicitConcepts(true);
+        T result = function.apply(graph);
+        graph.showImplicitConcepts(implicitFlag);
+        return result;
+    }
 
     /**
      * @param optional the optional to change into a stream

@@ -19,8 +19,6 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.TypeId;
-import ai.grakn.util.Schema;
-import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -40,14 +38,6 @@ public abstract class CommonOLAP {
 
     private static final String PREFIX_SELECTED_TYPE_KEY = "SELECTED_TYPE";
     private static final String PREFIX_PERSISTENT_PROPERTIES = "PERSISTENT";
-
-    /**
-     * The concepts that can be "seen" by analytics by default.
-     */
-    final Set<String> baseTypes = Sets.newHashSet(
-            Schema.BaseType.ENTITY.name(),
-            Schema.BaseType.RELATION.name(),
-            Schema.BaseType.RESOURCE.name());
 
     /**
      * The types that define a subgraph.
