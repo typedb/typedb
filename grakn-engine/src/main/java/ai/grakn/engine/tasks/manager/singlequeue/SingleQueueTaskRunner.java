@@ -29,6 +29,11 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.util.EngineID;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -66,6 +71,10 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final EngineID engineID;
     private final GraknEngineConfig engineConfig;
     private final RedisConnection redis;
+    private final Timer readRecordsTimer;
+    private final Meter stopMeter;
+    private final Meter resubmitMeter;
+    private final Timer executeTimer;
 
     private TaskId runningTaskId = null;
     private BackgroundTask runningTask = null;
@@ -77,14 +86,17 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     /**
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
      * {@param storage} to store and retrieve information about tasks.
-     *
+     *  @param manager a place to control the lifecycle of tasks
      * @param engineID identifier of the engine this task runner is on
-     * @param manager a place to control the lifecycle of tasks
      * @param offsetStorage a place to externally store kafka offsets
+     * @param metricRegistry global metric registry
      */
     public SingleQueueTaskRunner(
-            SingleQueueTaskManager manager, EngineID engineID, GraknEngineConfig config, RedisConnection redis,
-            ExternalOffsetStorage offsetStorage, int timeUntilBackoff, Consumer<TaskState, TaskConfiguration> consumer){
+            SingleQueueTaskManager manager, EngineID engineID, GraknEngineConfig config,
+            RedisConnection redis,
+            ExternalOffsetStorage offsetStorage, int timeUntilBackoff,
+            Consumer<TaskState, TaskConfiguration> consumer,
+            MetricRegistry metricRegistry){
         this.manager = manager;
         this.storage = manager.storage();
         this.consumer = consumer;
@@ -93,6 +105,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         this.redis = redis;
         this.offsetStorage = offsetStorage;
         this.MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF = timeUntilBackoff;
+        this.readRecordsTimer = metricRegistry
+                .timer(name(SingleQueueTaskRunner.class, "read-records"));
+        this.executeTimer = metricRegistry
+                .timer(name(SingleQueueTaskRunner.class, "execute"));
+        this.stopMeter = metricRegistry
+                .meter(name(SingleQueueTaskRunner.class, "stop"));
+        this.resubmitMeter = metricRegistry
+                .meter(name(SingleQueueTaskRunner.class, "resubmit"));
     }
 
     /**
@@ -163,20 +183,25 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      */
     private void readRecords(Consumer<TaskState, TaskConfiguration> theConsumer) {
         // This TaskRunner should only ever receive one record from each consumer
-        ConsumerRecords<TaskState, TaskConfiguration> records = theConsumer.poll(1000);
+        Context context = readRecordsTimer.time();
+        try{
+            ConsumerRecords<TaskState, TaskConfiguration> records = theConsumer.poll(1000);
 
-        for (ConsumerRecord<TaskState, TaskConfiguration> record : records) {
-            TaskState task = record.key();
-            TaskConfiguration configuration = record.value();
+            for (ConsumerRecord<TaskState, TaskConfiguration> record : records) {
+                TaskState task = record.key();
+                TaskConfiguration configuration = record.value();
 
-            boolean handled = handleTask(task, configuration);
-            if (handled) {
-                timeTaskLastHandled = now();
+                boolean handled = handleTask(task, configuration);
+                if (handled) {
+                    timeTaskLastHandled = now();
+                }
+
+                offsetStorage.saveOffset(theConsumer, new TopicPartition(record.topic(), record.partition()));
+
+                LOG.trace("{} acknowledged", task.getId());
             }
-
-            offsetStorage.saveOffset(theConsumer, new TopicPartition(record.topic(), record.partition()));
-
-            LOG.trace("{} acknowledged", task.getId());
+        } finally {
+            context.stop();
         }
     }
 
@@ -190,15 +215,18 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
         if (shouldStopTask(latestState)) {
             stopTask(latestState);
+            stopMeter.mark();
             return true;
         } else if(shouldDelayTask(latestState)){
             resubmitTask(latestState, configuration);
+            resubmitMeter.mark();
             return false;
         } else {
             // Need updated state to reflect task state changes in the execute method
             TaskState updatedState = executeTask(latestState, configuration);
 
             if(taskShouldRecur(updatedState)){
+                resubmitMeter.mark();
                 resubmitTask(updatedState, configuration);
             }
 
@@ -215,12 +243,11 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param task the task to execute from the kafka queue
      */
     private TaskState executeTask(TaskState task, TaskConfiguration configuration){
+        Context context = executeTimer.time();
         try {
             runningTaskId = task.getId();
             runningTask = task.taskClass().newInstance();
-
             runningTask.initialize(saveCheckpoint(task), configuration, manager, engineConfig, redis);
-
             boolean completed;
 
             //TODO pass a method to retrieve checkpoint from storage to task and remove "resume" method in interface
@@ -264,6 +291,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             storage.updateState(task);
 
             LOG.debug("{}\tmarked as {}", task, task.status());
+            context.stop();
         }
 
         return task;

@@ -123,8 +123,8 @@ public class SingleQueueTaskManager implements TaskManager {
         this.taskRunnerThreadPool = newFixedThreadPool(capacity * 2, taskRunnerPoolFactory);
 
         // Create and start the task runners
-        Set<SingleQueueTaskRunner> highPriorityTaskRunners = generate(() -> newTaskRunner(engineId, TaskState.Priority.HIGH.queue())).limit(capacity).collect(toSet());
-        Set<SingleQueueTaskRunner> lowPriorityTaskRunners = generate(() -> newTaskRunner(engineId, TaskState.Priority.LOW.queue())).limit(capacity).collect(toSet());
+        Set<SingleQueueTaskRunner> highPriorityTaskRunners = generate(() -> newTaskRunner(engineId, TaskState.Priority.HIGH.queue(), metricRegistry)).limit(capacity).collect(toSet());
+        Set<SingleQueueTaskRunner> lowPriorityTaskRunners = generate(() -> newTaskRunner(engineId, TaskState.Priority.LOW.queue(), metricRegistry)).limit(capacity).collect(toSet());
 
         this.taskRunners = Stream.concat(highPriorityTaskRunners.stream(), lowPriorityTaskRunners.stream()).collect(toSet());
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
@@ -249,9 +249,12 @@ public class SingleQueueTaskManager implements TaskManager {
      * Create a new instance of {@link SingleQueueTaskRunner} with the configured {@link #storage}}
      * and {@link #zookeeper} connection.
      * @param engineId Identifier of the engine on which this taskrunner is running
+     * @param metricRegistry
      * @return New instance of a SingleQueueTaskRunner
      */
-    private SingleQueueTaskRunner newTaskRunner(EngineID engineId, String priority){
-        return new SingleQueueTaskRunner(this, engineId, config, redis, offsetStorage, TIME_UNTIL_BACKOFF, newConsumer(priority));
+    private SingleQueueTaskRunner newTaskRunner(EngineID engineId, String priority,
+            MetricRegistry metricRegistry){
+        return new SingleQueueTaskRunner(this, engineId, config, redis, offsetStorage,
+                TIME_UNTIL_BACKOFF, newConsumer(priority), metricRegistry);
     }
 }

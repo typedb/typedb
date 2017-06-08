@@ -31,6 +31,7 @@ import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
@@ -132,7 +133,8 @@ public class SingleQueueTaskRunnerTest {
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
-        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, zookeeperRunning.config(), null, offsetStorage, TIME_UNTIL_BACKOFF, lowPriorityConsumer);
+        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, zookeeperRunning.config(), null,
+                offsetStorage, TIME_UNTIL_BACKOFF, lowPriorityConsumer, new MetricRegistry());
 
         for (List<TaskState> taskList : tasks) {
             lowPriorityConsumer.schedulePollTask(() -> taskList.forEach(this::addTask));
