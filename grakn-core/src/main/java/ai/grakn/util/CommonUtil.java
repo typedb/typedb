@@ -40,9 +40,9 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * Common utility methods used within Graql.
+ * Common utility methods used within Grakn.
  *
- * Some of these methods are Graql-specific, others add important "missing" methods to Java/Guava classes.
+ * Some of these methods are Grakn-specific, others add important "missing" methods to Java/Guava classes.
  *
  * @author Felix Chapman
  */
