@@ -17,18 +17,16 @@
  */
 package ai.grakn.client;
 
-import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
-import static org.apache.http.HttpStatus.SC_OK;
-
+import static ai.grakn.util.REST.WebPath.Graph.GRAQL;
 import java.net.URI;
+import mjson.Json;
+import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
 import org.apache.http.HttpResponse;
+import static org.apache.http.HttpStatus.SC_OK;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.HttpClients;
-
-import static ai.grakn.util.REST.WebPath.Graph.GRAQL;
-import mjson.Json;
+import org.apache.http.impl.client.DefaultHttpClient;
 
 /**
  * <p>
@@ -42,7 +40,7 @@ import mjson.Json;
  */
 public class QueryClient extends Client {
     
-    private final HttpClient httpClient = HttpClients.createDefault();
+    private final HttpClient httpClient = new DefaultHttpClient();
     private String scheme = DEFAULT_SCHEME_NAME;
     private String host;
     private int port;

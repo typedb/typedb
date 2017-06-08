@@ -217,44 +217,11 @@ public class TasksController {
         // so the client can relate the state to each element in the request.
         final Timer.Context context = createTasksTimer.time();
         try {
-            List<TaskStateWithConfiguration> taskStates = new ArrayList<>();
-            for (int i = 0; i < taskJsonList.size(); i++) {
-                Json singleTaskJson = taskJsonList.get(i);
-                try {
-                    taskStates.add(new TaskStateWithConfiguration(
-                            extractParametersAndProcessTask(singleTaskJson),
-                            extractConfiguration(singleTaskJson), i));
-                } catch (Exception e) {
-                    LOG.error("Malformed request at {}", singleTaskJson, e);
-                    // We return a failure for the full request as this imply there is
-                    // something wrong in the client logic that needs to be addressed
-                    throw e;
-                }
-            }
-            List<CompletableFuture<Json>> futures = taskStates.stream()
-                    .map(taskStateWithConfiguration -> CompletableFuture
-                            .supplyAsync(() -> addTaskToManager(taskStateWithConfiguration), executor))
-                    .collect(toList());
-            CompletableFuture<List<Json>> completableFuture = all(futures);
+            List<TaskStateWithConfiguration> taskStates = parseTasks(taskJsonList);
+            CompletableFuture<List<Json>> completableFuture = saveTasksInQueue(taskStates);
             Context executionContext = createTasksExecutionTimer.time();
             try {
-                List<Json> results = completableFuture
-                        .get(MAX_EXECUTION_TIME.getSeconds(), TimeUnit.SECONDS);
-                boolean hasFailures = false;
-                for (Json resultForTask : results) {
-                    responseJson.add(resultForTask);
-                    if (resultForTask.at("code").asInteger() != HttpStatus.SC_OK) {
-                        hasFailures = true;
-                    }
-                }
-                if (!hasFailures) {
-                    response.status(HttpStatus.SC_OK);
-                } else if (responseJson.asJsonList().size() > 0) {
-                    response.status(HttpStatus.SC_ACCEPTED);
-                } else {
-                    response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-                }
-                return responseJson;
+                return buildResponseForTasks(response, responseJson, completableFuture);
             } catch (TimeoutException | InterruptedException e) {
                 LOG.error("Task interrupted", e);
                 response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -269,7 +236,56 @@ public class TasksController {
         } finally {
             context.stop();
         }
+    }
 
+    private Json buildResponseForTasks(Response response, Json responseJson,
+            CompletableFuture<List<Json>> completableFuture)
+            throws InterruptedException, java.util.concurrent.ExecutionException, TimeoutException {
+        List<Json> results = completableFuture
+                .get(MAX_EXECUTION_TIME.getSeconds(), TimeUnit.SECONDS);
+        boolean hasFailures = false;
+        for (Json resultForTask : results) {
+            responseJson.add(resultForTask);
+            if (resultForTask.at("code").asInteger() != HttpStatus.SC_OK) {
+                hasFailures = true;
+            }
+        }
+        if (!hasFailures) {
+            response.status(HttpStatus.SC_OK);
+        } else if (responseJson.asJsonList().size() > 0) {
+            response.status(HttpStatus.SC_ACCEPTED);
+        } else {
+            response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        }
+        return responseJson;
+    }
+
+    private List<TaskStateWithConfiguration> parseTasks(List<Json> taskJsonList) {
+        List<TaskStateWithConfiguration> taskStates = new ArrayList<>();
+        for (int i = 0; i < taskJsonList.size(); i++) {
+            Json singleTaskJson = taskJsonList.get(i);
+            try {
+                taskStates.add(new TaskStateWithConfiguration(
+                        extractParametersAndProcessTask(singleTaskJson),
+                        extractConfiguration(singleTaskJson), i));
+            } catch (Exception e) {
+                LOG.error("Malformed request at {}", singleTaskJson, e);
+                // We return a failure for the full request as this imply there is
+                // something wrong in the client logic that needs to be addressed
+                throw e;
+            }
+        }
+        return taskStates;
+    }
+
+    private CompletableFuture<List<Json>> saveTasksInQueue(
+            List<TaskStateWithConfiguration> taskStates) {
+        // Put the tasks in a persistent queue
+        List<CompletableFuture<Json>> futures = taskStates.stream()
+                .map(taskStateWithConfiguration -> CompletableFuture
+                        .supplyAsync(() -> addTaskToManager(taskStateWithConfiguration), executor))
+                .collect(toList());
+        return all(futures);
     }
 
     private Json extractConfiguration(Json taskJson) {
