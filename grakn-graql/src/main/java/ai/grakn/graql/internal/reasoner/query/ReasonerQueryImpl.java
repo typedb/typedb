@@ -34,10 +34,10 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.BinaryBase;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
@@ -108,7 +108,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public String toString(){
-        return atomSet.stream().filter(Atomic::isAtom).map(Atomic::toString).collect(Collectors.joining(", "));
+        return atomSet.stream().map(Atomic::toString).collect(Collectors.joining(", "));
     }
 
     @Override
@@ -223,11 +223,19 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
+     * @return set of predicates contained in this query
+     */
+    public Set<Predicate> getPredicates() {
+        return getAtoms().stream()
+                .filter(Atomic::isPredicate).map(at -> (Predicate) at)
+                .collect(Collectors.toSet());
+    }
+
+    /**
      * @return set of id predicates contained in this query
      */
     public Set<IdPredicate> getIdPredicates() {
-        return atomSet.stream()
-                .filter(Atomic::isPredicate).map(at -> (Predicate) at)
+        return getPredicates().stream()
                 .filter(Predicate::isIdPredicate).map(predicate -> (IdPredicate) predicate)
                 .collect(Collectors.toSet());
     }
@@ -236,8 +244,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return set of value predicates contained in this query
      */
     public Set<ValuePredicate> getValuePredicates() {
-        return atomSet.stream()
-                .filter(Atomic::isPredicate).map(at -> (Predicate) at)
+        return getPredicates().stream()
                 .filter(Predicate::isValuePredicate).map(at -> (ValuePredicate) at)
                 .collect(Collectors.toSet());
     }
@@ -255,10 +262,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return set of filter atoms (currently only NotEquals) contained in this query
      */
-    public Set<NotEquals> getFilters() {
+    public Set<NeqPredicate> getFilters() {
         return atomSet.stream()
-                .filter(at -> at.getClass() == NotEquals.class)
-                .map(at -> (NotEquals) at)
+                .filter(at -> at instanceof Predicate).map(at -> (Predicate) at)
+                //.filter(Atomic::isPredicate).map(at -> (Predicate) at)
+                .filter(Predicate::isNeqPredicate).map(at -> (NeqPredicate) at)
                 .collect(Collectors.toSet());
     }
 
@@ -526,7 +534,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 differentialJoin(subGoals, cache, dCache, materialise, explanation) :
                 fullJoin(subGoals, cache, dCache, materialise, explanation);
 
-        Set<NotEquals> filters = getFilters();
+        Set<NeqPredicate> filters = getFilters();
         return join
                 .filter(a -> nonEqualsFilter(a, filters));
     }
@@ -559,7 +567,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             joinedVars.addAll(atomicQuery.getVarNames());
         }
 
-        Set<NotEquals> filters = this.getFilters();
+        Set<NeqPredicate> filters = this.getFilters();
         Set<Var> vars = this.getVarNames();
         return answerStream
                 .filter(a -> nonEqualsFilter(a, filters))
