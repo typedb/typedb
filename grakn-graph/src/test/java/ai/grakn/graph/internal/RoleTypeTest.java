@@ -23,15 +23,14 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -120,8 +119,8 @@ public class RoleTypeTest extends GraphTestBase {
     public void whenDeletingRoleTypeWithRolePlayers_Throw(){
         RoleType roleA = graknGraph.putRoleType("roleA");
         RoleType roleB = graknGraph.putRoleType("roleB");
-        RelationType relationType = graknGraph.putRelationType("relationTypes");
-        EntityType entityType = graknGraph.putEntityType("entityType");
+        RelationType relationType = graknGraph.putRelationType("relationTypes").relates(roleA).relates(roleB);
+        EntityType entityType = graknGraph.putEntityType("entityType").plays(roleA).plays(roleB);
 
         Entity a = entityType.addEntity();
         Entity b = entityType.addEntity();
@@ -145,19 +144,5 @@ public class RoleTypeTest extends GraphTestBase {
         assertThat(roleA.relationTypes(), containsInAnyOrder(relationType));
         assertThat(roleB.relationTypes(), containsInAnyOrder(relationType2));
         assertThat(roleType.relationTypes(), containsInAnyOrder(relationType, relationType2));
-    }
-
-    @Test
-    public void whenAddingRolePlayers_EnsureTheTypeOfTheResultingCastingIsTheRoleType(){
-        RoleTypeImpl roleA = (RoleTypeImpl) graknGraph.putRoleType("roleA");
-        RoleType roleB = graknGraph.putRoleType("roleB");
-        EntityType entityType = graknGraph.putEntityType("entityType");
-        Entity a = entityType.addEntity();
-        Entity b = entityType.addEntity();
-
-        relationType.addRelation().addRolePlayer(roleA, a).addRolePlayer(roleB, b);
-
-        CastingImpl casting = roleA.castings().iterator().next();
-        assertEquals(roleA, casting.type());
     }
 }

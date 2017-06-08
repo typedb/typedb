@@ -61,17 +61,21 @@ class TxCache {
     private final Map<TypeLabel, TypeImpl> typeCache = new HashMap<>();
     private final Map<TypeLabel, TypeId> labelCache = new HashMap<>();
 
-    //We Track Modified Concepts For Validation
-    private final Set<ConceptImpl> modifiedConcepts = new HashSet<>();
+    //Elements Tracked For Validation
+    private final Set<EntityImpl> modifiedEntities = new HashSet<>();
 
-    //We Track Casting Explicitly For Post Processing
-    private final Set<CastingImpl> modifiedCastings = new HashSet<>();
+    private final Set<RoleTypeImpl> modifiedRoleTypes = new HashSet<>();
+    private final Set<Casting> modifiedCastings = new HashSet<>();
 
-    //We Track Resource Explicitly for Post Processing
+    private final Set<RelationTypeImpl> modifiedRelationTypes = new HashSet<>();
+    private final Set<RelationImpl> modifiedRelations = new HashSet<>();
+
+    private final Set<RuleImpl> modifiedRules = new HashSet<>();
+
     private final Set<ResourceImpl> modifiedResources = new HashSet<>();
 
     //We Track Relations so that we can look them up before they are completely defined and indexed on commit
-    private final Map<String, RelationImpl> modifiedRelations = new HashMap<>();
+    private final Map<String, RelationImpl> relationIndexCache = new HashMap<>();
 
     //We Track the number of concept connections which have been made which may result in a new shard
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
@@ -128,57 +132,35 @@ class TxCache {
 
     /**
      *
-     * @param concept The concept to be later validated
+     * @param element The element to be later validated
      */
-    void trackConceptForValidation(ConceptImpl concept) {
-        if (!modifiedConcepts.contains(concept)) {
-            modifiedConcepts.add(concept);
-
-            if (concept.isCasting()) {
-                modifiedCastings.add(concept.asCasting());
-            }
-            if (concept.isResource()) {
-                modifiedResources.add((ResourceImpl) concept);
-            }
+    void trackForValidation(Element element) {
+        if (element.isEntity()) {
+            modifiedEntities.add((EntityImpl) element);
+        } else if (element.isRoleType()) {
+            modifiedRoleTypes.add((RoleTypeImpl) element);
+        } else if (element.isRelationType()) {
+            modifiedRelationTypes.add((RelationTypeImpl) element);
+        } else if (element.isRelation()){
+            RelationImpl relation = (RelationImpl) element;
+            modifiedRelations.add(relation);
+            //Caching of relations in memory so they can be retrieved without needing a commit
+            relationIndexCache.put(RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
+        } else if (element.isRule()){
+            modifiedRules.add((RuleImpl) element);
+        } else if (element.isResource()){
+            modifiedResources.add((ResourceImpl) element);
+        } else if (element.isRolePlayer()){
+            modifiedCastings.add(element.asRolePlayer());
         }
-
-        //Caching of relations in memory so they can be retrieved without needing a commit
-        if (concept.isRelation()) {
-            RelationImpl relation = (RelationImpl) concept;
-            modifiedRelations.put(RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
-        }
-    }
-
-    /**
-     *
-     * @return All the concepts which have been affected within the transaction in some way
-     */
-    Set<ConceptImpl> getModifiedConcepts() {
-        return modifiedConcepts;
-    }
-
-    /**
-     *
-     * @return All the castings which have been affected within the transaction in some way
-     */
-    Set<CastingImpl> getModifiedCastings() {
-        return modifiedCastings;
-    }
-
-    /**
-     *
-     * @return All the castings which have been affected within the transaction in some way
-     */
-    Set<ResourceImpl> getModifiedResources() {
-        return modifiedResources;
     }
 
     /**
      *
      * @return All the relations which have been affected in the transaction
      */
-    Map<String, RelationImpl> getModifiedRelations(){
-        return modifiedRelations;
+    Map<String, RelationImpl> getRelationIndexCache(){
+        return relationIndexCache;
     }
 
     /**
@@ -215,18 +197,25 @@ class TxCache {
 
     /**
      *
-     * @param concept The concept to nio longer track
+     * @param element The concept to nio longer track
      */
     @SuppressWarnings("SuspiciousMethodCalls")
-    void removeConcept(ConceptImpl concept){
-        modifiedConcepts.remove(concept);
-        modifiedCastings.remove(concept);
-        modifiedResources.remove(concept);
-        conceptCache.remove(concept.getId());
-        if(concept.isType()){
-            TypeLabel label = ((TypeImpl) concept).getLabel();
-            typeCache.remove(label);
-            labelCache.remove(label);
+    void remove(Element element){
+        modifiedEntities.remove(element);
+        modifiedRoleTypes.remove(element);
+        modifiedRelationTypes.remove(element);
+        modifiedRelations.remove(element);
+        modifiedRules.remove(element);
+        modifiedResources.remove(element);
+        modifiedCastings.remove(element);
+
+        if(element.isConcept()) {
+            conceptCache.remove(element.asConcept().getId());
+            if (element.isType()) {
+                TypeLabel label = ((TypeImpl) element).getLabel();
+                typeCache.remove(label);
+                labelCache.remove(label);
+            }
         }
     }
 
@@ -236,7 +225,7 @@ class TxCache {
      * @param index The current index of the relation
      */
     RelationImpl getCachedRelation(String index){
-        return modifiedRelations.get(index);
+        return relationIndexCache.get(index);
     }
 
     /**
@@ -335,8 +324,6 @@ class TxCache {
     Json getFormattedLog(){
         //Concepts In Need of Inspection
         Json conceptsForInspection = Json.object();
-        conceptsForInspection.set(Schema.BaseType.CASTING.name(), loadConceptsForFixing(getModifiedCastings()));
-
         conceptsForInspection.set(Schema.BaseType.RESOURCE.name(), loadConceptsForFixing(getModifiedResources()));
 
         //Types with instance changes
@@ -363,14 +350,46 @@ class TxCache {
         return Json.make(conceptByIndex);
     }
 
+    //--------------------------------------- Concepts Needed For Validation -------------------------------------------
+    Set<EntityImpl> getModifiedEntities() {
+        return modifiedEntities;
+    }
+
+    Set<RoleTypeImpl> getModifiedRoleTypes() {
+        return modifiedRoleTypes;
+    }
+
+    Set<RelationTypeImpl> getModifiedRelationTypes() {
+        return modifiedRelationTypes;
+    }
+    Set<RelationImpl> getModifiedRelations() {
+        return modifiedRelations;
+    }
+
+    Set<RuleImpl> getModifiedRules() {
+        return modifiedRules;
+    }
+
+    Set<ResourceImpl> getModifiedResources() {
+        return modifiedResources;
+    }
+
+    Set<Casting> getModifiedCastings() {
+        return modifiedCastings;
+    }
+
     //--------------------------------------- Transaction Specific Meta Data -------------------------------------------
     void closeTx(String closedReason){
         isTxOpen = false;
         this.closedReason = closedReason;
-        modifiedConcepts.clear();
-        modifiedCastings.clear();
-        modifiedResources.clear();
+        modifiedEntities.clear();
+        modifiedRoleTypes.clear();
+        modifiedRelationTypes.clear();
         modifiedRelations.clear();
+        modifiedRules.clear();
+        modifiedResources.clear();
+        modifiedCastings.clear();
+        relationIndexCache.clear();
         shardingCount.clear();
         conceptCache.clear();
         typeCache.clear();

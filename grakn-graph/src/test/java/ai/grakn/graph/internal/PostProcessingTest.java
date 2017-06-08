@@ -26,8 +26,6 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.util.Schema;
-import com.google.common.collect.ImmutableSet;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,9 +34,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
-import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -51,8 +47,6 @@ public class PostProcessingTest extends GraphTestBase{
     private RelationType relationType;
     private InstanceImpl instance1;
     private InstanceImpl instance2;
-    private InstanceImpl instance3;
-    private InstanceImpl instance4;
 
     @Before
     public void buildSampleGraph(){
@@ -62,63 +56,10 @@ public class PostProcessingTest extends GraphTestBase{
         EntityType thing = graknGraph.putEntityType("thing").plays(roleType1).plays(roleType2);
         instance1 = (InstanceImpl) thing.addEntity();
         instance2 = (InstanceImpl) thing.addEntity();
-        instance3 = (InstanceImpl) thing.addEntity();
-        instance4 = (InstanceImpl) thing.addEntity();
+        thing.addEntity();
+        thing.addEntity();
 
         relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
-    }
-
-    @Test
-    public void whenMergingDuplicateCastings_EnsureOnlyOneCastingRemains(){
-        Set<ConceptId> castingVertexIds = new HashSet<>();
-        CastingImpl mainCasting = (CastingImpl) instance1.castings().iterator().next();
-        castingVertexIds.add(mainCasting.getId());
-        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(mainCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue()));
-        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(mainCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4).getId().getValue()));
-        assertEquals(3, instance1.castings().size());
-
-        graknGraph.fixDuplicateCastings(mainCasting.getIndex(), castingVertexIds);
-        assertEquals(1, instance1.castings().size());
-    }
-
-    private CastingImpl buildDuplicateCastingWithNewRelation(CastingImpl mainCasting, RelationType relationType, RoleTypeImpl mainRoleType, InstanceImpl mainInstance, RoleType otherRoleType, InstanceImpl otherInstance){
-        RelationImpl relation = (RelationImpl) relationType.addRelation().addRolePlayer(otherRoleType, otherInstance);
-
-        //Create Fake Casting
-        Vertex castingVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
-        castingVertex.property(Schema.ConceptProperty.ID.name(), castingVertex.id().toString());
-        castingVertex.property(Schema.ConceptProperty.INDEX.name(), mainCasting.getIndex());
-        castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
-
-        Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
-        edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleType.getTypeId().getValue());
-
-        edge = relation.getVertex().addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
-        edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleType.getTypeId().getValue());
-
-        relation.setHash();
-
-        return graknGraph.admin().buildConcept(castingVertex);
-    }
-
-    @Test
-    public void whenMergingCastingWhichResultInDuplicateRelations_MergeDuplicateRelations() {
-        Set<ConceptId> castingVertexIds = new HashSet<>();
-
-        CastingImpl mainCasting = (CastingImpl) instance1.castings().iterator().next();
-        castingVertexIds.add(mainCasting.getId());
-        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(mainCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance2).getId().getValue()));
-        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(mainCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue()));
-
-        assertEquals(3, instance1.relations().size());
-        assertEquals(2, instance2.relations().size());
-        assertEquals(1, instance3.relations().size());
-
-        graknGraph.fixDuplicateCastings(mainCasting.getIndex(), castingVertexIds);
-
-        assertEquals(2, instance1.relations().size());
-        assertEquals(1, instance2.relations().size());
-        assertEquals(1, instance3.relations().size());
     }
 
     @Test
@@ -249,35 +190,5 @@ public class PostProcessingTest extends GraphTestBase{
         assertEquals(0L, t1.getShardCount());
         assertEquals(4L, t2.getShardCount());
         assertEquals(5L, t3.getShardCount());
-    }
-
-    @Test
-    public void whenPostProcessingCastingThatDoesNotExist_DuplicateCastingsExistReturnFalse(){
-        String invalidCastingIndex = UUID.randomUUID().toString();
-
-        assertFalse("Fix duplicate castings returns false",
-                graknGraph.duplicateCastingsExist(invalidCastingIndex, ImmutableSet.of(ConceptId.of(invalidCastingIndex))));
-    }
-
-    @Test
-    public void whenPostProcessingCastingThatExistsButNoDuplicate_DuplicateCastingsExistReturnFalse(){
-        CastingImpl validCasting = (CastingImpl) instance1.castings().iterator().next();
-
-        assertFalse("Fix duplicate castings returns false",
-                graknGraph.duplicateCastingsExist(validCasting.getIndex(), ImmutableSet.of(validCasting.getId())));
-    }
-
-    @Test
-    public void whenPostProcessingCastingThatExistsAndDuplicate_FixDuplicateCastingsReturnsTrue(){
-        CastingImpl validCasting = (CastingImpl) instance1.castings().iterator().next();
-        ConceptId otherCasting = ConceptId.of(buildDuplicateCastingWithNewRelation(validCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue());
-        assertEquals(2, instance1.castings().size());
-
-        assertTrue("Fix duplicate castings returns true",
-                graknGraph.fixDuplicateCastings(validCasting.getIndex(), ImmutableSet.of(validCasting.getId()))
-                        ||
-                graknGraph.fixDuplicateCastings(validCasting.getIndex(), ImmutableSet.of(otherCasting)));
-
-        assertEquals(1, instance1.castings().size());
     }
 }

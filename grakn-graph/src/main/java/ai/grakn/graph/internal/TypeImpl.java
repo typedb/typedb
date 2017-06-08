@@ -71,14 +71,14 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     private final TypeId cachedTypeId;
     private final TypeLabel cachedTypeLabel;
-    private ConceptCache<Boolean> cachedIsImplicit = new ConceptCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
-    private ConceptCache<Boolean> cachedIsAbstract = new ConceptCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
-    private ConceptCache<T> cachedSuperType = new ConceptCache<>(() -> this.<T>getOutgoingNeighbours(Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private ConceptCache<Set<T>> cachedDirectSubTypes = new ConceptCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
-    private ConceptCache<Set<T>> cachedShards = new ConceptCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
+    private ElementCache<Boolean> cachedIsImplicit = new ElementCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
+    private ElementCache<Boolean> cachedIsAbstract = new ElementCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
+    private ElementCache<T> cachedSuperType = new ElementCache<>(() -> this.<T>getOutgoingNeighbours(Schema.EdgeLabel.SUB).findFirst().orElse(null));
+    private ElementCache<Set<T>> cachedDirectSubTypes = new ElementCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private ElementCache<Set<T>> cachedShards = new ElementCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
 
     //This cache is different in order to keep track of which plays are required
-    private ConceptCache<Map<RoleType, Boolean>> cachedDirectPlays = new ConceptCache<>(() -> {
+    private ElementCache<Map<RoleType, Boolean>> cachedDirectPlays = new ElementCache<>(() -> {
         Map<RoleType, Boolean> roleTypes = new HashMap<>();
 
         getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
@@ -290,8 +290,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             cachedDirectSubTypes.clear();
             cachedDirectPlays.clear();
 
-            //Clear Global ConceptCache
-            getGraknGraph().getTxCache().removeConcept(this);
+            //Clear Global ElementCache
+            getGraknGraph().getTxCache().remove(this);
         }
     }
 
@@ -388,9 +388,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
             traversal.forEachRemaining(vertex -> {
                 ConceptImpl<Concept> concept = getGraknGraph().getElementFactory().buildConcept(vertex);
-                if (concept != null && !concept.isCasting()) {
-                    instances.add((V) concept);
-                }
+                if (concept != null) instances.add((V) concept);
             });
         }
 
@@ -505,8 +503,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             //Track any existing data if there is some
             instances().forEach(concept -> {
                 if (concept.isInstance()) {
-                    ((InstanceImpl<?, ?>) concept).castings().forEach(
-                            instance -> getGraknGraph().getTxCache().trackConceptForValidation(instance));
+                    ((InstanceImpl<?, ?>) concept).castingsInstance().forEach(
+                            rolePlayer -> getGraknGraph().getTxCache().trackForValidation(rolePlayer));
                 }
             });
         }
@@ -549,7 +547,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         //Update the cache of types played by the role
         ((RoleTypeImpl) roleType).addCachedDirectPlaysByType(this);
 
-        EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS);
+        EdgeElement edge = putEdge(roleType, Schema.EdgeLabel.PLAYS);
 
         if (required) {
             edge.setProperty(Schema.EdgeProperty.REQUIRED, true);
@@ -579,12 +577,13 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         cachedDirectPlays.ifPresent(set -> set.remove(roleType));
         ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(this);
 
-        //Add castings to tracking to make sure they can still be played.
+        //Add roleplayers to tracking to make sure they can still be played.
         instances().forEach(concept -> {
             if (concept.isInstance()) {
-                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> getGraknGraph().getTxCache().trackConceptForValidation(casting));
+                ((InstanceImpl<?, ?>) concept).castingsInstance().forEach(rolePlayer -> getGraknGraph().getTxCache().trackForValidation(rolePlayer));
             }
         });
+
 
         return getThis();
     }

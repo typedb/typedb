@@ -38,6 +38,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesCompatible;
 
@@ -239,6 +240,16 @@ public abstract class Atom extends AtomicBase {
                 .filter(atom -> containsVar(atom.getVarName()))
                 .forEach(relevantTypes::add);
         return relevantTypes;
+    }
+
+    /**
+     * @return neighbours of this atoms, i.e. atoms connected to this atom via shared variable
+     */
+    public Stream<Atom> getNeighbours(){
+        return getParentQuery().getAtoms().stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(at -> at != this)
+                .filter(at -> !Sets.intersection(this.getVarNames(), at.getVarNames()).isEmpty());
     }
 
     /**

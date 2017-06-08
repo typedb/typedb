@@ -70,7 +70,6 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-//TODO Stopping commit log tasks when clearing graph
 public class CommitLogControllerTest {
 
     private static final String TEST_KEYSPACE = "test";
@@ -122,7 +121,6 @@ public class CommitLogControllerTest {
                         argument.taskClass().equals(PostProcessingTask.class)),
                 argThat(argument ->
                         argument.json().at(KEYSPACE).asString().equals(BOB) &&
-                        argument.json().at(COMMIT_LOG_FIXING).at(Schema.BaseType.CASTING.name()).asJsonMap().size() == 2 &&
                         argument.json().at(COMMIT_LOG_FIXING).at(Schema.BaseType.RESOURCE.name()).asJsonMap().size() == 1));
 
         verify(manager, never()).addTask(
@@ -135,7 +133,6 @@ public class CommitLogControllerTest {
                         argument.taskClass().equals(PostProcessingTask.class)),
                 argThat(argument ->
                         argument.json().at(KEYSPACE).asString().equals(TIM) &&
-                        argument.json().at(COMMIT_LOG_FIXING).at(Schema.BaseType.CASTING.name()).asJsonMap().size() == 2 &&
                         argument.json().at(COMMIT_LOG_FIXING).at(Schema.BaseType.RESOURCE.name()).asJsonMap().size() == 1));
 
         bob.close();
@@ -213,18 +210,11 @@ public class CommitLogControllerTest {
     }
 
     private void sendFakeCommitLog() {
-        Json commitLogFixCasting = object();
-        commitLogFixCasting.set("10", array(1));
-        commitLogFixCasting.set("20", array(2));
-        commitLogFixCasting.set("30", array(3));
-        commitLogFixCasting.set("40", array(4));
-
         Json commitLogFixResource = object();
         commitLogFixResource.set("60", array(6));
         commitLogFixResource.set("70", array(7));
 
         Json commitLogFixing = object();
-        commitLogFixing.set(Schema.BaseType.CASTING.name(), commitLogFixCasting);
         commitLogFixing.set(Schema.BaseType.RESOURCE.name(), commitLogFixResource);
 
         Json commitLogCounting = array();

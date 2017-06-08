@@ -90,14 +90,10 @@ public class ValidatorTest extends GraphTestBase{
         Instance kyle = fakeType.addEntity();
         Instance icke = fakeType.addEntity();
 
-        RelationImpl assertion = (RelationImpl) relationType.addRelation().
-                addRolePlayer(kicker, kyle).addRolePlayer(kickee, icke);
+        relationType.addRelation().addRolePlayer(kicker, kyle).addRolePlayer(kickee, icke);
 
-        CastingImpl c1 = (CastingImpl) assertion.getMappingCasting().toArray()[0];
-        CastingImpl c2 = (CastingImpl) assertion.getMappingCasting().toArray()[1];
-
-        String error1 = ErrorMessage.VALIDATION_CASTING.getMessage(c1.getRolePlayer().type().getLabel(), c1.getRolePlayer().getId(), c1.getRole().getLabel());
-        String error2 = ErrorMessage.VALIDATION_CASTING.getMessage(c2.getRolePlayer().type().getLabel(), c2.getRolePlayer().getId(), c2.getRole().getLabel());
+        String error1 = ErrorMessage.VALIDATION_CASTING.getMessage(kyle.type().getLabel(), kyle.getId(), kicker.getLabel());
+        String error2 = ErrorMessage.VALIDATION_CASTING.getMessage(icke.type().getLabel(), icke.getId(), kickee.getLabel());
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(allOf(containsString(error1), containsString(error2)));
@@ -155,10 +151,9 @@ public class ValidatorTest extends GraphTestBase{
         godfather = graknGraph.getEntityType("movie").instances().iterator().next();
         Collection<Relation> assertions = godfather.relations();
         Set<ConceptId> assertionIds = new HashSet<>();
-        Set<ConceptId> castingIds = new HashSet<>();
+
         for (Relation a : assertions) {
             assertionIds.add(a.getId());
-            ((RelationImpl) a).getMappingCasting().forEach(c -> castingIds.add(c.getId()));
             a.delete();
         }
         godfather.delete();

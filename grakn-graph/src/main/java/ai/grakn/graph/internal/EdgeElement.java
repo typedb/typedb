@@ -33,11 +33,12 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  *
  * @author fppt
  */
-class EdgeImpl {
+class EdgeElement extends Element{
     private Edge edge;
     private final AbstractGraknGraph graknGraph;
 
-    EdgeImpl(Edge e, AbstractGraknGraph graknGraph){
+    EdgeElement(AbstractGraknGraph graknGraph, Edge e){
+        super(graknGraph, e.id());
         edge = e;
         this.graknGraph = graknGraph;
     }
@@ -50,6 +51,14 @@ class EdgeImpl {
         edge = null;
     }
 
+    /**
+     *
+     * @return The internal tinkerpop edge
+     */
+    public Edge getEdge(){
+        return edge;
+    }
+
     @Override
     public int hashCode() {
         return edge.hashCode();
@@ -57,7 +66,12 @@ class EdgeImpl {
 
     @Override
     public boolean equals(Object object) {
-        return object instanceof EdgeImpl && ((EdgeImpl) object).edge.equals(edge);
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+
+        EdgeElement edge = (EdgeElement) object;
+
+        return getElementId().equals(edge.getElementId());
     }
 
     /**
@@ -89,7 +103,7 @@ class EdgeImpl {
      * @param type The property to retrieve
      * @return The value of the property
      */
-    private <X> X getProperty(Schema.EdgeProperty type){
+    <X> X getProperty(Schema.EdgeProperty type){
         org.apache.tinkerpop.gremlin.structure.Property<X> property = edge.property(type.name());
         if(property != null && property.isPresent()) {
             return property.value();
