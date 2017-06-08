@@ -31,7 +31,7 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.util.CommonUtil.optionalOr;
+import static ai.grakn.util.CommonUtil.optionalOr;
 
 /**
  * Modifier that specifies the graph to execute the match query with.

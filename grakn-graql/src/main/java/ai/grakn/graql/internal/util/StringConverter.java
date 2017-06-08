@@ -30,7 +30,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
  * Class for converting Graql strings, used in the parser and for toString methods

@@ -34,7 +34,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.util.CommonUtil.withImplicitConceptsVisible;
+import static ai.grakn.util.CommonUtil.withImplicitConceptsVisible;
 import static java.util.stream.Collectors.toSet;
 
 /**
