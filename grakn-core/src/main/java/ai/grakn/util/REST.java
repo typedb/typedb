@@ -74,7 +74,6 @@ public class REST {
             public static final String TYPES = "/dashboard/types/";
             public static final String EXPLORE = "/dashboard/explore/";
             public static final String EXPLAIN = "/dashboard/explain/";
-            public static final String PRECOMPUTE = "/dashboard/precomputeInferences";
         }
 
         public static final String NEW_SESSION_URI="/auth/session/";
@@ -105,6 +104,8 @@ public class REST {
         public static final String LIMIT_PARAM = "limit";
         public static final String OFFSET_PARAM = "offset";
         public static final String KEYSPACE = "keyspace";
+        public static final String FORMAT = "format";
+
 
         //Commit Logs
         public static final String COMMIT_LOG_FIXING = "concepts-to-fix";

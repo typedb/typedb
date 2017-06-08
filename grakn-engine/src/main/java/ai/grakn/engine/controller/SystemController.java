@@ -34,9 +34,9 @@ import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
 import static ai.grakn.util.REST.GraphConfig.COMPUTER;
 import static ai.grakn.util.REST.GraphConfig.DEFAULT;
+import static ai.grakn.util.REST.Request.FORMAT;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
 import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
 import static ai.grakn.util.REST.WebPath.System.METRICS;
@@ -49,6 +49,7 @@ import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.common.TextFormat;
 import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -62,6 +63,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import mjson.Json;
+import static org.apache.http.HttpHeaders.CACHE_CONTROL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -84,6 +86,10 @@ import spark.Service;
  * @author fppt
  */
 public class SystemController {
+
+    private static final String PROMETHEUS_CONTENT_TYPE = "text/plain; version=0.0.4";
+    private static final String PROMETHEUS = "prometheus";
+
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
     private final EngineGraknGraphFactory factory;
     private final MetricRegistry metricRegistry;
@@ -175,13 +181,16 @@ public class SystemController {
     @GET
     @Path("/metrics")
     @ApiOperation(value = "Exposes internal metrics")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = FORMAT, value = "prometheus", dataType = "string", paramType = "path")
+    })
     private String getMetrics(Request request, Response response) throws IOException {
-        response.header("Cache-Control", "must-revalidate,no-cache,no-store");
+        response.header(CACHE_CONTROL, "must-revalidate,no-cache,no-store");
         response.status(HttpServletResponse.SC_OK);
-        Optional<String> format = Optional.ofNullable(request.queryParams("format"));
-        if (format.orElse("").equals("prometheus")) {
+        Optional<String> format = Optional.ofNullable(request.queryParams(FORMAT));
+        if (format.orElse("").equals(PROMETHEUS)) {
             // Prometheus format for the metrics
-            response.type(APPLICATION_TEXT);
+            response.type(PROMETHEUS_CONTENT_TYPE);
             final Writer writer1 = new StringWriter();
             TextFormat.write004(writer1, this.prometheusRegistry.metricFamilySamples());
             return writer1.toString();
