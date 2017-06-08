@@ -807,15 +807,6 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testCannotLookUpCastingById() {
-        String castingId = movieGraph.graph().admin().getTinkerTraversal()
-                .hasLabel(Schema.BaseType.CASTING.name()).id().next().toString();
-
-        MatchQuery query = qb.match(x.id(ConceptId.of(castingId)));
-        assertThat(query.execute(), empty());
-    }
-
-    @Test
     public void testLookupResourcesOnId() {
         Instance godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
         ConceptId id = godfather.getId();

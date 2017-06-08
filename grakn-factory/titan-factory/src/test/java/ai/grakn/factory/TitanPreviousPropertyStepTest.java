@@ -29,10 +29,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
-import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runners.MethodSorters;
 
 import java.util.List;
 
@@ -46,7 +44,6 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Felix Chapman
  */
-@FixMethodOrder(value= MethodSorters.NAME_ASCENDING)
 public class TitanPreviousPropertyStepTest extends TitanTestBase {
 
     private static final GraphTraversalSource tinker = TinkerGraph.open().traversal();

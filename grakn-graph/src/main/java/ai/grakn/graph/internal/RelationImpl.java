@@ -24,6 +24,8 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
@@ -35,6 +37,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -58,20 +62,32 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     }
 
     /**
-     *
-     * @return All the castings this relation is connected with
-     */
-    Set<CastingImpl> getMappingCasting() {
-        Set<CastingImpl> castings = new HashSet<>();
-        getOutgoingNeighbours(Schema.EdgeLabel.CASTING).forEach(casting -> castings.add(((CastingImpl) casting)));
-        return castings;
-    }
-
-    /**
      * Sets the internal hash in order to perform a faster lookup
      */
     void setHash(){
         setUniqueProperty(Schema.ConceptProperty.INDEX, generateNewHash(type(), allRolePlayers()));
+    }
+
+    /**
+     * Castings are retrieved from the perspective of the {@link Relation}
+     *
+     * @param roleTypes The role which the instances are playing
+     * @return The {@link Casting} which unify a {@link RoleType} and {@link Instance} with this {@link Relation}
+     */
+    Stream<Casting> castingsRelation(RoleType... roleTypes){
+        if(roleTypes.length == 0){
+            return getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
+                    map(edge -> getGraknGraph().getElementFactory().buildRolePlayer(edge));
+        }
+
+        //Traversal is used so we can potentially optimise on the index
+        Set<Integer> roleTypesIds = Arrays.stream(roleTypes).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
+        return getGraknGraph().getTinkerTraversal().
+                has(Schema.ConceptProperty.ID.name(), getId().getValue()).
+                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), type().getTypeId().getValue()).
+                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).
+                toStream().map(edge -> getGraknGraph().getElementFactory().buildRolePlayer(edge));
     }
 
     /**
@@ -103,32 +119,22 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      *
      * @return A list of all the role types and the instances playing them in this relation.
      */
+    @Override
     public Map<RoleType, Set<Instance>> allRolePlayers(){
-        Set<CastingImpl> castings = getMappingCasting();
         HashMap<RoleType, Set<Instance>> roleMap = new HashMap<>();
 
-        //Gets roles based on all roles of the relation type
+        //We add the role types explicitly so we can return them when there are no roleplayers
         type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
-
-        //Now iterate over castings
-        castings.forEach(c -> roleMap.computeIfAbsent(c.getRole(), (k) -> new HashSet<>()).add(c.getRolePlayer()));
+        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRoleType(), (k) -> new HashSet<>()).add(rp.getInstance()));
 
         return roleMap;
     }
 
     @Override
     public Collection<Instance> rolePlayers(RoleType... roleTypes) {
-        Set<Instance> rolePlayers = new HashSet<>();
-        Set<RoleType> validRoleTypes = new HashSet<>(Arrays.asList(roleTypes));
-
-        getMappingCasting().forEach(casting -> {
-            if(validRoleTypes.isEmpty() || validRoleTypes.contains(casting.getRole())){
-                rolePlayers.add(casting.getRolePlayer());
-            }
-        });
-
-        return rolePlayers;
+        return castingsRelation(roleTypes).map(Casting::getInstance).collect(Collectors.toSet());
     }
+
 
     /**
      * Expands this Relation to include a new role player which is playing a specific role.
@@ -139,6 +145,8 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     @Override
     public Relation addRolePlayer(RoleType roleType, Instance instance) {
         Objects.requireNonNull(roleType);
+        Objects.requireNonNull(instance);
+
         if(Schema.MetaSchema.isMetaLabel(roleType.getLabel())) throw GraphOperationException.metaTypeImmutable(roleType.getLabel());
 
         //Do the actual put of the role and role player
@@ -152,9 +160,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @return The Relation itself
      */
     private Relation addNewRolePlayer(RoleType roleType, Instance instance){
-        if(instance != null) {
-            getGraknGraph().addCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
-        }
+        getGraknGraph().putShortcutEdge((InstanceImpl) instance, this, (RoleTypeImpl) roleType);
         return this;
     }
 

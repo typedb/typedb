@@ -111,7 +111,6 @@ public class GraknOrientDBGraphFactoryTest {
         assertEquals(1, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.ENTITY.name()).size());
         assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RELATION.name()).size());
         assertEquals(6, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RESOURCE.name()).size());
-        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.CASTING.name()).size());
         assertEquals(1, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RULE.name()).size());
     }
 }
