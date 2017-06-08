@@ -58,7 +58,7 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         LinkedList<ReasonerAtomicQuery> queries = query.getResolutionPlan();
 
         LOG.trace("CQ: " + query);
-        LOG.trace("CQ plan: " + queries.stream()
+        LOG.debug("CQ plan:\n" + queries.stream()
                 .map(ReasonerAtomicQuery::getAtom)
                 .map(AtomicBase::toString)
                 .collect(Collectors.joining("\n"))
