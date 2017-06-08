@@ -34,9 +34,11 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
@@ -50,6 +52,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -78,8 +82,14 @@ public class StandaloneTaskManager implements TaskManager {
     private final EngineID engineID;
     private final GraknEngineConfig config;
     private final RedisConnection redis;
+    private final Timer addTaskTimer;
+    private final Timer executeTaskTimer;
+    private final Timer runTaskTimer;
+    private final Meter failedMeter;
+    private final Meter stoppedMeter;
+    private final Meter completedMeter;
 
-    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis) {
+    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis, MetricRegistry metricRegistry) {
         this.engineID = engineId;
         this.config = config;
         this.redis = redis;
@@ -100,6 +110,13 @@ public class StandaloneTaskManager implements TaskManager {
             }
             return new NonReentrantLock();
         });
+
+        addTaskTimer = metricRegistry.timer(name(StandaloneTaskManager.class, "add-task-timer"));
+        executeTaskTimer = metricRegistry.timer(name(StandaloneTaskManager.class, "execute-task-timer"));
+        runTaskTimer = metricRegistry.timer(name(StandaloneTaskManager.class, "run-task-timer"));
+        failedMeter = metricRegistry.meter(name(StandaloneTaskManager.class, "failed"));
+        stoppedMeter = metricRegistry.meter(name(StandaloneTaskManager.class, "stopped"));
+        completedMeter = metricRegistry.meter(name(StandaloneTaskManager.class, "completed"));
     }
 
     @Override
@@ -118,26 +135,31 @@ public class StandaloneTaskManager implements TaskManager {
 
     @Override
     public void addTask(TaskState taskState, TaskConfiguration configuration){
-        if(!taskState.priority().equals(TaskState.Priority.LOW)) LOG.info("Standalone mode only has a single priority.");
-        storage.newState(taskState);
+        Context context = addTaskTimer.time();
+        try{
+            if(!taskState.priority().equals(TaskState.Priority.LOW)) LOG.info("Standalone mode only has a single priority.");
+            storage.newState(taskState);
 
-        // Schedule task to run.
-        Instant now = Instant.now();
-        TaskSchedule schedule = taskState.schedule();
-        long delay = Duration.between(now, taskState.schedule().runAt()).toMillis();
+            // Schedule task to run.
+            Instant now = Instant.now();
+            TaskSchedule schedule = taskState.schedule();
+            long delay = Duration.between(now, taskState.schedule().runAt()).toMillis();
 
-        Runnable taskExecution = submitTaskForExecution(taskState, configuration);
+            Runnable taskExecution = submitTaskForExecution(taskState, configuration);
 
-        ScheduledFuture future;
-        if(schedule.isRecurring()){
-            future = schedulingService.scheduleAtFixedRate(taskExecution, delay, schedule.interval().get().toMillis(), TimeUnit.MILLISECONDS);
-        } else {
-            future = schedulingService.schedule(taskExecution, delay, TimeUnit.MILLISECONDS);
+            ScheduledFuture future;
+            if(schedule.isRecurring()){
+                future = schedulingService.scheduleAtFixedRate(taskExecution, delay, schedule.interval().get().toMillis(), TimeUnit.MILLISECONDS);
+            } else {
+                future = schedulingService.schedule(taskExecution, delay, TimeUnit.MILLISECONDS);
+            }
+
+            scheduledTasks.put(taskState.getId(), future);
+
+            LOG.info("Added task " + taskState.getId());
+        } finally {
+            context.stop();
         }
-
-        scheduledTasks.put(taskState.getId(), future);
-
-        LOG.info("Added task " + taskState.getId());
     }
 
     public void stopTask(TaskId id) {
@@ -179,6 +201,7 @@ public class StandaloneTaskManager implements TaskManager {
 
     private Runnable executeTask(TaskState task, TaskConfiguration configuration) {
         return () -> {
+            Context context = executeTaskTimer.time();
             try {
                 BackgroundTask runningTask = task.taskClass().newInstance();
                 runningTask.initialize(saveCheckpoint(task), configuration, this, config, redis);
@@ -194,23 +217,29 @@ public class StandaloneTaskManager implements TaskManager {
                     task.markRunning(engineID);
 
                     saveState(task);
-
-                    completed = runningTask.start();
+                    Context runContext = runTaskTimer.time();
+                    try {
+                        completed = runningTask.start();
+                    } finally {
+                        runContext.stop();
+                    }
                 }
-
                 if (completed) {
+                    completedMeter.mark();
                     task.markCompleted();
                 } else {
+                    stoppedMeter.mark();
                     task.markStopped();
                 }
             } catch (Throwable throwable) {
+                failedMeter.mark();
                 LOG.error("{} failed with {}", task.getId(), throwable.getMessage());
                 task.markFailed(throwable);
             } finally {
                 saveState(task);
                 runningTasks.remove(task.getId());
-
                 cancelTask(task);
+                context.stop();
             }
         };
     }
