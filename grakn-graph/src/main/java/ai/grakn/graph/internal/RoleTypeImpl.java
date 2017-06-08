@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -50,8 +51,8 @@ import java.util.stream.Collectors;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    private ConceptCache<Set<Type>> cachedDirectPlayedByTypes = new ConceptCache<>(() -> this.<Type>getIncomingNeighbours(Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private ConceptCache<Set<RelationType>> cachedRelationTypes = new ConceptCache<>(() -> this.<RelationType>getIncomingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private ElementCache<Set<Type>> cachedDirectPlayedByTypes = new ElementCache<>(() -> this.<Type>getIncomingNeighbours(Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
+    private ElementCache<Set<RelationType>> cachedRelationTypes = new ElementCache<>(() -> this.<RelationType>getIncomingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -131,11 +132,12 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
 
     /**
      *
-     * @return The castings of this role
+     * @return Get all the roleplayers of this role type
      */
-    public Set<CastingImpl> castings(){
-        return shards().stream().flatMap(shard ->
-                ((TypeImpl<?,?>) shard).<CastingImpl>getIncomingNeighbours(Schema.EdgeLabel.ISA)).collect(Collectors.toSet());
+    public Stream<Casting> rolePlayers(){
+        return relationTypes().stream().
+                flatMap(relationType -> relationType.instances().stream()).
+                flatMap(relation -> ((RelationImpl)relation).castingsRelation(this));
     }
 
     /**
@@ -156,7 +158,12 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         boolean hasRelates = getVertex().edges(Direction.IN, Schema.EdgeLabel.RELATES.getLabel()).hasNext();
         boolean hasPlays = getVertex().edges(Direction.IN, Schema.EdgeLabel.PLAYS.getLabel()).hasNext();
 
-        if(hasRelates || hasPlays){
+        boolean deletionNotAllowed = hasRelates || hasPlays;
+
+        //This check is independent as it is slower than the ones above
+        if(!deletionNotAllowed) deletionNotAllowed = rolePlayers().findAny().isPresent();
+
+        if(deletionNotAllowed){
             throw GraphOperationException.typeCannotBeDeleted(getLabel());
         } else {
             super.delete();
