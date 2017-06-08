@@ -19,7 +19,6 @@
 
 package ai.grakn.factory;
 
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
@@ -27,6 +26,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy.ProviderOptimizationStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.WherePredicateStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -56,9 +56,9 @@ public class TitanPreviousPropertyStepStrategy
     public void apply(Traversal.Admin<?, ?> traversal) {
 
         // Retrieve all graph (`V()`) steps - this is the step the strategy should replace
-        List<TitanGraphStep> graphSteps = TraversalHelper.getStepsOfClass(TitanGraphStep.class, traversal);
+        List<GraphStep> graphSteps = TraversalHelper.getStepsOfAssignableClass(GraphStep.class, traversal);
 
-        for (TitanGraphStep graphStep : graphSteps) {
+        for (GraphStep graphStep : graphSteps) {
             // For each graph step, confirm it follows this pattern:
             // `V().filter(__.properties(a).where(P.eq(b)))`
 
@@ -111,7 +111,7 @@ public class TitanPreviousPropertyStepStrategy
      * {@code traversal}.
      */
     private void executeStrategy(
-            Traversal.Admin<?, ?> traversal, TitanGraphStep<?, ?> graphStep, TraversalFilterStep<Vertex> filterStep,
+            Traversal.Admin<?, ?> traversal, GraphStep<?, ?> graphStep, TraversalFilterStep<Vertex> filterStep,
             String propertyKey, String label) {
 
         TitanPreviousPropertyStep newStep = new TitanPreviousPropertyStep(traversal, propertyKey, label);
