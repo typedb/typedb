@@ -37,8 +37,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.slf4j.LoggerFactory;
-import redis.embedded.RedisServer;
 
 /**
  * <p>
