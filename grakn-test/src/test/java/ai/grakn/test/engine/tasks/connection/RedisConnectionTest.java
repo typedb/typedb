@@ -49,7 +49,7 @@ public class RedisConnectionTest {
 
     @BeforeClass
     public static void getConnection(){
-        redis = RedisConnection.getConnection();
+        redis = engine.redis();
     }
 
     @Test

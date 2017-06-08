@@ -27,6 +27,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
@@ -169,12 +170,8 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     abstract String graqlString();
 
     final String subtypeString() {
-        if (subTypeLabels.isEmpty()) {
-            return ";";
-        } else {
-            return " in "
-                    + subTypeLabels.stream().map(StringConverter::typeLabelToString).collect(joining(", ")) + ";";
-        }
+        return subTypeLabels.isEmpty() ? ";" : " in "
+                + subTypeLabels.stream().map(StringConverter::typeLabelToString).collect(joining(", ")) + ";";
     }
 
     @Override
@@ -196,8 +193,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
         AbstractComputeQuery<?> that = (AbstractComputeQuery<?>) o;
 
-        if (!graph.equals(that.graph)) return false;
-        return subTypeLabels.equals(that.subTypeLabels);
+        return graph.equals(that.graph) && subTypeLabels.equals(that.subTypeLabels);
     }
 
     @Override
@@ -205,6 +201,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         int result = graph.hashCode();
         result = 31 * result + subTypeLabels.hashCode();
         return result;
+    }
+
+    Set<TypeId> convertLabelsToIds(Set<TypeLabel> TypeLabelSet) {
+        return TypeLabelSet.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
     }
 
     static String getRandomJobId() {

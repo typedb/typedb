@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -64,17 +65,21 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
 
         ComputerResult result;
 
+        if (ofTypeLabels.isEmpty()) {
+            ofTypeLabels.addAll(subTypeLabels);
+        } else {
+            ofTypeLabels = ofTypeLabels.stream()
+                    .flatMap(typeLabel -> graph.get().getType(typeLabel).subTypes().stream())
+                    .map(Type::getLabel)
+                    .collect(Collectors.toSet());
+            subTypeLabels.addAll(ofTypeLabels);
+        }
+
         Set<TypeLabel> withResourceRelationTypes = getHasResourceRelationTypes();
         withResourceRelationTypes.addAll(subTypeLabels);
 
-        if (ofTypeLabels.isEmpty()) {
-            ofTypeLabels.addAll(subTypeLabels);
-        }
-
-        Set<TypeId> withResourceRelationTypeIds =
-                withResourceRelationTypes.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
-        Set<TypeId> ofTypeIds =
-                ofTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+        Set<TypeId> withResourceRelationTypeIds = convertLabelsToIds(withResourceRelationTypes);
+        Set<TypeId> ofTypeIds = convertLabelsToIds(ofTypeLabels);
 
         String randomId = getRandomJobId();
 
@@ -143,8 +148,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
 
         DegreeQueryImpl that = (DegreeQueryImpl) o;
 
-        if (ofTypeLabelsSet != that.ofTypeLabelsSet) return false;
-        return ofTypeLabels.equals(that.ofTypeLabels);
+        return ofTypeLabelsSet == that.ofTypeLabelsSet && ofTypeLabels.equals(that.ofTypeLabels);
     }
 
     @Override

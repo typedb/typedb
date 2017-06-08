@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.TypeId;
-import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -81,39 +80,18 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        switch (memory.getIteration()) {
-            case 0:
-                return messageScopeSetInstance;
-            case 1:
-                return messageScopeSetCasting;
-            default:
-                return Collections.emptySet();
-        }
+        return memory.isInitialIteration() ? messageScopeSetShortcut : Collections.emptySet();
     }
 
     @Override
     public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
-
             case 0:
-                if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                    degreeStepInstance(vertex, messenger);
-                }
+                degreeMessagePassing(vertex, messenger);
                 break;
-
             case 1:
-                if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
-                    degreeStepCasting(messenger);
-                }
+                degreeMessageCounting(vertex, messenger);
                 break;
-
-            case 2:
-                TypeId typeId = Utility.getVertexTypeId(vertex);
-                if (selectedTypes.contains(typeId) && ofTypeIds.contains(typeId)) {
-                    vertex.property(degreePropertyKey, getMessageCount(messenger));
-                }
-                break;
-
             default:
                 throw new RuntimeException("unreachable");
         }
@@ -122,7 +100,20 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     @Override
     public boolean terminate(final Memory memory) {
         LOGGER.debug("Finished Degree Iteration " + memory.getIteration());
-        return memory.getIteration() == 2;
+        return memory.getIteration() == 1;
     }
 
+    void degreeMessagePassing(Vertex vertex, Messenger<Long> messenger) {
+        if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
+            messenger.sendMessage(messageScopeShortcutIn, 1L);
+            messenger.sendMessage(messageScopeShortcutOut, 1L);
+        }
+    }
+
+    void degreeMessageCounting(Vertex vertex, Messenger<Long> messenger) {
+        TypeId typeId = Utility.getVertexTypeId(vertex);
+        if (selectedTypes.contains(typeId) && ofTypeIds.contains(typeId)) {
+            vertex.property(degreePropertyKey, getMessageCount(messenger));
+        }
+    }
 }

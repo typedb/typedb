@@ -38,6 +38,4 @@ public class ShortExecutionMockTask extends MockBackgroundTask {
     protected void executeResumeInner(TaskCheckpoint checkpoint) {
         resumedCounter.incrementAndGet();
     }
-
-    public void pause() {}
 }
