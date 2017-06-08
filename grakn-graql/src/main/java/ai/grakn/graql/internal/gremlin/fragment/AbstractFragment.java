@@ -21,11 +21,10 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Streams;
 
 import java.util.Optional;
 import java.util.Set;
-
-import static ai.grakn.util.CommonUtil.optionalToStream;
 
 abstract class AbstractFragment implements Fragment{
 
@@ -67,7 +66,7 @@ abstract class AbstractFragment implements Fragment{
     }
 
     static Var[] optionalVarToArray(Optional<Var> var) {
-        return optionalToStream(var).toArray(Var[]::new);
+        return Streams.stream(var).toArray(Var[]::new);
     }
 
     @Override

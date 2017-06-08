@@ -33,7 +33,6 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
@@ -41,16 +40,19 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleTypeConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverterImpl;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 import javafx.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -63,9 +65,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesDisjoint;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getCompatibleRelationTypesWithRoles;
@@ -317,12 +316,12 @@ public class Relation extends TypeAtom {
 
         Set<VarPatternAdmin> roleVars = getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
-                .flatMap(CommonUtil::optionalToStream)
+                .flatMap(Streams::stream)
                 .collect(Collectors.toSet());
         //try directly
         roleVars.stream()
                 .map(VarPatternAdmin::getTypeLabel)
-                .flatMap(CommonUtil::optionalToStream)
+                .flatMap(Streams::stream)
                 .map(graph::<RoleType>getType)
                 .forEach(roleTypes::add);
 
@@ -411,7 +410,7 @@ public class Relation extends TypeAtom {
         //add user specified role type vars
         getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
-                .flatMap(CommonUtil::optionalToStream)
+                .flatMap(Streams::stream)
                 .filter(v -> v.getVarName().isUserDefinedName())
                 .forEach(r -> vars.add(r.getVarName()));
         return vars;

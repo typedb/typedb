@@ -37,11 +37,11 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -52,7 +52,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -106,7 +106,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return relationPlayers.stream().map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream);
+        return relationPlayers.stream().map(RelationPlayer::getRoleType).flatMap(Streams::stream);
     }
 
     @Override
@@ -150,8 +150,8 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws IllegalStateException {
 
         Set<TypeLabel> roleTypes = relationPlayers.stream()
-                .map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream)
-                .map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
+                .map(RelationPlayer::getRoleType).flatMap(Streams::stream)
+                .map(VarPatternAdmin::getTypeLabel).flatMap(Streams::stream)
                 .collect(toSet());
 
         Optional<TypeLabel> maybeLabel =

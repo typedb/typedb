@@ -26,7 +26,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.util.ANSI;
-import ai.grakn.util.CommonUtil;
+import com.google.common.collect.Streams;
 
 import java.util.Collection;
 import java.util.Map;
@@ -84,7 +84,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                     return instances.stream().map(instance ->
                         Optional.of(colorType(roleType) + ": id " + idToString(instance.getId()))
                     );
-                }).flatMap(CommonUtil::optionalToStream).collect(Collectors.joining(", "));
+                }).flatMap(Streams::stream).collect(Collectors.joining(", "));
 
                 sb.append(" (").append(relationString).append(")");
             }

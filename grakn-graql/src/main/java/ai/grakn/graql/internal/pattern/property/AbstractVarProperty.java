@@ -23,8 +23,8 @@ import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.Streams;
 
 import java.util.stream.Stream;
 
@@ -34,7 +34,7 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     public final void checkValid(GraknGraph graph, VarPatternAdmin var) throws IllegalStateException {
         checkValidProperty(graph, var);
 
-        getInnerVars().map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
+        getInnerVars().map(VarPatternAdmin::getTypeLabel).flatMap(Streams::stream).forEach(label -> {
             if (graph.getType(label) == null) {
                 throw new IllegalStateException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
             }

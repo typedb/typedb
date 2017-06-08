@@ -50,12 +50,12 @@ import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.pattern.property.RhsProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -67,7 +67,8 @@ import java.util.Stack;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static com.google.common.collect.ImmutableMultiset.toImmutableMultiset;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -369,7 +370,7 @@ class VarPatternImpl implements VarPatternAdmin {
     public Set<TypeLabel> getTypeLabels() {
         return getProperties()
                 .flatMap(VarProperty::getTypes)
-                .map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
+                .map(VarPatternAdmin::getTypeLabel).flatMap(Streams::stream)
                 .collect(toSet());
     }
 
@@ -418,7 +419,7 @@ class VarPatternImpl implements VarPatternAdmin {
                 .orElse(Stream.empty());
 
         ImmutableMultiset<RelationPlayer> relationPlayers =
-                Stream.concat(oldCastings, Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
+                Stream.concat(oldCastings, Stream.of(relationPlayer)).collect(toImmutableMultiset());
 
         RelationProperty newProperty = new RelationProperty(relationPlayers);
 
