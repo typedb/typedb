@@ -26,7 +26,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.util.ANSI;
-import ai.grakn.graql.internal.util.CommonUtil;
+import ai.grakn.util.CommonUtil;
 
 import java.util.Collection;
 import java.util.Map;

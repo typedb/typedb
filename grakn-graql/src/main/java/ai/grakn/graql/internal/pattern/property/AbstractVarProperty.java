@@ -23,7 +23,7 @@ import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.util.CommonUtil;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.stream.Stream;

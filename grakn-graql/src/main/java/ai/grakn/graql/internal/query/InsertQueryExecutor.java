@@ -53,7 +53,7 @@ import java.util.Stack;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.util.CommonUtil.optionalOr;
+import static ai.grakn.util.CommonUtil.optionalOr;
 import static ai.grakn.util.ErrorMessage.INSERT_INSTANCE_WITH_NAME;
 import static ai.grakn.util.ErrorMessage.INSERT_ISA_AND_SUB;
 import static ai.grakn.util.ErrorMessage.INSERT_MULTIPLE_VALUES;

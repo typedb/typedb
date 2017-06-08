@@ -31,7 +31,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static ai.grakn.graql.internal.util.StringConverter.GRAQL_KEYWORDS;
 
 /**
