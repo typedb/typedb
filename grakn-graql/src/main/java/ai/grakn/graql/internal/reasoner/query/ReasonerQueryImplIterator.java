@@ -20,22 +20,23 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
-import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  *
  * <p>
- * Tuple-at-a-time iterator for {@link ReasonerQueryImpl}.
- * For a starting query Q it removes the top (highest priority) atom A, constructs a corresponding atomic query
- * AQ and uses it to feed the the remaining query Q' = Q\AQ with partial substitutions. The behaviour proceeds
- * in recursive fashion.
+ * Tuple-at-a-time iterator for {@link ReasonerQueryImpl}, wraps around a {@link ReasonerQueryImplCumulativeIterator}.
+ * For a starting conjunctive query Q it constructs a resolution plan by decomposing it to atomic queries {@link ReasonerAtomicQuery}
+ * ordering them by their resolution priority. The ordered list is then passed to {@link ReasonerQueryImplCumulativeIterator}
+ * which takes care of substitution propagation leading to a final answer.
  * </p>
  *
  * @author Kasper Piskorski
@@ -43,53 +44,36 @@ import org.slf4j.LoggerFactory;
  */
 class ReasonerQueryImplIterator extends ReasonerQueryIterator {
 
-    private Answer partialSub = new QueryAnswer();
-    private final ReasonerQueryImpl queryPrime;
-
-    private final QueryCache<ReasonerAtomicQuery> cache;
-    private final Set<ReasonerAtomicQuery> subGoals;
-
-    private final Iterator<Answer> atomicQueryIterator;
-    private Iterator<Answer> queryIterator = Collections.emptyIterator();
-
+    private final Iterator<Answer> queryIterator;
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
     ReasonerQueryImplIterator(ReasonerQueryImpl q,
                               Answer sub,
                               Set<ReasonerAtomicQuery> subGoals,
                               QueryCache<ReasonerAtomicQuery> cache){
-        this.subGoals = subGoals;
-        this.cache = cache;
 
-        //get prioritised atom and construct atomic query from it
         ReasonerQueryImpl query = new ReasonerQueryImpl(q);
         query.addSubstitution(sub);
-        Atom topAtom = query.getTopAtom();
+
+        LinkedList<ReasonerAtomicQuery> queries = query.getResolutionPlan();
 
         LOG.trace("CQ: " + query);
-        LOG.trace("CQ delta: " + sub);
-        LOG.trace("CQ plan: " + query.getResolutionPlan());
+        LOG.trace("CQ plan: " + queries.stream()
+                .map(ReasonerAtomicQuery::getAtom)
+                .map(AtomicBase::toString)
+                .collect(Collectors.joining("\n"))
+        );
 
-        this.atomicQueryIterator = new ReasonerAtomicQuery(topAtom).iterator(new QueryAnswer(), subGoals, cache);
-        this.queryPrime = ReasonerQueries.prime(query, topAtom);
+        this.queryIterator = new ReasonerQueryImplCumulativeIterator(new QueryAnswer(), queries, subGoals, cache);
     }
 
     @Override
     public boolean hasNext() {
-        if (queryIterator.hasNext()) return true;
-
-        if (atomicQueryIterator.hasNext()) {
-            partialSub = atomicQueryIterator.next();
-            queryIterator = queryPrime.iterator(partialSub, subGoals, cache);
-            return hasNext();
-        }
-        return false;
+        return queryIterator.hasNext();
     }
 
     @Override
     public Answer next() {
-        Answer sub = queryIterator.next();
-        sub = sub.merge(partialSub, true);
-        return sub;
+        return queryIterator.next();
     }
 }
