@@ -24,7 +24,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -311,7 +310,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     //----------------------------------------------General Functionality-----------------------------------------------
-    private EdgeImpl addEdge(Concept from, Concept to, Schema.EdgeLabel type){
+    private EdgeElement addEdge(Concept from, Concept to, Schema.EdgeLabel type){
         return ((ConceptImpl)from).addEdge((ConceptImpl) to, type);
     }
 
@@ -529,7 +528,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Type type = buildType(label, ()-> getType(convertToId(label)));
         return validateConceptType(type, baseType, () -> null);
     }
-    private <T extends Type> T getType(TypeId id){
+    <T extends Type> T getType(TypeId id){
         if(!id.isValid()) return null;
         return getConcept(Schema.ConceptProperty.TYPE_ID, id.getValue());
     }
@@ -627,42 +626,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return getType(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
-    //-----------------------------------------------Casting Functionality----------------------------------------------
-    //------------------------------------ Construction
-    private CastingImpl addCasting(RoleTypeImpl role, InstanceImpl rolePlayer){
-        CastingImpl casting = getElementFactory().buildCasting(addVertex(Schema.BaseType.CASTING), role.currentShard()).setHash(role, rolePlayer);
-        if(rolePlayer != null) {
-            EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
-            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId().getValue());
-        }
-        return casting;
-    }
-    CastingImpl addCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
-        CastingImpl foundCasting  = null;
-        if(rolePlayer != null) {
-            foundCasting = getCasting(role, rolePlayer);
-        }
-
-        if(foundCasting == null){
-            foundCasting = addCasting(role, rolePlayer);
-        }
-
-        // Relation To Casting
-        EdgeImpl relationToCasting = relation.putEdge(foundCasting, Schema.EdgeLabel.CASTING);
-        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId().getValue());
-        getTxCache().trackConceptForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
-
-        //TODO: Only execute this if we need to. I.e if the above relation.putEdge() actually added a new edge.
-        if(rolePlayer != null) putShortcutEdge(rolePlayer, relation, role);
-
-        return foundCasting;
-    }
-
-    private CastingImpl getCasting(RoleTypeImpl role, InstanceImpl rolePlayer){
-        return getConcept(Schema.ConceptProperty.INDEX, CastingImpl.generateNewHash(role, rolePlayer));
-    }
-
-    private void putShortcutEdge(Instance toInstance, Relation fromRelation, RoleType roleType){
+    void putShortcutEdge(InstanceImpl toInstance, RelationImpl fromRelation, RoleTypeImpl roleType){
         boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getTypeId().getValue()).
@@ -670,9 +634,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 hasId(toInstance.getId().getRawValue()).hasNext();
 
         if(!exists){
-            EdgeImpl edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.SHORTCUT);
+            EdgeElement edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.SHORTCUT);
             edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getTypeId().getValue());
             edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getTypeId().getValue());
+            getTxCache().trackForValidation(getElementFactory().buildRolePlayer(edge));
+            getTxCache().trackForValidation(fromRelation); //This is so we can reassign the hash if needed
         }
     }
 
@@ -766,7 +732,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         validateGraph();
 
         boolean submissionNeeded = !getTxCache().getShardingCount().isEmpty() ||
-                !getTxCache().getModifiedCastings().isEmpty() ||
                 !getTxCache().getModifiedResources().isEmpty();
         Json conceptLog = getTxCache().getFormattedLog();
 
@@ -815,11 +780,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
-    @Override
-    public boolean duplicateCastingsExist(String index, Set<ConceptId> castingVertexIds){
-        CastingImpl mainCasting = (CastingImpl) getMainConcept(index);
-        return getDuplicates(mainCasting, castingVertexIds).size() > 0;
-    }
 
     /**
      * Returns the duplicates of the given concept
@@ -849,98 +809,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private ConceptImpl getMainConcept(String index){
         //This is done to ensure we merge into the indexed casting.
         return getConcept(Schema.ConceptProperty.INDEX, index);
-    }
-
-    /**
-     * Merges the provided duplicate castings.
-     *
-     * @param castingVertexIds The vertex Ids of the duplicate castings
-     * @return if castings were merged, a commit is required and the casting index exists
-     */
-    @Override
-    public boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds){
-        CastingImpl mainCasting = (CastingImpl) getMainConcept(index);
-        Set<CastingImpl> duplicated = (Set<CastingImpl>) getDuplicates(mainCasting, castingVertexIds);
-
-        if (duplicated.size() > 0) {
-            //Fix the duplicates
-            Set<Relation> duplicateRelations = mergeCastings(mainCasting, duplicated);
-
-            //Remove Redundant Relations
-            duplicateRelations.forEach(relation -> ((ConceptImpl) relation).deleteNode());
-
-            //Restore the index
-            String newIndex = mainCasting.getIndex();
-            mainCasting.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     *
-     * @param mainCasting The main casting to absorb all of the edges
-     * @param castings The castings to whose edges will be transferred to the main casting and deleted.
-     * @return A set of possible duplicate relations.
-     */
-    private Set<Relation> mergeCastings(CastingImpl mainCasting, Set<CastingImpl> castings){
-        RoleType role = mainCasting.getRole();
-        Set<Relation> relations = mainCasting.getRelations();
-        Set<Relation> relationsToClean = new HashSet<>();
-        Set<RelationImpl> relationsRequiringReIndexing = new HashSet<>();
-
-        for (CastingImpl otherCasting : castings) {
-            //Transfer assertion edges
-            for(Relation rel : otherCasting.getRelations()){
-                RelationImpl otherRelation = (RelationImpl) rel;
-                boolean transferEdge = true;
-
-                //Check if an equivalent Relation is already connected to this casting. This could be a slow process
-                for(Relation originalRelation: relations){
-                    if(relationsEqual(originalRelation, otherRelation)){
-                        relationsToClean.add(otherRelation);
-                        transferEdge = false;
-                        break;
-                    }
-                }
-
-                //Perform the transfer
-                if(transferEdge) {
-                    //Delete index so we can reset it when things are finalised.
-                    otherRelation.setProperty(Schema.ConceptProperty.INDEX, null);
-                    EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
-                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, role.getTypeId().getValue());
-                    relations = mainCasting.getRelations();
-                    relationsRequiringReIndexing.add(otherRelation);
-                }
-            }
-
-            getTxCache().removeConcept(otherCasting);
-            getTinkerPopGraph().traversal().V(otherCasting.getId().getRawValue()).next().remove();
-        }
-
-        relationsRequiringReIndexing.forEach(RelationImpl::setHash);
-
-        return relationsToClean;
-    }
-
-    /**
-     *
-     * @param mainRelation The main relation to compare
-     * @param otherRelation The relation to compare it with
-     * @return True if the roleplayers of the relations are the same.
-     */
-    private boolean relationsEqual(Relation mainRelation, Relation otherRelation){
-        String mainIndex = getRelationIndex((RelationImpl) mainRelation);
-        String otherIndex = getRelationIndex((RelationImpl) otherRelation);
-        return mainIndex.equals(otherIndex);
-    }
-    private String getRelationIndex(RelationImpl relation){
-        String index = relation.getIndex();
-        if(index == null) index = RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers());
-        return index;
     }
 
     /**
@@ -975,8 +843,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                     copyRelation(mainResource, otherResource, (RelationImpl) otherRelation);
                 }
 
-                //Delete the node and it's castings directly so we don't accidentally delete copied relations
-                otherResource.castings().forEach(ConceptImpl::deleteNode);
+                //Delete the node
                 otherResource.deleteNode();
             }
 
@@ -1009,12 +876,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             foundRelation = otherRelation;
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
             otherRelation.allRolePlayers().forEach((roleType, instances) -> {
-                if(instances.contains(other)) addCasting((RoleTypeImpl) roleType, main, otherRelation);
+                if(instances.contains(other)) putShortcutEdge(main, otherRelation, (RoleTypeImpl) roleType);
             });
         }
 
         //Explicitly track this new relation so we don't create duplicates
-        getTxCache().getModifiedRelations().put(newIndex, foundRelation);
+        getTxCache().getRelationIndexCache().put(newIndex, foundRelation);
     }
 
     @Override

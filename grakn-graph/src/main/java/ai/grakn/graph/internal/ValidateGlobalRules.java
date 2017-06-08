@@ -84,10 +84,10 @@ class ValidateGlobalRules {
      * @param casting The casting to be validated
      * @return A specific error if one is found.
      */
-    static Optional<String> validatePlaysStructure(CastingImpl casting) {
-        Instance rolePlayer = casting.getRolePlayer();
-        TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) rolePlayer.type();
-        RoleType roleType = casting.getRole();
+    static Optional<String> validatePlaysStructure(Casting casting) {
+        Instance instance = casting.getInstance();
+        TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) instance.type();
+        RoleType roleType = casting.getRoleType();
 
         boolean satisfiesPlays = false;
 
@@ -101,8 +101,8 @@ class ValidateGlobalRules {
                     satisfiesPlays = true;
 
                     // Assert unique relation for this role type
-                    if (required && rolePlayer.relations(roleType).size() != 1) {
-                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(rolePlayer.getId(), rolePlayer.type().getLabel(), roleType.getLabel(), rolePlayer.relations(roleType).size()));
+                    if (required && instance.relations(roleType).size() != 1) {
+                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(instance.getId(), instance.type().getLabel(), roleType.getLabel(), instance.relations(roleType).size()));
                     }
                 }
             }
@@ -112,7 +112,7 @@ class ValidateGlobalRules {
         if(satisfiesPlays) {
             return Optional.empty();
         } else {
-            return Optional.of(VALIDATION_CASTING.getMessage(rolePlayer.type().getLabel(), rolePlayer.getId(), casting.getRole().getLabel()));
+            return Optional.of(VALIDATION_CASTING.getMessage(instance.type().getLabel(), instance.getId(), casting.getRoleType().getLabel()));
         }
     }
 
@@ -152,18 +152,18 @@ class ValidateGlobalRules {
      */
     static Optional<String> validateRelationshipStructure(RelationImpl relation){
         RelationType relationType = relation.type();
-        Set<CastingImpl> castings = relation.getMappingCasting();
+        Collection<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
         Collection<RoleType> roleTypes = relationType.relates();
 
-        Set<RoleType> rolesViaCastings = castings.stream().map(CastingImpl::getRole).collect(Collectors.toSet());
+        Set<RoleType> rolesViaRolePlayers = castings.stream().map(Casting::getRoleType).collect(Collectors.toSet());
 
-        if(rolesViaCastings.size() > roleTypes.size()) {
-            return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), castings.size(), relationType.getLabel(), roleTypes.size()));
+        if(rolesViaRolePlayers.size() > roleTypes.size()) {
+            return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), rolesViaRolePlayers.size(), relationType.getLabel(), roleTypes.size()));
         }
 
-        for(CastingImpl casting: castings){
+        for(Casting casting : castings){
             boolean notFound = true;
-            for (RelationType innerRelationType : casting.getRole().relationTypes()) {
+            for (RelationType innerRelationType : casting.getRoleType().relationTypes()) {
                 if(innerRelationType.getLabel().equals(relationType.getLabel())){
                     notFound = false;
                     break;
@@ -171,7 +171,7 @@ class ValidateGlobalRules {
             }
 
             if(notFound) {
-                return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRole().getLabel(), relationType.getLabel()));
+                return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRoleType().getLabel(), relationType.getLabel()));
             }
         }
 

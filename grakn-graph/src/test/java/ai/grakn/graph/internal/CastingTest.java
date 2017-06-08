@@ -20,67 +20,72 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertNotNull;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+public class CastingTest extends GraphTestBase {
 
-public class CastingTest extends GraphTestBase{
-    private CastingImpl casting1;
-    private CastingImpl casting2;
-    private Entity entity1;
-    private Entity entity2;
-    private RoleType role1;
+    private RelationType relationType;
+    private EntityType entityType;
+    private RoleType role3;
     private RoleType role2;
-    private Relation relation;
+    private RoleType role1;
 
     @Before
-    public void crateRelation() {
-        role1 = graknGraph.putRoleType("role 1");
-        role2 = graknGraph.putRoleType("role 2");
-        RelationType relationType = graknGraph.putRelationType("Relation Type").relates(role1).relates(role2);
-        EntityType entityType = graknGraph.putEntityType("An Entity Type").plays(role1).plays(role2);
-
-        entity1 = entityType.addEntity();
-        entity2 = entityType.addEntity();
-
-        relation = relationType.addRelation().addRolePlayer(role1, entity1).addRolePlayer(role2, entity2);
-
-        //Get castings via internal index
-        casting1 = graknGraph.getConcept(Schema.ConceptProperty.INDEX,
-                CastingImpl.generateNewHash((RoleTypeImpl) role1, (InstanceImpl) entity1));
-        casting2 = graknGraph.getConcept(Schema.ConceptProperty.INDEX,
-                CastingImpl.generateNewHash((RoleTypeImpl) role2, (InstanceImpl) entity2));
-
-        assertNotNull(casting1);
-        assertNotNull(casting2);
-        assertNotEquals(casting1, casting2);
+    public void createOntology(){
+        role1 = graknGraph.putRoleType("role1");
+        role2 = graknGraph.putRoleType("role2");
+        role3 = graknGraph.putRoleType("role3");
+        entityType = graknGraph.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
+        relationType = graknGraph.putRelationType("Relation Type").relates(role1).relates(role2).relates(role3);
     }
 
     @Test
-    public void whenGettingRolePlayerViaCasting_ReturnRolePlayer() {
-        assertEquals(entity1, casting1.getRolePlayer());
-        assertEquals(entity2, casting2.getRolePlayer());
+    public void whenCreatingRelation_EnsureRolePlayerContainsInstanceRoleTypeRelationTypeAndRelation(){
+        Entity e1 = entityType.addEntity();
+
+        RelationImpl relation = (RelationImpl) relationType.addRelation().
+                addRolePlayer(role1, e1);
+
+        Set<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
+
+        castings.forEach(rolePlayer -> {
+            assertEquals(e1, rolePlayer.getInstance());
+            assertEquals(role1, rolePlayer.getRoleType());
+            assertEquals(relationType, rolePlayer.getRelationType());
+            assertEquals(relation, rolePlayer.getRelation());
+        });
     }
 
     @Test
-    public void whenGettingRoleViaCasting_ReturnRole(){
-        assertEquals(role1, casting1.getRole());
-        assertEquals(role2, casting2.getRole());
-    }
+    public void whenUpdatingRelation_EnsureRolePlayersAreUpdated(){
+        Entity e1 = entityType.addEntity();
+        Entity e3 = entityType.addEntity();
 
-    @Test
-    public void whenGettingRelationViaCasting_ReturnRelation(){
-        assertThat(casting1.getRelations(), containsInAnyOrder(relation));
-        assertThat(casting2.getRelations(), containsInAnyOrder(relation));
+        RelationImpl relation = (RelationImpl) relationType.addRelation().
+                addRolePlayer(role1, e1);
+
+        Set<Instance> instances = relation.castingsRelation().map(Casting::getInstance).collect(Collectors.toSet());
+        Set<RoleType> roles = relation.castingsRelation().map(Casting::getRoleType).collect(Collectors.toSet());
+        assertThat(instances, containsInAnyOrder(e1));
+        assertThat(roles, containsInAnyOrder(role1));
+
+        //Now Update
+        relation.addRolePlayer(role2, e1).addRolePlayer(role3, e3);
+
+        instances = relation.castingsRelation().map(Casting::getInstance).collect(Collectors.toSet());
+        roles = relation.castingsRelation().map(Casting::getRoleType).collect(Collectors.toSet());
+        assertThat(instances, containsInAnyOrder(e1, e3));
+        assertThat(roles, containsInAnyOrder(role1, role2, role3));
     }
 }

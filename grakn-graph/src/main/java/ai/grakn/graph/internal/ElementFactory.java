@@ -43,7 +43,7 @@ import java.util.function.Function;
  *
  * <p>
  *     This class turns Tinkerpop {@link Vertex} and {@link org.apache.tinkerpop.gremlin.structure.Edge}
- *     into Grakn {@link Concept} and {@link EdgeImpl}.
+ *     into Grakn {@link Concept} and {@link EdgeElement}.
  *
  *     Construction is only successful if the vertex and edge properties contain the needed information.
  *     A concept must include a label which is a {@link ai.grakn.util.Schema.BaseType}.
@@ -72,15 +72,10 @@ final class ElementFactory {
 
         //Only track concepts which have been modified.
         if(graknGraph.isConceptModified(concept)) {
-            graknGraph.getTxCache().trackConceptForValidation(concept);
+            graknGraph.getTxCache().trackForValidation(concept);
         }
 
         return concept;
-    }
-
-    // ------------------------------------------- Building Castings  --------------------------------------------------
-    CastingImpl buildCasting(Vertex vertex, RoleType type){
-        return getOrBuildConcept(vertex, (v) -> new CastingImpl(graknGraph, v, type));
     }
 
     // ---------------------------------------- Building Resource Types  -----------------------------------------------
@@ -153,9 +148,6 @@ final class ElementFactory {
                 case RELATION:
                     concept = new RelationImpl(graknGraph, v);
                     break;
-                case CASTING:
-                    concept = new CastingImpl(graknGraph, v);
-                    break;
                 case TYPE:
                     concept = new TypeImpl<>(graknGraph, v);
                     break;
@@ -204,7 +196,6 @@ final class ElementFactory {
                 Vertex typeVertex = shardVertex.edges(Direction.OUT, Schema.EdgeLabel.ISA.getLabel()).next().inVertex();
                 String label = typeVertex.label();
                 if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
-                if(label.equals(Schema.BaseType.ROLE_TYPE.name())) return Schema.BaseType.CASTING;
                 if(label.equals(Schema.BaseType.RELATION_TYPE.name())) return Schema.BaseType.RELATION;
                 if(label.equals(Schema.BaseType.RESOURCE_TYPE.name())) return Schema.BaseType.RESOURCE;
                 if(label.equals(Schema.BaseType.RULE_TYPE.name())) return Schema.BaseType.RULE;
@@ -213,7 +204,16 @@ final class ElementFactory {
         throw new IllegalStateException("Could not determine the base type of vertex [" + vertex + "]");
     }
 
-    EdgeImpl buildEdge(Edge edge){
-        return new EdgeImpl(edge, graknGraph);
+    EdgeElement buildEdge(Edge edge){
+        return new EdgeElement(graknGraph, edge);
+    }
+
+    //TODO: Integrate with cache and cleanup
+    Casting buildRolePlayer(Edge edge){
+        return buildRolePlayer(buildEdge(edge));
+    }
+
+    Casting buildRolePlayer(EdgeElement edge) {
+        return new Casting(graknGraph, edge.getEdge());
     }
 }

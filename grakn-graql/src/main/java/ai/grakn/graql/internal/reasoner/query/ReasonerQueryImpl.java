@@ -201,7 +201,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         LinkedList<ReasonerAtomicQuery> queries = new LinkedList<>();
 
         LinkedList<Atom> atoms = selectAtoms().stream()
-                .sorted(Comparator.comparing(at -> -at.computePriority()))
+                .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
                 .collect(Collectors.toCollection(LinkedList::new));
 
         Atom top = atoms.getFirst();
@@ -210,7 +210,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             queries.add(new ReasonerAtomicQuery(top));
             atoms.remove(top);
 
-            Set<Var> subbedVars = Sets.difference(top.getVarNames(), top.getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet()));
+            Set<Var> subbedVars = Sets.difference(
+                    top.getVarNames(),
+                    top.getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet())
+            );
+
             top = atoms.stream()
                     .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
                     .findFirst().orElse(null);
@@ -351,7 +355,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         //remove disjoint type constraints
         nonSelectableTypes.stream()
-                .filter(at -> findNextJoinable(at) == null)
+                .filter(at -> !at.getNeighbours().findFirst().isPresent())
                 .forEach(this::removeAtomic);
 
         //remove dangling predicates
@@ -369,58 +373,28 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         cstrs.forEach(con -> addAtomic(AtomicFactory.create(con, this)));
     }
 
-    private Atom findFirstJoinable(Set<Atom> atoms){
-        for (Atom next : atoms) {
-            Atom atom = findNextJoinable(Sets.difference(atoms, Sets.newHashSet(next)), next.getVarNames());
-            if (atom != null) return atom;
-        }
-        return atoms.iterator().next();
-    }
-
-    private Atom findNextJoinable(Set<Atom> atoms, Set<Var> vars){
-        for (Atom next : atoms) {
-            if (!Sets.intersection(vars, next.getVarNames()).isEmpty()) return next;
-        }
-        return null;
-    }
-
-    //TODO move to Atom?
-    /**
-     * @param atom for which the neighbour is to be found
-     * @return neighbour or null if disjoint
-     */
-    public Atom findNextJoinable(Atom atom){
-        Set<Atom> atoms = getAtoms().stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .filter(at -> at != atom)
-                .collect(Collectors.toSet());
-        return findNextJoinable(atoms, atom.getVarNames());
-    }
-
     /**
      * atom selection function
      * @return selected atoms
      */
     public Set<Atom> selectAtoms() {
-        Set<Atom> atoms = atomSet.stream()
+        Set<Atom> atomsToSelect = atomSet.stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .collect(Collectors.toSet());
-        if (atoms.size() == 1) return atoms;
-
-        //pass relations or rule-resolvable types and resources
-        Set<Atom> atomsToSelect = atoms.stream()
                 .filter(Atomic::isSelectable)
                 .collect(Collectors.toSet());
+        if (atomsToSelect.size() <= 2) return atomsToSelect;
 
         Set<Atom> orderedSelection = new LinkedHashSet<>();
 
-        Atom atom = findFirstJoinable(atomsToSelect);
-        Set<Var> joinedVars = new HashSet<>();
+        Atom atom = atomsToSelect.stream()
+                .filter(at -> at.getNeighbours().findFirst().isPresent())
+                .findFirst().orElse(null);
         while(!atomsToSelect.isEmpty() && atom != null) {
             orderedSelection.add(atom);
             atomsToSelect.remove(atom);
-            joinedVars.addAll(atom.getVarNames());
-            atom = findNextJoinable(atomsToSelect, joinedVars);
+            atom = atom.getNeighbours()
+                    .filter(atomsToSelect::contains)
+                    .findFirst().orElse(null);
         }
         //if disjoint select at random
         if (!atomsToSelect.isEmpty()) atomsToSelect.forEach(orderedSelection::add);
