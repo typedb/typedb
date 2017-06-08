@@ -20,14 +20,10 @@
 package ai.grakn.util;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
-import ai.grakn.graql.Var;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -36,8 +32,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toMap;
 
 /**
  * Common utility methods used within Grakn.
@@ -71,25 +65,9 @@ public class CommonUtil {
         return optional.map(Stream::of).orElseGet(Stream::empty);
     }
 
-    public static <T> Optional<T> tryNext(Iterator<T> iterator) {
-        if (iterator.hasNext()) {
-            return Optional.of(iterator.next());
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    public static <T> Optional<T> tryAny(Iterable<T> iterable) {
-        return tryNext(iterable.iterator());
-    }
-
     @SafeVarargs
     public static <T> Optional<T> optionalOr(Optional<T>... options) {
         return Stream.of(options).flatMap(CommonUtil::optionalToStream).findFirst();
-    }
-
-    public static Map<String, Concept> resultVarNameToString(Map<Var, Concept> result) {
-        return result.entrySet().stream().collect(toMap(entry -> entry.getKey().getValue(), Map.Entry::getValue));
     }
 
     public static <T> Collector<T, ?, ImmutableSet<T>> toImmutableSet() {
