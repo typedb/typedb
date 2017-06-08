@@ -25,11 +25,14 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
 import java.util.List;
+import java.util.Set;
+import org.elasticsearch.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
@@ -507,6 +510,18 @@ public class ReasoningTests {
         String queryString = "match (role1: $x1, role2: $x2) isa relation2;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         assertEquals(answers.size(), 2);
+
+        String queryString2 = "match " +
+                "$b isa entity2;" +
+                "$b has res1 'value';" +
+                "$rel1 has res2 'value1';" +
+                "$rel1 (role1: $p, role2: $b) isa relation1;" +
+                "$rel2 has res2 'value2';" +
+                "$rel2 (role1: $c, role2: $b) isa relation1;";
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
+        assertEquals(answers2.size(), 2);
+        Set<Var> vars = Sets.newHashSet(Var.of("b"), Var.of("p"), Var.of("c"), Var.of("rel1"), Var.of("rel2"));
+        answers2.forEach(ans -> assertTrue(ans.keySet().containsAll(vars)));
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {

@@ -23,6 +23,10 @@ relation2 sub relation
     relates role1
     relates role2;
 
+relation3 sub relation
+    relates role1
+    relates role2;
+
 res1 sub resource datatype string;
 res2 sub resource datatype string;
 
@@ -40,6 +44,15 @@ $rule isa inference-rule
     rhs {
         (role1: $p, role2: $c) isa relation2;
     };
+
+$dummyRule isa inference-rule
+    lhs{
+        (role1: $p, role2: $c) isa relation3;
+    }
+    rhs {
+        (role1: $p, role2: $c) isa relation1;
+    };
+
 
 #Data
 
