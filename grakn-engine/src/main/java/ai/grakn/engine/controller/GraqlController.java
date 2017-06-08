@@ -21,6 +21,9 @@ package ai.grakn.engine.controller;
 import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
+import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
+import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
@@ -60,7 +63,6 @@ import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -204,39 +206,6 @@ public class GraqlController {
         } finally {
             context.stop();
         }
-    }
-
-    /**
-     * Given a {@link Request} object retrieve the value of the {@param parameter} argument. If it is not present
-     * in the request query, return a 400 to the client.
-     *
-     * @param request information about the HTTP request
-     * @param parameter value to retrieve from the HTTP request
-     * @return value of the given parameter
-     */
-    static String mandatoryQueryParameter(Request request, String parameter){
-        return queryParameter(request, parameter).orElseThrow(() -> GraknServerException.requestMissingParameters(parameter));
-    }
-
-    /**
-     * Given a {@link Request}, retrieve the value of the {@param parameter}
-     * @param request information about the HTTP request
-     * @param parameter value to retrieve from the HTTP request
-     * @return value of the given parameter
-     */
-    static Optional<String> queryParameter(Request request, String parameter){
-        return Optional.ofNullable(request.queryParams(parameter));
-    }
-
-    /**
-     * Given a {@link Request), retreive the value of the request body. If the request does not have a body,
-     * return a 400 (missing parameter) to the client.
-     *
-     * @param request information about the HTTP request
-     * @return value of the request body as a string
-     */
-    static String mandatoryBody(Request request){
-        return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(GraknServerException::requestMissingBody);
     }
 
     /**

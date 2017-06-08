@@ -17,6 +17,9 @@
  */
 package ai.grakn.test;
 
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
+import static ai.grakn.graql.Graql.var;
+
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
@@ -24,20 +27,16 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.factory.SystemKeyspace;
-import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
+import com.jayway.restassured.RestAssured;
 import redis.embedded.RedisServer;
-
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
-import static ai.grakn.graql.Graql.var;
 
 /**
  * <p>
@@ -185,6 +184,14 @@ public abstract class GraknTestEnv {
 
     static String getUri(GraknEngineConfig config) {
         return config.getProperty("server.host") + ":" + config.getProperty("server.port");
+    }
+
+    static String getHost(GraknEngineConfig config) {
+        return config.getProperty("server.host");
+    }
+
+    static String getPort(GraknEngineConfig config) {
+        return config.getProperty("server.port");
     }
 
     static void setRestAssuredUri(GraknEngineConfig config) {

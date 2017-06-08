@@ -20,18 +20,17 @@
 package ai.grakn.test;
 
 
+import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
+import static ai.grakn.engine.GraknEngineServer.configureSpark;
+
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.JWTHandler;
-import org.junit.rules.ExternalResource;
-import spark.Service;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
-import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
+import org.junit.rules.ExternalResource;
+import spark.Service;
 
 /**
  * Context that starts spark
@@ -70,6 +69,9 @@ public class SparkContext extends ExternalResource {
         return GraknTestEnv.getUri(config);
     }
 
+    public String host() {
+        return GraknTestEnv.getHost(config);
+    }
     public GraknEngineConfig config() {
         return config;
     }

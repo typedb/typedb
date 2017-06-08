@@ -18,26 +18,36 @@
 
 package ai.grakn.test.graql.reasoner;
 
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
-import java.util.List;
+import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
+
+import static ai.grakn.graql.Graql.label;
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static ai.grakn.util.Schema.ImplicitType.HAS;
+import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
+import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -291,13 +301,13 @@ public class ReasoningTests {
         String queryString2 = "match $x isa res2;";
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
         assertEquals(answers2.size(), 1);
-        assertTrue(answers2.iterator().next().get(Graql.var("x")).isResource());
+        assertTrue(answers2.iterator().next().get(var("x")).isResource());
         String queryString3 = "match $x isa res1; $y isa res2;";
         QueryAnswers answers3 = queryAnswers(qb.parse(queryString3));
         assertEquals(answers3.size(), 1);
 
-        assertTrue(answers3.iterator().next().get(Graql.var("x")).isResource());
-        assertTrue(answers3.iterator().next().get(Graql.var("y")).isResource());
+        assertTrue(answers3.iterator().next().get(var("x")).isResource());
+        assertTrue(answers3.iterator().next().get(var("y")).isResource());
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
@@ -308,9 +318,9 @@ public class ReasoningTests {
         assertEquals(answers1.size(), 1);
         answers1.forEach(ans ->
                 {
-                    assertTrue(ans.get(Graql.var("x")).isEntity());
-                    assertTrue(ans.get(Graql.var("y")).isResource());
-                    assertTrue(ans.get(Graql.var("z")).isRelation());
+                    assertTrue(ans.get(var("x")).isEntity());
+                    assertTrue(ans.get(var("y")).isResource());
+                    assertTrue(ans.get(var("z")).isRelation());
                 }
         );
         String queryString2 = "match $x isa relation1, has res1 $y;";
@@ -318,8 +328,8 @@ public class ReasoningTests {
         assertEquals(answers2.size(), 1);
         answers2.forEach(ans ->
                 {
-                    assertTrue(ans.get(Graql.var("x")).isRelation());
-                    assertTrue(ans.get(Graql.var("y")).isResource());
+                    assertTrue(ans.get(var("x")).isRelation());
+                    assertTrue(ans.get(var("y")).isResource());
                 }
         );
     }
@@ -496,6 +506,29 @@ public class ReasoningTests {
         String queryString = "match (predecessor:$x1, successor:$x2) isa message-succession;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         assertEquals(answers.size(), 10);
+    }
+
+    @Test
+    public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
+        assertFalse(testSet14.graph().implicitConceptsVisible());
+
+        QueryBuilder withInference = testSet14.graph().graql().infer(true);
+        QueryBuilder withoutInference = testSet14.graph().graql().infer(false);
+
+        VarPattern owner = label(HAS_OWNER.getLabel("res1"));
+        VarPattern value = label(HAS_VALUE.getLabel("res1"));
+        VarPattern hasRes = label(HAS.getLabel("res1"));
+
+        Function<QueryBuilder, MatchQuery> query = qb -> qb.match(
+                var().rel(owner, "x").rel(value, "y").isa(hasRes),
+                var("a").has("res1", var("b"))  // This pattern is added only to encourage reasoning to activate
+        );
+
+        Set<Answer> resultsWithInference = query.apply(withInference).stream().collect(toSet());
+        Set<Answer> resultsWithoutInference = query.apply(withoutInference).stream().collect(toSet());
+
+        assertThat(resultsWithoutInference, not(empty()));
+        assertThat(Sets.difference(resultsWithoutInference, resultsWithInference), empty());
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {

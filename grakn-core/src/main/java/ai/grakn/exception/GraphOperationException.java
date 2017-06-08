@@ -27,6 +27,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
 
 import java.util.stream.Collectors;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 import static ai.grakn.util.ErrorMessage.CLOSE_GRAPH_FAILURE;
 import static ai.grakn.util.ErrorMessage.HAS_INVALID;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
+import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 
 /**
  * <p>
@@ -201,5 +203,12 @@ public class GraphOperationException extends GraknException{
      */
     public static GraphOperationException closingGraphFailed(GraknGraph graph, Exception e){
         return new GraphOperationException(CLOSE_GRAPH_FAILURE.getMessage(graph.getKeyspace()), e);
+    }
+
+    /**
+     * Thrown when using incompatible versions of Grakn
+     */
+    public static GraphOperationException versionMistmatch(Resource versionResource){
+        return new GraphOperationException(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, versionResource.getValue()));
     }
 }
