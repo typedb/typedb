@@ -33,7 +33,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 /**
  * Class for generating greedy traversal plans

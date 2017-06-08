@@ -33,9 +33,9 @@ import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Streams;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -49,8 +49,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.optionalToStream;
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -153,14 +152,14 @@ public class MatchQueryBase extends AbstractMatchQuery {
         Stream<TypeLabel> explicitTypeLabels = pattern.getVars().stream()
                 .flatMap(var -> var.getInnerVars().stream())
                 .map(VarPatternAdmin::getTypeLabel)
-                .flatMap(CommonUtil::optionalToStream);
+                .flatMap(Streams::stream);
 
         Stream<TypeLabel> typeLabelsFromIds = pattern.getVars().stream()
                 .flatMap(var -> var.getInnerVars().stream())
                 .map(var -> var.getProperty(IdProperty.class))
-                .flatMap(CommonUtil::optionalToStream)
+                .flatMap(Streams::stream)
                 .map(IdProperty::getId)
-                .flatMap(id -> optionalToStream(Optional.ofNullable(graph.<Concept>getConcept(id))))
+                .flatMap(id -> Streams.stream(Optional.ofNullable(graph.<Concept>getConcept(id))))
                 .filter(Concept::isType)
                 .map(Concept::asType)
                 .map(Type::getLabel);

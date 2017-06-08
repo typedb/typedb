@@ -26,9 +26,9 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Streams;
 
 import java.util.Collection;
 import java.util.Set;
@@ -79,7 +79,7 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public Stream<VarPatternAdmin> getInnerVars() {
-        return CommonUtil.optionalToStream(predicate.getInnerVar());
+        return Streams.stream(predicate.getInnerVar());
     }
 
     @Override
