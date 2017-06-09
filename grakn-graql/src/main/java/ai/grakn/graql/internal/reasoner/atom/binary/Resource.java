@@ -208,7 +208,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
-    public Unifier getUnifier(Atomic parentAtom) {
+    public Unifier getUnifier(Atom parentAtom) {
         if (!(parentAtom instanceof TypeAtom)) return super.getUnifier(parentAtom);
 
         Unifier unifier = new UnifierImpl();
