@@ -12,6 +12,7 @@ node('slave2-dev-jenkins') {
             sh 'mkdir grakn-package'
             sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
             sh 'grakn-package/bin/grakn.sh start'
+            sh 'grakn-package/bin/graql.sh -e "match $x;"'
         }
     }
     dir ('benchmarking') {
