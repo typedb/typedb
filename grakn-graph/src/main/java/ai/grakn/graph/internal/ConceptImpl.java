@@ -26,16 +26,13 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 
 /**
@@ -53,7 +50,7 @@ import java.util.stream.StreamSupport;
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
-abstract class ConceptImpl<T extends Concept> extends AbstractElement<Vertex> implements Concept {
+abstract class ConceptImpl<T extends Concept> extends VertexElement implements Concept {
     private ElementCache<Boolean> cachedIsShard = new ElementCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_SHARD));
 
     @SuppressWarnings("unchecked")
@@ -141,7 +138,7 @@ abstract class ConceptImpl<T extends Concept> extends AbstractElement<Vertex> im
 
     /**
      *
-     * @return The base ttpe of this concept which helps us identify the concept
+     * @return The base type of this concept which helps us identify the concept
      */
     Schema.BaseType getBaseType(){
         return Schema.BaseType.valueOf(getElement().label());
@@ -153,70 +150,7 @@ abstract class ConceptImpl<T extends Concept> extends AbstractElement<Vertex> im
      */
     @Override
     public ConceptId getId(){
-        return ConceptId.of(getElementId());
-    }
-
-    /**
-     *
-     * @param direction The direction of the edges to retrieve
-     * @param type The type of the edges to retrieve
-     * @return A collection of edges from this concept in a particular direction of a specific type
-     */
-    Stream<EdgeElement> getEdgesOfType(Direction direction, Schema.EdgeLabel type){
-        Iterable<Edge> iterable = () -> getElement().edges(direction, type.getLabel());
-        return StreamSupport.stream(iterable.spliterator(), false).
-                map(edge -> getGraknGraph().getElementFactory().buildEdge(edge));
-    }
-
-    //--------- Create Links -------//
-    /**
-     *  @param to the target concept
-     * @param type the type of the edge to create
-     */
-    EdgeElement putEdge(Concept to, Schema.EdgeLabel type){
-        ConceptImpl toConcept = (ConceptImpl) to;
-        GraphTraversal<Vertex, Edge> traversal = getGraknGraph().getTinkerPopGraph().traversal().V(getId().getRawValue()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getId().getRawValue()).select("edge");
-        if(!traversal.hasNext()) {
-            return addEdge(toConcept, type);
-        } else {
-            return getGraknGraph().getElementFactory().buildEdge(traversal.next());
-        }
-    }
-
-    /**
-     *
-     * @param toConcept the target concept
-     * @param type the type of the edge to create
-     * @return The edge created
-     */
-    EdgeElement addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
-        return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(getElement(), type.getLabel()));
-    }
-
-    /**
-     *
-     * @param direction The direction of the edges to retrieve
-     * @param type The type of the edges to retrieve
-     */
-    void deleteEdges(Direction direction, Schema.EdgeLabel type){
-        getElement().edges(direction, type.getLabel()).forEachRemaining(Edge::remove);
-    }
-
-    /**
-     * Deletes an edge of a specific type going to a specific concept
-     * @param type The type of the edge
-     * @param toConcept The target concept
-     */
-    void deleteEdgeTo(Schema.EdgeLabel type, Concept toConcept){
-        GraphTraversal<Vertex, Edge> traversal = getGraknGraph().getTinkerPopGraph().traversal().V(getId().getRawValue()).
-                outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getId().getRawValue()).select("edge");
-        if(traversal.hasNext()) {
-            traversal.next().remove();
-        }
-    }
-
-    private Edge addEdgeFrom(Vertex fromVertex, String type) {
-        return fromVertex.addEdge(type, getElement());
+        return ConceptId.of(getElement().id());
     }
 
     /**

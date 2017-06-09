@@ -445,7 +445,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public T scope(Instance instance) {
-        putEdge(instance, Schema.EdgeLabel.HAS_SCOPE);
+        putEdge((VertexElement) instance, Schema.EdgeLabel.HAS_SCOPE);
         return getThis();
     }
 
@@ -455,7 +455,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public T deleteScope(Instance scope) {
-        deleteEdgeTo(Schema.EdgeLabel.HAS_SCOPE, scope);
+        deleteEdgeTo(Schema.EdgeLabel.HAS_SCOPE, (VertexElement) scope);
         return getThis();
     }
 
@@ -480,7 +480,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
             //Modify the graph once we have checked no loop occurs
             deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
-            putEdge(newSuperType, Schema.EdgeLabel.SUB);
+            putEdge((VertexElement) newSuperType, Schema.EdgeLabel.SUB);
 
             //Update the sub types of the old super type
             if(oldSuperType != null) {
@@ -539,7 +539,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         //Update the cache of types played by the role
         ((RoleTypeImpl) roleType).addCachedDirectPlaysByType(this);
 
-        EdgeElement edge = putEdge(roleType, Schema.EdgeLabel.PLAYS);
+        EdgeElement edge = putEdge((VertexElement) roleType, Schema.EdgeLabel.PLAYS);
 
         if (required) {
             edge.setProperty(Schema.EdgeProperty.REQUIRED, true);
@@ -565,7 +565,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public T deletePlays(RoleType roleType) {
         checkTypeMutation();
-        deleteEdgeTo(Schema.EdgeLabel.PLAYS, roleType);
+        deleteEdgeTo(Schema.EdgeLabel.PLAYS, (VertexElement) roleType);
         cachedDirectPlays.ifPresent(set -> set.remove(roleType));
         ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(this);
 

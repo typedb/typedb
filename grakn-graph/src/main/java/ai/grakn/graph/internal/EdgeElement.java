@@ -58,7 +58,7 @@ class EdgeElement extends AbstractElement<Edge> {
 
         EdgeElement edge = (EdgeElement) object;
 
-        return getElementId().equals(edge.getElementId());
+        return getElement().id().equals(edge.getElement().id());
     }
 
     /**

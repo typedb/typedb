@@ -82,7 +82,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public RelationType relates(RoleType roleType) {
         checkTypeMutation();
-        putEdge(roleType, Schema.EdgeLabel.RELATES);
+        putEdge((VertexElement) roleType, Schema.EdgeLabel.RELATES);
 
         //ElementCache the Role internally
         cachedRelates.ifPresent(set -> set.add(roleType));
@@ -104,7 +104,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public RelationType deleteRelates(RoleType roleType) {
         checkTypeMutation();
-        deleteEdgeTo(Schema.EdgeLabel.RELATES, roleType);
+        deleteEdgeTo(Schema.EdgeLabel.RELATES, (VertexElement) roleType);
 
         RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
         //Add roleplayers of roleType to make sure relations are still valid

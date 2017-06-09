@@ -86,7 +86,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @return The Rule itself
      */
     Rule addHypothesis(Type type) {
-        putEdge(type, Schema.EdgeLabel.HYPOTHESIS);
+        putEdge((VertexElement) type, Schema.EdgeLabel.HYPOTHESIS);
         return getThis();
     }
 
@@ -96,7 +96,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @return The Rule itself
      */
     Rule addConclusion(Type type) {
-        putEdge(type, Schema.EdgeLabel.CONCLUSION);
+        putEdge((VertexElement) type, Schema.EdgeLabel.CONCLUSION);
         return getThis();
     }
 

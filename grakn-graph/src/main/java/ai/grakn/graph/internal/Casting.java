@@ -85,7 +85,7 @@ class Casting extends EdgeElement {
      * @return The hash code of the underlying vertex
      */
     public int hashCode() {
-        return getElementId().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
+        return getElement().id().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
     }
 
     /**
@@ -99,6 +99,6 @@ class Casting extends EdgeElement {
 
         Casting casting = (Casting) object;
 
-        return getElementId().equals(casting.getElementId());
+        return getElement().id().equals(casting.getElement().id());
     }
 }
