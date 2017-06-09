@@ -214,6 +214,6 @@ final class ElementFactory {
     }
 
     Casting buildRolePlayer(EdgeElement edge) {
-        return new Casting(graknGraph, edge.getEdge());
+        return new Casting(graknGraph, edge.getElement());
     }
 }

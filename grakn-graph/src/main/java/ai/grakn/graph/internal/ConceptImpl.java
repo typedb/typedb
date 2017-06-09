@@ -55,7 +55,6 @@ import java.util.stream.StreamSupport;
  */
 abstract class ConceptImpl<T extends Concept> extends AbstractElement<Vertex> implements Concept {
     private ElementCache<Boolean> cachedIsShard = new ElementCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_SHARD));
-    private final Vertex vertex;
 
     @SuppressWarnings("unchecked")
     T getThis(){
@@ -64,7 +63,6 @@ abstract class ConceptImpl<T extends Concept> extends AbstractElement<Vertex> im
 
     ConceptImpl(AbstractGraknGraph graknGraph, Vertex v){
         super(graknGraph, v);
-        vertex = v;
     }
 
     /**
@@ -97,7 +95,7 @@ abstract class ConceptImpl<T extends Concept> extends AbstractElement<Vertex> im
     void deleteNode(){
         getGraknGraph().getTxCache().remove(this);
         // delete node
-        getVertex().remove();
+        getElement().remove();
     }
 
     /**
@@ -143,18 +141,10 @@ abstract class ConceptImpl<T extends Concept> extends AbstractElement<Vertex> im
 
     /**
      *
-     * @return The tinkerpop vertex
-     */
-    Vertex getVertex() {
-        return vertex;
-    }
-
-    /**
-     *
      * @return The base ttpe of this concept which helps us identify the concept
      */
     Schema.BaseType getBaseType(){
-        return Schema.BaseType.valueOf(getVertex().label());
+        return Schema.BaseType.valueOf(getElement().label());
     }
 
     /**
@@ -173,7 +163,7 @@ abstract class ConceptImpl<T extends Concept> extends AbstractElement<Vertex> im
      * @return A collection of edges from this concept in a particular direction of a specific type
      */
     Stream<EdgeElement> getEdgesOfType(Direction direction, Schema.EdgeLabel type){
-        Iterable<Edge> iterable = () -> getVertex().edges(direction, type.getLabel());
+        Iterable<Edge> iterable = () -> getElement().edges(direction, type.getLabel());
         return StreamSupport.stream(iterable.spliterator(), false).
                 map(edge -> getGraknGraph().getElementFactory().buildEdge(edge));
     }
@@ -200,7 +190,7 @@ abstract class ConceptImpl<T extends Concept> extends AbstractElement<Vertex> im
      * @return The edge created
      */
     EdgeElement addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
-        return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(getVertex(), type.getLabel()));
+        return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(getElement(), type.getLabel()));
     }
 
     /**
@@ -209,7 +199,7 @@ abstract class ConceptImpl<T extends Concept> extends AbstractElement<Vertex> im
      * @param type The type of the edges to retrieve
      */
     void deleteEdges(Direction direction, Schema.EdgeLabel type){
-        getVertex().edges(direction, type.getLabel()).forEachRemaining(Edge::remove);
+        getElement().edges(direction, type.getLabel()).forEachRemaining(Edge::remove);
     }
 
     /**
@@ -226,7 +216,7 @@ abstract class ConceptImpl<T extends Concept> extends AbstractElement<Vertex> im
     }
 
     private Edge addEdgeFrom(Vertex fromVertex, String type) {
-        return fromVertex.addEdge(type, getVertex());
+        return fromVertex.addEdge(type, getElement());
     }
 
     /**
@@ -251,7 +241,7 @@ abstract class ConceptImpl<T extends Concept> extends AbstractElement<Vertex> im
     @Override
     public final String toString(){
         try {
-            getGraknGraph().validVertex(vertex);
+            getGraknGraph().validVertex(getElement());
             return innerToString();
         } catch (RuntimeException e){
             // Vertex is broken somehow. Most likely deleted.
@@ -290,7 +280,7 @@ abstract class ConceptImpl<T extends Concept> extends AbstractElement<Vertex> im
     //----------------------------------- Sharding Functionality
     T createShard(){
         Vertex shardVertex = getGraknGraph().addVertex(getBaseType());
-        shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), getVertex());
+        shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), getElement());
 
         ConceptImpl shardConcept = getGraknGraph().buildConcept(shardVertex);
         shardConcept.isShard(true);

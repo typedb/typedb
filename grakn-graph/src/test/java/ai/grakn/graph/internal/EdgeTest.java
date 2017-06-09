@@ -63,6 +63,6 @@ public class EdgeTest extends GraphTestBase{
 
     @Test
     public void whenGettingTheLabelOfAnEdge_ReturnExpectedType() throws Exception {
-        assertEquals(Schema.EdgeLabel.ISA, edge.getType());
+        assertEquals(Schema.EdgeLabel.ISA, edge.getLabel());
     }
 }

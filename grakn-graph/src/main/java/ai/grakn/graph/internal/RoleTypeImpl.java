@@ -155,8 +155,8 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
 
     @Override
     public void delete(){
-        boolean hasRelates = getVertex().edges(Direction.IN, Schema.EdgeLabel.RELATES.getLabel()).hasNext();
-        boolean hasPlays = getVertex().edges(Direction.IN, Schema.EdgeLabel.PLAYS.getLabel()).hasNext();
+        boolean hasRelates = getElement().edges(Direction.IN, Schema.EdgeLabel.RELATES.getLabel()).hasNext();
+        boolean hasPlays = getElement().edges(Direction.IN, Schema.EdgeLabel.PLAYS.getLabel()).hasNext();
 
         boolean deletionNotAllowed = hasRelates || hasPlays;
 

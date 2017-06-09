@@ -34,12 +34,10 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  * @author fppt
  */
 class EdgeElement extends AbstractElement<Edge> {
-    private Edge edge;
     private final AbstractGraknGraph graknGraph;
 
     EdgeElement(AbstractGraknGraph graknGraph, Edge e){
         super(graknGraph, e);
-        edge = e;
         this.graknGraph = graknGraph;
     }
 
@@ -47,21 +45,12 @@ class EdgeElement extends AbstractElement<Edge> {
      * Deletes the edge between two concepts and adds both those concepts for re-validation in case something goes wrong
      */
     public void delete(){
-        edge.remove();
-        edge = null;
-    }
-
-    /**
-     *
-     * @return The internal tinkerpop edge
-     */
-    public Edge getEdge(){
-        return edge;
+        getElement().remove();
     }
 
     @Override
     public int hashCode() {
-        return edge.hashCode();
+        return getElement().hashCode();
     }
 
     @Override
@@ -79,7 +68,7 @@ class EdgeElement extends AbstractElement<Edge> {
      * @return The source of the edge.
      */
     public <X extends Concept> X getSource(){
-        return graknGraph.getElementFactory().buildConcept(edge.outVertex());
+        return graknGraph.getElementFactory().buildConcept(getElement().outVertex());
     }
 
     /**
@@ -87,15 +76,15 @@ class EdgeElement extends AbstractElement<Edge> {
      * @return The target of the edge
      */
     public <X extends Concept> X getTarget(){
-        return graknGraph.getElementFactory().buildConcept(edge.inVertex());
+        return graknGraph.getElementFactory().buildConcept(getElement().inVertex());
     }
 
     /**
      *
      * @return The type of the edge
      */
-    public Schema.EdgeLabel getType() {
-        return Schema.EdgeLabel.getEdgeLabel(edge.label());
+    public Schema.EdgeLabel getLabel() {
+        return Schema.EdgeLabel.getEdgeLabel(getElement().label());
     }
 
     /**

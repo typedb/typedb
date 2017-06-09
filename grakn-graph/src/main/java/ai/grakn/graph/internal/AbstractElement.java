@@ -57,7 +57,7 @@ abstract class AbstractElement<E extends Element> {
         this.element = element;
     }
 
-    private E getElement(){
+    E getElement(){
         return element;
     }
 

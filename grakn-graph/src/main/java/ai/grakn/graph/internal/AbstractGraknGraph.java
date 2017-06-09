@@ -143,7 +143,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             currentValue = currentValue + 1;
         }
         //Vertex is used directly here to bypass meta type mutation check
-        metaConcept.getVertex().property(Schema.ConceptProperty.CURRENT_TYPE_ID.name(), currentValue);
+        metaConcept.getElement().property(Schema.ConceptProperty.CURRENT_TYPE_ID.name(), currentValue);
         return TypeId.of(currentValue);
     }
 
@@ -356,14 +356,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private Vertex putVertex(TypeLabel label, Schema.BaseType baseType){
         Vertex vertex;
-        ConceptImpl concept = getType(convertToId(label));
+        ConceptImpl<?> concept = getType(convertToId(label));
         if(concept == null) {
             vertex = addTypeVertex(getNextId(), label, baseType);
         } else {
             if(!baseType.equals(concept.getBaseType())) {
                 throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.ConceptProperty.TYPE_LABEL, label);
             }
-            vertex = concept.getVertex();
+            vertex = concept.getElement();
         }
         return vertex;
     }
@@ -849,7 +849,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
             //Restore the index
             String newIndex = mainResource.getIndex();
-            mainResource.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
+            mainResource.getElement().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 
             return true;
         }
