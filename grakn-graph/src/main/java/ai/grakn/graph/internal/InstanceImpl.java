@@ -68,10 +68,10 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     });
 
     private Cache<V> cachedType = new Cache<>(() -> {
-        ConceptImpl<?> currentType = (ConceptImpl) this.getOutgoingNeighbours(Schema.EdgeLabel.ISA).findFirst().orElse(null);
+        ConceptImpl<?> currentType = (ConceptImpl) neighbours(Direction.OUT, Schema.EdgeLabel.ISA).findFirst().orElse(null);
 
         while (currentType.isShard()){
-            currentType = (ConceptImpl) currentType.getOutgoingNeighbours(Schema.EdgeLabel.SHARD).findFirst().orElse(null);
+            currentType = (ConceptImpl) currentType.neighbours(Direction.OUT, Schema.EdgeLabel.SHARD).findFirst().orElse(null);
         }
 
         //noinspection unchecked

@@ -73,9 +73,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     private final TypeLabel cachedTypeLabel;
     private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
     private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
-    private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>getOutgoingNeighbours(Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
-    private Cache<Set<T>> cachedShards = new Cache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
+    private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
+    private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private Cache<Set<T>> cachedShards = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
 
     //This cache is different in order to keep track of which plays are required
     private Cache<Map<RoleType, Boolean>> cachedDirectPlays = new Cache<>(() -> {
@@ -257,9 +257,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public void delete(){
         checkTypeMutationAllowed();
-        boolean hasSubs = getIncomingNeighbours(Schema.EdgeLabel.SUB).findAny().isPresent();
-        boolean hasInstances = getIncomingNeighbours(Schema.EdgeLabel.SHARD).
-                filter(shard -> ((ConceptImpl)shard).getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().isPresent()).findAny().isPresent();
+        boolean hasSubs = neighbours(Direction.IN, Schema.EdgeLabel.SUB).findAny().isPresent();
+        boolean hasInstances = neighbours(Direction.IN, Schema.EdgeLabel.SHARD).
+                filter(shard -> ((ConceptImpl) shard).neighbours(Direction.IN, Schema.EdgeLabel.ISA).findAny().isPresent()).findAny().isPresent();
 
         if(hasSubs || hasInstances){
             throw GraphOperationException.typeCannotBeDeleted(getLabel());
@@ -368,7 +368,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         final Set<V> instances = new HashSet<>();
 
         if(isShard()){
-            instances.addAll(this.<V>getIncomingNeighbours(Schema.EdgeLabel.ISA).collect(Collectors.toSet()));
+            instances.addAll(this.<V>neighbours(Direction.IN, Schema.EdgeLabel.ISA).collect(Collectors.toSet()));
         } else {
             GraphTraversal<Vertex, Vertex> traversal = graph().getTinkerPopGraph().traversal().V()
                     .has(Schema.ConceptProperty.TYPE_ID.name(), getTypeId().getValue())
@@ -412,7 +412,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public Collection<Rule> getRulesOfHypothesis() {
         Set<Rule> rules = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> rules.add(concept.asRule()));
+        neighbours(Direction.IN, Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> rules.add(concept.asRule()));
         return Collections.unmodifiableCollection(rules);
     }
 
@@ -423,7 +423,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public Collection<Rule> getRulesOfConclusion() {
         Set<Rule> rules = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.CONCLUSION).forEach(concept -> rules.add(concept.asRule()));
+        neighbours(Direction.IN, Schema.EdgeLabel.CONCLUSION).forEach(concept -> rules.add(concept.asRule()));
         return Collections.unmodifiableCollection(rules);
     }
 
@@ -434,7 +434,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public Set<Instance> scopes() {
         HashSet<Instance> scopes = new HashSet<>();
-        getOutgoingNeighbours(Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asInstance()));
+        neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asInstance()));
         return scopes;
     }
 
@@ -595,8 +595,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     public T setAbstract(Boolean isAbstract) {
         if(!Schema.MetaSchema.isMetaLabel(getLabel()) && isAbstract &&
-                this.<TypeImpl>getIncomingNeighbours(Schema.EdgeLabel.SHARD).anyMatch(thing ->
-                        thing.getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().isPresent())){
+                this.<TypeImpl>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).anyMatch(thing -> thing.neighbours(Direction.IN, Schema.EdgeLabel.ISA).findAny().isPresent())){
             throw GraphOperationException.addingInstancesToAbstractType(this);
         }
 

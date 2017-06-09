@@ -24,6 +24,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -49,8 +50,8 @@ import java.util.stream.Stream;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>getIncomingNeighbours(Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>getIncomingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
+    private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RoleTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
@@ -153,8 +154,8 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
 
     @Override
     public void delete(){
-        boolean hasRelates = getIncomingNeighbours(Schema.EdgeLabel.RELATES).findAny().isPresent();
-        boolean hasPlays = getIncomingNeighbours(Schema.EdgeLabel.PLAYS).findAny().isPresent();
+        boolean hasRelates = neighbours(Direction.IN, Schema.EdgeLabel.RELATES).findAny().isPresent();
+        boolean hasPlays = neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).findAny().isPresent();
 
         boolean deletionNotAllowed = hasRelates || hasPlays;
 

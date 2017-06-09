@@ -478,8 +478,8 @@ public class EntityTypeTest extends GraphTestBase{
         EntityTypeImpl shard = (EntityTypeImpl) entityType.currentShard();
         Entity e1 = entityType.addEntity();
 
-        assertFalse("The isa edge was places on the type rather than the shard", entityType.getIncomingNeighbours(Schema.EdgeLabel.ISA).iterator().hasNext());
-        assertEquals(e1, shard.getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().get());
+        assertFalse("The isa edge was places on the type rather than the shard", entityType.neighbours(Direction.IN, Schema.EdgeLabel.ISA).iterator().hasNext());
+        assertEquals(e1, shard.neighbours(Direction.IN, Schema.EdgeLabel.ISA).findAny().get());
     }
 
 }

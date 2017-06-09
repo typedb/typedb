@@ -115,22 +115,25 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     /**
      *
-     * @param edgeType The edge label to traverse
-     * @return The neighbouring concepts found by traversing outgoing edges of a specific type
+     * @param direction the direction of the neigouring concept to get
+     * @param label The edge label to traverse
+     * @return The neighbouring concepts found by traversing edges of a specific type
      */
-    <X extends Concept> Stream<X> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
-        return vertex().getEdgesOfType(Direction.OUT, edgeType).map(EdgeElement::getTarget);
-    }
+    <X extends Concept> Stream<X> neighbours(Direction direction, Schema.EdgeLabel label){
+        Stream<X> edges = vertex().getEdgesOfType(direction, label).
+                flatMap(edge -> Stream.of(edge.getSource(), edge.getTarget()));
 
-    /**
-     *
-     * @param edgeType The edge label to traverse
-     * @return The neighbouring concepts found by traversing incoming edges of a specific type
-     */
-    <X extends Concept> Stream<X> getIncomingNeighbours(Schema.EdgeLabel edgeType){
-        return vertex().getEdgesOfType(Direction.IN, edgeType).map(EdgeElement::getSource);
-    }
+        switch (direction){
+            case IN:
+                edges = vertex().getEdgesOfType(direction, label).map(EdgeElement::getSource);
+                break;
+            case OUT:
+                edges = vertex().getEdgesOfType(direction, label).map(EdgeElement::getTarget);
+                break;
+        }
 
+        return edges;
+    }
 
     EdgeElement putEdge(Concept to, Schema.EdgeLabel label){
         return vertex().putEdge(((ConceptImpl) to).vertex(), label);
@@ -264,7 +267,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     }
 
     Set<T> shards(){
-        return this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet());
+        return this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet());
     }
 
     //TODO: Return implementation rather than interface

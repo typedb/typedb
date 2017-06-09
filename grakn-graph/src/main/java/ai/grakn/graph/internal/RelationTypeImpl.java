@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    private Cache<Set<RoleType>> cachedRelates = new Cache<>(() -> this.<RoleType>getOutgoingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private Cache<Set<RoleType>> cachedRelates = new Cache<>(() -> this.<RoleType>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RelationTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
