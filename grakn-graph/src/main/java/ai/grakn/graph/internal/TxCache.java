@@ -152,10 +152,8 @@ class TxCache {
             modifiedResources.add((ResourceImpl) element);
         }
     }
-    void trackForValidation(AbstractElement element) {
-        if (element.isCasting()){
-            modifiedCastings.add(element.asCasting());
-        }
+    void trackForValidation(Casting casting) {
+        modifiedCastings.add(casting);
     }
 
     /**

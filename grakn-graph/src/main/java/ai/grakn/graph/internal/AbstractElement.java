@@ -137,20 +137,4 @@ abstract class AbstractElement<E extends Element> {
     String label(){
         return getElement().label();
     }
-
-    /**
-     *
-     * @return A roleplayer if the element is a roleplayer
-     */
-    public Casting asCasting(){
-        return castConcept(Casting.class);
-    }
-
-    /**
-     *
-     * @return true if the element is a Casting
-     */
-    public boolean isCasting(){
-        return this instanceof Casting;
-    }
 }

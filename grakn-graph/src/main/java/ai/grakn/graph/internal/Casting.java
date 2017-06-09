@@ -38,14 +38,19 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  *
  * @author fppt
  */
-class Casting extends EdgeElement {
-    private ElementCache<RoleType> cachedRoleType = new ElementCache<>(() -> (RoleType) getGraknGraph().getType(TypeId.of(getProperty(Schema.EdgeProperty.ROLE_TYPE_ID))));
-    private ElementCache<RelationType> cachedRelationType = new ElementCache<>(() -> (RelationType) getGraknGraph().getType(TypeId.of(getProperty(Schema.EdgeProperty.RELATION_TYPE_ID))));
-    private ElementCache<Instance> cachedInstance = new ElementCache<>(this::getTarget);
-    private ElementCache<Relation> cachedRelation = new ElementCache<>(this::getSource);
+class Casting {
+    private final EdgeElement edgeElement;
+    private final ElementCache<RoleType> cachedRoleType = new ElementCache<>(() -> (RoleType) edge().getGraknGraph().getType(TypeId.of(edge().getProperty(Schema.EdgeProperty.ROLE_TYPE_ID))));
+    private final ElementCache<RelationType> cachedRelationType = new ElementCache<>(() -> (RelationType) edge().getGraknGraph().getType(TypeId.of(edge().getProperty(Schema.EdgeProperty.RELATION_TYPE_ID))));
+    private final ElementCache<Instance> cachedInstance = new ElementCache<>(() -> edge().getTarget());
+    private final ElementCache<Relation> cachedRelation = new ElementCache<>(() -> edge().getSource());
 
-    Casting(AbstractGraknGraph graph, Edge edge){
-        super(graph, edge);
+    Casting(EdgeElement edgeElement){
+        this.edgeElement = edgeElement;
+    }
+
+    EdgeElement edge(){
+        return edgeElement;
     }
 
     /**
@@ -85,7 +90,7 @@ class Casting extends EdgeElement {
      * @return The hash code of the underlying vertex
      */
     public int hashCode() {
-        return getElementId().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
+        return edge().getElementId().hashCode();
     }
 
     /**
@@ -99,6 +104,6 @@ class Casting extends EdgeElement {
 
         Casting casting = (Casting) object;
 
-        return getElementId().equals(casting.getElementId());
+        return edge().getElementId().equals(casting.edge().getElementId());
     }
 }
