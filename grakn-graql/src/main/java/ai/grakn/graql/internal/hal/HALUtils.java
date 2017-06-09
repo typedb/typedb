@@ -32,6 +32,7 @@ import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import com.theoryinpractise.halbuilder.api.Representation;
@@ -84,7 +85,7 @@ public class HALUtils {
         } else if (instance.isRule()) {
             return Schema.BaseType.RULE;
         } else {
-            throw new RuntimeException("Unrecognized base type of " + instance);
+            throw CommonUtil.unreachableStatement("Unrecognised base type of " + instance);
         }
     }
 
@@ -102,7 +103,7 @@ public class HALUtils {
         } else if (type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
             return Schema.BaseType.TYPE;
         } else {
-            throw new RuntimeException("Unrecognized base type of " + type);
+            throw CommonUtil.unreachableStatement("Unrecognised base type of " + type);
         }
     }
 

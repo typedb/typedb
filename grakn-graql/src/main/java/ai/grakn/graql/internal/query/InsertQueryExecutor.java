@@ -37,6 +37,7 @@ import ai.grakn.graql.internal.pattern.property.RhsProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -256,7 +257,7 @@ public class InsertQueryExecutor {
         } else if (type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
             throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
         } else {
-            throw new RuntimeException("Unrecognized type " + type.getLabel());
+            throw CommonUtil.unreachableStatement("Can't recognize type " + type);
         }
     }
 

@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeId;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
@@ -102,8 +102,7 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
         try {
             return (GraknMapReduce) super.clone();
         } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),
-                    e.getMessage()), e);
+            throw CommonUtil.unreachableStatement(e);
         }
     }
 
