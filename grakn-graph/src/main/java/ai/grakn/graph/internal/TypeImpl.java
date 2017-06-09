@@ -115,14 +115,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         cachedIsImplicit.set(isImplicit);
     }
 
-    TypeImpl(TypeImpl<T, V> type) {
-        super(type);
-        this.cachedTypeLabel = type.getLabel();
-        this.cachedTypeId = type.getTypeId();
-        type.cachedIsImplicit.ifPresent(value -> this.cachedIsImplicit.set(value));
-        type.cachedIsAbstract.ifPresent(value -> this.cachedIsAbstract.set(value));
-    }
-
     /**
      * Flushes the internal transaction caches so that persisted information can be cached and shared between
      * concepts

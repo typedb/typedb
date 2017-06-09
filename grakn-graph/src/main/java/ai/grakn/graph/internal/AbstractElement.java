@@ -30,10 +30,14 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Property;
+
+import static org.apache.tinkerpop.gremlin.structure.T.id;
 
 /**
  * <p>
- *     Graph Element
+ *     Graph AbstractElement
  * </p>
  *
  * <p>
@@ -44,17 +48,56 @@ import ai.grakn.exception.GraphOperationException;
  * @author fppt
  *
  */
-public abstract class Element {
-    private final Object id;
+abstract class AbstractElement<E extends Element> {
+    private final E element;
     private final AbstractGraknGraph graknGraph;
 
-    Element(AbstractGraknGraph graknGraph, Object id){
+    AbstractElement(AbstractGraknGraph graknGraph, E element){
         this.graknGraph = graknGraph;
-        this.id = id;
+        this.element = element;
+    }
+
+    private E getElement(){
+        return element;
     }
 
     Object getElementId(){
-        return id;
+        return element.id();
+    }
+
+
+    /**
+     *
+     * @param key The key of the property to mutate
+     * @param value The value to commit into the property
+     */
+     void setProperty(String key, Object value){
+        if(value == null) {
+            getElement().property(key).remove();
+        } else {
+            Property<Object> foundProperty = getElement().property(key);
+            if(!foundProperty.isPresent() || !foundProperty.value().equals(value)){
+                getElement().property(key, value);
+            }
+        }
+    }
+
+    /**
+     *
+     * @param key The key of the non-unique property to retrieve
+     * @return The value stored in the property
+     */
+    public <X> X getProperty(String key){
+        Property<X> property = getElement().property(key);
+        if(property != null && property.isPresent()) {
+            return property.value();
+        }
+        return null;
+    }
+    Boolean getPropertyBoolean(String key){
+        Boolean value = getProperty(key);
+        if(value == null) return false;
+        return value;
     }
 
     /**
@@ -81,7 +124,7 @@ public abstract class Element {
     public boolean equals(Object object) {
         //Compare Concept
         //based on id because vertex comparisons are equivalent
-        return this == object || object instanceof Element && ((Element) object).getElementId().equals(getElementId());
+        return this == object || object instanceof AbstractElement && ((AbstractElement) object).getElementId().equals(getElementId());
     }
 
     /**
@@ -91,7 +134,7 @@ public abstract class Element {
      * @return The concept itself casted to the defined interface
      * @throws GraphOperationException when casting an element incorrectly
      */
-    private <E extends Element> E castConcept(Class<E> type){
+    private <E extends AbstractElement> E castConcept(Class<E> type){
         try {
             return type.cast(this);
         } catch(ClassCastException e){

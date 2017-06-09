@@ -30,7 +30,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.Set;
 import java.util.function.Function;
@@ -54,7 +53,7 @@ import java.util.stream.StreamSupport;
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
-abstract class ConceptImpl<T extends Concept> extends Element implements Concept {
+abstract class ConceptImpl<T extends Concept> extends AbstractElement<Vertex> implements Concept {
     private ElementCache<Boolean> cachedIsShard = new ElementCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_SHARD));
     private final Vertex vertex;
 
@@ -64,33 +63,8 @@ abstract class ConceptImpl<T extends Concept> extends Element implements Concept
     }
 
     ConceptImpl(AbstractGraknGraph graknGraph, Vertex v){
-        super(graknGraph, v.id());
+        super(graknGraph, v);
         vertex = v;
-    }
-
-    ConceptImpl(ConceptImpl concept){
-        super(concept.getGraknGraph(), concept.getId().getValue());
-        this.vertex = concept.getVertex();
-    }
-
-    /**
-     *
-     * @param key The key of the property to mutate
-     * @param value The value to commit into the property
-     * @return The concept itself casted to the correct interface itself
-     */
-    private T setProperty(String key, Object value){
-        if(value == null) {
-            getVertex().property(key).remove();
-        } else {
-            VertexProperty<Object> foundProperty = getVertex().property(key);
-            if(foundProperty.isPresent() && foundProperty.value().equals(value)){
-               return getThis();
-            } else {
-                getVertex().property(key, value);
-            }
-        }
-        return getThis();
     }
 
     /**
@@ -151,7 +125,8 @@ abstract class ConceptImpl<T extends Concept> extends Element implements Concept
      * @return The concept itself casted to the correct interface
      */
     T setProperty(Schema.ConceptProperty key, Object value){
-        return setProperty(key.name(), value);
+        setProperty(key.name(), value);
+        return getThis();
     }
 
     /**
@@ -160,18 +135,10 @@ abstract class ConceptImpl<T extends Concept> extends Element implements Concept
      * @return The value stored in the property
      */
     public <X> X getProperty(Schema.ConceptProperty key){
-        VertexProperty<X> property = getVertex().property(key.name());
-        if(property != null && property.isPresent()) {
-            return property.value();
-        }
-        return null;
+        return getProperty(key.name());
     }
     Boolean getPropertyBoolean(Schema.ConceptProperty key){
-        Boolean value = getProperty(key);
-        if(value == null) {
-            return false;
-        }
-        return value;
+        return getPropertyBoolean(key.name());
     }
 
     /**

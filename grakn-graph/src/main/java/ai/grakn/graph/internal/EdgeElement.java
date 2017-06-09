@@ -33,12 +33,12 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  *
  * @author fppt
  */
-class EdgeElement extends Element{
+class EdgeElement extends AbstractElement<Edge> {
     private Edge edge;
     private final AbstractGraknGraph graknGraph;
 
     EdgeElement(AbstractGraknGraph graknGraph, Edge e){
-        super(graknGraph, e.id());
+        super(graknGraph, e);
         edge = e;
         this.graknGraph = graknGraph;
     }
@@ -100,24 +100,14 @@ class EdgeElement extends Element{
 
     /**
      *
-     * @param type The property to retrieve
+     * @param key The property to retrieve
      * @return The value of the property
      */
-    <X> X getProperty(Schema.EdgeProperty type){
-        org.apache.tinkerpop.gremlin.structure.Property<X> property = edge.property(type.name());
-        if(property != null && property.isPresent()) {
-            return property.value();
-        } else {
-            return null;
-        }
+    <X> X getProperty(Schema.EdgeProperty key){
+        return getProperty(key.name());
     }
-
     Boolean getPropertyBoolean(Schema.EdgeProperty key){
-        Boolean value = getProperty(key);
-        if(value == null) {
-            return false;
-        }
-        return value;
+        return getPropertyBoolean(key.name());
     }
 
     /**
@@ -126,7 +116,7 @@ class EdgeElement extends Element{
      * @param value The value of the property
      */
     void setProperty(Schema.EdgeProperty type, Object value){
-        edge.property(type.name(), value);
+        setProperty(type.name(), value);
     }
 
 }

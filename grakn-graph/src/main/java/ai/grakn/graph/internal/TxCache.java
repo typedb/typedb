@@ -134,7 +134,7 @@ class TxCache {
      *
      * @param element The element to be later validated
      */
-    void trackForValidation(Element element) {
+    void trackForValidation(AbstractElement element) {
         if (element.isEntity()) {
             modifiedEntities.add((EntityImpl) element);
         } else if (element.isRoleType()) {
@@ -200,7 +200,7 @@ class TxCache {
      * @param element The concept to nio longer track
      */
     @SuppressWarnings("SuspiciousMethodCalls")
-    void remove(Element element){
+    void remove(AbstractElement element){
         modifiedEntities.remove(element);
         modifiedRoleTypes.remove(element);
         modifiedRelationTypes.remove(element);
