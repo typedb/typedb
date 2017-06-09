@@ -76,7 +76,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     }
 
     AbstractGraknGraph<?> graph(){
-        return vertex().getGraknGraph();
+        return vertex().graph();
     }
 
     /**
@@ -95,8 +95,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The concept itself casted to the correct interface itself
      */
     T setUniqueProperty(Schema.ConceptProperty key, String value){
-        if(!vertex().getGraknGraph().isBatchGraph()) {
-            Concept fetchedConcept = vertex().getGraknGraph().getConcept(key, value);
+        if(!vertex().graph().isBatchGraph()) {
+            Concept fetchedConcept = vertex().graph().getConcept(key, value);
             if (fetchedConcept != null) throw PropertyNotUniqueException.cannotChangeProperty(this, fetchedConcept, key, value);
         }
 
@@ -110,7 +110,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         //TODO: clean this
         graph().txCache().remove(this);
         // delete node
-        vertex().getElement().remove();
+        vertex().element().remove();
     }
 
     /**
@@ -189,7 +189,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     @Override
     public ConceptId getId(){
-        return ConceptId.of(vertex().getElementId().getValue());
+        return ConceptId.of(vertex().id().getValue());
     }
 
     /**
@@ -214,7 +214,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     @Override
     public final String toString(){
         try {
-            graph().validVertex(vertex().getElement());
+            graph().validVertex(vertex().element());
             return innerToString();
         } catch (RuntimeException e){
             // Vertex is broken somehow. Most likely deleted.
@@ -253,7 +253,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     //----------------------------------- Sharding Functionality
     T createShard(){
         Vertex shardVertex = graph().addVertex(getBaseType());
-        shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), vertex().getElement());
+        shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), vertex().element());
 
         ConceptImpl shardConcept = graph().buildConcept(shardVertex);
         shardConcept.isShard(true);

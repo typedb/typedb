@@ -92,10 +92,10 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(VertexElement vertexElement) {
         super(vertexElement);
-        VertexProperty<String> typeLabel = vertex().getElement().property(Schema.ConceptProperty.TYPE_LABEL.name());
+        VertexProperty<String> typeLabel = vertex().element().property(Schema.ConceptProperty.TYPE_LABEL.name());
         if(typeLabel.isPresent()) {
             cachedTypeLabel = TypeLabel.of(typeLabel.value());
-            cachedTypeId = TypeId.of(vertex().getElement().value(Schema.ConceptProperty.TYPE_ID.name()));
+            cachedTypeId = TypeId.of(vertex().element().value(Schema.ConceptProperty.TYPE_ID.name()));
             isShard(false);
         } else {
             cachedTypeLabel = TypeLabel.of("SHARDED TYPE-" + getId().getValue()); //This is just a place holder it is never actually committed
@@ -257,7 +257,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public void delete(){
         checkTypeMutation();
-        boolean hasSubs = vertex().getElement().edges(Direction.IN, Schema.EdgeLabel.SUB.getLabel()).hasNext();
+        boolean hasSubs = vertex().element().edges(Direction.IN, Schema.EdgeLabel.SUB.getLabel()).hasNext();
         boolean hasInstances = graph().getTinkerTraversal().hasId(getId().getRawValue()).
                 in(Schema.EdgeLabel.SHARD.getLabel()).in(Schema.EdgeLabel.ISA.getLabel()).hasNext();
 

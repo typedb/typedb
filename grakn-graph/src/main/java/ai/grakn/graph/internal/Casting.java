@@ -40,8 +40,8 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  */
 class Casting {
     private final EdgeElement edgeElement;
-    private final ElementCache<RoleType> cachedRoleType = new ElementCache<>(() -> (RoleType) edge().getGraknGraph().getType(TypeId.of(edge().getProperty(Schema.EdgeProperty.ROLE_TYPE_ID))));
-    private final ElementCache<RelationType> cachedRelationType = new ElementCache<>(() -> (RelationType) edge().getGraknGraph().getType(TypeId.of(edge().getProperty(Schema.EdgeProperty.RELATION_TYPE_ID))));
+    private final ElementCache<RoleType> cachedRoleType = new ElementCache<>(() -> (RoleType) edge().graph().getType(TypeId.of(edge().getProperty(Schema.EdgeProperty.ROLE_TYPE_ID))));
+    private final ElementCache<RelationType> cachedRelationType = new ElementCache<>(() -> (RelationType) edge().graph().getType(TypeId.of(edge().getProperty(Schema.EdgeProperty.RELATION_TYPE_ID))));
     private final ElementCache<Instance> cachedInstance = new ElementCache<>(() -> edge().getTarget());
     private final ElementCache<Relation> cachedRelation = new ElementCache<>(() -> edge().getSource());
 
@@ -90,7 +90,7 @@ class Casting {
      * @return The hash code of the underlying vertex
      */
     public int hashCode() {
-        return edge().getElementId().hashCode();
+        return edge().id().hashCode();
     }
 
     /**
@@ -104,6 +104,6 @@ class Casting {
 
         Casting casting = (Casting) object;
 
-        return edge().getElementId().equals(casting.edge().getElementId());
+        return edge().id().equals(casting.edge().id());
     }
 }

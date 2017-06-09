@@ -156,7 +156,7 @@ public class PostProcessingTest extends GraphTestBase{
         String index = Schema.generateResourceIndex(type.getLabel(), value);
         Vertex resourceVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
 
-        resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), ((ResourceTypeImpl<?>)type.currentShard()).vertex().getElement());
+        resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), ((ResourceTypeImpl<?>)type.currentShard()).vertex().element());
         resourceVertex.property(Schema.ConceptProperty.INDEX.name(), index);
         resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), value);
         resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());

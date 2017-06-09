@@ -46,12 +46,12 @@ abstract class AbstractElement<E extends Element> {
         this.element = element;
     }
 
-    E getElement(){
+    E element(){
         return element;
     }
 
-    ElementId getElementId(){
-        return ElementId.of(getElement().id());
+    ElementId id(){
+        return ElementId.of(element().id());
     }
 
     /**
@@ -61,11 +61,11 @@ abstract class AbstractElement<E extends Element> {
      */
      void setProperty(String key, Object value){
         if(value == null) {
-            getElement().property(key).remove();
+            element().property(key).remove();
         } else {
-            Property<Object> foundProperty = getElement().property(key);
+            Property<Object> foundProperty = element().property(key);
             if(!foundProperty.isPresent() || !foundProperty.value().equals(value)){
-                getElement().property(key, value);
+                element().property(key, value);
             }
         }
     }
@@ -76,7 +76,7 @@ abstract class AbstractElement<E extends Element> {
      * @return The value stored in the property
      */
     public <X> X getProperty(String key){
-        Property<X> property = getElement().property(key);
+        Property<X> property = element().property(key);
         if(property != null && property.isPresent()) {
             return property.value();
         }
@@ -92,7 +92,7 @@ abstract class AbstractElement<E extends Element> {
      *
      * @return The grakn graph this concept is bound to.
      */
-    protected AbstractGraknGraph<?> getGraknGraph() {
+    protected AbstractGraknGraph<?> graph() {
         return graknGraph;
     }
 
@@ -112,7 +112,7 @@ abstract class AbstractElement<E extends Element> {
     public boolean equals(Object object) {
         //Compare Concept
         //based on id because vertex comparisons are equivalent
-        return this == object || object instanceof AbstractElement && ((AbstractElement) object).getElementId().equals(getElementId());
+        return this == object || object instanceof AbstractElement && ((AbstractElement) object).id().equals(id());
     }
 
     /**
@@ -135,6 +135,6 @@ abstract class AbstractElement<E extends Element> {
      * @return the label of the element in the graph.
      */
     String label(){
-        return getElement().label();
+        return element().label();
     }
 }

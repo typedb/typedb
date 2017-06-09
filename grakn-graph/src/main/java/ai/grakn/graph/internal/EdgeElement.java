@@ -43,12 +43,12 @@ class EdgeElement extends AbstractElement<Edge> {
      * Deletes the edge between two concepts and adds both those concepts for re-validation in case something goes wrong
      */
     public void delete(){
-        getElement().remove();
+        element().remove();
     }
 
     @Override
     public int hashCode() {
-        return getElement().hashCode();
+        return element().hashCode();
     }
 
     @Override
@@ -58,7 +58,7 @@ class EdgeElement extends AbstractElement<Edge> {
 
         EdgeElement edge = (EdgeElement) object;
 
-        return getElement().id().equals(edge.getElementId());
+        return element().id().equals(edge.id());
     }
 
     /**
@@ -66,7 +66,7 @@ class EdgeElement extends AbstractElement<Edge> {
      * @return The source of the edge.
      */
     public <X extends Concept> X getSource(){
-        return getGraknGraph().getElementFactory().buildConcept(getElement().outVertex());
+        return graph().getElementFactory().buildConcept(element().outVertex());
     }
 
     /**
@@ -74,7 +74,7 @@ class EdgeElement extends AbstractElement<Edge> {
      * @return The target of the edge
      */
     public <X extends Concept> X getTarget(){
-        return getGraknGraph().getElementFactory().buildConcept(getElement().inVertex());
+        return graph().getElementFactory().buildConcept(element().inVertex());
     }
 
     /**
@@ -82,7 +82,7 @@ class EdgeElement extends AbstractElement<Edge> {
      * @return The type of the edge
      */
     public Schema.EdgeLabel getLabel() {
-        return Schema.EdgeLabel.getEdgeLabel(getElement().label());
+        return Schema.EdgeLabel.getEdgeLabel(element().label());
     }
 
     /**

@@ -146,7 +146,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void whenBuildingAConceptFromAVertex_ReturnConcept(){
         EntityTypeImpl et = (EntityTypeImpl) graknGraph.putEntityType("Sample Entity Type");
-        assertEquals(et, graknGraph.admin().buildConcept(et.vertex().getElement()));
+        assertEquals(et, graknGraph.admin().buildConcept(et.vertex().element()));
     }
 
     @Test

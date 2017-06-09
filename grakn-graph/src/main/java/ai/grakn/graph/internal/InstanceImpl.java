@@ -143,7 +143,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     Stream<Casting> castingsInstance(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).
-                map(edge -> vertex().getGraknGraph().getElementFactory().buildRolePlayer(edge));
+                map(edge -> vertex().graph().getElementFactory().buildRolePlayer(edge));
     }
 
     <X extends Instance> Set<X> getShortcutNeighbours(){
@@ -211,9 +211,9 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
 
 
         TypeLabel label = resource.type().getLabel();
-        RelationType hasResource = vertex().getGraknGraph().getType(has.getLabel(label));
-        RoleType hasResourceTarget = vertex().getGraknGraph().getType(hasOwner.getLabel(label));
-        RoleType hasResourceValue = vertex().getGraknGraph().getType(hasValue.getLabel(label));
+        RelationType hasResource = vertex().graph().getType(has.getLabel(label));
+        RoleType hasResourceTarget = vertex().graph().getType(hasOwner.getLabel(label));
+        RoleType hasResourceValue = vertex().graph().getType(hasValue.getLabel(label));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
             throw GraphOperationException.hasNotAllowed(this, resource, type);

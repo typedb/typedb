@@ -359,7 +359,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             if(!baseType.equals(concept.getBaseType())) {
                 throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.ConceptProperty.TYPE_LABEL, label);
             }
-            vertex = concept.vertex().getElement();
+            vertex = concept.vertex().element();
         }
         return vertex;
     }
@@ -845,7 +845,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
             //Restore the index
             String newIndex = mainResource.getIndex();
-            mainResource.vertex().getElement().property(Schema.ConceptProperty.INDEX.name(), newIndex);
+            mainResource.vertex().element().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 
             return true;
         }

@@ -56,9 +56,9 @@ class VertexElement extends AbstractElement<Vertex>{
      * @return A collection of edges from this concept in a particular direction of a specific type
      */
     Stream<EdgeElement> getEdgesOfType(Direction direction, Schema.EdgeLabel label){
-        Iterable<Edge> iterable = () -> getElement().edges(direction, label.getLabel());
+        Iterable<Edge> iterable = () -> element().edges(direction, label.getLabel());
         return StreamSupport.stream(iterable.spliterator(), false).
-                map(edge -> getGraknGraph().getElementFactory().buildEdge(edge));
+                map(edge -> graph().getElementFactory().buildEdge(edge));
     }
 
     /**
@@ -68,7 +68,7 @@ class VertexElement extends AbstractElement<Vertex>{
      * @return The edge created
      */
     EdgeElement addEdge(VertexElement to, Schema.EdgeLabel type) {
-        return getGraknGraph().getElementFactory().buildEdge(getElement().addEdge(type.getLabel(), to.getElement()));
+        return graph().getElementFactory().buildEdge(element().addEdge(type.getLabel(), to.element()));
     }
 
     /**
@@ -76,11 +76,11 @@ class VertexElement extends AbstractElement<Vertex>{
      * @param type the type of the edge to create
      */
     EdgeElement putEdge(VertexElement to, Schema.EdgeLabel type){
-        GraphTraversal<Vertex, Edge> traversal = getGraknGraph().getTinkerPopGraph().traversal().V(getElementId().getValue()).outE(type.getLabel()).as("edge").otherV().hasId(to.getElement().id()).select("edge");
+        GraphTraversal<Vertex, Edge> traversal = graph().getTinkerPopGraph().traversal().V(id().getValue()).outE(type.getLabel()).as("edge").otherV().hasId(to.element().id()).select("edge");
         if(!traversal.hasNext()) {
             return addEdge(to, type);
         } else {
-            return getGraknGraph().getElementFactory().buildEdge(traversal.next());
+            return graph().getElementFactory().buildEdge(traversal.next());
         }
     }
 
@@ -93,11 +93,11 @@ class VertexElement extends AbstractElement<Vertex>{
      * @param targets An optional set of targets to delete edges from
      */
     void deleteEdge(Direction direction, Schema.EdgeLabel label, VertexElement... targets){
-        Iterator<Edge> edges = getElement().edges(direction, label.getLabel());
+        Iterator<Edge> edges = element().edges(direction, label.getLabel());
         if(targets.length == 0){
             edges.forEachRemaining(Edge::remove);
         } else {
-            Set<Vertex> verticesToDelete = Arrays.stream(targets).map(AbstractElement::getElement).collect(Collectors.toSet());
+            Set<Vertex> verticesToDelete = Arrays.stream(targets).map(AbstractElement::element).collect(Collectors.toSet());
             edges.forEachRemaining(edge -> {
                 boolean delete = false;
                 switch (direction){
