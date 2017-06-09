@@ -18,6 +18,12 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+
+import java.util.Optional;
+
 /**
  * <p>
  *     Represent a Shard of a concept
@@ -38,11 +44,18 @@ public class Shard {
         this.vertexElement = vertexElement;
     }
 
+    private VertexElement vertex(){
+        return vertexElement;
+    }
+
     /**
      *
      * @return The concept that this shard is part of
      */
     ConceptImpl concept(){
-        return null;
+        Optional<Object> concept = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD).
+                map(EdgeElement::getTarget).findAny();
+        if(concept.isPresent()) return (ConceptImpl) concept.get();
+        throw GraphOperationException.unlinkedShard(vertex().id());
     }
 }
