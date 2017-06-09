@@ -143,7 +143,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             currentValue = currentValue + 1;
         }
         //Vertex is used directly here to bypass meta type mutation check
-        metaConcept.getVertexElement().getElement().property(Schema.ConceptProperty.CURRENT_TYPE_ID.name(), currentValue);
+        metaConcept.setProperty(Schema.ConceptProperty.CURRENT_TYPE_ID, currentValue);
         return TypeId.of(currentValue);
     }
 
@@ -310,10 +310,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     //----------------------------------------------General Functionality-----------------------------------------------
-    private EdgeElement addEdge(Concept from, Concept to, Schema.EdgeLabel type){
-        return ((ConceptImpl)from).getVertexElement().addEdge(((ConceptImpl) to).getVertexElement(), type);
-    }
-
     @Override
     public <T extends Concept> T  getConcept(Schema.ConceptProperty key, Object value) {
         Iterator<Vertex> vertices = getTinkerTraversal().has(key.name(), value);
@@ -363,7 +359,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             if(!baseType.equals(concept.getBaseType())) {
                 throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.ConceptProperty.TYPE_LABEL, label);
             }
-            vertex = concept.getVertexElement().getElement();
+            vertex = concept.vertex().getElement();
         }
         return vertex;
     }
@@ -416,7 +412,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //Automatic shard creation - If this type does not have a shard create one
         if(!Schema.MetaSchema.isMetaLabel(label) &&
-                !type.getVertexElement().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()){
+                !type.vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()){
             type.createShard();
         }
 
@@ -634,7 +630,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 hasId(toInstance.getId().getRawValue()).hasNext();
 
         if(!exists){
-            EdgeElement edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.SHORTCUT);
+            EdgeElement edge = fromRelation.addEdge(toInstance, Schema.EdgeLabel.SHORTCUT);
             edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getTypeId().getValue());
             edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getTypeId().getValue());
             txCache().trackForValidation(getElementFactory().buildRolePlayer(edge));
@@ -849,7 +845,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
             //Restore the index
             String newIndex = mainResource.getIndex();
-            mainResource.getVertexElement().getElement().property(Schema.ConceptProperty.INDEX.name(), newIndex);
+            mainResource.vertex().getElement().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 
             return true;
         }

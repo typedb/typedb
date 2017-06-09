@@ -24,7 +24,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -154,8 +153,8 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
 
     @Override
     public void delete(){
-        boolean hasRelates = getVertexElement().getElement().edges(Direction.IN, Schema.EdgeLabel.RELATES.getLabel()).hasNext();
-        boolean hasPlays = getVertexElement().getElement().edges(Direction.IN, Schema.EdgeLabel.PLAYS.getLabel()).hasNext();
+        boolean hasRelates = getIncomingNeighbours(Schema.EdgeLabel.RELATES).findAny().isPresent();
+        boolean hasPlays = getIncomingNeighbours(Schema.EdgeLabel.PLAYS).findAny().isPresent();
 
         boolean deletionNotAllowed = hasRelates || hasPlays;
 

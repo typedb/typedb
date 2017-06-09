@@ -81,7 +81,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     private ElementCache<Map<RoleType, Boolean>> cachedDirectPlays = new ElementCache<>(() -> {
         Map<RoleType, Boolean> roleTypes = new HashMap<>();
 
-        getVertexElement().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
+        vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
             RoleType roleType = edge.getTarget();
             Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
             roleTypes.put(roleType, required);
@@ -92,10 +92,10 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(VertexElement vertexElement) {
         super(vertexElement);
-        VertexProperty<String> typeLabel = getVertexElement().getElement().property(Schema.ConceptProperty.TYPE_LABEL.name());
+        VertexProperty<String> typeLabel = vertex().getElement().property(Schema.ConceptProperty.TYPE_LABEL.name());
         if(typeLabel.isPresent()) {
             cachedTypeLabel = TypeLabel.of(typeLabel.value());
-            cachedTypeId = TypeId.of(getVertexElement().getElement().value(Schema.ConceptProperty.TYPE_ID.name()));
+            cachedTypeId = TypeId.of(vertex().getElement().value(Schema.ConceptProperty.TYPE_ID.name()));
             isShard(false);
         } else {
             cachedTypeLabel = TypeLabel.of("SHARDED TYPE-" + getId().getValue()); //This is just a place holder it is never actually committed
@@ -257,7 +257,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public void delete(){
         checkTypeMutation();
-        boolean hasSubs = getVertexElement().getElement().edges(Direction.IN, Schema.EdgeLabel.SUB.getLabel()).hasNext();
+        boolean hasSubs = vertex().getElement().edges(Direction.IN, Schema.EdgeLabel.SUB.getLabel()).hasNext();
         boolean hasInstances = graph().getTinkerTraversal().hasId(getId().getRawValue()).
                 in(Schema.EdgeLabel.SHARD.getLabel()).in(Schema.EdgeLabel.ISA.getLabel()).hasNext();
 
@@ -607,7 +607,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     @Override
     T setProperty(Schema.ConceptProperty key, Object value){
-        checkTypeMutation();
+        if(!Schema.ConceptProperty.CURRENT_TYPE_ID.equals(key)) checkTypeMutation();
         return super.setProperty(key, value);
     }
 

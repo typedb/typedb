@@ -79,8 +79,8 @@ public class ConceptTest extends GraphTestBase{
         EntityTypeImpl entityType2 = (EntityTypeImpl) graknGraph.putEntityType("entity type 1").superType(entityType1);
         EntityType entityType3 = graknGraph.putEntityType("entity type 2").superType(entityType2);
 
-        Set<EdgeElement> superType = entityType2.getVertexElement().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
-        Set<EdgeElement> subs = entityType2.getVertexElement().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
+        Set<EdgeElement> superType = entityType2.vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
+        Set<EdgeElement> subs = entityType2.vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
 
         assertThat(superType, is(not(empty())));
         assertThat(subs, is(not(empty())));

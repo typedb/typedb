@@ -71,12 +71,12 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         this.vertexElement = vertexElement;
     }
 
-    public VertexElement getVertexElement() {
+    public VertexElement vertex() {
         return vertexElement;
     }
 
     AbstractGraknGraph<?> graph(){
-        return getVertexElement().getGraknGraph();
+        return vertex().getGraknGraph();
     }
 
     /**
@@ -95,8 +95,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The concept itself casted to the correct interface itself
      */
     T setUniqueProperty(Schema.ConceptProperty key, String value){
-        if(!getVertexElement().getGraknGraph().isBatchGraph()) {
-            Concept fetchedConcept = getVertexElement().getGraknGraph().getConcept(key, value);
+        if(!vertex().getGraknGraph().isBatchGraph()) {
+            Concept fetchedConcept = vertex().getGraknGraph().getConcept(key, value);
             if (fetchedConcept != null) throw PropertyNotUniqueException.cannotChangeProperty(this, fetchedConcept, key, value);
         }
 
@@ -110,7 +110,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         //TODO: clean this
         graph().txCache().remove(this);
         // delete node
-        getVertexElement().getElement().remove();
+        vertex().getElement().remove();
     }
 
     /**
@@ -119,7 +119,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The neighbouring concepts found by traversing outgoing edges of a specific type
      */
     <X extends Concept> Stream<X> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
-        return getVertexElement().getEdgesOfType(Direction.OUT, edgeType).map(EdgeElement::getTarget);
+        return vertex().getEdgesOfType(Direction.OUT, edgeType).map(EdgeElement::getTarget);
     }
 
     /**
@@ -128,27 +128,27 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The neighbouring concepts found by traversing incoming edges of a specific type
      */
     <X extends Concept> Stream<X> getIncomingNeighbours(Schema.EdgeLabel edgeType){
-        return getVertexElement().getEdgesOfType(Direction.IN, edgeType).map(EdgeElement::getSource);
+        return vertex().getEdgesOfType(Direction.IN, edgeType).map(EdgeElement::getSource);
     }
 
 
     EdgeElement putEdge(Concept to, Schema.EdgeLabel label){
-        return getVertexElement().putEdge(((ConceptImpl) to).getVertexElement(), label);
+        return vertex().putEdge(((ConceptImpl) to).vertex(), label);
     }
 
     EdgeElement addEdge(Concept to, Schema.EdgeLabel label){
-        return getVertexElement().addEdge(((ConceptImpl) to).getVertexElement(), label);
+        return vertex().addEdge(((ConceptImpl) to).vertex(), label);
     }
 
     void deleteEdge(Direction direction, Schema.EdgeLabel label, Concept... to) {
         if (to.length == 0) {
-            getVertexElement().deleteEdge(direction, label);
+            vertex().deleteEdge(direction, label);
         } else{
             VertexElement[] targets = new VertexElement[to.length];
             for (int i = 0; i < to.length; i++) {
-                targets[i] = ((ConceptImpl)to[i]).getVertexElement();
+                targets[i] = ((ConceptImpl)to[i]).vertex();
             }
-            getVertexElement().deleteEdge(direction, label, targets);
+            vertex().deleteEdge(direction, label, targets);
         }
     }
 
@@ -159,7 +159,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The concept itself casted to the correct interface
      */
     T setProperty(Schema.ConceptProperty key, Object value){
-        getVertexElement().setProperty(key.name(), value);
+        vertex().setProperty(key.name(), value);
         return getThis();
     }
 
@@ -169,10 +169,10 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The value stored in the property
      */
     public <X> X getProperty(Schema.ConceptProperty key){
-        return getVertexElement().getProperty(key.name());
+        return vertex().getProperty(key.name());
     }
     Boolean getPropertyBoolean(Schema.ConceptProperty key){
-        return getVertexElement().getPropertyBoolean(key.name());
+        return vertex().getPropertyBoolean(key.name());
     }
 
     /**
@@ -180,7 +180,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The base type of this concept which helps us identify the concept
      */
     Schema.BaseType getBaseType(){
-        return Schema.BaseType.valueOf(getVertexElement().label());
+        return Schema.BaseType.valueOf(vertex().label());
     }
 
     /**
@@ -189,7 +189,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     @Override
     public ConceptId getId(){
-        return ConceptId.of(getVertexElement().getElementId().getValue());
+        return ConceptId.of(vertex().getElementId().getValue());
     }
 
     /**
@@ -214,7 +214,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     @Override
     public final String toString(){
         try {
-            graph().validVertex(getVertexElement().getElement());
+            graph().validVertex(vertex().getElement());
             return innerToString();
         } catch (RuntimeException e){
             // Vertex is broken somehow. Most likely deleted.
@@ -252,8 +252,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     //----------------------------------- Sharding Functionality
     T createShard(){
-        Vertex shardVertex = getVertexElement().getGraknGraph().addVertex(getBaseType());
-        shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), getVertexElement().getElement());
+        Vertex shardVertex = graph().addVertex(getBaseType());
+        shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), vertex().getElement());
 
         ConceptImpl shardConcept = graph().buildConcept(shardVertex);
         shardConcept.isShard(true);
@@ -270,7 +270,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     //TODO: Return implementation rather than interface
     T currentShard(){
         String currentShardId = getProperty(Schema.ConceptProperty.CURRENT_SHARD);
-        return getVertexElement().getGraknGraph().getConcept(ConceptId.of(currentShardId));
+        return graph().getConcept(ConceptId.of(currentShardId));
     }
 
     boolean isShard(){

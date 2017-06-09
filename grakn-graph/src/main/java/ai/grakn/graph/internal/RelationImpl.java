@@ -75,8 +75,8 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     Stream<Casting> castingsRelation(RoleType... roleTypes){
         if(roleTypes.length == 0){
-            return getVertexElement().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
-                    map(edge -> getVertexElement().getGraknGraph().getElementFactory().buildRolePlayer(edge));
+            return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
+                    map(edge -> graph().getElementFactory().buildRolePlayer(edge));
         }
 
         //Traversal is used so we can potentially optimise on the index
