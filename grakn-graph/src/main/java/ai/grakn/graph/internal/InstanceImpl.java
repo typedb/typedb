@@ -61,13 +61,13 @@ import java.util.stream.Stream;
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
-    private ElementCache<TypeLabel> cachedInternalType = new ElementCache<>(() -> {
+    private Cache<TypeLabel> cachedInternalType = new Cache<>(() -> {
         int typeId = getProperty(Schema.ConceptProperty.INSTANCE_TYPE_ID);
         Type type = graph().getConcept(Schema.ConceptProperty.TYPE_ID, typeId);
         return type.getLabel();
     });
 
-    private ElementCache<V> cachedType = new ElementCache<>(() -> {
+    private Cache<V> cachedType = new Cache<>(() -> {
         ConceptImpl<?> currentType = (ConceptImpl) this.getOutgoingNeighbours(Schema.EdgeLabel.ISA).findFirst().orElse(null);
 
         while (currentType.isShard()){
@@ -143,7 +143,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     Stream<Casting> castingsInstance(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).
-                map(edge -> vertex().graph().getElementFactory().buildRolePlayer(edge));
+                map(edge -> vertex().graph().factory().buildRolePlayer(edge));
     }
 
     <X extends Instance> Set<X> getShortcutNeighbours(){

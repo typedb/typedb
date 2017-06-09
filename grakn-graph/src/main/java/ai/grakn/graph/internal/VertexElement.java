@@ -58,7 +58,7 @@ class VertexElement extends AbstractElement<Vertex>{
     Stream<EdgeElement> getEdgesOfType(Direction direction, Schema.EdgeLabel label){
         Iterable<Edge> iterable = () -> element().edges(direction, label.getLabel());
         return StreamSupport.stream(iterable.spliterator(), false).
-                map(edge -> graph().getElementFactory().buildEdge(edge));
+                map(edge -> graph().factory().buildEdge(edge));
     }
 
     /**
@@ -68,7 +68,7 @@ class VertexElement extends AbstractElement<Vertex>{
      * @return The edge created
      */
     EdgeElement addEdge(VertexElement to, Schema.EdgeLabel type) {
-        return graph().getElementFactory().buildEdge(element().addEdge(type.getLabel(), to.element()));
+        return graph().factory().buildEdge(element().addEdge(type.getLabel(), to.element()));
     }
 
     /**
@@ -80,7 +80,7 @@ class VertexElement extends AbstractElement<Vertex>{
         if(!traversal.hasNext()) {
             return addEdge(to, type);
         } else {
-            return graph().getElementFactory().buildEdge(traversal.next());
+            return graph().factory().buildEdge(traversal.next());
         }
     }
 

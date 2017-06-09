@@ -49,8 +49,8 @@ import java.util.stream.Stream;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    private ElementCache<Set<Type>> cachedDirectPlayedByTypes = new ElementCache<>(() -> this.<Type>getIncomingNeighbours(Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private ElementCache<Set<RelationType>> cachedRelationTypes = new ElementCache<>(() -> this.<RelationType>getIncomingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>getIncomingNeighbours(Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
+    private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>getIncomingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RoleTypeImpl(VertexElement vertexElement) {
         super(vertexElement);

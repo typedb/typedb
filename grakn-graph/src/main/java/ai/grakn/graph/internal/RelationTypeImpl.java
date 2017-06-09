@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    private ElementCache<Set<RoleType>> cachedRelates = new ElementCache<>(() -> this.<RoleType>getOutgoingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private Cache<Set<RoleType>> cachedRelates = new Cache<>(() -> this.<RoleType>getOutgoingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RelationTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
@@ -57,7 +57,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public Relation addRelation() {
         return addInstance(Schema.BaseType.RELATION,
-                (vertex, type) -> graph().getElementFactory().buildRelation(vertex, type));
+                (vertex, type) -> graph().factory().buildRelation(vertex, type));
     }
 
     @Override
@@ -82,13 +82,13 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public RelationType relates(RoleType roleType) {
-        checkTypeMutation();
+        checkTypeMutationAllowed();
         putEdge(roleType, Schema.EdgeLabel.RELATES);
 
-        //ElementCache the Role internally
+        //Cache the Role internally
         cachedRelates.ifPresent(set -> set.add(roleType));
 
-        //ElementCache the relation type in the role
+        //Cache the relation type in the role
         ((RoleTypeImpl) roleType).addCachedRelationType(this);
 
         //Put all the instance back in for tracking because their unique hashes need to be regenerated
@@ -104,7 +104,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public RelationType deleteRelates(RoleType roleType) {
-        checkTypeMutation();
+        checkTypeMutationAllowed();
         deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, (Concept) roleType);
 
         RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;

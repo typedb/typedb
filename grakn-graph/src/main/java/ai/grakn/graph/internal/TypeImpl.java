@@ -71,14 +71,14 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     private final TypeId cachedTypeId;
     private final TypeLabel cachedTypeLabel;
-    private ElementCache<Boolean> cachedIsImplicit = new ElementCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
-    private ElementCache<Boolean> cachedIsAbstract = new ElementCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
-    private ElementCache<T> cachedSuperType = new ElementCache<>(() -> this.<T>getOutgoingNeighbours(Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private ElementCache<Set<T>> cachedDirectSubTypes = new ElementCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
-    private ElementCache<Set<T>> cachedShards = new ElementCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
+    private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
+    private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
+    private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>getOutgoingNeighbours(Schema.EdgeLabel.SUB).findFirst().orElse(null));
+    private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private Cache<Set<T>> cachedShards = new Cache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
 
     //This cache is different in order to keep track of which plays are required
-    private ElementCache<Map<RoleType, Boolean>> cachedDirectPlays = new ElementCache<>(() -> {
+    private Cache<Map<RoleType, Boolean>> cachedDirectPlays = new Cache<>(() -> {
         Map<RoleType, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
@@ -252,11 +252,11 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     }
 
     /**
-     * Deletes the concept as  type
+     * Deletes the concept as type
      */
     @Override
     public void delete(){
-        checkTypeMutation();
+        checkTypeMutationAllowed();
         boolean hasSubs = getIncomingNeighbours(Schema.EdgeLabel.SUB).findAny().isPresent();
         boolean hasInstances = getIncomingNeighbours(Schema.EdgeLabel.SHARD).
                 filter(shard -> ((ConceptImpl)shard).getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().isPresent()).findAny().isPresent();
@@ -282,7 +282,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             cachedDirectSubTypes.clear();
             cachedDirectPlays.clear();
 
-            //Clear Global ElementCache
+            //Clear Global Cache
             graph().txCache().remove(this);
         }
     }
@@ -379,7 +379,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
                     .in(Schema.EdgeLabel.ISA.getLabel());
 
             traversal.forEachRemaining(vertex -> {
-                ConceptImpl<Concept> concept = graph().getElementFactory().buildConcept(vertex);
+                ConceptImpl<Concept> concept = graph().factory().buildConcept(vertex);
                 if (concept != null) instances.add((V) concept);
             });
         }
@@ -465,7 +465,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The Type itself
      */
     public T superType(T newSuperType) {
-        checkTypeMutation();
+        checkTypeMutationAllowed();
 
         T oldSuperType = superType();
         if(oldSuperType == null || (!oldSuperType.equals(newSuperType))) {
@@ -531,7 +531,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     }
 
     T plays(RoleType roleType, boolean required) {
-        checkTypeMutation();
+        checkTypeMutationAllowed();
 
         //Update the internal cache of role types played
         cachedDirectPlays.ifPresent(map -> map.put(roleType, required));
@@ -564,7 +564,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public T deletePlays(RoleType roleType) {
-        checkTypeMutation();
+        checkTypeMutationAllowed();
         deleteEdge(Direction.OUT, Schema.EdgeLabel.PLAYS, (Concept) roleType);
         cachedDirectPlays.ifPresent(set -> set.remove(roleType));
         ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(this);
@@ -607,7 +607,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     @Override
     T setProperty(Schema.ConceptProperty key, Object value){
-        if(!Schema.ConceptProperty.CURRENT_TYPE_ID.equals(key)) checkTypeMutation();
+        if(!Schema.ConceptProperty.CURRENT_TYPE_ID.equals(key)) checkTypeMutationAllowed();
         return super.setProperty(key, value);
     }
 
@@ -616,7 +616,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * 1. The type is not a meta-type
      * 2. The graph is not batch loading
      */
-    void checkTypeMutation(){
+    void checkTypeMutationAllowed(){
         if(isShard()) return;
         graph().checkOntologyMutationAllowed();
         if(Schema.MetaSchema.isMetaLabel(getLabel())){
@@ -635,7 +635,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     public T has(ResourceType resourceType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
         //Check if this is a met type
-        checkTypeMutation();
+        checkTypeMutationAllowed();
 
         //Check if resource type is the meta
         if(Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())){

@@ -66,7 +66,7 @@ class EdgeElement extends AbstractElement<Edge> {
      * @return The source of the edge.
      */
     public <X extends Concept> X getSource(){
-        return graph().getElementFactory().buildConcept(element().outVertex());
+        return graph().factory().buildConcept(element().outVertex());
     }
 
     /**
@@ -74,7 +74,7 @@ class EdgeElement extends AbstractElement<Edge> {
      * @return The target of the edge
      */
     public <X extends Concept> X getTarget(){
-        return graph().getElementFactory().buildConcept(element().inVertex());
+        return graph().factory().buildConcept(element().inVertex());
     }
 
     /**

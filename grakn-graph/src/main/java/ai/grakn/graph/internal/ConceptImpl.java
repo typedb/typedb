@@ -59,7 +59,7 @@ import java.util.stream.Stream;
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
 abstract class ConceptImpl<T extends Concept> implements Concept {
-    private final ElementCache<Boolean> cachedIsShard = new ElementCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_SHARD));
+    private final Cache<Boolean> cachedIsShard = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_SHARD));
     private final VertexElement vertexElement;
 
     @SuppressWarnings("unchecked")

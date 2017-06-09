@@ -106,7 +106,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         if(value == null) throw GraphOperationException.settingNullProperty(getDataType().getConceptProperty());
         return putInstance(Schema.BaseType.RESOURCE,
                 () -> getResource(value), (vertex, type) ->
-                graph().getElementFactory().buildResource(vertex, type, value));
+                graph().factory().buildResource(vertex, type, value));
     }
 
     @Override

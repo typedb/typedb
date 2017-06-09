@@ -228,7 +228,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends Concept> T buildConcept(Vertex vertex) {
-        return getElementFactory().buildConcept(vertex);
+        return factory().buildConcept(vertex);
     }
 
     @Override
@@ -305,7 +305,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return new QueryBuilderImpl(this);
     }
 
-    ElementFactory getElementFactory(){
+    ElementFactory factory(){
         return elementFactory;
     }
 
@@ -319,7 +319,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             if(vertices.hasNext()) {
                 LOG.warn(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
             }
-            return getElementFactory().buildConcept(vertex);
+            return factory().buildConcept(vertex);
         } else {
             return null;
         }
@@ -328,7 +328,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private Set<ConceptImpl> getConcepts(Schema.ConceptProperty key, Object value){
         Set<ConceptImpl> concepts = new HashSet<>();
         getTinkerTraversal().has(key.name(), value).
-            forEachRemaining(v -> concepts.add(getElementFactory().buildConcept(v)));
+            forEachRemaining(v -> concepts.add(factory().buildConcept(v)));
         return concepts;
     }
 
@@ -399,7 +399,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public EntityType putEntityType(TypeLabel label) {
         return putType(label, Schema.BaseType.ENTITY_TYPE,
-                v -> getElementFactory().buildEntityType(v, getMetaEntityType()));
+                v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
     private <T extends TypeImpl> T putType(TypeLabel label, Schema.BaseType baseType, Function<Vertex, T> factory){
@@ -452,12 +452,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public RelationType putRelationType(TypeLabel label) {
         return putType(label, Schema.BaseType.RELATION_TYPE,
-                v -> getElementFactory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE)).asRelationType();
+                v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE)).asRelationType();
     }
 
     RelationType putRelationTypeImplicit(TypeLabel label) {
         return putType(label, Schema.BaseType.RELATION_TYPE,
-                v -> getElementFactory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE)).asRelationType();
+                v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE)).asRelationType();
     }
 
     @Override
@@ -468,12 +468,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public RoleType putRoleType(TypeLabel label) {
         return putType(label, Schema.BaseType.ROLE_TYPE,
-                v -> getElementFactory().buildRoleType(v, getMetaRoleType(), Boolean.FALSE)).asRoleType();
+                v -> factory().buildRoleType(v, getMetaRoleType(), Boolean.FALSE)).asRoleType();
     }
 
     RoleType putRoleTypeImplicit(TypeLabel label) {
         return putType(label, Schema.BaseType.ROLE_TYPE,
-                v -> getElementFactory().buildRoleType(v, getMetaRoleType(), Boolean.TRUE)).asRoleType();
+                v -> factory().buildRoleType(v, getMetaRoleType(), Boolean.TRUE)).asRoleType();
     }
 
     @Override
@@ -486,7 +486,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public <V> ResourceType<V> putResourceType(TypeLabel label, ResourceType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
         ResourceType<V> resourceType = putType(label, Schema.BaseType.RESOURCE_TYPE,
-                v -> getElementFactory().buildResourceType(v, getMetaResourceType(), dataType)).asResourceType();
+                v -> factory().buildResourceType(v, getMetaResourceType(), dataType)).asResourceType();
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if(Schema.MetaSchema.isMetaLabel(label)) {
@@ -506,7 +506,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public RuleType putRuleType(TypeLabel label) {
         return putType(label, Schema.BaseType.RULE_TYPE,
-                v ->  getElementFactory().buildRuleType(v, getMetaRuleType()));
+                v ->  factory().buildRuleType(v, getMetaRuleType()));
     }
 
     //------------------------------------ Lookup
@@ -633,7 +633,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             EdgeElement edge = fromRelation.addEdge(toInstance, Schema.EdgeLabel.SHORTCUT);
             edge.property(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getTypeId().getValue());
             edge.property(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getTypeId().getValue());
-            txCache().trackForValidation(getElementFactory().buildRolePlayer(edge));
+            txCache().trackForValidation(factory().buildRolePlayer(edge));
             txCache().trackForValidation(fromRelation); //This is so we can reassign the hash if needed
         }
     }
