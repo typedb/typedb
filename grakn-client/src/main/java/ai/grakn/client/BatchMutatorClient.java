@@ -238,59 +238,53 @@ public class BatchMutatorClient {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-
-
-        Json configuration = Json.object()
-                .set(KEYSPACE_PARAM, keyspace)
-                .set(BATCH_NUMBER, batchNumber)
-                .set(TASK_LOADER_MUTATIONS,
-                        queries.stream().map(Query::toString).collect(toList()));
-
-        Callable<TaskId> callable = () -> taskClient
-                .sendTask("ai.grakn.engine.loader.MutatorTask",
-                        BatchMutatorClient.class.getName(),
-                        Instant.ofEpochMilli(new Date().getTime()), null, configuration, 10000);
-
-        Retryer<TaskId> retryer = RetryerBuilder.<TaskId>newBuilder()
-                .retryIfExceptionOfType(IOException.class)
-                .retryIfRuntimeException()
-                .withStopStrategy(StopStrategies.stopAfterAttempt(retry ? MAX_RETRIES : 1))
-                .build();
-
-        TaskId taskId;
         try {
-            taskId = retryer.call(callable);
-        } catch (Exception e) {
+            Json configuration = Json.object()
+                    .set(KEYSPACE_PARAM, keyspace)
+                    .set(BATCH_NUMBER, batchNumber)
+                    .set(TASK_LOADER_MUTATIONS,
+                            queries.stream().map(Query::toString).collect(toList()));
+
+            Callable<TaskId> callable = () -> taskClient
+                    .sendTask("ai.grakn.engine.loader.MutatorTask",
+                            BatchMutatorClient.class.getName(),
+                            Instant.ofEpochMilli(new Date().getTime()), null, configuration, 10000);
+
+            Retryer<TaskId> retryer = RetryerBuilder.<TaskId>newBuilder()
+                    .retryIfExceptionOfType(IOException.class)
+                    .retryIfRuntimeException()
+                    .withStopStrategy(StopStrategies.stopAfterAttempt(retry ? MAX_RETRIES : 1))
+                    .build();
+
+            TaskId taskId =retryer.call(callable);
+            CompletableFuture<Json> status = makeTaskCompletionFuture(taskId);
+            // Add this status to the set of completable futures
+            // TODO: use an async client
+            futures.put(status.hashCode(), status);
+
+            status
+                    // Unblock and log errors when task completes
+                    .handle((result, error) -> {
+                        unblock(status);
+
+                        // Log any errors
+                        if(error != null){
+                            LOG.error("Error while executing mutator", error);
+                        }
+
+                        return result;
+                    })
+                    // Execute registered completion function
+                    .thenAcceptAsync(onCompletionOfTask)
+                    // Log errors in completion function
+                    .exceptionally(t -> {
+                        LOG.error("Error in callback for mutator", t);
+                        throw new RuntimeException(t);
+                    });
+        } catch (Throwable e) {
             LOG.error("Error while executing queries:\n{}", queries);
-            throw new RuntimeException(e);
+            blocker.release();
         }
-
-        CompletableFuture<Json> status = makeTaskCompletionFuture(taskId);
-
-        // Add this status to the set of completable futures
-        // TODO: use an async client
-        futures.put(status.hashCode(), status);
-
-        status
-        // Unblock and log errors when task completes
-        .handle((result, error) -> {
-            unblock(status);
-
-            // Log any errors
-            if(error != null){
-                LOG.error("Error while executing mutator", error);
-            }
-
-            return result;
-        })
-        // Execute registered completion function
-        .thenAcceptAsync(onCompletionOfTask)
-        // Log errors in completion function
-        .exceptionally(t -> {
-            LOG.error("Error in callback for mutator", t);
-            throw new RuntimeException(t);
-        });
-
     }
 
     private void unblock(CompletableFuture<Json> status){
