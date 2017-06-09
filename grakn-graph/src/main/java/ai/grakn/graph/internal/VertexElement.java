@@ -24,6 +24,10 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -68,7 +72,7 @@ class VertexElement extends AbstractElement<Vertex>{
     }
 
     /**
-     *  @param to the target {@link VertexElement}
+     * @param to the target {@link VertexElement}
      * @param type the type of the edge to create
      */
     EdgeElement putEdge(VertexElement to, Schema.EdgeLabel type){
@@ -81,24 +85,36 @@ class VertexElement extends AbstractElement<Vertex>{
     }
 
     /**
+     * Deletes all the edges of a specific {@link Schema.EdgeLabel} to or from a specific set of targets.
+     * If no targets are provided then all the edges of the specified type are deleted
      *
-     * @param direction The direction of the edges to retrieve
-     * @param type The type of the edges to retrieve
+     * @param direction The direction of the edges to delete
+     * @param label The edge label to delete
+     * @param targets An optional set of targets to delete edges from
      */
-    void deleteEdges(Direction direction, Schema.EdgeLabel type){
-        getElement().edges(direction, type.getLabel()).forEachRemaining(Edge::remove);
-    }
+    void deleteEdge(Direction direction, Schema.EdgeLabel label, VertexElement... targets){
+        Iterator<Edge> edges = getElement().edges(direction, label.getLabel());
+        if(targets.length == 0){
+            edges.forEachRemaining(Edge::remove);
+        } else {
+            Set<Vertex> verticesToDelete = Arrays.stream(targets).map(AbstractElement::getElement).collect(Collectors.toSet());
+            edges.forEachRemaining(edge -> {
+                boolean delete = false;
+                switch (direction){
+                    case BOTH:
+                        delete = verticesToDelete.contains(edge.inVertex()) || verticesToDelete.contains(edge.outVertex());
+                        break;
+                    case IN:
+                        delete = verticesToDelete.contains(edge.outVertex());
+                        break;
+                    case OUT:
+                        delete = verticesToDelete.contains(edge.inVertex());
+                        break;
+                }
 
-    /**
-     * Deletes an edge of a specific type going to a specific {@link VertexElement}
-     * @param type The type of the edge
-     * @param to The target {@link VertexElement}
-     */
-    void deleteEdgeTo(Schema.EdgeLabel type,VertexElement to){
-        GraphTraversal<Vertex, Edge> traversal = getGraknGraph().getTinkerPopGraph().traversal().V(getElementId().getValue()).
-                outE(type.getLabel()).as("edge").otherV().hasId(to.getElementId().getValue()).select("edge");
-        if(traversal.hasNext()) {
-            traversal.next().remove();
+                if(delete) edge.remove();
+            });
         }
     }
+
 }

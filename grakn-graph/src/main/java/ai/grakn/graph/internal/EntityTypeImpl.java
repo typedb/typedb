@@ -47,6 +47,6 @@ class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
     @Override
     public Entity addEntity() {
         return addInstance(Schema.BaseType.ENTITY, (vertex, type) ->
-                getVertexElement().getGraknGraph().getElementFactory().buildEntity(vertex, type));
+                graph().getElementFactory().buildEntity(vertex, type));
     }
 }

@@ -53,11 +53,11 @@ class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
 
         return putInstance(Schema.BaseType.RULE,
                 () -> getRule(lhs, rhs), (vertex, type) ->
-                        getVertexElement().getGraknGraph().getElementFactory().buildRule(vertex, type, lhs, rhs));
+                        graph().getElementFactory().buildRule(vertex, type, lhs, rhs));
     }
 
     private Rule getRule(Pattern lhs, Pattern rhs) {
         String index = RuleImpl.generateRuleIndex(this, lhs, rhs);
-        return getVertexElement().getGraknGraph().getConcept(Schema.ConceptProperty.INDEX, index);
+        return graph().getConcept(Schema.ConceptProperty.INDEX, index);
     }
 }

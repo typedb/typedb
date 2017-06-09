@@ -106,13 +106,13 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         if(value == null) throw GraphOperationException.settingNullProperty(getDataType().getConceptProperty());
         return putInstance(Schema.BaseType.RESOURCE,
                 () -> getResource(value), (vertex, type) ->
-                getVertexElement().getGraknGraph().getElementFactory().buildResource(vertex, type, value));
+                graph().getElementFactory().buildResource(vertex, type, value));
     }
 
     @Override
     public <V> Resource<V> getResource(V value) {
         String index = Schema.generateResourceIndex(getLabel(), value.toString());
-        return getVertexElement().getGraknGraph().getConcept(Schema.ConceptProperty.INDEX, index);
+        return graph().getConcept(Schema.ConceptProperty.INDEX, index);
     }
 
     /**

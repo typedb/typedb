@@ -94,7 +94,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     public void delete() {
         Set<Relation> relations = castingsInstance().map(Casting::getRelation).collect(Collectors.toSet());
 
-        getVertexElement().getGraknGraph().getTxCache().removedInstance(type().getId());
+        getVertexElement().getGraknGraph().txCache().removedInstance(type().getId());
         deleteNode();
 
         relations.forEach(relation -> {
@@ -102,7 +102,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
                 relation.delete();
             } else {
                 RelationImpl rel = (RelationImpl) relation;
-                getVertexElement().getGraknGraph().getTxCache().trackForValidation(rel);
+                getVertexElement().getGraknGraph().txCache().trackForValidation(rel);
                 rel.cleanUp();
             }
         });

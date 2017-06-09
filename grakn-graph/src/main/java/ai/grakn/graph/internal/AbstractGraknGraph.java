@@ -113,18 +113,18 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         graphCache = new GraphCache(properties);
 
         //Initialise Graph
-        getTxCache().openTx(GraknTxType.WRITE);
+        txCache().openTx(GraknTxType.WRITE);
 
-        getTxCache().showImplicitTypes(true);
+        txCache().showImplicitTypes(true);
         if(initialiseMetaConcepts()) close(true, false);
-        getTxCache().showImplicitTypes(false);
+        txCache().showImplicitTypes(false);
 
     }
 
     @Override
     public TypeId convertToId(TypeLabel label){
-        if(getTxCache().isLabelCached(label)){
-            return getTxCache().convertLabelToId(label);
+        if(txCache().isLabelCached(label)){
+            return txCache().convertLabelToId(label);
         }
         return TypeId.invalid();
     }
@@ -171,7 +171,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * Opens the thread bound transaction
      */
     public void openTransaction(GraknTxType txType){
-        getTxCache().openTx(txType);
+        txCache().openTx(txType);
     }
 
     String getEngineUrl(){
@@ -187,7 +187,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return keyspace;
     }
 
-    TxCache getTxCache() {
+    TxCache txCache() {
         TxCache txCache = localConceptLog.get();
         if(txCache == null){
             localConceptLog.set(txCache = new TxCache(getGraphCache()));
@@ -202,23 +202,23 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public boolean isClosed(){
-        return !getTxCache().isTxOpen();
+        return !txCache().isTxOpen();
     }
     public abstract boolean isSessionClosed();
 
     @Override
     public boolean implicitConceptsVisible(){
-        return getTxCache().implicitTypesVisible();
+        return txCache().implicitTypesVisible();
     }
 
     @Override
     public boolean isReadOnly(){
-        return GraknTxType.READ.equals(getTxCache().txType());
+        return GraknTxType.READ.equals(txCache().txType());
     }
 
     @Override
     public void showImplicitConcepts(boolean flag){
-        getTxCache().showImplicitTypes(flag);
+        txCache().showImplicitTypes(flag);
     }
 
     @Override
@@ -233,7 +233,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public boolean isBatchGraph(){
-        return GraknTxType.BATCH.equals(getTxCache().txType());
+        return GraknTxType.BATCH.equals(txCache().txType());
     }
 
     @SuppressWarnings("unchecked")
@@ -336,12 +336,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return concepts;
     }
 
-    void checkOntologyMutation(){
-        checkMutation();
+    void checkOntologyMutationAllowed(){
+        checkMutationAllowed();
         if(isBatchGraph()) throw GraphOperationException.ontologyMutation();
     }
 
-    void checkMutation(){
+    void checkMutationAllowed(){
         if(isReadOnly()) throw GraphOperationException.transactionReadOnly(this);
     }
 
@@ -391,7 +391,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return The result of the operation on the graph.
      */
     private <X> X operateOnOpenGraph(Supplier<X> supplier){
-        if(isClosed()) throw GraphOperationException.transactionClosed(this, getTxCache().getClosedReason());
+        if(isClosed()) throw GraphOperationException.transactionClosed(this, txCache().getClosedReason());
         return supplier.get();
     }
 
@@ -407,7 +407,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     private <T extends TypeImpl> T putType(TypeLabel label, Schema.BaseType baseType, Function<Vertex, T> factory){
-        checkOntologyMutation();
+        checkOntologyMutationAllowed();
         TypeImpl type = buildType(label, () -> factory.apply(putVertex(label, baseType)));
 
         T finalType = validateConceptType(type, baseType, () -> {
@@ -441,8 +441,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return The type which was either cached or built via a DB read or write
      */
     private TypeImpl buildType(TypeLabel label, Supplier<TypeImpl> dbBuilder){
-        if(getTxCache().isTypeCached(label)){
-            return getTxCache().getCachedType(label);
+        if(txCache().isTypeCached(label)){
+            return txCache().getCachedType(label);
         } else {
             return dbBuilder.get();
         }
@@ -516,8 +516,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //------------------------------------ Lookup
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
-        if(getTxCache().isConceptCached(id)){
-            return getTxCache().getCachedConcept(id);
+        if(txCache().isConceptCached(id)){
+            return txCache().getCachedConcept(id);
         } else {
             return getConcept(Schema.ConceptProperty.ID, id.getValue());
         }
@@ -637,8 +637,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             EdgeElement edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.SHORTCUT);
             edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getTypeId().getValue());
             edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getTypeId().getValue());
-            getTxCache().trackForValidation(getElementFactory().buildRolePlayer(edge));
-            getTxCache().trackForValidation(fromRelation); //This is so we can reassign the hash if needed
+            txCache().trackForValidation(getElementFactory().buildRolePlayer(edge));
+            txCache().trackForValidation(fromRelation); //This is so we can reassign the hash if needed
         }
     }
 
@@ -646,7 +646,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public void delete() {
         closeSession();
         clearGraph();
-        getTxCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
+        txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
 
         //Remove the graph from the system keyspace
         SystemKeyspace.deleteKeyspace(getKeyspace());
@@ -660,7 +660,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public void closeSession(){
         try {
-            getTxCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(getKeyspace()));
+            txCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(getKeyspace()));
             getTinkerPopGraph().close();
         } catch (Exception e) {
             throw GraphOperationException.closingGraphFailed(this, e);
@@ -695,9 +695,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                     String logsToUpload = logs.get();
                     new Thread(() -> LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, logsToUpload) + "]")).start();
                 }
-                getTxCache().writeToGraphCache(true);
+                txCache().writeToGraphCache(true);
             } else {
-                getTxCache().writeToGraphCache(isReadOnly());
+                txCache().writeToGraphCache(isReadOnly());
             }
         } finally {
             closeTransaction(closeMessage);
@@ -714,7 +714,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
         } finally {
-            getTxCache().closeTx(closedReason);
+            txCache().closeTx(closedReason);
         }
     }
 
@@ -731,9 +731,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private Optional<String> commitWithLogs() throws InvalidGraphException {
         validateGraph();
 
-        boolean submissionNeeded = !getTxCache().getShardingCount().isEmpty() ||
-                !getTxCache().getModifiedResources().isEmpty();
-        Json conceptLog = getTxCache().getFormattedLog();
+        boolean submissionNeeded = !txCache().getShardingCount().isEmpty() ||
+                !txCache().getModifiedResources().isEmpty();
+        Json conceptLog = txCache().getFormattedLog();
 
         LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransactionInternal();
@@ -867,7 +867,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //Gets the other resource index and replaces all occurrences of the other resource id with the main resource id
         //This allows us to find relations far more quickly.
         String newIndex = otherRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
-        RelationImpl foundRelation = getTxCache().getCachedRelation(newIndex);
+        RelationImpl foundRelation = txCache().getCachedRelation(newIndex);
         if(foundRelation == null) foundRelation = getConcept(Schema.ConceptProperty.INDEX, newIndex);
 
         if (foundRelation != null) {//If it exists delete the other one
@@ -881,7 +881,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         //Explicitly track this new relation so we don't create duplicates
-        getTxCache().getRelationIndexCache().put(newIndex, foundRelation);
+        txCache().getRelationIndexCache().put(newIndex, foundRelation);
     }
 
     @Override

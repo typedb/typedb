@@ -75,7 +75,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
         if(value == null) {
             return null;
         } else {
-            return getVertexElement().getGraknGraph().graql().parsePattern(value);
+            return graph().graql().parsePattern(value);
         }
     }
 

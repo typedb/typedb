@@ -63,16 +63,16 @@ final class ElementFactory {
     private <X extends ConceptImpl> X getOrBuildConcept(Vertex v, Function<VertexElement, X> conceptBuilder){
         ConceptId conceptId = ConceptId.of(v.id().toString());
 
-        if(!graknGraph.getTxCache().isConceptCached(conceptId)){
+        if(!graknGraph.txCache().isConceptCached(conceptId)){
             X newConcept = conceptBuilder.apply(new VertexElement(graknGraph, v));
-            graknGraph.getTxCache().cacheConcept(newConcept);
+            graknGraph.txCache().cacheConcept(newConcept);
         }
 
-        X concept = graknGraph.getTxCache().getCachedConcept(conceptId);
+        X concept = graknGraph.txCache().getCachedConcept(conceptId);
 
         //Only track concepts which have been modified.
         if(graknGraph.isConceptModified(concept)) {
-            graknGraph.getTxCache().trackForValidation(concept);
+            graknGraph.txCache().trackForValidation(concept);
         }
 
         return concept;
@@ -142,7 +142,7 @@ final class ElementFactory {
         }
 
         ConceptId conceptId = ConceptId.of(v.id());
-        if(!graknGraph.getTxCache().isConceptCached(conceptId)){
+        if(!graknGraph.txCache().isConceptCached(conceptId)){
             VertexElement vertexElement = new VertexElement(graknGraph, v);
             ConceptImpl concept;
             switch (type) {
@@ -179,10 +179,10 @@ final class ElementFactory {
                 default:
                     throw new RuntimeException("Unknown base type [" + v.label() + "]");
             }
-            graknGraph.getTxCache().cacheConcept(concept);
+            graknGraph.txCache().cacheConcept(concept);
         }
 
-        return graknGraph.getTxCache().getCachedConcept(conceptId);
+        return graknGraph.txCache().getCachedConcept(conceptId);
     }
 
     //TODO: Simplify this if it does not make a difference to large loading

@@ -59,8 +59,8 @@ import java.util.stream.Stream;
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
 abstract class ConceptImpl<T extends Concept> implements Concept {
+    private final ElementCache<Boolean> cachedIsShard = new ElementCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_SHARD));
     private final VertexElement vertexElement;
-    private ElementCache<Boolean> cachedIsShard = new ElementCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_SHARD));
 
     @SuppressWarnings("unchecked")
     T getThis(){
@@ -73,6 +73,10 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     public VertexElement getVertexElement() {
         return vertexElement;
+    }
+
+    AbstractGraknGraph<?> graph(){
+        return getVertexElement().getGraknGraph();
     }
 
     /**
@@ -104,7 +108,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     void deleteNode(){
         //TODO: clean this
-        getVertexElement().getGraknGraph().getTxCache().remove(this);
+        graph().txCache().remove(this);
         // delete node
         getVertexElement().getElement().remove();
     }
@@ -137,8 +141,10 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     }
 
     void deleteEdge(Schema.EdgeLabel label, Concept to){
-        getVertexElement().deleteEdgeTo(label, ((ConceptImpl) to).getVertexElement());
+        getVertexElement().deleteEdge(Direction.OUT, label, ((ConceptImpl) to).getVertexElement());
     }
+
+
 
     /**
      *
@@ -202,7 +208,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     @Override
     public final String toString(){
         try {
-            getVertexElement().getGraknGraph().validVertex(getVertexElement().getElement());
+            graph().validVertex(getVertexElement().getElement());
             return innerToString();
         } catch (RuntimeException e){
             // Vertex is broken somehow. Most likely deleted.
@@ -243,7 +249,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         Vertex shardVertex = getVertexElement().getGraknGraph().addVertex(getBaseType());
         shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), getVertexElement().getElement());
 
-        ConceptImpl shardConcept = getVertexElement().getGraknGraph().buildConcept(shardVertex);
+        ConceptImpl shardConcept = graph().buildConcept(shardVertex);
         shardConcept.isShard(true);
         setProperty(Schema.ConceptProperty.CURRENT_SHARD, shardConcept.getId().getValue());
 
@@ -299,6 +305,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return A Type if the element is a Type
      */
+    @Override
     public Type asType() {
         return castConcept(Type.class);
     }
@@ -307,6 +314,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return An Instance if the element is an Instance
      */
+    @Override
     public Instance asInstance() {
         return castConcept(Instance.class);
     }
@@ -315,6 +323,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return A Entity Type if the element is a Entity Type
      */
+    @Override
     public EntityType asEntityType() {
         return castConcept(EntityType.class);
     }
@@ -323,6 +332,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return A Role Type if the element is a Role Type
      */
+    @Override
     public RoleType asRoleType() {
         return castConcept(RoleType.class);
     }
@@ -331,6 +341,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return A Relation Type if the element is a Relation Type
      */
+    @Override
     public RelationType asRelationType() {
         return castConcept(RelationType.class);
     }
@@ -340,6 +351,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return A Resource Type if the element is a Resource Type
      */
     @SuppressWarnings("unchecked")
+    @Override
     public <D> ResourceType<D> asResourceType() {
         return castConcept(ResourceType.class);
     }
@@ -348,6 +360,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return A Rule Type if the element is a Rule Type
      */
+    @Override
     public RuleType asRuleType() {
         return castConcept(RuleType.class);
     }
@@ -356,6 +369,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return An Entity if the element is an Instance
      */
+    @Override
     public Entity asEntity() {
         return castConcept(Entity.class);
     }
@@ -364,6 +378,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return A Relation if the element is a Relation
      */
+    @Override
     public Relation asRelation() {
         return castConcept(Relation.class);
     }
@@ -373,6 +388,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return A Resource if the element is a Resource
      */
     @SuppressWarnings("unchecked")
+    @Override
     public <D> Resource<D> asResource() {
         return castConcept(Resource.class);
     }
@@ -381,6 +397,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return A Rule if the element is a Rule
      */
+    @Override
     public Rule asRule() {
         return castConcept(Rule.class);
     }
@@ -389,6 +406,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return true if the element is a Type
      */
+    @Override
     public boolean isType() {
         return this instanceof Type;
     }
@@ -397,6 +415,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return true if the element is an Instance
      */
+    @Override
     public boolean isInstance() {
         return this instanceof Instance;
     }
@@ -405,6 +424,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return true if the element is a Entity Type
      */
+    @Override
     public boolean isEntityType() {
         return this instanceof EntityType;
     }
@@ -413,6 +433,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return true if the element is a Role Type
      */
+    @Override
     public boolean isRoleType() {
         return this instanceof RoleType;
     }
@@ -421,6 +442,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return true if the element is a Relation Type
      */
+    @Override
     public boolean isRelationType() {
         return this instanceof RelationType;
     }
@@ -429,6 +451,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return true if the element is a Resource Type
      */
+    @Override
     public boolean isResourceType() {
         return this instanceof ResourceType;
     }
@@ -437,6 +460,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return true if the element is a Rule Type
      */
+    @Override
     public boolean isRuleType() {
         return this instanceof RuleType;
     }
@@ -445,6 +469,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return true if the element is a Entity
      */
+    @Override
     public boolean isEntity() {
         return this instanceof Entity;
     }
@@ -453,6 +478,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return true if the element is a Relation
      */
+    @Override
     public boolean isRelation() {
         return this instanceof Relation;
     }
@@ -461,6 +487,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return true if the element is a Resource
      */
+    @Override
     public boolean isResource() {
         return this instanceof Resource;
     }
@@ -469,6 +496,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return true if the element is a Rule
      */
+    @Override
     public boolean isRule() {
         return this instanceof Rule;
     }
