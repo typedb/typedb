@@ -61,6 +61,10 @@ abstract class AbstractElement<E extends Element> {
         return element;
     }
 
+    ElementId getElementId(){
+        return ElementId.of(getElement().id());
+    }
+
     /**
      *
      * @param key The key of the property to mutate
@@ -119,7 +123,7 @@ abstract class AbstractElement<E extends Element> {
     public boolean equals(Object object) {
         //Compare Concept
         //based on id because vertex comparisons are equivalent
-        return this == object || object instanceof AbstractElement && ((AbstractElement) object).getElement().id().equals(getElement().id());
+        return this == object || object instanceof AbstractElement && ((AbstractElement) object).getElementId().equals(getElementId());
     }
 
     /**

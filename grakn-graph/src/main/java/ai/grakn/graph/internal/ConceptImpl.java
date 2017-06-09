@@ -150,7 +150,7 @@ abstract class ConceptImpl<T extends Concept> extends VertexElement implements C
      */
     @Override
     public ConceptId getId(){
-        return ConceptId.of(getElement().id());
+        return ConceptId.of(getElementId().getValue());
     }
 
     /**
