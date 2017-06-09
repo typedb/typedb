@@ -83,7 +83,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
             RoleType roleType = edge.getTarget();
-            Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
+            Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
             roleTypes.put(roleType, required);
         });
 
@@ -257,9 +257,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public void delete(){
         checkTypeMutation();
-        boolean hasSubs = vertex().element().edges(Direction.IN, Schema.EdgeLabel.SUB.getLabel()).hasNext();
-        boolean hasInstances = graph().getTinkerTraversal().hasId(getId().getRawValue()).
-                in(Schema.EdgeLabel.SHARD.getLabel()).in(Schema.EdgeLabel.ISA.getLabel()).hasNext();
+        boolean hasSubs = getIncomingNeighbours(Schema.EdgeLabel.SUB).findAny().isPresent();
+        boolean hasInstances = getIncomingNeighbours(Schema.EdgeLabel.SHARD).
+                filter(shard -> ((ConceptImpl)shard).getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().isPresent()).findAny().isPresent();
 
         if(hasSubs || hasInstances){
             throw GraphOperationException.typeCannotBeDeleted(getLabel());
@@ -542,7 +542,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         EdgeElement edge = putEdge(roleType, Schema.EdgeLabel.PLAYS);
 
         if (required) {
-            edge.setProperty(Schema.EdgeProperty.REQUIRED, true);
+            edge.property(Schema.EdgeProperty.REQUIRED, true);
         }
 
         return getThis();

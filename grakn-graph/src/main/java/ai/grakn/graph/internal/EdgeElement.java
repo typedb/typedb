@@ -90,11 +90,11 @@ class EdgeElement extends AbstractElement<Edge> {
      * @param key The property to retrieve
      * @return The value of the property
      */
-    <X> X getProperty(Schema.EdgeProperty key){
-        return getProperty(key.name());
+    <X> X property(Schema.EdgeProperty key){
+        return property(key.name());
     }
-    Boolean getPropertyBoolean(Schema.EdgeProperty key){
-        return getPropertyBoolean(key.name());
+    Boolean propertyBoolean(Schema.EdgeProperty key){
+        return propertyBoolean(key.name());
     }
 
     /**
@@ -102,8 +102,8 @@ class EdgeElement extends AbstractElement<Edge> {
      * @param type The property to retrieve
      * @param value The value of the property
      */
-    void setProperty(Schema.EdgeProperty type, Object value){
-        setProperty(type.name(), value);
+    void property(Schema.EdgeProperty type, Object value){
+        property(type.name(), value);
     }
 
 }

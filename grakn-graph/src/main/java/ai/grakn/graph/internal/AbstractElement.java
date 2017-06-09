@@ -55,11 +55,18 @@ abstract class AbstractElement<E extends Element> {
     }
 
     /**
+     * Deletes the element from the graph
+     */
+    void delete(){
+        element().remove();
+    }
+
+    /**
      *
      * @param key The key of the property to mutate
      * @param value The value to commit into the property
      */
-     void setProperty(String key, Object value){
+     void property(String key, Object value){
         if(value == null) {
             element().property(key).remove();
         } else {
@@ -75,15 +82,15 @@ abstract class AbstractElement<E extends Element> {
      * @param key The key of the non-unique property to retrieve
      * @return The value stored in the property
      */
-    public <X> X getProperty(String key){
+    public <X> X property(String key){
         Property<X> property = element().property(key);
         if(property != null && property.isPresent()) {
             return property.value();
         }
         return null;
     }
-    Boolean getPropertyBoolean(String key){
-        Boolean value = getProperty(key);
+    Boolean propertyBoolean(String key){
+        Boolean value = property(key);
         if(value == null) return false;
         return value;
     }

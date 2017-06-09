@@ -631,8 +631,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         if(!exists){
             EdgeElement edge = fromRelation.addEdge(toInstance, Schema.EdgeLabel.SHORTCUT);
-            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getTypeId().getValue());
-            edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getTypeId().getValue());
+            edge.property(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getTypeId().getValue());
+            edge.property(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getTypeId().getValue());
             txCache().trackForValidation(getElementFactory().buildRolePlayer(edge));
             txCache().trackForValidation(fromRelation); //This is so we can reassign the hash if needed
         }

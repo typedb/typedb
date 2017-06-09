@@ -110,7 +110,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         //TODO: clean this
         graph().txCache().remove(this);
         // delete node
-        vertex().element().remove();
+        vertex().delete();
     }
 
     /**
@@ -159,7 +159,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The concept itself casted to the correct interface
      */
     T setProperty(Schema.ConceptProperty key, Object value){
-        vertex().setProperty(key.name(), value);
+        vertex().property(key.name(), value);
         return getThis();
     }
 
@@ -169,10 +169,10 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The value stored in the property
      */
     public <X> X getProperty(Schema.ConceptProperty key){
-        return vertex().getProperty(key.name());
+        return vertex().property(key.name());
     }
     Boolean getPropertyBoolean(Schema.ConceptProperty key){
-        return vertex().getPropertyBoolean(key.name());
+        return vertex().propertyBoolean(key.name());
     }
 
     /**

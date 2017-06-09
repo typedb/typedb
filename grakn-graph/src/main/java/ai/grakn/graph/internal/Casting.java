@@ -40,8 +40,8 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  */
 class Casting {
     private final EdgeElement edgeElement;
-    private final ElementCache<RoleType> cachedRoleType = new ElementCache<>(() -> (RoleType) edge().graph().getType(TypeId.of(edge().getProperty(Schema.EdgeProperty.ROLE_TYPE_ID))));
-    private final ElementCache<RelationType> cachedRelationType = new ElementCache<>(() -> (RelationType) edge().graph().getType(TypeId.of(edge().getProperty(Schema.EdgeProperty.RELATION_TYPE_ID))));
+    private final ElementCache<RoleType> cachedRoleType = new ElementCache<>(() -> (RoleType) edge().graph().getType(TypeId.of(edge().property(Schema.EdgeProperty.ROLE_TYPE_ID))));
+    private final ElementCache<RelationType> cachedRelationType = new ElementCache<>(() -> (RelationType) edge().graph().getType(TypeId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_ID))));
     private final ElementCache<Instance> cachedInstance = new ElementCache<>(() -> edge().getTarget());
     private final ElementCache<Relation> cachedRelation = new ElementCache<>(() -> edge().getSource());
 

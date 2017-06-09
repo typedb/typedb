@@ -288,9 +288,9 @@ public class EntityTypeTest extends GraphTestBase{
 
         // Check that resource is not required
         EdgeElement entityPlays = ((EntityTypeImpl) entityType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
-        assertFalse(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
+        assertFalse(entityPlays.propertyBoolean(Schema.EdgeProperty.REQUIRED));
         EdgeElement resourcePlays = ((ResourceTypeImpl <?>) resourceType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
-        assertFalse(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
+        assertFalse(resourcePlays.propertyBoolean(Schema.EdgeProperty.REQUIRED));
     }
 
     @Test
