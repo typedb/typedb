@@ -34,11 +34,9 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  * @author fppt
  */
 class EdgeElement extends AbstractElement<Edge> {
-    private final AbstractGraknGraph graknGraph;
 
     EdgeElement(AbstractGraknGraph graknGraph, Edge e){
         super(graknGraph, e);
-        this.graknGraph = graknGraph;
     }
 
     /**
@@ -68,7 +66,7 @@ class EdgeElement extends AbstractElement<Edge> {
      * @return The source of the edge.
      */
     public <X extends Concept> X getSource(){
-        return graknGraph.getElementFactory().buildConcept(getElement().outVertex());
+        return getGraknGraph().getElementFactory().buildConcept(getElement().outVertex());
     }
 
     /**
@@ -76,7 +74,7 @@ class EdgeElement extends AbstractElement<Edge> {
      * @return The target of the edge
      */
     public <X extends Concept> X getTarget(){
-        return graknGraph.getElementFactory().buildConcept(getElement().inVertex());
+        return getGraknGraph().getElementFactory().buildConcept(getElement().inVertex());
     }
 
     /**

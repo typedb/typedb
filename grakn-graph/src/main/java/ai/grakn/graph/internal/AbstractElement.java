@@ -65,7 +65,6 @@ abstract class AbstractElement<E extends Element> {
         return element.id();
     }
 
-
     /**
      *
      * @param key The key of the property to mutate
