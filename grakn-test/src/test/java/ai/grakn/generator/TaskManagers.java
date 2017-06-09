@@ -24,10 +24,12 @@ import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.util.EngineID;
+import com.codahale.metrics.MetricRegistry;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
+import com.yammer.metrics.core.MetricsRegistry;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -65,8 +67,9 @@ public class TaskManagers extends Generator<TaskManager> {
         if(!taskManagers.containsKey(taskManagerToReturn)){
             try {
                 Constructor<? extends TaskManager> constructor =
-                        taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class, RedisConnection.class);
-                taskManagers.put(taskManagerToReturn, constructor.newInstance(EngineID.me(), config, null));
+                        taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class, RedisConnection.class, MetricsRegistry.class);
+                // TODO this doesn't take a Redis connection. Make sure this is what we expect
+                taskManagers.put(taskManagerToReturn, constructor.newInstance(EngineID.me(), config, null, new MetricRegistry()));
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
                 throw new RuntimeException(e);
             }

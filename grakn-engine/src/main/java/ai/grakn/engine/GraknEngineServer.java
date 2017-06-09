@@ -83,8 +83,8 @@ public class GraknEngineServer implements AutoCloseable {
         redis = RedisConnection.create(redisUrl, redisPort);
 
         factory = EngineGraknGraphFactory.create(prop.getProperties());
-        taskManager = startTaskManager();
         metricRegistry = new MetricRegistry();
+        taskManager = startTaskManager();
 
         startHTTP();
         printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
