@@ -143,7 +143,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             currentValue = currentValue + 1;
         }
         //Vertex is used directly here to bypass meta type mutation check
-        metaConcept.getElement().property(Schema.ConceptProperty.CURRENT_TYPE_ID.name(), currentValue);
+        metaConcept.getVertexElement().getElement().property(Schema.ConceptProperty.CURRENT_TYPE_ID.name(), currentValue);
         return TypeId.of(currentValue);
     }
 
@@ -311,7 +311,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //----------------------------------------------General Functionality-----------------------------------------------
     private EdgeElement addEdge(Concept from, Concept to, Schema.EdgeLabel type){
-        return ((ConceptImpl)from).addEdge((ConceptImpl) to, type);
+        return ((ConceptImpl)from).getVertexElement().addEdge(((ConceptImpl) to).getVertexElement(), type);
     }
 
     @Override
@@ -363,7 +363,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             if(!baseType.equals(concept.getBaseType())) {
                 throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.ConceptProperty.TYPE_LABEL, label);
             }
-            vertex = concept.getElement();
+            vertex = concept.getVertexElement().getElement();
         }
         return vertex;
     }
@@ -416,7 +416,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //Automatic shard creation - If this type does not have a shard create one
         if(!Schema.MetaSchema.isMetaLabel(label) &&
-                !type.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()){
+                !type.getVertexElement().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()){
             type.createShard();
         }
 
@@ -849,7 +849,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
             //Restore the index
             String newIndex = mainResource.getIndex();
-            mainResource.getElement().property(Schema.ConceptProperty.INDEX.name(), newIndex);
+            mainResource.getVertexElement().getElement().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 
             return true;
         }

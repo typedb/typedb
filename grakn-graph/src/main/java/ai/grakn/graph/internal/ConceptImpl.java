@@ -22,7 +22,15 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.util.Schema;
@@ -50,7 +58,8 @@ import java.util.stream.Stream;
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
-abstract class ConceptImpl<T extends Concept> extends VertexElement implements Concept {
+abstract class ConceptImpl<T extends Concept> implements Concept {
+    private final VertexElement vertexElement;
     private ElementCache<Boolean> cachedIsShard = new ElementCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_SHARD));
 
     @SuppressWarnings("unchecked")
@@ -58,8 +67,12 @@ abstract class ConceptImpl<T extends Concept> extends VertexElement implements C
         return (T) this;
     }
 
-    ConceptImpl(AbstractGraknGraph graknGraph, Vertex v){
-        super(graknGraph, v);
+    ConceptImpl(VertexElement vertexElement){
+        this.vertexElement = vertexElement;
+    }
+
+    public VertexElement getVertexElement() {
+        return vertexElement;
     }
 
     /**
@@ -78,8 +91,8 @@ abstract class ConceptImpl<T extends Concept> extends VertexElement implements C
      * @return The concept itself casted to the correct interface itself
      */
     T setUniqueProperty(Schema.ConceptProperty key, String value){
-        if(!getGraknGraph().isBatchGraph()) {
-            Concept fetchedConcept = getGraknGraph().getConcept(key, value);
+        if(!getVertexElement().getGraknGraph().isBatchGraph()) {
+            Concept fetchedConcept = getVertexElement().getGraknGraph().getConcept(key, value);
             if (fetchedConcept != null) throw PropertyNotUniqueException.cannotChangeProperty(this, fetchedConcept, key, value);
         }
 
@@ -90,9 +103,10 @@ abstract class ConceptImpl<T extends Concept> extends VertexElement implements C
      * Deletes the node and adds it neighbours for validation
      */
     void deleteNode(){
-        getGraknGraph().getTxCache().remove(this);
+        //TODO: clean this
+        getVertexElement().getGraknGraph().getTxCache().remove(this);
         // delete node
-        getElement().remove();
+        getVertexElement().getElement().remove();
     }
 
     /**
@@ -101,7 +115,7 @@ abstract class ConceptImpl<T extends Concept> extends VertexElement implements C
      * @return The neighbouring concepts found by traversing outgoing edges of a specific type
      */
     <X extends Concept> Stream<X> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
-        return getEdgesOfType(Direction.OUT, edgeType).map(EdgeElement::getTarget);
+        return getVertexElement().getEdgesOfType(Direction.OUT, edgeType).map(EdgeElement::getTarget);
     }
 
     /**
@@ -110,7 +124,20 @@ abstract class ConceptImpl<T extends Concept> extends VertexElement implements C
      * @return The neighbouring concepts found by traversing incoming edges of a specific type
      */
     <X extends Concept> Stream<X> getIncomingNeighbours(Schema.EdgeLabel edgeType){
-        return getEdgesOfType(Direction.IN, edgeType).map(EdgeElement::getSource);
+        return getVertexElement().getEdgesOfType(Direction.IN, edgeType).map(EdgeElement::getSource);
+    }
+
+
+    EdgeElement putEdge(Concept to, Schema.EdgeLabel label){
+        return getVertexElement().putEdge(((ConceptImpl) to).getVertexElement(), label);
+    }
+
+    EdgeElement addEdge(Concept to, Schema.EdgeLabel label){
+        return getVertexElement().addEdge(((ConceptImpl) to).getVertexElement(), label);
+    }
+
+    void deleteEdge(Schema.EdgeLabel label, Concept to){
+        getVertexElement().deleteEdgeTo(label, ((ConceptImpl) to).getVertexElement());
     }
 
     /**
@@ -120,7 +147,7 @@ abstract class ConceptImpl<T extends Concept> extends VertexElement implements C
      * @return The concept itself casted to the correct interface
      */
     T setProperty(Schema.ConceptProperty key, Object value){
-        setProperty(key.name(), value);
+        getVertexElement().setProperty(key.name(), value);
         return getThis();
     }
 
@@ -130,10 +157,10 @@ abstract class ConceptImpl<T extends Concept> extends VertexElement implements C
      * @return The value stored in the property
      */
     public <X> X getProperty(Schema.ConceptProperty key){
-        return getProperty(key.name());
+        return getVertexElement().getProperty(key.name());
     }
     Boolean getPropertyBoolean(Schema.ConceptProperty key){
-        return getPropertyBoolean(key.name());
+        return getVertexElement().getPropertyBoolean(key.name());
     }
 
     /**
@@ -141,7 +168,7 @@ abstract class ConceptImpl<T extends Concept> extends VertexElement implements C
      * @return The base type of this concept which helps us identify the concept
      */
     Schema.BaseType getBaseType(){
-        return Schema.BaseType.valueOf(getElement().label());
+        return Schema.BaseType.valueOf(getVertexElement().label());
     }
 
     /**
@@ -150,7 +177,7 @@ abstract class ConceptImpl<T extends Concept> extends VertexElement implements C
      */
     @Override
     public ConceptId getId(){
-        return ConceptId.of(getElementId().getValue());
+        return ConceptId.of(getVertexElement().getElementId().getValue());
     }
 
     /**
@@ -175,7 +202,7 @@ abstract class ConceptImpl<T extends Concept> extends VertexElement implements C
     @Override
     public final String toString(){
         try {
-            getGraknGraph().validVertex(getElement());
+            getVertexElement().getGraknGraph().validVertex(getVertexElement().getElement());
             return innerToString();
         } catch (RuntimeException e){
             // Vertex is broken somehow. Most likely deleted.
@@ -213,10 +240,10 @@ abstract class ConceptImpl<T extends Concept> extends VertexElement implements C
 
     //----------------------------------- Sharding Functionality
     T createShard(){
-        Vertex shardVertex = getGraknGraph().addVertex(getBaseType());
-        shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), getElement());
+        Vertex shardVertex = getVertexElement().getGraknGraph().addVertex(getBaseType());
+        shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), getVertexElement().getElement());
 
-        ConceptImpl shardConcept = getGraknGraph().buildConcept(shardVertex);
+        ConceptImpl shardConcept = getVertexElement().getGraknGraph().buildConcept(shardVertex);
         shardConcept.isShard(true);
         setProperty(Schema.ConceptProperty.CURRENT_SHARD, shardConcept.getId().getValue());
 
@@ -231,7 +258,7 @@ abstract class ConceptImpl<T extends Concept> extends VertexElement implements C
     //TODO: Return implementation rather than interface
     T currentShard(){
         String currentShardId = getProperty(Schema.ConceptProperty.CURRENT_SHARD);
-        return getGraknGraph().getConcept(ConceptId.of(currentShardId));
+        return getVertexElement().getGraknGraph().getConcept(ConceptId.of(currentShardId));
     }
 
     boolean isShard(){
@@ -251,5 +278,198 @@ abstract class ConceptImpl<T extends Concept> extends VertexElement implements C
 
     void setShardCount(Long instanceCount){
         setProperty(Schema.ConceptProperty.SHARD_COUNT, instanceCount);
+    }
+
+    /**
+     * Helper method to cast a concept to it's correct type
+     * @param type The type to cast to
+     * @param <E> The type of the interface we are casting to.
+     * @return The concept itself casted to the defined interface
+     * @throws GraphOperationException when casting an element incorrectly
+     */
+    private <E extends Concept> E castConcept(Class<E> type){
+        try {
+            return type.cast(this);
+        } catch(ClassCastException e){
+            throw GraphOperationException.invalidCasting(this, type);
+        }
+    }
+
+    /**
+     *
+     * @return A Type if the element is a Type
+     */
+    public Type asType() {
+        return castConcept(Type.class);
+    }
+
+    /**
+     *
+     * @return An Instance if the element is an Instance
+     */
+    public Instance asInstance() {
+        return castConcept(Instance.class);
+    }
+
+    /**
+     *
+     * @return A Entity Type if the element is a Entity Type
+     */
+    public EntityType asEntityType() {
+        return castConcept(EntityType.class);
+    }
+
+    /**
+     *
+     * @return A Role Type if the element is a Role Type
+     */
+    public RoleType asRoleType() {
+        return castConcept(RoleType.class);
+    }
+
+    /**
+     *
+     * @return A Relation Type if the element is a Relation Type
+     */
+    public RelationType asRelationType() {
+        return castConcept(RelationType.class);
+    }
+
+    /**
+     *
+     * @return A Resource Type if the element is a Resource Type
+     */
+    @SuppressWarnings("unchecked")
+    public <D> ResourceType<D> asResourceType() {
+        return castConcept(ResourceType.class);
+    }
+
+    /**
+     *
+     * @return A Rule Type if the element is a Rule Type
+     */
+    public RuleType asRuleType() {
+        return castConcept(RuleType.class);
+    }
+
+    /**
+     *
+     * @return An Entity if the element is an Instance
+     */
+    public Entity asEntity() {
+        return castConcept(Entity.class);
+    }
+
+    /**
+     *
+     * @return A Relation if the element is a Relation
+     */
+    public Relation asRelation() {
+        return castConcept(Relation.class);
+    }
+
+    /**
+     *
+     * @return A Resource if the element is a Resource
+     */
+    @SuppressWarnings("unchecked")
+    public <D> Resource<D> asResource() {
+        return castConcept(Resource.class);
+    }
+
+    /**
+     *
+     * @return A Rule if the element is a Rule
+     */
+    public Rule asRule() {
+        return castConcept(Rule.class);
+    }
+
+    /**
+     *
+     * @return true if the element is a Type
+     */
+    public boolean isType() {
+        return this instanceof Type;
+    }
+
+    /**
+     *
+     * @return true if the element is an Instance
+     */
+    public boolean isInstance() {
+        return this instanceof Instance;
+    }
+
+    /**
+     *
+     * @return true if the element is a Entity Type
+     */
+    public boolean isEntityType() {
+        return this instanceof EntityType;
+    }
+
+    /**
+     *
+     * @return true if the element is a Role Type
+     */
+    public boolean isRoleType() {
+        return this instanceof RoleType;
+    }
+
+    /**
+     *
+     * @return true if the element is a Relation Type
+     */
+    public boolean isRelationType() {
+        return this instanceof RelationType;
+    }
+
+    /**
+     *
+     * @return true if the element is a Resource Type
+     */
+    public boolean isResourceType() {
+        return this instanceof ResourceType;
+    }
+
+    /**
+     *
+     * @return true if the element is a Rule Type
+     */
+    public boolean isRuleType() {
+        return this instanceof RuleType;
+    }
+
+    /**
+     *
+     * @return true if the element is a Entity
+     */
+    public boolean isEntity() {
+        return this instanceof Entity;
+    }
+
+    /**
+     *
+     * @return true if the element is a Relation
+     */
+    public boolean isRelation() {
+        return this instanceof Relation;
+    }
+
+    /**
+     *
+     * @return true if the element is a Resource
+     */
+    public boolean isResource() {
+        return this instanceof Resource;
+    }
+
+    /**
+     *
+     * @return true if the element is a Rule
+     */
+    public boolean isRule() {
+        return this instanceof Rule;
     }
 }

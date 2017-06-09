@@ -287,9 +287,9 @@ public class EntityTypeTest extends GraphTestBase{
         relationType.relates().forEach(role -> assertTrue(role.isImplicit()));
 
         // Check that resource is not required
-        EdgeElement entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
+        EdgeElement entityPlays = ((EntityTypeImpl) entityType).getVertexElement().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
         assertFalse(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
-        EdgeElement resourcePlays = ((ResourceTypeImpl <?>) resourceType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
+        EdgeElement resourcePlays = ((ResourceTypeImpl <?>) resourceType).getVertexElement().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
         assertFalse(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
     }
 

@@ -23,7 +23,6 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -43,12 +42,12 @@ import java.util.HashSet;
  *
  */
 class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
-    RuleImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+    RuleImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    RuleImpl(AbstractGraknGraph graknGraph, Vertex v, RuleType type, Pattern lhs, Pattern rhs) {
-        super(graknGraph, v, type);
+    RuleImpl(VertexElement vertexElement, RuleType type, Pattern lhs, Pattern rhs) {
+        super(vertexElement, type);
         setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
         setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
         setUniqueProperty(Schema.ConceptProperty.INDEX, generateRuleIndex(type(), lhs, rhs));
@@ -76,7 +75,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
         if(value == null) {
             return null;
         } else {
-            return getGraknGraph().graql().parsePattern(value);
+            return getVertexElement().getGraknGraph().graql().parsePattern(value);
         }
     }
 
@@ -86,7 +85,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @return The Rule itself
      */
     Rule addHypothesis(Type type) {
-        putEdge((VertexElement) type, Schema.EdgeLabel.HYPOTHESIS);
+        putEdge(type, Schema.EdgeLabel.HYPOTHESIS);
         return getThis();
     }
 
@@ -96,7 +95,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @return The Rule itself
      */
     Rule addConclusion(Type type) {
-        putEdge((VertexElement) type, Schema.EdgeLabel.CONCLUSION);
+        putEdge(type, Schema.EdgeLabel.CONCLUSION);
         return getThis();
     }
 

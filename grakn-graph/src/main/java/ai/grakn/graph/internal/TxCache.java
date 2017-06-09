@@ -134,7 +134,7 @@ class TxCache {
      *
      * @param element The element to be later validated
      */
-    void trackForValidation(AbstractElement element) {
+    void trackForValidation(ConceptImpl element) {
         if (element.isEntity()) {
             modifiedEntities.add((EntityImpl) element);
         } else if (element.isRoleType()) {
@@ -150,8 +150,11 @@ class TxCache {
             modifiedRules.add((RuleImpl) element);
         } else if (element.isResource()){
             modifiedResources.add((ResourceImpl) element);
-        } else if (element.isRolePlayer()){
-            modifiedCastings.add(element.asRolePlayer());
+        }
+    }
+    void trackForValidation(AbstractElement element) {
+        if (element.isCasting()){
+            modifiedCastings.add(element.asCasting());
         }
     }
 
@@ -197,26 +200,26 @@ class TxCache {
 
     /**
      *
-     * @param element The concept to nio longer track
+     * @param concept The concept to nio longer track
      */
     @SuppressWarnings("SuspiciousMethodCalls")
-    void remove(AbstractElement element){
-        modifiedEntities.remove(element);
-        modifiedRoleTypes.remove(element);
-        modifiedRelationTypes.remove(element);
-        modifiedRelations.remove(element);
-        modifiedRules.remove(element);
-        modifiedResources.remove(element);
-        modifiedCastings.remove(element);
+    void remove(ConceptImpl concept){
+        modifiedEntities.remove(concept);
+        modifiedRoleTypes.remove(concept);
+        modifiedRelationTypes.remove(concept);
+        modifiedRelations.remove(concept);
+        modifiedRules.remove(concept);
+        modifiedResources.remove(concept);
 
-        if(element.isConcept()) {
-            conceptCache.remove(element.asConcept().getId());
-            if (element.isType()) {
-                TypeLabel label = ((TypeImpl) element).getLabel();
-                typeCache.remove(label);
-                labelCache.remove(label);
-            }
+        conceptCache.remove(concept.getId());
+        if (concept.isType()) {
+            TypeLabel label = ((TypeImpl) concept).getLabel();
+            typeCache.remove(label);
+            labelCache.remove(label);
         }
+    }
+    void remove(AbstractElement element){
+        modifiedCastings.remove(element);
     }
 
     /**

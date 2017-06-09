@@ -18,17 +18,6 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.RuleType;
-import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -143,211 +132,25 @@ abstract class AbstractElement<E extends Element> {
 
     /**
      *
-     * @return true if the element is a Concept
+     * @return the label of the element in the graph.
      */
-    public ConceptImpl asConcept(){
-        return castConcept(ConceptImpl.class);
-    }
-
-    /**
-     *
-     * @return A Type if the element is a Type
-     */
-    public Type asType() {
-        return castConcept(TypeImpl.class);
-    }
-
-    /**
-     *
-     * @return An Instance if the element is an Instance
-     */
-    public Instance asInstance() {
-        return castConcept(InstanceImpl.class);
-    }
-
-    /**
-     *
-     * @return A Entity Type if the element is a Entity Type
-     */
-    public EntityType asEntityType() {
-        return castConcept(EntityTypeImpl.class);
-    }
-
-    /**
-     *
-     * @return A Role Type if the element is a Role Type
-     */
-    public RoleType asRoleType() {
-        return castConcept(RoleTypeImpl.class);
-    }
-
-    /**
-     *
-     * @return A Relation Type if the element is a Relation Type
-     */
-    public RelationType asRelationType() {
-        return castConcept(RelationTypeImpl.class);
-    }
-
-    /**
-     *
-     * @return A Resource Type if the element is a Resource Type
-     */
-    @SuppressWarnings("unchecked")
-    public <D> ResourceType<D> asResourceType() {
-        return castConcept(ResourceTypeImpl.class);
-    }
-
-    /**
-     *
-     * @return A Rule Type if the element is a Rule Type
-     */
-    public RuleType asRuleType() {
-        return castConcept(RuleTypeImpl.class);
-    }
-
-    /**
-     *
-     * @return An Entity if the element is an Instance
-     */
-    public Entity asEntity() {
-        return castConcept(EntityImpl.class);
-    }
-
-    /**
-     *
-     * @return A Relation if the element is a Relation
-     */
-    public Relation asRelation() {
-        return castConcept(RelationImpl.class);
-    }
-
-    /**
-     *
-     * @return A Resource if the element is a Resource
-     */
-    @SuppressWarnings("unchecked")
-    public <D> Resource<D> asResource() {
-        return castConcept(ResourceImpl.class);
-    }
-
-    /**
-     *
-     * @return A Rule if the element is a Rule
-     */
-    public Rule asRule() {
-        return castConcept(RuleImpl.class);
+    String label(){
+        return getElement().label();
     }
 
     /**
      *
      * @return A roleplayer if the element is a roleplayer
      */
-    public Casting asRolePlayer(){
+    public Casting asCasting(){
         return castConcept(Casting.class);
-    }
-
-    /**
-     *
-     * @return true if the element is a Concept
-     */
-    public boolean isConcept(){
-        return this instanceof Concept;
-    }
-
-    /**
-     *
-     * @return true if the element is a Type
-     */
-    public boolean isType() {
-        return this instanceof Type;
-    }
-
-    /**
-     *
-     * @return true if the element is an Instance
-     */
-    public boolean isInstance() {
-        return this instanceof Instance;
-    }
-
-    /**
-     *
-     * @return true if the element is a Entity Type
-     */
-    public boolean isEntityType() {
-        return this instanceof EntityType;
-    }
-
-    /**
-     *
-     * @return true if the element is a Role Type
-     */
-    public boolean isRoleType() {
-        return this instanceof RoleType;
-    }
-
-    /**
-     *
-     * @return true if the element is a Relation Type
-     */
-    public boolean isRelationType() {
-        return this instanceof RelationType;
-    }
-
-    /**
-     *
-     * @return true if the element is a Resource Type
-     */
-    public boolean isResourceType() {
-        return this instanceof ResourceType;
-    }
-
-    /**
-     *
-     * @return true if the element is a Rule Type
-     */
-    public boolean isRuleType() {
-        return this instanceof RuleType;
-    }
-
-    /**
-     *
-     * @return true if the element is a Entity
-     */
-    public boolean isEntity() {
-        return this instanceof Entity;
-    }
-
-    /**
-     *
-     * @return true if the element is a Relation
-     */
-    public boolean isRelation() {
-        return this instanceof Relation;
-    }
-
-    /**
-     *
-     * @return true if the element is a Resource
-     */
-    public boolean isResource() {
-        return this instanceof Resource;
-    }
-
-    /**
-     *
-     * @return true if the element is a Rule
-     */
-    public boolean isRule() {
-        return this instanceof Rule;
     }
 
     /**
      *
      * @return true if the element is a Casting
      */
-    public boolean isRolePlayer(){
+    public boolean isCasting(){
         return this instanceof Casting;
     }
 }

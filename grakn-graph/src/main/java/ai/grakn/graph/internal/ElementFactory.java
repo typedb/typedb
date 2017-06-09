@@ -60,11 +60,11 @@ final class ElementFactory {
         this.graknGraph = graknGraph;
     }
 
-    private <X extends ConceptImpl> X getOrBuildConcept(Vertex v, Function<Vertex, X> conceptBuilder){
+    private <X extends ConceptImpl> X getOrBuildConcept(Vertex v, Function<VertexElement, X> conceptBuilder){
         ConceptId conceptId = ConceptId.of(v.id().toString());
 
         if(!graknGraph.getTxCache().isConceptCached(conceptId)){
-            X newConcept = conceptBuilder.apply(v);
+            X newConcept = conceptBuilder.apply(new VertexElement(graknGraph, v));
             graknGraph.getTxCache().cacheConcept(newConcept);
         }
 
@@ -80,47 +80,47 @@ final class ElementFactory {
 
     // ---------------------------------------- Building Resource Types  -----------------------------------------------
     <V> ResourceTypeImpl<V> buildResourceType(Vertex vertex, ResourceType<V> type, ResourceType.DataType<V> dataType){
-        return getOrBuildConcept(vertex, (v) -> new ResourceTypeImpl<>(graknGraph, v, type, dataType));
+        return getOrBuildConcept(vertex, (v) -> new ResourceTypeImpl<>(v, type, dataType));
     }
 
     // ------------------------------------------ Building Resources
     <V> ResourceImpl <V> buildResource(Vertex vertex, ResourceType<V> type, V value){
-        return getOrBuildConcept(vertex, (v) -> new ResourceImpl<>(graknGraph, v, type, value));
+        return getOrBuildConcept(vertex, (v) -> new ResourceImpl<>(v, type, value));
     }
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
     RelationTypeImpl buildRelationType(Vertex vertex, RelationType type, Boolean isImplicit){
-        return getOrBuildConcept(vertex, (v) -> new RelationTypeImpl(graknGraph, v, type, isImplicit));
+        return getOrBuildConcept(vertex, (v) -> new RelationTypeImpl(v, type, isImplicit));
     }
 
     // -------------------------------------------- Building Relations
     RelationImpl buildRelation(Vertex vertex, RelationType type){
-        return getOrBuildConcept(vertex, (v) -> new RelationImpl(graknGraph, v, type));
+        return getOrBuildConcept(vertex, (v) -> new RelationImpl(v, type));
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
     EntityTypeImpl buildEntityType(Vertex vertex, EntityType type){
-        return getOrBuildConcept(vertex, (v) -> new EntityTypeImpl(graknGraph, v, type));
+        return getOrBuildConcept(vertex, (v) -> new EntityTypeImpl(v, type));
     }
 
     // ------------------------------------------- Building Entities
     EntityImpl buildEntity(Vertex vertex, EntityType type){
-        return getOrBuildConcept(vertex, (v) -> new EntityImpl(graknGraph, v, type));
+        return getOrBuildConcept(vertex, (v) -> new EntityImpl(v, type));
     }
 
     // ----------------------------------------- Building Rule Types  --------------------------------------------------
     RuleTypeImpl buildRuleType(Vertex vertex, RuleType type){
-        return getOrBuildConcept(vertex, (v) -> new RuleTypeImpl(graknGraph, v, type));
+        return getOrBuildConcept(vertex, (v) -> new RuleTypeImpl(v, type));
     }
 
     // -------------------------------------------- Building Rules
     RuleImpl buildRule(Vertex vertex, RuleType type, Pattern lhs, Pattern rhs){
-        return getOrBuildConcept(vertex, (v) -> new RuleImpl(graknGraph, v, type, lhs, rhs));
+        return getOrBuildConcept(vertex, (v) -> new RuleImpl(v, type, lhs, rhs));
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
     RoleTypeImpl buildRoleType(Vertex vertex, RoleType type, Boolean isImplicit){
-        return getOrBuildConcept(vertex, (v) -> new RoleTypeImpl(graknGraph, v, type, isImplicit));
+        return getOrBuildConcept(vertex, (v) -> new RoleTypeImpl(v, type, isImplicit));
     }
 
     /**
@@ -143,37 +143,38 @@ final class ElementFactory {
 
         ConceptId conceptId = ConceptId.of(v.id());
         if(!graknGraph.getTxCache().isConceptCached(conceptId)){
+            VertexElement vertexElement = new VertexElement(graknGraph, v);
             ConceptImpl concept;
             switch (type) {
                 case RELATION:
-                    concept = new RelationImpl(graknGraph, v);
+                    concept = new RelationImpl(vertexElement);
                     break;
                 case TYPE:
-                    concept = new TypeImpl<>(graknGraph, v);
+                    concept = new TypeImpl<>(vertexElement);
                     break;
                 case ROLE_TYPE:
-                    concept = new RoleTypeImpl(graknGraph, v);
+                    concept = new RoleTypeImpl(vertexElement);
                     break;
                 case RELATION_TYPE:
-                    concept = new RelationTypeImpl(graknGraph, v);
+                    concept = new RelationTypeImpl(vertexElement);
                     break;
                 case ENTITY:
-                    concept = new EntityImpl(graknGraph, v);
+                    concept = new EntityImpl(vertexElement);
                     break;
                 case ENTITY_TYPE:
-                    concept = new EntityTypeImpl(graknGraph, v);
+                    concept = new EntityTypeImpl(vertexElement);
                     break;
                 case RESOURCE_TYPE:
-                    concept = new ResourceTypeImpl<>(graknGraph, v);
+                    concept = new ResourceTypeImpl<>(vertexElement);
                     break;
                 case RESOURCE:
-                    concept = new ResourceImpl<>(graknGraph, v);
+                    concept = new ResourceImpl<>(vertexElement);
                     break;
                 case RULE:
-                    concept = new RuleImpl(graknGraph, v);
+                    concept = new RuleImpl(vertexElement);
                     break;
                 case RULE_TYPE:
-                    concept = new RuleTypeImpl(graknGraph, v);
+                    concept = new RuleTypeImpl(vertexElement);
                     break;
                 default:
                     throw new RuntimeException("Unknown base type [" + v.label() + "]");

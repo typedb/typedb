@@ -24,7 +24,6 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.regex.Pattern;
@@ -49,12 +48,12 @@ import static ai.grakn.util.Schema.generateResourceIndex;
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
-    ResourceImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+    ResourceImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    ResourceImpl(AbstractGraknGraph graknGraph, Vertex v, ResourceType<D> type, D value) {
-        super(graknGraph, v, type);
+    ResourceImpl(VertexElement vertexElement, ResourceType<D> type, D value) {
+        super(vertexElement, type);
         setValue(value);
     }
 

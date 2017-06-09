@@ -72,10 +72,9 @@ class VertexElement extends AbstractElement<Vertex>{
      * @param type the type of the edge to create
      */
     EdgeElement putEdge(VertexElement to, Schema.EdgeLabel type){
-        ConceptImpl toConcept = (ConceptImpl) to;
-        GraphTraversal<Vertex, Edge> traversal = getGraknGraph().getTinkerPopGraph().traversal().V(getElementId().getValue()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getId().getRawValue()).select("edge");
+        GraphTraversal<Vertex, Edge> traversal = getGraknGraph().getTinkerPopGraph().traversal().V(getElementId().getValue()).outE(type.getLabel()).as("edge").otherV().hasId(to.getElement().id()).select("edge");
         if(!traversal.hasNext()) {
-            return addEdge(toConcept, type);
+            return addEdge(to, type);
         } else {
             return getGraknGraph().getElementFactory().buildEdge(traversal.next());
         }
@@ -95,7 +94,7 @@ class VertexElement extends AbstractElement<Vertex>{
      * @param type The type of the edge
      * @param to The target {@link VertexElement}
      */
-    void deleteEdgeTo(Schema.EdgeLabel type, VertexElement to){
+    void deleteEdgeTo(Schema.EdgeLabel type,VertexElement to){
         GraphTraversal<Vertex, Edge> traversal = getGraknGraph().getTinkerPopGraph().traversal().V(getElementId().getValue()).
                 outE(type.getLabel()).as("edge").otherV().hasId(to.getElementId().getValue()).select("edge");
         if(traversal.hasNext()) {
