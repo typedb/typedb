@@ -140,11 +140,17 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         return getVertexElement().addEdge(((ConceptImpl) to).getVertexElement(), label);
     }
 
-    void deleteEdge(Schema.EdgeLabel label, Concept to){
-        getVertexElement().deleteEdge(Direction.OUT, label, ((ConceptImpl) to).getVertexElement());
+    void deleteEdge(Direction direction, Schema.EdgeLabel label, Concept... to) {
+        if (to.length == 0) {
+            getVertexElement().deleteEdge(direction, label);
+        } else{
+            VertexElement[] targets = new VertexElement[to.length];
+            for (int i = 0; i < to.length; i++) {
+                targets[i] = ((ConceptImpl)to[i]).getVertexElement();
+            }
+            getVertexElement().deleteEdge(direction, label, targets);
+        }
     }
-
-
 
     /**
      *

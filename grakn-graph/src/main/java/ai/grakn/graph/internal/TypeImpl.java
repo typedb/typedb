@@ -455,7 +455,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public T deleteScope(Instance scope) {
-        deleteEdge(Schema.EdgeLabel.HAS_SCOPE, scope);
+        deleteEdge(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE, (Concept) scope);
         return getThis();
     }
 
@@ -479,7 +479,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             }
 
             //Modify the graph once we have checked no loop occurs
-            getVertexElement().deleteEdge(Direction.OUT, Schema.EdgeLabel.SUB);
+            deleteEdge(Direction.OUT, Schema.EdgeLabel.SUB);
             putEdge(newSuperType, Schema.EdgeLabel.SUB);
 
             //Update the sub types of the old super type
@@ -565,7 +565,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public T deletePlays(RoleType roleType) {
         checkTypeMutation();
-        deleteEdge(Schema.EdgeLabel.PLAYS, roleType);
+        deleteEdge(Direction.OUT, Schema.EdgeLabel.PLAYS, (Concept) roleType);
         cachedDirectPlays.ifPresent(set -> set.remove(roleType));
         ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(this);
 

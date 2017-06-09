@@ -18,10 +18,12 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -103,7 +105,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public RelationType deleteRelates(RoleType roleType) {
         checkTypeMutation();
-        deleteEdge(Schema.EdgeLabel.RELATES, roleType);
+        deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, (Concept) roleType);
 
         RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
         //Add roleplayers of roleType to make sure relations are still valid
