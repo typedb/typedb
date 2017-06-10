@@ -130,7 +130,6 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
                     .map(a -> {
 
                         //TODO if rulehead not present in cache, do a specific ask
-
                         //check cache, might be empty if there are query-head differences
                         Answer cacheQueryAnswer = cache.getAnswer(query, a.unify(combinedUnifier));
                         Answer cacheHeadAnswer = cacheQueryAnswer.isEmpty()? cache.getAnswer(ruleHead, a) : new QueryAnswer();
@@ -164,19 +163,6 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
                                     headAsk.iterator().next()
                                             .filterVars(queryVars)
                                             .unify(combinedUnifier);
-                            /*
-                                    queryAsk.iterator().next() :
-                                    headAsk.iterator().next()
-                                        .filterVars(queryVars)
-                                        .unify(combinedUnifier);
-                                        */
-                            /*
-                            return cacheHeadAnswer.isEmpty()?
-                                    cacheQueryAnswer :
-                                    cacheHeadAnswer
-                                            .filterVars(queryVars)
-                                            .unify(combinedUnifier);
-                                            */
                         }
                     });
             return baseStream
@@ -213,7 +199,6 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
     @Override
     public Answer next() {
         Answer sub = queryIterator.next();
-        //System.out.println("answer to : " + query + " " + sub);
         sub  = cache.recordAnswerWithUnifier(query, sub, cacheUnifier);
         return sub;
     }

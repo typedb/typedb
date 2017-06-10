@@ -204,6 +204,9 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
             priority += vpsPriority;
         }
 
+        //TODO refies relation
+        priority += getNeighbours().filter(Atom::isRelation).filter(at -> at.getVarNames().contains(this.getVarName())).findFirst().isPresent()? 0 : 0;
+
         return priority;
     }
 

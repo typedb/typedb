@@ -43,7 +43,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -464,16 +463,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getSubstitution().keySet().containsAll(getVarNames());
     }
 
-    private boolean requiresMaterialisation(){
-        for(Atom atom : selectAtoms()){
-            for (InferenceRule rule : atom.getApplicableRules())
-                if (rule.requiresMaterialisation(atom)){
-                    return true;
-                }
-        }
-        return false;
-    }
-
     private Stream<Answer> fullJoin(Set<ReasonerAtomicQuery> subGoals,
                                     Cache<ReasonerAtomicQuery, ?> cache,
                                     Cache<ReasonerAtomicQuery, ?> dCache,
@@ -542,13 +531,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Stream<Answer> resolve(boolean materialise, boolean explanation) {
-
-        //if (materialise || requiresMaterialisation()) {
-        //    return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
-       // } else {
-
+        if (materialise) {
+            return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
+        } else {
             return new QueryAnswerIterator(this).hasStream();
-        //}
+        }
     }
 
     /**
