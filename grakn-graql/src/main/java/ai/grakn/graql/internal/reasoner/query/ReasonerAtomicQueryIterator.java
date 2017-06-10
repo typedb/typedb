@@ -111,10 +111,10 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
                 .unify(permutationUnifier)
                 .unify(uInv);
 
-        ReasonerAtomicQuery ruleHead = rule.getHead();
-        ReasonerQueryImpl ruleBody = rule.getBody();
-        //Set<Var> headVars = ruleHead.getVarNames();
-        Set<Var> varsToRetain = rule.hasDisconnectedHead()? ruleBody.getVarNames() : ruleHead.getVarNames();
+        Set<Var> varsToRetain = rule.hasDisconnectedHead()?
+                rule.getBody().getVarNames() :
+                rule.getHead().getVarNames();
+
         Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
 
         Iterable<Answer> baseIterable = () -> rule.getBody().iterator(partialSubPrime, subGoals, cache);
@@ -122,66 +122,70 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
                 .stream(baseIterable.spliterator(), false)
                 .map(a -> a.filterVars(varsToRetain));
 
-        //TODO materialise
-        if (rule.requiresMaterialisation(query.getAtom())) {
-            Set<Var> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size()? combinedUnifier.keySet() : ruleHead.getVarNames();
-            baseStream = baseStream
-                    .distinct()
-                    .map(a -> {
+        Stream<Answer> ruleStream = rule.requiresMaterialisation(query.getAtom())?
+                getMaterialisedRuleStream(baseStream, sub, rule, combinedUnifier) :
+                getRuleStream(baseStream, sub, rule, combinedUnifier);
 
-                        //TODO if rulehead not present in cache, do a specific ask
-                        //check cache, might be empty if there are query-head differences
-                        Answer cacheQueryAnswer = cache.getAnswer(query, a.unify(combinedUnifier));
-                        Answer cacheHeadAnswer = cacheQueryAnswer.isEmpty()? cache.getAnswer(ruleHead, a) : new QueryAnswer();
+        return ruleStream.iterator();
+    }
 
-                        //check db
-                        List<Answer> headAsk = new ReasonerAtomicQuery(ruleHead).addSubstitution(a).getMatchQuery().execute();
-                        List<Answer> queryAsk = query.isEquivalent(ruleHead)?
-                                Collections.emptyList() :
-                                new ReasonerAtomicQuery(query).addSubstitution(a.unify(combinedUnifier)).getMatchQuery().execute();
+    private Stream<Answer> getRuleStream(Stream<Answer> baseStream, Answer sub, InferenceRule rule, Unifier unifier){
+        Set<Var> queryVars = query.getVarNames();
+        return baseStream
+                .map(a -> a.unify(unifier))
+                .filter(a -> !a.isEmpty())
+                .map(a -> a.merge(sub))
+                .map(a -> a.filterVars(queryVars))
+                .map(a -> a.explain(new RuleExplanation(query, rule)));
+    }
 
-                        if (headAsk.isEmpty()
-                                && queryAsk.isEmpty()
-                                && cacheQueryAnswer.isEmpty()
-                                && cacheHeadAnswer.isEmpty()){
-                            Answer materialisedSub = ruleHead.materialise(a).findFirst().orElse(null);
-                            cache.recordAnswer(ruleHead, materialisedSub);
-                            return materialisedSub
-                                    .filterVars(queryVars)
-                                    .unify(combinedUnifier);
-                        } else {
-                            return headAsk.isEmpty()?
-                                    queryAsk.isEmpty()?
-                                            cacheHeadAnswer.isEmpty()?
-                                                    cacheQueryAnswer :
-                                                    cacheHeadAnswer
-                                                            .filterVars(queryVars)
-                                                            .unify(combinedUnifier)
-                                            :
-                                            queryAsk.iterator().next()
-                                    :
-                                    headAsk.iterator().next()
-                                            .filterVars(queryVars)
-                                            .unify(combinedUnifier);
-                        }
-                    });
-            return baseStream
-                    .filter(a -> !a.isEmpty())
-                    .map(a -> a.merge(sub))
-                    .map(a -> a.explain(new RuleExplanation(query, rule)))
-                    .iterator();
-        } else {
-            Set<Var> queryVars = query.getVarNames();
+    private Stream<Answer> getMaterialisedRuleStream(Stream<Answer> baseStream, Answer sub, InferenceRule rule, Unifier unifier){
+        ReasonerAtomicQuery ruleHead = rule.getHead();
+        Set<Var> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size()? unifier.keySet() : ruleHead.getVarNames();
+        baseStream = baseStream
+                .distinct()
+                .map(a -> {
 
-            //transform the rule answer to the answer to the query
-            return baseStream
-                    .map(a -> a.unify(combinedUnifier))
-                    .filter(a -> !a.isEmpty())
-                    .map(a -> a.merge(sub))
-                    .map(a -> a.filterVars(queryVars))
-                    .map(a -> a.explain(new RuleExplanation(query, rule)))
-                    .iterator();
-        }
+                    //TODO if rulehead not present in cache, do a specific ask
+                    //check cache, might be empty if there are query-head differences
+                    Answer cacheQueryAnswer = cache.getAnswer(query, a.unify(unifier));
+                    Answer cacheHeadAnswer = cacheQueryAnswer.isEmpty()? cache.getAnswer(ruleHead, a) : new QueryAnswer();
+
+                    //check db
+                    List<Answer> headAsk = new ReasonerAtomicQuery(ruleHead).addSubstitution(a).getMatchQuery().execute();
+                    List<Answer> queryAsk = query.isEquivalent(ruleHead)?
+                            Collections.emptyList() :
+                            new ReasonerAtomicQuery(query).addSubstitution(a.unify(unifier)).getMatchQuery().execute();
+
+                    if (headAsk.isEmpty()
+                            && queryAsk.isEmpty()
+                            && cacheQueryAnswer.isEmpty()
+                            && cacheHeadAnswer.isEmpty()){
+                        Answer materialisedSub = ruleHead.materialise(a).findFirst().orElse(null);
+                        cache.recordAnswer(ruleHead, materialisedSub);
+                        return materialisedSub
+                                .filterVars(queryVars)
+                                .unify(unifier);
+                    } else {
+                        return headAsk.isEmpty()?
+                                queryAsk.isEmpty()?
+                                        cacheHeadAnswer.isEmpty()?
+                                                cacheQueryAnswer :
+                                                cacheHeadAnswer
+                                                        .filterVars(queryVars)
+                                                        .unify(unifier)
+                                        :
+                                        queryAsk.iterator().next()
+                                :
+                                headAsk.iterator().next()
+                                        .filterVars(queryVars)
+                                        .unify(unifier);
+                    }
+                });
+        return baseStream
+                .filter(a -> !a.isEmpty())
+                .map(a -> a.merge(sub))
+                .map(a -> a.explain(new RuleExplanation(query, rule)));
     }
 
     @Override

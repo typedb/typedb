@@ -271,7 +271,7 @@ public class GeoInferenceTest {
         QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in;";
 
-        QueryAnswers answers = new QueryAnswers(iqb.materialise(false).<MatchQuery>parse(queryString).admin().stream().collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
         assertEquals(answers.size(), 51);
         assertEquals(answers, answers2);
@@ -283,10 +283,14 @@ public class GeoInferenceTest {
         String queryString = "match $x isa is-located-in;";
         String queryString2 = "match $x ($x1, $x2) isa is-located-in;select $x;";
 
-        QueryAnswers answers = queryAnswers(iqb.materialise(true).parse(queryString));
-        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString2));
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        QueryAnswers answers3 = queryAnswers(iqb.materialise(false).parse(queryString2));
+        QueryAnswers answers4 = queryAnswers(iqb.materialise(true).parse(queryString2));
         assertEquals(answers, answers2);
+        assertEquals(answers3, answers4);
         assertEquals(answers.size(), 51);
+        assertEquals(answers3.size(), 51);
     }
 
     @Test
