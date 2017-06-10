@@ -286,6 +286,7 @@ public class ReasoningTests {
         assertEquals(answers1.size(), 2);
     }
 
+    //TODO potentially a graql bug when executing match insert on shared resources
     @Ignore
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources2() {
@@ -298,12 +299,12 @@ public class ReasoningTests {
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
         assertEquals(answers2.size(), 1);
         assertTrue(answers2.iterator().next().get(Var.of("x")).isResource());
-        //String queryString3 = "match $x isa res1; $y isa res2;";
-        //QueryAnswers answers3 = queryAnswers(qb.parse(queryString3));
-        //assertEquals(answers3.size(), 1);
+        String queryString3 = "match $x isa res1; $y isa res2;";
+        QueryAnswers answers3 = queryAnswers(qb.parse(queryString3));
+        assertEquals(answers3.size(), 1);
 
-        //assertTrue(answers3.iterator().next().get(Var.of("x")).isResource());
-        //assertTrue(answers3.iterator().next().get(Var.of("y")).isResource());
+        assertTrue(answers3.iterator().next().get(Var.of("x")).isResource());
+        assertTrue(answers3.iterator().next().get(Var.of("y")).isResource());
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.

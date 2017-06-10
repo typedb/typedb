@@ -203,7 +203,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public Stream<Answer> materialise(Answer answer) {
         ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
         queryToMaterialise.addSubstitution(answer);
-        //System.out.println("Materialise : " + queryToMaterialise);
         return queryToMaterialise.insert()
                 .map(ans -> ans.setExplanation(answer.getExplanation()));
     }
