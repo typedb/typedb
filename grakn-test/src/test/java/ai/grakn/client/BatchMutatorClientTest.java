@@ -80,7 +80,7 @@ public class BatchMutatorClientTest {
 
         // Create a BatchMutatorClient with a callback that will fail
         BatchMutatorClient loader = loader();
-        loader.setTaskCompletionConsumer((taskStatus) -> {
+        loader.setTaskCompletionConsumer((json) -> {
             try {
                 throw new RuntimeException("deliberate failure");
             } finally {
@@ -108,7 +108,7 @@ public class BatchMutatorClientTest {
 
         // Create a BatchMutatorClient with a callback that will fail
         BatchMutatorClient loader = loader();
-        loader.setTaskCompletionConsumer((taskStatus) -> tasksCompleted.incrementAndGet());
+        loader.setTaskCompletionConsumer((json) -> tasksCompleted.incrementAndGet());
 
         // Load some queries
         generate(this::query).limit(1).forEach(loader::add);
@@ -178,8 +178,8 @@ public class BatchMutatorClientTest {
         BatchMutatorClient loader = loader();
         loader.setRetryPolicy(true);
         loader.setBatchSize(5);
-        loader.setTaskCompletionConsumer((taskStatus) -> {
-            if(taskStatus != null){
+        loader.setTaskCompletionConsumer((json) -> {
+            if(json != null){
                 tasksCompletedWithoutError.incrementAndGet();
             }
         });
@@ -208,8 +208,8 @@ public class BatchMutatorClientTest {
         loader.setRetryPolicy(false);
         int batchSize = 5;
         loader.setBatchSize(batchSize);
-        loader.setTaskCompletionConsumer((taskStatus) -> {
-            if (taskStatus != null) {
+        loader.setTaskCompletionConsumer((json) -> {
+            if (json != null) {
                 tasksCompletedWithoutError.incrementAndGet();
             } else {
                 tasksCompletedWithError.incrementAndGet();

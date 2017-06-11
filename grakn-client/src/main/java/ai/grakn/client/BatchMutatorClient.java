@@ -18,36 +18,47 @@
 
 package ai.grakn.client;
 
-import ai.grakn.engine.TaskId;
-import ai.grakn.engine.TaskStatus;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
-import ai.grakn.graql.Query;
 import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 import static ai.grakn.util.REST.Request.BATCH_NUMBER;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
+import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
+import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
+
+import ai.grakn.engine.TaskId;
+import ai.grakn.engine.TaskStatus;
+import ai.grakn.graql.Query;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.REST;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
+import java.io.BufferedReader;
 import java.io.IOException;
-import static java.lang.String.format;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpRetryException;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import static java.util.stream.Collectors.toList;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,12 +79,15 @@ public class BatchMutatorClient {
     // Change in behaviour in v0.14 Previously infinite, now limited
     private static final int MAX_RETRIES = 100;
 
+    private final String GET = "http://%s" + TASKS + "/%s";
+
     private final Map<Integer,CompletableFuture> futures;
     private final Collection<Query> queries;
     private final String keyspace;
+    private final String uri;
     private final TaskClient taskClient;
 
-    private Consumer<TaskStatus> onCompletionOfTask;
+    private Consumer<Json> onCompletionOfTask;
     private AtomicInteger batchNumber;
     private Semaphore blocker;
     private int batchSize;
@@ -81,10 +95,11 @@ public class BatchMutatorClient {
     private boolean retry = false;
 
     public BatchMutatorClient(String keyspace, String uri) {
-        this(keyspace, uri, (TaskStatus t) -> {});
+        this(keyspace, uri, (Json t) -> {});
     }
 
-    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskStatus> onCompletionOfTask) {
+    public BatchMutatorClient(String keyspace, String uri, Consumer<Json> onCompletionOfTask) {
+        this.uri = uri;
         this.keyspace = keyspace;
         this.queries = new ArrayList<>();
         this.futures = new ConcurrentHashMap<>();
@@ -104,6 +119,7 @@ public class BatchMutatorClient {
         } else {
             throw new RuntimeException("Invalid uri " + uri);
         }
+
         setBatchSize(25);
         setNumberActiveTasks(25);
     }
@@ -123,7 +139,7 @@ public class BatchMutatorClient {
      * Provide a consumer function to execute upon task completion
      * @param onCompletionOfTask function applied to the last state of the task
      */
-    public BatchMutatorClient setTaskCompletionConsumer(Consumer<TaskStatus> onCompletionOfTask){
+    public BatchMutatorClient setTaskCompletionConsumer(Consumer<Json> onCompletionOfTask){
         this.onCompletionOfTask = onCompletionOfTask;
         return this;
     }
@@ -241,7 +257,7 @@ public class BatchMutatorClient {
                     .build();
 
             TaskId taskId =retryer.call(callable);
-            CompletableFuture<TaskStatus> status = makeTaskCompletionFuture(taskId);
+            CompletableFuture<Json> status = makeTaskCompletionFuture(taskId);
             // Add this status to the set of completable futures
             // TODO: use an async client, there's a potential race condition in case of failure just after the unblock
             futures.put(status.hashCode(), status);
@@ -270,9 +286,41 @@ public class BatchMutatorClient {
         }
     }
 
-    private void unblock(CompletableFuture<TaskStatus> status){
+    private void unblock(CompletableFuture<Json> status){
         blocker.release();
         futures.remove(status.hashCode());
+    }
+
+    /**
+     * Fetch the status of a single task from the Tasks Controller
+     * @param id ID of the task to be fetched
+     * @return Json object containing status of the task
+     */
+    private Json getStatus(TaskId id) throws HttpRetryException {
+        HttpURLConnection connection = null;
+        try {
+            URL url = new URL(format(GET, uri, id.getValue()));
+
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setDoOutput(true);
+
+            // create post
+            connection.setRequestMethod(REST.HttpConn.GET_METHOD);
+
+            if(connection.getResponseCode() == 404){
+                throw new IllegalArgumentException("Not found in Grakn task storage: " + id);
+            }
+
+            // get response
+            return Json.read(readResponse(connection.getInputStream()));
+        }
+        catch (IOException e){
+            throw new HttpRetryException(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(uri), 404);
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
     }
 
     /**
@@ -282,41 +330,52 @@ public class BatchMutatorClient {
      * @param id ID of the task to wait on completion
      * @return Completable future that will await completion of the given task
      */
-    private CompletableFuture<TaskStatus> makeTaskCompletionFuture(TaskId id) {
+    private CompletableFuture<Json> makeTaskCompletionFuture(TaskId id){
         return CompletableFuture.supplyAsync(() -> {
-            Retryer<TaskStatus> retryer = RetryerBuilder.<TaskStatus>newBuilder()
-                    .retryIfExceptionOfType(IOException.class)
-                    .retryIfExceptionOfType(IllegalArgumentException.class)
-                    .retryIfRuntimeException()
-                    .retryIfResult(Objects::isNull)
-                    // Keeping compatibility with previous version, retrying many times
-                    .withStopStrategy(StopStrategies.stopAfterAttempt(MAX_RETRIES))
-                    .build();
+            while (true) {
+                try {
+                    Json taskState = getStatus(id);
+                    TaskStatus status = TaskStatus.valueOf(taskState.at(TASK_STATUS_PARAMETER).asString());
+                    if (status == COMPLETED || status == FAILED || status == STOPPED) {
+                        return taskState;
+                    }
+                } catch (IllegalArgumentException e) {
+                    // Means the task has not yet been stored: we want to log the error, but continue looping
+                    LOG.warn(format("Task [%s] not found on server. Attempting to get status again.", id));
+                } catch (HttpRetryException e){
+                    LOG.warn(format("Could not communicate with host %s for task [%s] ", uri, id));
+                    if(retry){
+                        LOG.warn(format("Attempting communication again with host %s for task [%s]", uri, id));
+                    } else {
+                        throw new RuntimeException(e);
+                    }
+                } catch (Throwable t) {
+                    throw new RuntimeException(t);
+                }
 
-            try {
-                return retryer.call(() -> {
-                            try {
-                                TaskStatus status = taskClient.getStatus(id);
-                                if (status == COMPLETED || status == FAILED || status == STOPPED) {
-                                    return status;
-                                } else {
-                                    LOG.error(format("Task [%s] had unexpected state [%s]", id, status));
-                                    return null;
-                                }
-                            } catch (IllegalArgumentException e) {
-                                // Means the task has not yet been stored: we want to log the error, but continue looping
-                                LOG.warn(format("Task [%s] not found on server. Attempting to get status again.", id));
-                                throw e;
-                            } catch (Throwable t) {
-                                LOG.error(format("Task [%s] could not be retrieved, retrying", id));
-                                throw new RuntimeException(t);
-                            }
-                        }
-                );
-            } catch (Exception e) {
-                throw new RuntimeException("Could not get task " + id);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         });
+    }
+
+    /**
+     * Read the input stream from a HttpURLConnection into a String
+     * @return String containing response from the server
+     */
+    private String readResponse(InputStream inputStream) throws IOException {
+        try(BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))){
+            StringBuilder response = new StringBuilder();
+            String inputLine;
+            while ((inputLine = reader.readLine()) != null) {
+                response.append(inputLine);
+            }
+
+            return response.toString();
+        }
     }
 }
 
