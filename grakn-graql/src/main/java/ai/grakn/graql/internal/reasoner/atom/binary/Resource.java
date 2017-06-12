@@ -204,7 +204,6 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
             priority += vpsPriority;
         }
 
-        //TODO refies relation
         boolean reifiesRelation =  getNeighbours()
                 .filter(Atom::isRelation)
                 .filter(at -> at.getVarName().equals(this.getVarName()))
@@ -216,7 +215,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
-    public Unifier getUnifier(Atomic parentAtom) {
+    public Unifier getUnifier(Atom parentAtom) {
         if (!(parentAtom instanceof TypeAtom)) return super.getUnifier(parentAtom);
 
         Unifier unifier = new UnifierImpl();

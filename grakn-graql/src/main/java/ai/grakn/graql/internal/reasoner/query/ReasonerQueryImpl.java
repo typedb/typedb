@@ -107,7 +107,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public String toString(){
-        return atomSet.stream().filter(Atomic::isAtom).map(Atomic::toString).collect(Collectors.joining(", "));
+        return atomSet.stream().map(Atomic::toString).collect(Collectors.joining(", "));
     }
 
     @Override
@@ -178,7 +178,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     private boolean isTransitive() {
-        return atomSet.stream().filter(this::containsEquivalentAtom).count() == 2;
+        return atomSet.stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(this::containsEquivalentAtom).count() == 2;
     }
 
     boolean isAtomic() {
@@ -274,12 +276,15 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param atom in question
      * @return true if query contains an equivalent atom
      */
-    private boolean containsEquivalentAtom(Atomic atom) {
+    private boolean containsEquivalentAtom(Atom atom) {
         return !getEquivalentAtoms(atom).isEmpty();
     }
 
-    Set<Atomic> getEquivalentAtoms(Atomic atom) {
-        return atomSet.stream().filter(at -> at.isEquivalent(atom)).collect(Collectors.toSet());
+    Set<Atom> getEquivalentAtoms(Atom atom) {
+        return atomSet.stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(at -> at.isEquivalent(atom))
+                .collect(Collectors.toSet());
     }
 
     @Override

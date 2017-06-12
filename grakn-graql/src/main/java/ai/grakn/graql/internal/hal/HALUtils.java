@@ -66,12 +66,12 @@ public class HALUtils {
 
     // - State properties
 
-    final static String ID_PROPERTY = "_id";
-    final static String TYPE_PROPERTY = "_type";
-    final static String BASETYPE_PROPERTY = "_baseType";
-    final static String DIRECTION_PROPERTY = "_direction";
-    final static String VALUE_PROPERTY = "_value";
-    final static String NAME_PROPERTY = "_name";
+    public final static String ID_PROPERTY = "_id";
+    public final static String TYPE_PROPERTY = "_type";
+    public final static String BASETYPE_PROPERTY = "_baseType";
+    public final static String DIRECTION_PROPERTY = "_direction";
+    public final static String VALUE_PROPERTY = "_value";
+    public final static String NAME_PROPERTY = "_name";
 
 
     static Schema.BaseType getBaseType(Instance instance) {

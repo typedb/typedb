@@ -524,9 +524,6 @@ public class GenealogyTest {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        long start = System.currentTimeMillis();
-        QueryAnswers answers = new QueryAnswers(query.admin().stream().collect(toSet()));
-        System.out.println(System.currentTimeMillis() - start);
-        return answers;
+        return new QueryAnswers(query.admin().stream().collect(toSet()));
     }
 }
