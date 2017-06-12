@@ -144,6 +144,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         baseStream = baseStream
                 .distinct()
                 .map(a -> {
+                    boolean queryEquivalentToHead = query.isEquivalent(ruleHead);
 
                     //check if the specific answer to ruleHead already in cache/db
                     Answer headAnswer = ruleHead
@@ -152,14 +153,15 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
                             .unify(unifier);
 
                     //if not and query different than rule head do the same with the query
-                    Answer queryAnswer = headAnswer.isEmpty() && query.isEquivalent(ruleHead)?
+                    Answer queryAnswer = headAnswer.isEmpty() && queryEquivalentToHead?
                             query.lookupAnswer(cache, a) :
                             new QueryAnswer();
 
+                    //ensure no duplicates created - only materialise answer if it doesn't exist in the db
                     if (headAnswer.isEmpty()
                         && queryAnswer.isEmpty()) {
                         Answer materialisedSub = ruleHead.materialise(a).findFirst().orElse(null);
-                        cache.recordAnswer(ruleHead, materialisedSub);
+                        if (!queryEquivalentToHead) cache.recordAnswer(ruleHead, materialisedSub);
                         return materialisedSub
                                 .filterVars(queryVars)
                                 .unify(unifier);

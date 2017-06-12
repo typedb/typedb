@@ -40,6 +40,11 @@ public final class ResolutionStrategy {
     public static final int IS_RESOURCE_ATOM = 0;
 
     /**
+     * priority modifier if a given atom is a resource atom attached to a relation
+     */
+    public static final int RESOURCE_REIFIYING_RELATION = 15;
+
+    /**
      * priority modifier if a given atom is a type atom
      */
     public static final int IS_TYPE_ATOM = 0;
@@ -56,7 +61,7 @@ public final class ResolutionStrategy {
     public static final int NON_SPECIFIC_TYPE_ATOM = -1000;
 
 
-    public static final int RULE_RESOLVABLE_ATOM = -15;
+    public static final int RULE_RESOLVABLE_ATOM = -10;
 
     /**
      * priority modifier if a given atom is recursive atom

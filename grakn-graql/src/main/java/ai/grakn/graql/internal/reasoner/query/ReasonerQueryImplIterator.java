@@ -58,18 +58,6 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
 
         LOG.trace("CQ: " + query);
 
-        this.queryIterator = getQueryIterator(query, subGoals, cache);
-    }
-
-    private Iterator<Answer> getQueryIterator(ReasonerQueryImpl query,
-                                              Set<ReasonerAtomicQuery> subGoals,
-                                              QueryCache<ReasonerAtomicQuery> cache){
-        if (!query.isRuleResolvable()){
-            return query.getMatchQuery().stream()
-                    .map(at -> at.explain(new LookupExplanation(query)))
-                    .iterator();
-        }
-
         LinkedList<ReasonerAtomicQuery> queries = query.getResolutionPlan();
 
         LOG.trace("CQ plan:\n" + queries.stream()
@@ -77,9 +65,8 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
                 .collect(Collectors.joining("\n"))
         );
 
-        return new ReasonerQueryImplCumulativeIterator(new QueryAnswer(), queries, subGoals, cache);
+        queryIterator = new ReasonerQueryImplCumulativeIterator(new QueryAnswer(), queries, subGoals, cache);
     }
-
 
     @Override
     public boolean hasNext() {

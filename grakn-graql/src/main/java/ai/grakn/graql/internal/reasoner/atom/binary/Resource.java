@@ -205,7 +205,12 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
         }
 
         //TODO refies relation
-        priority += getNeighbours().filter(Atom::isRelation).filter(at -> at.getVarNames().contains(this.getVarName())).findFirst().isPresent()? 0 : 0;
+        boolean reifiesRelation =  getNeighbours()
+                .filter(Atom::isRelation)
+                .filter(at -> at.getVarName().equals(this.getVarName()))
+                .findFirst().isPresent();
+
+        priority += reifiesRelation ? ResolutionStrategy.RESOURCE_REIFIYING_RELATION : 0;
 
         return priority;
     }

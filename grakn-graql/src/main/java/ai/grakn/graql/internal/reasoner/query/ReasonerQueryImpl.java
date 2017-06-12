@@ -212,20 +212,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     top.getVarNames(),
                     top.getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet())
             );
-            
-            //try neighbours
-            top = top.getNeighbours()
-                    .filter(atoms::contains)
+
+            top = atoms.stream()
                     .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
                     .findFirst().orElse(null);
-
-            //disjoint case
-            if (top == null){
-                top = atoms.stream()
-                        .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                        .findFirst().orElse(null);
-            }
-
         }
         return queries;
     }
