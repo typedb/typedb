@@ -93,7 +93,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         super(vertexElement);
         String typeLabel = vertex().property(Schema.VertexProperty.TYPE_LABEL);
         cachedTypeLabel = TypeLabel.of(typeLabel);
-        cachedTypeId = TypeId.of(vertex().element().value(Schema.VertexProperty.TYPE_ID.name()));
+        cachedTypeId = TypeId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
     }
 
     TypeImpl(VertexElement vertexElement, T superType) {
