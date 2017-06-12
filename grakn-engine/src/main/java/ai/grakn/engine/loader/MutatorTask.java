@@ -80,8 +80,15 @@ public class MutatorTask extends BackgroundTask {
                 .timer(name(MutatorTask.class, "insert-queries")).time();
         try {
             graph.showImplicitConcepts(true);
-
-            inserts.forEach(q -> q.withGraph(graph).execute());
+            inserts.forEach(q -> {
+                Context contextSingle = metricRegistry()
+                        .timer(name(MutatorTask.class, "insert-queries-single")).time();
+                try {
+                    q.withGraph(graph).execute();
+                } finally {
+                    contextSingle.stop();
+                }
+            });
 
             Optional<String> result = graph.admin().commitNoLogs();
             if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs

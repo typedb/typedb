@@ -29,13 +29,14 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.REST;
-import mjson.Json;
-
+import static com.codahale.metrics.MetricRegistry.name;
+import com.codahale.metrics.Timer.Context;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
+import mjson.Json;
 
 /**
  * <p>
@@ -52,27 +53,43 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
 
     @Override
     public boolean start() {
-        long shardingThreshold = engineConfiguration().getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
-        int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
+        Context context = metricRegistry()
+                .timer(name(UpdatingInstanceCountTask.class, "execution")).time();
+        try {
+            long shardingThreshold = engineConfiguration().getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
+            int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+            EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
 
-        Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
-        String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
+            Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
+            metricRegistry().histogram(name(UpdatingInstanceCountTask.class, "jobs"))
+                    .update(jobs.size());
+            String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
 
-        //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
-        //The graph cannot be used because each engine can have it's own snapshot of the graph with caching which makes
-        //values only approximately correct
-        Set<ConceptId> conceptToShard = new HashSet<>();
+            //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
+            //The graph cannot be used because each engine can have it's own snapshot of the graph with caching which makes
+            //values only approximately correct
+            Set<ConceptId> conceptToShard = new HashSet<>();
 
-        //Update counts
-        jobs.forEach((key, value) -> {
-            if(updateShardCounts(redis(), keyspace, key, value, shardingThreshold)) conceptToShard.add(key);
-        });
+            //Update counts
+            jobs.forEach((key, value) -> {
+                Context contextSingle = metricRegistry()
+                        .timer(name(UpdatingInstanceCountTask.class, "execution-single")).time();
+                try {
+                    if (updateShardCounts(redis(), keyspace, key, value, shardingThreshold)) {
+                        conceptToShard.add(key);
+                    }
+                } finally {
+                    contextSingle.stop();
+                }
+            });
 
-        //Shard anything which requires sharding
-        conceptToShard.forEach(type -> shardConcept(redis(), factory, keyspace, type, maxRetry, shardingThreshold));
+            //Shard anything which requires sharding
+            conceptToShard.forEach(type -> shardConcept(redis(), factory, keyspace, type, maxRetry, shardingThreshold));
 
-        return true;
+            return true;
+        } finally {
+            context.stop();
+        }
     }
 
     /**
