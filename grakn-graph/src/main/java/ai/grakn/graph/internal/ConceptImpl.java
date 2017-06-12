@@ -126,6 +126,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
                                 vertex().graph().factory().buildConcept(edge.source()),
                                 vertex().graph().factory().buildConcept(edge.target())
                         ));
+                break;
             case IN:
                 edges = vertex().getEdgesOfType(direction, label).map(edge ->
                         vertex().graph().factory().buildConcept(edge.source())
