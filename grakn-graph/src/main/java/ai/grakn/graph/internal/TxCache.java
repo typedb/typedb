@@ -216,9 +216,6 @@ class TxCache {
             labelCache.remove(label);
         }
     }
-    void remove(AbstractElement element){
-        modifiedCastings.remove(element);
-    }
 
     /**
      * Gets a cached relation by index. This way we can find non committed relations quickly.

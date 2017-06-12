@@ -29,11 +29,13 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.CLOSE_GRAPH_FAILURE;
 import static ai.grakn.util.ErrorMessage.HAS_INVALID;
+import static ai.grakn.util.ErrorMessage.INVALID_DIRECTION;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.NO_TYPE;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
@@ -218,5 +220,12 @@ public class GraphOperationException extends GraknException{
      */
     public static GraphOperationException noType(Instance instance){
         return new GraphOperationException(NO_TYPE.getMessage(instance));
+    }
+
+    /**
+     * Thrown when attempting to traverse an edge in an invalid direction
+     */
+    public static GraphOperationException invalidDirection(Direction direction){
+        return new GraphOperationException(INVALID_DIRECTION.getMessage(direction));
     }
 }

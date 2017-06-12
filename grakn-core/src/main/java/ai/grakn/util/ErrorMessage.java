@@ -65,6 +65,7 @@ public enum ErrorMessage {
     CLOSE_GRAPH_FAILURE("Unable to close graph [%s]"),
     VERSION_MISMATCH("You are attempting to use Grakn Version [%s] with a graph build using version [%s], this is not supported."),
     NO_TYPE("Concept [%s] does not have a type"),
+    INVALID_DIRECTION("Cannot traverse an edge in direction [%s]"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),

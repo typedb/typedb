@@ -117,13 +117,15 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The neighbouring concepts found by traversing edges of a specific type
      */
     <X extends Concept> Stream<X> neighbours(Direction direction, Schema.EdgeLabel label){
-        Stream<X> edges = vertex().getEdgesOfType(direction, label).
-                flatMap(edge -> Stream.of(
-                        vertex().graph().factory().buildConcept(edge.source()),
-                        vertex().graph().factory().buildConcept(edge.target())
-                ));
+        Stream<X> edges;
 
         switch (direction){
+            case BOTH:
+                edges = vertex().getEdgesOfType(direction, label).
+                        flatMap(edge -> Stream.of(
+                                vertex().graph().factory().buildConcept(edge.source()),
+                                vertex().graph().factory().buildConcept(edge.target())
+                        ));
             case IN:
                 edges = vertex().getEdgesOfType(direction, label).map(edge ->
                         vertex().graph().factory().buildConcept(edge.source())
@@ -134,6 +136,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
                         vertex().graph().factory().buildConcept(edge.target())
                 );
                 break;
+            default:
+                throw GraphOperationException.invalidDirection(direction);
         }
 
         return edges;
