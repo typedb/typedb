@@ -229,11 +229,11 @@ final class ElementFactory {
     }
 
     Shard buildShard(ConceptImpl shardOwner, Vertex vertex){
-        return new Shard(shardOwner, buildVertexElement(vertex), true);
+        return new Shard(shardOwner, buildVertexElement(vertex));
     }
 
-    Shard buildShard(ConceptImpl shardOwner, VertexElement vertexElement){
-        return new Shard(shardOwner, vertexElement, false);
+    Shard buildShard(VertexElement vertexElement){
+        return new Shard(vertexElement);
     }
 
     VertexElement buildVertexElement(Vertex vertex){

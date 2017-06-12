@@ -267,7 +267,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     Set<Shard> shards(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).map(edge ->
-                vertex().graph().factory().buildShard(this, edge.source())).collect(Collectors.toSet());
+                vertex().graph().factory().buildShard(edge.source())).collect(Collectors.toSet());
     }
 
     Shard currentShard(){

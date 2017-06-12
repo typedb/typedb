@@ -37,13 +37,15 @@ import java.util.stream.Stream;
  * @author fppt
  */
 class Shard {
-    private final ConceptImpl owner;
     private final VertexElement vertexElement;
 
-    Shard(ConceptImpl owner, VertexElement vertexElement, boolean newShard){
-        this.owner = owner;
+    Shard(ConceptImpl owner, VertexElement vertexElement){
+        this(vertexElement);
+        owner(owner);
+    }
+
+    Shard(VertexElement vertexElement){
         this.vertexElement = vertexElement;
-        if(newShard) owner(owner);
     }
 
     VertexElement vertex(){
@@ -56,14 +58,6 @@ class Shard {
      */
     String id(){
         return vertex().id().getValue().toString();
-    }
-
-    /**
-     *
-     * @return The concept that this shard is part of
-     */
-    ConceptImpl owner(){
-        return owner;
     }
 
     /**
