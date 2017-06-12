@@ -236,6 +236,10 @@ final class ElementFactory {
         return new Shard(vertexElement);
     }
 
+    Shard buildShard(Vertex vertex){
+        return new Shard(buildVertexElement(vertex));
+    }
+
     VertexElement buildVertexElement(Vertex vertex){
         try {
             graknGraph.validVertex(vertex);

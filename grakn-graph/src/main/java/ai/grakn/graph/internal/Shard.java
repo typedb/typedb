@@ -65,7 +65,7 @@ class Shard {
      * @param owner Sets the owner of this shard
      */
     private void owner(ConceptImpl owner){
-        vertex().addEdge(owner.vertex(), Schema.EdgeLabel.SHARD);
+        vertex().putEdge(owner.vertex(), Schema.EdgeLabel.SHARD);
     }
 
     /**

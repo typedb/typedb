@@ -278,7 +278,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     Shard currentShard(){
         String currentShardId = property(Schema.ConceptProperty.CURRENT_SHARD);
         Vertex shardVertex = graph().getTinkerTraversal().has(Schema.ConceptProperty.ID.name(), currentShardId).next();
-        return graph().factory().buildShard(this, shardVertex);
+        return graph().factory().buildShard(shardVertex);
     }
 
     long getShardCount(){
