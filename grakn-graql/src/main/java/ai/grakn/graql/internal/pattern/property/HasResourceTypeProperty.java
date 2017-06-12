@@ -140,7 +140,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Type entityTypeConcept = concept.asType();
         ResourceType resourceTypeConcept = insertQueryExecutor.getConcept(resourceType).asResourceType();
 

@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
@@ -39,12 +40,12 @@ public interface VarPropertyInternal extends VarProperty {
     /**
      * Check if the given property can be used in a match query
      */
-    void checkValid(GraknGraph graph, VarPatternAdmin var) throws IllegalStateException;
+    void checkValid(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException;
 
     /**
      * Check if the given property can be inserted
      */
-    default void checkInsertable(VarPatternAdmin var) throws IllegalStateException {
+    default void checkInsertable(VarPatternAdmin var) throws GraqlQueryException {
     }
 
     /**
@@ -57,14 +58,14 @@ public interface VarPropertyInternal extends VarProperty {
      * @param insertQueryExecutor the instance handling the insert query
      * @param concept the concept to insert a property on
      */
-    void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException;
+    void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException;
 
     /**
      * Delete the given property from the graph, if possible.
      * @param graph the graph to operate on
      * @param concept the concept to delete properties of
      */
-    void delete(GraknGraph graph, Concept concept) throws IllegalStateException;
+    void delete(GraknGraph graph, Concept concept) throws GraqlQueryException;
 
     @Override
     default Stream<VarPatternAdmin> getInnerVars() {

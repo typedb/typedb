@@ -79,7 +79,7 @@ public abstract class RuleProperty extends AbstractVarProperty implements Unique
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         if (!concept.isRule()) {
             throw GraqlQueryException.insertUnsupportedProperty(this.getName(), RULE);
         }

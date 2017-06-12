@@ -89,7 +89,7 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         RoleType roleType = insertQueryExecutor.getConcept(role).asRoleType();
         concept.asType().plays(roleType);
     }

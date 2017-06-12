@@ -83,7 +83,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Instance scopeInstance = insertQueryExecutor.getConcept(scope).asInstance();
         concept.asType().scope(scopeInstance);
     }

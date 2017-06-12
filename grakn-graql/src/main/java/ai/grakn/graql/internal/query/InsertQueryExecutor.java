@@ -302,9 +302,9 @@ public class InsertQueryExecutor {
      * This is because types must have specified labels.
      * @param label an optional label to get
      * @return the label, if present
-     * @throws IllegalStateException if the label was not present
+     * @throws GraqlQueryException if the label was not present
      */
-    private TypeLabel getTypeLabelOrThrow(Optional<TypeLabel> label) throws IllegalStateException {
+    private TypeLabel getTypeLabelOrThrow(Optional<TypeLabel> label) throws GraqlQueryException {
         return label.orElseThrow(GraqlQueryException::insertTypeWithoutLabel);
     }
 
@@ -327,8 +327,10 @@ public class InsertQueryExecutor {
     }
 
     /**
-     * Get the datatype of a {@link VarPatternAdmin} if specified, else throws an IllegalStateException
+     * Get the datatype of a {@link VarPatternAdmin} if specified
      * @return the datatype of the given var
+     *
+     * @throws GraqlQueryException if there is no data type specified
      */
     private ResourceType.DataType<?> getDataType(VarPatternAdmin var) {
         Optional<ResourceType.DataType<?>> directDataType =
