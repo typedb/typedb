@@ -82,9 +82,9 @@ public class StandaloneTaskManager implements TaskManager {
     private final EngineID engineID;
     private final GraknEngineConfig config;
     private final RedisConnection redis;
+    private MetricRegistry metricRegistry;
     private final Timer addTaskTimer;
     private final Timer executeTaskTimer;
-    private final Timer runTaskTimer;
     private final Meter failedMeter;
     private final Meter stoppedMeter;
     private final Meter completedMeter;
@@ -93,6 +93,7 @@ public class StandaloneTaskManager implements TaskManager {
         this.engineID = engineId;
         this.config = config;
         this.redis = redis;
+        this.metricRegistry = metricRegistry;
 
         stoppedTasks = new HashSet<>();
         runningTasks = new ConcurrentHashMap<>();
@@ -113,7 +114,6 @@ public class StandaloneTaskManager implements TaskManager {
 
         addTaskTimer = metricRegistry.timer(name(StandaloneTaskManager.class, "add-task-timer"));
         executeTaskTimer = metricRegistry.timer(name(StandaloneTaskManager.class, "execute-task-timer"));
-        runTaskTimer = metricRegistry.timer(name(StandaloneTaskManager.class, "run-task-timer"));
         failedMeter = metricRegistry.meter(name(StandaloneTaskManager.class, "failed"));
         stoppedMeter = metricRegistry.meter(name(StandaloneTaskManager.class, "stopped"));
         completedMeter = metricRegistry.meter(name(StandaloneTaskManager.class, "completed"));
@@ -204,7 +204,7 @@ public class StandaloneTaskManager implements TaskManager {
             Context context = executeTaskTimer.time();
             try {
                 BackgroundTask runningTask = task.taskClass().newInstance();
-                runningTask.initialize(saveCheckpoint(task), configuration, this, config, redis);
+                runningTask.initialize(saveCheckpoint(task), configuration, this, config, redis, metricRegistry);
 
                 runningTasks.put(task.getId(), runningTask);
 
@@ -217,7 +217,9 @@ public class StandaloneTaskManager implements TaskManager {
                     task.markRunning(engineID);
 
                     saveState(task);
-                    Context runContext = runTaskTimer.time();
+                    Context runContext = metricRegistry
+                            .timer(name(StandaloneTaskManager.class, "run-task-timer",
+                                    task.taskClass().getName())).time();
                     try {
                         completed = runningTask.start();
                     } finally {

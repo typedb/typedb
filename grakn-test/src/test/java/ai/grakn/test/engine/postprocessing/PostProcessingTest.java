@@ -29,6 +29,7 @@ import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Sets;
 import mjson.Json;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -118,7 +119,7 @@ public class PostProcessingTest {
                                 Schema.BaseType.RESOURCE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))
         );
-        task.initialize(null, configuration, (x, y) -> {}, engine.config(), null);
+        task.initialize(null, configuration, (x, y) -> {}, engine.config(), null, new MetricRegistry());
 
         task.start();
 

@@ -684,7 +684,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private Optional<String> close(boolean commitRequired, boolean submitLogs){
         Optional<String> logs = Optional.empty();
-        if(isClosed()) return logs;
+        if(isClosed()) {
+            return logs;
+        }
         String closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", getKeyspace());
 
         try{

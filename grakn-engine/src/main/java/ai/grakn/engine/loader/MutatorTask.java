@@ -30,6 +30,8 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.REST;
+import static com.codahale.metrics.MetricRegistry.name;
+import com.codahale.metrics.Timer.Context;
 import mjson.Json;
 
 import java.util.Collection;
@@ -55,7 +57,7 @@ public class MutatorTask extends BackgroundTask {
     @Override
     public boolean start() {
         Collection<Query> inserts = getInserts(configuration());
-
+        metricRegistry().histogram(name(MutatorTask.class, "inserts")).update(inserts.size());
         String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
         int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
         EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
@@ -74,20 +76,28 @@ public class MutatorTask extends BackgroundTask {
      * @return true if the data was inserted, false otherwise
      */
     private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts) {
-        graph.showImplicitConcepts(true);
+        Context context = metricRegistry()
+                .timer(name(MutatorTask.class, "insert-queries")).time();
+        try {
+            graph.showImplicitConcepts(true);
 
-        inserts.forEach(q -> q.withGraph(graph).execute());
+            inserts.forEach(q -> q.withGraph(graph).execute());
 
-        Optional<String> result = graph.admin().commitNoLogs();
-        if(result.isPresent()){ //Submit more tasks if commit resulted in created commit logs
-            String logs = result.get();
-            addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration().getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY)),
-                    PostProcessingTask.createConfig(graph.getKeyspace(), logs));
-            addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
-                    UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));
+            Optional<String> result = graph.admin().commitNoLogs();
+            if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
+                String logs = result.get();
+                metricRegistry()
+                        .meter(name(MutatorTask.class, "commit-log-created")).mark();
+                addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration()
+                                .getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY)),
+                        PostProcessingTask.createConfig(graph.getKeyspace(), logs));
+                addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
+                        UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));
+            }
+            return true;
+        } finally {
+            context.stop();
         }
-
-        return true;
     }
 
 

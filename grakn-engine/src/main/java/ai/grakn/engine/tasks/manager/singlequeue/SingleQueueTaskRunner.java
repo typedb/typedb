@@ -74,6 +74,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final Timer readRecordsTimer;
     private final Meter stopMeter;
     private final Meter resubmitMeter;
+    private MetricRegistry metricRegistry;
     private final Timer executeTimer;
 
     private TaskId runningTaskId = null;
@@ -113,6 +114,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 .meter(name(SingleQueueTaskRunner.class, "stop"));
         this.resubmitMeter = metricRegistry
                 .meter(name(SingleQueueTaskRunner.class, "resubmit"));
+        this.metricRegistry = metricRegistry;
     }
 
     /**
@@ -247,7 +249,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         try {
             runningTaskId = task.getId();
             runningTask = task.taskClass().newInstance();
-            runningTask.initialize(saveCheckpoint(task), configuration, manager, engineConfig, redis);
+            runningTask.initialize(saveCheckpoint(task), configuration, manager, engineConfig, redis,
+                    metricRegistry);
             boolean completed;
 
             //TODO pass a method to retrieve checkpoint from storage to task and remove "resume" method in interface

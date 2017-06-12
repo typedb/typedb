@@ -2,17 +2,17 @@ package ai.grakn.engine.loader;
 
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.graql.Graql;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
+import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
-import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 
 /**
  *
@@ -41,7 +41,8 @@ public class MutatorTaskTest {
     @Test
     public void checkReadOnlyQueriesAreRejected() {
         MutatorTask mutatorTask = new MutatorTask();
-        mutatorTask.initialize((x) -> System.out.println(x.toString()), taskConfiguration, (x, y) -> {}, null, null);
+        mutatorTask.initialize((x) -> System.out.println(x.toString()), taskConfiguration, (x, y) -> {}, null, null,
+                new MetricRegistry());
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(READ_ONLY_QUERY.getMessage(readOnlyQuery));
         mutatorTask.start();

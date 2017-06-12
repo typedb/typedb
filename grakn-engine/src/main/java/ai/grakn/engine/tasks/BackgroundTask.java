@@ -20,10 +20,10 @@ package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.connection.RedisConnection;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Preconditions;
-
-import javax.annotation.Nullable;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 /**
  * Interface which all tasks that wish to be scheduled for later execution as background tasks must implement.
@@ -37,23 +37,27 @@ public abstract class BackgroundTask {
     private @Nullable Consumer<TaskCheckpoint> saveCheckpoint = null;
     private @Nullable GraknEngineConfig engineConfig = null;
     private @Nullable RedisConnection redis = null;
+    private @Nullable MetricRegistry metricRegistry = null;
 
     /**
      * Initialize the {@link BackgroundTask}. This must be called prior to any other call to {@link BackgroundTask}.
-     *
      * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
      *                       the task to resume from this point should it crash.
-     * @param configuration The configuration needed to execute the task
-     * @param taskSubmitter Allows followup tasks to be submitted for processing
+     * @param configuration  The configuration needed to execute the task
+     * @param taskSubmitter  Allows followup tasks to be submitted for processing
+     * @param metricRegistry Metric registry
      */
     public final void initialize(
-            Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter,
-            GraknEngineConfig engineConfig, RedisConnection redis) {
+            Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration,
+            TaskSubmitter taskSubmitter,
+            GraknEngineConfig engineConfig, RedisConnection redis,
+            MetricRegistry metricRegistry) {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
         this.saveCheckpoint = saveCheckpoint;
         this.engineConfig = engineConfig;
         this.redis = redis;
+        this.metricRegistry = metricRegistry;
     }
 
     /**
@@ -134,6 +138,11 @@ public abstract class BackgroundTask {
     public final RedisConnection redis() {
         Preconditions.checkNotNull(redis, "BackgroundTask#initialise must be called before retrieving redis connection");
         return redis;
+    }
+
+    public final MetricRegistry metricRegistry() {
+        Preconditions.checkNotNull(metricRegistry, "BackgroundTask#initialise must be called before retrieving metrics registry");
+        return metricRegistry;
     }
 
 }
