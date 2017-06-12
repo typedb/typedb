@@ -1,7 +1,17 @@
+def kafka_version = 'kafka_2.11-0.10.1.0'
 node('slave2-dev-jenkins') {
     def workspace = pwd()
     try {
-
+    dir ('kafka') {
+        stage ('Download Kafka') {
+            sh "curl http://apache.mirror.anlx.net/kafka/0.10.1.0/${kafka_version}.tgz > kafka.tgz; tar xvzf kafka.tgz && rm kafka.tgz"
+        }
+        stage ('Start Kafka') {
+            sh "sudo ./${kafka_version}/bin/zookeeper-server-start.sh ${kafka_version}/config/zookeeper.properties >> zookeeper.log 2>&1 &"
+            sh "sleep 20"
+            sh "sudo ./${kafka_version}/bin/kafka-server-start.sh ${kafka_version}/config/server.properties >> kafka.log  2>&1 &"
+        }
+    }
     dir ('grakn') {
         checkout scm
         stage ('Build Grakn') {
@@ -11,7 +21,7 @@ node('slave2-dev-jenkins') {
         stage ('Init Grakn') {
             sh 'mkdir grakn-package'
             sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
-            sh 'grakn-package/bin/grakn.sh start'
+            sh 'grakn-package/bin/grakn-engine.sh start'
             sh 'grakn-package/bin/graql.sh -e "match $x;"'
         }
     }
@@ -52,13 +62,18 @@ node('slave2-dev-jenkins') {
     }
 
     } finally {
-
     dir ('grakn') {
         stage('Tear Down Grakn') {
             sh 'grakn-package/bin/grakn.sh stop'
             sh 'rm -rf grakn-package'
         }
     }
-
+    dir ('kafka') {
+        stage('Tear Down Kafka') {
+            sh "sudo ./${kafka_version}/bin/zookeeper-server-stop.sh"
+            sh "sudo ./${kafka_version}/bin/kafka-server-stop.sh"
+            sh 'rm -rf ${kafka_version}'
+        }
+    }
     }
 }
