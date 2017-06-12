@@ -2,6 +2,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -27,7 +28,7 @@ public class OutPlaysFragmentTest {
 
         // Make sure we traverse upwards subs once and plays
         assertThat(traversal, is(__.V()
-                .union(__.not(__.has(INSTANCE_TYPE_ID.name())), __.repeat(__.out(SUB.getLabel())).emit()).unfold()
+                .union(__.<Vertex>not(__.has(INSTANCE_TYPE_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.repeat(__.out(SUB.getLabel())).emit()).unfold()
                 .out(PLAYS.getLabel())
         ));
     }
