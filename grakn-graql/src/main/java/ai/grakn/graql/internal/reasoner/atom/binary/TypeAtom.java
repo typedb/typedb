@@ -57,6 +57,9 @@ public class TypeAtom extends Binary{
 
     public TypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
     public TypeAtom(VarPatternAdmin pattern, IdPredicate p, ReasonerQuery par) { super(pattern, p, par);}
+    public TypeAtom(Var var, Var valueVar, ConceptId typeId, ReasonerQuery par){
+        this(var, valueVar, new IdPredicate(Graql.var(valueVar).id(typeId).admin(), par), par);
+    }
     public TypeAtom(Var var, Var valueVar, IdPredicate p, ReasonerQuery par){
         this(Graql.var(var).isa(Graql.var(valueVar)).admin(), p, par);
     }

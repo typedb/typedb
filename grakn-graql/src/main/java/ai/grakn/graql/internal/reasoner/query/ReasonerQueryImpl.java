@@ -49,6 +49,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,9 +67,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
+import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -146,7 +150,24 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return priority;
     }
 
+    private Set<TypeAtom> inferEntityTypes() {
+        Set<Var> subbedVars = Sets.difference(
+                getVarNames(),
+                getIdPredicates().stream().map(IdPredicate::getVarName).collect(Collectors.toSet()));
+        Set<Var> untypedVars = Sets.difference(subbedVars, getVarTypeMap().keySet());
+
+        Set<TypeAtom> types = getIdPredicates().stream()
+                .filter(untypedVars::contains)
+                .map(pred -> new TypeAtom(pred.getVarName(), Var.anon(), pred.getPredicate(), this))
+                .collect(toSet());
+        if (!types.isEmpty()){
+            System.out.println();
+        }
+        return types;
+    }
+
     private void inferTypes() {
+        inferEntityTypes().forEach(this::addAtomic);
         atomSet.stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .forEach(Atom::inferTypes);
@@ -462,6 +483,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(e -> new IdPredicate(e.getKey(), e.getValue(), this))
                 .collect(Collectors.toSet());
         atomSet.addAll(predicates);
+
+        inferTypes();
         return this;
     }
 
