@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
