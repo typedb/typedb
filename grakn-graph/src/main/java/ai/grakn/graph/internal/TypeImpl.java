@@ -128,7 +128,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param producer The factory method to produce the instance if it doesn't exist
      * @return A new or already existing instance
      */
-    V putInstance(Schema.BaseType instanceBaseType, Supplier<V> finder, BiFunction<Vertex, T, V> producer) {
+    V putInstance(Schema.BaseType instanceBaseType, Supplier<V> finder, BiFunction<VertexElement, T, V> producer) {
         vertex().graph().checkMutationAllowed();
 
         V instance = finder.get();
@@ -143,7 +143,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param producer The factory method to produce the instance
      * @return A new instance
      */
-    V addInstance(Schema.BaseType instanceBaseType, BiFunction<Vertex, T, V> producer){
+    V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer){
         vertex().graph().checkMutationAllowed();
 
         if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
@@ -152,7 +152,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         if(isAbstract()) throw GraphOperationException.addingInstancesToAbstractType(this);
 
-        Vertex instanceVertex = vertex().graph().addVertex(instanceBaseType);
+        VertexElement instanceVertex = vertex().graph().addVertex(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
             vertex().graph().txCache().addedInstance(getId());
         }

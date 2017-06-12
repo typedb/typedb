@@ -63,11 +63,11 @@ final class ElementFactory {
         this.graknGraph = graknGraph;
     }
 
-    private <X extends ConceptImpl> X getOrBuildConcept(Vertex v, Function<VertexElement, X> conceptBuilder){
+    private <X extends ConceptImpl> X getOrBuildConcept(VertexElement v, Function<VertexElement, X> conceptBuilder){
         ConceptId conceptId = ConceptId.of(v.id().toString());
 
         if(!graknGraph.txCache().isConceptCached(conceptId)){
-            X newConcept = conceptBuilder.apply(buildVertexElement(v));
+            X newConcept = conceptBuilder.apply(v);
             graknGraph.txCache().cacheConcept(newConcept);
         }
 
@@ -82,47 +82,47 @@ final class ElementFactory {
     }
 
     // ---------------------------------------- Building Resource Types  -----------------------------------------------
-    <V> ResourceTypeImpl<V> buildResourceType(Vertex vertex, ResourceType<V> type, ResourceType.DataType<V> dataType){
+    <V> ResourceTypeImpl<V> buildResourceType(VertexElement vertex, ResourceType<V> type, ResourceType.DataType<V> dataType){
         return getOrBuildConcept(vertex, (v) -> new ResourceTypeImpl<>(v, type, dataType));
     }
 
     // ------------------------------------------ Building Resources
-    <V> ResourceImpl <V> buildResource(Vertex vertex, ResourceType<V> type, V value){
+    <V> ResourceImpl <V> buildResource(VertexElement vertex, ResourceType<V> type, V value){
         return getOrBuildConcept(vertex, (v) -> new ResourceImpl<>(v, type, value));
     }
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
-    RelationTypeImpl buildRelationType(Vertex vertex, RelationType type, Boolean isImplicit){
+    RelationTypeImpl buildRelationType(VertexElement vertex, RelationType type, Boolean isImplicit){
         return getOrBuildConcept(vertex, (v) -> new RelationTypeImpl(v, type, isImplicit));
     }
 
     // -------------------------------------------- Building Relations
-    RelationImpl buildRelation(Vertex vertex, RelationType type){
+    RelationImpl buildRelation(VertexElement vertex, RelationType type){
         return getOrBuildConcept(vertex, (v) -> new RelationImpl(v, type));
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
-    EntityTypeImpl buildEntityType(Vertex vertex, EntityType type){
+    EntityTypeImpl buildEntityType(VertexElement vertex, EntityType type){
         return getOrBuildConcept(vertex, (v) -> new EntityTypeImpl(v, type));
     }
 
     // ------------------------------------------- Building Entities
-    EntityImpl buildEntity(Vertex vertex, EntityType type){
+    EntityImpl buildEntity(VertexElement vertex, EntityType type){
         return getOrBuildConcept(vertex, (v) -> new EntityImpl(v, type));
     }
 
     // ----------------------------------------- Building Rule Types  --------------------------------------------------
-    RuleTypeImpl buildRuleType(Vertex vertex, RuleType type){
+    RuleTypeImpl buildRuleType(VertexElement vertex, RuleType type){
         return getOrBuildConcept(vertex, (v) -> new RuleTypeImpl(v, type));
     }
 
     // -------------------------------------------- Building Rules
-    RuleImpl buildRule(Vertex vertex, RuleType type, Pattern lhs, Pattern rhs){
+    RuleImpl buildRule(VertexElement vertex, RuleType type, Pattern lhs, Pattern rhs){
         return getOrBuildConcept(vertex, (v) -> new RuleImpl(v, type, lhs, rhs));
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
-    RoleTypeImpl buildRoleType(Vertex vertex, RoleType type, Boolean isImplicit){
+    RoleTypeImpl buildRoleType(VertexElement vertex, RoleType type, Boolean isImplicit){
         return getOrBuildConcept(vertex, (v) -> new RoleTypeImpl(v, type, isImplicit));
     }
 
@@ -228,8 +228,8 @@ final class ElementFactory {
         return new Casting(edge);
     }
 
-    Shard buildShard(ConceptImpl shardOwner, Vertex vertex){
-        return new Shard(shardOwner, buildVertexElement(vertex));
+    Shard buildShard(ConceptImpl shardOwner, VertexElement vertexElement){
+        return new Shard(shardOwner, vertexElement);
     }
 
     Shard buildShard(VertexElement vertexElement){

@@ -231,7 +231,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     //----------------------------------- Sharding Functionality
     Shard createShard(){
-        Vertex shardVertex = vertex().graph().addVertex(Schema.BaseType.SHARD);
+        VertexElement shardVertex = vertex().graph().addVertex(Schema.BaseType.SHARD);
         Shard shard = vertex().graph().factory().buildShard(this, shardVertex);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         return shard;

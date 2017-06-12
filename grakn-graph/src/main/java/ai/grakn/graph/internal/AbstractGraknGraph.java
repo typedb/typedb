@@ -240,28 +240,28 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private boolean initialiseMetaConcepts(){
         boolean ontologyInitialised = false;
         if(isMetaOntologyNotInitialised()){
-            Vertex type = addTypeVertex(Schema.MetaSchema.CONCEPT.getId(), Schema.MetaSchema.CONCEPT.getLabel(), Schema.BaseType.TYPE);
-            Vertex entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
-            Vertex relationType = addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
-            Vertex resourceType = addTypeVertex(Schema.MetaSchema.RESOURCE.getId(), Schema.MetaSchema.RESOURCE.getLabel(), Schema.BaseType.RESOURCE_TYPE);
-            Vertex roleType = addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE_TYPE);
-            Vertex ruleType = addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
-            Vertex inferenceRuleType = addTypeVertex(Schema.MetaSchema.INFERENCE_RULE.getId(), Schema.MetaSchema.INFERENCE_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
-            Vertex constraintRuleType = addTypeVertex(Schema.MetaSchema.CONSTRAINT_RULE.getId(), Schema.MetaSchema.CONSTRAINT_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
+            VertexElement type = addTypeVertex(Schema.MetaSchema.CONCEPT.getId(), Schema.MetaSchema.CONCEPT.getLabel(), Schema.BaseType.TYPE);
+            VertexElement entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
+            VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
+            VertexElement resourceType = addTypeVertex(Schema.MetaSchema.RESOURCE.getId(), Schema.MetaSchema.RESOURCE.getLabel(), Schema.BaseType.RESOURCE_TYPE);
+            VertexElement roleType = addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE_TYPE);
+            VertexElement ruleType = addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
+            VertexElement inferenceRuleType = addTypeVertex(Schema.MetaSchema.INFERENCE_RULE.getId(), Schema.MetaSchema.INFERENCE_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
+            VertexElement constraintRuleType = addTypeVertex(Schema.MetaSchema.CONSTRAINT_RULE.getId(), Schema.MetaSchema.CONSTRAINT_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
 
-            relationType.property(Schema.VertexProperty.IS_ABSTRACT.name(), true);
-            roleType.property(Schema.VertexProperty.IS_ABSTRACT.name(), true);
-            resourceType.property(Schema.VertexProperty.IS_ABSTRACT.name(), true);
-            ruleType.property(Schema.VertexProperty.IS_ABSTRACT.name(), true);
-            entityType.property(Schema.VertexProperty.IS_ABSTRACT.name(), true);
+            relationType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+            roleType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+            resourceType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+            ruleType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+            entityType.property(Schema.VertexProperty.IS_ABSTRACT, true);
 
-            relationType.addEdge(Schema.EdgeLabel.SUB.getLabel(), type);
-            roleType.addEdge(Schema.EdgeLabel.SUB.getLabel(), type);
-            resourceType.addEdge(Schema.EdgeLabel.SUB.getLabel(), type);
-            ruleType.addEdge(Schema.EdgeLabel.SUB.getLabel(), type);
-            entityType.addEdge(Schema.EdgeLabel.SUB.getLabel(), type);
-            inferenceRuleType.addEdge(Schema.EdgeLabel.SUB.getLabel(), ruleType);
-            constraintRuleType.addEdge(Schema.EdgeLabel.SUB.getLabel(), ruleType);
+            relationType.addEdge(type, Schema.EdgeLabel.SUB);
+            roleType.addEdge(type, Schema.EdgeLabel.SUB);
+            resourceType.addEdge(type, Schema.EdgeLabel.SUB);
+            ruleType.addEdge(type, Schema.EdgeLabel.SUB);
+            entityType.addEdge(type, Schema.EdgeLabel.SUB);
+            inferenceRuleType.addEdge(ruleType, Schema.EdgeLabel.SUB);
+            constraintRuleType.addEdge(ruleType, Schema.EdgeLabel.SUB);
 
             //Manual creation of shards on meta types which have instances
             createMetaShard(inferenceRuleType, Schema.BaseType.RULE_TYPE);
@@ -278,10 +278,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         return ontologyInitialised;
     }
-    private void createMetaShard(Vertex metaNode, Schema.BaseType baseType){
-        Vertex metaShard = addVertex(baseType);
-        metaShard.addEdge(Schema.EdgeLabel.SHARD.getLabel(), metaNode);
-        metaNode.property(Schema.VertexProperty.CURRENT_SHARD.name(), metaShard.id().toString());
+    private void createMetaShard(VertexElement metaNode, Schema.BaseType baseType){
+        VertexElement metaShard = addVertex(baseType);
+        metaShard.addEdge(metaNode, Schema.EdgeLabel.SHARD);
+        metaNode.property(Schema.VertexProperty.CURRENT_SHARD, metaShard.id().toString());
     }
 
     private boolean isMetaOntologyNotInitialised(){
@@ -343,14 +343,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
-    Vertex addVertex(Schema.BaseType baseType){
+    VertexElement addVertex(Schema.BaseType baseType){
         Vertex vertex = operateOnOpenGraph(() -> getTinkerPopGraph().addVertex(baseType.name()));
         vertex.property(Schema.VertexProperty.ID.name(), vertex.id().toString());
-        return vertex;
+        return factory().buildVertexElement(vertex);
     }
 
-    private Vertex putVertex(TypeLabel label, Schema.BaseType baseType){
-        Vertex vertex;
+    private VertexElement putVertex(TypeLabel label, Schema.BaseType baseType){
+        VertexElement vertex;
         ConceptImpl<?> concept = getType(convertToId(label));
         if(concept == null) {
             vertex = addTypeVertex(getNextId(), label, baseType);
@@ -358,7 +358,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             if(!baseType.equals(concept.baseType())) {
                 throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.VertexProperty.TYPE_LABEL, label);
             }
-            vertex = concept.vertex().element();
+            vertex = concept.vertex();
         }
         return vertex;
     }
@@ -371,11 +371,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param baseType The base type of the new type
      * @return The new type vertex
      */
-    private Vertex addTypeVertex(TypeId id, TypeLabel label, Schema.BaseType baseType){
-        Vertex vertex = addVertex(baseType);
-        vertex.property(Schema.VertexProperty.TYPE_LABEL.name(), label.getValue());
-        vertex.property(Schema.VertexProperty.TYPE_ID.name(), id.getValue());
-        return vertex;
+    private VertexElement addTypeVertex(TypeId id, TypeLabel label, Schema.BaseType baseType){
+        VertexElement vertexElement = addVertex(baseType);
+        vertexElement.property(Schema.VertexProperty.TYPE_LABEL, label.getValue());
+        vertexElement.property(Schema.VertexProperty.TYPE_ID, id.getValue());
+        return vertexElement;
     }
 
     /**
@@ -401,7 +401,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
-    private <T extends TypeImpl> T putType(TypeLabel label, Schema.BaseType baseType, Function<Vertex, T> factory){
+    private <T extends TypeImpl> T putType(TypeLabel label, Schema.BaseType baseType, Function<VertexElement, T> factory){
         checkOntologyMutationAllowed();
         TypeImpl type = buildType(label, () -> factory.apply(putVertex(label, baseType)));
 
