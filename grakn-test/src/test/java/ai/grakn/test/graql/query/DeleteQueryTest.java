@@ -20,6 +20,7 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
@@ -318,7 +319,7 @@ public class DeleteQueryTest {
 
     @Test
     public void testErrorWhenDeleteValue() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("delet"), containsString("val")));
         qb.match(var("x").isa("movie")).delete(var("x").val("hello")).execute();
     }
