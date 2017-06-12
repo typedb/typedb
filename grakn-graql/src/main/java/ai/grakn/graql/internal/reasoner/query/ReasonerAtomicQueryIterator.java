@@ -29,7 +29,6 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 
-import java.util.List;
 import java.util.stream.StreamSupport;
 import javafx.util.Pair;
 import org.slf4j.Logger;
@@ -146,40 +145,26 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
                 .distinct()
                 .map(a -> {
 
-                    //TODO if rulehead not present in cache, do a specific ask
-                    //check cache, might be empty if there are query-head differences
-                    Answer cacheQueryAnswer = cache.getAnswer(query, a.unify(unifier));
-                    Answer cacheHeadAnswer = cacheQueryAnswer.isEmpty()? cache.getAnswer(ruleHead, a) : new QueryAnswer();
+                    //check if the specific answer to ruleHead already in cache/db
+                    Answer headAnswer = ruleHead
+                            .lookupAnswer(cache, a)
+                            .filterVars(queryVars)
+                            .unify(unifier);
 
-                    //check db
-                    List<Answer> headAsk = new ReasonerAtomicQuery(ruleHead).addSubstitution(a).getMatchQuery().execute();
-                    List<Answer> queryAsk = query.isEquivalent(ruleHead)?
-                            Collections.emptyList() :
-                            new ReasonerAtomicQuery(query).addSubstitution(a.unify(unifier)).getMatchQuery().execute();
+                    //if not and query different than rule head do the same with the query
+                    Answer queryAnswer = headAnswer.isEmpty() && query.isEquivalent(ruleHead)?
+                            query.lookupAnswer(cache, a) :
+                            new QueryAnswer();
 
-                    if (headAsk.isEmpty()
-                            && queryAsk.isEmpty()
-                            && cacheQueryAnswer.isEmpty()
-                            && cacheHeadAnswer.isEmpty()){
+                    if (headAnswer.isEmpty()
+                        && queryAnswer.isEmpty()) {
                         Answer materialisedSub = ruleHead.materialise(a).findFirst().orElse(null);
                         cache.recordAnswer(ruleHead, materialisedSub);
                         return materialisedSub
                                 .filterVars(queryVars)
                                 .unify(unifier);
                     } else {
-                        return headAsk.isEmpty()?
-                                queryAsk.isEmpty()?
-                                        cacheHeadAnswer.isEmpty()?
-                                                cacheQueryAnswer :
-                                                cacheHeadAnswer
-                                                        .filterVars(queryVars)
-                                                        .unify(unifier)
-                                        :
-                                        queryAsk.iterator().next()
-                                :
-                                headAsk.iterator().next()
-                                        .filterVars(queryVars)
-                                        .unify(unifier);
+                        return headAnswer.isEmpty()? queryAnswer : headAnswer;
                     }
                 });
         return baseStream
