@@ -38,6 +38,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -68,14 +69,14 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     });
 
     private Cache<V> cachedType = new Cache<>(() -> {
-        ConceptImpl<?> currentType = (ConceptImpl) neighbours(Direction.OUT, Schema.EdgeLabel.ISA).findFirst().orElse(null);
+        Optional<EdgeElement> typeEdge = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
+                flatMap(edge -> edge.getTarget().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).findAny();
 
-        while (currentType.isShard()){
-            currentType = (ConceptImpl) currentType.neighbours(Direction.OUT, Schema.EdgeLabel.SHARD).findFirst().orElse(null);
+        if(!typeEdge.isPresent()) {
+            throw GraphOperationException.noType(this);
         }
 
-        //noinspection unchecked
-        return (V) currentType;
+        return graph().factory().buildConcept(typeEdge.get().getTarget());
     });
 
     InstanceImpl(VertexElement vertexElement) {
@@ -84,7 +85,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
 
     InstanceImpl(VertexElement vertexElement, V type) {
         this(vertexElement);
-        type(type);
+        type((TypeImpl) type);
     }
 
     /**
@@ -239,9 +240,9 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @param type The type of this concept
      * @return The concept itself casted to the correct interface
      */
-    protected T type(V type) {
+    protected T type(TypeImpl type) {
         if(type != null){
-            putEdge(type, Schema.EdgeLabel.ISA);
+            type.currentShard().link(this);
             setInternalType(type());
         }
         return getThis();

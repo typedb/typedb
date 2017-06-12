@@ -33,8 +33,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
+import java.util.Optional;
 import java.util.function.Function;
+
+import static ai.grakn.util.Schema.BaseType.RELATION_TYPE;
+import static ai.grakn.util.Schema.BaseType.RULE_TYPE;
 
 /**
  * <p>
@@ -64,7 +67,7 @@ final class ElementFactory {
         ConceptId conceptId = ConceptId.of(v.id().toString());
 
         if(!graknGraph.txCache().isConceptCached(conceptId)){
-            X newConcept = conceptBuilder.apply(new VertexElement(graknGraph, v));
+            X newConcept = conceptBuilder.apply(buildVertexElement(v));
             graknGraph.txCache().cacheConcept(newConcept);
         }
 
@@ -131,19 +134,21 @@ final class ElementFactory {
      * @return A concept built to the correct type
      */
     <X extends Concept> X buildConcept(Vertex v){
+        return buildConcept(buildVertexElement(v));
+    }
+
+    <X extends Concept> X buildConcept(VertexElement vertexElement){
         Schema.BaseType type;
-        //Check if the vertex is valid
+
         try {
-            graknGraph.validVertex(v);
-            type = getBaseType(v);
+            type = getBaseType(vertexElement);
         } catch (IllegalStateException e){
-            LOG.warn("Invalid vertex [" + v + "] due to " + e.getMessage(), e);
+            LOG.warn("Invalid vertex [" + vertexElement.element() + "] due to " + e.getMessage(), e);
             return null;
         }
 
-        ConceptId conceptId = ConceptId.of(v.id());
+        ConceptId conceptId = ConceptId.of(vertexElement.id().getValue());
         if(!graknGraph.txCache().isConceptCached(conceptId)){
-            VertexElement vertexElement = new VertexElement(graknGraph, v);
             ConceptImpl concept;
             switch (type) {
                 case RELATION:
@@ -177,32 +182,37 @@ final class ElementFactory {
                     concept = new RuleTypeImpl(vertexElement);
                     break;
                 default:
-                    throw new RuntimeException("Unknown base type [" + v.label() + "]");
+                    throw new RuntimeException("Unknown base type [" + vertexElement.label() + "]");
             }
             graknGraph.txCache().cacheConcept(concept);
         }
-
         return graknGraph.txCache().getCachedConcept(conceptId);
     }
 
-    //TODO: Simplify this if it does not make a difference to large loading
-    private Schema.BaseType getBaseType(Vertex vertex){
+    /**
+     * This is a helper method to get the base type of a vertex.
+     * It first tried to get the base type via the label.
+     * If this is not possible it then tries to get the base type via the Shard Edge.
+     *
+     * @param vertex The vertex to build a concept from
+     * @return The base type of the vertex, if it is a valid concept.
+     */
+    private Schema.BaseType getBaseType(VertexElement vertex){
         try {
             return Schema.BaseType.valueOf(vertex.label());
         } catch (IllegalArgumentException e){
-            //Base type appears to be invalid. Let's try getting the type via the isa edge
-            Iterator<Edge> iterator = vertex.edges(Direction.OUT, Schema.EdgeLabel.SHARD.getLabel());
-            if(iterator.hasNext()){
-                Vertex shardVertex = iterator.next().inVertex();
-                Vertex typeVertex = shardVertex.edges(Direction.OUT, Schema.EdgeLabel.ISA.getLabel()).next().inVertex();
-                String label = typeVertex.label();
+            //Base type appears to be invalid. Let's try getting the type via the shard edge
+            Optional<EdgeElement> type = vertex.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD).findAny();
+
+            if(type.isPresent()){
+                String label = type.get().getTarget().label();
                 if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
-                if(label.equals(Schema.BaseType.RELATION_TYPE.name())) return Schema.BaseType.RELATION;
+                if(label.equals(RELATION_TYPE.name())) return Schema.BaseType.RELATION;
                 if(label.equals(Schema.BaseType.RESOURCE_TYPE.name())) return Schema.BaseType.RESOURCE;
-                if(label.equals(Schema.BaseType.RULE_TYPE.name())) return Schema.BaseType.RULE;
+                if(label.equals(RULE_TYPE.name())) return Schema.BaseType.RULE;
             }
         }
-        throw new IllegalStateException("Could not determine the base type of vertex [" + vertex + "]");
+        throw new IllegalStateException("Could not determine the base type of vertex [" + vertex.element() + "]");
     }
 
     EdgeElement buildEdge(Edge edge){
@@ -216,5 +226,24 @@ final class ElementFactory {
 
     Casting buildRolePlayer(EdgeElement edge) {
         return new Casting(edge);
+    }
+
+    Shard buildShard(ConceptImpl shardOwner, Vertex vertex){
+        return new Shard(shardOwner, buildVertexElement(vertex), true);
+    }
+
+    Shard buildShard(ConceptImpl shardOwner, VertexElement vertexElement){
+        return new Shard(shardOwner, vertexElement, false);
+    }
+
+    VertexElement buildVertexElement(Vertex vertex){
+        try {
+            graknGraph.validVertex(vertex);
+        } catch (IllegalStateException e){
+            LOG.warn("Invalid vertex [" + vertex + "] due to " + e.getMessage(), e);
+            return null;
+        }
+
+        return new VertexElement(graknGraph, vertex);
     }
 }

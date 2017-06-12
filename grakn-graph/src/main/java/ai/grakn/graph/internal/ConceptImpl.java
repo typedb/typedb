@@ -59,7 +59,6 @@ import java.util.stream.Stream;
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
 abstract class ConceptImpl<T extends Concept> implements Concept {
-    private final Cache<Boolean> cachedIsShard = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_SHARD));
     private final VertexElement vertexElement;
 
     @SuppressWarnings("unchecked")
@@ -121,14 +120,21 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     <X extends Concept> Stream<X> neighbours(Direction direction, Schema.EdgeLabel label){
         Stream<X> edges = vertex().getEdgesOfType(direction, label).
-                flatMap(edge -> Stream.of(edge.getSource(), edge.getTarget()));
+                flatMap(edge -> Stream.of(
+                        vertex().graph().factory().buildConcept(edge.getSource()),
+                        vertex().graph().factory().buildConcept(edge.getTarget())
+                ));
 
         switch (direction){
             case IN:
-                edges = vertex().getEdgesOfType(direction, label).map(EdgeElement::getSource);
+                edges = vertex().getEdgesOfType(direction, label).map(edge ->
+                        vertex().graph().factory().buildConcept(edge.getSource())
+                );
                 break;
             case OUT:
-                edges = vertex().getEdgesOfType(direction, label).map(EdgeElement::getTarget);
+                edges = vertex().getEdgesOfType(direction, label).map(edge ->
+                        vertex().graph().factory().buildConcept(edge.getTarget())
+                );
                 break;
         }
 
@@ -254,35 +260,22 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     }
 
     //----------------------------------- Sharding Functionality
-    T createShard(){
+    Shard createShard(){
         Vertex shardVertex = graph().addVertex(getBaseType());
-        shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), vertex().element());
-
-        ConceptImpl shardConcept = graph().buildConcept(shardVertex);
-        shardConcept.isShard(true);
-        setProperty(Schema.ConceptProperty.CURRENT_SHARD, shardConcept.getId().getValue());
-
-        //noinspection unchecked
-        return (T) shardConcept;
+        Shard shard = graph().factory().buildShard(this, shardVertex);
+        setProperty(Schema.ConceptProperty.CURRENT_SHARD, shard.id());
+        return shard;
     }
 
-    Set<T> shards(){
-        return this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet());
+    Set<Shard> shards(){
+        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).map(edge ->
+                vertex().graph().factory().buildShard(this, edge.getSource())).collect(Collectors.toSet());
     }
 
-    //TODO: Return implementation rather than interface
-    T currentShard(){
+    Shard currentShard(){
         String currentShardId = getProperty(Schema.ConceptProperty.CURRENT_SHARD);
-        return graph().getConcept(ConceptId.of(currentShardId));
-    }
-
-    boolean isShard(){
-        return cachedIsShard.get();
-    }
-
-    void isShard(Boolean isShard){
-        if(isShard) setProperty(Schema.ConceptProperty.IS_SHARD, isShard);
-        cachedIsShard.set(isShard);
+        Vertex shardVertex = graph().getTinkerTraversal().has(Schema.ConceptProperty.ID.name(), currentShardId).next();
+        return graph().factory().buildShard(this, shardVertex);
     }
 
     long getShardCount(){

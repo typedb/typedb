@@ -82,7 +82,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         Map<RoleType, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-            RoleType roleType = edge.getTarget();
+            RoleType roleType = graph().factory().buildConcept(edge.getTarget());
             Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
             roleTypes.put(roleType, required);
         });
@@ -93,15 +93,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     TypeImpl(VertexElement vertexElement) {
         super(vertexElement);
         VertexProperty<String> typeLabel = vertex().element().property(Schema.ConceptProperty.TYPE_LABEL.name());
-        if(typeLabel.isPresent()) {
-            cachedTypeLabel = TypeLabel.of(typeLabel.value());
-            cachedTypeId = TypeId.of(vertex().element().value(Schema.ConceptProperty.TYPE_ID.name()));
-            isShard(false);
-        } else {
-            cachedTypeLabel = TypeLabel.of("SHARDED TYPE-" + getId().getValue()); //This is just a place holder it is never actually committed
-            cachedTypeId = null; //Shards don't have indexed Ids
-            isShard(true);
-        }
+        cachedTypeLabel = TypeLabel.of(typeLabel.value());
+        cachedTypeId = TypeId.of(vertex().element().value(Schema.ConceptProperty.TYPE_ID.name()));
     }
 
     TypeImpl(VertexElement vertexElement, T superType) {
@@ -126,16 +119,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         cachedDirectSubTypes.flush();
         cachedShards.flush();
         cachedDirectPlays.flush();
-    }
-
-    @Override
-    Set<T> shards(){
-        return cachedShards.get();
-    }
-
-    @Override
-    boolean isShard(){
-        return cachedTypeLabel == null || cachedTypeLabel.getValue().startsWith("SHARDED TYPE-");
     }
 
     /**
@@ -174,7 +157,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
             graph().txCache().addedInstance(getId());
         }
-        return producer.apply(instanceVertex, currentShard());
+        return producer.apply(instanceVertex, getThis());
     }
 
     /**
@@ -258,8 +241,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public void delete(){
         checkTypeMutationAllowed();
         boolean hasSubs = neighbours(Direction.IN, Schema.EdgeLabel.SUB).findAny().isPresent();
-        boolean hasInstances = neighbours(Direction.IN, Schema.EdgeLabel.SHARD).
-                filter(shard -> ((ConceptImpl) shard).neighbours(Direction.IN, Schema.EdgeLabel.ISA).findAny().isPresent()).findAny().isPresent();
+        boolean hasInstances = currentShard().links().findAny().isPresent();
 
         if(hasSubs || hasInstances){
             throw GraphOperationException.typeCannotBeDeleted(getLabel());
@@ -367,22 +349,18 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public Collection<V> instances() {
         final Set<V> instances = new HashSet<>();
 
-        if(isShard()){
-            instances.addAll(this.<V>neighbours(Direction.IN, Schema.EdgeLabel.ISA).collect(Collectors.toSet()));
-        } else {
-            GraphTraversal<Vertex, Vertex> traversal = graph().getTinkerPopGraph().traversal().V()
-                    .has(Schema.ConceptProperty.TYPE_ID.name(), getTypeId().getValue())
-                    .union(__.identity(),
-                            __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
-                    ).unfold()
-                    .in(Schema.EdgeLabel.SHARD.getLabel())
-                    .in(Schema.EdgeLabel.ISA.getLabel());
+        GraphTraversal<Vertex, Vertex> traversal = graph().getTinkerPopGraph().traversal().V()
+                .has(Schema.ConceptProperty.TYPE_ID.name(), getTypeId().getValue())
+                .union(__.identity(),
+                        __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
+                ).unfold()
+                .in(Schema.EdgeLabel.SHARD.getLabel())
+                .in(Schema.EdgeLabel.ISA.getLabel());
 
-            traversal.forEachRemaining(vertex -> {
-                ConceptImpl<Concept> concept = graph().factory().buildConcept(vertex);
-                if (concept != null) instances.add((V) concept);
-            });
-        }
+        traversal.forEachRemaining(vertex -> {
+            ConceptImpl<Concept> concept = graph().factory().buildConcept(vertex);
+            if (concept != null) instances.add((V) concept);
+        });
 
         return Collections.unmodifiableCollection(filterImplicitStructures(instances));
     }
@@ -594,8 +572,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The Type itself.
      */
     public T setAbstract(Boolean isAbstract) {
-        if(!Schema.MetaSchema.isMetaLabel(getLabel()) && isAbstract &&
-                this.<TypeImpl>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).anyMatch(thing -> thing.neighbours(Direction.IN, Schema.EdgeLabel.ISA).findAny().isPresent())){
+        if(!Schema.MetaSchema.isMetaLabel(getLabel()) && isAbstract && currentShard().links().findAny().isPresent()){
             throw GraphOperationException.addingInstancesToAbstractType(this);
         }
 
@@ -616,7 +593,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * 2. The graph is not batch loading
      */
     void checkTypeMutationAllowed(){
-        if(isShard()) return;
         graph().checkOntologyMutationAllowed();
         if(Schema.MetaSchema.isMetaLabel(getLabel())){
             throw GraphOperationException.metaTypeImmutable(getLabel());

@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 import static ai.grakn.util.ErrorMessage.CLOSE_GRAPH_FAILURE;
 import static ai.grakn.util.ErrorMessage.HAS_INVALID;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
-import static ai.grakn.util.ErrorMessage.UNLINKED_SHARD;
+import static ai.grakn.util.ErrorMessage.NO_TYPE;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 
 /**
@@ -213,11 +213,10 @@ public class GraphOperationException extends GraknException{
         return new GraphOperationException(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, versionResource.getValue()));
     }
 
-
     /**
-     * Thrown when a ahdr does not link to a real concept
+     * Thrown when an instance does not have a type
      */
-    public static GraphOperationException unlinkedShard(Object id){
-        return new GraphOperationException(UNLINKED_SHARD.getMessage(id));
+    public static GraphOperationException noType(Instance instance){
+        return new GraphOperationException(NO_TYPE.getMessage(instance));
     }
 }

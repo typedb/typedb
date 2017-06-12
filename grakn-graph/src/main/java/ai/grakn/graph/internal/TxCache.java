@@ -239,7 +239,7 @@ class TxCache {
         if(concept.isType()){
             TypeImpl type = (TypeImpl) concept;
             typeCache.put(type.getLabel(), type);
-            if(!type.isShard()) labelCache.put(type.getLabel(), type.getTypeId());
+            labelCache.put(type.getLabel(), type.getTypeId());
         }
     }
 

@@ -377,7 +377,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void whenShardingSuperNode_EnsureNewInstancesGoToNewShard(){
         EntityTypeImpl entityType = (EntityTypeImpl) graknGraph.putEntityType("The Special Type");
-        EntityType s1 = entityType.currentShard();
+        Shard s1 = entityType.currentShard();
 
         //Add 3 instances to first shard
         Entity s1_e1 = entityType.addEntity();
@@ -385,7 +385,7 @@ public class GraknGraphTest extends GraphTestBase {
         Entity s1_e3 = entityType.addEntity();
         graknGraph.admin().shard(entityType.getId());
 
-        EntityType s2 = entityType.currentShard();
+        Shard s2 = entityType.currentShard();
 
         //Add 5 instances to second shard
         Entity s2_e1 = entityType.addEntity();
@@ -395,7 +395,7 @@ public class GraknGraphTest extends GraphTestBase {
         Entity s2_e5 = entityType.addEntity();
 
         graknGraph.admin().shard(entityType.getId());
-        EntityType s3 = entityType.currentShard();
+        Shard s3 = entityType.currentShard();
 
         //Add 2 instances to 3rd shard
         Entity s3_e1 = entityType.addEntity();
@@ -405,9 +405,9 @@ public class GraknGraphTest extends GraphTestBase {
         assertThat(entityType.shards(), containsInAnyOrder(s1, s2, s3));
 
         //Check shards have correct instances
-        assertThat(s1.instances(), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
-        assertThat(s2.instances(), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
-        assertThat(s3.instances(), containsInAnyOrder(s3_e1, s3_e2));
+        assertThat(s1.links().collect(Collectors.toSet()), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
+        assertThat(s2.links().collect(Collectors.toSet()), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
+        assertThat(s3.links().collect(Collectors.toSet()), containsInAnyOrder(s3_e1, s3_e2));
     }
 
     @Test

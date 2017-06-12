@@ -85,8 +85,8 @@ public class ConceptTest extends GraphTestBase{
         assertThat(superType, is(not(empty())));
         assertThat(subs, is(not(empty())));
 
-        superType.forEach(edge -> assertEquals(entityType1, edge.getTarget()));
-        subs.forEach(edge -> assertEquals(entityType3, edge.getSource()));
+        superType.forEach(edge -> assertEquals(entityType1, graknGraph.factory().buildConcept(edge.getTarget())));
+        subs.forEach(edge -> assertEquals(entityType3, graknGraph.factory().buildConcept(edge.getSource())));
     }
 
     @Test

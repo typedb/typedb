@@ -18,11 +18,10 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -37,25 +36,79 @@ import java.util.Optional;
  *
  * @author fppt
  */
-public class Shard {
+class Shard {
+    private final ConceptImpl owner;
     private final VertexElement vertexElement;
 
-    public Shard(VertexElement vertexElement){
+    Shard(ConceptImpl owner, VertexElement vertexElement, boolean newShard){
+        this.owner = owner;
         this.vertexElement = vertexElement;
+        if(newShard) owner(owner);
     }
 
-    private VertexElement vertex(){
+    VertexElement vertex(){
         return vertexElement;
+    }
+
+    /**
+     *
+     * @return The id of this shard. String ares used because shards are looked up via the string index.
+     */
+    String id(){
+        return vertex().id().getValue().toString();
     }
 
     /**
      *
      * @return The concept that this shard is part of
      */
-    ConceptImpl concept(){
-        Optional<Object> concept = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD).
-                map(EdgeElement::getTarget).findAny();
-        if(concept.isPresent()) return (ConceptImpl) concept.get();
-        throw GraphOperationException.unlinkedShard(vertex().id());
+    ConceptImpl owner(){
+        return owner;
+    }
+
+    /**
+     *
+     * @param owner Sets the owner of this shard
+     */
+    private void owner(ConceptImpl owner){
+        vertex().addEdge(owner.vertex(), Schema.EdgeLabel.SHARD);
+    }
+
+    /**
+     * Links a new concept to this shard.
+     *
+     * @param concept The concept to link to this shard
+     */
+    void link(ConceptImpl concept){
+        concept.vertex().putEdge(vertex(), Schema.EdgeLabel.ISA);
+    }
+
+    /**
+     *
+     * @return All the concept linked to this shard
+     */
+    Stream<ConceptImpl> links(){
+        return  vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).
+                map(EdgeElement::getSource).
+                map(vertexElement ->  vertex().graph().factory().buildConcept(vertexElement));
+    }
+
+    /**
+     *
+     * @return The hash code of the underlying vertex
+     */
+    public int hashCode() {
+        return id().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+
+        Shard shard = (Shard) object;
+
+        //based on id because vertex comparisons are equivalent
+        return id().equals(shard.id());
     }
 }

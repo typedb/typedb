@@ -42,8 +42,8 @@ class Casting {
     private final EdgeElement edgeElement;
     private final Cache<RoleType> cachedRoleType = new Cache<>(() -> (RoleType) edge().graph().getType(TypeId.of(edge().property(Schema.EdgeProperty.ROLE_TYPE_ID))));
     private final Cache<RelationType> cachedRelationType = new Cache<>(() -> (RelationType) edge().graph().getType(TypeId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_ID))));
-    private final Cache<Instance> cachedInstance = new Cache<>(() -> edge().getTarget());
-    private final Cache<Relation> cachedRelation = new Cache<>(() -> edge().getSource());
+    private final Cache<Instance> cachedInstance = new Cache<>(() -> edge().graph().factory().buildConcept(edge().getTarget()));
+    private final Cache<Relation> cachedRelation = new Cache<>(() -> edge().graph().factory().buildConcept(edge().getSource()));
 
     Casting(EdgeElement edgeElement){
         this.edgeElement = edgeElement;
