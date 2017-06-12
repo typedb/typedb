@@ -20,15 +20,21 @@
 package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -50,9 +56,10 @@ public class GreedyTraversalPlan {
 
     /**
      * Create a traversal plan using the default maxTraersalAttempts.
-     * @see GreedyTraversalPlan#createTraversal(PatternAdmin, GraknGraph, long)
+     *
      * @param pattern a pattern to find a query plan for
      * @return a semi-optimal traversal plan
+     * @see GreedyTraversalPlan#createTraversal(PatternAdmin, GraknGraph, long)
      */
     public static GraqlTraversal createTraversal(PatternAdmin pattern, GraknGraph graph) {
         return createTraversal(pattern, graph, MAX_TRAVERSAL_ATTEMPTS);
@@ -72,7 +79,7 @@ public class GreedyTraversalPlan {
      * With fixed MAX_TRAVERSAL_ATTEMPTS, this method is O(n) where n is the size of the query. In general, it produces
      * optimal or nearly-optimal results, so a 'smarter' method may not be necessary.
      *
-     * @param pattern a pattern to find a query plan for
+     * @param pattern              a pattern to find a query plan for
      * @param maxTraversalAttempts number of traversal plans to test
      * @return a semi-optimal traversal plan
      */
@@ -91,11 +98,47 @@ public class GreedyTraversalPlan {
 
     /**
      * Create a semi-optimal plan using a greedy approach to execute a single conjunction
+     *
      * @param query the conjunction query to find a traversal plan
      * @return a semi-optimal traversal plan to execute the given conjunction
      */
     private static List<Fragment> semiOptimalConjunction(ConjunctionQuery query, long maxTraversalAttempts) {
         Plan initialPlan = Plan.base();
+
+        Map<Integer, Set<String>> varNameSetCluster = new HashMap<>();
+        final int[] index = {0};
+        query.getEquivalentFragmentSets().stream().flatMap(EquivalentFragmentSet::stream).forEach(fragment -> {
+
+            Set<Var> fragmentVarsSet = Sets.newHashSet(fragment.getVariableNames());
+            fragmentVarsSet.addAll(fragment.getDependencies());
+            Set<String> fragmentVarNameSet = fragmentVarsSet.stream().map(Var::getValue).collect(Collectors.toSet());
+
+            List<Integer> setsWithVarInCommon = new ArrayList<>();
+            varNameSetCluster.forEach((setIndex, varNameSet) -> {
+                if (!Collections.disjoint(varNameSet, fragmentVarNameSet)) {
+                    setsWithVarInCommon.add(setIndex);
+                }
+            });
+
+            if (setsWithVarInCommon.isEmpty()) {
+                index[0] += 1;
+                varNameSetCluster.put(index[0], fragmentVarNameSet);
+            } else {
+                Iterator<Integer> iterator = setsWithVarInCommon.iterator();
+                Integer firstSet = iterator.next();
+                varNameSetCluster.get(firstSet).addAll(fragmentVarNameSet);
+                while (iterator.hasNext()) {
+                    Integer nextSet = iterator.next();
+                    varNameSetCluster.get(firstSet).addAll(varNameSetCluster.get(nextSet));
+                    varNameSetCluster.remove(nextSet);
+                }
+            }
+        });
+        if (varNameSetCluster.size() != 1) {
+            System.out.println("varNameSetCluster = " + varNameSetCluster.size());
+            varNameSetCluster.entrySet().forEach(
+                    SetEntry -> System.out.println("     SetEntry : " + SetEntry));
+        }
 
         // Should always start with fragments with fixed cost
         // So remove them from fragmentSets and add them to the plan
@@ -138,15 +181,18 @@ public class GreedyTraversalPlan {
 
             plan.fragments().forEach(fragment -> fragmentSets.remove(fragment.getEquivalentFragmentSet()));
         }
+        System.out.println("plan.fragments() = " + plan.fragments());
+        System.out.println();
 
         return plan.fragments();
     }
 
     /**
      * Find a traversal plan that will satisfy the given equivalent fragment sets
-     * @param plan the plan so far
+     *
+     * @param plan         the plan so far
      * @param fragmentSets a set of equivalent fragment sets that must all be covered by the plan
-     * @param depth the maximum depth the plan is allowed to descend in the tree
+     * @param depth        the maximum depth the plan is allowed to descend in the tree
      * @return a new plan that extends the given plan
      */
     private static void extendPlan(Plan plan, List<Plan> allPlans, Set<EquivalentFragmentSet> fragmentSets, long depth) {
