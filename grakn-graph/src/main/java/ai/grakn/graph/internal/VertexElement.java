@@ -158,4 +158,13 @@ class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty>{
         }
     }
 
+    @Override
+    public String toString(){
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("Vertex [").append(id()).append("] /n");
+        element().properties().forEachRemaining(
+                p -> stringBuilder.append("Property [").append(p.key()).append("] value [").append(p.value()).append("] /n"));
+        return stringBuilder.toString();
+    }
+
 }

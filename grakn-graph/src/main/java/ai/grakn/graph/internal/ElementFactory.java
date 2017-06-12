@@ -143,7 +143,7 @@ final class ElementFactory {
         try {
             type = getBaseType(vertexElement);
         } catch (IllegalStateException e){
-            LOG.warn("Invalid vertex [" + vertexElement.element() + "] due to " + e.getMessage(), e);
+            LOG.warn("Invalid vertex [" + vertexElement + "] due to " + e.getMessage(), e);
             return null;
         }
 
@@ -212,7 +212,7 @@ final class ElementFactory {
                 if(label.equals(RULE_TYPE.name())) return Schema.BaseType.RULE;
             }
         }
-        throw new IllegalStateException("Could not determine the base type of vertex [" + vertex.element() + "]");
+        throw new IllegalStateException("Could not determine the base type of vertex [" + vertex + "]");
     }
 
     // ---------------------------------------- Non Concept Construction -----------------------------------------------
