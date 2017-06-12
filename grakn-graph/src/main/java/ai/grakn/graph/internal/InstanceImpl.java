@@ -64,7 +64,7 @@ import java.util.stream.Stream;
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
     private Cache<TypeLabel> cachedInternalType = new Cache<>(() -> {
         int typeId = property(Schema.ConceptProperty.INSTANCE_TYPE_ID);
-        Type type = graph().getConcept(Schema.ConceptProperty.TYPE_ID, typeId);
+        Type type = vertex().graph().getConcept(Schema.ConceptProperty.TYPE_ID, typeId);
         return type.getLabel();
     });
 
@@ -76,7 +76,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
             throw GraphOperationException.noType(this);
         }
 
-        return graph().factory().buildConcept(typeEdge.get().target());
+        return vertex().graph().factory().buildConcept(typeEdge.get().target());
     });
 
     InstanceImpl(VertexElement vertexElement) {
@@ -95,7 +95,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     public void delete() {
         Set<Relation> relations = castingsInstance().map(Casting::getRelation).collect(Collectors.toSet());
 
-        graph().txCache().removedInstance(type().getId());
+        vertex().graph().txCache().removedInstance(type().getId());
         deleteNode();
 
         relations.forEach(relation -> {
@@ -103,7 +103,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
                 relation.delete();
             } else {
                 RelationImpl rel = (RelationImpl) relation;
-                graph().txCache().trackForValidation(rel);
+                vertex().graph().txCache().trackForValidation(rel);
                 rel.cleanUp();
             }
         });
@@ -149,11 +149,11 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
 
     <X extends Instance> Set<X> getShortcutNeighbours(){
         Set<X> foundNeighbours = new HashSet<X>();
-        graph().getTinkerTraversal().
+        vertex().graph().getTinkerTraversal().
                 has(Schema.ConceptProperty.ID.name(), getId().getValue()).
                 in(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 out(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                forEachRemaining(vertex -> foundNeighbours.add(graph().buildConcept(vertex)));
+                forEachRemaining(vertex -> foundNeighbours.add(vertex().graph().buildConcept(vertex)));
         return foundNeighbours;
     }
 
@@ -165,7 +165,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     @Override
     public Collection<Relation> relations(RoleType... roleTypes) {
         Set<Relation> relations = new HashSet<>();
-        GraphTraversal<Vertex, Vertex> traversal = graph().getTinkerTraversal().
+        GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerTraversal().
                 has(Schema.ConceptProperty.ID.name(), getId().getValue());
 
         if(roleTypes.length == 0){
@@ -175,7 +175,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
             traversal.inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                     has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).outV();
         }
-        traversal.forEachRemaining(v -> relations.add(graph().buildConcept(v)));
+        traversal.forEachRemaining(v -> relations.add(vertex().graph().buildConcept(v)));
 
         return relations;
     }

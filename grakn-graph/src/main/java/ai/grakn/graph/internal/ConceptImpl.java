@@ -74,10 +74,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         return vertexElement;
     }
 
-    AbstractGraknGraph<?> graph(){
-        return vertex().graph();
-    }
-
     /**
      * Deletes the concept.
      * @throws GraphOperationException Throws an exception if the node has any edges attached to it.
@@ -106,7 +102,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * Deletes the node and adds it neighbours for validation
      */
     void deleteNode(){
-        graph().txCache().remove(this);
+        vertex().graph().txCache().remove(this);
         vertex().delete();
     }
 
@@ -117,31 +113,24 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The neighbouring concepts found by traversing edges of a specific type
      */
     <X extends Concept> Stream<X> neighbours(Direction direction, Schema.EdgeLabel label){
-        Stream<X> edges;
-
         switch (direction){
             case BOTH:
-                edges = vertex().getEdgesOfType(direction, label).
+                return vertex().getEdgesOfType(direction, label).
                         flatMap(edge -> Stream.of(
                                 vertex().graph().factory().buildConcept(edge.source()),
                                 vertex().graph().factory().buildConcept(edge.target())
                         ));
-                break;
             case IN:
-                edges = vertex().getEdgesOfType(direction, label).map(edge ->
+                return vertex().getEdgesOfType(direction, label).map(edge ->
                         vertex().graph().factory().buildConcept(edge.source())
                 );
-                break;
             case OUT:
-                edges = vertex().getEdgesOfType(direction, label).map(edge ->
+                return  vertex().getEdgesOfType(direction, label).map(edge ->
                         vertex().graph().factory().buildConcept(edge.target())
                 );
-                break;
             default:
                 throw GraphOperationException.invalidDirection(direction);
         }
-
-        return edges;
     }
 
     EdgeElement putEdge(Concept to, Schema.EdgeLabel label){
@@ -226,7 +215,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     @Override
     public final String toString(){
         try {
-            graph().validVertex(vertex().element());
+            vertex().graph().validVertex(vertex().element());
             return innerToString();
         } catch (RuntimeException e){
             // Vertex is broken somehow. Most likely deleted.
@@ -264,8 +253,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     //----------------------------------- Sharding Functionality
     Shard createShard(){
-        Vertex shardVertex = graph().addVertex(Schema.BaseType.SHARD);
-        Shard shard = graph().factory().buildShard(this, shardVertex);
+        Vertex shardVertex = vertex().graph().addVertex(Schema.BaseType.SHARD);
+        Shard shard = vertex().graph().factory().buildShard(this, shardVertex);
         property(Schema.ConceptProperty.CURRENT_SHARD, shard.id());
         return shard;
     }
@@ -277,8 +266,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     Shard currentShard(){
         String currentShardId = property(Schema.ConceptProperty.CURRENT_SHARD);
-        Vertex shardVertex = graph().getTinkerTraversal().has(Schema.ConceptProperty.ID.name(), currentShardId).next();
-        return graph().factory().buildShard(shardVertex);
+        Vertex shardVertex = vertex().graph().getTinkerTraversal().has(Schema.ConceptProperty.ID.name(), currentShardId).next();
+        return vertex().graph().factory().buildShard(shardVertex);
     }
 
     long getShardCount(){

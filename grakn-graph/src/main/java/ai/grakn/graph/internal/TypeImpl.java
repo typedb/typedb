@@ -82,7 +82,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         Map<RoleType, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-            RoleType roleType = graph().factory().buildConcept(edge.target());
+            RoleType roleType = vertex().graph().factory().buildConcept(edge.target());
             Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
             roleTypes.put(roleType, required);
         });
@@ -130,7 +130,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return A new or already existing instance
      */
     V putInstance(Schema.BaseType instanceBaseType, Supplier<V> finder, BiFunction<Vertex, T, V> producer) {
-        graph().checkMutationAllowed();
+        vertex().graph().checkMutationAllowed();
 
         V instance = finder.get();
         if(instance == null) instance = addInstance(instanceBaseType, producer);
@@ -145,7 +145,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return A new instance
      */
     V addInstance(Schema.BaseType instanceBaseType, BiFunction<Vertex, T, V> producer){
-        graph().checkMutationAllowed();
+        vertex().graph().checkMutationAllowed();
 
         if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
             throw GraphOperationException.metaTypeImmutable(getLabel());
@@ -153,9 +153,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         if(isAbstract()) throw GraphOperationException.addingInstancesToAbstractType(this);
 
-        Vertex instanceVertex = graph().addVertex(instanceBaseType);
+        Vertex instanceVertex = vertex().graph().addVertex(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
-            graph().txCache().addedInstance(getId());
+            vertex().graph().txCache().addedInstance(getId());
         }
         return producer.apply(instanceVertex, getThis());
     }
@@ -201,13 +201,13 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     }
 
     private Collection<ResourceType> resources(Schema.ImplicitType implicitType){
-        return CommonUtil.withImplicitConceptsVisible(graph(), () -> {
+        return CommonUtil.withImplicitConceptsVisible(vertex().graph(), () -> {
             //TODO: Make this less convoluted
             String [] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
             String prefix = implicitIdentifiers[0] + "-";
             String suffix = "-" + implicitIdentifiers[1];
 
-            graph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retrieved
+            vertex().graph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retrieved
 
             Set<ResourceType> resourceTypes = new HashSet<>();
             //A traversal is not used in this caching so that ontology caching can be taken advantage of.
@@ -215,7 +215,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
                 String roleTypeLabel = roleType.getLabel().getValue();
                 if(roleTypeLabel.startsWith(prefix) && roleTypeLabel.endsWith(suffix)){ //This is the implicit type we want
                     String resourceTypeLabel = roleTypeLabel.replace(prefix, "").replace(suffix, "");
-                    resourceTypes.add(graph().getResourceType(resourceTypeLabel));
+                    resourceTypes.add(vertex().graph().getResourceType(resourceTypeLabel));
                 }
             }));
 
@@ -228,7 +228,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     }
 
     private <X extends Concept> Set<X> filterImplicitStructures(Set<X> types){
-        if (!graph().implicitConceptsVisible() && !types.isEmpty() && types.iterator().next().isType()) {
+        if (!vertex().graph().implicitConceptsVisible() && !types.isEmpty() && types.iterator().next().isType()) {
             return types.stream().filter(t -> !t.asType().isImplicit()).collect(Collectors.toSet());
         }
         return types;
@@ -265,7 +265,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             cachedDirectPlays.clear();
 
             //Clear Global Cache
-            graph().txCache().remove(this);
+            vertex().graph().txCache().remove(this);
         }
     }
 
@@ -349,7 +349,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public Collection<V> instances() {
         final Set<V> instances = new HashSet<>();
 
-        GraphTraversal<Vertex, Vertex> traversal = graph().getTinkerPopGraph().traversal().V()
+        GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerPopGraph().traversal().V()
                 .has(Schema.ConceptProperty.TYPE_ID.name(), getTypeId().getValue())
                 .union(__.identity(),
                         __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
@@ -358,7 +358,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
                 .in(Schema.EdgeLabel.ISA.getLabel());
 
         traversal.forEachRemaining(vertex -> {
-            ConceptImpl<Concept> concept = graph().factory().buildConcept(vertex);
+            ConceptImpl<Concept> concept = vertex().graph().factory().buildConcept(vertex);
             if (concept != null) instances.add((V) concept);
         });
 
@@ -474,7 +474,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             instances().forEach(concept -> {
                 if (concept.isInstance()) {
                     ((InstanceImpl<?, ?>) concept).castingsInstance().forEach(
-                            rolePlayer -> graph().txCache().trackForValidation(rolePlayer));
+                            rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
                 }
             });
         }
@@ -550,7 +550,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         //Add roleplayers to tracking to make sure they can still be played.
         instances().forEach(concept -> {
             if (concept.isInstance()) {
-                ((InstanceImpl<?, ?>) concept).castingsInstance().forEach(rolePlayer -> graph().txCache().trackForValidation(rolePlayer));
+                ((InstanceImpl<?, ?>) concept).castingsInstance().forEach(rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
             }
         });
 
@@ -593,7 +593,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * 2. The graph is not batch loading
      */
     void checkTypeMutationAllowed(){
-        graph().checkOntologyMutationAllowed();
+        vertex().graph().checkOntologyMutationAllowed();
         if(Schema.MetaSchema.isMetaLabel(getLabel())){
             throw GraphOperationException.metaTypeImmutable(getLabel());
         }
@@ -618,9 +618,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         }
 
         TypeLabel resourceTypeLabel = resourceType.getLabel();
-        RoleType ownerRole = graph().putRoleTypeImplicit(hasOwner.getLabel(resourceTypeLabel));
-        RoleType valueRole = graph().putRoleTypeImplicit(hasValue.getLabel(resourceTypeLabel));
-        RelationType relationType = graph().putRelationTypeImplicit(has.getLabel(resourceTypeLabel)).
+        RoleType ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(resourceTypeLabel));
+        RoleType valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(resourceTypeLabel));
+        RelationType relationType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceTypeLabel)).
                 relates(ownerRole).
                 relates(valueRole);
 
@@ -628,9 +628,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         ResourceType resourceTypeSuper = resourceType.superType();
         TypeLabel superLabel = resourceTypeSuper.getLabel();
         if(!Schema.MetaSchema.RESOURCE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
-            RoleType ownerRoleSuper = graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
-            RoleType valueRoleSuper = graph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
-            RelationType relationTypeSuper = graph().putRelationTypeImplicit(has.getLabel(superLabel)).
+            RoleType ownerRoleSuper = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
+            RoleType valueRoleSuper = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
+            RelationType relationTypeSuper = vertex().graph().putRelationTypeImplicit(has.getLabel(superLabel)).
                     relates(ownerRoleSuper).relates(valueRoleSuper);
 
             //Create the super type edges from sub role/relations to super roles/relation

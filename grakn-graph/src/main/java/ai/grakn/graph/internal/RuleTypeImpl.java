@@ -52,12 +52,11 @@ class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
         if(rhs == null) throw GraphOperationException.settingNullProperty(Schema.ConceptProperty.RULE_RHS);
 
         return putInstance(Schema.BaseType.RULE,
-                () -> getRule(lhs, rhs), (vertex, type) ->
-                        graph().factory().buildRule(vertex, type, lhs, rhs));
+                () -> getRule(lhs, rhs), (vertex, type) -> vertex().graph().factory().buildRule(vertex, type, lhs, rhs));
     }
 
     private Rule getRule(Pattern lhs, Pattern rhs) {
         String index = RuleImpl.generateRuleIndex(this, lhs, rhs);
-        return graph().getConcept(Schema.ConceptProperty.INDEX, index);
+        return vertex().graph().getConcept(Schema.ConceptProperty.INDEX, index);
     }
 }

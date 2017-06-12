@@ -76,17 +76,17 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     Stream<Casting> castingsRelation(RoleType... roleTypes){
         if(roleTypes.length == 0){
             return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
-                    map(edge -> graph().factory().buildRolePlayer(edge));
+                    map(edge -> vertex().graph().factory().buildRolePlayer(edge));
         }
 
         //Traversal is used so we can potentially optimise on the index
         Set<Integer> roleTypesIds = Arrays.stream(roleTypes).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
-        return graph().getTinkerTraversal().
+        return vertex().graph().getTinkerTraversal().
                 has(Schema.ConceptProperty.ID.name(), getId().getValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), type().getTypeId().getValue()).
                 has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).
-                toStream().map(edge -> graph().factory().buildRolePlayer(edge));
+                toStream().map(edge -> vertex().graph().factory().buildRolePlayer(edge));
     }
 
     /**
@@ -159,7 +159,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @return The Relation itself
      */
     private Relation addNewRolePlayer(RoleType roleType, Instance instance){
-        graph().putShortcutEdge((InstanceImpl) instance, this, (RoleTypeImpl) roleType);
+        vertex().graph().putShortcutEdge((InstanceImpl) instance, this, (RoleTypeImpl) roleType);
         return this;
     }
 
