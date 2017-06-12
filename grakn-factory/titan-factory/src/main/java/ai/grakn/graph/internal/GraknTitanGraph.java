@@ -106,7 +106,7 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    Vertex addVertex(Schema.BaseType baseType){
+    VertexElement addVertex(Schema.BaseType baseType){
         return executeLockingMethod(() -> super.addVertex(baseType));
     }
 
