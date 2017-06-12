@@ -371,7 +371,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public Iterator<Answer> iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        Iterator<ReasonerAtomicQueryIterator> qIterator = getQueryStream()
+        Iterator<ReasonerAtomicQueryIterator> qIterator = getQueryStream(sub)
                 .map(q -> new ReasonerAtomicQueryIterator(q, sub, subGoals, cache))
                 .iterator();
         return Iterators.concat(qIterator);
@@ -380,9 +380,17 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * @return stream of atomic query obtained by inserting all inferred possible types (if ambiguous)
      */
-    private Stream<ReasonerAtomicQuery> getQueryStream(){
-        Atom atom = getAtom();
-        if (!atom.isRelation() || atom.getType() != null) return Stream.of(this);
+    private Stream<ReasonerAtomicQuery> getQueryStream(Answer sub){
+
+        //ReasonerAtomicQuery query = this;
+
+        Set<TypeAtom> types = getAtom().getType() == null? this.inferEntityTypes(sub) : Collections.emptySet();
+        ReasonerAtomicQuery query = types.isEmpty()? this : new ReasonerAtomicQuery(this);
+        if(!types.isEmpty()) types.forEach(query::addAtomic);
+
+
+        Atom atom = query.getAtom();
+        if (!atom.isRelation() || atom.getType() != null) return Stream.of(query);
         else{
             List<RelationType> relationTypes = ((Relation) atom).inferPossibleRelationTypes();
             return relationTypes.stream()
