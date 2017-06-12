@@ -52,7 +52,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
 
     ResourceTypeImpl(VertexElement vertexElement, ResourceType<D> type, DataType<D> dataType) {
         super(vertexElement, type);
-        setImmutableProperty(Schema.VertexProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
+        vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
     }
 
     /**

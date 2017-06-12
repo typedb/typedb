@@ -103,7 +103,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
         this(vertexElement, superType);
-        setImmutableProperty(Schema.VertexProperty.IS_IMPLICIT, isImplicit, vertex().property(Schema.VertexProperty.IS_IMPLICIT), Function.identity());
+        vertex().propertyImmutable(Schema.VertexProperty.IS_IMPLICIT, isImplicit, vertex().property(Schema.VertexProperty.IS_IMPLICIT), Function.identity());
         cachedIsImplicit.set(isImplicit);
     }
 

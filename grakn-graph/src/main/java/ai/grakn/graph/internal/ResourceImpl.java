@@ -98,9 +98,10 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
             ResourceTypeImpl<D> resourceType = (ResourceTypeImpl<D>) type();
             Schema.VertexProperty property = dataType().getVertexProperty();
             //noinspection unchecked
-            setImmutableProperty(property, castValue(value), vertex().property(property), (v) -> resourceType.getDataType().getPersistenceValue((D) v));
+            vertex().propertyImmutable(property, castValue(value), vertex().property(property), (v) -> resourceType.getDataType().getPersistenceValue((D) v));
+            vertex().propertyUnique(Schema.VertexProperty.INDEX, generateResourceIndex(type().getLabel(), value.toString()));
 
-            return propertyUnique(Schema.VertexProperty.INDEX, generateResourceIndex(type().getLabel(), value.toString()));
+            return getThis();
         } catch (ClassCastException e) {
             throw GraphOperationException.invalidResourceValue(value, dataType());
         }

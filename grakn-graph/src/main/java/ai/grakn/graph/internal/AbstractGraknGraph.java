@@ -491,7 +491,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(Schema.MetaSchema.isMetaLabel(label)) {
             throw GraphOperationException.metaTypeImmutable(label);
         } else if(!dataType.equals(resourceType.getDataType())){
-            throw GraphOperationException.immutableProperty(resourceType.getDataType(), dataType, resourceType, Schema.VertexProperty.DATA_TYPE);
+            throw GraphOperationException.immutableProperty(resourceType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE);
         }
 
         return resourceType;

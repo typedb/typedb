@@ -44,7 +44,7 @@ public enum ErrorMessage {
     REGEX_NOT_STRING("The Resource Type [%s] is not of type String so it cannot support regular expressions"),
     CLOSED_CLEAR("The session for graph has been closed due to deleting the graph"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The transaction was not %s. The graph was actually effected directly"),
-    IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
+    IMMUTABLE_VALUE("The value [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),

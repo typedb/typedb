@@ -49,9 +49,9 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
 
     RuleImpl(VertexElement vertexElement, RuleType type, Pattern lhs, Pattern rhs) {
         super(vertexElement, type);
-        setImmutableProperty(Schema.VertexProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
-        setImmutableProperty(Schema.VertexProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
-        propertyUnique(Schema.VertexProperty.INDEX, generateRuleIndex(type(), lhs, rhs));
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
+        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateRuleIndex(type(), lhs, rhs));
     }
 
     /**

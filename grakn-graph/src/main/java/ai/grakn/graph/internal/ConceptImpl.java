@@ -32,13 +32,11 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -81,22 +79,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     @Override
     public void delete() throws GraphOperationException {
         deleteNode();
-    }
-
-    /**
-     *
-     * @param key The key of the unique property to mutate
-     * @param value The new value of the unique property
-     * @return The concept itself casted to the correct interface itself
-     */
-    T propertyUnique(Schema.VertexProperty key, String value){
-        if(!vertex().graph().isBatchGraph()) {
-            Concept fetchedConcept = vertex().graph().getConcept(key, value);
-            if (fetchedConcept != null) throw PropertyNotUniqueException.cannotChangeProperty(this, fetchedConcept, key, value);
-        }
-
-        vertex().property(key, value);
-        return getThis();
     }
 
     /**
@@ -210,20 +192,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         return message;
     }
 
-    <X> void setImmutableProperty(Schema.VertexProperty vertexProperty, X newValue, X foundValue, Function<X, Object> converter){
-        if(newValue == null){
-            throw GraphOperationException.settingNullProperty(vertexProperty);
-        }
-
-        if(foundValue != null){
-            if(!foundValue.equals(newValue)){
-                throw GraphOperationException.immutableProperty(foundValue, newValue, this, vertexProperty);
-            }
-        } else {
-            vertex().property(vertexProperty, converter.apply(newValue));
-        }
-    }
-    
     @Override
     public int compareTo(Concept o) {
         return this.getId().compareTo(o.getId());

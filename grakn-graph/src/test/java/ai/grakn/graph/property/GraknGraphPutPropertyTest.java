@@ -161,7 +161,7 @@ public class GraknGraphPutPropertyTest {
         if(isMetaLabel(typeLabel)) {
             exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeLabel));
         } else {
-            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.VertexProperty.DATA_TYPE.name()));
+            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE.name()));
         }
 
         graph.putResourceType(typeLabel, dataType);

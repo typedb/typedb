@@ -137,8 +137,8 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when attempting to mutate a property which is immutable
      */
-    public static GraphOperationException immutableProperty(Object oldValue, Object newValue, Concept conceptBeingMutated, Schema.VertexProperty vertexProperty){
-        return new GraphOperationException(ErrorMessage.IMMUTABLE_VALUE.getMessage(oldValue, conceptBeingMutated, newValue, vertexProperty.name()));
+    public static GraphOperationException immutableProperty(Object oldValue, Object newValue, Schema.VertexProperty vertexProperty){
+        return new GraphOperationException(ErrorMessage.IMMUTABLE_VALUE.getMessage(oldValue, newValue, vertexProperty.name()));
     }
 
     /**
