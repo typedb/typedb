@@ -64,7 +64,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * Sets the internal hash in order to perform a faster lookup
      */
     void setHash(){
-        propertyUnique(Schema.ConceptProperty.INDEX, generateNewHash(type(), allRolePlayers()));
+        propertyUnique(Schema.VertexProperty.INDEX, generateNewHash(type(), allRolePlayers()));
     }
 
     /**
@@ -82,7 +82,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
         //Traversal is used so we can potentially optimise on the index
         Set<Integer> roleTypesIds = Arrays.stream(roleTypes).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
         return vertex().graph().getTinkerTraversal().
-                has(Schema.ConceptProperty.ID.name(), getId().getValue()).
+                has(Schema.VertexProperty.ID.name(), getId().getValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), type().getTypeId().getValue()).
                 has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).

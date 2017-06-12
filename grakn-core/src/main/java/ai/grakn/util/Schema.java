@@ -147,7 +147,7 @@ public final class Schema {
     /**
      * An enum which defines the non-unique mutable properties of the concept.
      */
-    public enum ConceptProperty {
+    public enum VertexProperty {
         //Unique Properties
         TYPE_LABEL(String.class), INDEX(String.class), ID(String.class), TYPE_ID(Integer.class),
 
@@ -164,7 +164,7 @@ public final class Schema {
 
         private final Class dataType;
 
-        ConceptProperty(Class dataType) {
+        VertexProperty(Class dataType) {
             this.dataType = dataType;
         }
 

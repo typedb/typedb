@@ -34,7 +34,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,8 +70,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     private final TypeId cachedTypeId;
     private final TypeLabel cachedTypeLabel;
-    private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> propertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
-    private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> propertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
+    private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
+    private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
     private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
     private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
     private Cache<Set<T>> cachedShards = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
@@ -92,9 +91,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(VertexElement vertexElement) {
         super(vertexElement);
-        VertexProperty<String> typeLabel = vertex().element().property(Schema.ConceptProperty.TYPE_LABEL.name());
-        cachedTypeLabel = TypeLabel.of(typeLabel.value());
-        cachedTypeId = TypeId.of(vertex().element().value(Schema.ConceptProperty.TYPE_ID.name()));
+        String typeLabel = vertex().property(Schema.VertexProperty.TYPE_LABEL);
+        cachedTypeLabel = TypeLabel.of(typeLabel);
+        cachedTypeId = TypeId.of(vertex().element().value(Schema.VertexProperty.TYPE_ID.name()));
     }
 
     TypeImpl(VertexElement vertexElement, T superType) {
@@ -104,7 +103,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
         this(vertexElement, superType);
-        setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit, property(Schema.ConceptProperty.IS_IMPLICIT), Function.identity());
+        setImmutableProperty(Schema.VertexProperty.IS_IMPLICIT, isImplicit, vertex().property(Schema.VertexProperty.IS_IMPLICIT), Function.identity());
         cachedIsImplicit.set(isImplicit);
     }
 
@@ -350,7 +349,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         final Set<V> instances = new HashSet<>();
 
         GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerPopGraph().traversal().V()
-                .has(Schema.ConceptProperty.TYPE_ID.name(), getTypeId().getValue())
+                .has(Schema.VertexProperty.TYPE_ID.name(), getTypeId().getValue())
                 .union(__.identity(),
                         __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
                 ).unfold()
@@ -576,15 +575,15 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             throw GraphOperationException.addingInstancesToAbstractType(this);
         }
 
-        property(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
+        property(Schema.VertexProperty.IS_ABSTRACT, isAbstract);
         cachedIsAbstract.set(isAbstract);
         return getThis();
     }
 
-    @Override
-    T property(Schema.ConceptProperty key, Object value){
-        if(!Schema.ConceptProperty.CURRENT_TYPE_ID.equals(key)) checkTypeMutationAllowed();
-        return super.property(key, value);
+    T property(Schema.VertexProperty key, Object value){
+        if(!Schema.VertexProperty.CURRENT_TYPE_ID.equals(key)) checkTypeMutationAllowed();
+        vertex().property(key, value);
+        return getThis();
     }
 
     /**

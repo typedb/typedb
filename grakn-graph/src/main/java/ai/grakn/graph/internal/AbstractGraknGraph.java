@@ -136,14 +136,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private TypeId getNextId(){
         TypeImpl<?, ?> metaConcept = (TypeImpl<?, ?>) getMetaConcept();
-        Integer currentValue = metaConcept.property(Schema.ConceptProperty.CURRENT_TYPE_ID);
+        Integer currentValue = metaConcept.vertex().property(Schema.VertexProperty.CURRENT_TYPE_ID);
         if(currentValue == null){
             currentValue = Schema.MetaSchema.values().length + 1;
         } else {
             currentValue = currentValue + 1;
         }
         //Vertex is used directly here to bypass meta type mutation check
-        metaConcept.property(Schema.ConceptProperty.CURRENT_TYPE_ID, currentValue);
+        metaConcept.property(Schema.VertexProperty.CURRENT_TYPE_ID, currentValue);
         return TypeId.of(currentValue);
     }
 
@@ -249,11 +249,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             Vertex inferenceRuleType = addTypeVertex(Schema.MetaSchema.INFERENCE_RULE.getId(), Schema.MetaSchema.INFERENCE_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
             Vertex constraintRuleType = addTypeVertex(Schema.MetaSchema.CONSTRAINT_RULE.getId(), Schema.MetaSchema.CONSTRAINT_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
 
-            relationType.property(Schema.ConceptProperty.IS_ABSTRACT.name(), true);
-            roleType.property(Schema.ConceptProperty.IS_ABSTRACT.name(), true);
-            resourceType.property(Schema.ConceptProperty.IS_ABSTRACT.name(), true);
-            ruleType.property(Schema.ConceptProperty.IS_ABSTRACT.name(), true);
-            entityType.property(Schema.ConceptProperty.IS_ABSTRACT.name(), true);
+            relationType.property(Schema.VertexProperty.IS_ABSTRACT.name(), true);
+            roleType.property(Schema.VertexProperty.IS_ABSTRACT.name(), true);
+            resourceType.property(Schema.VertexProperty.IS_ABSTRACT.name(), true);
+            ruleType.property(Schema.VertexProperty.IS_ABSTRACT.name(), true);
+            entityType.property(Schema.VertexProperty.IS_ABSTRACT.name(), true);
 
             relationType.addEdge(Schema.EdgeLabel.SUB.getLabel(), type);
             roleType.addEdge(Schema.EdgeLabel.SUB.getLabel(), type);
@@ -281,7 +281,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private void createMetaShard(Vertex metaNode, Schema.BaseType baseType){
         Vertex metaShard = addVertex(baseType);
         metaShard.addEdge(Schema.EdgeLabel.SHARD.getLabel(), metaNode);
-        metaNode.property(Schema.ConceptProperty.CURRENT_SHARD.name(), metaShard.id().toString());
+        metaNode.property(Schema.VertexProperty.CURRENT_SHARD.name(), metaShard.id().toString());
     }
 
     private boolean isMetaOntologyNotInitialised(){
@@ -310,7 +310,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //----------------------------------------------General Functionality-----------------------------------------------
     @Override
-    public <T extends Concept> T  getConcept(Schema.ConceptProperty key, Object value) {
+    public <T extends Concept> T  getConcept(Schema.VertexProperty key, Object value) {
         Iterator<Vertex> vertices = getTinkerTraversal().has(key.name(), value);
 
         if(vertices.hasNext()){
@@ -324,7 +324,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    private Set<ConceptImpl> getConcepts(Schema.ConceptProperty key, Object value){
+    private Set<ConceptImpl> getConcepts(Schema.VertexProperty key, Object value){
         Set<ConceptImpl> concepts = new HashSet<>();
         getTinkerTraversal().has(key.name(), value).
             forEachRemaining(v -> concepts.add(factory().buildConcept(v)));
@@ -345,7 +345,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //------------------------------------ Construction
     Vertex addVertex(Schema.BaseType baseType){
         Vertex vertex = operateOnOpenGraph(() -> getTinkerPopGraph().addVertex(baseType.name()));
-        vertex.property(Schema.ConceptProperty.ID.name(), vertex.id().toString());
+        vertex.property(Schema.VertexProperty.ID.name(), vertex.id().toString());
         return vertex;
     }
 
@@ -356,7 +356,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             vertex = addTypeVertex(getNextId(), label, baseType);
         } else {
             if(!baseType.equals(concept.baseType())) {
-                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.ConceptProperty.TYPE_LABEL, label);
+                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.VertexProperty.TYPE_LABEL, label);
             }
             vertex = concept.vertex().element();
         }
@@ -373,8 +373,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private Vertex addTypeVertex(TypeId id, TypeLabel label, Schema.BaseType baseType){
         Vertex vertex = addVertex(baseType);
-        vertex.property(Schema.ConceptProperty.TYPE_LABEL.name(), label.getValue());
-        vertex.property(Schema.ConceptProperty.TYPE_ID.name(), id.getValue());
+        vertex.property(Schema.VertexProperty.TYPE_LABEL.name(), label.getValue());
+        vertex.property(Schema.VertexProperty.TYPE_ID.name(), id.getValue());
         return vertex;
     }
 
@@ -406,7 +406,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         TypeImpl type = buildType(label, () -> factory.apply(putVertex(label, baseType)));
 
         T finalType = validateConceptType(type, baseType, () -> {
-            throw PropertyNotUniqueException.cannotCreateProperty(type, Schema.ConceptProperty.TYPE_LABEL, label);
+            throw PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.TYPE_LABEL, label);
         });
 
         //Automatic shard creation - If this type does not have a shard create one
@@ -491,7 +491,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(Schema.MetaSchema.isMetaLabel(label)) {
             throw GraphOperationException.metaTypeImmutable(label);
         } else if(!dataType.equals(resourceType.getDataType())){
-            throw GraphOperationException.immutableProperty(resourceType.getDataType(), dataType, resourceType, Schema.ConceptProperty.DATA_TYPE);
+            throw GraphOperationException.immutableProperty(resourceType.getDataType(), dataType, resourceType, Schema.VertexProperty.DATA_TYPE);
         }
 
         return resourceType;
@@ -514,7 +514,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(txCache().isConceptCached(id)){
             return txCache().getCachedConcept(id);
         } else {
-            return getConcept(Schema.ConceptProperty.ID, id.getValue());
+            return getConcept(Schema.VertexProperty.ID, id.getValue());
         }
     }
     private <T extends Type> T getType(TypeLabel label, Schema.BaseType baseType){
@@ -525,7 +525,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
     <T extends Type> T getType(TypeId id){
         if(!id.isValid()) return null;
-        return getConcept(Schema.ConceptProperty.TYPE_ID, id.getValue());
+        return getConcept(Schema.VertexProperty.TYPE_ID, id.getValue());
     }
 
     @Override
@@ -541,7 +541,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName());
 
         //noinspection unchecked
-        getConcepts(dataType.getConceptProperty(), dataType.getPersistenceValue(value)).forEach(concept -> {
+        getConcepts(dataType.getVertexProperty(), dataType.getPersistenceValue(value)).forEach(concept -> {
             if(concept != null && concept.isResource()) {
                 //noinspection unchecked
                 resources.add(concept.asResource());
@@ -803,7 +803,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private ConceptImpl getMainConcept(String index){
         //This is done to ensure we merge into the indexed casting.
-        return getConcept(Schema.ConceptProperty.INDEX, index);
+        return getConcept(Schema.VertexProperty.INDEX, index);
     }
 
     /**
@@ -844,7 +844,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
             //Restore the index
             String newIndex = mainResource.getIndex();
-            mainResource.vertex().element().property(Schema.ConceptProperty.INDEX.name(), newIndex);
+            mainResource.vertex().element().property(Schema.VertexProperty.INDEX.name(), newIndex);
 
             return true;
         }
@@ -863,7 +863,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //This allows us to find relations far more quickly.
         String newIndex = otherRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
         RelationImpl foundRelation = txCache().getCachedRelation(newIndex);
-        if(foundRelation == null) foundRelation = getConcept(Schema.ConceptProperty.INDEX, newIndex);
+        if(foundRelation == null) foundRelation = getConcept(Schema.VertexProperty.INDEX, newIndex);
 
         if (foundRelation != null) {//If it exists delete the other one
             otherRelation.deleteNode(); //Raw deletion because the castings should remain

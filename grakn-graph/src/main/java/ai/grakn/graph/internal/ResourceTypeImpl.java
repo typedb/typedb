@@ -52,7 +52,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
 
     ResourceTypeImpl(VertexElement vertexElement, ResourceType<D> type, DataType<D> dataType) {
         super(vertexElement, type);
-        setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
+        setImmutableProperty(Schema.VertexProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
     }
 
     /**
@@ -77,7 +77,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
 
         checkInstancesMatchRegex(regex);
 
-        return property(Schema.ConceptProperty.REGEX, regex);
+        return property(Schema.VertexProperty.REGEX, regex);
     }
 
     /**
@@ -103,7 +103,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @SuppressWarnings("unchecked")
     @Override
     public Resource<D> putResource(D value) {
-        if(value == null) throw GraphOperationException.settingNullProperty(getDataType().getConceptProperty());
+        if(value == null) throw GraphOperationException.settingNullProperty(getDataType().getVertexProperty());
         return putInstance(Schema.BaseType.RESOURCE,
                 () -> getResource(value), (vertex, type) -> vertex().graph().factory().buildResource(vertex, type, value));
     }
@@ -111,7 +111,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @Override
     public <V> Resource<V> getResource(V value) {
         String index = Schema.generateResourceIndex(getLabel(), value.toString());
-        return vertex().graph().getConcept(Schema.ConceptProperty.INDEX, index);
+        return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);
     }
 
     /**
@@ -121,7 +121,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
     @Override
     public DataType<D> getDataType() {
-        return (DataType<D>) DataType.SUPPORTED_TYPES.get(property(Schema.ConceptProperty.DATA_TYPE));
+        return (DataType<D>) DataType.SUPPORTED_TYPES.get(vertex().property(Schema.VertexProperty.DATA_TYPE));
     }
 
     /**
@@ -129,7 +129,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      */
     @Override
     public String getRegex() {
-        return property(Schema.ConceptProperty.REGEX);
+        return vertex().property(Schema.VertexProperty.REGEX);
     }
 
 }

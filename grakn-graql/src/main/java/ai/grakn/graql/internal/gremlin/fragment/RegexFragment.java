@@ -24,7 +24,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.graql.internal.util.StringConverter.valueToString;
-import static ai.grakn.util.Schema.ConceptProperty.REGEX;
+import static ai.grakn.util.Schema.VertexProperty.REGEX;
 
 class RegexFragment extends AbstractFragment {
 

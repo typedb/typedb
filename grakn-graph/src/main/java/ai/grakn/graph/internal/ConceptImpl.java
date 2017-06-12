@@ -89,13 +89,14 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param value The new value of the unique property
      * @return The concept itself casted to the correct interface itself
      */
-    T propertyUnique(Schema.ConceptProperty key, String value){
+    T propertyUnique(Schema.VertexProperty key, String value){
         if(!vertex().graph().isBatchGraph()) {
             Concept fetchedConcept = vertex().graph().getConcept(key, value);
             if (fetchedConcept != null) throw PropertyNotUniqueException.cannotChangeProperty(this, fetchedConcept, key, value);
         }
 
-        return property(key, value);
+        vertex().property(key, value);
+        return getThis();
     }
 
     /**
@@ -155,29 +156,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     /**
      *
-     * @param key The key of the non-unique property to mutate
-     * @param value The value to commit into the property
-     * @return The concept itself casted to the correct interface
-     */
-    T property(Schema.ConceptProperty key, Object value){
-        vertex().property(key.name(), value);
-        return getThis();
-    }
-
-    /**
-     *
-     * @param key The key of the non-unique property to retrieve
-     * @return The value stored in the property
-     */
-    public <X> X property(Schema.ConceptProperty key){
-        return vertex().property(key.name());
-    }
-    Boolean propertyBoolean(Schema.ConceptProperty key){
-        return vertex().propertyBoolean(key.name());
-    }
-
-    /**
-     *
      * @return The base type of this concept which helps us identify the concept
      */
     Schema.BaseType baseType(){
@@ -232,17 +210,17 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         return message;
     }
 
-    <X> void setImmutableProperty(Schema.ConceptProperty conceptProperty, X newValue, X foundValue, Function<X, Object> converter){
+    <X> void setImmutableProperty(Schema.VertexProperty vertexProperty, X newValue, X foundValue, Function<X, Object> converter){
         if(newValue == null){
-            throw GraphOperationException.settingNullProperty(conceptProperty);
+            throw GraphOperationException.settingNullProperty(vertexProperty);
         }
 
         if(foundValue != null){
             if(!foundValue.equals(newValue)){
-                throw GraphOperationException.immutableProperty(foundValue, newValue, this, conceptProperty);
+                throw GraphOperationException.immutableProperty(foundValue, newValue, this, vertexProperty);
             }
         } else {
-            property(conceptProperty, converter.apply(newValue));
+            vertex().property(vertexProperty, converter.apply(newValue));
         }
     }
     
@@ -255,7 +233,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     Shard createShard(){
         Vertex shardVertex = vertex().graph().addVertex(Schema.BaseType.SHARD);
         Shard shard = vertex().graph().factory().buildShard(this, shardVertex);
-        property(Schema.ConceptProperty.CURRENT_SHARD, shard.id());
+        vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         return shard;
     }
 
@@ -265,19 +243,19 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     }
 
     Shard currentShard(){
-        String currentShardId = property(Schema.ConceptProperty.CURRENT_SHARD);
-        Vertex shardVertex = vertex().graph().getTinkerTraversal().has(Schema.ConceptProperty.ID.name(), currentShardId).next();
+        String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
+        Vertex shardVertex = vertex().graph().getTinkerTraversal().has(Schema.VertexProperty.ID.name(), currentShardId).next();
         return vertex().graph().factory().buildShard(shardVertex);
     }
 
     long getShardCount(){
-        Long value = property(Schema.ConceptProperty.SHARD_COUNT);
+        Long value = vertex().property(Schema.VertexProperty.SHARD_COUNT);
         if(value == null) return 0L;
         return value;
     }
 
     void setShardCount(Long instanceCount){
-        property(Schema.ConceptProperty.SHARD_COUNT, instanceCount);
+        vertex().property(Schema.VertexProperty.SHARD_COUNT, instanceCount);
     }
 
     /**

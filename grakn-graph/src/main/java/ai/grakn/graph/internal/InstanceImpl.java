@@ -63,8 +63,8 @@ import java.util.stream.Stream;
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
     private Cache<TypeLabel> cachedInternalType = new Cache<>(() -> {
-        int typeId = property(Schema.ConceptProperty.INSTANCE_TYPE_ID);
-        Type type = vertex().graph().getConcept(Schema.ConceptProperty.TYPE_ID, typeId);
+        int typeId = vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID);
+        Type type = vertex().graph().getConcept(Schema.VertexProperty.TYPE_ID, typeId);
         return type.getLabel();
     });
 
@@ -114,7 +114,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return The inner index value of some concepts.
      */
     public String getIndex(){
-        return property(Schema.ConceptProperty.INDEX);
+        return vertex().property(Schema.VertexProperty.INDEX);
     }
 
     /**
@@ -150,7 +150,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     <X extends Instance> Set<X> getShortcutNeighbours(){
         Set<X> foundNeighbours = new HashSet<X>();
         vertex().graph().getTinkerTraversal().
-                has(Schema.ConceptProperty.ID.name(), getId().getValue()).
+                has(Schema.VertexProperty.ID.name(), getId().getValue()).
                 in(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 out(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 forEachRemaining(vertex -> foundNeighbours.add(vertex().graph().buildConcept(vertex)));
@@ -166,7 +166,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     public Collection<Relation> relations(RoleType... roleTypes) {
         Set<Relation> relations = new HashSet<>();
         GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerTraversal().
-                has(Schema.ConceptProperty.ID.name(), getId().getValue());
+                has(Schema.VertexProperty.ID.name(), getId().getValue());
 
         if(roleTypes.length == 0){
             traversal.in(Schema.EdgeLabel.SHORTCUT.getLabel());
@@ -255,7 +255,8 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     private T setInternalType(Type type){
         cachedInternalType.set(type.getLabel());
-        return property(Schema.ConceptProperty.INSTANCE_TYPE_ID, type.getTypeId().getValue());
+        vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID, type.getTypeId().getValue());
+        return getThis();
     }
 
     /**

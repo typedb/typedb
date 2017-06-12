@@ -36,8 +36,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.util.Schema.ConceptProperty.INSTANCE_TYPE_ID;
-import static ai.grakn.util.Schema.ConceptProperty.TYPE_ID;
+import static ai.grakn.util.Schema.VertexProperty.INSTANCE_TYPE_ID;
+import static ai.grakn.util.Schema.VertexProperty.TYPE_ID;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
 import static java.util.stream.Collectors.joining;

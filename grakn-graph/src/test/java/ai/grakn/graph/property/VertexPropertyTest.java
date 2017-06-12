@@ -63,7 +63,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
 
 @RunWith(JUnitQuickcheck.class)
-public class ConceptPropertyTest {
+public class VertexPropertyTest {
 
     @Rule
     public ExpectedException exception = ExpectedException.none();

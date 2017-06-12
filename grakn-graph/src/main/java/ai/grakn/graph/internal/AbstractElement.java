@@ -36,7 +36,7 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
  * @author fppt
  *
  */
-abstract class AbstractElement<E extends Element> {
+abstract class AbstractElement<E extends Element, P extends Enum> {
     private final E element;
     private final AbstractGraknGraph graknGraph;
 
@@ -65,13 +65,13 @@ abstract class AbstractElement<E extends Element> {
      * @param key The key of the property to mutate
      * @param value The value to commit into the property
      */
-     void property(String key, Object value){
+     void property(P key, Object value){
         if(value == null) {
-            element().property(key).remove();
+            element().property(key.name()).remove();
         } else {
-            Property<Object> foundProperty = element().property(key);
+            Property<Object> foundProperty = element().property(key.name());
             if(!foundProperty.isPresent() || !foundProperty.value().equals(value)){
-                element().property(key, value);
+                element().property(key.name(), value);
             }
         }
     }
@@ -81,14 +81,14 @@ abstract class AbstractElement<E extends Element> {
      * @param key The key of the non-unique property to retrieve
      * @return The value stored in the property
      */
-    public <X> X property(String key){
-        Property<X> property = element().property(key);
+    public <X> X property(P key){
+        Property<X> property = element().property(key.name());
         if(property != null && property.isPresent()) {
             return property.value();
         }
         return null;
     }
-    Boolean propertyBoolean(String key){
+    Boolean propertyBoolean(P key){
         Boolean value = property(key);
         if(value == null) return false;
         return value;

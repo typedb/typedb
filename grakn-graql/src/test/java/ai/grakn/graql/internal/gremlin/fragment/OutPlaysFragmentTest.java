@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
-import static ai.grakn.util.Schema.ConceptProperty.INSTANCE_TYPE_ID;
+import static ai.grakn.util.Schema.VertexProperty.INSTANCE_TYPE_ID;
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
 import static org.hamcrest.CoreMatchers.is;

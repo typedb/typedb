@@ -47,7 +47,7 @@ public class PropertyNotUniqueException extends GraphOperationException{
      * Thrown when trying to set the property of concept {@code mutatingConcept} to a {@code value} which is already
      * taken by concept {@code conceptWithValue}
      */
-    public static PropertyNotUniqueException cannotChangeProperty(Concept mutatingConcept, Concept conceptWithValue, Schema.ConceptProperty property, Object value){
+    public static PropertyNotUniqueException cannotChangeProperty(Concept mutatingConcept, Concept conceptWithValue, Schema.VertexProperty property, Object value){
         return new PropertyNotUniqueException(INVALID_UNIQUE_PROPERTY_MUTATION.getMessage(property, mutatingConcept, value, conceptWithValue));
     }
 
@@ -55,7 +55,7 @@ public class PropertyNotUniqueException extends GraphOperationException{
      * Thrown when trying to create a concept using a unique property which is already taken.
      * For example this happens when using an already taken {@link TypeLabel}
      */
-    public static PropertyNotUniqueException cannotCreateProperty(Concept conceptWithValue, Schema.ConceptProperty property, Object value){
+    public static PropertyNotUniqueException cannotCreateProperty(Concept conceptWithValue, Schema.VertexProperty property, Object value){
         return new PropertyNotUniqueException(UNIQUE_PROPERTY_TAKEN.getMessage(property.name(), value, conceptWithValue));
     }
 }

@@ -44,7 +44,7 @@ import java.util.stream.StreamSupport;
  *
  * @author fppt
  */
-class VertexElement extends AbstractElement<Vertex>{
+class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty>{
     VertexElement(AbstractGraknGraph graknGraph, Vertex element) {
         super(graknGraph, element);
     }

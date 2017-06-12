@@ -49,9 +49,9 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
 
     RuleImpl(VertexElement vertexElement, RuleType type, Pattern lhs, Pattern rhs) {
         super(vertexElement, type);
-        setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
-        setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
-        propertyUnique(Schema.ConceptProperty.INDEX, generateRuleIndex(type(), lhs, rhs));
+        setImmutableProperty(Schema.VertexProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
+        setImmutableProperty(Schema.VertexProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
+        propertyUnique(Schema.VertexProperty.INDEX, generateRuleIndex(type(), lhs, rhs));
     }
 
     /**
@@ -60,7 +60,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public Pattern getLHS() {
-        return parsePattern(property(Schema.ConceptProperty.RULE_LHS));
+        return parsePattern(vertex().property(Schema.VertexProperty.RULE_LHS));
     }
 
     /**
@@ -69,7 +69,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public Pattern getRHS() {
-        return parsePattern(property(Schema.ConceptProperty.RULE_RHS));
+        return parsePattern(vertex().property(Schema.VertexProperty.RULE_RHS));
     }
 
     private Pattern parsePattern(String value){

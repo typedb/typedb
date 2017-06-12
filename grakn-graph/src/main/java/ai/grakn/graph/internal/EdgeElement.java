@@ -32,7 +32,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  *
  * @author fppt
  */
-class EdgeElement extends AbstractElement<Edge> {
+class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
 
     EdgeElement(AbstractGraknGraph graknGraph, Edge e){
         super(graknGraph, e);
@@ -75,26 +75,4 @@ class EdgeElement extends AbstractElement<Edge> {
     public VertexElement target(){
         return graph().factory().buildVertexElement(element().inVertex());
     }
-
-    /**
-     *
-     * @param key The property to retrieve
-     * @return The value of the property
-     */
-    <X> X property(Schema.EdgeProperty key){
-        return property(key.name());
-    }
-    Boolean propertyBoolean(Schema.EdgeProperty key){
-        return propertyBoolean(key.name());
-    }
-
-    /**
-     *
-     * @param type The property to retrieve
-     * @param value The value of the property
-     */
-    void property(Schema.EdgeProperty type, Object value){
-        property(type.name(), value);
-    }
-
 }
