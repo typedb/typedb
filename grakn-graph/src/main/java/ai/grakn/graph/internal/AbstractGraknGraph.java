@@ -281,7 +281,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private void createMetaShard(Vertex metaNode, Schema.BaseType baseType){
         Vertex metaShard = addVertex(baseType);
         metaShard.addEdge(Schema.EdgeLabel.SHARD.getLabel(), metaNode);
-        metaShard.property(Schema.ConceptProperty.IS_SHARD.name(), true);
         metaNode.property(Schema.ConceptProperty.CURRENT_SHARD.name(), metaShard.id().toString());
     }
 
