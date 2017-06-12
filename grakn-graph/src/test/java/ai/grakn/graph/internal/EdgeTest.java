@@ -53,16 +53,16 @@ public class EdgeTest extends GraphTestBase{
 
     @Test
     public void whenGettingTheSourceOfAnEdge_ReturnTheConceptTheEdgeComesFrom() throws Exception {
-        assertEquals(entity.vertex(), edge.getSource());
+        assertEquals(entity.vertex(), edge.source());
     }
 
     @Test
     public void whenGettingTheTargetOfAnEdge_ReturnTheConceptTheEdgePointsTowards() throws Exception {
-        assertEquals(entityType.currentShard().vertex(), edge.getTarget());
+        assertEquals(entityType.currentShard().vertex(), edge.target());
     }
 
     @Test
     public void whenGettingTheLabelOfAnEdge_ReturnExpectedType() throws Exception {
-        assertEquals(Schema.EdgeLabel.ISA, edge.getLabel());
+        assertEquals(Schema.EdgeLabel.ISA.getLabel(), edge.element().label());
     }
 }

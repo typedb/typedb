@@ -77,7 +77,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
 
         checkInstancesMatchRegex(regex);
 
-        return setProperty(Schema.ConceptProperty.REGEX, regex);
+        return property(Schema.ConceptProperty.REGEX, regex);
     }
 
     /**
@@ -122,7 +122,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
     @Override
     public DataType<D> getDataType() {
-        return (DataType<D>) DataType.SUPPORTED_TYPES.get(getProperty(Schema.ConceptProperty.DATA_TYPE));
+        return (DataType<D>) DataType.SUPPORTED_TYPES.get(property(Schema.ConceptProperty.DATA_TYPE));
     }
 
     /**
@@ -130,7 +130,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      */
     @Override
     public String getRegex() {
-        return getProperty(Schema.ConceptProperty.REGEX);
+        return property(Schema.ConceptProperty.REGEX);
     }
 
 }

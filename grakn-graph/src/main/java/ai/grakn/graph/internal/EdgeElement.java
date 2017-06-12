@@ -64,7 +64,7 @@ class EdgeElement extends AbstractElement<Edge> {
      *
      * @return The source of the edge.
      */
-    public VertexElement getSource(){
+    public VertexElement source(){
         return graph().factory().buildVertexElement(element().outVertex());
     }
 
@@ -72,16 +72,8 @@ class EdgeElement extends AbstractElement<Edge> {
      *
      * @return The target of the edge
      */
-    public VertexElement getTarget(){
+    public VertexElement target(){
         return graph().factory().buildVertexElement(element().inVertex());
-    }
-
-    /**
-     *
-     * @return The type of the edge
-     */
-    public Schema.EdgeLabel getLabel() {
-        return Schema.EdgeLabel.getEdgeLabel(element().label());
     }
 
     /**

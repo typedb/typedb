@@ -98,9 +98,9 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
             ResourceTypeImpl<D> resourceType = (ResourceTypeImpl<D>) type();
             Schema.ConceptProperty property = dataType().getConceptProperty();
             //noinspection unchecked
-            setImmutableProperty(property, castValue(value), getProperty(property), (v) -> resourceType.getDataType().getPersistenceValue((D) v));
+            setImmutableProperty(property, castValue(value), property(property), (v) -> resourceType.getDataType().getPersistenceValue((D) v));
 
-            return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type().getLabel(), value.toString()));
+            return propertyUnique(Schema.ConceptProperty.INDEX, generateResourceIndex(type().getLabel(), value.toString()));
         } catch (ClassCastException e) {
             throw GraphOperationException.invalidResourceValue(value, dataType());
         }
@@ -151,7 +151,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
      */
     @Override
     public D getValue(){
-        return dataType().getValue(getProperty(dataType().getConceptProperty()));
+        return dataType().getValue(property(dataType().getConceptProperty()));
     }
 
     @Override

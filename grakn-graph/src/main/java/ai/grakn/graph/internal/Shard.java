@@ -89,7 +89,7 @@ class Shard {
      */
     Stream<ConceptImpl> links(){
         return  vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).
-                map(EdgeElement::getSource).
+                map(EdgeElement::source).
                 map(vertexElement ->  vertex().graph().factory().buildConcept(vertexElement));
     }
 

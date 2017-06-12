@@ -64,7 +64,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * Sets the internal hash in order to perform a faster lookup
      */
     void setHash(){
-        setUniqueProperty(Schema.ConceptProperty.INDEX, generateNewHash(type(), allRolePlayers()));
+        propertyUnique(Schema.ConceptProperty.INDEX, generateNewHash(type(), allRolePlayers()));
     }
 
     /**

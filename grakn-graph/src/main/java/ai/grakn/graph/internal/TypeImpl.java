@@ -71,8 +71,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     private final TypeId cachedTypeId;
     private final TypeLabel cachedTypeLabel;
-    private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
-    private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
+    private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> propertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
+    private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> propertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
     private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
     private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
     private Cache<Set<T>> cachedShards = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
@@ -82,7 +82,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         Map<RoleType, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-            RoleType roleType = graph().factory().buildConcept(edge.getTarget());
+            RoleType roleType = graph().factory().buildConcept(edge.target());
             Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
             roleTypes.put(roleType, required);
         });
@@ -104,7 +104,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
         this(vertexElement, superType);
-        setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity());
+        setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit, property(Schema.ConceptProperty.IS_IMPLICIT), Function.identity());
         cachedIsImplicit.set(isImplicit);
     }
 
@@ -576,15 +576,15 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             throw GraphOperationException.addingInstancesToAbstractType(this);
         }
 
-        setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
+        property(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
         cachedIsAbstract.set(isAbstract);
         return getThis();
     }
 
     @Override
-    T setProperty(Schema.ConceptProperty key, Object value){
+    T property(Schema.ConceptProperty key, Object value){
         if(!Schema.ConceptProperty.CURRENT_TYPE_ID.equals(key)) checkTypeMutationAllowed();
-        return super.setProperty(key, value);
+        return super.property(key, value);
     }
 
     /**

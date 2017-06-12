@@ -63,20 +63,20 @@ import java.util.stream.Stream;
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
     private Cache<TypeLabel> cachedInternalType = new Cache<>(() -> {
-        int typeId = getProperty(Schema.ConceptProperty.INSTANCE_TYPE_ID);
+        int typeId = property(Schema.ConceptProperty.INSTANCE_TYPE_ID);
         Type type = graph().getConcept(Schema.ConceptProperty.TYPE_ID, typeId);
         return type.getLabel();
     });
 
     private Cache<V> cachedType = new Cache<>(() -> {
         Optional<EdgeElement> typeEdge = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
-                flatMap(edge -> edge.getTarget().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).findAny();
+                flatMap(edge -> edge.target().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).findAny();
 
         if(!typeEdge.isPresent()) {
             throw GraphOperationException.noType(this);
         }
 
-        return graph().factory().buildConcept(typeEdge.get().getTarget());
+        return graph().factory().buildConcept(typeEdge.get().target());
     });
 
     InstanceImpl(VertexElement vertexElement) {
@@ -114,7 +114,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return The inner index value of some concepts.
      */
     public String getIndex(){
-        return getProperty(Schema.ConceptProperty.INDEX);
+        return property(Schema.ConceptProperty.INDEX);
     }
 
     /**
@@ -255,7 +255,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     private T setInternalType(Type type){
         cachedInternalType.set(type.getLabel());
-        return setProperty(Schema.ConceptProperty.INSTANCE_TYPE_ID, type.getTypeId().getValue());
+        return property(Schema.ConceptProperty.INSTANCE_TYPE_ID, type.getTypeId().getValue());
     }
 
     /**

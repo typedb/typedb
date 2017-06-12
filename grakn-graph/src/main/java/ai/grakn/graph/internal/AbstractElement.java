@@ -18,7 +18,6 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraphOperationException;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 
@@ -120,21 +119,6 @@ abstract class AbstractElement<E extends Element> {
         //Compare Concept
         //based on id because vertex comparisons are equivalent
         return this == object || object instanceof AbstractElement && ((AbstractElement) object).id().equals(id());
-    }
-
-    /**
-     * Helper method to cast a concept to it's correct type
-     * @param type The type to cast to
-     * @param <E> The type of the interface we are casting to.
-     * @return The concept itself casted to the defined interface
-     * @throws GraphOperationException when casting an element incorrectly
-     */
-    private <E extends AbstractElement> E castConcept(Class<E> type){
-        try {
-            return type.cast(this);
-        } catch(ClassCastException e){
-            throw GraphOperationException.invalidCasting(this, type);
-        }
     }
 
     /**

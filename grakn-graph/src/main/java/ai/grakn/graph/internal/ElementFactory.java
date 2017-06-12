@@ -205,7 +205,7 @@ final class ElementFactory {
             Optional<EdgeElement> type = vertex.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD).findAny();
 
             if(type.isPresent()){
-                String label = type.get().getTarget().label();
+                String label = type.get().target().label();
                 if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
                 if(label.equals(RELATION_TYPE.name())) return Schema.BaseType.RELATION;
                 if(label.equals(Schema.BaseType.RESOURCE_TYPE.name())) return Schema.BaseType.RESOURCE;
@@ -215,11 +215,11 @@ final class ElementFactory {
         throw new IllegalStateException("Could not determine the base type of vertex [" + vertex.element() + "]");
     }
 
+    // ---------------------------------------- Non Concept Construction -----------------------------------------------
     EdgeElement buildEdge(Edge edge){
         return new EdgeElement(graknGraph, edge);
     }
 
-    //TODO: Integrate with cache and cleanup
     Casting buildRolePlayer(Edge edge){
         return buildRolePlayer(buildEdge(edge));
     }

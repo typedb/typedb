@@ -93,22 +93,20 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param value The new value of the unique property
      * @return The concept itself casted to the correct interface itself
      */
-    T setUniqueProperty(Schema.ConceptProperty key, String value){
+    T propertyUnique(Schema.ConceptProperty key, String value){
         if(!vertex().graph().isBatchGraph()) {
             Concept fetchedConcept = vertex().graph().getConcept(key, value);
             if (fetchedConcept != null) throw PropertyNotUniqueException.cannotChangeProperty(this, fetchedConcept, key, value);
         }
 
-        return setProperty(key, value);
+        return property(key, value);
     }
 
     /**
      * Deletes the node and adds it neighbours for validation
      */
     void deleteNode(){
-        //TODO: clean this
         graph().txCache().remove(this);
-        // delete node
         vertex().delete();
     }
 
@@ -121,19 +119,19 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     <X extends Concept> Stream<X> neighbours(Direction direction, Schema.EdgeLabel label){
         Stream<X> edges = vertex().getEdgesOfType(direction, label).
                 flatMap(edge -> Stream.of(
-                        vertex().graph().factory().buildConcept(edge.getSource()),
-                        vertex().graph().factory().buildConcept(edge.getTarget())
+                        vertex().graph().factory().buildConcept(edge.source()),
+                        vertex().graph().factory().buildConcept(edge.target())
                 ));
 
         switch (direction){
             case IN:
                 edges = vertex().getEdgesOfType(direction, label).map(edge ->
-                        vertex().graph().factory().buildConcept(edge.getSource())
+                        vertex().graph().factory().buildConcept(edge.source())
                 );
                 break;
             case OUT:
                 edges = vertex().getEdgesOfType(direction, label).map(edge ->
-                        vertex().graph().factory().buildConcept(edge.getTarget())
+                        vertex().graph().factory().buildConcept(edge.target())
                 );
                 break;
         }
@@ -167,7 +165,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param value The value to commit into the property
      * @return The concept itself casted to the correct interface
      */
-    T setProperty(Schema.ConceptProperty key, Object value){
+    T property(Schema.ConceptProperty key, Object value){
         vertex().property(key.name(), value);
         return getThis();
     }
@@ -177,10 +175,10 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param key The key of the non-unique property to retrieve
      * @return The value stored in the property
      */
-    public <X> X getProperty(Schema.ConceptProperty key){
+    public <X> X property(Schema.ConceptProperty key){
         return vertex().property(key.name());
     }
-    Boolean getPropertyBoolean(Schema.ConceptProperty key){
+    Boolean propertyBoolean(Schema.ConceptProperty key){
         return vertex().propertyBoolean(key.name());
     }
 
@@ -188,7 +186,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return The base type of this concept which helps us identify the concept
      */
-    Schema.BaseType getBaseType(){
+    Schema.BaseType baseType(){
         return Schema.BaseType.valueOf(vertex().label());
     }
 
@@ -232,7 +230,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     }
 
     protected String innerToString() {
-        String message = "Base Type [" + getBaseType() + "] ";
+        String message = "Base Type [" + baseType() + "] ";
         if(getId() != null) {
             message = message + "- Id [" + getId() + "] ";
         }
@@ -250,7 +248,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
                 throw GraphOperationException.immutableProperty(foundValue, newValue, this, conceptProperty);
             }
         } else {
-            setProperty(conceptProperty, converter.apply(newValue));
+            property(conceptProperty, converter.apply(newValue));
         }
     }
     
@@ -261,31 +259,31 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     //----------------------------------- Sharding Functionality
     Shard createShard(){
-        Vertex shardVertex = graph().addVertex(getBaseType());
+        Vertex shardVertex = graph().addVertex(baseType());
         Shard shard = graph().factory().buildShard(this, shardVertex);
-        setProperty(Schema.ConceptProperty.CURRENT_SHARD, shard.id());
+        property(Schema.ConceptProperty.CURRENT_SHARD, shard.id());
         return shard;
     }
 
     Set<Shard> shards(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).map(edge ->
-                vertex().graph().factory().buildShard(this, edge.getSource())).collect(Collectors.toSet());
+                vertex().graph().factory().buildShard(this, edge.source())).collect(Collectors.toSet());
     }
 
     Shard currentShard(){
-        String currentShardId = getProperty(Schema.ConceptProperty.CURRENT_SHARD);
+        String currentShardId = property(Schema.ConceptProperty.CURRENT_SHARD);
         Vertex shardVertex = graph().getTinkerTraversal().has(Schema.ConceptProperty.ID.name(), currentShardId).next();
         return graph().factory().buildShard(this, shardVertex);
     }
 
     long getShardCount(){
-        Long value = getProperty(Schema.ConceptProperty.SHARD_COUNT);
+        Long value = property(Schema.ConceptProperty.SHARD_COUNT);
         if(value == null) return 0L;
         return value;
     }
 
     void setShardCount(Long instanceCount){
-        setProperty(Schema.ConceptProperty.SHARD_COUNT, instanceCount);
+        property(Schema.ConceptProperty.SHARD_COUNT, instanceCount);
     }
 
     /**

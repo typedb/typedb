@@ -136,14 +136,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private TypeId getNextId(){
         TypeImpl<?, ?> metaConcept = (TypeImpl<?, ?>) getMetaConcept();
-        Integer currentValue = metaConcept.getProperty(Schema.ConceptProperty.CURRENT_TYPE_ID);
+        Integer currentValue = metaConcept.property(Schema.ConceptProperty.CURRENT_TYPE_ID);
         if(currentValue == null){
             currentValue = Schema.MetaSchema.values().length + 1;
         } else {
             currentValue = currentValue + 1;
         }
         //Vertex is used directly here to bypass meta type mutation check
-        metaConcept.setProperty(Schema.ConceptProperty.CURRENT_TYPE_ID, currentValue);
+        metaConcept.property(Schema.ConceptProperty.CURRENT_TYPE_ID, currentValue);
         return TypeId.of(currentValue);
     }
 
@@ -356,7 +356,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(concept == null) {
             vertex = addTypeVertex(getNextId(), label, baseType);
         } else {
-            if(!baseType.equals(concept.getBaseType())) {
+            if(!baseType.equals(concept.baseType())) {
                 throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.ConceptProperty.TYPE_LABEL, label);
             }
             vertex = concept.vertex().element();
