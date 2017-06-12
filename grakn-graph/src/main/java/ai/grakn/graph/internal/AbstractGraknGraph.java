@@ -264,8 +264,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             constraintRuleType.addEdge(ruleType, Schema.EdgeLabel.SUB);
 
             //Manual creation of shards on meta types which have instances
-            createMetaShard(inferenceRuleType, Schema.BaseType.RULE_TYPE);
-            createMetaShard(constraintRuleType, Schema.BaseType.RULE_TYPE);
+            createMetaShard(inferenceRuleType);
+            createMetaShard(constraintRuleType);
 
             ontologyInitialised = true;
         }
@@ -278,8 +278,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         return ontologyInitialised;
     }
-    private void createMetaShard(VertexElement metaNode, Schema.BaseType baseType){
-        VertexElement metaShard = addVertex(baseType);
+    private void createMetaShard(VertexElement metaNode){
+        VertexElement metaShard = addVertex(Schema.BaseType.SHARD);
         metaShard.addEdge(metaNode, Schema.EdgeLabel.SHARD);
         metaNode.property(Schema.VertexProperty.CURRENT_SHARD, metaShard.id().toString());
     }
