@@ -29,6 +29,7 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import java.util.Collection;
 import java.util.Collections;
@@ -81,7 +82,7 @@ public class TypeAtom extends Binary{
     @Override
     public String toString(){
         String typeString = (getType() != null? getType().getLabel() : "") + "(" + getVarName() + ")";
-        return typeString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
+        return typeString + getPredicates().stream().map(Predicate::toString).collect(Collectors.joining(""));
     }
 
     @Override

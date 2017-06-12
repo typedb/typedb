@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -99,14 +98,14 @@ public abstract class BinaryBase extends Atom {
     }
 
     @Override
-    public Unifier getUnifier(Atomic parentAtom) {
+    public Unifier getUnifier(Atom parentAtom) {
         if (!(parentAtom instanceof BinaryBase)) {
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
         }
 
         Unifier unifier = new UnifierImpl();
         Var childValVarName = this.getValueVariable();
-        Var parentValVarName = ((BinaryBase) parentAtom).getValueVariable();
+        Var parentValVarName = parentAtom.getValueVariable();
 
         if (parentAtom.isUserDefinedName()){
             Var childVarName = this.getVarName();

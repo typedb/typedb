@@ -796,6 +796,43 @@ public class AtomicTest {
     }
 
     @Test
+    public void testUnification_RelationWithMetaRolesAndIds(){
+        GraknGraph graph = ruleApplicabilitySet.graph();
+        String relation = "{(role: $x, role: $y) isa relation3; $y id '15';}";
+        String relation2 = "{(role: $z, role: $v) isa relation3; $z id '15';}";
+        String relation3 = "{(role: $z, role: $v) isa relation3; $v id '15';}";
+
+        Atom atom = ReasonerQueries.atomic(conjunction(relation, graph), graph).getAtom();
+        Atom atom2 = ReasonerQueries.atomic(conjunction(relation2, graph), graph).getAtom();
+        Atom atom3 = ReasonerQueries.atomic(conjunction(relation3, graph), graph).getAtom();
+
+        Unifier unifier = atom.getUnifier(atom2);
+        Unifier unifier2 = atom2.getUnifier(atom);
+
+        Unifier unifier3 = atom.getUnifier(atom3);
+        Unifier unifier4 = atom3.getUnifier(atom);
+
+        Unifier correctUnifier = new UnifierImpl(
+                ImmutableMap.of(
+                        Var.of("x"), Var.of("v"),
+                        Var.of("y"), Var.of("z"))
+        );
+        Unifier correctUnifier2 = correctUnifier.inverse();
+
+        Unifier correctUnifier3 = new UnifierImpl(
+                ImmutableMap.of(
+                        Var.of("x"), Var.of("z"),
+                        Var.of("y"), Var.of("v"))
+        );
+        Unifier correctUnifier4 = correctUnifier3.inverse();
+
+        assertTrue(unifier.toString(), unifier.containsAll(correctUnifier));
+        assertTrue(unifier2.toString(), unifier2.containsAll(correctUnifier2));
+        assertTrue(unifier3.toString(), unifier3.containsAll(correctUnifier3));
+        assertTrue(unifier4.toString(), unifier4.containsAll(correctUnifier4));
+    }
+
+    @Test
     public void testUnification_RelationWithRoleHierarchy(){
         GraknGraph graph = genealogyOntology.graph();
         String relation = "{(parent: $y, child: $x);}";
