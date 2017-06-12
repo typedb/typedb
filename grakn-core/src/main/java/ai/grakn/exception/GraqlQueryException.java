@@ -65,7 +65,6 @@ import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
  *
  * @author fppt
  */
-//TODO: Felix to integrate with Graql
 public class GraqlQueryException extends GraknException{
 
     private GraqlQueryException(String error) {
