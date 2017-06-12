@@ -813,15 +813,15 @@ public class AtomicTest {
 
         Unifier correctUnifier = new UnifierImpl(
                 ImmutableMap.of(
-                        Var.of("x"), Var.of("v"),
-                        Var.of("y"), Var.of("z"))
+                        Graql.var("x"), Graql.var("v"),
+                        Graql.var("y"), Graql.var("z"))
         );
         Unifier correctUnifier2 = correctUnifier.inverse();
 
         Unifier correctUnifier3 = new UnifierImpl(
                 ImmutableMap.of(
-                        Var.of("x"), Var.of("z"),
-                        Var.of("y"), Var.of("v"))
+                        Graql.var("x"), Graql.var("z"),
+                        Graql.var("y"), Graql.var("v"))
         );
         Unifier correctUnifier4 = correctUnifier3.inverse();
 
