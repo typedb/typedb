@@ -283,5 +283,5 @@ public abstract class Atom extends AtomicBase {
      * @param parentAtom atom to be unified with
      * @return unifier
      */
-    public abstract Unifier getUnifier(Atomic parentAtom);
+    public abstract Unifier getUnifier(Atom parentAtom);
 }

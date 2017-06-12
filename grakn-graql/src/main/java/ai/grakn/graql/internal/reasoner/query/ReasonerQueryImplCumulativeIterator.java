@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import com.google.common.collect.Lists;
@@ -40,7 +39,7 @@ import java.util.Set;
  *
  */
 class ReasonerQueryImplCumulativeIterator extends ReasonerQueryIterator{
-    private Answer partialSub = new QueryAnswer();
+    private final Answer partialSub;
 
     private final LinkedList<ReasonerAtomicQuery> nextList;
     private final QueryCache<ReasonerAtomicQuery> cache;
@@ -54,6 +53,7 @@ class ReasonerQueryImplCumulativeIterator extends ReasonerQueryIterator{
                                         QueryCache<ReasonerAtomicQuery> cache){
         this.subGoals = subGoals;
         this.cache = cache;
+        this.partialSub = sub;
         this.nextList = Lists.newLinkedList(qs);
 
         Iterator<Answer> iterator = nextList.removeFirst().iterator(sub, subGoals, cache);
@@ -67,8 +67,8 @@ class ReasonerQueryImplCumulativeIterator extends ReasonerQueryIterator{
         if (queryIterator.hasNext()) return true;
 
         if (atomicQueryIterator.hasNext() && !nextList.isEmpty()) {
-            partialSub = atomicQueryIterator.next();
-            queryIterator = new ReasonerQueryImplCumulativeIterator(partialSub, nextList, subGoals, cache);
+            Answer feederSub  = atomicQueryIterator.next();
+            queryIterator = new ReasonerQueryImplCumulativeIterator(feederSub.merge(partialSub), nextList, subGoals, cache);
             return hasNext();
         }
         return false;
