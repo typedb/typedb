@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import java.util.Iterator;
@@ -55,16 +55,16 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         ReasonerQueryImpl query = new ReasonerQueryImpl(q);
         query.addSubstitution(sub);
 
+        LOG.trace("CQ: " + query);
+
         LinkedList<ReasonerAtomicQuery> queries = query.getResolutionPlan();
 
-        LOG.trace("CQ: " + query);
-        LOG.debug("CQ plan:\n" + queries.stream()
-                .map(ReasonerAtomicQuery::getAtom)
-                .map(AtomicBase::toString)
+        LOG.trace("CQ plan:\n" + queries.stream()
+                .map(ReasonerQuery::toString)
                 .collect(Collectors.joining("\n"))
         );
 
-        this.queryIterator = new ReasonerQueryImplCumulativeIterator(new QueryAnswer(), queries, subGoals, cache);
+        queryIterator = new ReasonerQueryImplCumulativeIterator(new QueryAnswer(), queries, subGoals, cache);
     }
 
     @Override
