@@ -158,7 +158,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The hash code of the underlying vertex
      */
     public int hashCode() {
-        return getId().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
+        return getId().getRawValue().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
     }
 
     @Override
