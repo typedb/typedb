@@ -19,10 +19,14 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+
+import java.util.Collection;
 
 /**
  * @author Felix Chapman
@@ -44,5 +48,42 @@ class LabelFragmentSet extends EquivalentFragmentSet {
 
     TypeLabel label() {
         return label;
+    }
+
+    /**
+     * Optimise away any redundant {@link LabelFragmentSet}s. A {@link LabelFragmentSet} is considered redundant if:
+     * <ol>
+     *   <li>It refers to a type that exists in the graph
+     *   <li>It is not associated with a user-defined variable
+     *   <li>The variable it is associated with is not referred to in any other fragment
+     * </ol>
+     */
+    static boolean applyRedundantLabelEliminationOptimisation(
+            Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+
+        Iterable<LabelFragmentSet> labelFragments =
+                EquivalentFragmentSets.fragmentSetOfType(LabelFragmentSet.class, fragmentSets)::iterator;
+
+        for (LabelFragmentSet labelSet : labelFragments) {
+
+            boolean hasUserDefinedVar = labelSet.type().isUserDefinedName();
+            if (hasUserDefinedVar) continue;
+
+            boolean existsInGraph = graph.getType(labelSet.label()) != null;
+            if (!existsInGraph) continue;
+
+            boolean varReferredToInOtherFragment = fragmentSets.stream()
+                    .filter(set -> !set.equals(labelSet))
+                    .flatMap(set -> set.fragments().stream())
+                    .map(Fragment::getVariableNames)
+                    .anyMatch(vars -> vars.contains(labelSet.type()));
+
+            if (!varReferredToInOtherFragment) {
+                fragmentSets.remove(labelSet);
+                return true;
+            }
+        }
+
+        return false;
     }
 }
