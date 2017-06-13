@@ -18,7 +18,6 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
@@ -33,35 +32,22 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  *
  * @author fppt
  */
-class EdgeElement extends Element{
-    private Edge edge;
-    private final AbstractGraknGraph graknGraph;
+class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
 
     EdgeElement(AbstractGraknGraph graknGraph, Edge e){
-        super(graknGraph, e.id());
-        edge = e;
-        this.graknGraph = graknGraph;
+        super(graknGraph, e);
     }
 
     /**
      * Deletes the edge between two concepts and adds both those concepts for re-validation in case something goes wrong
      */
     public void delete(){
-        edge.remove();
-        edge = null;
-    }
-
-    /**
-     *
-     * @return The internal tinkerpop edge
-     */
-    public Edge getEdge(){
-        return edge;
+        element().remove();
     }
 
     @Override
     public int hashCode() {
-        return edge.hashCode();
+        return element().hashCode();
     }
 
     @Override
@@ -71,62 +57,22 @@ class EdgeElement extends Element{
 
         EdgeElement edge = (EdgeElement) object;
 
-        return getElementId().equals(edge.getElementId());
+        return element().id().equals(edge.id());
     }
 
     /**
      *
      * @return The source of the edge.
      */
-    public <X extends Concept> X getSource(){
-        return graknGraph.getElementFactory().buildConcept(edge.outVertex());
+    public VertexElement source(){
+        return graph().factory().buildVertexElement(element().outVertex());
     }
 
     /**
      *
      * @return The target of the edge
      */
-    public <X extends Concept> X getTarget(){
-        return graknGraph.getElementFactory().buildConcept(edge.inVertex());
+    public VertexElement target(){
+        return graph().factory().buildVertexElement(element().inVertex());
     }
-
-    /**
-     *
-     * @return The type of the edge
-     */
-    public Schema.EdgeLabel getType() {
-        return Schema.EdgeLabel.getEdgeLabel(edge.label());
-    }
-
-    /**
-     *
-     * @param type The property to retrieve
-     * @return The value of the property
-     */
-    <X> X getProperty(Schema.EdgeProperty type){
-        org.apache.tinkerpop.gremlin.structure.Property<X> property = edge.property(type.name());
-        if(property != null && property.isPresent()) {
-            return property.value();
-        } else {
-            return null;
-        }
-    }
-
-    Boolean getPropertyBoolean(Schema.EdgeProperty key){
-        Boolean value = getProperty(key);
-        if(value == null) {
-            return false;
-        }
-        return value;
-    }
-
-    /**
-     *
-     * @param type The property to retrieve
-     * @param value The value of the property
-     */
-    void setProperty(Schema.EdgeProperty type, Object value){
-        edge.property(type.name(), value);
-    }
-
 }

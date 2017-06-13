@@ -24,7 +24,7 @@ import ai.grakn.graql.Var;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.util.Schema.ConceptProperty.DATA_TYPE;
+import static ai.grakn.util.Schema.VertexProperty.DATA_TYPE;
 
 class DataTypeFragment extends AbstractFragment {
 

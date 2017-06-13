@@ -33,8 +33,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
+import java.util.Optional;
 import java.util.function.Function;
+
+import static ai.grakn.util.Schema.BaseType.RELATION_TYPE;
+import static ai.grakn.util.Schema.BaseType.RULE_TYPE;
 
 /**
  * <p>
@@ -60,67 +63,67 @@ final class ElementFactory {
         this.graknGraph = graknGraph;
     }
 
-    private <X extends ConceptImpl> X getOrBuildConcept(Vertex v, Function<Vertex, X> conceptBuilder){
+    private <X extends ConceptImpl> X getOrBuildConcept(VertexElement v, Function<VertexElement, X> conceptBuilder){
         ConceptId conceptId = ConceptId.of(v.id().toString());
 
-        if(!graknGraph.getTxCache().isConceptCached(conceptId)){
+        if(!graknGraph.txCache().isConceptCached(conceptId)){
             X newConcept = conceptBuilder.apply(v);
-            graknGraph.getTxCache().cacheConcept(newConcept);
+            graknGraph.txCache().cacheConcept(newConcept);
         }
 
-        X concept = graknGraph.getTxCache().getCachedConcept(conceptId);
+        X concept = graknGraph.txCache().getCachedConcept(conceptId);
 
         //Only track concepts which have been modified.
         if(graknGraph.isConceptModified(concept)) {
-            graknGraph.getTxCache().trackForValidation(concept);
+            graknGraph.txCache().trackForValidation(concept);
         }
 
         return concept;
     }
 
     // ---------------------------------------- Building Resource Types  -----------------------------------------------
-    <V> ResourceTypeImpl<V> buildResourceType(Vertex vertex, ResourceType<V> type, ResourceType.DataType<V> dataType){
-        return getOrBuildConcept(vertex, (v) -> new ResourceTypeImpl<>(graknGraph, v, type, dataType));
+    <V> ResourceTypeImpl<V> buildResourceType(VertexElement vertex, ResourceType<V> type, ResourceType.DataType<V> dataType){
+        return getOrBuildConcept(vertex, (v) -> new ResourceTypeImpl<>(v, type, dataType));
     }
 
     // ------------------------------------------ Building Resources
-    <V> ResourceImpl <V> buildResource(Vertex vertex, ResourceType<V> type, V value){
-        return getOrBuildConcept(vertex, (v) -> new ResourceImpl<>(graknGraph, v, type, value));
+    <V> ResourceImpl <V> buildResource(VertexElement vertex, ResourceType<V> type, V value){
+        return getOrBuildConcept(vertex, (v) -> new ResourceImpl<>(v, type, value));
     }
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
-    RelationTypeImpl buildRelationType(Vertex vertex, RelationType type, Boolean isImplicit){
-        return getOrBuildConcept(vertex, (v) -> new RelationTypeImpl(graknGraph, v, type, isImplicit));
+    RelationTypeImpl buildRelationType(VertexElement vertex, RelationType type, Boolean isImplicit){
+        return getOrBuildConcept(vertex, (v) -> new RelationTypeImpl(v, type, isImplicit));
     }
 
     // -------------------------------------------- Building Relations
-    RelationImpl buildRelation(Vertex vertex, RelationType type){
-        return getOrBuildConcept(vertex, (v) -> new RelationImpl(graknGraph, v, type));
+    RelationImpl buildRelation(VertexElement vertex, RelationType type){
+        return getOrBuildConcept(vertex, (v) -> new RelationImpl(v, type));
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
-    EntityTypeImpl buildEntityType(Vertex vertex, EntityType type){
-        return getOrBuildConcept(vertex, (v) -> new EntityTypeImpl(graknGraph, v, type));
+    EntityTypeImpl buildEntityType(VertexElement vertex, EntityType type){
+        return getOrBuildConcept(vertex, (v) -> new EntityTypeImpl(v, type));
     }
 
     // ------------------------------------------- Building Entities
-    EntityImpl buildEntity(Vertex vertex, EntityType type){
-        return getOrBuildConcept(vertex, (v) -> new EntityImpl(graknGraph, v, type));
+    EntityImpl buildEntity(VertexElement vertex, EntityType type){
+        return getOrBuildConcept(vertex, (v) -> new EntityImpl(v, type));
     }
 
     // ----------------------------------------- Building Rule Types  --------------------------------------------------
-    RuleTypeImpl buildRuleType(Vertex vertex, RuleType type){
-        return getOrBuildConcept(vertex, (v) -> new RuleTypeImpl(graknGraph, v, type));
+    RuleTypeImpl buildRuleType(VertexElement vertex, RuleType type){
+        return getOrBuildConcept(vertex, (v) -> new RuleTypeImpl(v, type));
     }
 
     // -------------------------------------------- Building Rules
-    RuleImpl buildRule(Vertex vertex, RuleType type, Pattern lhs, Pattern rhs){
-        return getOrBuildConcept(vertex, (v) -> new RuleImpl(graknGraph, v, type, lhs, rhs));
+    RuleImpl buildRule(VertexElement vertex, RuleType type, Pattern lhs, Pattern rhs){
+        return getOrBuildConcept(vertex, (v) -> new RuleImpl(v, type, lhs, rhs));
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
-    RoleTypeImpl buildRoleType(Vertex vertex, RoleType type, Boolean isImplicit){
-        return getOrBuildConcept(vertex, (v) -> new RoleTypeImpl(graknGraph, v, type, isImplicit));
+    RoleTypeImpl buildRoleType(VertexElement vertex, RoleType type, Boolean isImplicit){
+        return getOrBuildConcept(vertex, (v) -> new RoleTypeImpl(v, type, isImplicit));
     }
 
     /**
@@ -131,89 +134,120 @@ final class ElementFactory {
      * @return A concept built to the correct type
      */
     <X extends Concept> X buildConcept(Vertex v){
+        return buildConcept(buildVertexElement(v));
+    }
+
+    <X extends Concept> X buildConcept(VertexElement vertexElement){
         Schema.BaseType type;
-        //Check if the vertex is valid
+
         try {
-            graknGraph.validVertex(v);
-            type = getBaseType(v);
+            type = getBaseType(vertexElement);
         } catch (IllegalStateException e){
-            LOG.warn("Invalid vertex [" + v + "] due to " + e.getMessage(), e);
+            LOG.warn("Invalid vertex [" + vertexElement + "] due to " + e.getMessage(), e);
             return null;
         }
 
-        ConceptId conceptId = ConceptId.of(v.id());
-        if(!graknGraph.getTxCache().isConceptCached(conceptId)){
+        ConceptId conceptId = ConceptId.of(vertexElement.id().getValue());
+        if(!graknGraph.txCache().isConceptCached(conceptId)){
             ConceptImpl concept;
             switch (type) {
                 case RELATION:
-                    concept = new RelationImpl(graknGraph, v);
+                    concept = new RelationImpl(vertexElement);
                     break;
                 case TYPE:
-                    concept = new TypeImpl<>(graknGraph, v);
+                    concept = new TypeImpl<>(vertexElement);
                     break;
                 case ROLE_TYPE:
-                    concept = new RoleTypeImpl(graknGraph, v);
+                    concept = new RoleTypeImpl(vertexElement);
                     break;
                 case RELATION_TYPE:
-                    concept = new RelationTypeImpl(graknGraph, v);
+                    concept = new RelationTypeImpl(vertexElement);
                     break;
                 case ENTITY:
-                    concept = new EntityImpl(graknGraph, v);
+                    concept = new EntityImpl(vertexElement);
                     break;
                 case ENTITY_TYPE:
-                    concept = new EntityTypeImpl(graknGraph, v);
+                    concept = new EntityTypeImpl(vertexElement);
                     break;
                 case RESOURCE_TYPE:
-                    concept = new ResourceTypeImpl<>(graknGraph, v);
+                    concept = new ResourceTypeImpl<>(vertexElement);
                     break;
                 case RESOURCE:
-                    concept = new ResourceImpl<>(graknGraph, v);
+                    concept = new ResourceImpl<>(vertexElement);
                     break;
                 case RULE:
-                    concept = new RuleImpl(graknGraph, v);
+                    concept = new RuleImpl(vertexElement);
                     break;
                 case RULE_TYPE:
-                    concept = new RuleTypeImpl(graknGraph, v);
+                    concept = new RuleTypeImpl(vertexElement);
                     break;
                 default:
-                    throw new RuntimeException("Unknown base type [" + v.label() + "]");
+                    throw new RuntimeException("Unknown base type [" + vertexElement.label() + "]");
             }
-            graknGraph.getTxCache().cacheConcept(concept);
+            graknGraph.txCache().cacheConcept(concept);
         }
-
-        return graknGraph.getTxCache().getCachedConcept(conceptId);
+        return graknGraph.txCache().getCachedConcept(conceptId);
     }
 
-    //TODO: Simplify this if it does not make a difference to large loading
-    private Schema.BaseType getBaseType(Vertex vertex){
+    /**
+     * This is a helper method to get the base type of a vertex.
+     * It first tried to get the base type via the label.
+     * If this is not possible it then tries to get the base type via the Shard Edge.
+     *
+     * @param vertex The vertex to build a concept from
+     * @return The base type of the vertex, if it is a valid concept.
+     */
+    private Schema.BaseType getBaseType(VertexElement vertex){
         try {
             return Schema.BaseType.valueOf(vertex.label());
         } catch (IllegalArgumentException e){
-            //Base type appears to be invalid. Let's try getting the type via the isa edge
-            Iterator<Edge> iterator = vertex.edges(Direction.OUT, Schema.EdgeLabel.SHARD.getLabel());
-            if(iterator.hasNext()){
-                Vertex shardVertex = iterator.next().inVertex();
-                Vertex typeVertex = shardVertex.edges(Direction.OUT, Schema.EdgeLabel.ISA.getLabel()).next().inVertex();
-                String label = typeVertex.label();
+            //Base type appears to be invalid. Let's try getting the type via the shard edge
+            Optional<EdgeElement> type = vertex.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD).findAny();
+
+            if(type.isPresent()){
+                String label = type.get().target().label();
                 if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
-                if(label.equals(Schema.BaseType.RELATION_TYPE.name())) return Schema.BaseType.RELATION;
+                if(label.equals(RELATION_TYPE.name())) return Schema.BaseType.RELATION;
                 if(label.equals(Schema.BaseType.RESOURCE_TYPE.name())) return Schema.BaseType.RESOURCE;
-                if(label.equals(Schema.BaseType.RULE_TYPE.name())) return Schema.BaseType.RULE;
+                if(label.equals(RULE_TYPE.name())) return Schema.BaseType.RULE;
             }
         }
         throw new IllegalStateException("Could not determine the base type of vertex [" + vertex + "]");
     }
 
+    // ---------------------------------------- Non Concept Construction -----------------------------------------------
     EdgeElement buildEdge(Edge edge){
         return new EdgeElement(graknGraph, edge);
     }
 
-    //TODO: Integrate with cache and cleanup
     Casting buildRolePlayer(Edge edge){
         return buildRolePlayer(buildEdge(edge));
     }
 
     Casting buildRolePlayer(EdgeElement edge) {
-        return new Casting(graknGraph, edge.getEdge());
+        return new Casting(edge);
+    }
+
+    Shard buildShard(ConceptImpl shardOwner, VertexElement vertexElement){
+        return new Shard(shardOwner, vertexElement);
+    }
+
+    Shard buildShard(VertexElement vertexElement){
+        return new Shard(vertexElement);
+    }
+
+    Shard buildShard(Vertex vertex){
+        return new Shard(buildVertexElement(vertex));
+    }
+
+    VertexElement buildVertexElement(Vertex vertex){
+        try {
+            graknGraph.validVertex(vertex);
+        } catch (IllegalStateException e){
+            LOG.warn("Invalid vertex [" + vertex + "] due to " + e.getMessage(), e);
+            return null;
+        }
+
+        return new VertexElement(graknGraph, vertex);
     }
 }

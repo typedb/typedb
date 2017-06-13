@@ -38,7 +38,7 @@ class IdFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.has(Schema.ConceptProperty.ID.name(), id.getValue());
+        traversal.has(Schema.VertexProperty.ID.name(), id.getValue());
     }
 
     @Override

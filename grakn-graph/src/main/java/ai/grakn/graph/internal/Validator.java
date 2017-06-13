@@ -62,27 +62,27 @@ class Validator {
             //Validate Entity Types
             //Not Needed
             //Validate Entities
-            graknGraph.getTxCache().getModifiedEntities().forEach(this::validateInstance);
+            graknGraph.txCache().getModifiedEntities().forEach(this::validateInstance);
 
             //Validate RoleTypes
-            graknGraph.getTxCache().getModifiedRoleTypes().forEach(this::validateRoleType);
+            graknGraph.txCache().getModifiedRoleTypes().forEach(this::validateRoleType);
             //Validate Role Players
-            graknGraph.getTxCache().getModifiedCastings().forEach(this::validateCasting);
+            graknGraph.txCache().getModifiedCastings().forEach(this::validateCasting);
 
             //Validate Relation Types
-            graknGraph.getTxCache().getModifiedRelationTypes().forEach(this::validateRelationType);
+            graknGraph.txCache().getModifiedRelationTypes().forEach(this::validateRelationType);
             //Validate Relations
-            graknGraph.getTxCache().getModifiedRelations().forEach(this::validateRelation);
+            graknGraph.txCache().getModifiedRelations().forEach(this::validateRelation);
 
             //Validate Rule Types
             //Not Needed
             //Validate Rules
-            graknGraph.getTxCache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
+            graknGraph.txCache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
 
             //Validate Resource Types
             //Not Needed
             //Validate Resource
-            graknGraph.getTxCache().getModifiedResources().forEach(this::validateInstance);
+            graknGraph.txCache().getModifiedResources().forEach(this::validateInstance);
 
         });
 

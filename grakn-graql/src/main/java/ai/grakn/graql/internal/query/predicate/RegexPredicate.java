@@ -59,7 +59,7 @@ class RegexPredicate implements ValuePredicateAdmin {
 
     @Override
     public void applyPredicate(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.has(Schema.ConceptProperty.VALUE_STRING.name(), regexPredicate());
+        traversal.has(Schema.VertexProperty.VALUE_STRING.name(), regexPredicate());
     }
 
     @Override

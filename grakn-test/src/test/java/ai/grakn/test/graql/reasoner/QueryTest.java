@@ -118,7 +118,6 @@ public class QueryTest {
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
         ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, graph), graph);
         assertNotEquals(query, query2);
-        assertNotEquals(query.hashCode(), query2.hashCode());
     }
     
     @Test //tests various configurations of alpha-equivalence with extra type atoms present

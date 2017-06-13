@@ -21,11 +21,10 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.util.StringUtil;
-
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.util.Schema.ConceptProperty.REGEX;
+import static ai.grakn.util.Schema.VertexProperty.REGEX;
 
 class RegexFragment extends AbstractFragment {
 

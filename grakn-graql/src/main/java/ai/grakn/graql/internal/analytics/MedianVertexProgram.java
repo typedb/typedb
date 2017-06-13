@@ -86,7 +86,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
         this.statisticsResourceTypeIds = statisticsResourceTypeIds;
 
         String resourceDataTypeValue = resourceDataType.equals(ResourceType.DataType.LONG) ?
-                Schema.ConceptProperty.VALUE_LONG.name() : Schema.ConceptProperty.VALUE_DOUBLE.name();
+                Schema.VertexProperty.VALUE_LONG.name() : Schema.VertexProperty.VALUE_DOUBLE.name();
         persistentProperties.put(RESOURCE_DATA_TYPE, resourceDataTypeValue);
 
         degreePropertyKey = DegreeVertexProgram.DEGREE + randomId;
@@ -142,7 +142,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
         memory.set(NEGATIVE_COUNT, 0L);
         memory.set(POSITIVE_COUNT, 0L);
         memory.set(FOUND, false);
-        if (persistentProperties.get(RESOURCE_DATA_TYPE).equals(Schema.ConceptProperty.VALUE_LONG.name())) {
+        if (persistentProperties.get(RESOURCE_DATA_TYPE).equals(Schema.VertexProperty.VALUE_LONG.name())) {
             memory.set(MEDIAN, 0L);
             memory.set(PIVOT, 0L);
             memory.set(PIVOT_NEGATIVE, 0L);
