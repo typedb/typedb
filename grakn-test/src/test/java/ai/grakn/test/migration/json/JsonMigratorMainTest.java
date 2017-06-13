@@ -69,11 +69,6 @@ public class JsonMigratorMainTest {
     }
 
     @Test
-    public void jsonMainDistributedLoaderTest(){
-        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace());
-    }
-
-    @Test
     public void jsonMainNoArgsTest() {
         run("json");
     }
