@@ -72,6 +72,7 @@
         <orientdb.version>3.2.3.0</orientdb.version>
         <orientdb-gremlin-core.version>3.2.1</orientdb-gremlin-core.version>
         <logback.version>1.1.7</logback.version>
+        <janino.version>2.7.8</janino.version>
         <slf4j.version>1.7.20</slf4j.version>
         <csv.version>1.4</csv.version>
         <jool.version>3.8.5</jool.version>
@@ -229,6 +230,13 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!--Jaino used for conditionals in log files-->
+        <dependency>
+            <groupId>org.codehaus.janino</groupId>
+            <artifactId>janino</artifactId>
+            <version>${janino.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
