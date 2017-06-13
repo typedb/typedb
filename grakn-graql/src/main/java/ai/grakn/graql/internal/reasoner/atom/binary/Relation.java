@@ -410,10 +410,6 @@ public class Relation extends TypeAtom {
                 .collect(Collectors.toList());
     }
 
-    public List<RelationType> inferPossibleRelationTypes(){
-        return inferPossibleRelationTypes(new QueryAnswer());
-    }
-
     private Relation inferRelationType(Answer sub){
         List<RelationType> relationTypes = inferPossibleRelationTypes(sub);
         if (relationTypes.size() == 1) addType(relationTypes.iterator().next());
