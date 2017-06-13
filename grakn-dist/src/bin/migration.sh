@@ -10,6 +10,9 @@ for jar in "${GRAKN_HOME}"/lib/*.jar; do
    CLASSPATH="$CLASSPATH:$jar"
 done
 
+# Add path containing logback.xml
+CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf/main/
+
 if [ "$1" == "csv" ]
 then
   java -cp ${CLASSPATH} -Dlogback.configurationFile="${GRAKN_HOME}/conf/main/logback.xml" -Dgrakn.log.dirs="${GRAKN_HOME}/logs" -Dgrakn.dir="${GRAKN_HOME}/bin" ai.grakn.migration.csv.CSVMigrator ${1+"$@"}
