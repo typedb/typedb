@@ -29,6 +29,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -63,7 +64,9 @@ public class QueryAnswer implements Answer {
 
     @Override
     public String toString(){
-        return map.entrySet().stream().map(e -> "[" + e.getKey() + "/" + e.getValue().getId() + "]").collect(Collectors.joining());
+        return map.entrySet().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().getValue()))
+                .map(e -> "[" + e.getKey() + "/" + e.getValue().getId() + "]").collect(Collectors.joining());
     }
 
     @Override
@@ -117,6 +120,9 @@ public class QueryAnswer implements Answer {
 
     @Override
     public boolean containsKey(Var var){ return map.containsKey(var);}
+
+    @Override
+    public boolean containsAll(Answer ans){ return map.entrySet().containsAll(ans.map().entrySet());}
 
     @Override
     public boolean isEmpty(){ return map.isEmpty();}

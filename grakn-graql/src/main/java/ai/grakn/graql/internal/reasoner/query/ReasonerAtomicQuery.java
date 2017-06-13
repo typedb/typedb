@@ -176,6 +176,23 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return queryVisited ? cache.getAnswerStream(this) : DBlookup(cache);
     }
 
+    /**
+     * check whether specific answer to this query exists in cache/db
+     * @param cache qieru cache
+     * @param sub specific answer
+     * @return found answer if any, otherwise empty answer
+     */
+    Answer lookupAnswer(QueryCache<ReasonerAtomicQuery> cache, Answer sub) {
+        boolean queryVisited = cache.contains(this);
+        if (queryVisited){
+            Answer answer = cache.getAnswer(this, sub);
+            if (!answer.isEmpty()) return answer;
+        }
+
+        List<Answer> match = new ReasonerAtomicQuery(this).addSubstitution(sub).getMatchQuery().execute();
+        return match.isEmpty()? new QueryAnswer() : match.iterator().next();
+    }
+
     Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
         boolean queryVisited = cache.contains(this);
         return queryVisited ? cache.getAnswerStreamWithUnifier(this) : new Pair<>(DBlookup(), new UnifierImpl());
