@@ -44,6 +44,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -451,6 +452,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(e -> new IdPredicate(e.getKey(), e.getValue(), this))
                 .collect(Collectors.toSet());
         atomSet.addAll(predicates);
+
         return this;
     }
 
