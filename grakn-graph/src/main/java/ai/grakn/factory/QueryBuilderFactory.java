@@ -14,25 +14,27 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
+package ai.grakn.factory;
 
-package ai.grakn.generator;
-
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.RuleType;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graql.QueryBuilder;
 
-public class Rules extends AbstractInstanceGenerator<Rule, RuleType> {
-
-    public Rules() {
-        super(Rule.class, RuleTypes.class);
-    }
-
-    @Override
-    protected Rule newInstance(RuleType type) {
-        // TODO: generate more complicated rules
-        QueryBuilder graql = this.graph().graql();
-        return type.putRule(graql.parsePattern("$x"), graql.parsePattern("$x"));
-    }
+/**
+ * <p>
+ * A <code>QueryBuilderFactory</code> can produce a {@link ai.grakn.graql.QueryBuilder} 
+ * from a graph
+ * </p>
+ * @author borislav
+ * @param <T> The concrete type of the underlying graph implementation
+ */
+public interface QueryBuilderFactory<T extends Graph> {
+    /**
+     * Construct a new {@link ai.grakn.graql.QueryBuilder}
+     * 
+     * @param graph The graph which will be queried.
+     * @return A query builder bound to the specified graph.
+     */
+    QueryBuilder getQueryBuilder(AbstractGraknGraph<T> graph);
 }

@@ -36,11 +36,11 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.PropertyNotUniqueException;
+import ai.grakn.factory.QueryBuilderFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -98,7 +98,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final G graph;
     private final ElementFactory elementFactory;
     private final GraphCache graphCache;
-
+    private QueryBuilderFactory<G> queryBuilderFactory = null;
+    
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
 
@@ -159,8 +160,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param concept A concept in the graph
      * @return True if the concept has been modified in the transaction
      */
-    public abstract boolean isConceptModified(ConceptImpl concept);
+    public abstract boolean isConceptModified(ConceptImpl<?> concept);
 
+    public AbstractGraknGraph<G> queryBuilderFactory(QueryBuilderFactory<G> queryFactory) {
+        this.queryBuilderFactory = queryFactory;
+        return this;
+    }
     /**
      *
      * @return The number of open transactions currently.
@@ -302,7 +307,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public QueryBuilder graql(){
-        return new QueryBuilderImpl(this);
+        return queryBuilderFactory.getQueryBuilder(this);
     }
 
     ElementFactory getElementFactory(){
