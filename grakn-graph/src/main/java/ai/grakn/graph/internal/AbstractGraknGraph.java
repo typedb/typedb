@@ -867,7 +867,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             Set<Relation> duplicateRelations = mergeCastings(mainCasting, duplicated);
 
             //Temporary patch to stop null pointers. No proper fix due to castings being removed in master
-            if(duplicateRelations.isEmpty()) return false;
+            if(duplicateRelations.isEmpty()) return true;
 
             //Remove Redundant Relations
             duplicateRelations.forEach(relation -> ((ConceptImpl) relation).deleteNode());
