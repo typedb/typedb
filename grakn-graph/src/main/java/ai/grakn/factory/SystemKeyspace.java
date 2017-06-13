@@ -83,11 +83,11 @@ public class SystemKeyspace {
     protected static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
 
     private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
-    private static final AtomicBoolean factoryBeingInstantated = new AtomicBoolean(false);
-    private static final CountDownLatch factoryInstantiated = new CountDownLatch(1);
-    private static InternalFactory factory;
+    static final AtomicBoolean factoryBeingInstantiated = new AtomicBoolean(false);
+    static CountDownLatch factoryInstantiated = new CountDownLatch(1);
+    static InternalFactory factory;
 
-    private SystemKeyspace(){
+    SystemKeyspace(){
     }
 
     /**
@@ -109,7 +109,7 @@ public class SystemKeyspace {
     }
 
     private static void initialiseFactory(Supplier<InternalFactory> factoryInitialiser){
-        if(factoryBeingInstantated.compareAndSet(false, true)){
+        if(factoryBeingInstantiated.compareAndSet(false, true)){
             factory = factoryInitialiser.get();
             loadSystemOntology();
             factoryInstantiated.countDown();

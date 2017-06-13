@@ -4,33 +4,32 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
-import org.junit.Before;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 public class SystemKeyspaceTest {
-
-    @Before
-    public void cleanSystemKeySpaceGraph(){
-        try(GraknSession system = Grakn.session(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME)) {
-            try (GraknGraph graph = system.open(GraknTxType.WRITE)) {
-                graph.getEntityType("keyspace").instances().forEach(Concept::delete);
-            }
-        }
-    }
 
     @Test
     public void whenCreatingMultipleGraphs_EnsureKeySpacesAreAddedToSystemGraph() throws InvalidGraphException {
@@ -107,6 +106,51 @@ public class SystemKeyspaceTest {
         //Check only 2 graphs have been built
         assertEquals(graphs, systemGraphs);
         assertFalse(SystemKeyspace.containsKeyspace(deletedGraph.getKeyspace()));
+    }
+
+    @Test
+    public void whenInstantiatingSystemGraphInMultipleThreads_InterruptedExceptionIsNotThrown() throws InterruptedException {
+
+        // Dereference the factory in our mocked system keyspace
+        SystemKeyspaceMock.dereference();
+
+        int numberThreads = 100;
+        ExecutorService executorService = Executors.newFixedThreadPool(numberThreads);
+
+        Collection<Callable<Integer>> threads = new ArrayList<>();
+        for(int i = 0; i < numberThreads; i ++){
+            int finalI = i;
+            threads.add(() -> {
+
+                // Implicitly instantiate system keyspace
+                SystemKeyspaceMock.initialise(mock(TinkerInternalFactory.class, Mockito.RETURNS_DEEP_STUBS));
+
+                // Check the system graph exists
+                SystemKeyspaceMock.containsKeyspace(SystemKeyspace.SYSTEM_GRAPH_NAME);
+
+                // Close the mock
+                SystemKeyspaceMock.close();
+
+                return finalI;
+            });
+        }
+
+        try {
+            // Open system graph concurrently
+            Collection<Future<Integer>> futures = executorService.invokeAll(threads);
+            for(Future future:futures){
+                future.get();
+            }
+        } catch (InterruptedException | ExecutionException e) {
+
+            // an exception was thrown, fail the test
+            fail("Exception was thrown instantiating system keyspace");
+
+            throw new RuntimeException(e);
+        } finally {
+            // Dereference the factory in our mocked system keyspace
+            SystemKeyspaceMock.dereference();
+        }
     }
 
     private Set<GraknGraph> buildGraphs(String ... keyspaces){
