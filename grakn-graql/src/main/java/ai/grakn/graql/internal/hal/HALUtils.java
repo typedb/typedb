@@ -58,9 +58,9 @@ public class HALUtils {
     final static String SUB_EDGE = "sub";
     final static String OUTBOUND_EDGE = "OUT";
     final static String INBOUND_EDGE = "IN";
-    final static String HAS_ROLE_EDGE = "has-role";
-    final static String HAS_RESOURCE_EDGE = "has-resource";
-    final static String PLAYS_ROLE_EDGE = "plays-role";
+    final static String RELATES_EDGE = Schema.EdgeLabel.RELATES.getLabel();
+    final static String HAS_EDGE = "has";
+    final static String PLAYS_EDGE = Schema.EdgeLabel.PLAYS.getLabel();
     final static String HAS_EMPTY_ROLE_EDGE = "EMPTY-GRAKN-ROLE";
 
 

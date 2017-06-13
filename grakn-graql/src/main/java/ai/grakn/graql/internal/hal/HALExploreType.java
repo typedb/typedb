@@ -28,11 +28,11 @@ import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import java.util.Collection;
 
 import static ai.grakn.graql.internal.hal.HALUtils.DIRECTION_PROPERTY;
-import static ai.grakn.graql.internal.hal.HALUtils.HAS_RESOURCE_EDGE;
-import static ai.grakn.graql.internal.hal.HALUtils.HAS_ROLE_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.HAS_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.RELATES_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.INBOUND_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
-import static ai.grakn.graql.internal.hal.HALUtils.PLAYS_ROLE_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.PLAYS_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.SUB_EDGE;
 
 
@@ -85,14 +85,14 @@ class HALExploreType extends HALExploreConcept{
             Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + type.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, type);
-            halResource.withRepresentation(PLAYS_ROLE_EDGE, roleRepresentation);
+            halResource.withRepresentation(PLAYS_EDGE, roleRepresentation);
         });
 
         roleType.relationTypes().forEach(relType -> {
             Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + relType.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, relType);
-            halResource.withRepresentation(HAS_ROLE_EDGE, roleRepresentation);
+            halResource.withRepresentation(RELATES_EDGE, roleRepresentation);
         });
     }
 
@@ -103,7 +103,7 @@ class HALExploreType extends HALExploreConcept{
             generateStateAndLinks(roleRepresentation, role);
             //We always return roles with in embedded the entities that play that role.
             roleTypeOntology(roleRepresentation, role);
-            halResource.withRepresentation(HAS_ROLE_EDGE, roleRepresentation);
+            halResource.withRepresentation(RELATES_EDGE, roleRepresentation);
         });
     }
 
@@ -113,7 +113,7 @@ class HALExploreType extends HALExploreConcept{
                     .newRepresentation(resourceLinkPrefix + currentResourceType.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(embeddedResource, currentResourceType);
-            halResource.withRepresentation(HAS_RESOURCE_EDGE, embeddedResource);
+            halResource.withRepresentation(HAS_EDGE, embeddedResource);
         });
     }
 
@@ -126,7 +126,7 @@ class HALExploreType extends HALExploreConcept{
             //We always return roles with in embedded the relations they play in.
             roleTypeOntology(roleRepresentation, role);
 
-            halResource.withRepresentation(PLAYS_ROLE_EDGE, roleRepresentation);
+            halResource.withRepresentation(PLAYS_EDGE, roleRepresentation);
         });
     }
 
