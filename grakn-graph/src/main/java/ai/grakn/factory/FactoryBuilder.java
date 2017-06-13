@@ -59,7 +59,7 @@ public class FactoryBuilder {
             } else {
                 factoryType = TinkerInternalFactory.class.getName();
             }
-            return getGraknGraphFactory(factoryType, keyspace, engineUrl, properties);
+            return getFactory(factoryType, keyspace, engineUrl, properties);
         } catch(MissingResourceException e){
             throw new IllegalArgumentException(ErrorMessage.MISSING_FACTORY_DEFINITION.getMessage());
         }
@@ -67,11 +67,12 @@ public class FactoryBuilder {
 
     /**
      *
+     *
      * @param factoryType The string defining which factory should be used for creating the grakn graph.
      *                    A valid example includes: ai.grakn.factory.TinkerInternalFactory
      * @return A graph factory which produces the relevant expected graph.
     */
-    static InternalFactory getGraknGraphFactory(String factoryType, String keyspace, String engineUrl, Properties properties){
+    static InternalFactory<?> getFactory(String factoryType, String keyspace, String engineUrl, Properties properties){
         String key = factoryType + keyspace.toLowerCase();
         Log.debug("Get factory for " + key);
         InternalFactory factory = openFactories.get(key);
