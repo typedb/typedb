@@ -20,13 +20,13 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -67,7 +67,7 @@ class ConjunctionQuery {
         vars = patternConjunction.getPatterns();
 
         if (vars.size() == 0) {
-            throw new IllegalArgumentException(ErrorMessage.NO_PATTERNS.getMessage());
+            throw GraqlQueryException.noPatterns();
         }
 
         ImmutableSet<EquivalentFragmentSet> fragmentSets =

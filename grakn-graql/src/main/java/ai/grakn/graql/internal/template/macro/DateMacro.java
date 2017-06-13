@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.macro.Macro;
 
 import java.time.LocalDate;
@@ -45,7 +46,7 @@ public class DateMacro implements Macro<Unescaped<String>> {
     @Override
     public Unescaped<String> apply(List<Object> values) {
         if(values.size() != 2){
-            throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
+            throw GraqlQueryException.wrongNumberOfMacroArguments(this, values);
         }
 
         String originalDate = values.get(0).toString();
@@ -70,9 +71,9 @@ public class DateMacro implements Macro<Unescaped<String>> {
 
             return extractLocalDateTime(parsedDate).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         } catch (IllegalArgumentException e){
-            throw new IllegalArgumentException("Cannot parse date format " + originalFormat + ". See DateTimeFormatter#ofPattern");
+            throw GraqlQueryException.cannotParseDateFormat(originalFormat);
         } catch (DateTimeParseException e){
-            throw new DateTimeParseException("Cannot parse date value " + originalDate + " with format " + originalFormat, e.getParsedString(), e.getErrorIndex());
+            throw GraqlQueryException.cannotParseDateString(originalDate, originalFormat, e);
         }
     }
 

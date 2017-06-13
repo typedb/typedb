@@ -27,6 +27,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
@@ -368,28 +369,28 @@ public class InsertQueryTest {
 
     @Test
     public void testErrorWhenInsertWithPredicate() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("predicate");
         qb.insert(var().id(ConceptId.of("123")).val(gt(3))).execute();
     }
 
     @Test
     public void testErrorWhenInsertWithMultipleIds() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("id"), containsString("123"), containsString("456")));
         qb.insert(var().id(ConceptId.of("123")).id(ConceptId.of("456")).isa("movie")).execute();
     }
 
     @Test
     public void testErrorWhenInsertWithMultipleValues() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("value"), containsString("123"), containsString("456")));
         qb.insert(var().val("123").val("456").isa("title")).execute();
     }
 
     @Test
     public void testErrorWhenSubRelation() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("isa"), containsString("relation")));
         qb.insert(
                 var().sub("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y"),
@@ -602,7 +603,7 @@ public class InsertQueryTest {
 
     @Test
     public void testErrorWhenInsertRelationWithEmptyRolePlayer() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(
                 allOf(containsString("$y"), containsString("id"), containsString("isa"), containsString("sub"))
         );
@@ -614,7 +615,7 @@ public class InsertQueryTest {
 
     @Test
     public void testErrorResourceTypeWithoutDataType() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(
                 allOf(containsString("my-resource"), containsString("datatype"), containsString("resource"))
         );
@@ -623,7 +624,7 @@ public class InsertQueryTest {
 
     @Test
     public void testErrorWhenAddingInstanceOfConcept() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(
                 allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.CONCEPT.getLabel().getValue()))
         );
@@ -632,35 +633,35 @@ public class InsertQueryTest {
 
     @Test
     public void testErrorRecursiveType() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("thingy"), containsString("itself")));
         qb.insert(label("thingy").sub("thingy")).execute();
     }
 
     @Test
     public void testErrorTypeWithoutLabel() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("type"), containsString("label")));
         qb.insert(var().sub("entity")).execute();
     }
 
     @Test
     public void testErrorInsertResourceWithoutValue() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("resource"), containsString("value")));
         qb.insert(var("x").isa("name")).execute();
     }
 
     @Test
     public void testErrorInsertInstanceWithName() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("instance"), containsString("name"), containsString("abc")));
         qb.insert(label("abc").isa("movie")).execute();
     }
 
     @Test
     public void testErrorInsertResourceWithName() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("instance"), containsString("name"), containsString("bobby")));
         qb.insert(label("bobby").val("bob").isa("name")).execute();
     }
@@ -709,49 +710,49 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertInstanceWithoutType() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("isa")));
         qb.insert(var().has("name", "Bob")).execute();
     }
 
     @Test
     public void testInsertRuleWithoutLhs() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("lhs")));
         qb.insert(var().isa("inference-rule").rhs(var("x").isa("movie"))).execute();
     }
 
     @Test
     public void testInsertRuleWithoutRhs() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("rhs")));
         qb.insert(var().isa("inference-rule").lhs(var("x").isa("movie"))).execute();
     }
 
     @Test
     public void testInsertNonRuleWithLhs() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("lhs", RULE.getLabel()));
         qb.insert(var().isa("movie").lhs(var("x").pattern())).execute();
     }
 
     @Test
     public void testInsertNonRuleWithRHS() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("rhs", RULE.getLabel()));
         qb.insert(label("thing").sub("movie").rhs(var("x").pattern())).execute();
     }
 
     @Test
     public void testErrorWhenNonExistentResource() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("nothing");
         qb.insert(label("blah this").sub("entity").has("nothing")).execute();
     }
 
     @Test
     public void whenInsertingMetaType_Throw() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.INSERT_METATYPE.getMessage("my-metatype", "concept"));
         qb.insert(label("my-metatype").sub("concept")).execute();
     }

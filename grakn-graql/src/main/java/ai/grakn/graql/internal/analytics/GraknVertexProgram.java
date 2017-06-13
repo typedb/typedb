@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
@@ -106,8 +106,7 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
         try {
             return (GraknVertexProgram) super.clone();
         } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(
-                    ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(), e.getMessage()), e);
+            throw CommonUtil.unreachableStatement(e);
         }
     }
 

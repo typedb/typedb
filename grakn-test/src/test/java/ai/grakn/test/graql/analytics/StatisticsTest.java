@@ -28,6 +28,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
@@ -96,20 +97,20 @@ public class StatisticsTest {
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             //TODO: add more detailed error messages
             // resources-type is not set
-            assertIllegalStateExceptionThrown(graph.graql().compute().max().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().min().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().mean().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().sum().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().std().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().median().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().max().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().min().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().mean().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().sum().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().std().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().median().in(thing)::execute);
 
             // if it's not a resource-type
-            assertIllegalStateExceptionThrown(graph.graql().compute().max().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().min().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().mean().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().sum().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().std().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().median().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().max().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().min().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().mean().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().sum().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().std().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().median().of(thing)::execute);
 
             // resource-type has no instance
             assertFalse(graph.graql().compute().max().of(resourceType7).execute().isPresent());
@@ -128,29 +129,29 @@ public class StatisticsTest {
             assertFalse(graph.graql().compute().mean().of(resourceType3).execute().isPresent());
 
             // resource-type has incorrect data type
-            assertIllegalStateExceptionThrown(graph.graql().compute().max().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().min().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().mean().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().sum().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().std().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().median().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().max().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().min().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().mean().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().sum().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().std().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().median().of(resourceType4)::execute);
 
             // resource-types have different data types
             Set<TypeLabel> resourceTypes = Sets.newHashSet(TypeLabel.of(resourceType1), TypeLabel.of(resourceType2));
-            assertIllegalStateExceptionThrown(graph.graql().compute().max().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().min().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().mean().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().sum().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().std().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().median().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().max().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().min().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().mean().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().sum().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().std().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().median().of(resourceTypes)::execute);
         }
     }
 
-    private void assertIllegalStateExceptionThrown(Supplier<Optional> method) {
+    private void assertGraqlQueryExceptionThrown(Supplier<Optional> method) {
         boolean exceptionThrown = false;
         try {
             method.get();
-        } catch (IllegalStateException e) {
+        } catch (GraqlQueryException e) {
             exceptionThrown = true;
         }
         assertTrue(exceptionThrown);

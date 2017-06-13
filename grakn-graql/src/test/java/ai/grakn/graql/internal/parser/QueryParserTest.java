@@ -21,6 +21,8 @@ package ai.grakn.graql.internal.parser;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.DeleteQuery;
@@ -598,8 +600,8 @@ public class QueryParserTest {
     }
 
     @Test
-    public void whenParseIncorrectSyntax_ThrowIllegalArgumentExceptionWithHelpfulError() {
-        exception.expect(IllegalArgumentException.class);
+    public void whenParseIncorrectSyntax_ThrowGraqlSyntaxExceptionWithHelpfulError() {
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage(allOf(
                 containsString("syntax error"), containsString("line 1"),
                 containsString("\nmatch $x isa "),
@@ -611,7 +613,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParseIncorrectSyntax_ErrorMessageShouldRetainWhitespace() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage(not(containsString("match$xisa")));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa ");
@@ -619,7 +621,7 @@ public class QueryParserTest {
 
     @Test
     public void testSyntaxErrorPointer() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage(allOf(
                 containsString("\nmatch $x is"),
                 containsString("\n         ^")
@@ -787,15 +789,15 @@ public class QueryParserTest {
         assertEquals(bigNumber, count[0]);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testMultipleQueriesThrowsIllegalArgumentException() {
+    @Test(expected = GraqlSyntaxException.class)
+    public void testMultipleQueriesThrowsSyntaxException() {
         //noinspection ResultOfMethodCallIgnored
         parse("insert $x isa movie; insert $y isa movie");
     }
 
     @Test
     public void testMissingColon() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage("':'");
         //noinspection ResultOfMethodCallIgnored
         parse("match (actor $x, $y) isa has-cast;");
@@ -803,7 +805,7 @@ public class QueryParserTest {
 
     @Test
     public void testMissingComma() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage("','");
         //noinspection ResultOfMethodCallIgnored
         parse("match ($x $y) isa has-cast;");
@@ -811,7 +813,7 @@ public class QueryParserTest {
 
     @Test
     public void testLimitMistake() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage("limit1");
         //noinspection ResultOfMethodCallIgnored
         parse("match ($x, $y); limit1;");
@@ -819,7 +821,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingAggregateWithWrongArgumentNumber_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("count", 0, 1));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate count $x;");
@@ -827,7 +829,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingAggregateWithWrongVariableArgumentNumber_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("group", "1-2", 0));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate group;");
@@ -835,7 +837,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingAggregateWithWrongName_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.UNKNOWN_AGGREGATE.getMessage("hello"));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate hello $x;");

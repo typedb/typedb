@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeId;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -259,8 +260,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
         if (memory.getIteration() == MAX_ITERATION) {
             LOGGER.debug("Reached Max Iteration: " + MAX_ITERATION + " !!!!!!!!");
-            throw new IllegalStateException(ErrorMessage.MAX_ITERATION_REACHED
-                    .getMessage(this.getClass().toString()));
+            throw GraqlQueryException.maxIterationsReached(this.getClass());
         }
 
         memory.or(VOTE_TO_HALT_SOURCE, true);

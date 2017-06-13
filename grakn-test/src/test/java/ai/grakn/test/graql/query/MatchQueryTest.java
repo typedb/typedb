@@ -27,6 +27,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
@@ -903,7 +904,7 @@ public class MatchQueryTest {
         ));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = GraqlQueryException.class)
     public void testMatchEmpty() {
         qb.match().execute();
     }

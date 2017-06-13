@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graphs.CWGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -987,7 +988,7 @@ public class AtomicTest {
     public void testWhenCreatingQueryWithNonexistentType_ExceptionIsThrown(){
         GraknGraph graph = snbGraph.graph();
         String patternString = "{$x isa someType;}";
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
     }
 

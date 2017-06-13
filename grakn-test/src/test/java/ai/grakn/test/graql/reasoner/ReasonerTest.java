@@ -23,24 +23,23 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.SNBGraph;
-
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
@@ -200,7 +199,7 @@ public class ReasonerTest {
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                         "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
         Pattern head = Graql.and(graph.graql().parsePatterns("($x, $z) isa is-located-in;"));
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         Rule rule = graph.admin().getMetaRuleInference().putRule(body, head);
         InferenceRule irule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
     }
@@ -210,7 +209,7 @@ public class ReasonerTest {
         GraknGraph graph = testGeoGraph.graph();
         Pattern body = Graql.and(graph.graql().parsePatterns("$x isa country;"));
         Pattern head = Graql.and(graph.graql().parsePatterns("$x has name contains 'land';"));
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         Rule rule = graph.admin().getMetaRuleInference().putRule(body, head);
         InferenceRule irule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
     }
