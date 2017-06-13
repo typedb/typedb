@@ -34,7 +34,7 @@ import java.util.function.Consumer;
 public class SparkContext extends ExternalResource {
 
     private final BiConsumer<Service, GraknEngineConfig> createControllers;
-    private GraknEngineConfig config = GraknTestEnv.createTestConfig();
+    private final GraknEngineConfig config = GraknTestEnv.createTestConfig();
 
     private Service spark;
 
