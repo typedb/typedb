@@ -844,7 +844,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
             //Restore the index
             String newIndex = mainResource.getIndex();
-            mainResource.vertex().property(Schema.VertexProperty.INDEX, newIndex);
+            //NOTE: Vertex Element is used directly here otherwise property is not actually restored!
+            mainResource.vertex().element().property(Schema.VertexProperty.INDEX.name(), newIndex);
 
             return true;
         }
