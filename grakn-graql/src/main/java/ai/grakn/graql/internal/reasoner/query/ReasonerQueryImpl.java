@@ -44,7 +44,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
