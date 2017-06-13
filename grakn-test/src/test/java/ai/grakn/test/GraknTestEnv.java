@@ -25,6 +25,7 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.util.CassandraHelper;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
@@ -193,10 +194,12 @@ public abstract class GraknTestEnv {
     static void startEmbeddedCassandra() {
         try {
             // We have to use reflection here because the cassandra dependency is only included when testing the titan profile.
-            Class<?> cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
+            //Class<?> cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
 
             //noinspection unchecked
-            cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
+            //cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
+
+            CassandraHelper.startEmbedded("cassandra-embedded.yaml");
 
             try {
                 Thread.sleep(5000);
