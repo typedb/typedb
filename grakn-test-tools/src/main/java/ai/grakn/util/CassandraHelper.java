@@ -40,14 +40,29 @@ public class CassandraHelper {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(CassandraHelper.class);
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
 
+
+
     /**
      * Starts an embedded version of cassandra
      */
-    public static void startEmbedded(String file){
-        try {
-            EmbeddedCassandraServerHelper.startEmbeddedCassandra(file);
-        } catch (Exception e){
-            throw new RuntimeException(e);
+    public static void startEmbedded(){
+        if(CASSANDRA_RUNNING.compareAndSet(false, true)) {
+            try {
+                EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
+
+                //This thread sleep is to give time for cass to startup
+                //TODO: Determine if this is still needed
+                try {
+                    Thread.sleep(5000);
+                }
+                catch(InterruptedException ex) {
+                    LOG.info("Thread sleep interrupted.");
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Error while starting embedded cassandra ", e);
+            }
+        } else {
+            LOG.warn("Cassandra is already running");
         }
     }
 }

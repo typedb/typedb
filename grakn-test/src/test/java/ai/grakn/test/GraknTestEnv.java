@@ -69,7 +69,7 @@ public abstract class GraknTestEnv {
     public static void ensureCassandraRunning() throws Exception {
         if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
             LOG.info("starting cassandra...");
-            startEmbeddedCassandra();
+            CassandraHelper.startEmbedded();
             LOG.info("cassandra started.");
         }
     }
@@ -191,26 +191,16 @@ public abstract class GraknTestEnv {
         engineGraknGraphFactory.refreshConnections();
     }
 
-    static void startEmbeddedCassandra() {
-        try {
-            // We have to use reflection here because the cassandra dependency is only included when testing the titan profile.
-            //Class<?> cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
+    static String getUri(GraknEngineConfig config) {
+        return config.getProperty("server.host") + ":" + config.getProperty("server.port");
+    }
 
-            //noinspection unchecked
-            //cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
+    static String getHost(GraknEngineConfig config) {
+        return config.getProperty("server.host");
+    }
 
-            CassandraHelper.startEmbedded("cassandra-embedded.yaml");
-
-            try {
-                Thread.sleep(5000);
-            } 
-            catch(InterruptedException ex) { 
-                LOG.info("Thread sleep interrupted."); 
-            }
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    static String getPort(GraknEngineConfig config) {
+        return config.getProperty("server.port");
     }
 
     static void setRestAssuredUri(GraknEngineConfig config) {
