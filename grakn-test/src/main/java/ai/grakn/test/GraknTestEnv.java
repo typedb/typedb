@@ -17,26 +17,32 @@
  */
 package ai.grakn.test;
 
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
-import static ai.grakn.graql.Graql.var;
-
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.factory.SystemKeyspace;
+import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
-import com.jayway.restassured.RestAssured;
 import redis.embedded.RedisServer;
+import spark.Service;
+
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
+import static ai.grakn.engine.GraknEngineServer.configureSpark;
+import static ai.grakn.graql.Graql.var;
 
 /**
  * <p>
@@ -65,6 +71,19 @@ public abstract class GraknTestEnv {
             startEmbeddedCassandra();
             LOG.info("cassandra started.");
         }
+    }
+
+    /**
+     * Create a configuration for use in tests, using random ports.
+     */
+    static GraknEngineConfig createTestConfig() {
+        GraknEngineConfig config = GraknEngineConfig.create();
+
+        Integer serverPort = getEphemeralPort();
+
+        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(serverPort));
+
+        return config;
     }
 
     /**
@@ -141,6 +160,15 @@ public abstract class GraknTestEnv {
         // There is no way to stop the embedded Casssandra, no such API offered.
     }
 
+    static Service startSpark(GraknEngineConfig config) {
+        LOG.info("starting spark on port " + config.uri());
+
+        Service spark = Service.ignite();
+        configureSpark(spark, config, JWTHandler.create(config.getProperty(JWT_SECRET_PROPERTY)));
+        setRestAssuredUri(config);
+        return spark;
+    }
+
     public static GraknGraph emptyGraph(EngineGraknGraphFactory factory) {
         return factory.getGraph(randomKeyspace(), GraknTxType.WRITE);
     }
@@ -182,20 +210,8 @@ public abstract class GraknTestEnv {
         }
     }
 
-    static String getUri(GraknEngineConfig config) {
-        return config.getProperty("server.host") + ":" + config.getProperty("server.port");
-    }
-
-    static String getHost(GraknEngineConfig config) {
-        return config.getProperty("server.host");
-    }
-
-    static String getPort(GraknEngineConfig config) {
-        return config.getProperty("server.port");
-    }
-
     static void setRestAssuredUri(GraknEngineConfig config) {
-        RestAssured.baseURI = "http://" + getUri(config);
+        RestAssured.baseURI = "http://" + config.uri();
     }
 
     public static String randomKeyspace(){
@@ -213,5 +229,13 @@ public abstract class GraknTestEnv {
 
     public static boolean usingOrientDB() {
         return "orientdb".equals(CONFIG);
+    }
+
+    private static int getEphemeralPort() {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -237,6 +237,10 @@ public class GraknEngineConfig {
                                           : defaultValue;
     }
 
+    public String uri() {
+        return getProperty(SERVER_HOST_NAME) + ":" + getProperty(SERVER_PORT_NUMBER);
+    }
+
     static final String GRAKN_ASCII =
                       "     ___  ___  ___  _  __ _  _     ___  ___     %n" +
                     "    / __|| _ \\/   \\| |/ /| \\| |   /   \\|_ _|    %n" +

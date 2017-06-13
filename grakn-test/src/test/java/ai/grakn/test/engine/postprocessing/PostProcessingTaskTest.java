@@ -71,7 +71,7 @@ public class PostProcessingTaskTest {
                 )));
 
         //Initialise system keyspace
-        Grakn.session(Grakn.DEFAULT_URI, SystemKeyspace.SYSTEM_GRAPH_NAME).open(GraknTxType.WRITE).close();
+        Grakn.session(engine.uri(), SystemKeyspace.SYSTEM_GRAPH_NAME).open(GraknTxType.WRITE).close();
     }
 
     @Test

@@ -41,7 +41,8 @@ import static org.junit.Assume.assumeFalse;
 public class CountTest {
 
     @ClassRule
-    public static final EngineContext rule = EngineContext.startInMemoryServer();
+    // TODO: Don't set port once bug #15130 is fixed
+    public static final EngineContext rule = EngineContext.startInMemoryServer().port(4567);
 
     private GraknSession factory;
 

@@ -18,7 +18,6 @@
 
 package ai.grakn.test.migration.json;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
@@ -60,7 +59,7 @@ public class JsonMigratorTest {
     public void setup(){
         factory = engine.factoryWithNewKeyspace();
         GraknGraph graph = factory.open(GraknTxType.WRITE);
-        migrator = Migrator.to(Grakn.DEFAULT_URI, graph.getKeyspace());
+        migrator = Migrator.to(engine.uri(), graph.getKeyspace());
         graph.close();
     }
 
