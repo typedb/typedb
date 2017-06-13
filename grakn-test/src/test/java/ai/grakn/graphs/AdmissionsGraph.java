@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.test.graphs.TestGraph;
+import ai.grakn.test.graph.TestGraph;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

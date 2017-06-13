@@ -31,7 +31,7 @@ import java.util.function.Consumer;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static ai.grakn.test.graphs.TestGraph.loadFromFile;
+import static ai.grakn.test.graph.TestGraph.loadFromFile;
 
 /**
  *

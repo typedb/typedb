@@ -27,9 +27,11 @@ import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import org.junit.rules.ExternalResource;
 import com.jayway.restassured.RestAssured;
+import org.junit.rules.ExternalResource;
+
 import javax.annotation.Nullable;
+
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_URL;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
