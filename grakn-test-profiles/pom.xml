@@ -18,6 +18,15 @@
         <skip-docker-tests>true</skip-docker-tests>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-test-tools</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
@@ -187,8 +196,4 @@
             </build>
         </profile>
     </profiles>
-
-
-
-
 </project>
