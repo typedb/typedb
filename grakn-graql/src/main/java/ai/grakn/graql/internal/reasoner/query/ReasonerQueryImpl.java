@@ -218,7 +218,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             top = atoms.stream()
                     .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
                     .findFirst().orElse(null);
-
         }
         return queries;
     }

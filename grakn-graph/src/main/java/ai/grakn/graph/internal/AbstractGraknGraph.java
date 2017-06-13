@@ -860,6 +860,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds){
         CastingImpl mainCasting = (CastingImpl) getMainConcept(index);
+
+        //Temporary patch to stop null pointers. No proper fix due to castings being removed in master
+        if(mainCasting == null) return false;
+
         Set<CastingImpl> duplicated = (Set<CastingImpl>) getDuplicates(mainCasting, castingVertexIds);
 
         if (duplicated.size() > 0) {
