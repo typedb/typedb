@@ -46,7 +46,6 @@
     <!--Configure the "main" appender used for all non-post processing Grakn logs. Logs are kept for
         60 days and each file is capped at 50MB, but at most 1GB -->
     <appender name="MAIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <!--grakn.dir is a system variable, log.dirs is taken from the grakn.properties on the classpath-->
         <file>${configuredLogDir}/${graknLogFileName}</file>
         <encoder>
             <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
