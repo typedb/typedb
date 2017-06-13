@@ -18,6 +18,8 @@ find "$SCRIPT_DIR"/../../grakn-test/ -name '*Test*.java' -o -name '*IT*.java' | 
 
 parallel --jobs 75% \
   --no-run-if-empty \
+  --halt now,fail=1 \
+  --joblog "$SCRIPT_DIR"/../../grakn-test/target/parallel-docker-test.log \
   "/usr/bin/docker run -i \
   -v "$SCRIPT_DIR"/../../grakn-test/target/surefire-reports:/grakn-src/grakn-test/target/surefire-reports/ \
   -w /grakn-src/ graknlabs/jenkins-with-src-compiled:latest \
