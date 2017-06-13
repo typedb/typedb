@@ -48,7 +48,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,12 +63,10 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javafx.util.Pair;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
-import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -89,13 +86,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
         this.graph = graph;
         atomSet.addAll(AtomicFactory.createAtomSet(pattern, this));
-        inferTypes(new QueryAnswer());
+        inferTypes();
     }
 
     ReasonerQueryImpl(ReasonerQueryImpl q) {
         this.graph = q.graph;
         q.getAtoms().forEach(at -> addAtomic(AtomicFactory.create(at, this)));
-        inferTypes(new QueryAnswer());
+        inferTypes();
     }
 
     ReasonerQueryImpl(Atom atom) {
@@ -105,7 +102,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         this.graph = atom.getParentQuery().graph();
         addAtomic(AtomicFactory.create(atom, this));
         addAtomConstraints(atom.getNonSelectableConstraints());
-        inferTypes(new QueryAnswer());
+        inferTypes();
     }
 
     @Override
@@ -148,32 +145,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return priority;
     }
 
-    Set<TypeAtom> inferEntityTypes(Answer sub) {
-        if (sub.isEmpty()) return Collections.emptySet();
-
-        Set<Var> subbedVars = Sets.intersection(getVarNames(), sub.keySet());
-        Set<Var> untypedVars = Sets.difference(subbedVars, getVarTypeMap().keySet());
-        Set<TypeAtom> types = untypedVars.stream()
-                .map(v -> new Pair<>(v, sub.get(v)))
-                .filter(p -> p.getValue().isEntity())
-                .map(e -> {
-                    Var var = e.getKey();
-                    Concept c = e.getValue();
-                    Type type = c.asInstance().type();
-                    return new TypeAtom(var, Var.anon(), type.getId(), this);
-                })
-                .collect(toSet());
-
-        if(!types.isEmpty()){
-            System.out.println();
-            System.out.println("inferred types for " + this + " " + types);
-        }
-
-        return types;
-    }
-
-    private void inferTypes(Answer sub) {
-        inferEntityTypes(sub).forEach(this::addAtomic);
+    private void inferTypes() {
         atomSet.stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .forEach(Atom::inferTypes);
@@ -246,6 +218,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             top = atoms.stream()
                     .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
                     .findFirst().orElse(null);
+
         }
         return queries;
     }
