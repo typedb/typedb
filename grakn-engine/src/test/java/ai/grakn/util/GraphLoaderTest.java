@@ -18,11 +18,20 @@
 package ai.grakn.util;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 //TODO: Move this test class to a lower dependency. Specifically Graql
 public class GraphLoaderTest {
@@ -35,6 +44,24 @@ public class GraphLoaderTest {
             assertThat(graph.admin().getMetaEntityType().instances(), is(empty()));
             assertThat(graph.admin().getMetaRelationType().instances(), is(empty()));
             assertThat(graph.admin().getMetaRuleType().instances(), is(empty()));
+        }
+    }
+
+    @Test
+    public void whenCreatingGraphWithPreLoader_EnsureGraphContainsPreloadedEntities(){
+        Set<TypeLabel> labels = new HashSet<>(Arrays.asList(TypeLabel.of("1"), TypeLabel.of("2"), TypeLabel.of("3")));
+
+        Consumer<GraknGraph> preLoader = graph -> {
+            labels.forEach(graph::putEntityType);
+        };
+
+        GraphLoader loader = GraphLoader.preLoad(preLoader);
+
+        try (GraknGraph graph = loader.graph()){
+            Set<TypeLabel> foundLabels = graph.admin().getMetaEntityType().subTypes().stream().
+                    map(Type::getLabel).collect(Collectors.toSet());
+
+            assertTrue(foundLabels.containsAll(labels));
         }
     }
 }

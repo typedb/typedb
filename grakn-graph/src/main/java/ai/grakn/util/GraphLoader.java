@@ -31,6 +31,7 @@ import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /**
  * <p>
@@ -53,21 +54,41 @@ public class GraphLoader {
     private static Properties graphConfig;
 
     private final InternalFactory<?> factory;
+    private final Consumer<GraknGraph> preLoad;
     private GraknGraph graph;
 
-    private GraphLoader(String keyspace){
-        factory = FactoryBuilder.getFactory(keyspace, Grakn.IN_MEMORY, properties());
+    private GraphLoader(Consumer<GraknGraph> preLoad){
+        factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties());
+        this.preLoad = preLoad;
+
+        load();
     }
 
     public static GraphLoader empty(){
-        return new GraphLoader(randomKeyspace());
+        return new GraphLoader(null);
+    }
+
+    public static GraphLoader preLoad(Consumer<GraknGraph> build){
+        return new GraphLoader(build);
     }
 
     public GraknGraph graph(){
         if(graph == null || graph.isClosed()){
             graph = factory.open(GraknTxType.WRITE);
         }
+
         return graph;
+    }
+
+    /**
+     * Loads the graph using the specified Preloader
+     */
+    private void load(){
+        try (GraknGraph graph = graph()) {
+            if(preLoad != null) preLoad.accept(graph);
+
+            graph.commit();
+        }
     }
 
     /**
