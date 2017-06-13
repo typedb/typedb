@@ -76,7 +76,7 @@
                 <configuration>
                     <systemPropertyVariables>
                         <grakn.conf>../conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
-                    <grakn.test-profile>tinker</grakn.test-profile> <!-- the only profile that should ever run -->
+                        <grakn.test-profile>tinker</grakn.test-profile> <!-- the only profile that should ever run on this module-->
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
