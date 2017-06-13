@@ -54,8 +54,8 @@ public class HALUtils {
 
     // - Edges names
 
-    final static String ISA_EDGE = "isa";
-    final static String SUB_EDGE = "sub";
+    final static String ISA_EDGE = Schema.EdgeLabel.ISA.getLabel();
+    final static String SUB_EDGE = Schema.EdgeLabel.SUB.getLabel();
     final static String OUTBOUND_EDGE = "OUT";
     final static String INBOUND_EDGE = "IN";
     final static String RELATES_EDGE = Schema.EdgeLabel.RELATES.getLabel();
