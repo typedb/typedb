@@ -36,7 +36,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
  *
  * @param <T> A vendor implementation of a Tinkerpop {@link Graph}
  */
-public interface InternalFactory<T extends Graph> {
+public interface InternalFactory<T extends Graph> extends QueryBuilderFactory<T> {
     /**
      *
      * @param txType The type of transaction to open on the graph
@@ -50,6 +50,4 @@ public interface InternalFactory<T extends Graph> {
      * @return An instance of a tinker graph
      */
     T getTinkerPopGraph(boolean batchLoading);
-
-
 }
