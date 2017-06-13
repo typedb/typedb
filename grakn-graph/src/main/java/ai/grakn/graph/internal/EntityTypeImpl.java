@@ -21,7 +21,6 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * <p>
@@ -37,17 +36,16 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  *
  */
 class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
-    EntityTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+    EntityTypeImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    EntityTypeImpl(AbstractGraknGraph graknGraph, Vertex v, EntityType type) {
-        super(graknGraph, v, type);
+    EntityTypeImpl(VertexElement vertexElement, EntityType type) {
+        super(vertexElement, type);
     }
 
     @Override
     public Entity addEntity() {
-        return addInstance(Schema.BaseType.ENTITY, (vertex, type) ->
-                getGraknGraph().getElementFactory().buildEntity(vertex, type));
+        return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> vertex().graph().factory().buildEntity(vertex, type));
     }
 }

@@ -30,6 +30,7 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
 
@@ -66,16 +67,6 @@ public final class Schema {
         @CheckReturnValue
         public String getLabel() {
             return label;
-        }
-
-        @CheckReturnValue
-        public static EdgeLabel getEdgeLabel(String label) {
-            for (EdgeLabel edgeLabel : EdgeLabel.values()) {
-                if (edgeLabel.getLabel().equals(label)) {
-                    return edgeLabel;
-                }
-            }
-            return null;
         }
     }
 
@@ -136,7 +127,10 @@ public final class Schema {
         RELATION(Relation.class),
         ENTITY(Entity.class),
         RESOURCE(Resource.class),
-        RULE(Rule.class);
+        RULE(Rule.class),
+
+        //Internal
+        SHARD(Vertex.class);
 
         private final Class classType;
 
@@ -153,12 +147,12 @@ public final class Schema {
     /**
      * An enum which defines the non-unique mutable properties of the concept.
      */
-    public enum ConceptProperty {
+    public enum VertexProperty {
         //Unique Properties
         TYPE_LABEL(String.class), INDEX(String.class), ID(String.class), TYPE_ID(Integer.class),
 
         //Other Properties
-        INSTANCE_TYPE_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_SHARD(Boolean.class),
+        INSTANCE_TYPE_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),
         REGEX(String.class), DATA_TYPE(String.class), SHARD_COUNT(Long.class), CURRENT_TYPE_ID(Integer.class),
         RULE_LHS(String.class), RULE_RHS(String.class), CURRENT_SHARD(String.class),
 
@@ -170,7 +164,7 @@ public final class Schema {
 
         private final Class dataType;
 
-        ConceptProperty(Class dataType) {
+        VertexProperty(Class dataType) {
             this.dataType = dataType;
         }
 

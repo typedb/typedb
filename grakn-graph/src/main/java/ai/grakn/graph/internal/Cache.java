@@ -38,7 +38,7 @@ import java.util.function.Supplier;
  * @author fppt
  *
  */
-class ElementCache<V> {
+class Cache<V> {
     //If no cache can produce the data then the database is read
     private final Supplier<V> databaseReader;
 
@@ -48,7 +48,7 @@ class ElementCache<V> {
     //Graph bound value which has already been persisted and acts as a shared component cache
     private Optional<V> sharedValue = Optional.empty();
 
-    ElementCache(Supplier<V> databaseReader){
+    Cache(Supplier<V> databaseReader){
         this.databaseReader = databaseReader;
     }
 

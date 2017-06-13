@@ -123,8 +123,8 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
     }
 
     final Number resourceValue(Vertex vertex) {
-        return usingLong() ? vertex.value(Schema.ConceptProperty.VALUE_LONG.name()) :
-                vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name());
+        return usingLong() ? vertex.value(Schema.VertexProperty.VALUE_LONG.name()) :
+                vertex.value(Schema.VertexProperty.VALUE_DOUBLE.name());
     }
 
     final Number minValue() {

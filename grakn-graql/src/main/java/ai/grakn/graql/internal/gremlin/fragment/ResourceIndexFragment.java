@@ -26,7 +26,7 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.util.Schema.ConceptProperty.INDEX;
+import static ai.grakn.util.Schema.VertexProperty.INDEX;
 
 class ResourceIndexFragment extends AbstractFragment {
 

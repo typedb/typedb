@@ -36,8 +36,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.util.Schema.ConceptProperty.INSTANCE_TYPE_ID;
-import static ai.grakn.util.Schema.ConceptProperty.TYPE_ID;
+import static ai.grakn.util.Schema.VertexProperty.INSTANCE_TYPE_ID;
+import static ai.grakn.util.Schema.VertexProperty.TYPE_ID;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
 import static java.util.stream.Collectors.joining;
@@ -146,13 +146,13 @@ public class Fragments {
     @SuppressWarnings("unchecked")
     static GraphTraversal<Vertex, Vertex> outSubs(GraphTraversal<Vertex, Vertex> traversal) {
         // These traversals make sure to only navigate types by checking they do not have a `INSTANCE_TYPE_ID` property
-        return traversal.union(__.not(__.has(INSTANCE_TYPE_ID.name())), __.repeat(__.out(SUB.getLabel())).emit()).unfold();
+        return traversal.union(__.<Vertex>not(__.has(INSTANCE_TYPE_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.repeat(__.out(SUB.getLabel())).emit()).unfold();
     }
 
     @SuppressWarnings("unchecked")
     static GraphTraversal<Vertex, Vertex> inSubs(GraphTraversal<Vertex, Vertex> traversal) {
         // These traversals make sure to only navigate types by checking they do not have a `INSTANCE_TYPE_ID` property
-        return traversal.union(__.not(__.has(INSTANCE_TYPE_ID.name())), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
+        return traversal.union(__.<Vertex>not(__.has(INSTANCE_TYPE_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
     }
 
     static String displayOptionalTypeLabels(String name, Optional<Set<TypeLabel>> typeLabels) {

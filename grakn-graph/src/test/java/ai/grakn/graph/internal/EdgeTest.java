@@ -30,13 +30,13 @@ import static org.junit.Assert.assertNotEquals;
 public class EdgeTest extends GraphTestBase{
 
     private EntityTypeImpl entityType;
-    private Entity entity;
+    private EntityImpl entity;
     private EdgeElement edge;
 
     @Before
     public void createEdge(){
         entityType = (EntityTypeImpl) graknGraph.putEntityType("My Entity Type");
-        entity = entityType.addEntity();
+        entity = (EntityImpl) entityType.addEntity();
         Edge tinkerEdge = graknGraph.getTinkerTraversal().hasId(entity.getId().getValue()).outE().next();
         edge = new EdgeElement(graknGraph, tinkerEdge);
     }
@@ -53,16 +53,16 @@ public class EdgeTest extends GraphTestBase{
 
     @Test
     public void whenGettingTheSourceOfAnEdge_ReturnTheConceptTheEdgeComesFrom() throws Exception {
-        assertEquals(entity, edge.getSource());
+        assertEquals(entity.vertex(), edge.source());
     }
 
     @Test
     public void whenGettingTheTargetOfAnEdge_ReturnTheConceptTheEdgePointsTowards() throws Exception {
-        assertEquals(entityType.currentShard(), edge.getTarget());
+        assertEquals(entityType.currentShard().vertex(), edge.target());
     }
 
     @Test
     public void whenGettingTheLabelOfAnEdge_ReturnExpectedType() throws Exception {
-        assertEquals(Schema.EdgeLabel.ISA, edge.getType());
+        assertEquals(Schema.EdgeLabel.ISA.getLabel(), edge.label());
     }
 }

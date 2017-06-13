@@ -30,7 +30,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static ai.grakn.util.ErrorMessage.NULL_VALUE;
-import static ai.grakn.util.Schema.ConceptProperty.RULE_LHS;
+import static ai.grakn.util.Schema.VertexProperty.RULE_LHS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;

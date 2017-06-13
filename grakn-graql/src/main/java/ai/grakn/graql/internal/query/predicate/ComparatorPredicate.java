@@ -47,7 +47,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
     private static final String[] VALUE_PROPERTIES =
             SUPPORTED_TYPES.values().stream()
-                    .map(ResourceType.DataType::getConceptProperty)
+                    .map(ResourceType.DataType::getVertexProperty)
                     .distinct()
                     .map(Enum::name)
                     .toArray(String[]::new);
@@ -160,7 +160,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
         value.ifPresent(theValue -> {
             // Compare to a given value
             ResourceType.DataType<?> dataType = SUPPORTED_TYPES.get(originalValue.get().getClass().getTypeName());
-            Schema.ConceptProperty property = dataType.getConceptProperty();
+            Schema.VertexProperty property = dataType.getVertexProperty();
             traversal.has(property.name(), gremlinPredicate(theValue));
         });
     }

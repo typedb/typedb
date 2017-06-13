@@ -26,7 +26,6 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -53,19 +52,19 @@ import java.util.stream.Stream;
  *
  */
 class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relation {
-    RelationImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+    RelationImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    RelationImpl(AbstractGraknGraph graknGraph, Vertex v, RelationType type) {
-        super(graknGraph, v, type);
+    RelationImpl(VertexElement vertexElement, RelationType type) {
+        super(vertexElement, type);
     }
 
     /**
      * Sets the internal hash in order to perform a faster lookup
      */
     void setHash(){
-        setUniqueProperty(Schema.ConceptProperty.INDEX, generateNewHash(type(), allRolePlayers()));
+        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateNewHash(type(), allRolePlayers()));
     }
 
     /**
@@ -76,18 +75,18 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     Stream<Casting> castingsRelation(RoleType... roleTypes){
         if(roleTypes.length == 0){
-            return getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
-                    map(edge -> getGraknGraph().getElementFactory().buildRolePlayer(edge));
+            return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
+                    map(edge -> vertex().graph().factory().buildRolePlayer(edge));
         }
 
         //Traversal is used so we can potentially optimise on the index
         Set<Integer> roleTypesIds = Arrays.stream(roleTypes).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
-        return getGraknGraph().getTinkerTraversal().
-                has(Schema.ConceptProperty.ID.name(), getId().getValue()).
+        return vertex().graph().getTinkerTraversal().
+                has(Schema.VertexProperty.ID.name(), getId().getValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), type().getTypeId().getValue()).
                 has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).
-                toStream().map(edge -> getGraknGraph().getElementFactory().buildRolePlayer(edge));
+                toStream().map(edge -> vertex().graph().factory().buildRolePlayer(edge));
     }
 
     /**
@@ -160,7 +159,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @return The Relation itself
      */
     private Relation addNewRolePlayer(RoleType roleType, Instance instance){
-        getGraknGraph().putShortcutEdge((InstanceImpl) instance, this, (RoleTypeImpl) roleType);
+        vertex().graph().putShortcutEdge((InstanceImpl) instance, this, (RoleTypeImpl) roleType);
         return this;
     }
 

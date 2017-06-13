@@ -25,7 +25,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
-import static ai.grakn.util.Schema.ConceptProperty.TYPE_ID;
+import static ai.grakn.util.Schema.VertexProperty.TYPE_ID;
 
 class LabelFragment extends AbstractFragment {
 
