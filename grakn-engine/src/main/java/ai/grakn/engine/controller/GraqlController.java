@@ -303,7 +303,7 @@ public class GraqlController {
             ((PathQuery) query).execute()
                     .orElse(new ArrayList<>())
                     .forEach(c -> array.add(
-                            renderHALConceptData(c, 0, keyspace, 0, numberEmbeddedComponents)));
+                            Json.read(renderHALConceptData(c, 0, keyspace, 0, numberEmbeddedComponents))));
 
             return array;
         }
