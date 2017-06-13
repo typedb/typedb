@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.pattern;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.ValuePredicate;
@@ -50,9 +51,10 @@ import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.pattern.property.RhsProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.graql.internal.util.CommonUtil;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -67,7 +69,7 @@ import java.util.Stack;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -287,7 +289,7 @@ class VarPatternImpl implements VarPatternAdmin {
 
     @Override
     public VarPatternAdmin setVarName(Var name) {
-        if (!this.name.isUserDefinedName()) throw new RuntimeException(ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
+        Preconditions.checkState(this.name.isUserDefinedName(), ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
         return new VarPatternImpl(name, properties);
     }
 
@@ -445,10 +447,7 @@ class VarPatternImpl implements VarPatternAdmin {
      */
     private void testUniqueProperty(UniqueVarProperty property) {
         getProperty(property.getClass()).filter(other -> !other.equals(property)).ifPresent(other -> {
-            String message = ErrorMessage.CONFLICTING_PROPERTIES.getMessage(
-                    getPrintableName(), property.graqlString(), other.graqlString()
-            );
-            throw new IllegalStateException(message);
+            throw GraqlQueryException.conflictingProperties(this, property, other);
         });
     }
 

@@ -108,7 +108,7 @@ public class UpdatingInstanceCountTaskTest {
     private void checkShardCount(String keyspace, Concept concept, int expectedValue){
         try(GraknGraph graknGraph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
             int shards = graknGraph.admin().getTinkerTraversal().
-                    has(Schema.ConceptProperty.ID.name(), concept.getId().getValue()).
+                    has(Schema.VertexProperty.ID.name(), concept.getId().getValue()).
                     in(Schema.EdgeLabel.SHARD.getLabel()).toList().size();
 
             assertEquals(expectedValue, shards);

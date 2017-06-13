@@ -22,13 +22,15 @@ package ai.grakn.graph.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
+import ai.grakn.util.CommonUtil;
 import com.google.common.collect.Lists;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.Function;
 
-import static ai.grakn.generator.GraknGraphs.withImplicitConceptsVisible;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
@@ -41,9 +43,9 @@ public class PropertyUtil {
 
     @SuppressWarnings("unchecked")
     public static Collection<Type> directSubTypes(GraknGraph graph, Type type) {
-        Object ret = withImplicitConceptsVisible(graph, g ->
-            type.subTypes().stream().filter(subType -> type.equals(subType.superType())).collect(toList())
-        );
+        Function<GraknGraph,? extends List<? extends Type>> function = g ->
+            type.subTypes().stream().filter(subType -> type.equals(subType.superType())).collect(toList());
+        Object ret = CommonUtil.withImplicitConceptsVisible(graph, function);
         return (Collection<Type>)ret;
     }
 

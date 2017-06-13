@@ -18,11 +18,12 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -43,20 +44,20 @@ import java.util.stream.Collectors;
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    private ElementCache<Set<RoleType>> cachedRelates = new ElementCache<>(() -> this.<RoleType>getOutgoingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private Cache<Set<RoleType>> cachedRelates = new Cache<>(() -> this.<RoleType>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+    RelationTypeImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RelationType type, Boolean isImplicit) {
-        super(graknGraph, v, type, isImplicit);
+    RelationTypeImpl(VertexElement vertexElement, RelationType type, Boolean isImplicit) {
+        super(vertexElement, type, isImplicit);
     }
 
     @Override
     public Relation addRelation() {
         return addInstance(Schema.BaseType.RELATION,
-                (vertex, type) -> getGraknGraph().getElementFactory().buildRelation(vertex, type));
+                (vertex, type) -> vertex().graph().factory().buildRelation(vertex, type));
     }
 
     @Override
@@ -81,17 +82,17 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public RelationType relates(RoleType roleType) {
-        checkTypeMutation();
+        checkTypeMutationAllowed();
         putEdge(roleType, Schema.EdgeLabel.RELATES);
 
-        //ElementCache the Role internally
+        //Cache the Role internally
         cachedRelates.ifPresent(set -> set.add(roleType));
 
-        //ElementCache the relation type in the role
+        //Cache the relation type in the role
         ((RoleTypeImpl) roleType).addCachedRelationType(this);
 
         //Put all the instance back in for tracking because their unique hashes need to be regenerated
-        instances().forEach(instance -> getGraknGraph().getTxCache().trackForValidation((ConceptImpl) instance));
+        instances().forEach(instance -> vertex().graph().txCache().trackForValidation((ConceptImpl) instance));
 
         return this;
     }
@@ -103,19 +104,19 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public RelationType deleteRelates(RoleType roleType) {
-        checkTypeMutation();
-        deleteEdgeTo(Schema.EdgeLabel.RELATES, roleType);
+        checkTypeMutationAllowed();
+        deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, (Concept) roleType);
 
         RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
         //Add roleplayers of roleType to make sure relations are still valid
-        roleTypeImpl.rolePlayers().forEach(rolePlayer -> getGraknGraph().getTxCache().trackForValidation(rolePlayer));
+        roleTypeImpl.rolePlayers().forEach(rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
 
 
         //Add the Role Type itself
-        getGraknGraph().getTxCache().trackForValidation(roleTypeImpl);
+        vertex().graph().txCache().trackForValidation(roleTypeImpl);
 
         //Add the Relation Type
-        getGraknGraph().getTxCache().trackForValidation(roleTypeImpl);
+        vertex().graph().txCache().trackForValidation(roleTypeImpl);
 
         //Remove from internal cache
         cachedRelates.ifPresent(set -> set.remove(roleType));
@@ -124,7 +125,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         ((RoleTypeImpl) roleType).deleteCachedRelationType(this);
 
         //Put all the instance back in for tracking because their unique hashes need to be regenerated
-        instances().forEach(instance -> getGraknGraph().getTxCache().trackForValidation((ConceptImpl) instance));
+        instances().forEach(instance -> vertex().graph().txCache().trackForValidation((ConceptImpl) instance));
 
         return this;
     }

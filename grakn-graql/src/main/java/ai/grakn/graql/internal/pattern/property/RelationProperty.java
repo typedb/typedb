@@ -25,6 +25,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPatternBuilder;
@@ -37,8 +38,7 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -51,8 +51,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
-
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -147,7 +146,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     }
 
     @Override
-    public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws IllegalStateException {
+    public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
 
         Set<TypeLabel> roleTypes = relationPlayers.stream()
                 .map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream)
@@ -161,7 +160,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             Type type = graph.getType(label);
 
             if (type == null || !type.isRelationType()) {
-                throw new IllegalStateException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(label));
+                throw GraqlQueryException.notARelationType(label);
             }
         });
 
@@ -169,20 +168,20 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         roleTypes.forEach(roleId -> {
             Type type = graph.getType(roleId);
             if (type == null || !type.isRoleType()) {
-                throw new IllegalStateException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(roleId, roleId));
+                throw GraqlQueryException.notARoleType(roleId);
             }
         });
     }
 
     @Override
-    public void checkInsertable(VarPatternAdmin var) throws IllegalStateException {
+    public void checkInsertable(VarPatternAdmin var) throws GraqlQueryException {
         if (!var.hasProperty(IsaProperty.class)) {
-            throw new IllegalStateException(ErrorMessage.INSERT_RELATION_WITHOUT_ISA.getMessage());
+            throw GraqlQueryException.insertRelationWithoutType();
         }
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Relation relation = concept.asRelation();
         relationPlayers.forEach(relationPlayer -> addRoleplayer(insertQueryExecutor, relation, relationPlayer));
     }
@@ -193,9 +192,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param relationPlayer a casting between a role type and role player
      */
     private void addRoleplayer(InsertQueryExecutor insertQueryExecutor, Relation relation, RelationPlayer relationPlayer) {
-        VarPatternAdmin roleVar = relationPlayer.getRoleType().orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage())
-        );
+        VarPatternAdmin roleVar = relationPlayer.getRoleType().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
 
         RoleType roleType = insertQueryExecutor.getConcept(roleVar).asRoleType();
         Instance roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asInstance();

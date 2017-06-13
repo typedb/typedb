@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -44,16 +45,15 @@ import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import java.util.Comparator;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -63,10 +63,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getListPermutations;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilterWithInverse;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getListPermutations;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getUnifiersFromPermutations;
 
 /**
  *
@@ -142,7 +142,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public Set<Atom> selectAtoms() {
         Set<Atom> selectedAtoms = super.selectAtoms();
         if (selectedAtoms.size() != 1) {
-            throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(this.toString()));
+            throw GraqlQueryException.nonAtomicQuery(this);
         }
         return selectedAtoms;
     }
@@ -153,16 +153,17 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         ReasonerAtomicQuery parent = (ReasonerAtomicQuery) p;
         Unifier unifier = getAtom().getUnifier(parent.getAtom());
         //get type unifiers
-        Set<Atomic> unified = new HashSet<>();
-        getAtom().getTypeConstraints().forEach(type -> {
-            Set<Atomic> toUnify = Sets.difference(parent.getEquivalentAtoms(type), unified);
-            Atomic equiv = toUnify.stream().findFirst().orElse(null);
-            //only apply if unambiguous
-            if (equiv != null && toUnify.size() == 1){
-                unifier.merge(type.getUnifier(equiv));
-                unified.add(equiv);
-            }
-        });
+        Set<Atom> unified = new HashSet<>();
+        getAtom().getTypeConstraints()
+                .forEach(type -> {
+                    Set<Atom> toUnify = Sets.difference(parent.getEquivalentAtoms(type), unified);
+                    Atom equiv = toUnify.stream().findFirst().orElse(null);
+                    //only apply if unambiguous
+                    if (equiv != null && toUnify.size() == 1){
+                        unifier.merge(type.getUnifier(equiv));
+                        unified.add(equiv);
+                    }
+                });
         return unifier;
     }
 

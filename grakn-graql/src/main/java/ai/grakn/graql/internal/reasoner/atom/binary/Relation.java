@@ -33,7 +33,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
@@ -41,16 +41,18 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleTypeConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverterImpl;
-import ai.grakn.graql.internal.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -63,9 +65,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesDisjoint;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getCompatibleRelationTypesWithRoles;
@@ -658,12 +657,22 @@ public class Relation extends TypeAtom {
 
         //self-consistent procedure until no non-empty mappings present
         while( compatibleMappings.asMap().values().stream().filter(s -> !s.isEmpty()).count() > 0) {
-            //prioritise mappings with equivalent types and unambiguous mappings
             Map.Entry<RelationPlayer, RelationPlayer> entry = compatibleMappings.entries().stream()
+                    //prioritise mappings with equivalent types and unambiguous mappings
                     .sorted(Comparator.comparing(e -> {
                         Type parentType = parentVarTypeMap.get(e.getKey().getRolePlayer().getVarName());
                         Type childType = childVarTypeMap.get(e.getValue().getRolePlayer().getVarName());
                         return !(parentType != null && childType != null && parentType.equals(childType));
+                    }))
+                    //prioritise mappings with sam var substitution (idpredicates)
+                    .sorted(Comparator.comparing(e -> {
+                        IdPredicate parentId = parentAtom.getIdPredicates().stream()
+                                .filter(p -> p.getVarName().equals(e.getKey().getRolePlayer().getVarName()))
+                                .findFirst().orElse(null);
+                        IdPredicate childId = getIdPredicates().stream()
+                                .filter(p -> p.getVarName().equals(e.getValue().getRolePlayer().getVarName()))
+                                .findFirst().orElse(null);
+                        return !(parentId != null && childId != null && parentId.getPredicate().equals(childId.getPredicate()));
                     }))
                     .sorted(Comparator.comparing(e -> compatibleMappings.get(e.getKey()).size()))
                     .findFirst().orElse(null);
@@ -680,13 +689,11 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public Unifier getUnifier(Atomic pAtom) {
-        if (!(pAtom instanceof TypeAtom)) {
-            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
-        }
+    public Unifier getUnifier(Atom pAtom) {
+        if (this.equals(pAtom)) return new UnifierImpl();
 
         Unifier unifier = super.getUnifier(pAtom);
-        if (((Atom) pAtom).isRelation()) {
+        if (pAtom.isRelation()) {
             Relation parentAtom = (Relation) pAtom;
 
             getRelationPlayerMappings(parentAtom)

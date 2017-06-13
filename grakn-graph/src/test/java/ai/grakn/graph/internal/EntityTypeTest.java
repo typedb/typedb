@@ -287,10 +287,10 @@ public class EntityTypeTest extends GraphTestBase{
         relationType.relates().forEach(role -> assertTrue(role.isImplicit()));
 
         // Check that resource is not required
-        EdgeElement entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
-        assertFalse(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
-        EdgeElement resourcePlays = ((ResourceTypeImpl <?>) resourceType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
-        assertFalse(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
+        EdgeElement entityPlays = ((EntityTypeImpl) entityType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
+        assertFalse(entityPlays.propertyBoolean(Schema.EdgeProperty.REQUIRED));
+        EdgeElement resourcePlays = ((ResourceTypeImpl <?>) resourceType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
+        assertFalse(resourcePlays.propertyBoolean(Schema.EdgeProperty.REQUIRED));
     }
 
     @Test
@@ -475,11 +475,11 @@ public class EntityTypeTest extends GraphTestBase{
     @Test
     public void whenAddingInstanceToType_EnsureIsaEdgeIsPlacedOnShard(){
         EntityTypeImpl entityType = (EntityTypeImpl) graknGraph.putEntityType("EntityType");
-        EntityTypeImpl shard = (EntityTypeImpl) entityType.currentShard();
+        Shard shard =  entityType.currentShard();
         Entity e1 = entityType.addEntity();
 
-        assertFalse("The isa edge was places on the type rather than the shard", entityType.getIncomingNeighbours(Schema.EdgeLabel.ISA).iterator().hasNext());
-        assertEquals(e1, shard.getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().get());
+        assertFalse("The isa edge was places on the type rather than the shard", entityType.neighbours(Direction.IN, Schema.EdgeLabel.ISA).iterator().hasNext());
+        assertEquals(e1, shard.links().findAny().get());
     }
 
 }

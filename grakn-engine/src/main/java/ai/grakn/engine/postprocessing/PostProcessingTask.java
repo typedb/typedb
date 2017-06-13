@@ -156,7 +156,7 @@ public class PostProcessingTask extends BackgroundTask {
         }
 
         //Check index
-        if(graph.admin().getConcept(Schema.ConceptProperty.INDEX, conceptIndex) == null){
+        if(graph.admin().getConcept(Schema.VertexProperty.INDEX, conceptIndex) == null){
             return Optional.of("The concept index [" + conceptIndex + "] did not return any concept");
         }
 

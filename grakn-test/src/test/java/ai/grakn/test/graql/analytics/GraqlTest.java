@@ -29,6 +29,8 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -127,7 +129,7 @@ public class GraqlTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = GraqlQueryException.class)
     public void testInvalidIdWithAnalytics() {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum of thing;").execute();
@@ -220,7 +222,7 @@ public class GraqlTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = GraqlQueryException.class)
     public void testNonResourceTypeAsSubgraphForAnalytics() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.putEntityType(thing);
@@ -228,11 +230,11 @@ public class GraqlTest {
         }
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            graph.graql().parse("compute sum in thing;").execute();
+            graph.graql().parse("compute sum of thing;").execute();
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = GraqlSyntaxException.class)
     public void testErrorWhenNoSubgrapForAnalytics() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum;").execute();

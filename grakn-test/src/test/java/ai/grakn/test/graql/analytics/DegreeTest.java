@@ -188,7 +188,7 @@ public class DegreeTest {
                     }
             ));
 
-            degrees3 = graph.graql().compute().degree().of("thing").in("thing", "related").execute();
+            degrees3 = graph.graql().compute().degree().of("thing").in("related").execute();
             assertEquals(2, degrees3.size());
             assertEquals(2, degrees3.get(1L).size());
             assertEquals(1, degrees3.get(3L).size());

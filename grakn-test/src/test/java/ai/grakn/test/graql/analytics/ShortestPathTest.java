@@ -9,6 +9,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
@@ -64,7 +65,7 @@ public class ShortestPathTest {
         factory = rule.factoryWithNewKeyspace();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFound() throws Exception {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
@@ -75,7 +76,7 @@ public class ShortestPathTest {
         }
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFoundSubgraph() throws Exception {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());

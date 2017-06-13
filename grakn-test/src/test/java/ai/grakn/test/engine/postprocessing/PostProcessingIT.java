@@ -147,7 +147,7 @@ public class PostProcessingIT {
             for (Object object : graph.admin().getMetaResourceType().instances()) {
                 Resource resource = (Resource) object;
                 String index = Schema.generateResourceIndex(resource.type().getLabel(), resource.getValue().toString());
-                assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.ConceptProperty.INDEX, index));
+                assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.VertexProperty.INDEX, index));
             }
         }
     }

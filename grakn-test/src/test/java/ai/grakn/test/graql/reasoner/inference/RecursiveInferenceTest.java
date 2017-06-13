@@ -33,11 +33,9 @@ import ai.grakn.graphs.TransitivityMatrixGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
 
-import java.util.List;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;

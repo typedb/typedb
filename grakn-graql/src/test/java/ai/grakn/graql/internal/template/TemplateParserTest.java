@@ -659,7 +659,7 @@ public class TemplateParserTest {
 
     @Test
     public void keyWithSpacesFailsTest(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
 
         String template = "insert $x isa person has name <First Name>;    ";
         String expected = "insert $x0 has name \"Phil Collins\" isa person;";
@@ -679,7 +679,7 @@ public class TemplateParserTest {
 
     @Test
     public void testGraqlParsingException(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         String template = "<<<<<<<";
         Graql.parseTemplate(template, new HashMap<>()).forEach(q -> {});
     }

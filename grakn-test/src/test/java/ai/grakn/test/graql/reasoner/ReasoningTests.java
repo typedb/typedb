@@ -20,18 +20,20 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
+
 import com.google.common.collect.Sets;
+import java.util.List;
+import java.util.Set;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
 import static ai.grakn.graql.Graql.label;
@@ -132,6 +134,9 @@ public class ReasoningTests {
 
     @ClassRule
     public static final GraphContext testSet25 = GraphContext.preLoad("testSet25.gql").assumeTrue(usingTinker());
+
+    @ClassRule
+    public static final GraphContext testSet26 = GraphContext.preLoad("testSet26.gql").assumeTrue(usingTinker());
 
     @Before
     public void onStartup() throws Exception {
@@ -290,6 +295,29 @@ public class ReasoningTests {
 
         assertEquals(answers2.size(), 1);
         assertEquals(answers1.size(), 2);
+    }
+
+    @Test
+    public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
+        assertFalse(testSet14.graph().implicitConceptsVisible());
+
+        QueryBuilder withInference = testSet14.graph().graql().infer(true);
+        QueryBuilder withoutInference = testSet14.graph().graql().infer(false);
+
+        VarPattern owner = label(HAS_OWNER.getLabel("res1"));
+        VarPattern value = label(HAS_VALUE.getLabel("res1"));
+        VarPattern hasRes = label(HAS.getLabel("res1"));
+
+        Function<QueryBuilder, MatchQuery> query = qb -> qb.match(
+                var().rel(owner, "x").rel(value, "y").isa(hasRes),
+                var("a").has("res1", var("b"))  // This pattern is added only to encourage reasoning to activate
+        );
+
+        Set<Answer> resultsWithInference = query.apply(withInference).stream().collect(toSet());
+        Set<Answer> resultsWithoutInference = query.apply(withoutInference).stream().collect(toSet());
+
+        assertThat(resultsWithoutInference, not(empty()));
+        assertThat(Sets.difference(resultsWithoutInference, resultsWithInference), empty());
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
@@ -477,7 +505,7 @@ public class ReasoningTests {
     }
 
     @Test //Expected result: The same set of results is always returned
-    public void reasoningWithLimitHigherThanNumberOfResultsReturnsConsistentResults(){
+    public void reasoningWithLimitHigherThanNumberOfResults_ReturnsConsistentResults(){
         QueryBuilder qb = testSet23.graph().graql().infer(true);
         String queryString = "match (friend1:$x1, friend2:$x2) isa knows-trans;limit 60;";
         QueryAnswers oldAnswers = queryAnswers(qb.parse(queryString));
@@ -508,27 +536,25 @@ public class ReasoningTests {
         assertEquals(answers.size(), 10);
     }
 
-    @Test
-    public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
-        assertFalse(testSet14.graph().implicitConceptsVisible());
+    //tests if partial substitutions are propagated correctly - atom disjointness may lead to variable loss (bug #15476)
+    @Test //Expected result: 2 relations obtained by correctly finding reified relations
+    public void reasoningWithReifiedRelations() {
+        QueryBuilder qb = testSet26.graph().graql().infer(true);
+        String queryString = "match (role1: $x1, role2: $x2) isa relation2;";
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        assertEquals(answers.size(), 2);
 
-        QueryBuilder withInference = testSet14.graph().graql().infer(true);
-        QueryBuilder withoutInference = testSet14.graph().graql().infer(false);
-
-        VarPattern owner = label(HAS_OWNER.getLabel("res1"));
-        VarPattern value = label(HAS_VALUE.getLabel("res1"));
-        VarPattern hasRes = label(HAS.getLabel("res1"));
-
-        Function<QueryBuilder, MatchQuery> query = qb -> qb.match(
-                var().rel(owner, "x").rel(value, "y").isa(hasRes),
-                var("a").has("res1", var("b"))  // This pattern is added only to encourage reasoning to activate
-        );
-
-        Set<Answer> resultsWithInference = query.apply(withInference).stream().collect(toSet());
-        Set<Answer> resultsWithoutInference = query.apply(withoutInference).stream().collect(toSet());
-
-        assertThat(resultsWithoutInference, not(empty()));
-        assertThat(Sets.difference(resultsWithoutInference, resultsWithInference), empty());
+        String queryString2 = "match " +
+                "$b isa entity2;" +
+                "$b has res1 'value';" +
+                "$rel1 has res2 'value1';" +
+                "$rel1 (role1: $p, role2: $b) isa relation1;" +
+                "$rel2 has res2 'value2';" +
+                "$rel2 (role1: $c, role2: $b) isa relation1;";
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
+        assertEquals(answers2.size(), 2);
+        Set<Var> vars = Sets.newHashSet(var("b"), var("p"), var("c"), var("rel1"), var("rel2"));
+        answers2.forEach(ans -> assertTrue(ans.keySet().containsAll(vars)));
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -25,13 +26,13 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.stream.Collectors;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -112,7 +113,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
         Iterator<ValueProperty> properties = pattern.getProperties(ValueProperty.class).iterator();
         ValueProperty property = properties.next();
         if (properties.hasNext()) {
-            throw new IllegalStateException("Attempting creation of ValuePredicate atom with more than single predicate");
+            throw GraqlQueryException.valuePredicateAtomWithMultiplePredicates();
         }
         return property.getPredicate();
     }

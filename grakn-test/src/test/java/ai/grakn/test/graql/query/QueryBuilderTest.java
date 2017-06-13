@@ -19,13 +19,13 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.test.GraphContext;
-
 import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -106,7 +106,7 @@ public class QueryBuilderTest {
     @Test
     public void testErrorExecuteMatchQueryWithoutGraph() {
         MatchQuery query = match(var("x").isa("movie"));
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
         //noinspection ResultOfMethodCallIgnored
         query.iterator();
@@ -114,7 +114,7 @@ public class QueryBuilderTest {
 
     @Test
     public void testErrorExecuteAskQueryWithoutGraph() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
         match(var("x").isa("movie")).ask().execute();
     }
@@ -122,14 +122,14 @@ public class QueryBuilderTest {
     @Test
     public void testErrorExecuteInsertQueryWithoutGraph() {
         InsertQuery query = insert(var().id(ConceptId.of("another-movie")).isa("movie"));
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
         query.execute();
     }
 
     @Test
     public void testErrorExecuteDeleteQueryWithoutGraph() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
         match(var("x").isa("movie")).delete("x").execute();
     }
@@ -137,14 +137,14 @@ public class QueryBuilderTest {
     @Test
     public void testValidationWhenGraphProvided() {
         MatchQuery query = match(var("x").isa("not-a-thing"));
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         //noinspection ResultOfMethodCallIgnored
         query.withGraph(movieGraph.graph()).stream();
     }
 
     @Test
     public void testErrorWhenSpecifyGraphTwice() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
         //noinspection ResultOfMethodCallIgnored
         movieGraph.graph().graql().match(var("x").isa("movie")).withGraph(movieGraph.graph()).stream();

@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.TypeId;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -58,7 +59,7 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
                 degreeStatisticsStepResource(vertex, messenger, ofTypeIds, degreePropertyKey);
                 break;
             default:
-                throw new RuntimeException("unreachable");
+                throw CommonUtil.unreachableStatement("Exceeded expected maximum number of iterations");
         }
     }
 

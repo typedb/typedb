@@ -22,10 +22,10 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 
@@ -82,12 +82,12 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     private void getResourceTypes(GraknGraph graph) {
         if (statisticsResourceTypeLabels.isEmpty()) {
-            throw new IllegalStateException(ErrorMessage.RESOURCE_TYPE_NOT_SPECIFIED.getMessage());
+            throw GraqlQueryException.statisticsResourceTypesNotSpecified();
         }
 
         Set<Type> statisticsResourceTypes = statisticsResourceTypeLabels.stream().map((label) -> {
             Type type = graph.getType(label);
-            if (type == null) throw new IllegalArgumentException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
+            if (type == null) throw GraqlQueryException.labelNotFound(label);
             return type;
         }).collect(Collectors.toSet());
         for (Type type : statisticsResourceTypes) {
@@ -102,17 +102,13 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     }
 
     ResourceType.DataType getDataTypeOfSelectedResourceTypes(Set<TypeLabel> resourceTypes) {
-        if (resourceTypes == null || resourceTypes.isEmpty()) {
-            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                    .getMessage(this.getClass().toString()));
-        }
+        assert resourceTypes != null && !resourceTypes.isEmpty();
 
         ResourceType.DataType dataType = null;
         for (TypeLabel resourceType : resourceTypes) {
             // check if the selected type is a resource-type
             if (!resourceTypesDataTypeMap.containsKey(resourceType)) {
-                throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                        .getMessage(this.getClass().toString()));
+                throw GraqlQueryException.mustBeResourceType(resourceType);
             }
 
             if (dataType == null) {
@@ -121,15 +117,13 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
                 if (!dataType.equals(ResourceType.DataType.LONG) &&
                         !dataType.equals(ResourceType.DataType.DOUBLE)) {
-                    throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                            .getMessage(this.getClass().toString()));
+                    throw GraqlQueryException.resourceMustBeANumber(dataType, resourceType);
                 }
 
             } else {
                 // check if all the resource-types have the same data-type
                 if (!dataType.equals(resourceTypesDataTypeMap.get(resourceType))) {
-                    throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                            .getMessage(this.getClass().toString()));
+                    throw GraqlQueryException.resourcesWithDifferentDataTypes(resourceTypes);
                 }
             }
         }
@@ -142,11 +136,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         List<Pattern> checkSubtypes = subTypeLabels.stream()
                 .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
 
-        if (graph.isPresent()) {
-            return graph.get().graql().infer(false).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
-        } else {
-            throw new RuntimeException("Cannot compute the instnces of a type without a graph");
-        }
+        return graph.orElseThrow(GraqlQueryException::noGraph).graql().infer(false).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
     }
 
     Set<TypeLabel> getCombinedSubTypes() {

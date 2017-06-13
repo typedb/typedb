@@ -209,43 +209,43 @@ public interface ResourceType<D> extends Type {
     class DataType<D> {
         public static final DataType<String> STRING = new DataType<>(
                 String.class.getName(),
-                Schema.ConceptProperty.VALUE_STRING,
+                Schema.VertexProperty.VALUE_STRING,
                 (v) -> v,
                 o -> defaultConverter(o, String.class, Object::toString));
 
         public static final DataType<Boolean> BOOLEAN = new DataType<>(
                 Boolean.class.getName(),
-                Schema.ConceptProperty.VALUE_BOOLEAN,
+                Schema.VertexProperty.VALUE_BOOLEAN,
                 (v) -> v,
                 o -> defaultConverter(o, Boolean.class, (v) -> Boolean.parseBoolean(v.toString())));
 
         public static final DataType<Integer> INTEGER = new DataType<>(
                 Integer.class.getName(),
-                Schema.ConceptProperty.VALUE_INTEGER,
+                Schema.VertexProperty.VALUE_INTEGER,
                 (v) -> v,
                 o -> defaultConverter(o, Integer.class, (v) -> Integer.parseInt(v.toString())));
 
         public static final DataType<Long> LONG = new DataType<>(
                 Long.class.getName(),
-                Schema.ConceptProperty.VALUE_LONG,
+                Schema.VertexProperty.VALUE_LONG,
                 (v) -> v,
                 o -> defaultConverter(o, Long.class, (v) -> Long.parseLong(v.toString())));
 
         public static final DataType<Double> DOUBLE = new DataType<>(
                 Double.class.getName(),
-                Schema.ConceptProperty.VALUE_DOUBLE,
+                Schema.VertexProperty.VALUE_DOUBLE,
                 (v) -> v,
                 o -> defaultConverter(o, Double.class, (v) -> Double.parseDouble(v.toString())));
 
         public static final DataType<Float> FLOAT = new DataType<>(
                 Float.class.getName(),
-                Schema.ConceptProperty.VALUE_FLOAT,
+                Schema.VertexProperty.VALUE_FLOAT,
                 (v) -> v,
                 o -> defaultConverter(o, Float.class, (v) -> Float.parseFloat(v.toString())));
 
         public static final DataType<LocalDateTime> DATE = new DataType<>(
                 LocalDateTime.class.getName(),
-                Schema.ConceptProperty.VALUE_DATE,
+                Schema.VertexProperty.VALUE_DATE,
                 (d) -> d.atZone(ZoneId.of("Z")).toInstant().toEpochMilli(),
                 (o) -> {
                     if (o == null) return null;
@@ -266,14 +266,14 @@ public interface ResourceType<D> extends Type {
                     .build();
 
         private final String dataType;
-        private final Schema.ConceptProperty conceptProperty;
+        private final Schema.VertexProperty vertexProperty;
         private final Function<D, Object> persistenceValueSupplier;
         private final Function<Object, D> valueSupplier;
 
 
-        private DataType(String dataType, Schema.ConceptProperty conceptProperty, Function<D, Object> savedValueProvider, Function<Object, D> valueSupplier){
+        private DataType(String dataType, Schema.VertexProperty vertexProperty, Function<D, Object> savedValueProvider, Function<Object, D> valueSupplier){
             this.dataType = dataType;
-            this.conceptProperty = conceptProperty;
+            this.vertexProperty = vertexProperty;
             this.persistenceValueSupplier = savedValueProvider;
             this.valueSupplier = valueSupplier;
         }
@@ -295,8 +295,8 @@ public interface ResourceType<D> extends Type {
         }
 
         @CheckReturnValue
-        public Schema.ConceptProperty getConceptProperty(){
-            return conceptProperty;
+        public Schema.VertexProperty getVertexProperty(){
+            return vertexProperty;
         }
 
         @Override

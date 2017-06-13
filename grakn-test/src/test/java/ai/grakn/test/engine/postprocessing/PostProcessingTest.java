@@ -43,7 +43,7 @@ import java.util.Set;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
 import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.Schema.ConceptProperty.INDEX;
+import static ai.grakn.util.Schema.VertexProperty.INDEX;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;

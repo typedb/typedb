@@ -19,6 +19,8 @@
 package ai.grakn.graql.internal.parser;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -30,7 +32,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
@@ -103,9 +104,7 @@ public class QueryParser {
             String name, int minArgs, int maxArgs, Function<List<Object>, Aggregate> aggregateMethod) {
         aggregateMethods.put(name, args -> {
             if (args.size() < minArgs || args.size() > maxArgs) {
-                String expectedArgs = (minArgs == maxArgs) ? Integer.toString(minArgs) : minArgs + "-" + maxArgs;
-                String message = ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage(name, expectedArgs, args.size());
-                throw new IllegalArgumentException(message);
+                throw GraqlQueryException.incorrectAggregateArgumentNumber(name, minArgs, maxArgs, args);
             }
             return aggregateMethod.apply(args);
         });
@@ -240,7 +239,7 @@ public class QueryParser {
         S tree = parseRule.apply(parser);
 
         if (errorListener.hasErrors()) {
-            throw new IllegalArgumentException(errorListener.toString());
+            throw GraqlSyntaxException.parsingError(errorListener.toString());
         }
 
         return visit.apply(getQueryVisitor(), tree);

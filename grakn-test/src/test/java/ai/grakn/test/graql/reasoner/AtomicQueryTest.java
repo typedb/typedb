@@ -20,6 +20,7 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graphs.AdmissionsGraph;
 import ai.grakn.graphs.CWGraph;
 import ai.grakn.graphs.GeoGraph;
@@ -33,16 +34,15 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.SNBGraph;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
@@ -96,7 +96,7 @@ public class AtomicQueryTest {
     public void testWhenConstructingNonAtomicQuery_ExceptionIsThrown() {
         String patternString = "{$x isa person;$y isa product;($x, $y) isa recommendation;($y, $t) isa typing;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, snbGraph.graph());
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, snbGraph.graph());
     }
 

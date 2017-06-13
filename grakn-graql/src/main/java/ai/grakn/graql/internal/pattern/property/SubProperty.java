@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -29,6 +30,7 @@ import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -85,7 +87,7 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Concept superConcept = insertQueryExecutor.getConcept(superType);
 
         if (concept.isEntityType()) {
@@ -99,7 +101,7 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
         } else if (concept.isRuleType()) {
             concept.asRuleType().superType(superConcept.asRuleType());
         } else {
-            throw new RuntimeException("Unexpected error: unreachable statement reached");
+            throw CommonUtil.unreachableStatement("Can't recognize type " + concept);
         }
     }
 
