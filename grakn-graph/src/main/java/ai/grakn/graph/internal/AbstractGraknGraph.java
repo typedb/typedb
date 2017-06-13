@@ -860,14 +860,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds){
         CastingImpl mainCasting = (CastingImpl) getMainConcept(index);
+
+        //Temporary patch to stop null pointers. No proper fix due to castings being removed in master
+        if(mainCasting == null) return false;
+
         Set<CastingImpl> duplicated = (Set<CastingImpl>) getDuplicates(mainCasting, castingVertexIds);
 
         if (duplicated.size() > 0) {
             //Fix the duplicates
             Set<Relation> duplicateRelations = mergeCastings(mainCasting, duplicated);
-
-            //Temporary patch to stop null pointers. No proper fix due to castings being removed in master
-            if(duplicateRelations.isEmpty()) return true;
 
             //Remove Redundant Relations
             duplicateRelations.forEach(relation -> ((ConceptImpl) relation).deleteNode());
@@ -889,10 +890,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return A set of possible duplicate relations.
      */
     private Set<Relation> mergeCastings(CastingImpl mainCasting, Set<CastingImpl> castings){
-
-        //Temporary patch to stop null pointers. No proper fix due to castings being removed in master
-        if(mainCasting == null) return Collections.emptySet();
-
         RoleType role = mainCasting.getRole();
         Set<Relation> relations = mainCasting.getRelations();
         Set<Relation> relationsToClean = new HashSet<>();
