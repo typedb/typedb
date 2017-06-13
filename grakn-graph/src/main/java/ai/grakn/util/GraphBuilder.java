@@ -52,6 +52,7 @@ public class GraphBuilder {
             String config = System.getProperty(SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE);
             if(config == null) throw GraphOperationException.invalidConfig(null);
 
+            properties = new Properties();
             try (FileInputStream inputStream = new FileInputStream(config)){
                 properties.load(inputStream);
             } catch (IOException e) {

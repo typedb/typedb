@@ -18,12 +18,14 @@
 
 package ai.grakn.util;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertNotNull;
 
 public class GraphBuilderTest {
 
+    @Ignore
     @Test
     public void whenAccessingGraphBuilder_EnsureSamplePropertiesAreLoaded(){
         assertNotNull(GraphBuilder.getSystemProperties());
