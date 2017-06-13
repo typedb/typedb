@@ -29,7 +29,6 @@ import ai.grakn.util.CassandraHelper;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
-import redis.embedded.RedisServer;
 import spark.Service;
 
 import java.io.IOException;
@@ -37,11 +36,9 @@ import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.graql.Graql.var;
 
@@ -59,18 +56,14 @@ public abstract class GraknTestEnv {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestEnv.class);
 
     private static String CONFIG = System.getProperty("grakn.test-profile");
-    private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
     private static AtomicInteger KAFKA_COUNTER = new AtomicInteger(0);
     private static AtomicInteger REDIS_COUNTER = new AtomicInteger(0);
 
     private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
-    private static RedisServer redisServer;
 
     public static void ensureCassandraRunning() throws Exception {
-        if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
-            LOG.info("starting cassandra...");
+        if (usingTitan()) {
             CassandraHelper.startEmbedded();
-            LOG.info("cassandra started.");
         }
     }
 
@@ -113,15 +106,6 @@ public abstract class GraknTestEnv {
         return server;
     }
 
-    static void startRedis(GraknEngineConfig config) throws IOException {
-        if(REDIS_COUNTER.getAndIncrement() == 0) {
-            LOG.info("Starting redis...");
-            redisServer = new RedisServer(config.getPropertyAsInt(REDIS_SERVER_PORT));
-            redisServer.start();
-            LOG.info("Redis started.");
-        }
-    }
-
     static void startKafka(GraknEngineConfig config) throws Exception {
         // Clean-up ironically uses a lot of memory
         if (KAFKA_COUNTER.getAndIncrement() == 0) {
@@ -139,14 +123,6 @@ public abstract class GraknTestEnv {
             LOG.info("Stopping kafka...");
             kafkaUnit.shutdown();
             LOG.info("Kafka stopped.");
-        }
-    }
-
-    static void stopRedis(){
-        if (REDIS_COUNTER.decrementAndGet() == 0) {
-            LOG.info("Stopping Redis...");
-            redisServer.stop();
-            LOG.info("Redis stopped.");
         }
     }
 
