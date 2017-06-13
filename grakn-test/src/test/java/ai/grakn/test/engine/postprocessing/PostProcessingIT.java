@@ -35,6 +35,7 @@ import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.SchemaViolationException;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -57,6 +58,7 @@ public class PostProcessingIT {
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
+    @Ignore
     @Test
     public void checkThatDuplicateResourcesAtLargerScaleAreMerged() throws InvalidGraphException, ExecutionException, InterruptedException {
         assumeFalse(usingTinker());
