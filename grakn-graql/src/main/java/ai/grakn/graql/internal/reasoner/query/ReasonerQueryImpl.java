@@ -48,6 +48,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -95,14 +96,20 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         inferTypes();
     }
 
-    ReasonerQueryImpl(Atom atom) {
-        if (atom.getParentQuery() == null) {
-            throw GraqlQueryException.atomParentMissing(atom.toString());
-        }
-        this.graph = atom.getParentQuery().graph();
-        addAtomic(AtomicFactory.create(atom, this));
-        addAtomConstraints(atom.getNonSelectableConstraints());
+    ReasonerQueryImpl(Set<Atom> atoms, GraknGraph graph){
+        this.graph = graph;
+
+        atoms.stream()
+                .map(at -> AtomicFactory.create(at, this))
+                .forEach(this::addAtomic);
+        atoms.stream()
+                .map(Atom::getNonSelectableConstraints)
+                .forEach(this::addAtomConstraints);
         inferTypes();
+    }
+
+    ReasonerQueryImpl(Atom atom) {
+        this(Collections.singleton(atom), atom.getParentQuery().graph());
     }
 
     @Override
@@ -197,17 +204,28 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * compute the resolution plan - list of atomic queries ordered by their resolution priority
      * @return list of prioritised atomic queries
      */
-    LinkedList<ReasonerAtomicQuery> getResolutionPlan(){
-        LinkedList<ReasonerAtomicQuery> queries = new LinkedList<>();
+    LinkedList<ReasonerQueryImpl> getResolutionPlan(){
+        LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
 
         LinkedList<Atom> atoms = selectAtoms().stream()
                 .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
                 .collect(Collectors.toCollection(LinkedList::new));
 
         Atom top = atoms.getFirst();
-
+        Set<Atom> nonResolvableAtoms = new HashSet<>();
         while (!atoms.isEmpty()) {
-            queries.add(new ReasonerAtomicQuery(top));
+
+            if (top.isRuleResolvable()) {
+                queries.add(new ReasonerAtomicQuery(top));
+
+                if (!nonResolvableAtoms.isEmpty()){
+                    queries.add(ReasonerQueries.create(nonResolvableAtoms, graph()));
+                    nonResolvableAtoms.clear();
+                }
+            } else {
+                nonResolvableAtoms.add(top);
+            }
+
             atoms.remove(top);
 
             Set<Var> subbedVars = Sets.difference(
