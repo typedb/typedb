@@ -111,7 +111,7 @@ public class SystemKeyspace {
     private static void initialiseFactory(Supplier<InternalFactory> factoryInitialiser){
         if(factoryBeingInstantiated.compareAndSet(false, true)){
             factory = factoryInitialiser.get();
-            loadSystemOntology();
+            loadSystemOntology(factory);
             factoryInstantiated.countDown();
         }
     }
@@ -198,8 +198,8 @@ public class SystemKeyspace {
      * only consists of types, the inserts are idempotent and it is safe to load it
      * multiple times.
      */
-    private static void loadSystemOntology() {
-        try (GraknGraph graph = factory().open(GraknTxType.WRITE)) {
+    private static void loadSystemOntology(InternalFactory factory) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             if (graph.getType(KEYSPACE_ENTITY) != null) {
                 return;
             }
