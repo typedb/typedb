@@ -1,6 +1,5 @@
 package ai.grakn.graph.internal;
 
-import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -16,7 +15,6 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -146,17 +144,6 @@ public class GraknGraphTest extends GraphTestBase {
     public void whenBuildingAConceptFromAVertex_ReturnConcept(){
         EntityTypeImpl et = (EntityTypeImpl) graknGraph.putEntityType("Sample Entity Type");
         assertEquals(et, graknGraph.admin().buildConcept(et.getVertex()));
-    }
-
-    @Test
-    public void whenExecutingGraqlTraversalFromGraph_ReturnExpectedResults(){
-        EntityType type = graknGraph.putEntityType("Concept Type");
-        Entity entity = type.addEntity();
-
-        Collection<Concept> results = graknGraph.graql().match(var("x").isa(type.getLabel().getValue())).
-                execute().iterator().next().values();
-
-        assertThat(results, containsInAnyOrder(entity));
     }
 
     @Test

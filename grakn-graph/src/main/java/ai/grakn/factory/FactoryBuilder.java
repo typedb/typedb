@@ -45,13 +45,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FactoryBuilder {
     private static final String FACTORY = "factory.internal";
-    private static final Map<String, InternalFactory> openFactories = new ConcurrentHashMap<>();
+    private static final Map<String, InternalFactory<?>> openFactories = new ConcurrentHashMap<>();
 
     private FactoryBuilder(){
         throw new UnsupportedOperationException();
     }
 
-    public static InternalFactory getFactory(String keyspace, String engineUrl, Properties properties){
+    public static InternalFactory<?> getFactory(String keyspace, String engineUrl, Properties properties){
         try{
             String factoryType;
             if (!Grakn.IN_MEMORY.equals(engineUrl)) {
@@ -71,10 +71,10 @@ public class FactoryBuilder {
      *                    A valid example includes: ai.grakn.factory.TinkerInternalFactory
      * @return A graph factory which produces the relevant expected graph.
     */
-    static InternalFactory getGraknGraphFactory(String factoryType, String keyspace, String engineUrl, Properties properties){
+    static InternalFactory<?> getGraknGraphFactory(String factoryType, String keyspace, String engineUrl, Properties properties){
         String key = factoryType + keyspace.toLowerCase();
         Log.debug("Get factory for " + key);
-        InternalFactory factory = openFactories.get(key);
+        InternalFactory<?> factory = openFactories.get(key);
         if (factory != null) {
             return factory;
         }
@@ -91,10 +91,10 @@ public class FactoryBuilder {
      * @param properties Additional properties to apply to the graph
      * @return A new factory bound to a specific keyspace
      */
-    private static synchronized InternalFactory newFactory(String key, String factoryType, String keyspace, String engineUrl, Properties properties){
+    private static synchronized InternalFactory<?> newFactory(String key, String factoryType, String keyspace, String engineUrl, Properties properties){
         InternalFactory<?> internalFactory;
         try {
-            internalFactory = (InternalFactory) Class.forName(factoryType)
+            internalFactory = (InternalFactory<?>) Class.forName(factoryType)
                     .getDeclaredConstructor(String.class, String.class, Properties.class)
                     .newInstance(keyspace, engineUrl, properties);
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
