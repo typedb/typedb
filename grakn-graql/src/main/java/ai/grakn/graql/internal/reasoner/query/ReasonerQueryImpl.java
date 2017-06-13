@@ -170,10 +170,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     @Override
     public boolean isRuleResolvable() {
-        Iterator<Atom> it = atomSet.stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at).iterator();
-        while (it.hasNext()) {
-            if (it.next().isRuleResolvable()) {
+        for (Atom atom : selectAtoms()) {
+            if (atom.isRuleResolvable()) {
                 return true;
             }
         }
@@ -218,17 +216,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     top.getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet())
             );
 
-            //try neighbours
-            top = top.getNeighbours()
-                    .filter(atoms::contains)
+            top = atoms.stream()
                     .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
                     .findFirst().orElse(null);
-
-            if (top == null) {
-                top = atoms.stream()
-                        .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                        .findFirst().orElse(null);
-            }
         }
         return queries;
     }
@@ -469,16 +459,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getSubstitution().keySet().containsAll(getVarNames());
     }
 
-    private boolean requiresMaterialisation(){
-        for(Atom atom : selectAtoms()){
-            for (InferenceRule rule : atom.getApplicableRules())
-                if (rule.requiresMaterialisation(atom)){
-                    return true;
-                }
-        }
-        return false;
-    }
-
     private Stream<Answer> fullJoin(Set<ReasonerAtomicQuery> subGoals,
                                     Cache<ReasonerAtomicQuery, ?> cache,
                                     Cache<ReasonerAtomicQuery, ?> dCache,
@@ -547,7 +527,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Stream<Answer> resolve(boolean materialise, boolean explanation) {
-        if (materialise || requiresMaterialisation()) {
+        if (materialise) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
             return new QueryAnswerIterator(this).hasStream();
