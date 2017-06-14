@@ -85,9 +85,9 @@ public class SystemKeyspace {
     private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
     private static final AtomicBoolean factoryBeingInstantiated = new AtomicBoolean(false);
     private static final CountDownLatch factoryInstantiated = new CountDownLatch(1);
-    private static InternalFactory factory;
     private static SystemKeyspace instance = null;
-
+    private InternalFactory factory;
+    
     /**
      * Initialises the system keyspace for a specific running instance of engine.
      * This initializer is used when the first graph created is the system graph.
@@ -108,7 +108,7 @@ public class SystemKeyspace {
      * @param properties the properties used to initialise the keyspace
      */
     static SystemKeyspace initialise(String engineUrl, Properties properties){
-        if(factory == null){
+        if(instance == null){
             instance = new SystemKeyspace(engineUrl, properties);
         }
 
