@@ -36,7 +36,6 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.factory.QueryBuilderFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
@@ -69,6 +68,9 @@ import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toSet;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+
 /**
  * <p>
  *    The Grakn Graph Base Implementation
@@ -98,7 +100,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final G graph;
     private final ElementFactory elementFactory;
     private final GraphCache graphCache;
-    private QueryBuilderFactory<G> queryBuilderFactory = null;
+    
+    static Constructor<?> queryConstructor = null;    
+    static {
+        String queryBuilderClassName = "ai.grakn.graql.internal.query.QueryBuilderImpl";        
+        try {
+            queryConstructor = Class.forName(queryBuilderClassName).getConstructor(GraknGraph.class);
+        } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
+            throw new RuntimeException("The query builder implementation " + queryBuilderClassName + 
+                    " must be accessible in the classpath and have a one argument constructor taking a GraknGraph");
+        }        
+    }
     
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
@@ -162,10 +174,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     public abstract boolean isConceptModified(ConceptImpl<?> concept);
 
-    public AbstractGraknGraph<G> queryBuilderFactory(QueryBuilderFactory<G> queryFactory) {
-        this.queryBuilderFactory = queryFactory;
-        return this;
-    }
     /**
      *
      * @return The number of open transactions currently.
@@ -307,7 +315,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public QueryBuilder graql(){
-        return queryBuilderFactory.getQueryBuilder(this);
+        try {
+            return (QueryBuilder) queryConstructor.newInstance(this);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     ElementFactory getElementFactory(){

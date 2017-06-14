@@ -22,14 +22,9 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.graql.QueryBuilder;
-
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.CheckReturnValue;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
 
 import static javax.annotation.meta.When.NEVER;
@@ -59,7 +54,6 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
 
     protected M graknGraph = null;
     private M batchLoadingGraknGraph = null;
-    private Constructor<?> queryConstructor = null;
     
     protected G graph = null;
     private G batchLoadingGraph = null;
@@ -71,14 +65,6 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         this.engineUrl = engineUrl;
         this.properties = properties;
         
-        String queryBuilderClassName = "ai.grakn.graql.internal.query.QueryBuilderImpl";        
-        try {
-            this.queryConstructor = Class.forName(queryBuilderClassName).getConstructor(GraknGraph.class);
-        } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-            throw new RuntimeException("The query builder implementation " + queryBuilderClassName + 
-                    " must be accessible in the classpath and have a one argument constructor taking a GraknGraph");
-        }
-
         if(SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(keyspace)) {
             SystemKeyspace.initialise(this);
         } else {
@@ -86,16 +72,6 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         }
     }
 
-    @Override
-    public QueryBuilder getQueryBuilder(AbstractGraknGraph<G> graph) {
-        try {
-            return (QueryBuilder)queryConstructor.newInstance(graph);
-        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-                | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-    }
-    
     abstract M buildGraknGraphFromTinker(G graph);
 
     abstract G buildTinkerPopGraph(boolean batchLoading);
@@ -132,7 +108,6 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
                 graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading));
             }
         }
-        graknGraph.queryBuilderFactory(this);
         graknGraph.openTransaction(txType);
         return graknGraph;
     }

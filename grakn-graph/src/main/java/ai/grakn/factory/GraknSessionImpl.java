@@ -69,17 +69,16 @@ public class GraknSessionImpl implements GraknSession {
         this.keyspace = keyspace;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public GraknGraph open(GraknTxType transactionType) {
-        final InternalFactory factory = getConfiguredFactory();
+        final InternalFactory<?> factory = getConfiguredFactory();
         switch (transactionType){
             case READ:
             case WRITE:
-                graph = factory.open(transactionType).queryBuilderFactory(factory);
+                graph = factory.open(transactionType);
                 return graph;
             case BATCH:
-                graphBatch = factory.open(transactionType).queryBuilderFactory(factory);
+                graphBatch = factory.open(transactionType);
                 return graphBatch;
             default:
                 throw GraphOperationException.transactionInvalid(transactionType);
