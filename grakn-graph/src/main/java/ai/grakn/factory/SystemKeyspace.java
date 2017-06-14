@@ -87,7 +87,7 @@ public class SystemKeyspace {
     private static final CountDownLatch factoryInstantiated = new CountDownLatch(1);
     private static SystemKeyspace instance = null;
     private InternalFactory factory;
-    
+
     /**
      * Initialises the system keyspace for a specific running instance of engine.
      * This initializer is used when the first graph created is the system graph.
@@ -107,7 +107,7 @@ public class SystemKeyspace {
      * @param engineUrl the url of engine to get the config from
      * @param properties the properties used to initialise the keyspace
      */
-    static SystemKeyspace initialise(String engineUrl, Properties properties){
+    public static SystemKeyspace initialise(String engineUrl, Properties properties){
         if(instance == null){
             instance = new SystemKeyspace(engineUrl, properties);
         }

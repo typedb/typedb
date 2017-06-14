@@ -30,8 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.GraknEngineConfig.LOADER_REPEAT_COMMITS;
-
 /**
  * <p>
  *     Abstract class containing utilities for graph mutations
@@ -46,7 +44,12 @@ import static ai.grakn.engine.GraknEngineConfig.LOADER_REPEAT_COMMITS;
 public abstract class GraphMutators {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphMutators.class);
-    private static final int MAX_RETRY = GraknEngineConfig.getInstance().getPropertyAsInt(LOADER_REPEAT_COMMITS);
+    private static final GraknEngineConfig config = GraknEngineConfig.getInstance();
+
+    private static final int MAX_RETRY = config.getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+    private static final SystemKeyspace systemKeyspace = SystemKeyspace.initialise(
+            config.getProperty(GraknEngineConfig.SERVER_HOST_NAME) + ":" + config.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER),
+            config.getProperties());
 
     /**
      *
@@ -77,7 +80,7 @@ public abstract class GraphMutators {
     private static void runGraphMutationWithRetry(
             EngineGraknGraphFactory factory, String keyspace, GraknTxType txType, Consumer<GraknGraph> mutatingFunction
     ){
-        if(!SystemKeyspace.containsKeyspace(keyspace)){ //This may be slow.
+        if(!systemKeyspace.containsKeyspace(keyspace)){ //This may be slow.
             LOG.warn("Attempting to execute mutation on graph [" + keyspace + "] which no longer exists");
             return;
         }
