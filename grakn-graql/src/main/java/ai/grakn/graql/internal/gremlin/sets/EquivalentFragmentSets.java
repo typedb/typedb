@@ -35,6 +35,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.gremlin.sets.LabelFragmentSet.applyRedundantLabelEliminationOptimisation;
 import static ai.grakn.graql.internal.gremlin.sets.ResourceIndexFragmentSet.applyResourceIndexOptimisation;
 import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutRelationTypeOptimisation;
 import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutRoleTypeOptimisation;
@@ -161,7 +162,8 @@ public class EquivalentFragmentSets {
         ImmutableList<Supplier<Boolean>> optimisations = ImmutableList.of(
                 () -> applyResourceIndexOptimisation(fragmentSets, graph),
                 () -> applyShortcutRoleTypeOptimisation(fragmentSets, graph),
-                () -> applyShortcutRelationTypeOptimisation(fragmentSets, graph)
+                () -> applyShortcutRelationTypeOptimisation(fragmentSets, graph),
+                () -> applyRedundantLabelEliminationOptimisation(fragmentSets, graph)
         );
 
         // Repeatedly apply optimisations until they don't alter the query
