@@ -99,10 +99,6 @@ public class SystemKeyspace {
         initialiseFactory(() ->  FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties));
     }
 
-    private SystemKeyspace(InternalFactory internalFactory){
-        initialiseFactory(() -> internalFactory);
-    }
-
     /**
      * Initialises the system keyspace for a specific running instance of engine
      * @param engineUrl the url of engine to get the config from
@@ -111,14 +107,6 @@ public class SystemKeyspace {
     synchronized static SystemKeyspace initialise(String engineUrl, Properties properties){
         if(factory == null){
             instance = new SystemKeyspace(engineUrl, properties);
-        }
-
-        return instance;
-    }
-
-    synchronized static SystemKeyspace initialise(InternalFactory internalFactory){
-        if(factory == null){
-            instance = new SystemKeyspace(internalFactory);
         }
 
         return instance;
