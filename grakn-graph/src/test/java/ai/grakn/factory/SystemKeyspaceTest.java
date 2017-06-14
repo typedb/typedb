@@ -23,7 +23,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -69,7 +68,9 @@ public class SystemKeyspaceTest {
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system graph", spaces.contains(keyspace));
-            assertTrue(SystemKeyspace.containsKeyspace(keyspace));
+
+            SystemKeyspace systemKeyspace = SystemKeyspace.initialise(Grakn.IN_MEMORY, TEST_PROPERTIES);
+            assertTrue(systemKeyspace.containsKeyspace(keyspace));
         }
 
         graphs.forEach(GraknGraph::close);
@@ -133,16 +134,14 @@ public class SystemKeyspaceTest {
         Set<GraknGraph> systemGraphs = buildGraphs(systemKeyspaces.toArray(new String[systemKeyspaces.size()]));
 
         //Check only 2 graphs have been built
+        SystemKeyspace systemKeyspace = SystemKeyspace.initialise(Grakn.IN_MEMORY, TEST_PROPERTIES);
+
         assertEquals(graphs, systemGraphs);
-        assertFalse(SystemKeyspace.containsKeyspace(deletedGraph.getKeyspace()));
+        assertFalse(systemKeyspace.containsKeyspace(deletedGraph.getKeyspace()));
     }
 
     @Test
     public void whenInstantiatingSystemGraphInMultipleThreads_InterruptedExceptionIsNotThrown() throws InterruptedException {
-
-        // Dereference the factory in our mocked system keyspace
-        SystemKeyspaceMock.dereference();
-
         int numberThreads = 100;
         ExecutorService executorService = Executors.newFixedThreadPool(numberThreads);
 
@@ -152,13 +151,10 @@ public class SystemKeyspaceTest {
             threads.add(() -> {
 
                 // Implicitly instantiate system keyspace
-                SystemKeyspaceMock.initialise(new TinkerInternalFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, Grakn.IN_MEMORY, TEST_PROPERTIES));
+                SystemKeyspace systemKeyspace = SystemKeyspace.initialise(Grakn.IN_MEMORY, TEST_PROPERTIES);
 
                 // Check the system graph exists
-                SystemKeyspaceMock.containsKeyspace(SystemKeyspace.SYSTEM_GRAPH_NAME);
-
-                // Close the mock
-                SystemKeyspaceMock.close();
+                systemKeyspace.containsKeyspace(SystemKeyspace.SYSTEM_GRAPH_NAME);
 
                 return finalI;
             });
@@ -176,9 +172,6 @@ public class SystemKeyspaceTest {
             fail("Exception was thrown instantiating system keyspace " + getFullStackTrace(e));
 
             throw new RuntimeException(e);
-        } finally {
-            // Dereference the factory in our mocked system keyspace
-            SystemKeyspaceMock.dereference();
         }
     }
 

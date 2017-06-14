@@ -30,6 +30,7 @@ import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.GraknVersion;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,11 +84,23 @@ public class SystemKeyspace {
     protected static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
 
     private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
-    static final AtomicBoolean factoryBeingInstantiated = new AtomicBoolean(false);
-    static CountDownLatch factoryInstantiated = new CountDownLatch(1);
-    static InternalFactory factory;
+    private static final AtomicBoolean factoryBeingInstantiated = new AtomicBoolean(false);
+    private static final CountDownLatch factoryInstantiated = new CountDownLatch(1);
+    private static InternalFactory factory;
+    private static SystemKeyspace instance = null;
 
-    SystemKeyspace(){
+    /**
+     * Initialises the system keyspace for a specific running instance of engine.
+     * This initializer is used when the first graph created is the system graph.
+     * @param engineUrl the url of engine to get the config from
+     * @param properties the properties used to initialise the keyspace
+     */
+    private SystemKeyspace(String engineUrl, Properties properties){
+        initialiseFactory(() ->  FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties));
+    }
+
+    private SystemKeyspace(InternalFactory internalFactory){
+        initialiseFactory(() -> internalFactory);
     }
 
     /**
@@ -95,20 +108,23 @@ public class SystemKeyspace {
      * @param engineUrl the url of engine to get the config from
      * @param properties the properties used to initialise the keyspace
      */
-    static void initialise(String engineUrl, Properties properties){
-        initialiseFactory(() -> FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties));
+    synchronized static SystemKeyspace initialise(String engineUrl, Properties properties){
+        if(factory == null){
+            instance = new SystemKeyspace(engineUrl, properties);
+        }
+
+        return instance;
     }
 
-    /**
-     * Initialises the system keyspace for a specific running instance of engine.
-     * This initializer is used when the first graph created is the system graph.
-     * @param internalFactory the factory to use when initialising the system graph.
-     */
-    static void initialise(InternalFactory internalFactory){
-        initialiseFactory(() -> internalFactory);
+    synchronized static SystemKeyspace initialise(InternalFactory internalFactory){
+        if(factory == null){
+            instance = new SystemKeyspace(internalFactory);
+        }
+
+        return instance;
     }
 
-    private static void initialiseFactory(Supplier<InternalFactory> factoryInitialiser){
+    private void initialiseFactory(Supplier<InternalFactory> factoryInitialiser){
         if(factoryBeingInstantiated.compareAndSet(false, true)){
             factory = factoryInitialiser.get();
             loadSystemOntology(factory);
@@ -121,9 +137,11 @@ public class SystemKeyspace {
      * instantiated if necessary.
      * @return Factory to provide the system keyspace
      */
-    private static InternalFactory factory(){
+    private InternalFactory factory(){
         try {
-            factoryInstantiated.await();
+            if(!factoryInstantiated.await(10, TimeUnit.SECONDS)){
+                throw new IllegalStateException("System factory has not yet been initialised");
+            }
         } catch (InterruptedException e){
             throw new IllegalStateException("Interrupted while waiting for system graph to instantiate.");
         }
@@ -133,7 +151,7 @@ public class SystemKeyspace {
     /**
      * Closes the system keyspace if there are no pending transactions on it.
      */
-    public static void close(){
+    public void close(){
         AbstractGraknGraph system = factory().open(GraknTxType.READ);
         system.close();
         if (!system.isSessionClosed() && system.numOpenTx() == 0) {
@@ -144,7 +162,7 @@ public class SystemKeyspace {
     /**
      * Notify that we just opened a keyspace with the same engineUrl & config.
      */
-    static void keyspaceOpened(String keyspace) {
+    void keyspaceOpened(String keyspace) {
         openSpaces.computeIfAbsent(keyspace, name -> {
             try (GraknGraph graph = factory().open(GraknTxType.WRITE)) {
                 ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
@@ -167,7 +185,7 @@ public class SystemKeyspace {
      * @param keyspace The keyspace which might be in the system
      * @return true if the keyspace is in the system
      */
-    public static boolean containsKeyspace(String keyspace){
+    public boolean containsKeyspace(String keyspace){
         try (GraknGraph graph = factory().open(GraknTxType.READ)) {
             return graph.getResourceType(KEYSPACE_RESOURCE.getValue()).getResource(keyspace) != null;
         }
@@ -179,7 +197,7 @@ public class SystemKeyspace {
      *
      * @param keyspace the keyspace to be removed from the system graph
      */
-    public static void deleteKeyspace(String keyspace){
+    public void deleteKeyspace(String keyspace){
         try (GraknGraph graph = factory().open(GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
             Resource<String> resource = keyspaceName.getResource(keyspace);
@@ -198,7 +216,7 @@ public class SystemKeyspace {
      * only consists of types, the inserts are idempotent and it is safe to load it
      * multiple times.
      */
-    private static void loadSystemOntology(InternalFactory factory) {
+    void loadSystemOntology(InternalFactory factory) {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             if (graph.getType(KEYSPACE_ENTITY) != null) {
                 return;

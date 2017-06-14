@@ -93,6 +93,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public static final String NORMAL_CACHE_TIMEOUT_MS = "graph.ontology-cache-timeout-ms";
 
     //----------------------------- Graph Shared Variable
+    protected final SystemKeyspace systemKeyspace;
     private final String keyspace;
     private final String engine;
     private final Properties properties;
@@ -103,11 +104,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
 
-    public AbstractGraknGraph(G graph, String keyspace, String engine, Properties properties) {
+    public AbstractGraknGraph(G graph, String keyspace, String engine, Properties properties, SystemKeyspace systemKeyspace) {
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
         this.properties = properties;
+        this.systemKeyspace = systemKeyspace;
         elementFactory = new ElementFactory(this);
 
         //Initialise Graph Caches
@@ -683,7 +685,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         getTxCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
 
         //Remove the graph from the system keyspace
-        SystemKeyspace.deleteKeyspace(getKeyspace());
+        systemKeyspace.deleteKeyspace(getKeyspace());
     }
 
     //This is overridden by vendors for more efficient clearing approaches
