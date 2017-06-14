@@ -21,13 +21,11 @@ package ai.grakn.graql.internal.util;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
-import com.google.common.collect.ImmutableSet;
-import org.apache.commons.lang.StringEscapeUtils;
+import ai.grakn.util.StringUtil;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
+import com.google.common.collect.ImmutableSet;
+
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
@@ -46,48 +44,6 @@ public class StringConverter {
     public static final ImmutableSet<String> GRAQL_KEYWORDS = getKeywords().collect(toImmutableSet());
 
     private StringConverter() {}
-
-    /**
-     * @param string the string to unescape
-     * @return the unescaped string, replacing any backslash escapes with the real characters
-     */
-    public static String unescapeString(String string) {
-        return StringEscapeUtils.unescapeJavaScript(string);
-    }
-
-    /**
-     * @param string the string to escape
-     * @return the escaped string, replacing any escapable characters with backslashes
-     */
-    public static String escapeString(String string) {
-        return StringEscapeUtils.escapeJavaScript(string);
-    }
-
-    /**
-     * @param string a string to quote and escape
-     * @return a string, surrounded with double quotes and escaped
-     */
-    private static String quoteString(String string) {
-        return "\"" + escapeString(string) + "\"";
-    }
-
-    /**
-     * @param value a value in the graph
-     * @return the string representation of the value (using quotes if it is already a string)
-     */
-    public static String valueToString(Object value) {
-        if (value instanceof String) {
-            return quoteString((String) value);
-        } else if (value instanceof Double) {
-            DecimalFormat df = new DecimalFormat("#", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
-            df.setMinimumFractionDigits(1);
-            df.setMaximumFractionDigits(12);
-            df.setMinimumIntegerDigits(1);
-            return df.format(value);
-        } else {
-            return value.toString();
-        }
-    }
 
     /**
      * @param id an ID of a concept
@@ -115,7 +71,7 @@ public class StringConverter {
         if (value.matches("^[a-zA-Z_][a-zA-Z0-9_-]*$") && !GRAQL_KEYWORDS.contains(value)) {
             return value;
         } else {
-            return quoteString(value);
+            return StringUtil.quoteString(value);
         }
     }
 
