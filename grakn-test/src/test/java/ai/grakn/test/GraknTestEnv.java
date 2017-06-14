@@ -57,7 +57,6 @@ public abstract class GraknTestEnv {
 
     private static String CONFIG = System.getProperty("grakn.test-profile");
     private static AtomicInteger KAFKA_COUNTER = new AtomicInteger(0);
-    private static AtomicInteger REDIS_COUNTER = new AtomicInteger(0);
 
     private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
 
