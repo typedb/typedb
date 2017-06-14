@@ -40,12 +40,6 @@
             <artifactId>mjson</artifactId>
             <version>${mjson.version}</version>
         </dependency>        
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-graql</artifactId>
-            <version>${project.version}</version>
-            <scope>runtime</scope>
-        </dependency>
         <!--Spark Computer Dependencies-->
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>

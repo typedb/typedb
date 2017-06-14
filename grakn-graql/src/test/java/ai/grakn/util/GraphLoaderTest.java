@@ -40,7 +40,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-//TODO: Move this test class to a lower dependency. Specifically Graql
 public class GraphLoaderTest {
 
     //TODO: Put this somewhere common
