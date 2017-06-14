@@ -27,6 +27,7 @@ import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
@@ -40,7 +41,6 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.Schema.VertexProperty.INDEX;
@@ -57,7 +57,7 @@ public class PostProcessingTest {
 
     @BeforeClass
     public static void onlyRunOnTinker(){
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     @Before

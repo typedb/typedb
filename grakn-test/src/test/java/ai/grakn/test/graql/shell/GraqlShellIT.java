@@ -20,6 +20,7 @@ package ai.grakn.test.graql.shell;
 
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.test.DistributionContext;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -45,8 +46,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static ai.grakn.test.GraknTestEnv.usingTitan;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -83,7 +82,7 @@ public class GraqlShellIT {
         trueErr = System.err;
         
         // TODO: Get these tests working consistently on Jenkins - causes timeouts
-        assumeFalse(usingTitan());
+        assumeFalse(GraknTestSetup.usingTitan());
     }
 
     @Before
@@ -317,7 +316,7 @@ public class GraqlShellIT {
     @Test
     public void testRollback() throws Exception {
         // Tinker graph doesn't support rollback
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         String[] result = testShell("insert E sub entity;\nrollback\nmatch $x label E;\n").split("\n");
 
@@ -363,7 +362,7 @@ public class GraqlShellIT {
     @Test
     public void testRollbackSemicolon() throws Exception {
         // Tinker graph doesn't support rollback
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         String result = testShell("insert entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity;\n");
         String[] lines = result.split("\n");

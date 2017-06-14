@@ -22,16 +22,15 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.util.GraknTestSetup;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.util.function.Consumer;
 
-import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
-import static ai.grakn.test.GraknTestEnv.randomKeyspace;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static ai.grakn.test.graphs.TestGraph.loadFromFile;
+import static ai.grakn.graphs.TestGraph.loadFromFile;
+import static ai.grakn.test.GraknTestEngineSetup.randomKeyspace;
 
 /**
  *
@@ -78,7 +77,7 @@ public class GraphContext implements TestRule {
     }
 
     public void rollback() {
-        if (usingTinker()) {
+        if (GraknTestSetup.usingTinker()) {
             graph.admin().delete();
             loadGraph();
         } else if (!graph.isClosed()) {
@@ -124,7 +123,7 @@ public class GraphContext implements TestRule {
             @Override
             public void evaluate() throws Throwable {
                 org.junit.Assume.assumeTrue(assumption);
-                ensureCassandraRunning();
+                GraknTestSetup.ensureCassandraRunning();
 
                 loadGraph();
 

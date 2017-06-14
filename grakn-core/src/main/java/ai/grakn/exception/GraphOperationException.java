@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import static ai.grakn.util.ErrorMessage.CLOSE_GRAPH_FAILURE;
 import static ai.grakn.util.ErrorMessage.HAS_INVALID;
 import static ai.grakn.util.ErrorMessage.INVALID_DIRECTION;
+import static ai.grakn.util.ErrorMessage.INVALID_PATH_TO_CONFIG;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.NO_TYPE;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
@@ -227,5 +228,12 @@ public class GraphOperationException extends GraknException{
      */
     public static GraphOperationException invalidDirection(Direction direction){
         return new GraphOperationException(INVALID_DIRECTION.getMessage(direction));
+    }
+
+    /**
+     * Thrown when attempting to read a config file which cannot be accessed
+     */
+    public static GraphOperationException invalidGraphConfig(String pathToFile){
+        return new GraphOperationException(INVALID_PATH_TO_CONFIG.getMessage(pathToFile));
     }
 }

@@ -25,10 +25,11 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.util.EmbeddedKafka;
+import ai.grakn.util.EmbeddedRedis;
+import ai.grakn.util.GraknTestSetup;
 import com.jayway.restassured.RestAssured;
-import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
-import redis.embedded.RedisServer;
 import spark.Service;
 
 import java.io.IOException;
@@ -36,8 +37,6 @@ import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
@@ -46,32 +45,19 @@ import static ai.grakn.graql.Graql.var;
 
 /**
  * <p>
- * Contains utility methods and statically initialized environment variables to control
- * Grakn unit tests. 
+ *     Sets up a test grakn engine
+ * </p>
+ *
+ * <p>
+ *     Sets up a grakn engine for testing purposes.
  * </p>
  * 
  * @author borislav
  *
  */
-public abstract class GraknTestEnv {
+public abstract class GraknTestEngineSetup {
 
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestEnv.class);
-
-    private static String CONFIG = System.getProperty("grakn.test-profile");
-    private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
-    private static AtomicInteger KAFKA_COUNTER = new AtomicInteger(0);
-    private static AtomicInteger REDIS_COUNTER = new AtomicInteger(0);
-
-    private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
-    private static RedisServer redisServer;
-
-    public static void ensureCassandraRunning() throws Exception {
-        if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
-            LOG.info("starting cassandra...");
-            startEmbeddedCassandra();
-            LOG.info("cassandra started.");
-        }
-    }
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestEngineSetup.class);
 
     /**
      * Create a configuration for use in tests, using random ports.
@@ -101,7 +87,7 @@ public abstract class GraknTestEnv {
         // we end up wanting to use the TitanFactory but without starting Cassandra first.
         LOG.info("starting engine...");
 
-        ensureCassandraRunning();
+        GraknTestSetup.ensureCassandraRunning();
 
         // start engine
         setRestAssuredUri(config);
@@ -112,41 +98,20 @@ public abstract class GraknTestEnv {
         return server;
     }
 
-    static void startRedis(GraknEngineConfig config) throws IOException {
-        if(REDIS_COUNTER.getAndIncrement() == 0) {
-            LOG.info("Starting redis...");
-            redisServer = new RedisServer(config.getPropertyAsInt(REDIS_SERVER_PORT));
-            redisServer.start();
-            LOG.info("Redis started.");
-        }
-    }
-
-    static void startKafka(GraknEngineConfig config) throws Exception {
-        // Clean-up ironically uses a lot of memory
-        if (KAFKA_COUNTER.getAndIncrement() == 0) {
-            LOG.info("Starting kafka...");
-            kafkaUnit.setKafkaBrokerConfig("log.cleaner.enable", "false");
-            kafkaUnit.startup();
-            kafkaUnit.createTopic(TaskState.Priority.HIGH.queue(), config.getAvailableThreads() * 2);
-            kafkaUnit.createTopic(TaskState.Priority.LOW.queue(), config.getAvailableThreads() * 2);
-            LOG.info("Kafka started.");
-        }
-    }
-
-    static void stopKafka() throws Exception {
-        if (KAFKA_COUNTER.decrementAndGet() == 0) {
-            LOG.info("Stopping kafka...");
-            kafkaUnit.shutdown();
-            LOG.info("Kafka stopped.");
-        }
+    static void startRedis(GraknEngineConfig config){
+        EmbeddedRedis.start(config.getPropertyAsInt(REDIS_SERVER_PORT));
     }
 
     static void stopRedis(){
-        if (REDIS_COUNTER.decrementAndGet() == 0) {
-            LOG.info("Stopping Redis...");
-            redisServer.stop();
-            LOG.info("Redis stopped.");
-        }
+        EmbeddedRedis.stop();
+    }
+
+    static void startKafka(GraknEngineConfig config) throws Exception {
+        EmbeddedKafka.start(config.getAvailableThreads(), TaskState.Priority.HIGH.queue(), TaskState.Priority.LOW.queue());
+    }
+
+    static void stopKafka() throws Exception {
+        EmbeddedKafka.stop();
     }
 
     static void stopEngine(GraknEngineServer server) throws Exception {
@@ -169,10 +134,6 @@ public abstract class GraknTestEnv {
         return spark;
     }
 
-    public static GraknGraph emptyGraph(EngineGraknGraphFactory factory) {
-        return factory.getGraph(randomKeyspace(), GraknTxType.WRITE);
-    }
-
     private static void clearGraphs(EngineGraknGraphFactory engineGraknGraphFactory) {
         // Drop all keyspaces
         final Set<String> keyspaceNames = new HashSet<String>();
@@ -190,26 +151,6 @@ public abstract class GraknTestEnv {
         engineGraknGraphFactory.refreshConnections();
     }
 
-    static void startEmbeddedCassandra() {
-        try {
-            // We have to use reflection here because the cassandra dependency is only included when testing the titan profile.
-            Class<?> cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
-
-            //noinspection unchecked
-            cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
-
-            try {
-                Thread.sleep(5000);
-            } 
-            catch(InterruptedException ex) { 
-                LOG.info("Thread sleep interrupted."); 
-            }
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     static void setRestAssuredUri(GraknEngineConfig config) {
         RestAssured.baseURI = "http://" + config.uri();
     }
@@ -217,18 +158,6 @@ public abstract class GraknTestEnv {
     public static String randomKeyspace(){
         // Embedded Casandra has problems dropping keyspaces that start with a number
         return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
-    }
-
-    public static boolean usingTinker() {
-        return "tinker".equals(CONFIG);
-    }
-
-    public static boolean usingTitan() {
-        return "titan".equals(CONFIG);
-    }
-
-    public static boolean usingOrientDB() {
-        return "orientdb".equals(CONFIG);
     }
 
     private static int getEphemeralPort() {

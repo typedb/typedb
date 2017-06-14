@@ -42,6 +42,7 @@
         <module>grakn-test-profiles</module>
         <module>grakn-factory</module>
         <module>grakn-client</module>
+        <module>grakn-test-tools</module>
     </modules>
 
     <properties>
@@ -95,6 +96,7 @@
         <redis.version>2.9.0</redis.version>
         <redis-test.version>0.6</redis-test.version>
         <guava-retrying.version>2.0.0</guava-retrying.version>
+        <cassandra-driver-core.version>3.1.2</cassandra-driver-core.version>
         <main.basedir>${project.parent.basedir}</main.basedir>
     </properties>
 
