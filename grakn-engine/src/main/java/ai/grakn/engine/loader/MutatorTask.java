@@ -57,7 +57,7 @@ public class MutatorTask extends BackgroundTask {
     @Override
     public boolean start() {
         Collection<Query> inserts = getInserts(configuration());
-        metricRegistry().histogram(name(MutatorTask.class, "inserts")).update(inserts.size());
+        metricRegistry().histogram(name(MutatorTask.class, "jobs")).update(inserts.size());
         String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
         int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
         EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
@@ -77,12 +77,12 @@ public class MutatorTask extends BackgroundTask {
      */
     private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts) {
         Context context = metricRegistry()
-                .timer(name(MutatorTask.class, "insert-queries")).time();
+                .timer(name(MutatorTask.class, "execution")).time();
         try {
             graph.showImplicitConcepts(true);
             inserts.forEach(q -> {
                 Context contextSingle = metricRegistry()
-                        .timer(name(MutatorTask.class, "insert-queries-single")).time();
+                        .timer(name(MutatorTask.class, "execution-single")).time();
                 try {
                     q.withGraph(graph).execute();
                 } finally {
@@ -93,8 +93,6 @@ public class MutatorTask extends BackgroundTask {
             Optional<String> result = graph.admin().commitNoLogs();
             if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
                 String logs = result.get();
-                metricRegistry()
-                        .meter(name(MutatorTask.class, "commit-log-created")).mark();
                 addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration()
                                 .getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY)),
                         PostProcessingTask.createConfig(graph.getKeyspace(), logs));

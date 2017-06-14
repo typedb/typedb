@@ -89,7 +89,6 @@ public class TasksController {
     private final TaskManager manager;
     private final ExecutorService executor;
     private final Timer createTasksTimer;
-    private final Timer createTasksExecutionTimer;
     private final Timer stopTaskTimer;
     private final Timer getTaskTimer;
     private final Timer getTasksTimer;
@@ -104,7 +103,6 @@ public class TasksController {
         this.getTaskTimer = metricRegistry.timer(name(TasksController.class, "get-task"));
         this.stopTaskTimer = metricRegistry.timer(name(TasksController.class, "stop-task"));
         this.createTasksTimer = metricRegistry.timer(name(TasksController.class, "create-tasks"));
-        this.createTasksExecutionTimer = metricRegistry.timer(name(TasksController.class, "create-tasks-execution"));
 
         spark.get(TASKS, this::getTasks);
         spark.get(GET, this::getTask);
@@ -219,7 +217,6 @@ public class TasksController {
         try {
             List<TaskStateWithConfiguration> taskStates = parseTasks(taskJsonList);
             CompletableFuture<List<Json>> completableFuture = saveTasksInQueue(taskStates);
-            Context executionContext = createTasksExecutionTimer.time();
             try {
                 return buildResponseForTasks(response, responseJson, completableFuture);
             } catch (TimeoutException | InterruptedException e) {
@@ -230,8 +227,6 @@ public class TasksController {
                 LOG.error("Exception while processing batch of tasks", e);
                 response.status(HttpStatus.SC_INTERNAL_SERVER_ERROR);
                 return Json.object();
-            } finally {
-                executionContext.stop();
             }
         } finally {
             context.stop();

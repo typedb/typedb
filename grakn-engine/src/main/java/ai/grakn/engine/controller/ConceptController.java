@@ -79,8 +79,8 @@ public class ConceptController {
     public ConceptController(EngineGraknGraphFactory factory, Service spark,
             MetricRegistry metricRegistry){
         this.factory = factory;
-        this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-id-get"));
-        this.ontologyGetTimer = metricRegistry.timer(name(ConceptController.class, "ontology-get"));
+        this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-identifier"));
+        this.ontologyGetTimer = metricRegistry.timer(name(ConceptController.class, "ontology"));
 
         spark.get(CONCEPT + ID_PARAMETER,  this::conceptByIdentifier);
         spark.get(ONTOLOGY,  this::ontology);
