@@ -25,8 +25,9 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.VarPatternBuilder;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
+import ai.grakn.util.StringUtil;
+
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -100,7 +101,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
     public String toString() {
         // If there is no value, then there must be a var
         //noinspection OptionalGetWithoutIsPresent
-        String argument = value.map(StringConverter::valueToString).orElseGet(() -> var.get().getPrintableName());
+        String argument = value.map(StringUtil::valueToString).orElseGet(() -> var.get().getPrintableName());
 
         return getSymbol() + " " + argument;
     }

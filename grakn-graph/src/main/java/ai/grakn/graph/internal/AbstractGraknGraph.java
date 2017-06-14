@@ -40,7 +40,6 @@ import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -68,6 +67,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toSet;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * <p>
@@ -98,7 +100,18 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final G graph;
     private final ElementFactory elementFactory;
     private final GraphCache graphCache;
-
+    
+    static Constructor<?> queryConstructor = null;    
+    static {
+        String queryBuilderClassName = "ai.grakn.graql.internal.query.QueryBuilderImpl";        
+        try {
+            queryConstructor = Class.forName(queryBuilderClassName).getConstructor(GraknGraph.class);
+        } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
+            throw new RuntimeException("The query builder implementation " + queryBuilderClassName + 
+                    " must be accessible in the classpath and have a one argument constructor taking a GraknGraph");
+        }        
+    }
+    
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
 
@@ -159,7 +172,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param concept A concept in the graph
      * @return True if the concept has been modified in the transaction
      */
-    public abstract boolean isConceptModified(ConceptImpl concept);
+    public abstract boolean isConceptModified(ConceptImpl<?> concept);
 
     /**
      *
@@ -301,7 +314,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public QueryBuilder graql(){
-        return new QueryBuilderImpl(this);
+        try {
+            return (QueryBuilder) queryConstructor.newInstance(this);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     ElementFactory factory(){
