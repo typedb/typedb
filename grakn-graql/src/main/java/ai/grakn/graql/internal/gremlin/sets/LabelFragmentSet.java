@@ -56,10 +56,13 @@ class LabelFragmentSet extends EquivalentFragmentSet {
      *   <li>It refers to a type that exists in the graph
      *   <li>It is not associated with a user-defined variable
      *   <li>The variable it is associated with is not referred to in any other fragment
+     *   <li>The fragment set is not the only remaining fragment set</li>
      * </ol>
      */
     static boolean applyRedundantLabelEliminationOptimisation(
             Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+
+        if (fragmentSets.size() <= 1) return false;
 
         Iterable<LabelFragmentSet> labelFragments =
                 EquivalentFragmentSets.fragmentSetOfType(LabelFragmentSet.class, fragmentSets)::iterator;

@@ -60,19 +60,6 @@ public class LabelFragmentSetTest {
 
     @Test
     public void whenOptimisingQueryWithGeneratedVarLabel_EliminateLabelFragmentSet() {
-        Collection<EquivalentFragmentSet> originalFragmentSets = ImmutableSet.of(
-                label(generatedVar, existingTypeLabel)
-        );
-
-        Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
-
-        LabelFragmentSet.applyRedundantLabelEliminationOptimisation(fragmentSets, graph);
-
-        assertEquals(ImmutableSet.of(), fragmentSets);
-    }
-
-    @Test
-    public void whenOptimisingQueryWithLabelDisconnectedFromAllVars_EliminateLabelFragmentSet() {
         EquivalentFragmentSet labelFragment = label(generatedVar, existingTypeLabel);
 
         Set<EquivalentFragmentSet> originalFragmentSets = ImmutableSet.of(
@@ -85,6 +72,19 @@ public class LabelFragmentSetTest {
         LabelFragmentSet.applyRedundantLabelEliminationOptimisation(fragmentSets, graph);
 
         assertEquals(Sets.difference(originalFragmentSets, ImmutableSet.of(labelFragment)), fragmentSets);
+    }
+
+    @Test
+    public void whenOptimisingQueryContainingOnlyASingleFragment_DoNotEliminateLabelFragmentSet() {
+        Collection<EquivalentFragmentSet> originalFragmentSets = ImmutableSet.of(
+                label(generatedVar, existingTypeLabel)
+        );
+
+        Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
+
+        LabelFragmentSet.applyRedundantLabelEliminationOptimisation(fragmentSets, graph);
+
+        assertEquals(originalFragmentSets, fragmentSets);
     }
 
     @Test
