@@ -217,19 +217,9 @@ public class GraknEngineConfig {
     public int getPropertyAsInt(String property) {
         return Integer.parseInt(getProperty(property));
     }
-
-    public int getPropertyAsInt(String property, int defaultValue) {
-        return prop.containsKey(property) ? Integer.parseInt(prop.getProperty(property))
-                                          : defaultValue;
-    }
     
     public long getPropertyAsLong(String property) {
         return Long.parseLong(getProperty(property));
-    }
-    
-    public long getPropertyAsLong(String property, long defaultValue) {
-        return prop.containsKey(property) ? Long.parseLong(prop.getProperty(property))
-                                          : defaultValue;
     }
 
     public boolean getPropertyAsBool(String property, boolean defaultValue) {

@@ -24,17 +24,14 @@ import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
 
+import ai.grakn.util.GraknTestSetup;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.stream.Collectors;
-
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -47,7 +44,7 @@ public class GeoInferenceTest {
 
     @BeforeClass
     public static void onStartup() throws Exception {
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     @Test

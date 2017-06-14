@@ -38,6 +38,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraphContext;
 
+import ai.grakn.util.GraknTestSetup;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
@@ -50,7 +51,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -59,14 +59,14 @@ import static org.junit.Assume.assumeTrue;
 public class LazyTest {
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext graphContext = GraphContext.empty().assumeTrue(usingTinker());
+    public static final GraphContext graphContext = GraphContext.empty().assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     @Test

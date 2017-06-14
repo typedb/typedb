@@ -40,6 +40,7 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -62,7 +63,6 @@ import java.util.stream.Collectors;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.util.ErrorMessage.INSERT_UNSUPPORTED_PROPERTY;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
@@ -528,7 +528,7 @@ public class InsertQueryTest {
     @Test
     public void testKeyCorrectUsage() throws InvalidGraphException {
         // This should only run on tinker because it commits
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
@@ -539,7 +539,7 @@ public class InsertQueryTest {
 
     @Test
     public void testKeyUniqueOwner() throws InvalidGraphException {
-        assumeTrue(usingTinker()); // This should only run on tinker because it commits
+        assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
@@ -554,7 +554,7 @@ public class InsertQueryTest {
     @Ignore // TODO: Un-ignore this when constraints are designed and implemented
     @Test
     public void testKeyUniqueValue() throws InvalidGraphException {
-        assumeTrue(usingTinker()); // This should only run on tinker because it commits
+        assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
@@ -569,7 +569,7 @@ public class InsertQueryTest {
 
     @Test
     public void testKeyRequiredOwner() throws InvalidGraphException {
-        assumeTrue(usingTinker()); // This should only run on tinker because it commits
+        assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),

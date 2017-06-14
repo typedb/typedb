@@ -33,6 +33,7 @@ import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.junit.Before;
@@ -47,8 +48,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestEnv.usingOrientDB;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -85,7 +84,7 @@ public class StatisticsTest {
     @Before
     public void setUp() {
         // TODO: Fix tests in orientdb
-        assumeFalse(usingOrientDB());
+        assumeFalse(GraknTestSetup.usingOrientDB());
 
         factory = context.factoryWithNewKeyspace();
     }
@@ -161,7 +160,7 @@ public class StatisticsTest {
     @Test
     public void testMinAndMax() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         Optional<Number> result;
 
@@ -256,7 +255,7 @@ public class StatisticsTest {
     @Test
     public void testSum() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         Optional<Number> result;
 
@@ -316,7 +315,7 @@ public class StatisticsTest {
     @Test
     public void testMean() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         Optional<Double> result;
 
@@ -375,7 +374,7 @@ public class StatisticsTest {
     @Test
     public void testStd() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         Optional<Double> result;
 
@@ -448,7 +447,7 @@ public class StatisticsTest {
     @Test
     public void testMedian() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         Optional<Number> result;
 

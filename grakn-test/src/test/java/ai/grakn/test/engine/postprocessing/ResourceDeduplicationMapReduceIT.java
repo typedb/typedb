@@ -13,6 +13,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.engine.postprocessing.ResourceDeduplicationTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.Schema;
 import mjson.Json;
 import org.junit.After;
@@ -26,7 +27,6 @@ import org.junit.Test;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.checkUnique;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.indexOf;
@@ -67,7 +67,7 @@ public class ResourceDeduplicationMapReduceIT {
     
     @BeforeClass
     public static void onlyRunOnTinker(){
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     private String keyspace() {

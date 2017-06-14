@@ -31,6 +31,7 @@ import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.test.GraphContext;
 
+import ai.grakn.util.GraknTestSetup;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,7 +42,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
@@ -50,13 +50,13 @@ public class ExplanationTest {
 
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext explanationGraph = GraphContext.preLoad("explanationTest.gql").assumeTrue(usingTinker());
+    public static final GraphContext explanationGraph = GraphContext.preLoad("explanationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     private static Concept polibuda, uw;
     private static Concept warsaw;
@@ -67,7 +67,7 @@ public class ExplanationTest {
 
     @BeforeClass
     public static void onStartup() throws Exception {
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
         GraknGraph graph = geoGraph.graph();
         iqb = graph.graql().infer(true).materialise(false);
         polibuda = getConcept(graph, "name", "Warsaw-Polytechnics");
