@@ -30,8 +30,7 @@ import org.junit.runners.model.Statement;
 import java.util.function.Consumer;
 
 import static ai.grakn.graphs.TestGraph.loadFromFile;
-import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
-import static ai.grakn.test.GraknTestEnv.randomKeyspace;
+import static ai.grakn.test.GraknTestEngineSetup.randomKeyspace;
 
 /**
  *
@@ -124,7 +123,7 @@ public class GraphContext implements TestRule {
             @Override
             public void evaluate() throws Throwable {
                 org.junit.Assume.assumeTrue(assumption);
-                ensureCassandraRunning();
+                GraknTestSetup.ensureCassandraRunning();
 
                 loadGraph();
 

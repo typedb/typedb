@@ -25,7 +25,6 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.util.EmbeddedCassandra;
 import ai.grakn.util.EmbeddedKafka;
 import ai.grakn.util.EmbeddedRedis;
 import ai.grakn.util.GraknTestSetup;
@@ -46,22 +45,19 @@ import static ai.grakn.graql.Graql.var;
 
 /**
  * <p>
- * Contains utility methods and statically initialized environment variables to control
- * Grakn unit tests. 
+ *     Sets up a test grakn engine
+ * </p>
+ *
+ * <p>
+ *     Sets up a grakn engine for testing purposes.
  * </p>
  * 
  * @author borislav
  *
  */
-public abstract class GraknTestEnv {
+public abstract class GraknTestEngineSetup {
 
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestEnv.class);
-
-    public static void ensureCassandraRunning() throws Exception {
-        if (GraknTestSetup.usingTitan()) {
-            EmbeddedCassandra.start();
-        }
-    }
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestEngineSetup.class);
 
     /**
      * Create a configuration for use in tests, using random ports.
@@ -91,7 +87,7 @@ public abstract class GraknTestEnv {
         // we end up wanting to use the TitanFactory but without starting Cassandra first.
         LOG.info("starting engine...");
 
-        ensureCassandraRunning();
+        GraknTestSetup.ensureCassandraRunning();
 
         // start engine
         setRestAssuredUri(config);
@@ -136,10 +132,6 @@ public abstract class GraknTestEnv {
         configureSpark(spark, config, JWTHandler.create(config.getProperty(JWT_SECRET_PROPERTY)));
         setRestAssuredUri(config);
         return spark;
-    }
-
-    public static GraknGraph emptyGraph(EngineGraknGraphFactory factory) {
-        return factory.getGraph(randomKeyspace(), GraknTxType.WRITE);
     }
 
     private static void clearGraphs(EngineGraknGraphFactory engineGraknGraphFactory) {

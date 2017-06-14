@@ -19,8 +19,6 @@
 package ai.grakn.util;
 
 
-import org.slf4j.LoggerFactory;
-
 /**
  * <p>
  *     Helpes Setup Grakn Test Environment
@@ -35,8 +33,16 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class GraknTestSetup {
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestSetup.class);
     private static String CONFIG = System.getProperty("grakn.test-profile");
+
+    /**
+     * Starts cassandra if needed.
+     */
+    public static void ensureCassandraRunning() {
+        if (GraknTestSetup.usingTitan()) {
+            EmbeddedCassandra.start();
+        }
+    }
 
     /**
      *

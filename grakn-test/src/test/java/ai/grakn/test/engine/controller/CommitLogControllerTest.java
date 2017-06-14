@@ -37,6 +37,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.SparkContext;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.jayway.restassured.http.ContentType;
@@ -51,7 +52,6 @@ import org.mockito.Mockito;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
-import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_CONCEPT_ID;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
@@ -86,7 +86,7 @@ public class CommitLogControllerTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        ensureCassandraRunning();
+        GraknTestSetup.ensureCassandraRunning();
     }
 
     @After

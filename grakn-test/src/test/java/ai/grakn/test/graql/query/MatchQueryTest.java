@@ -38,8 +38,8 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.GraknTestEnv;
 import ai.grakn.test.GraphContext;
+import ai.grakn.util.GraphLoader;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -630,7 +630,7 @@ public class MatchQueryTest {
 
     @Test
     public void testGraqlPlaysSemanticsMatchGraphAPI() {
-        GraknGraph graph = GraknTestEnv.emptyGraph(movieGraph.factory());  // TODO: Try and remove this call if possible
+        GraknGraph graph = GraphLoader.empty().graph(); // TODO: Try and remove this call if possible
         QueryBuilder qb = graph.graql();
 
         TypeLabel a = TypeLabel.of("a");
