@@ -25,9 +25,9 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.util.CassandraHelper;
-import ai.grakn.util.KafkaHelper;
-import ai.grakn.util.RedisHelper;
+import ai.grakn.util.EmbeddedCassandra;
+import ai.grakn.util.EmbeddedKafka;
+import ai.grakn.util.EmbeddedRedis;
 import com.jayway.restassured.RestAssured;
 import org.slf4j.LoggerFactory;
 import spark.Service;
@@ -61,7 +61,7 @@ public abstract class GraknTestEnv {
 
     public static void ensureCassandraRunning() throws Exception {
         if (usingTitan()) {
-            CassandraHelper.startEmbedded();
+            EmbeddedCassandra.start();
         }
     }
 
@@ -105,19 +105,19 @@ public abstract class GraknTestEnv {
     }
 
     static void startRedis(GraknEngineConfig config){
-        RedisHelper.startEmbedded(config.getPropertyAsInt(REDIS_SERVER_PORT));
+        EmbeddedRedis.start(config.getPropertyAsInt(REDIS_SERVER_PORT));
     }
 
     static void stopRedis(){
-        RedisHelper.stopEmbedded();
+        EmbeddedRedis.stop();
     }
 
     static void startKafka(GraknEngineConfig config) throws Exception {
-        KafkaHelper.startEmbedded(config.getAvailableThreads(), TaskState.Priority.HIGH.queue(), TaskState.Priority.LOW.queue());
+        EmbeddedKafka.start(config.getAvailableThreads(), TaskState.Priority.HIGH.queue(), TaskState.Priority.LOW.queue());
     }
 
     static void stopKafka() throws Exception {
-        KafkaHelper.stopEmbedded();
+        EmbeddedKafka.stop();
     }
 
     static void stopEngine(GraknEngineServer server) throws Exception {

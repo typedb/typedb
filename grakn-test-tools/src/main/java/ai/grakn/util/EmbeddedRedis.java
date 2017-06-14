@@ -37,8 +37,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author fppt
  *
  */
-public class RedisHelper {
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(RedisHelper.class);
+public class EmbeddedRedis {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedRedis.class);
     private static AtomicInteger REDIS_COUNTER = new AtomicInteger(0);
     private static RedisServer redisServer;
 
@@ -47,7 +47,7 @@ public class RedisHelper {
      *
      * @param port The port to start redis on
      */
-    public static void startEmbedded(int port){
+    public static void start(int port){
         if(REDIS_COUNTER.getAndIncrement() == 0) {
             LOG.info("Starting redis...");
             try {
@@ -63,7 +63,7 @@ public class RedisHelper {
     /**
      * Stops the embedded redis
      */
-    public static void stopEmbedded(){
+    public static void stop(){
         if (REDIS_COUNTER.decrementAndGet() == 0) {
             LOG.info("Stopping Redis...");
             redisServer.stop();

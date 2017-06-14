@@ -39,14 +39,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author fppt
  *
  */
-public class CassandraHelper {
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(CassandraHelper.class);
+public class EmbeddedCassandra {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedCassandra.class);
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
 
     /**
      * Starts an embedded version of cassandra
      */
-    public static void startEmbedded(){
+    public static void start(){
         if(CASSANDRA_RUNNING.compareAndSet(false, true)) {
             try {
                 LOG.info("starting cassandra...");

@@ -36,8 +36,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author fppt
  *
  */
-public class KafkaHelper {
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(KafkaHelper.class);
+public class EmbeddedKafka {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedKafka.class);
     private static AtomicInteger KAFKA_COUNTER = new AtomicInteger(0);
     private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
 
@@ -46,7 +46,7 @@ public class KafkaHelper {
      * @param numThreads The number of threads availiable to Kafka. This maps to the created kafka partitions
      * @param queues The names of the kafka queues to create
      */
-    public static void startEmbedded(int numThreads, String ... queues){
+    public static void start(int numThreads, String ... queues){
         // Clean-up ironically uses a lot of memory
         if (KAFKA_COUNTER.getAndIncrement() == 0) {
             LOG.info("Starting kafka...");
@@ -62,7 +62,7 @@ public class KafkaHelper {
     /**
      * Stops the embedded kafka
      */
-    public static void stopEmbedded(){
+    public static void stop(){
         if (KAFKA_COUNTER.decrementAndGet() == 0) {
             LOG.info("Stopping kafka...");
             kafkaUnit.shutdown();
