@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -62,6 +63,22 @@ public class GraphLoaderTest {
                     map(Type::getLabel).collect(Collectors.toSet());
 
             assertTrue(foundLabels.containsAll(labels));
+        }
+    }
+
+    @Test
+    public void whenBuildingGraph_EnsureBackendMatchesTheTestProfile(){
+        try(GraknGraph graph = GraphLoader.empty().graph()){
+            //String comparison is used here because we do not have the class available at compile time
+            if(GraknTestSetup.usingTinker()){
+                assertEquals("ai.grakn.graph.internal.GraknTinkerGraph", graph.getClass().getName());
+            } else if (GraknTestSetup.usingTitan()) {
+                assertEquals("ai.grakn.graph.internal.GraknTitanGraph", graph.getClass().getName());
+            } else if (GraknTestSetup.usingOrientDB()) {
+                assertEquals("ai.grakn.graph.internal.GraknOrientDBGraph", graph.getClass().getName());
+            } else {
+                throw new RuntimeException("Test run with unsupported graph backend");
+            }
         }
     }
 }
