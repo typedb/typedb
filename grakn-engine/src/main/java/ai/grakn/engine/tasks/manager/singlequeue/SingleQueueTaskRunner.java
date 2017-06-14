@@ -80,10 +80,6 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private TaskId runningTaskId = null;
     private BackgroundTask runningTask = null;
 
-    private final int BACKOFF = 0;
-    private final int MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF;
-    private Instant timeTaskLastHandled;
-
     /**
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
      * {@param storage} to store and retrieve information about tasks.
@@ -95,7 +91,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     public SingleQueueTaskRunner(
             SingleQueueTaskManager manager, EngineID engineID, GraknEngineConfig config,
             RedisConnection redis,
-            ExternalOffsetStorage offsetStorage, int timeUntilBackoff,
+            ExternalOffsetStorage offsetStorage,
             Consumer<TaskState, TaskConfiguration> consumer,
             MetricRegistry metricRegistry){
         this.manager = manager;
@@ -105,7 +101,6 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         this.engineConfig = config;
         this.redis = redis;
         this.offsetStorage = offsetStorage;
-        this.MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF = timeUntilBackoff;
         this.readRecordsTimer = metricRegistry
                 .timer(name(SingleQueueTaskRunner.class, "read-records"));
         this.executeTimer = metricRegistry
@@ -134,21 +129,11 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     @Override
     public void run() {
         LOG.debug("started");
-
-        timeTaskLastHandled = now();
         while (!wakeUp.get()) {
             try {
                 // Reading from both the regular consumer and recurring consumer every time means that we will handle
                 // recurring tasks regularly, even if there are lots of non-recurring tasks to process.
                 readRecords(consumer);
-
-                // Exponential back-off: sleep longer and longer when receiving the same tasks
-                long timeSinceLastHandledTask = between(timeTaskLastHandled, now()).toMillis();
-
-                if (timeSinceLastHandledTask >= MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF) {
-                    LOG.trace("has been  " + timeSinceLastHandledTask + " ms since handled task, sleeping for " + BACKOFF + "ms");
-                    Thread.sleep(BACKOFF);
-                }
             } catch (Throwable throwable){
                 LOG.error("error thrown", throwable);
                 assert false; // This should be unreachable, but in production we still handle it for robustness
@@ -188,18 +173,11 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         Context context = readRecordsTimer.time();
         try{
             ConsumerRecords<TaskState, TaskConfiguration> records = theConsumer.poll(1000);
-
             for (ConsumerRecord<TaskState, TaskConfiguration> record : records) {
                 TaskState task = record.key();
                 TaskConfiguration configuration = record.value();
-
-                boolean handled = handleTask(task, configuration);
-                if (handled) {
-                    timeTaskLastHandled = now();
-                }
-
+                handleTask(task, configuration);
                 offsetStorage.saveOffset(theConsumer, new TopicPartition(record.topic(), record.partition()));
-
                 LOG.trace("{} acknowledged", task.getId());
             }
         } finally {

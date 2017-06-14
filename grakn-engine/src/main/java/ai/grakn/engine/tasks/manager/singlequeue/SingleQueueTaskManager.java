@@ -71,7 +71,6 @@ public class SingleQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskManager.class);
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
-    private final static int TIME_UNTIL_BACKOFF = 60_000;
     private final static String TASKS_STOPPED = "/stopped/%s";
     private final static String TASKS_STOPPED_PREFIX = "/stopped";
 
@@ -253,7 +252,6 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     private SingleQueueTaskRunner newTaskRunner(EngineID engineId, String priority,
             MetricRegistry metricRegistry){
-        return new SingleQueueTaskRunner(this, engineId, config, redis, offsetStorage,
-                TIME_UNTIL_BACKOFF, newConsumer(priority), metricRegistry);
+        return new SingleQueueTaskRunner(this, engineId, config, redis, offsetStorage, newConsumer(priority), metricRegistry);
     }
 }

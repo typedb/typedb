@@ -134,8 +134,7 @@ public class SingleQueueTaskRunnerTest {
 
     public void setUpTasks(List<List<TaskState>> tasks) {
         taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, zookeeperRunning.config(), null,
-                offsetStorage, TIME_UNTIL_BACKOFF, lowPriorityConsumer, new MetricRegistry());
-
+                offsetStorage, lowPriorityConsumer, new MetricRegistry());
         for (List<TaskState> taskList : tasks) {
             lowPriorityConsumer.schedulePollTask(() -> taskList.forEach(this::addTask));
         }
