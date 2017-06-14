@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -42,8 +43,8 @@ import java.util.Properties;
  * @author fppt
  */
 public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
-    public GraknOrientDBGraph(OrientGraph graph, String name, String engineUrl, Properties properties){
-        super(graph, name, engineUrl, properties);
+    public GraknOrientDBGraph(OrientGraph graph, String name, String engineUrl, Properties properties, SystemKeyspace systemKeyspace){
+        super(graph, name, engineUrl, properties, systemKeyspace);
     }
 
     /**

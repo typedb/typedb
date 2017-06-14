@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -40,8 +41,8 @@ import java.util.Properties;
 public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     private final TinkerGraph rootGraph;
 
-    public GraknTinkerGraph(TinkerGraph tinkerGraph, String name, String engineUrl, Properties properties){
-        super(tinkerGraph, name, engineUrl, properties);
+    public GraknTinkerGraph(TinkerGraph tinkerGraph, String name, String engineUrl, Properties properties, SystemKeyspace systemKeyspace){
+        super(tinkerGraph, name, engineUrl, properties, systemKeyspace);
         rootGraph = tinkerGraph;
     }
 

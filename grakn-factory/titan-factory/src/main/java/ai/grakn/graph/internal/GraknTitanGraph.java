@@ -50,8 +50,8 @@ import java.util.function.Supplier;
  * @author fppt
  */
 public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
-    public GraknTitanGraph(TitanGraph graph, String name, String engineUrl, Properties properties){
-        super(graph, name, engineUrl, properties);
+    public GraknTitanGraph(TitanGraph graph, String name, String engineUrl, Properties properties, SystemKeyspace systemKeyspace){
+        super(graph, name, engineUrl, properties, systemKeyspace);
     }
 
     /**
@@ -78,7 +78,7 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
 
         //Close the system graph if possible
         if(!getKeyspace().equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
-            SystemKeyspace.close();
+            systemKeyspace.close();
         }
     }
 
