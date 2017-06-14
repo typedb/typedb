@@ -24,7 +24,6 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static java.time.Instant.now;
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -125,10 +124,9 @@ public class TaskClientTest {
     public void whenGettingStatusOfATaskAndSeverHasNotStoredTask_TheClientThrowsStorageException(){
         TaskState task = createTask();
         when(manager.storage().getState(task.getId()))
-                .thenThrow(GraknBackendException.stateStorage(task.getId().getValue()));
+                .thenThrow(GraknBackendException.stateStorage());
 
         exception.expect(GraknBackendException.class);
-        exception.expectMessage(containsString(task.getId().getValue()));
 
         client.getStatus(task.getId());
     }
