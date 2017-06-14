@@ -41,7 +41,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -96,7 +95,11 @@ public class SystemKeyspace {
      * @param properties the properties used to initialise the keyspace
      */
     private SystemKeyspace(String engineUrl, Properties properties){
-        initialiseFactory(() ->  FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties));
+        if(factoryBeingInstantiated.compareAndSet(false, true)){
+            factory = FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties);
+            loadSystemOntology(factory);
+            factoryInstantiated.countDown();
+        }
     }
 
     /**
@@ -104,20 +107,12 @@ public class SystemKeyspace {
      * @param engineUrl the url of engine to get the config from
      * @param properties the properties used to initialise the keyspace
      */
-    synchronized static SystemKeyspace initialise(String engineUrl, Properties properties){
+    static SystemKeyspace initialise(String engineUrl, Properties properties){
         if(factory == null){
             instance = new SystemKeyspace(engineUrl, properties);
         }
 
         return instance;
-    }
-
-    private void initialiseFactory(Supplier<InternalFactory> factoryInitialiser){
-        if(factoryBeingInstantiated.compareAndSet(false, true)){
-            factory = factoryInitialiser.get();
-            loadSystemOntology(factory);
-            factoryInstantiated.countDown();
-        }
     }
 
     /**
