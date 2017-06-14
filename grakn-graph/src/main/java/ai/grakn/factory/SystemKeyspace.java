@@ -29,6 +29,7 @@ import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.GraknVersion;
+import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,10 +83,11 @@ public class SystemKeyspace {
     protected static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
 
     private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
-    private static final AtomicBoolean isFactorySet = new AtomicBoolean(false);
-    private static InternalFactory factory;
+    static final AtomicBoolean factoryBeingInstantiated = new AtomicBoolean(false);
+    static CountDownLatch factoryInstantiated = new CountDownLatch(1);
+    static InternalFactory factory;
 
-    private SystemKeyspace(){
+    SystemKeyspace(){
     }
 
     /**
@@ -107,14 +109,24 @@ public class SystemKeyspace {
     }
 
     private static void initialiseFactory(Supplier<InternalFactory> factoryInitialiser){
-        if(isFactorySet.compareAndSet(false, true)){
+        if(factoryBeingInstantiated.compareAndSet(false, true)){
             factory = factoryInitialiser.get();
-            loadSystemOntology();
+            loadSystemOntology(factory);
+            factoryInstantiated.countDown();
         }
     }
 
+    /**
+     * Get the system keyspace for this instance of engine. Wait for the system keyspace to be
+     * instantiated if necessary.
+     * @return Factory to provide the system keyspace
+     */
     private static InternalFactory factory(){
-        if(factory == null) throw new IllegalStateException("System factory has not yet been initialised");
+        try {
+            factoryInstantiated.await();
+        } catch (InterruptedException e){
+            throw new IllegalStateException("Interrupted while waiting for system graph to instantiate.");
+        }
         return factory;
     }
 
@@ -186,8 +198,8 @@ public class SystemKeyspace {
      * only consists of types, the inserts are idempotent and it is safe to load it
      * multiple times.
      */
-    private static void loadSystemOntology() {
-        try (GraknGraph graph = factory().open(GraknTxType.WRITE)) {
+    private static void loadSystemOntology(InternalFactory factory) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             if (graph.getType(KEYSPACE_ENTITY) != null) {
                 return;
             }
