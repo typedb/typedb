@@ -349,7 +349,6 @@ public class TasksControllerTest {
 
         Response response = get(task.getId());
 
-        assertThat(exception(response), equalTo(GraknBackendException.stateStorageMissingId(task.getId()).getMessage()));
         assertThat(response.statusCode(), equalTo(404));
     }
 

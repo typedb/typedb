@@ -359,10 +359,10 @@ public class TasksController {
         //TODO: Fix this. This is needed because of a mixture of exceptions being thrown within the context of this controller
         if(exception instanceof GraknServerException){
             response.status(((GraknServerException) exception).getStatus());
+            response.body(Json.object("exception", exception.getMessage()).toString());
         } else {
             response.status(404);
         }
-        response.body(Json.object("exception", exception.getMessage()).toString());
     }
 
     // TODO: Return 'schedule' object as its own object
