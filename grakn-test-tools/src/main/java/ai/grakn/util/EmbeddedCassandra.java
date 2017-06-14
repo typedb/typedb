@@ -64,8 +64,6 @@ public class EmbeddedCassandra {
             } catch (TTransportException | IOException | ConfigurationException e) {
                 throw new RuntimeException("Cannot start Embedded Cassandra", e);
             }
-        } else {
-            LOG.warn("Cassandra is already running");
         }
     }
 }

@@ -20,6 +20,7 @@ package ai.grakn.util;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -37,6 +38,12 @@ import static org.junit.Assert.assertTrue;
 //TODO: Move this test class to a lower dependency. Specifically Graql
 public class GraphLoaderTest {
 
+    //TODO: Put this somewhere common
+    @Before
+    public void setup(){
+        GraknTestSetup.ensureCassandraRunning();
+    }
+
     @Test
     public void whenCreatingEmptyGraph_EnsureGraphIsEmpty(){
         GraphLoader loader = GraphLoader.empty();
@@ -52,9 +59,7 @@ public class GraphLoaderTest {
     public void whenCreatingGraphWithPreLoader_EnsureGraphContainsPreloadedEntities(){
         Set<TypeLabel> labels = new HashSet<>(Arrays.asList(TypeLabel.of("1"), TypeLabel.of("2"), TypeLabel.of("3")));
 
-        Consumer<GraknGraph> preLoader = graph -> {
-            labels.forEach(graph::putEntityType);
-        };
+        Consumer<GraknGraph> preLoader = graph -> labels.forEach(graph::putEntityType);
 
         GraphLoader loader = GraphLoader.preLoad(preLoader);
 
