@@ -23,6 +23,10 @@ import ai.grakn.concept.TypeLabel;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,6 +36,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -56,7 +61,7 @@ public class GraphLoaderTest {
     }
 
     @Test
-    public void whenCreatingGraphWithPreLoader_EnsureGraphContainsPreloadedEntities(){
+    public void whenCreatingGraphWithPreLoader_EnsureGraphContainsPreLoadedEntities(){
         Set<TypeLabel> labels = new HashSet<>(Arrays.asList(TypeLabel.of("1"), TypeLabel.of("2"), TypeLabel.of("3")));
 
         Consumer<GraknGraph> preLoader = graph -> labels.forEach(graph::putEntityType);
@@ -83,6 +88,38 @@ public class GraphLoaderTest {
                 assertEquals("ai.grakn.graph.internal.GraknOrientDBGraph", graph.getClass().getName());
             } else {
                 throw new RuntimeException("Test run with unsupported graph backend");
+            }
+        }
+    }
+
+    @Test
+    public void whenCreatingGraphWithPreLoadingFiles_EnsureGraphContainsPreLoadedEntities(){
+        //Create some rubbish files
+        String [] files = new String[10];
+        String [] typeNames = new String[10];
+        try {
+            for(int i = 0; i < files.length; i ++) {
+                File temp = File.createTempFile("some-graql-file-" + i, ".gql");
+                temp.deleteOnExit();
+
+                try(BufferedWriter out = new BufferedWriter(new FileWriter(temp))){
+                    typeNames[i]= "my-entity-type-" + i;
+                    out.write("insert " + typeNames[i] + " sub entity;");
+                }
+
+                files[i] = temp.getAbsolutePath();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        //Load the data in
+        GraphLoader loader = GraphLoader.preLoad(files);
+
+        //Check the data is there
+        try (GraknGraph graph = loader.graph()){
+            for (String typeName : typeNames) {
+                assertNotNull(graph.getEntityType(typeName));
             }
         }
     }

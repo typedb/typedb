@@ -22,16 +22,22 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.factory.InternalFactory;
+import ai.grakn.graql.Query;
+import com.google.common.io.Files;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -55,12 +61,13 @@ public class GraphLoader {
 
     private final InternalFactory<?> factory;
     private final Consumer<GraknGraph> preLoad;
+    private final String[] files;
     private GraknGraph graph;
 
-    private GraphLoader(Consumer<GraknGraph> preLoad){
+    private GraphLoader(Consumer<GraknGraph> preLoad, String ... files){
         factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties());
         this.preLoad = preLoad;
-
+        this.files = files;
         load();
     }
 
@@ -70,6 +77,10 @@ public class GraphLoader {
 
     public static GraphLoader preLoad(Consumer<GraknGraph> build){
         return new GraphLoader(build);
+    }
+
+    public static GraphLoader preLoad(String [] files){
+        return new GraphLoader(null, files);
     }
 
     public GraknGraph graph(){
@@ -86,6 +97,12 @@ public class GraphLoader {
     private void load(){
         try (GraknGraph graph = graph()) {
             if(preLoad != null) preLoad.accept(graph);
+
+            if (files != null) {
+                for (String file : files) {
+                    loadFromFile(graph, file);
+                }
+            }
 
             graph.commit();
         }
@@ -134,5 +151,18 @@ public class GraphLoader {
     private static String randomKeyspace(){
         // Embedded Casandra has problems dropping keyspaces that start with a number
         return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
+    }
+
+    //TODO: Cleanup again. Another duplicate. Currently in TestGraph
+    private static void loadFromFile(GraknGraph graph, String file) {
+        try {
+            File graql = new File(file);
+
+            graph.graql()
+                    .parseList(Files.readLines(graql, StandardCharsets.UTF_8).stream().collect(Collectors.joining("\n")))
+                    .forEach(Query::execute);
+        } catch (IOException |InvalidGraphException e){
+            throw new RuntimeException(e);
+        }
     }
 }
