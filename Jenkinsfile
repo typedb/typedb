@@ -14,8 +14,6 @@ node('slave1-dev-jenkins') {
                 sh 'mkdir grakn-package'
                 sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
                 sh 'grakn-package/bin/grakn.sh start'
-                // todo: remove this hack when bug fixed
-                sh 'grakn-package/bin/graql.sh -e "match \$x;"'
             }
         }
         dir('benchmarking') {
