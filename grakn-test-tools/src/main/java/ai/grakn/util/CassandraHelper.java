@@ -18,9 +18,12 @@
 
 package ai.grakn.util;
 
+import org.apache.cassandra.exceptions.ConfigurationException;
+import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -48,7 +51,6 @@ public class CassandraHelper {
             try {
                 LOG.info("starting cassandra...");
                 EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
-
                 //This thread sleep is to give time for cass to startup
                 //TODO: Determine if this is still needed
                 try {
@@ -58,8 +60,9 @@ public class CassandraHelper {
                     LOG.info("Thread sleep interrupted.");
                 }
                 LOG.info("cassandra started.");
-            } catch (Exception e) {
-                throw new RuntimeException("Error while starting embedded cassandra ", e);
+
+            } catch (TTransportException | IOException | ConfigurationException e) {
+                throw new RuntimeException("Cannot start Embedded Cassandra", e);
             }
         } else {
             LOG.warn("Cassandra is already running");
