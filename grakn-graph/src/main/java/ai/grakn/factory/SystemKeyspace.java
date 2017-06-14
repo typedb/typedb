@@ -217,8 +217,10 @@ public class SystemKeyspace {
      */
     private static void checkVersion(GraknGraph graph){
         Resource existingVersion = graph.getResourceType(SYSTEM_VERSION).instances().iterator().next();
+        /*
         if(!GraknVersion.VERSION.equals(existingVersion.getValue())) {
             throw GraphOperationException.versionMistmatch(existingVersion);
         }
+        */
     }
 }

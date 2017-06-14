@@ -215,18 +215,46 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Atom top = atoms.getFirst();
         Set<Atom> nonResolvableAtoms = new HashSet<>();
         while (!atoms.isEmpty()) {
+            atoms.remove(top);
 
             if (top.isRuleResolvable()) {
-                queries.add(new ReasonerAtomicQuery(top));
 
                 if (!nonResolvableAtoms.isEmpty()){
                     queries.add(ReasonerQueries.create(nonResolvableAtoms, graph()));
                     nonResolvableAtoms.clear();
                 }
+                queries.add(new ReasonerAtomicQuery(top));
             } else {
                 nonResolvableAtoms.add(top);
+                if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, graph()));
             }
 
+
+
+            Set<Var> subbedVars = Sets.difference(
+                    top.getVarNames(),
+                    top.getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet())
+            );
+
+            top = atoms.stream()
+                    .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
+                    .findFirst().orElse(null);
+        }
+
+        return queries;
+    }
+
+    LinkedList<ReasonerQueryImpl> getOldResolutionPlan(){
+        LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
+
+        LinkedList<Atom> atoms = selectAtoms().stream()
+                .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
+                .collect(Collectors.toCollection(LinkedList::new));
+
+        Atom top = atoms.getFirst();
+        while (!atoms.isEmpty()) {
+
+            queries.add(new ReasonerAtomicQuery(top));
             atoms.remove(top);
 
             Set<Var> subbedVars = Sets.difference(
