@@ -95,6 +95,7 @@ public class CommitLogControllerTest {
     }
 
     @Test
+    @Ignore
     public void whenControllerReceivesLog_TaskManagerReceivesPPTask() {
         sendFakeCommitLog();
 
