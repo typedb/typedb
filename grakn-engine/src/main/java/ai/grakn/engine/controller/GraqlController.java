@@ -24,6 +24,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
@@ -53,10 +55,12 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static ai.grakn.GraknTxType.WRITE;
+import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
+import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.util.REST.Request.Graql.INFER;
@@ -96,9 +100,8 @@ public class GraqlController {
 
         //TODO The below exceptions are very broad. They should be revised after we improve exception
         //TODO hierarchies in Graql and Graph
-        // Handle graql syntax exceptions
-        spark.exception(IllegalStateException.class, (e, req, res) -> handleError(400, e, res));
-        spark.exception(IllegalArgumentException.class, (e, req, res) -> handleError(400, e, res));
+        spark.exception(GraqlQueryException.class, (e, req, res) -> handleError(400, e, res));
+        spark.exception(GraqlSyntaxException.class, (e, req, res) -> handleError(400, e, res));
 
         // Handle invalid type castings and invalid insertions
         spark.exception(GraphOperationException.class, (e, req, res) -> handleError(422, e, res));
@@ -185,39 +188,6 @@ public class GraqlController {
 
             return respond(response, query, APPLICATION_JSON, Json.object());
         }
-    }
-
-    /**
-     * Given a {@link Request} object retrieve the value of the {@param parameter} argument. If it is not present
-     * in the request query, return a 400 to the client.
-     *
-     * @param request information about the HTTP request
-     * @param parameter value to retrieve from the HTTP request
-     * @return value of the given parameter
-     */
-    static String mandatoryQueryParameter(Request request, String parameter){
-        return queryParameter(request, parameter).orElseThrow(() -> GraknServerException.requestMissingParameters(parameter));
-    }
-
-    /**
-     * Given a {@link Request}, retrieve the value of the {@param parameter}
-     * @param request information about the HTTP request
-     * @param parameter value to retrieve from the HTTP request
-     * @return value of the given parameter
-     */
-    static Optional<String> queryParameter(Request request, String parameter){
-        return Optional.ofNullable(request.queryParams(parameter));
-    }
-
-    /**
-     * Given a {@link Request), retreive the value of the request body. If the request does not have a body,
-     * return a 400 (missing parameter) to the client.
-     *
-     * @param request information about the HTTP request
-     * @return value of the request body as a string
-     */
-    static String mandatoryBody(Request request){
-        return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(GraknServerException::requestMissingBody);
     }
 
     /**

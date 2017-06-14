@@ -42,12 +42,12 @@ public class GraphWriterMainTest {
 
     @Test
     public void exportOntologyToSystemOutTest(){
-        runAndAssertDataCorrect("export", "-ontology", "-keyspace", keyspace);
+        runAndAssertDataCorrect("export", "-u", engineContext.uri(), "-ontology", "-keyspace", keyspace);
     }
 
     @Test
     public void exportDataToSystemOutTest(){
-        runAndAssertDataCorrect("export", "-data", "-keyspace", keyspace);
+        runAndAssertDataCorrect("export", "-u", engineContext.uri(), "-data", "-keyspace", keyspace);
     }
     
     @Test
@@ -62,7 +62,7 @@ public class GraphWriterMainTest {
 
     @Test
     public void exportEngineURLProvidedTest(){
-        runAndAssertDataCorrect("export", "-data", "-uri", "localhost:4567", "-keyspace", keyspace);
+        runAndAssertDataCorrect("export", "-u", engineContext.uri(), "-data", "-uri", "localhost:4567", "-keyspace", keyspace);
     }
 
     private void runAndAssertDataCorrect(String... args){

@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.parser;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.AskQuery;
@@ -50,7 +51,6 @@ import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -59,6 +59,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -89,8 +90,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public List<Query<?>> visitQueryList(GraqlParser.QueryListContext ctx) {
-        return ctx.queryListElem().stream().map(this::visitQueryListElem).collect(toList());
+    public Iterator<? extends Query<?>> visitQueryList(GraqlParser.QueryListContext ctx) {
+        return ctx.queryListElem().stream().map(this::visitQueryListElem).iterator();
     }
 
     @Override
@@ -347,7 +348,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         Function<List<Object>, Aggregate> aggregateMethod = aggregateMethods.get(name);
 
         if (aggregateMethod == null) {
-            throw new IllegalArgumentException(ErrorMessage.UNKNOWN_AGGREGATE.getMessage(name));
+            throw GraqlQueryException.unknownAggregate(name);
         }
 
         List<Object> arguments = ctx.argument().stream().map(this::visit).collect(toList());
@@ -405,7 +406,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     public VarPattern visitVarPattern(GraqlParser.VarPatternContext ctx) {
         VarPattern var;
         if (ctx.VARIABLE() != null) {
-            var = var(getVariable(ctx.VARIABLE()));
+            var = getVariable(ctx.VARIABLE()).pattern();
         } else {
             var = visitVariable(ctx.variable());
         }
@@ -441,7 +442,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     public UnaryOperator<VarPattern> visitPropHas(GraqlParser.PropHasContext ctx) {
         TypeLabel type = visitLabel(ctx.label());
 
-        VarPattern resource = ctx.VARIABLE() != null ? var(getVariable(ctx.VARIABLE())) : var();
+        Var resourceVar = ctx.VARIABLE() != null ? getVariable(ctx.VARIABLE()) : var();
+        VarPattern resource = resourceVar.pattern();
 
         if (ctx.predicate() != null) {
             resource = resource.val(visitPredicate(ctx.predicate()));
@@ -492,7 +494,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         if (ctx.VARIABLE() == null) {
             return var -> var.rel(visitVariable(ctx.variable()));
         } else {
-            return var -> var.rel(visitVariable(ctx.variable()), var(getVariable(ctx.VARIABLE())));
+            return var -> var.rel(visitVariable(ctx.variable()), getVariable(ctx.VARIABLE()));
         }
     }
 
@@ -518,7 +520,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<VarPattern> visitHasScope(GraqlParser.HasScopeContext ctx) {
-        return var -> var.hasScope(var(getVariable(ctx.VARIABLE())));
+        return var -> var.hasScope(getVariable(ctx.VARIABLE()));
     }
 
     @Override
@@ -543,11 +545,11 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public VarPattern visitVariable(GraqlParser.VariableContext ctx) {
         if (ctx == null) {
-            return var();
+            return var().pattern();
         } else if (ctx.label() != null) {
             return Graql.label(visitLabel(ctx.label()));
         } else {
-            return var(getVariable(ctx.VARIABLE()));
+            return getVariable(ctx.VARIABLE()).pattern();
         }
     }
 
@@ -558,7 +560,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public ValuePredicate visitPredicateVariable(GraqlParser.PredicateVariableContext ctx) {
-        return eq(var(getVariable(ctx.VARIABLE())));
+        return eq(getVariable(ctx.VARIABLE()));
     }
 
     @Override
@@ -598,7 +600,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public VarPattern visitValueVariable(GraqlParser.ValueVariableContext ctx) {
-        return var(getVariable(ctx.VARIABLE()));
+        return getVariable(ctx.VARIABLE()).pattern();
     }
 
     @Override
@@ -657,7 +659,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     private Var getVariable(TerminalNode variable) {
         // Remove '$' prefix
-        return Var.of(variable.getText().substring(1));
+        return var(variable.getText().substring(1));
     }
 
     private String getRegex(TerminalNode string) {

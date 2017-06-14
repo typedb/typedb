@@ -18,18 +18,18 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import com.google.common.collect.ImmutableList;
-import java.util.Collections;
-import java.util.Locale;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collections;
+import java.util.Locale;
+
 import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class DoubleMacroTest {
 
@@ -40,7 +40,7 @@ public class DoubleMacroTest {
 
     @Test
     public void applyDoubleMacroToNoArguments_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         doubleMacro.apply(Collections.emptyList());
@@ -48,7 +48,7 @@ public class DoubleMacroTest {
 
     @Test
     public void applyDoubleMacroToMoreThanOneArgument_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         doubleMacro.apply(ImmutableList.of("1.0", "2.0"));

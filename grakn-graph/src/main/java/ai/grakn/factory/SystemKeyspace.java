@@ -25,6 +25,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.AbstractGraknGraph;
@@ -76,12 +77,13 @@ public class SystemKeyspace {
     // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
     // If there is a more natural home for this constant, feel free to put it there! (Boris)
     public static final String SYSTEM_GRAPH_NAME = "graknSystem";
+    private static final String SYSTEM_VERSION = "system-version";
     private static final String SYSTEM_ONTOLOGY_FILE = "system.gql";
     public static final TypeLabel KEYSPACE_ENTITY = TypeLabel.of("keyspace");
+
     public static final TypeLabel KEYSPACE_RESOURCE = TypeLabel.of("keyspace-name");
 
     protected static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
-
     private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
     static final AtomicBoolean factoryBeingInstantiated = new AtomicBoolean(false);
     static CountDownLatch factoryInstantiated = new CountDownLatch(1);
@@ -198,9 +200,10 @@ public class SystemKeyspace {
      * only consists of types, the inserts are idempotent and it is safe to load it
      * multiple times.
      */
-    private static void loadSystemOntology(InternalFactory factory) {
+    static void loadSystemOntology(InternalFactory factory) {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             if (graph.getType(KEYSPACE_ENTITY) != null) {
+                checkVersion(graph);
                 return;
             }
             ClassLoader loader = SystemKeyspace.class.getClassLoader();
@@ -209,12 +212,25 @@ public class SystemKeyspace {
                 query = buffer.lines().collect(Collectors.joining("\n"));
             }
             graph.graql().parse(query).execute();
-            graph.getResourceType("system-version").putResource(GraknVersion.VERSION);
+            graph.getResourceType(SYSTEM_VERSION).putResource(GraknVersion.VERSION);
             graph.admin().commitNoLogs();
             LOG.info("Loaded system ontology to system keyspace.");
         } catch (IOException | InvalidGraphException | NullPointerException e) {
             e.printStackTrace(System.err);
             LOG.error("Could not load system ontology. The error was: " + e);
+        }
+    }
+
+    /**
+     * Helper method which checks the version persisted in the system keyspace with the version of the running grakn
+     * instance
+     *
+     * @throws ai.grakn.exception.GraphOperationException when the versions do not match
+     */
+    private static void checkVersion(GraknGraph graph){
+        Resource existingVersion = graph.getResourceType(SYSTEM_VERSION).instances().iterator().next();
+        if(!GraknVersion.VERSION.equals(existingVersion.getValue())) {
+            throw GraphOperationException.versionMistmatch(existingVersion);
         }
     }
 }

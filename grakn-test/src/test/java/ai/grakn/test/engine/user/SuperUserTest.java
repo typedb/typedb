@@ -22,6 +22,7 @@ import ai.grakn.test.GraphContext;
 import mjson.Json;
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -30,6 +31,7 @@ import org.junit.Test;
  * @author borislav
  *
  */
+@Ignore
 public class SuperUserTest {
 
     @ClassRule

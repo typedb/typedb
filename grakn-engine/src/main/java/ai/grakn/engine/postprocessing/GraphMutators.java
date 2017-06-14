@@ -20,7 +20,6 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.factory.SystemKeyspace;
@@ -29,8 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
-
-import static ai.grakn.engine.GraknEngineConfig.LOADER_REPEAT_COMMITS;
 
 /**
  * <p>
@@ -46,7 +43,6 @@ import static ai.grakn.engine.GraknEngineConfig.LOADER_REPEAT_COMMITS;
 public abstract class GraphMutators {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphMutators.class);
-    private static final int MAX_RETRY = GraknEngineConfig.getInstance().getPropertyAsInt(LOADER_REPEAT_COMMITS);
 
     /**
      *
@@ -55,8 +51,8 @@ public abstract class GraphMutators {
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
     public static void runBatchMutationWithRetry(
-            EngineGraknGraphFactory factory, String keyspace, Consumer<GraknGraph> mutatingFunction){
-        runGraphMutationWithRetry(factory, keyspace, GraknTxType.BATCH, mutatingFunction);
+            EngineGraknGraphFactory factory, String keyspace, int maxRetry, Consumer<GraknGraph> mutatingFunction){
+        runGraphMutationWithRetry(factory, keyspace, GraknTxType.BATCH, maxRetry, mutatingFunction);
     }
 
     /**
@@ -65,8 +61,8 @@ public abstract class GraphMutators {
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
     static void runGraphMutationWithRetry(
-            EngineGraknGraphFactory factory, String keyspace, Consumer<GraknGraph> mutatingFunction){
-        runGraphMutationWithRetry(factory, keyspace, GraknTxType.WRITE, mutatingFunction);
+            EngineGraknGraphFactory factory, String keyspace, int maxRetry, Consumer<GraknGraph> mutatingFunction){
+        runGraphMutationWithRetry(factory, keyspace, GraknTxType.WRITE, maxRetry, mutatingFunction);
     }
 
     /**
@@ -75,14 +71,15 @@ public abstract class GraphMutators {
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
     private static void runGraphMutationWithRetry(
-            EngineGraknGraphFactory factory, String keyspace, GraknTxType txType, Consumer<GraknGraph> mutatingFunction
+            EngineGraknGraphFactory factory, String keyspace, GraknTxType txType, int maxRetry,
+            Consumer<GraknGraph> mutatingFunction
     ){
         if(!SystemKeyspace.containsKeyspace(keyspace)){ //This may be slow.
             LOG.warn("Attempting to execute mutation on graph [" + keyspace + "] which no longer exists");
             return;
         }
 
-        for(int retry = 0; retry < MAX_RETRY; retry++) {
+        for(int retry = 0; retry < maxRetry; retry++) {
             try(GraknGraph graph = factory.getGraph(keyspace, txType))  {
 
                 mutatingFunction.accept(graph);

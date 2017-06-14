@@ -20,12 +20,13 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.util.CommonUtil.optionalToStream;
+import static ai.grakn.util.CommonUtil.optionalToStream;
 
 abstract class AbstractFragment implements Fragment{
 
@@ -72,11 +73,8 @@ abstract class AbstractFragment implements Fragment{
 
     @Override
     public final EquivalentFragmentSet getEquivalentFragmentSet() {
-        if (equivalentFragmentSet != null) {
-            return equivalentFragmentSet;
-        } else {
-            throw new IllegalStateException("Should not call getEquivalentFragmentSet before setEquivalentFragmentSet");
-        }
+        Preconditions.checkNotNull(equivalentFragmentSet, "Should not call getEquivalentFragmentSet before setEquivalentFragmentSet");
+        return equivalentFragmentSet;
     }
 
     @Override

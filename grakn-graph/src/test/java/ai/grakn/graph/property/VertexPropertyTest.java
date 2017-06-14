@@ -30,6 +30,7 @@ import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.Methods.MethodOf;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -42,9 +43,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Set;
+import java.util.function.Function;
 
 import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
-import static ai.grakn.generator.GraknGraphs.withImplicitConceptsVisible;
 import static ai.grakn.generator.Methods.mockParamsOf;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -62,7 +63,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
 
 @RunWith(JUnitQuickcheck.class)
-public class ConceptPropertyTest {
+public class VertexPropertyTest {
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -245,7 +246,7 @@ public class ConceptPropertyTest {
     private static void assumeDeletable(GraknGraph graph, Concept concept) {
         // Confirm this concept is allowed to be deleted
         // TODO: A better way to handle these assumptions?
-        withImplicitConceptsVisible(graph, g -> {
+        Function<GraknGraph,Object> function = g -> {
             if (concept.isType()) {
                 Type type = concept.asType();
                 assumeThat(type.subTypes(), contains(type));
@@ -266,7 +267,8 @@ public class ConceptPropertyTest {
             }
 
             return null;
-        });
+        };
+        CommonUtil.withImplicitConceptsVisible(graph, function);
     }
 
 }

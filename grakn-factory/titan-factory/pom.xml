@@ -36,6 +36,13 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-test-tools</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Titan DB -->
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>

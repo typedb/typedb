@@ -25,9 +25,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskCheckpoint;
-import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
@@ -52,7 +49,7 @@ import java.util.function.Consumer;
  * @author borislav
  *
  */
-public class ResourceDeduplicationTask implements BackgroundTask {
+public class ResourceDeduplicationTask extends BackgroundTask {
     
     public static final String KEYSPACE_CONFIG  = "keyspace";
     public static final String KEYSPACE_DEFAULT = "grakn"; 
@@ -87,13 +84,22 @@ public class ResourceDeduplicationTask implements BackgroundTask {
      *
      */
     public static class Job implements MapReduce<String, ConceptId, String, Long, Long> {
-        static Schema.ConceptProperty [] possibleValues = 
-            {Schema.ConceptProperty.VALUE_BOOLEAN, Schema.ConceptProperty.VALUE_DOUBLE, Schema.ConceptProperty.VALUE_FLOAT,
-             Schema.ConceptProperty.VALUE_INTEGER, Schema.ConceptProperty.VALUE_LONG, Schema.ConceptProperty.VALUE_STRING};
+        static Schema.VertexProperty[] possibleValues =
+            {Schema.VertexProperty.VALUE_BOOLEAN, Schema.VertexProperty.VALUE_DOUBLE, Schema.VertexProperty.VALUE_FLOAT,
+             Schema.VertexProperty.VALUE_INTEGER, Schema.VertexProperty.VALUE_LONG, Schema.VertexProperty.VALUE_STRING};
         
         private boolean deleteUnattached = false;
         private String keyspace;
-        
+        private String uri;
+
+        /**
+         * Specify the uri to use for the deduplication job.
+         */
+        public Job uri(String uri) {
+            this.uri = uri;
+            return this;
+        }
+
         /**
          * Specify the keyspace to use for the deduplication job.
          */
@@ -128,14 +134,14 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             }
             // We form the key from the resource type name and the value, and the value of the map-reduce is the concept ID
             // of the resource instance itself
-            LOG.debug("Resource index: " + vertex.property(Schema.ConceptProperty.INDEX.name()).value());            
-            Object key = vertex.property(Schema.ConceptProperty.INDEX.name()).value();
+            LOG.debug("Resource index: " + vertex.property(Schema.VertexProperty.INDEX.name()).value());
+            Object key = vertex.property(Schema.VertexProperty.INDEX.name()).value();
             if (key != null) {
-                LOG.debug("Emit " + key + " -- "  +  ConceptId.of(vertex.property(Schema.ConceptProperty.ID.name())));
-                emitter.emit(key.toString(), ConceptId.of(vertex.property(Schema.ConceptProperty.ID.name()).value()));
+                LOG.debug("Emit " + key + " -- "  +  ConceptId.of(vertex.property(Schema.VertexProperty.ID.name())));
+                emitter.emit(key.toString(), ConceptId.of(vertex.property(Schema.VertexProperty.ID.name()).value()));
             }
             else {
-                LOG.warn("Resource " + vertex.property(Schema.ConceptProperty.ID.name()) + " has no value?!");
+                LOG.warn("Resource " + vertex.property(Schema.VertexProperty.ID.name()) + " has no value?!");
             }
         }
 
@@ -164,7 +170,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             LOG.debug("Concepts: " + conceptIds);
             if (conceptIds.size() > 1) {
                 // TODO: what if we fail here due to some read-write conflict?
-                transact(Grakn.session(Grakn.DEFAULT_URI, keyspace),
+                transact(Grakn.session(uri, keyspace),
                          (graph) -> graph.admin().fixDuplicateResources(key, conceptIds),
                          "Reducing resource duplicate set " + conceptIds);
                 emitter.emit(key, (long) (conceptIds.size() - 1));
@@ -172,8 +178,8 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             // Check and maybe delete resource if it's not attached to anything
             if (this.deleteUnattached ) {
                 // TODO: what if we fail here due to some read-write conflict?
-                try (GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)) {
-                    Resource<?> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, key);
+                try (GraknGraph graph = Grakn.session(uri, keyspace).open(GraknTxType.WRITE)) {
+                    Resource<?> res = graph.admin().getConcept(Schema.VertexProperty.INDEX, key);
                     if (res.ownerInstances().isEmpty() && res.relations().isEmpty()) {
                         res.delete();
                     }
@@ -199,30 +205,20 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     }
     
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
-        LOG.info("Starting ResourceDeduplicationTask : " + configuration.json());
+    public boolean start() {
+        LOG.info("Starting ResourceDeduplicationTask : " + configuration().json());
         
-        String keyspace = configuration.json().at("keyspace", KEYSPACE_DEFAULT).asString();
-        GraknComputer computer = Grakn.session(Grakn.DEFAULT_URI, keyspace).getGraphComputer();
-        Job job = new Job().keyspace(keyspace)
-                           .deleteUnattached(configuration.json().at("deletedUnattached", DELETE_UNATTACHED_DEFAULT ).asBoolean());
+        String keyspace = configuration().json().at("keyspace", KEYSPACE_DEFAULT).asString();
+        GraknComputer computer = Grakn.session(engineConfiguration().uri(), keyspace).getGraphComputer();
+        Job job = new Job().uri(engineConfiguration().uri()).keyspace(keyspace)
+                           .deleteUnattached(configuration().json().at("deletedUnattached", DELETE_UNATTACHED_DEFAULT ).asBoolean());
         this.totalEliminated = computer.compute(job).memory().get(job.getMemoryKey());
         return true;
     }
 
     @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
-        throw new UnsupportedOperationException();
-    }
-    
-    @Override
     public boolean stop() {
         return true;
-    }
-
-    @Override
-    public void pause() {
-        throw new UnsupportedOperationException();
     }
 
     public Long totalElimintated() {

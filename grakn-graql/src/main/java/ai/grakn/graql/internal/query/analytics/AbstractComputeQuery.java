@@ -27,13 +27,14 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -111,7 +112,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     void initSubGraph() {
-        GraknGraph theGraph = graph.orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
+        GraknGraph theGraph = graph.orElseThrow(GraqlQueryException::noGraph);
         keySpace = theGraph.getKeyspace();
 
         getAllSubTypes(theGraph);
@@ -121,7 +122,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         // fetch all the types in the subGraph
         Set<Type> subGraph = subTypeLabels.stream().map((label) -> {
             Type type = graph.getType(label);
-            if (type == null) throw new IllegalArgumentException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
+            if (type == null) throw GraqlQueryException.labelNotFound(label);
             return type;
         }).collect(Collectors.toSet());
 
@@ -169,12 +170,8 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     abstract String graqlString();
 
     final String subtypeString() {
-        if (subTypeLabels.isEmpty()) {
-            return ";";
-        } else {
-            return " in "
-                    + subTypeLabels.stream().map(StringConverter::typeLabelToString).collect(joining(", ")) + ";";
-        }
+        return subTypeLabels.isEmpty() ? ";" : " in "
+                + subTypeLabels.stream().map(StringConverter::typeLabelToString).collect(joining(", ")) + ";";
     }
 
     @Override
@@ -196,8 +193,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
         AbstractComputeQuery<?> that = (AbstractComputeQuery<?>) o;
 
-        if (!graph.equals(that.graph)) return false;
-        return subTypeLabels.equals(that.subTypeLabels);
+        return graph.equals(that.graph) && subTypeLabels.equals(that.subTypeLabels);
     }
 
     @Override
@@ -205,6 +201,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         int result = graph.hashCode();
         result = 31 * result + subTypeLabels.hashCode();
         return result;
+    }
+
+    Set<TypeId> convertLabelsToIds(Set<TypeLabel> TypeLabelSet) {
+        return TypeLabelSet.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
     }
 
     static String getRandomJobId() {

@@ -24,12 +24,12 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.analytics.CountQuery;
-import com.google.common.collect.ImmutableList;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 
 import static ai.grakn.util.REST.RemoteShell.QUERY;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -53,7 +53,7 @@ public class GraqlSessionTest {
         when(graph.graql()).thenReturn(qb);
         when(qb.infer(false)).thenReturn(qb);
         when(qb.materialise(false)).thenReturn(qb);
-        when(qb.parseList("compute count;")).thenReturn(ImmutableList.of(count));
+        when(qb.parseList("compute count;")).thenReturn(Stream.of(count));
 
         GraqlSession session = new GraqlSession(jettySesssion, factory, "json", false, false, false);
         session.receiveQuery(Json.object(QUERY, "compute count;"));

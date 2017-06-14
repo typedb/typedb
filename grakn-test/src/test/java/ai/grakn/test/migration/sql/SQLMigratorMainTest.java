@@ -72,7 +72,7 @@ public class SQLMigratorMainTest {
     @Test
     public void sqlMainTest(){
         graph.close();
-        runAndAssertDataCorrect("sql", "-t", templateFile,
+        runAndAssertDataCorrect("sql", "-u", engine.uri(), "-t", templateFile,
                 "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-q", query, "-k", keyspace);
     }
@@ -81,35 +81,35 @@ public class SQLMigratorMainTest {
     public void sqlMainNoKeyspace(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Keyspace missing (-k)");
-        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile);
+        run("sql", "-u", engine.uri(), "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile);
     }
 
     @Test
     public void sqlMainNoUserTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No username specified (-user)");
-        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-k", keyspace);
+        run("sql", "-u", engine.uri(), "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-k", keyspace);
     }
 
     @Test
     public void sqlMainNoPassTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No password specified (-pass)");
-        run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query, "-k", keyspace);
+        run("sql", "-u", engine.uri(), "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query, "-k", keyspace);
     }
 
     @Test
     public void sqlMainNoURLTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No db specified (-location)");
-        run("sql", "-driver", DRIVER, "-q", query, "-t", templateFile);
+        run("sql", "-u", engine.uri(), "-driver", DRIVER, "-q", query, "-t", templateFile);
     }
 
     @Test
     public void sqlMainNoQueryTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No SQL query specified (-query)");
-        run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL,
+        run("sql", "-u", engine.uri(), "-t", templateFile, "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-k", keyspace);
     }
 
@@ -117,14 +117,14 @@ public class SQLMigratorMainTest {
     public void sqlMainNoTemplateTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Template file missing (-t)");
-        run("sql", "-driver", DRIVER, "-location", URL,
+        run("sql", "-u", engine.uri(), "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-q", query);
     }
 
     @Test
     public void sqlMainTemplateNoExistTest(){
         exception.expect(RuntimeException.class);
-        run("sql", "-t", templateFile + "wrong", "-driver", DRIVER, "-location", URL,
+        run("sql", "-u", engine.uri(), "-t", templateFile + "wrong", "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-q", query);
     }
 
@@ -136,7 +136,7 @@ public class SQLMigratorMainTest {
 
         String configurationFile = getFile("sql", "pokemon/migration.yaml").getAbsolutePath();
 
-        run("sql", "-driver", DRIVER, "-location", URL,
+        run("sql", "-u", engine.uri(), "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-k", keyspace,
                 "-c", configurationFile);
 

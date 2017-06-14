@@ -33,6 +33,6 @@ public class Rules extends AbstractInstanceGenerator<Rule, RuleType> {
     @Override
     protected Rule newInstance(RuleType type) {
         // TODO: generate more complicated rules
-        return type.putRule(var("x"), var("x"));
+        return type.putRule(var("x").pattern(), var("x").pattern());
     }
 }

@@ -19,12 +19,11 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Answer;
 
 import java.util.Optional;
 import java.util.stream.Stream;
-
-import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
 
 /**
  * "Limit" modifier for match query that limits the results of a query.
@@ -36,7 +35,7 @@ class MatchQueryLimit extends MatchQueryModifier {
     MatchQueryLimit(AbstractMatchQuery inner, long limit) {
         super(inner);
         if (limit <= 0) {
-            throw new IllegalArgumentException(NON_POSITIVE_LIMIT.getMessage(limit));
+            throw GraqlQueryException.nonPositiveLimit(limit);
         }
         this.limit = limit;
     }

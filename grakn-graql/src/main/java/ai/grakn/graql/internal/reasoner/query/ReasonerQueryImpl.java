@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -43,7 +44,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.util.ErrorMessage;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -97,7 +98,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     ReasonerQueryImpl(Atom atom) {
         if (atom.getParentQuery() == null) {
-            throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
+            throw GraqlQueryException.atomParentMissing(atom.toString());
         }
         this.graph = atom.getParentQuery().graph();
         addAtomic(AtomicFactory.create(atom, this));
@@ -289,7 +290,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Unifier getUnifier(ReasonerQuery parent) {
-        throw new IllegalStateException("Attempted to obtain unifiers on non-atomic queries.");
+        throw GraqlQueryException.getUnifierOfNonAtomicQuery();
     }
 
     /**
@@ -403,7 +404,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         if (!atomsToSelect.isEmpty()) atomsToSelect.forEach(orderedSelection::add);
 
         if (orderedSelection.isEmpty()) {
-            throw new IllegalStateException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(this.toString()));
+            throw GraqlQueryException.noAtomsSelected(this);
         }
         return orderedSelection;
     }

@@ -20,7 +20,9 @@ package ai.grakn.test.graql.graql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -60,7 +62,7 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryIsLimitedToANegativeNumber_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(NON_POSITIVE_LIMIT.getMessage(Long.MIN_VALUE));
         //noinspection ResultOfMethodCallIgnored
         graph.graql().match(var()).limit(Long.MIN_VALUE);
@@ -68,7 +70,7 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryIsLimitedToZero_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(NON_POSITIVE_LIMIT.getMessage(0L));
         //noinspection ResultOfMethodCallIgnored
         graph.graql().match(var()).limit(0L);
@@ -76,7 +78,7 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryIsOffsetByANegativeNumber_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(NEGATIVE_OFFSET.getMessage(Long.MIN_VALUE));
         //noinspection ResultOfMethodCallIgnored
         graph.graql().match(var()).offset(Long.MIN_VALUE);
@@ -127,8 +129,8 @@ public class MatchQueryTest {
 
     @Test
     public void whenSelectingVarNotInQuery_Throw() {
-        exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Var.of("x")));
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("x")));
         graph.graql().match(var()).select("x").execute();
     }
 

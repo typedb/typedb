@@ -51,7 +51,7 @@ public class SumMapReduce extends StatisticsMapReduce<Number> {
         if (usingLong()) {
             if (resourceIsValid(vertex)) {
                 emitter.emit(NullObject.instance(),
-                        ((Long) vertex.value(Schema.ConceptProperty.VALUE_LONG.name())) *
+                        ((Long) vertex.value(Schema.VertexProperty.VALUE_LONG.name())) *
                                 ((Long) vertex.value(degreePropertyKey)));
                 return;
             }
@@ -59,7 +59,7 @@ public class SumMapReduce extends StatisticsMapReduce<Number> {
         } else {
             if (resourceIsValid(vertex)) {
                 emitter.emit(NullObject.instance(),
-                        ((Double) vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name())) *
+                        ((Double) vertex.value(Schema.VertexProperty.VALUE_DOUBLE.name())) *
                                 ((Long) vertex.value(degreePropertyKey)));
                 return;
             }

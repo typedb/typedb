@@ -156,22 +156,6 @@ public interface GraknAdmin {
     Optional<String> commitNoLogs() throws InvalidGraphException;
 
     /**
-     * Check if there are duplicates castings in the provided set of vertex IDs
-     * @param index index of the casting to find duplicates of
-     * @param castingVertexIds vertex Ids containing potential duplicates
-     * @return true if there are duplicate castings and PostProcessing can proceed
-     */
-    boolean duplicateCastingsExist(String index, Set<ConceptId> castingVertexIds);
-
-    /**
-     * Merges the provided duplicate castings.
-     *
-     * @param castingVertexIds The vertex Ids of the duplicate castings
-     * @return if castings were merged and a commit is required.
-     */
-    boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds);
-
-    /**
      * Check if there are duplicate resources in the provided set of vertex IDs
      * @param index index of the resource to find duplicates of
      * @param resourceVertexIds vertex Ids containing potential duplicates
@@ -207,7 +191,7 @@ public interface GraknAdmin {
      * @return A concept with the matching key and value
      */
     @CheckReturnValue
-    <T extends Concept> T getConcept(Schema.ConceptProperty key, Object value);
+    <T extends Concept> T getConcept(Schema.VertexProperty key, Object value);
 
     /**
      * Closes the root session this graph stems from. This will automatically rollback any pending transactions.

@@ -27,6 +27,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
@@ -35,11 +36,11 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -62,7 +63,6 @@ import java.util.stream.Collectors;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.util.ErrorMessage.INSERT_UNSUPPORTED_PROPERTY;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
@@ -323,7 +323,7 @@ public class InsertQueryTest {
         Set<Answer> results = insert.stream().collect(Collectors.toSet());
         assertEquals(1, results.size());
         Answer result = results.iterator().next();
-        assertEquals(ImmutableSet.of(Var.of("x"), Var.of("z")), result.keySet());
+        assertEquals(ImmutableSet.of(Graql.var("x"), Graql.var("z")), result.keySet());
         assertThat(result.values(), Matchers.everyItem(notNullValue(Concept.class)));
     }
 
@@ -343,7 +343,7 @@ public class InsertQueryTest {
         assertFalse(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
 
         Answer result1 = results.next();
-        assertEquals(ImmutableSet.of(Var.of("x")), result1.keySet());
+        assertEquals(ImmutableSet.of(Graql.var("x")), result1.keySet());
 
         AskQuery query123 = qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask();
         AskQuery query456 = qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask();
@@ -359,7 +359,7 @@ public class InsertQueryTest {
 
         //Check that both are inserted correctly
         Answer result2 = results.next();
-        assertEquals(ImmutableSet.of(Var.of("x")), result1.keySet());
+        assertEquals(ImmutableSet.of(Graql.var("x")), result1.keySet());
         assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
         assertTrue(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
         assertFalse(results.hasNext());
@@ -369,28 +369,28 @@ public class InsertQueryTest {
 
     @Test
     public void testErrorWhenInsertWithPredicate() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("predicate");
         qb.insert(var().id(ConceptId.of("123")).val(gt(3))).execute();
     }
 
     @Test
     public void testErrorWhenInsertWithMultipleIds() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("id"), containsString("123"), containsString("456")));
         qb.insert(var().id(ConceptId.of("123")).id(ConceptId.of("456")).isa("movie")).execute();
     }
 
     @Test
     public void testErrorWhenInsertWithMultipleValues() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("value"), containsString("123"), containsString("456")));
         qb.insert(var().val("123").val("456").isa("title")).execute();
     }
 
     @Test
     public void testErrorWhenSubRelation() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("isa"), containsString("relation")));
         qb.insert(
                 var().sub("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y"),
@@ -528,7 +528,7 @@ public class InsertQueryTest {
     @Test
     public void testKeyCorrectUsage() throws InvalidGraphException {
         // This should only run on tinker because it commits
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
@@ -539,7 +539,7 @@ public class InsertQueryTest {
 
     @Test
     public void testKeyUniqueOwner() throws InvalidGraphException {
-        assumeTrue(usingTinker()); // This should only run on tinker because it commits
+        assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
@@ -554,7 +554,7 @@ public class InsertQueryTest {
     @Ignore // TODO: Un-ignore this when constraints are designed and implemented
     @Test
     public void testKeyUniqueValue() throws InvalidGraphException {
-        assumeTrue(usingTinker()); // This should only run on tinker because it commits
+        assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
@@ -569,7 +569,7 @@ public class InsertQueryTest {
 
     @Test
     public void testKeyRequiredOwner() throws InvalidGraphException {
-        assumeTrue(usingTinker()); // This should only run on tinker because it commits
+        assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
@@ -596,14 +596,14 @@ public class InsertQueryTest {
         List<Answer> results = query.execute();
         assertEquals(1, results.size());
         Answer result = results.get(0);
-        assertEquals(Sets.newHashSet(Var.of("x")), result.keySet());
+        assertEquals(Sets.newHashSet(Graql.var("x")), result.keySet());
         Entity x = result.get("x").asEntity();
         assertEquals("movie", x.type().getLabel().getValue());
     }
 
     @Test
     public void testErrorWhenInsertRelationWithEmptyRolePlayer() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(
                 allOf(containsString("$y"), containsString("id"), containsString("isa"), containsString("sub"))
         );
@@ -615,7 +615,7 @@ public class InsertQueryTest {
 
     @Test
     public void testErrorResourceTypeWithoutDataType() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(
                 allOf(containsString("my-resource"), containsString("datatype"), containsString("resource"))
         );
@@ -624,7 +624,7 @@ public class InsertQueryTest {
 
     @Test
     public void testErrorWhenAddingInstanceOfConcept() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(
                 allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.CONCEPT.getLabel().getValue()))
         );
@@ -633,35 +633,35 @@ public class InsertQueryTest {
 
     @Test
     public void testErrorRecursiveType() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("thingy"), containsString("itself")));
         qb.insert(label("thingy").sub("thingy")).execute();
     }
 
     @Test
     public void testErrorTypeWithoutLabel() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("type"), containsString("label")));
         qb.insert(var().sub("entity")).execute();
     }
 
     @Test
     public void testErrorInsertResourceWithoutValue() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("resource"), containsString("value")));
         qb.insert(var("x").isa("name")).execute();
     }
 
     @Test
     public void testErrorInsertInstanceWithName() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("instance"), containsString("name"), containsString("abc")));
         qb.insert(label("abc").isa("movie")).execute();
     }
 
     @Test
     public void testErrorInsertResourceWithName() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("instance"), containsString("name"), containsString("bobby")));
         qb.insert(label("bobby").val("bob").isa("name")).execute();
     }
@@ -710,49 +710,49 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertInstanceWithoutType() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("isa")));
         qb.insert(var().has("name", "Bob")).execute();
     }
 
     @Test
     public void testInsertRuleWithoutLhs() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("lhs")));
         qb.insert(var().isa("inference-rule").rhs(var("x").isa("movie"))).execute();
     }
 
     @Test
     public void testInsertRuleWithoutRhs() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("rhs")));
         qb.insert(var().isa("inference-rule").lhs(var("x").isa("movie"))).execute();
     }
 
     @Test
     public void testInsertNonRuleWithLhs() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("lhs", RULE.getLabel()));
-        qb.insert(var().isa("movie").lhs(var("x"))).execute();
+        qb.insert(var().isa("movie").lhs(var("x").pattern())).execute();
     }
 
     @Test
     public void testInsertNonRuleWithRHS() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("rhs", RULE.getLabel()));
-        qb.insert(label("thing").sub("movie").rhs(var("x"))).execute();
+        qb.insert(label("thing").sub("movie").rhs(var("x").pattern())).execute();
     }
 
     @Test
     public void testErrorWhenNonExistentResource() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("nothing");
         qb.insert(label("blah this").sub("entity").has("nothing")).execute();
     }
 
     @Test
     public void whenInsertingMetaType_Throw() {
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.INSERT_METATYPE.getMessage("my-metatype", "concept"));
         qb.insert(label("my-metatype").sub("concept")).execute();
     }
@@ -796,7 +796,7 @@ public class InsertQueryTest {
 
         // Delete all vars
         for (VarPattern var : vars) {
-            qb.match(var).delete(var(var.admin().getVarName())).execute();
+            qb.match(var).delete(var.admin().getVarName()).execute();
         }
 
         // Make sure vars don't exist

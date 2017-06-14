@@ -23,24 +23,24 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.SNBGraph;
-
+import ai.grakn.util.GraknTestSetup;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
@@ -56,7 +56,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.and;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -68,41 +67,41 @@ import static org.junit.Assume.assumeTrue;
 public class ReasonerTest {
 
     @ClassRule
-    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext snbGraph2 = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext snbGraph2 = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext snbGraph3 = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext snbGraph3 = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSnbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext testSnbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testGeoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext testGeoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext nonMaterialisedGeoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext nonMaterialisedGeoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext nonMaterialisedSnbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext nonMaterialisedSnbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext geoGraph2 = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext geoGraph2 = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext geoGraph3 = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext geoGraph3 = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
     public static void onStartup() throws Exception {
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     @Test
@@ -200,7 +199,7 @@ public class ReasonerTest {
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                         "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
         Pattern head = Graql.and(graph.graql().parsePatterns("($x, $z) isa is-located-in;"));
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         Rule rule = graph.admin().getMetaRuleInference().putRule(body, head);
         InferenceRule irule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
     }
@@ -210,7 +209,7 @@ public class ReasonerTest {
         GraknGraph graph = testGeoGraph.graph();
         Pattern body = Graql.and(graph.graql().parsePatterns("$x isa country;"));
         Pattern head = Graql.and(graph.graql().parsePatterns("$x has name contains 'land';"));
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         Rule rule = graph.admin().getMetaRuleInference().putRule(body, head);
         InferenceRule irule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
     }
@@ -660,7 +659,7 @@ public class ReasonerTest {
         MatchQuery query2 = iqb.parse(queryString2);
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers answers2 = queryAnswers(query2);
-        assertEquals(answers.filterVars(Sets.newHashSet(Var.of("x"))), answers2);
+        assertEquals(answers.filterVars(Sets.newHashSet(Graql.var("x"))), answers2);
     }
 
     @Test
@@ -730,8 +729,8 @@ public class ReasonerTest {
 
         final int offset = 4;
         List<Answer> fullAnswers = query.execute();
-        List<Answer> answers = query.orderBy(Var.of("a")).execute();
-        List<Answer> answers2 = query.orderBy(Var.of("a")).offset(offset).execute();
+        List<Answer> answers = query.orderBy(Graql.var("a")).execute();
+        List<Answer> answers2 = query.orderBy(Graql.var("a")).offset(offset).execute();
 
         assertEquals(fullAnswers.size(), answers2.size() + offset);
         assertEquals(answers.size(), answers2.size() + offset);
