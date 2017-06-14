@@ -432,8 +432,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     *
-     * @return
+     * @return substitution obtained from all id predicates (including internal) in the query
      */
     Answer getSubstitution(){
         Set<IdPredicate> predicates = this.getTypeConstraints().stream()

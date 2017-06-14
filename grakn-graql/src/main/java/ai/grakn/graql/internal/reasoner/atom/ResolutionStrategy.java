@@ -66,7 +66,7 @@ public final class ResolutionStrategy {
     /**
      * priority modifier if a given atom is recursive atom
      */
-    public static final int RECURSIVE_ATOM = -10;
+    public static final int RECURSIVE_ATOM = -5;
 
     /**
      * priority modifier for guard (type atom) the atom has
