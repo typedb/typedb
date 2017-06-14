@@ -26,13 +26,26 @@ import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.QueryBuilder;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import ai.grakn.graql.internal.printer.Printers;
-import static ai.grakn.test.GraknTestEnv.usingTitan;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.SparkContext;
 import ai.grakn.test.engine.controller.TasksControllerTest.JsonMapper;
+import ai.grakn.util.GraknTestSetup;
+import ai.grakn.util.REST;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.response.Response;
+import mjson.Json;
+import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.FixMethodOrder;
+import org.junit.Test;
+import org.junit.runners.MethodSorters;
+import java.util.Collections;
+import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
+import static ai.grakn.graql.internal.hal.HALUtils.ID_PROPERTY;
+import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
-import ai.grakn.util.REST;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
@@ -45,10 +58,6 @@ import static ai.grakn.util.REST.Response.EXCEPTION;
 import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
 import static ai.grakn.util.REST.Response.Graql.RESPONSE;
 import com.codahale.metrics.MetricRegistry;
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.response.Response;
-import java.util.Collections;
-import mjson.Json;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -58,11 +67,6 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.junit.Assume.assumeTrue;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -72,6 +76,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 
 //TODO Run in name order until TP Bug #13730 Fixed
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -94,7 +99,7 @@ public class GraqlControllerGETTest {
     }).port(4567); // TODO: Don't use the default port when bug #15130 is fixed
 
     @Before
-    public void setupMock(){
+    public void setupMock() {
         mockQueryBuilder = mock(QueryBuilder.class);
 
         when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
@@ -113,7 +118,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatch_QueryIsExecuted(){
+    public void GETGraqlMatch_QueryIsExecuted() {
         String query = "match $x isa movie;";
         sendGET(query, APPLICATION_TEXT);
 
@@ -122,14 +127,14 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatch_ResponseStatusIs200(){
+    public void GETGraqlMatch_ResponseStatusIs200() {
         Response response = sendGET(APPLICATION_TEXT);
 
         assertThat(response.statusCode(), equalTo(200));
     }
 
     @Test
-    public void GETMalformedGraqlMatch_ResponseStatusCodeIs400(){
+    public void GETMalformedGraqlMatch_ResponseStatusCodeIs400() {
         String query = "match $x isa ;";
         Response response = sendGET(query, APPLICATION_TEXT);
 
@@ -137,7 +142,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETMalformedGraqlMatch_ResponseExceptionContainsSyntaxError(){
+    public void GETMalformedGraqlMatch_ResponseExceptionContainsSyntaxError() {
         String query = "match $x isa ;";
         Response response = sendGET(query, APPLICATION_TEXT);
 
@@ -146,7 +151,7 @@ public class GraqlControllerGETTest {
 
     // This is so that the word "Exception" does not appear on the dashboard when there is a syntax error
     @Test
-    public void GETMalformedGraqlMatch_ResponseExceptionDoesNotContainWordException(){
+    public void GETMalformedGraqlMatch_ResponseExceptionDoesNotContainWordException() {
         String query = "match $x isa ;";
         Response response = sendGET(query, APPLICATION_TEXT);
 
@@ -154,7 +159,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchWithInvalidAcceptType_ResponseStatusIs406(){
+    public void GETGraqlMatchWithInvalidAcceptType_ResponseStatusIs406() {
         Response response = sendGET("invalid");
 
         assertThat(response.statusCode(), equalTo(406));
@@ -162,7 +167,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchWithNoKeyspace_ResponseStatusIs400(){
+    public void GETGraqlMatchWithNoKeyspace_ResponseStatusIs400() {
         Response response = RestAssured.with().get(REST.WebPath.Graph.GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
@@ -170,7 +175,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchWithNoQuery_ResponseStatusIs400(){
+    public void GETGraqlMatchWithNoQuery_ResponseStatusIs400() {
         Response response = RestAssured.with()
                 .queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .get(REST.WebPath.Graph.GRAQL);
@@ -180,7 +185,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchNoMaterialise_ResponseStatusIs400(){
+    public void GETGraqlMatchNoMaterialise_ResponseStatusIs400() {
         Response response = RestAssured.with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(QUERY, "match $x isa movie;")
                 .queryParam(INFER, true)
@@ -192,21 +197,21 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchWithReasonerTrue_ReasonerIsOnWhenExecuting(){
+    public void GETGraqlMatchWithReasonerTrue_ReasonerIsOnWhenExecuting() {
         sendGET("match $x isa movie;", APPLICATION_TEXT, true, true, 0);
 
         verify(mockQueryBuilder).infer(booleanThat(arg -> arg));
     }
 
     @Test
-    public void GETGraqlMatchWithReasonerFalse_ReasonerIsOffWhenExecuting(){
+    public void GETGraqlMatchWithReasonerFalse_ReasonerIsOffWhenExecuting() {
         sendGET("match $x isa movie;", APPLICATION_TEXT, false, true, 0);
 
         verify(mockQueryBuilder).infer(booleanThat(arg -> !arg));
     }
 
     @Test
-    public void GETGraqlMatchWithNoInfer_ResponseStatusIs400(){
+    public void GETGraqlMatchWithNoInfer_ResponseStatusIs400() {
         Response response = RestAssured.with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(QUERY, "match $x isa movie;")
                 .accept(APPLICATION_TEXT)
@@ -217,31 +222,31 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchWithMaterialiseFalse_MaterialiseIsOffWhenExecuting(){
+    public void GETGraqlMatchWithMaterialiseFalse_MaterialiseIsOffWhenExecuting() {
         sendGET("match $x isa movie;", APPLICATION_TEXT, false, false, 0);
 
         verify(mockQueryBuilder).materialise(booleanThat(arg -> !arg));
     }
 
     @Test
-    public void GETGraqlMatchWithMaterialiseTrue_MaterialiseIsOnWhenExecuting(){
+    public void GETGraqlMatchWithMaterialiseTrue_MaterialiseIsOnWhenExecuting() {
         sendGET("match $x isa movie;", APPLICATION_TEXT, false, true, 0);
 
         verify(mockQueryBuilder).materialise(booleanThat(arg -> arg));
     }
 
     @Test
-    public void GETGraqlMatchWithHALTypeAndNumberEmbedded1_ResponsesContainAtMost1Concept(){
+    public void GETGraqlMatchWithHALTypeAndNumberEmbedded1_ResponsesContainAtMost1Concept() {
         Response response =
-                sendGET("match $x isa movie;", APPLICATION_HAL, false, true,1);
+                sendGET("match $x isa movie;", APPLICATION_HAL, false, true, 1);
 
         jsonResponse(response).asJsonList().forEach(e -> {
-             assertThat(e.asJsonMap().get("_embedded").asJsonMap().size(), lessThanOrEqualTo(1));
+            assertThat(e.asJsonMap().get("_embedded").asJsonMap().size(), lessThanOrEqualTo(1));
         });
     }
 
     @Test
-    public void GETGraqlMatchWithHALType_ResponseIsCorrectHal(){
+    public void GETGraqlMatchWithHALType_ResponseIsCorrectHal() {
         String queryString = "match $x isa movie;";
         Response response = sendGET(queryString, APPLICATION_HAL);
 
@@ -251,21 +256,21 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchWithHALType_ResponseContentTypeIsHal(){
+    public void GETGraqlMatchWithHALType_ResponseContentTypeIsHal() {
         Response response = sendGET(APPLICATION_HAL);
 
         assertThat(response.contentType(), equalTo(APPLICATION_HAL));
     }
 
     @Test
-    public void GETGraqlMatchWithHALTypeAndEmptyResponse_ResponseIsEmptyJsonArray(){
+    public void GETGraqlMatchWithHALTypeAndEmptyResponse_ResponseIsEmptyJsonArray() {
         Response response = sendGET("match $x isa runtime;", APPLICATION_HAL);
 
         assertThat(jsonResponse(response), equalTo(Json.array()));
     }
 
     @Test
-    public void GETGraqlMatchWithHALType_ResponseContainsOriginalQuery(){
+    public void GETGraqlMatchWithHALType_ResponseContainsOriginalQuery() {
         String query = "match $x isa movie;";
         Response response = sendGET(query, APPLICATION_HAL);
 
@@ -273,14 +278,14 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchWithTextType_ResponseContentTypeIsGraql(){
+    public void GETGraqlMatchWithTextType_ResponseContentTypeIsGraql() {
         Response response = sendGET(APPLICATION_TEXT);
 
         assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
     }
 
     @Test
-    public void GETGraqlMatchWithTextType_ResponseIsCorrectGraql(){
+    public void GETGraqlMatchWithTextType_ResponseIsCorrectGraql() {
         Response response = sendGET(APPLICATION_TEXT);
 
         assertThat(stringResponse(response).length(), greaterThan(0));
@@ -288,7 +293,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchWithTextType_ResponseContainsOriginalQuery(){
+    public void GETGraqlMatchWithTextType_ResponseContainsOriginalQuery() {
         String query = "match $x isa movie;";
         Response response = sendGET(APPLICATION_TEXT);
 
@@ -296,21 +301,21 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchWithTextTypeAndEmptyResponse_ResponseIsEmptyString(){
+    public void GETGraqlMatchWithTextTypeAndEmptyResponse_ResponseIsEmptyString() {
         Response response = sendGET("match $x isa \"runtime\";", APPLICATION_TEXT);
 
         assertThat(stringResponse(response), isEmptyString());
     }
 
     @Test
-    public void GETGraqlMatchWithGraqlJsonType_ResponseContentTypeIsGraqlJson(){
+    public void GETGraqlMatchWithGraqlJsonType_ResponseContentTypeIsGraqlJson() {
         Response response = sendGET(APPLICATION_JSON_GRAQL);
 
         assertThat(response.contentType(), equalTo(APPLICATION_JSON_GRAQL));
     }
 
     @Test
-    public void GETGraqlMatchWithGraqlJsonType_ResponseIsCorrectGraql(){
+    public void GETGraqlMatchWithGraqlJsonType_ResponseIsCorrectGraql() {
         String query = "match $x isa movie;";
         Response response = sendGET(APPLICATION_JSON_GRAQL);
 
@@ -320,7 +325,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchWithGraqlJsonType_ResponseContainsOriginalQuery(){
+    public void GETGraqlMatchWithGraqlJsonType_ResponseContainsOriginalQuery() {
         String query = "match $x isa movie;";
         Response response = sendGET(APPLICATION_JSON_GRAQL);
 
@@ -328,14 +333,14 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchWithGraqlJsonTypeAndEmptyResponse_ResponseIsEmptyJsonObject(){
+    public void GETGraqlMatchWithGraqlJsonTypeAndEmptyResponse_ResponseIsEmptyJsonObject() {
         Response response = sendGET("match $x isa \"runtime\";", APPLICATION_JSON_GRAQL);
 
         assertThat(jsonResponse(response), equalTo(Json.array()));
     }
 
     @Test
-    public void GETGraqlInsert_ResponseExceptionContainsReadOnlyAllowedMessage(){
+    public void GETGraqlInsert_ResponseExceptionContainsReadOnlyAllowedMessage() {
         String query = "insert $x isa movie;";
         Response response = sendGET(query, APPLICATION_TEXT);
 
@@ -343,7 +348,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlInsert_ResponseStatusCodeIs405NotSupported(){
+    public void GETGraqlInsert_ResponseStatusCodeIs405NotSupported() {
         String query = "insert $x isa movie;";
         Response response = sendGET(query, APPLICATION_TEXT);
 
@@ -351,7 +356,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlAggregateWithHalType_ResponseStatusCodeIs406(){
+    public void GETGraqlAggregateWithHalType_ResponseStatusCodeIs406() {
         String query = "match $x isa movie; aggregate count;";
         Response response = sendGET(query, APPLICATION_HAL);
 
@@ -359,7 +364,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlAggregateWithTextType_ResponseStatusIs200(){
+    public void GETGraqlAggregateWithTextType_ResponseStatusIs200() {
         String query = "match $x isa movie; aggregate count;";
         Response response = sendGET(query, APPLICATION_TEXT);
 
@@ -367,7 +372,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlAggregateWithTextType_ResponseIsCorrect(){
+    public void GETGraqlAggregateWithTextType_ResponseIsCorrect() {
         String query = "match $x isa movie; aggregate count;";
         Response response = sendGET(query, APPLICATION_TEXT);
 
@@ -379,7 +384,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlAggregateWithTextType_ResponseContentTypeIsText(){
+    public void GETGraqlAggregateWithTextType_ResponseContentTypeIsText() {
         String query = "match $x isa movie; aggregate count;";
         Response response = sendGET(query, APPLICATION_TEXT);
 
@@ -387,7 +392,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlCompute_ResponseContainsOriginalQuery(){
+    public void GETGraqlCompute_ResponseContainsOriginalQuery() {
         String query = "compute count in movie;";
         Response response = sendGET(query, APPLICATION_TEXT);
 
@@ -395,7 +400,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlComputeWithTextType_ResponseContentTypeIsText(){
+    public void GETGraqlComputeWithTextType_ResponseContentTypeIsText() {
         String query = "compute count in movie;";
         Response response = sendGET(query, APPLICATION_TEXT);
 
@@ -403,7 +408,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlComputeWithTextType_ResponseStatusIs200(){
+    public void GETGraqlComputeWithTextType_ResponseStatusIs200() {
         String query = "compute count in movie;";
         Response response = sendGET(query, APPLICATION_TEXT);
 
@@ -411,7 +416,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlComputeWithTextType_ResponseIsCorrect(){
+    public void GETGraqlComputeWithTextType_ResponseIsCorrect() {
         String query = "compute count in movie;";
         Response response = sendGET(query, APPLICATION_TEXT);
 
@@ -420,7 +425,7 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlComputeWithHALType_ResponseStatusIs406(){
+    public void GETGraqlComputeWithHALType_ResponseStatusIs406() {
         String query = "compute count in movie;";
         Response response = sendGET(query, APPLICATION_HAL);
 
@@ -430,8 +435,8 @@ public class GraqlControllerGETTest {
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
-    public void ZGETGraqlComputePathWithTextType_ResponseIsCorrect(){
-        assumeTrue(usingTitan());
+    public void ZGETGraqlComputePathWithTextType_ResponseIsCorrect() {
+        assumeTrue(GraknTestSetup.usingTitan());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -445,8 +450,8 @@ public class GraqlControllerGETTest {
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
-    public void ZGETGraqlComputePathWithHALType_ResponseContentTypeIsHAL(){
-        assumeTrue(usingTitan());
+    public void ZGETGraqlComputePathWithHALType_ResponseContentTypeIsHAL() {
+        assumeTrue(GraknTestSetup.usingTitan());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -459,8 +464,8 @@ public class GraqlControllerGETTest {
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
-    public void ZGETGraqlComputePathWithHALType_ResponseStatusIs200(){
-        assumeTrue(usingTitan());
+    public void ZGETGraqlComputePathWithHALType_ResponseStatusIs200() {
+        assumeTrue(GraknTestSetup.usingTitan());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -473,8 +478,8 @@ public class GraqlControllerGETTest {
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
-    public void ZGETGraqlComputePathWithHALType_ResponseIsCorrect(){
-        assumeTrue(usingTitan());
+    public void ZGETGraqlComputePathWithHALType_ResponseIsNotEmpty() {
+        assumeTrue(GraknTestSetup.usingTitan());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -487,7 +492,25 @@ public class GraqlControllerGETTest {
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
-    public void ZGETGraqlComputePathWithHALTypeAndNoPath_ResponseIsEmptyJson(){
+    public void ZGETGraqlComputePathWithHALType_ResponseContainsValidHALObjects() {
+        assumeTrue(GraknTestSetup.usingTitan());
+
+        String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
+        String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
+
+        String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
+        Response response = sendGET(query, APPLICATION_HAL);
+
+        jsonResponse(response).asJsonList().forEach(object -> {
+            assertTrue(object.has(ID_PROPERTY));
+            assertTrue(object.has(BASETYPE_PROPERTY));
+            assertTrue(object.has(TYPE_PROPERTY));
+        });
+    }
+
+    //TODO Prefix with Z to run last until TP Bug #13730 Fixed
+    @Test
+    public void ZGETGraqlComputePathWithHALTypeAndNoPath_ResponseIsEmptyJson() {
         String fromId = graphContext.graph().getResourcesByValue("Apocalypse Now").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
 
@@ -498,16 +521,16 @@ public class GraqlControllerGETTest {
         assertThat(jsonResponse(response), equalTo(Json.array()));
     }
 
-    private Response sendGET(String acceptType){
+    private Response sendGET(String acceptType) {
         return sendGET("match $x isa movie;", acceptType, false, false, -1);
     }
 
-    private Response sendGET(String match, String acceptType){
+    private Response sendGET(String match, String acceptType) {
         return sendGET(match, acceptType, false, false, -1);
     }
 
     private Response sendGET(String match, String acceptType, boolean reasonser,
-                             boolean materialise, int limitEmbedded){
+                             boolean materialise, int limitEmbedded) {
         return RestAssured.with()
                 .queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(QUERY, match)
@@ -518,19 +541,19 @@ public class GraqlControllerGETTest {
                 .get(REST.WebPath.Graph.GRAQL);
     }
 
-    protected static String exception(Response response){
+    protected static String exception(Response response) {
         return response.getBody().as(Json.class, jsonMapper).at(EXCEPTION).asString();
     }
 
-    protected static String stringResponse(Response response){
+    protected static String stringResponse(Response response) {
         return response.getBody().as(Json.class, jsonMapper).at(RESPONSE).asString();
     }
 
-    protected static Json jsonResponse(Response response){
+    protected static Json jsonResponse(Response response) {
         return response.getBody().as(Json.class, jsonMapper).at(RESPONSE);
     }
 
-    protected static String originalQuery(Response response){
+    protected static String originalQuery(Response response) {
         return response.getBody().as(Json.class, jsonMapper).at(ORIGINAL_QUERY).asString();
     }
 }

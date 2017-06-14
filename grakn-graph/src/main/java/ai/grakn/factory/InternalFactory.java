@@ -50,6 +50,4 @@ public interface InternalFactory<T extends Graph> {
      * @return An instance of a tinker graph
      */
     T getTinkerPopGraph(boolean batchLoading);
-
-
 }

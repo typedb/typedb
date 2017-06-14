@@ -24,6 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
@@ -56,11 +57,11 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
         LOGGER.info("ShortestPathVertexProgram is called");
         long startTime = System.currentTimeMillis();
 
-        if (sourceId == null) throw new IllegalStateException(ErrorMessage.NO_SOURCE.getMessage());
-        if (destinationId == null) throw new IllegalStateException(ErrorMessage.NO_DESTINATION.getMessage());
+        if (sourceId == null) throw GraqlQueryException.noPathSource();
+        if (destinationId == null) throw GraqlQueryException.noPathDestination();
         initSubGraph();
         if (!verticesExistInSubgraph(sourceId, destinationId)) {
-            throw new IllegalStateException(ErrorMessage.INSTANCE_DOES_NOT_EXIST.getMessage());
+            throw GraqlQueryException.instanceDoesNotExist();
         }
         if (sourceId.equals(destinationId)) {
             return Optional.of(Collections.singletonList(graph.get().getConcept(sourceId)));

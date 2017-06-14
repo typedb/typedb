@@ -20,11 +20,10 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-
-import static ai.grakn.util.Schema.ConceptProperty.IS_SHARD;
 
 class NotInternalFragment extends AbstractFragment {
 
@@ -34,7 +33,7 @@ class NotInternalFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.not(__.has(IS_SHARD.name(), true));
+        traversal.not(__.hasLabel(Schema.BaseType.SHARD.name()));
     }
 
     @Override

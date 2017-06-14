@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -88,14 +89,14 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         RoleType roleType = insertQueryExecutor.getConcept(role).asRoleType();
         concept.asType().plays(roleType);
     }
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        TypeLabel roleLabel = role.getTypeLabel().orElseThrow(() -> failDelete(this));
+        TypeLabel roleLabel = role.getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
         concept.asType().deletePlays(graph.getType(roleLabel));
     }
 

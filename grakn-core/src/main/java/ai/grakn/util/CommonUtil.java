@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -79,6 +80,21 @@ public class CommonUtil {
     @SafeVarargs
     public static <T> Optional<T> optionalOr(Optional<T>... options) {
         return Stream.of(options).flatMap(CommonUtil::optionalToStream).findFirst();
+    }
+
+    @CheckReturnValue
+    public static RuntimeException unreachableStatement(Throwable cause) {
+        return unreachableStatement(null, cause);
+    }
+
+    @CheckReturnValue
+    public static RuntimeException unreachableStatement(String message) {
+        return unreachableStatement(message, null);
+    }
+
+    @CheckReturnValue
+    public static RuntimeException unreachableStatement(String message, Throwable cause) {
+        return new RuntimeException("Statement expected to be unreachable: " + message, cause);
     }
 
     public static <T> Collector<T, ?, ImmutableSet<T>> toImmutableSet() {

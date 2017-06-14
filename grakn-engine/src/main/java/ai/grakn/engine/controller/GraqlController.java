@@ -43,6 +43,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
@@ -60,14 +62,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.stream.Collectors;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
@@ -75,6 +69,15 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Service;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -107,9 +110,8 @@ public class GraqlController {
 
         //TODO The below exceptions are very broad. They should be revised after we improve exception
         //TODO hierarchies in Graql and Graph
-        // Handle graql syntax exceptions
-        spark.exception(IllegalStateException.class, (e, req, res) -> handleError(400, e, res));
-        spark.exception(IllegalArgumentException.class, (e, req, res) -> handleError(400, e, res));
+        spark.exception(GraqlQueryException.class, (e, req, res) -> handleError(400, e, res));
+        spark.exception(GraqlSyntaxException.class, (e, req, res) -> handleError(400, e, res));
 
         // Handle invalid type castings and invalid insertions
         spark.exception(GraphOperationException.class, (e, req, res) -> handleError(422, e, res));
@@ -320,7 +322,7 @@ public class GraqlController {
             ((PathQuery) query).execute()
                     .orElse(new ArrayList<>())
                     .forEach(c -> array.add(
-                            renderHALConceptData(c, 0, keyspace, 0, numberEmbeddedComponents)));
+                            Json.read(renderHALConceptData(c, 0, keyspace, 0, numberEmbeddedComponents))));
 
             return array;
         }

@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -29,7 +30,8 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.property.RegexAtom;
-import ai.grakn.graql.internal.util.StringConverter;
+import ai.grakn.util.StringUtil;
+
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -64,7 +66,7 @@ public class RegexProperty extends AbstractVarProperty implements UniqueVarPrope
 
     @Override
     public String getProperty() {
-        return StringConverter.valueToString(regex);
+        return StringUtil.valueToString(regex);
     }
 
     @Override
@@ -73,7 +75,7 @@ public class RegexProperty extends AbstractVarProperty implements UniqueVarPrope
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         concept.asResourceType().setRegex(regex);
     }
 

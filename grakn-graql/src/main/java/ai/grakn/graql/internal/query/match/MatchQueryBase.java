@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -34,7 +35,6 @@ import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -71,7 +71,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
      */
     public MatchQueryBase(Conjunction<PatternAdmin> pattern) {
         if (pattern.getPatterns().size() == 0) {
-            throw new IllegalArgumentException(ErrorMessage.NO_PATTERNS.getMessage());
+            throw GraqlQueryException.noPatterns();
         }
 
         this.pattern = pattern;
@@ -81,9 +81,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
     @Override
     public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
-        GraknGraph graph = optionalGraph.orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
-        );
+        GraknGraph graph = optionalGraph.orElseThrow(GraqlQueryException::noGraph);
 
         this.typeLabels = getAllTypeLabels(graph);
 
@@ -122,7 +120,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
     @Override
     public Set<Type> getTypes() {
-        throw new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage());
+        throw GraqlQueryException.noGraph();
     }
 
     @Override

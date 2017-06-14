@@ -18,7 +18,6 @@
 
 package ai.grakn.test.migration.sql;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
@@ -59,7 +58,7 @@ public class SQLMigratorTest {
         factory = engine.factoryWithNewKeyspace();
         GraknGraph graph = factory.open(GraknTxType.WRITE);
         graph.close();
-        migrator = Migrator.to(Grakn.DEFAULT_URI, graph.getKeyspace());
+        migrator = Migrator.to(engine.uri(), graph.getKeyspace());
     }
 
     @Test

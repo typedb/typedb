@@ -26,6 +26,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
 
+import ai.grakn.util.GraknTestSetup;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -36,21 +37,19 @@ import static ai.grakn.graql.Graql.and;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-import static ai.grakn.test.GraknTestEnv.*;
-
 public class CWInferenceTest {
     private static QueryBuilder qb;
     private static QueryBuilder iqb;
 
     @ClassRule
-    public static GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(usingTinker());
+    public static GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static GraphContext cwGraph2 = GraphContext.preLoad(CWGraph.get()).assumeTrue(usingTinker());
+    public static GraphContext cwGraph2 = GraphContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
         qb = cwGraph.graph().graql().infer(false);
         iqb = cwGraph.graph().graql().infer(true).materialise(false);
     }

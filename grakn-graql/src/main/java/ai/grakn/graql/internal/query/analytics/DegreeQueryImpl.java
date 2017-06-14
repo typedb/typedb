@@ -26,7 +26,6 @@ import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
@@ -56,12 +55,6 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
         long startTime = System.currentTimeMillis();
         initSubGraph();
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
-        ofTypeLabels.forEach(type -> {
-            if (!subTypeLabels.contains(type)) {
-                throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                        .getMessage(type));
-            }
-        });
 
         ComputerResult result;
 

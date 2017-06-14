@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graphs.CWGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -32,6 +33,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
@@ -41,6 +43,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.SNBGraph;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -60,7 +63,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
@@ -71,35 +73,35 @@ import static org.junit.Assume.assumeTrue;
 public class AtomicTest {
 
     @ClassRule
-    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext genealogyOntology = GraphContext.preLoad("genealogy/ontology.gql").assumeTrue(usingTinker());
+    public static final GraphContext genealogyOntology = GraphContext.preLoad("genealogy/ontology.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext typeInferenceSet = GraphContext.preLoad("typeInferenceTest.gql").assumeTrue(usingTinker());
+    public static final GraphContext typeInferenceSet = GraphContext.preLoad("typeInferenceTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilitySet = GraphContext.preLoad("ruleApplicabilityTest.gql").assumeTrue(usingTinker());
+    public static final GraphContext ruleApplicabilitySet = GraphContext.preLoad("ruleApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext resourceApplicabilitySet = GraphContext.preLoad("resourceApplicabilityTest.gql").assumeTrue(usingTinker());
+    public static final GraphContext resourceApplicabilitySet = GraphContext.preLoad("resourceApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilitySetWithTypes = GraphContext.preLoad("ruleApplicabilityTestWithTypes.gql").assumeTrue(usingTinker());
+    public static final GraphContext ruleApplicabilitySetWithTypes = GraphContext.preLoad("ruleApplicabilityTestWithTypes.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilityInstanceTypesSet = GraphContext.preLoad("testSet19.gql").assumeTrue(usingTinker());
+    public static final GraphContext ruleApplicabilityInstanceTypesSet = GraphContext.preLoad("testSet19.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilitySingleRoleSet = GraphContext.preLoad("testSet22.gql").assumeTrue(usingTinker());
+    public static final GraphContext ruleApplicabilitySingleRoleSet = GraphContext.preLoad("testSet22.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     @org.junit.Rule
@@ -603,8 +605,8 @@ public class AtomicTest {
                 graph.getType(TypeLabel.of("relation1")),
                 graph.getType(TypeLabel.of("relation3"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
-        List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
 
         assertTrue(CollectionUtils.isEqualCollection(relationTypes, possibleTypes));
         assertTrue(CollectionUtils.isEqualCollection(relationTypes2, possibleTypes));
@@ -626,8 +628,8 @@ public class AtomicTest {
         List<RelationType> possibleTypes = Collections.singletonList(
                 graph.getType(TypeLabel.of("relation1"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
-        List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationTypes, possibleTypes);
         assertEquals(relationTypes2, possibleTypes);
@@ -648,7 +650,7 @@ public class AtomicTest {
                 graph.getType(TypeLabel.of("relation3"))
         );
 
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         assertTrue(CollectionUtils.isEqualCollection(relationTypes, possibleTypes));
         assertEquals(atom.getType(), null);
     }
@@ -663,7 +665,7 @@ public class AtomicTest {
         List<RelationType> possibleTypes = Collections.singletonList(
                 graph.getType(TypeLabel.of("relation3"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationTypes, possibleTypes);
         assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation3")));
@@ -683,8 +685,8 @@ public class AtomicTest {
                 graph.getType(TypeLabel.of("relation1")),
                 graph.getType(TypeLabel.of("relation3"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
-        List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
 
         assertTrue(CollectionUtils.isEqualCollection(relationTypes, possibleTypes));
         assertTrue(CollectionUtils.isEqualCollection(relationTypes2, possibleTypes));
@@ -703,7 +705,7 @@ public class AtomicTest {
         List<RelationType> possibleTypes = Collections.singletonList(
                 graph.getType(TypeLabel.of("relation3"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationTypes, possibleTypes);
         assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation3")));
@@ -716,7 +718,7 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
 
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertThat(relationTypes, empty());
         assertEquals(atom.getType(), null);
@@ -729,7 +731,7 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
 
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertThat(relationTypes, empty());
         assertEquals(atom.getType(), null);
@@ -745,7 +747,7 @@ public class AtomicTest {
         List<RelationType> possibleTypes = Collections.singletonList(
                 graph.getType(TypeLabel.of("relation1"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         assertEquals(relationTypes, possibleTypes);
         assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation1")));
     }
@@ -760,7 +762,7 @@ public class AtomicTest {
         List<RelationType> possibleTypes = Collections.singletonList(
                 graph.getType(TypeLabel.of("relation1"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationTypes, possibleTypes);
         assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation1")));
@@ -777,7 +779,7 @@ public class AtomicTest {
                 graph.getType(TypeLabel.of("relation3")),
                 graph.getType(TypeLabel.of("relation2"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         assertEquals(relationTypes, possibleTypes);
         assertEquals(atom.getType(), null);
     }
@@ -789,9 +791,46 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
 
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes();
+        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         assertThat(relationTypes, empty());
         assertEquals(atom.getType(), null);
+    }
+
+    @Test
+    public void testUnification_RelationWithMetaRolesAndIds(){
+        GraknGraph graph = ruleApplicabilitySet.graph();
+        String relation = "{(role: $x, role: $y) isa relation3; $y id '15';}";
+        String relation2 = "{(role: $z, role: $v) isa relation3; $z id '15';}";
+        String relation3 = "{(role: $z, role: $v) isa relation3; $v id '15';}";
+
+        Atom atom = ReasonerQueries.atomic(conjunction(relation, graph), graph).getAtom();
+        Atom atom2 = ReasonerQueries.atomic(conjunction(relation2, graph), graph).getAtom();
+        Atom atom3 = ReasonerQueries.atomic(conjunction(relation3, graph), graph).getAtom();
+
+        Unifier unifier = atom.getUnifier(atom2);
+        Unifier unifier2 = atom2.getUnifier(atom);
+
+        Unifier unifier3 = atom.getUnifier(atom3);
+        Unifier unifier4 = atom3.getUnifier(atom);
+
+        Unifier correctUnifier = new UnifierImpl(
+                ImmutableMap.of(
+                        Graql.var("x"), Graql.var("v"),
+                        Graql.var("y"), Graql.var("z"))
+        );
+        Unifier correctUnifier2 = correctUnifier.inverse();
+
+        Unifier correctUnifier3 = new UnifierImpl(
+                ImmutableMap.of(
+                        Graql.var("x"), Graql.var("z"),
+                        Graql.var("y"), Graql.var("v"))
+        );
+        Unifier correctUnifier4 = correctUnifier3.inverse();
+
+        assertTrue(unifier.toString(), unifier.containsAll(correctUnifier));
+        assertTrue(unifier2.toString(), unifier2.containsAll(correctUnifier2));
+        assertTrue(unifier3.toString(), unifier3.containsAll(correctUnifier3));
+        assertTrue(unifier4.toString(), unifier4.containsAll(correctUnifier4));
     }
 
     @Test
@@ -950,7 +989,7 @@ public class AtomicTest {
     public void testWhenCreatingQueryWithNonexistentType_ExceptionIsThrown(){
         GraknGraph graph = snbGraph.graph();
         String patternString = "{$x isa someType;}";
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
     }
 

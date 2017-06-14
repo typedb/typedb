@@ -13,10 +13,10 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.engine.postprocessing.ResourceDeduplicationTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.test.EngineContext;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.checkUnique;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.indexOf;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
 import java.util.function.Consumer;
@@ -66,7 +66,7 @@ public class ResourceDeduplicationMapReduceIT {
     
     @BeforeClass
     public static void onlyRunOnTinker(){
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     private String keyspace() {
@@ -80,7 +80,7 @@ public class ResourceDeduplicationMapReduceIT {
     }
 
     private void initTask(ResourceDeduplicationTask task) {
-        task.initialize(checkpoint -> { throw new RuntimeException("No checkpoint expected.");}, configuration(), (x, y) -> {}, null, null,
+        task.initialize(checkpoint -> { throw new RuntimeException("No checkpoint expected.");}, configuration(), (x, y) -> {}, engine.config(), null,
                 new MetricRegistry());
     }
 
@@ -276,7 +276,7 @@ public class ResourceDeduplicationMapReduceIT {
         Assert.assertEquals(new Long(3), task.totalElimintated());
         transact(graph -> {
             Assert.assertTrue(checkUnique(graph, resourceIndex));
-            Resource<String> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, resourceIndex);
+            Resource<String> res = graph.admin().getConcept(Schema.VertexProperty.INDEX, resourceIndex);
             Assert.assertEquals(3, res.ownerInstances().size());
         });        
     }
@@ -304,7 +304,7 @@ public class ResourceDeduplicationMapReduceIT {
         Assert.assertEquals(new Long(1), task.totalElimintated());
         transact(graph -> {
             Assert.assertTrue(checkUnique(graph, resourceIndex));
-            Resource<String> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, resourceIndex);
+            Resource<String> res = graph.admin().getConcept(Schema.VertexProperty.INDEX, resourceIndex);
             Assert.assertEquals(1, res.relations(related1).size());
             Assert.assertEquals(1, res.relations(related2).size());
         });
@@ -352,10 +352,10 @@ public class ResourceDeduplicationMapReduceIT {
         transact(graph -> {
             for (String key : resourceKeys)
                 Assert.assertTrue(checkUnique(graph, key));
-            Resource<String> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, resourceKeys[0]);
+            Resource<String> res = graph.admin().getConcept(Schema.VertexProperty.INDEX, resourceKeys[0]);
             Assert.assertEquals(1, res.relations(related1).size());
             Assert.assertEquals(1, res.relations(related2).size());
-            Resource<Float> fres = graph.admin().getConcept(Schema.ConceptProperty.INDEX, resourceKeys[1]);
+            Resource<Float> fres = graph.admin().getConcept(Schema.VertexProperty.INDEX, resourceKeys[1]);
             Assert.assertEquals(1, fres.relations(related1).size());
             Assert.assertEquals(1, fres.relations(related2).size());
         });
@@ -401,7 +401,7 @@ public class ResourceDeduplicationMapReduceIT {
         Assert.assertEquals(new Long(3), task.totalElimintated());        
         transact(graph -> {
             for (String key : resourceKeys)
-                Assert.assertNull(graph.admin().getConcept(Schema.ConceptProperty.INDEX, key)); 
+                Assert.assertNull(graph.admin().getConcept(Schema.VertexProperty.INDEX, key));
         });
     }
 }

@@ -33,18 +33,16 @@ import ai.grakn.graphs.TransitivityMatrixGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
 
-import java.util.List;
+import ai.grakn.util.GraknTestSetup;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
@@ -53,41 +51,41 @@ public class RecursiveInferenceTest {
 
     // The recursivity graph is loaded to test if possible, but is unused elsewhere
     @ClassRule
-    public static final GraphContext recursivityContext = GraphContext.preLoad("recursivity-test.gql").assumeTrue(usingTinker());
+    public static final GraphContext recursivityContext = GraphContext.preLoad("recursivity-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext recursivitySGContext = GraphContext.preLoad("recursivity-sg-test.gql").assumeTrue(usingTinker());
+    public static final GraphContext recursivitySGContext = GraphContext.preLoad("recursivity-sg-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext recursivityTCContext = GraphContext.preLoad("recursivity-tc-test.gql").assumeTrue(usingTinker());
+    public static final GraphContext recursivityTCContext = GraphContext.preLoad("recursivity-tc-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext recursivityRSGContext = GraphContext.preLoad("recursivity-rsg-test.gql").assumeTrue(usingTinker());
+    public static final GraphContext recursivityRSGContext = GraphContext.preLoad("recursivity-rsg-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ancestorFriendContext = GraphContext.preLoad("ancestor-friend-test.gql").assumeTrue(usingTinker());
+    public static final GraphContext ancestorFriendContext = GraphContext.preLoad("ancestor-friend-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext transitivityContext = GraphContext.preLoad("transitivity-test.gql").assumeTrue(usingTinker());
+    public static final GraphContext transitivityContext = GraphContext.preLoad("transitivity-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ancestorContext = GraphContext.preLoad("ancestor-test.gql").assumeTrue(usingTinker());
+    public static final GraphContext ancestorContext = GraphContext.preLoad("ancestor-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext reachabilityContext = GraphContext.preLoad("reachability-test.gql").assumeTrue(usingTinker());
+    public static final GraphContext reachabilityContext = GraphContext.preLoad("reachability-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext sameGenerationContext = GraphContext.preLoad("same-generation-test.gql").assumeTrue(usingTinker());
+    public static final GraphContext sameGenerationContext = GraphContext.preLoad("same-generation-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext reachabilitySymmetricContext = GraphContext.preLoad("reachability-test-symmetric.gql").assumeTrue(usingTinker());
+    public static final GraphContext reachabilitySymmetricContext = GraphContext.preLoad("reachability-test-symmetric.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @Rule
     public final GraphContext graphContext = GraphContext.empty();
 
     @Before
     public void onStartup() throws Exception {
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
         graphContext.graph().close();
     }
 

@@ -14,23 +14,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
 package ai.grakn.test;
 
 
-import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
-
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.util.JWTHandler;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import org.junit.rules.ExternalResource;
 import spark.Service;
+
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Context that starts spark
@@ -39,13 +33,12 @@ import spark.Service;
 public class SparkContext extends ExternalResource {
 
     private final BiConsumer<Service, GraknEngineConfig> createControllers;
-    private final GraknEngineConfig config = GraknEngineConfig.create();
+    private final GraknEngineConfig config = GraknTestEngineSetup.createTestConfig();
 
     private Service spark;
 
     private SparkContext(BiConsumer<Service, GraknEngineConfig> createControllers) {
         this.createControllers = createControllers;
-        port(getEphemeralPort());
     }
 
     public static SparkContext withControllers(BiConsumer<Service, GraknEngineConfig> createControllers) {
@@ -66,21 +59,15 @@ public class SparkContext extends ExternalResource {
     }
 
     public String uri() {
-        return GraknTestEnv.getUri(config);
+        return config.uri();
     }
 
-    public String host() {
-        return GraknTestEnv.getHost(config);
-    }
     public GraknEngineConfig config() {
         return config;
     }
 
     public void start() {
-        spark = Service.ignite();
-        configureSpark(spark, config, JWTHandler.create(config.getProperty(JWT_SECRET_PROPERTY)));
-
-        GraknTestEnv.setRestAssuredUri(config);
+        spark = GraknTestEngineSetup.startSpark(config);
 
         createControllers.accept(spark, config);
 
@@ -112,11 +99,4 @@ public class SparkContext extends ExternalResource {
         stop();
     }
 
-    private static int getEphemeralPort() {
-        try (ServerSocket socket = new ServerSocket(0)) {
-            return socket.getLocalPort();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

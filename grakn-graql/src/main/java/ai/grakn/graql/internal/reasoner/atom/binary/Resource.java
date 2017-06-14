@@ -205,11 +205,18 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
             priority += vpsPriority;
         }
 
+        boolean reifiesRelation =  getNeighbours()
+                .filter(Atom::isRelation)
+                .filter(at -> at.getVarName().equals(this.getVarName()))
+                .findFirst().isPresent();
+
+        priority += reifiesRelation ? ResolutionStrategy.RESOURCE_REIFIYING_RELATION : 0;
+
         return priority;
     }
 
     @Override
-    public Unifier getUnifier(Atomic parentAtom) {
+    public Unifier getUnifier(Atom parentAtom) {
         if (!(parentAtom instanceof TypeAtom)) return super.getUnifier(parentAtom);
 
         Unifier unifier = new UnifierImpl();

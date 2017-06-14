@@ -32,6 +32,7 @@ import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.SchemaViolationException;
 import org.junit.ClassRule;
@@ -46,7 +47,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
@@ -59,7 +59,7 @@ public class PostProcessingIT {
 
     @Test
     public void checkThatDuplicateResourcesAtLargerScaleAreMerged() throws InvalidGraphException, ExecutionException, InterruptedException {
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         GraknSession session = engine.factoryWithNewKeyspace();
 
@@ -147,7 +147,7 @@ public class PostProcessingIT {
             for (Object object : graph.admin().getMetaResourceType().instances()) {
                 Resource resource = (Resource) object;
                 String index = Schema.generateResourceIndex(resource.type().getLabel(), resource.getValue().toString());
-                assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.ConceptProperty.INDEX, index));
+                assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.VertexProperty.INDEX, index));
             }
         }
     }

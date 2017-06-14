@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
@@ -29,7 +30,6 @@ import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableCollection;
 
 import java.util.Collection;
@@ -40,7 +40,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
-import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
 
 /**
  * A query that will insert a collection of variables into a graph
@@ -64,7 +63,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
         assert(!matchQuery.isPresent() || !graph.isPresent());
 
         if (vars.isEmpty()) {
-            throw new IllegalArgumentException(NO_PATTERNS.getMessage());
+            throw GraqlQueryException.noPatterns();
         }
 
         this.matchQuery = matchQuery;
@@ -106,8 +105,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Stream<Answer> stream() {
-        GraknGraph theGraph =
-                getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
+        GraknGraph theGraph = getGraph().orElseThrow(GraqlQueryException::noGraph);
 
         InsertQueryExecutor executor = new InsertQueryExecutor(vars, theGraph);
 
@@ -130,8 +128,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Set<Type> getTypes() {
-        GraknGraph theGraph =
-                getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
+        GraknGraph theGraph = getGraph().orElseThrow(GraqlQueryException::noGraph);
 
         Set<Type> types = vars.stream()
                 .flatMap(v -> v.getInnerVars().stream())

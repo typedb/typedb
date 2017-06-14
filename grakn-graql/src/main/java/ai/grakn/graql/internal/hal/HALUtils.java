@@ -32,6 +32,7 @@ import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import com.theoryinpractise.halbuilder.api.Representation;
@@ -66,12 +67,12 @@ public class HALUtils {
 
     // - State properties
 
-    final static String ID_PROPERTY = "_id";
-    final static String TYPE_PROPERTY = "_type";
-    final static String BASETYPE_PROPERTY = "_baseType";
-    final static String DIRECTION_PROPERTY = "_direction";
-    final static String VALUE_PROPERTY = "_value";
-    final static String NAME_PROPERTY = "_name";
+    public final static String ID_PROPERTY = "_id";
+    public final static String TYPE_PROPERTY = "_type";
+    public final static String BASETYPE_PROPERTY = "_baseType";
+    public final static String DIRECTION_PROPERTY = "_direction";
+    public final static String VALUE_PROPERTY = "_value";
+    public final static String NAME_PROPERTY = "_name";
 
 
     static Schema.BaseType getBaseType(Instance instance) {
@@ -84,7 +85,7 @@ public class HALUtils {
         } else if (instance.isRule()) {
             return Schema.BaseType.RULE;
         } else {
-            throw new RuntimeException("Unrecognized base type of " + instance);
+            throw CommonUtil.unreachableStatement("Unrecognised base type of " + instance);
         }
     }
 
@@ -102,7 +103,7 @@ public class HALUtils {
         } else if (type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
             return Schema.BaseType.TYPE;
         } else {
-            throw new RuntimeException("Unrecognized base type of " + type);
+            throw CommonUtil.unreachableStatement("Unrecognised base type of " + type);
         }
     }
 

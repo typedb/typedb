@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
@@ -28,7 +29,6 @@ import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 
@@ -36,9 +36,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
-import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 
 /**
  * A DeleteQuery that will execute deletions for every result of a MatchQuery
@@ -53,7 +50,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
      */
     DeleteQueryImpl(Collection<VarPatternAdmin> deleters, MatchQuery matchQuery) {
         if (deleters.isEmpty()) {
-            throw new IllegalArgumentException(NO_PATTERNS.getMessage());
+            throw GraqlQueryException.noPatterns();
         }
 
         this.deleters = ImmutableSet.copyOf(deleters);
@@ -93,7 +90,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
             Concept concept = result.get(deleter.getVarName());
 
             if (concept == null) {
-                throw new IllegalArgumentException(VARIABLE_NOT_IN_QUERY.getMessage(deleter.getVarName()));
+                throw GraqlQueryException.varNotInQuery(deleter.getVarName());
             }
 
             deletePattern(concept, deleter);
@@ -118,9 +115,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     private GraknGraph getGraph() {
-        return matchQuery.getGraph().orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
-        );
+        return matchQuery.getGraph().orElseThrow(GraqlQueryException::noGraph);
     }
 
     @Override

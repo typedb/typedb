@@ -75,6 +75,9 @@ public interface Answer {
     boolean containsKey(Var var);
 
     @CheckReturnValue
+    boolean containsAll(Answer ans);
+
+    @CheckReturnValue
     boolean isEmpty();
 
     @CheckReturnValue

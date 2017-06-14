@@ -86,9 +86,18 @@ public class ResourceDeduplicationTask extends BackgroundTask {
      */
     @SuppressFBWarnings("CN_IMPLEMENTS_CLONE_BUT_NOT_CLONEABLE")
     public static class Job implements MapReduce<String, ConceptId, String, Long, Long> {
-       private boolean deleteUnattached = false;
+        private boolean deleteUnattached = false;
         private String keyspace;
-        
+        private String uri;
+
+        /**
+         * Specify the uri to use for the deduplication job.
+         */
+        public Job uri(String uri) {
+            this.uri = uri;
+            return this;
+        }
+
         /**
          * Specify the keyspace to use for the deduplication job.
          */
@@ -123,14 +132,14 @@ public class ResourceDeduplicationTask extends BackgroundTask {
             }
             // We form the key from the resource type name and the value, and the value of the map-reduce is the concept ID
             // of the resource instance itself
-            LOG.debug("Resource index: " + vertex.property(Schema.ConceptProperty.INDEX.name()).value());            
-            Object key = vertex.property(Schema.ConceptProperty.INDEX.name()).value();
+            LOG.debug("Resource index: " + vertex.property(Schema.VertexProperty.INDEX.name()).value());
+            Object key = vertex.property(Schema.VertexProperty.INDEX.name()).value();
             if (key != null) {
-                LOG.debug("Emit " + key + " -- "  +  ConceptId.of(vertex.property(Schema.ConceptProperty.ID.name())));
-                emitter.emit(key.toString(), ConceptId.of(vertex.property(Schema.ConceptProperty.ID.name()).value()));
+                LOG.debug("Emit " + key + " -- "  +  ConceptId.of(vertex.property(Schema.VertexProperty.ID.name())));
+                emitter.emit(key.toString(), ConceptId.of(vertex.property(Schema.VertexProperty.ID.name()).value()));
             }
             else {
-                LOG.warn("Resource " + vertex.property(Schema.ConceptProperty.ID.name()) + " has no value?!");
+                LOG.warn("Resource " + vertex.property(Schema.VertexProperty.ID.name()) + " has no value?!");
             }
         }
 
@@ -159,7 +168,7 @@ public class ResourceDeduplicationTask extends BackgroundTask {
             LOG.debug("Concepts: " + conceptIds);
             if (conceptIds.size() > 1) {
                 // TODO: what if we fail here due to some read-write conflict?
-                transact(Grakn.session(Grakn.DEFAULT_URI, keyspace),
+                transact(Grakn.session(uri, keyspace),
                          (graph) -> graph.admin().fixDuplicateResources(key, conceptIds),
                          "Reducing resource duplicate set " + conceptIds);
                 emitter.emit(key, (long) (conceptIds.size() - 1));
@@ -167,8 +176,8 @@ public class ResourceDeduplicationTask extends BackgroundTask {
             // Check and maybe delete resource if it's not attached to anything
             if (this.deleteUnattached ) {
                 // TODO: what if we fail here due to some read-write conflict?
-                try (GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)) {
-                    Resource<?> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, key);
+                try (GraknGraph graph = Grakn.session(uri, keyspace).open(GraknTxType.WRITE)) {
+                    Resource<?> res = graph.admin().getConcept(Schema.VertexProperty.INDEX, key);
                     if (res.ownerInstances().isEmpty() && res.relations().isEmpty()) {
                         res.delete();
                     }
@@ -199,8 +208,8 @@ public class ResourceDeduplicationTask extends BackgroundTask {
         LOG.info("Starting ResourceDeduplicationTask : " + configuration().json());
         
         String keyspace = configuration().json().at("keyspace", KEYSPACE_DEFAULT).asString();
-        GraknComputer computer = Grakn.session(Grakn.DEFAULT_URI, keyspace).getGraphComputer();
-        Job job = new Job().keyspace(keyspace)
+        GraknComputer computer = Grakn.session(engineConfiguration().uri(), keyspace).getGraphComputer();
+        Job job = new Job().uri(engineConfiguration().uri()).keyspace(keyspace)
                            .deleteUnattached(configuration().json().at("deletedUnattached", DELETE_UNATTACHED_DEFAULT ).asBoolean());
         this.totalEliminated = computer.compute(job).memory().get(job.getMemoryKey());
         return true;

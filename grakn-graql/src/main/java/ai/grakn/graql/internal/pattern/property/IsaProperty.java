@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -30,7 +31,6 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -89,11 +89,11 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
-    public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws IllegalStateException {
+    public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
         type.getTypeLabel().ifPresent(typeLabel -> {
             Type theType = graph.getType(typeLabel);
             if (theType != null && theType.isRoleType()) {
-                throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(typeLabel));
+                throw GraqlQueryException.queryInstanceOfRoleType(typeLabel);
             }
         });
     }

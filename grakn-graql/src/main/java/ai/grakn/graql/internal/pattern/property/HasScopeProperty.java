@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -82,14 +83,14 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Instance scopeInstance = insertQueryExecutor.getConcept(scope).asInstance();
         concept.asType().scope(scopeInstance);
     }
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        ConceptId scopeId = scope.getId().orElseThrow(() -> failDelete(this));
+        ConceptId scopeId = scope.getId().orElseThrow(() -> GraqlQueryException.failDelete(this));
         concept.asType().deleteScope(graph.getConcept(scopeId));
     }
 

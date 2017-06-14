@@ -1,6 +1,5 @@
 package ai.grakn.graph.internal;
 
-import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -16,7 +15,6 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -30,6 +28,9 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
+import org.junit.Test;
+
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -38,8 +39,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
-import org.junit.Test;
+
+import static ai.grakn.graql.Graql.var;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class GraknGraphTest extends GraphTestBase {
 
@@ -145,18 +156,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void whenBuildingAConceptFromAVertex_ReturnConcept(){
         EntityTypeImpl et = (EntityTypeImpl) graknGraph.putEntityType("Sample Entity Type");
-        assertEquals(et, graknGraph.admin().buildConcept(et.getVertex()));
-    }
-
-    @Test
-    public void whenExecutingGraqlTraversalFromGraph_ReturnExpectedResults(){
-        EntityType type = graknGraph.putEntityType("Concept Type");
-        Entity entity = type.addEntity();
-
-        Collection<Concept> results = graknGraph.graql().match(var("x").isa(type.getLabel().getValue())).
-                execute().iterator().next().values();
-
-        assertThat(results, containsInAnyOrder(entity));
+        assertEquals(et, graknGraph.factory().buildConcept(et.vertex()));
     }
 
     @Test
@@ -376,7 +376,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void whenShardingSuperNode_EnsureNewInstancesGoToNewShard(){
         EntityTypeImpl entityType = (EntityTypeImpl) graknGraph.putEntityType("The Special Type");
-        EntityType s1 = entityType.currentShard();
+        Shard s1 = entityType.currentShard();
 
         //Add 3 instances to first shard
         Entity s1_e1 = entityType.addEntity();
@@ -384,7 +384,7 @@ public class GraknGraphTest extends GraphTestBase {
         Entity s1_e3 = entityType.addEntity();
         graknGraph.admin().shard(entityType.getId());
 
-        EntityType s2 = entityType.currentShard();
+        Shard s2 = entityType.currentShard();
 
         //Add 5 instances to second shard
         Entity s2_e1 = entityType.addEntity();
@@ -394,7 +394,7 @@ public class GraknGraphTest extends GraphTestBase {
         Entity s2_e5 = entityType.addEntity();
 
         graknGraph.admin().shard(entityType.getId());
-        EntityType s3 = entityType.currentShard();
+        Shard s3 = entityType.currentShard();
 
         //Add 2 instances to 3rd shard
         Entity s3_e1 = entityType.addEntity();
@@ -404,9 +404,9 @@ public class GraknGraphTest extends GraphTestBase {
         assertThat(entityType.shards(), containsInAnyOrder(s1, s2, s3));
 
         //Check shards have correct instances
-        assertThat(s1.instances(), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
-        assertThat(s2.instances(), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
-        assertThat(s3.instances(), containsInAnyOrder(s3_e1, s3_e2));
+        assertThat(s1.links().collect(Collectors.toSet()), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
+        assertThat(s2.links().collect(Collectors.toSet()), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
+        assertThat(s3.links().collect(Collectors.toSet()), containsInAnyOrder(s3_e1, s3_e2));
     }
 
     @Test

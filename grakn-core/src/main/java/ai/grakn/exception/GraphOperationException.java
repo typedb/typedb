@@ -29,12 +29,16 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.CLOSE_GRAPH_FAILURE;
 import static ai.grakn.util.ErrorMessage.HAS_INVALID;
+import static ai.grakn.util.ErrorMessage.INVALID_DIRECTION;
+import static ai.grakn.util.ErrorMessage.INVALID_PATH_TO_CONFIG;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
+import static ai.grakn.util.ErrorMessage.NO_TYPE;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 
 /**
@@ -120,7 +124,7 @@ public class GraphOperationException extends GraknException{
      * Thrown when creating a resource whose value {@code object} does not match it's resource's  {@code dataType}.
      */
     public static GraphOperationException invalidResourceValue(Object object, ResourceType.DataType dataType){
-        return new GraphOperationException(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.getConceptProperty().getDataType().getName()));
+        return new GraphOperationException(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.getVertexProperty().getDataType().getName()));
     }
 
     /**
@@ -134,14 +138,14 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when attempting to mutate a property which is immutable
      */
-    public static GraphOperationException immutableProperty(Object oldValue, Object newValue, Concept conceptBeingMutated, Schema.ConceptProperty conceptProperty){
-        return new GraphOperationException(ErrorMessage.IMMUTABLE_VALUE.getMessage(oldValue, conceptBeingMutated, newValue, conceptProperty.name()));
+    public static GraphOperationException immutableProperty(Object oldValue, Object newValue, Schema.VertexProperty vertexProperty){
+        return new GraphOperationException(ErrorMessage.IMMUTABLE_VALUE.getMessage(oldValue, newValue, vertexProperty.name()));
     }
 
     /**
      * Thrown when attempting to set a property to null
      */
-    public static GraphOperationException settingNullProperty(Schema.ConceptProperty property){
+    public static GraphOperationException settingNullProperty(Schema.VertexProperty property){
         return new GraphOperationException(ErrorMessage.NULL_VALUE.getMessage(property.name()));
     }
 
@@ -210,5 +214,26 @@ public class GraphOperationException extends GraknException{
      */
     public static GraphOperationException versionMistmatch(Resource versionResource){
         return new GraphOperationException(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, versionResource.getValue()));
+    }
+
+    /**
+     * Thrown when an instance does not have a type
+     */
+    public static GraphOperationException noType(Instance instance){
+        return new GraphOperationException(NO_TYPE.getMessage(instance));
+    }
+
+    /**
+     * Thrown when attempting to traverse an edge in an invalid direction
+     */
+    public static GraphOperationException invalidDirection(Direction direction){
+        return new GraphOperationException(INVALID_DIRECTION.getMessage(direction));
+    }
+
+    /**
+     * Thrown when attempting to read a config file which cannot be accessed
+     */
+    public static GraphOperationException invalidGraphConfig(String pathToFile){
+        return new GraphOperationException(INVALID_PATH_TO_CONFIG.getMessage(pathToFile));
     }
 }

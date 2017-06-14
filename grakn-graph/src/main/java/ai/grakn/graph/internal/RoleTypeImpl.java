@@ -25,7 +25,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -51,19 +50,19 @@ import java.util.stream.Stream;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    private ElementCache<Set<Type>> cachedDirectPlayedByTypes = new ElementCache<>(() -> this.<Type>getIncomingNeighbours(Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private ElementCache<Set<RelationType>> cachedRelationTypes = new ElementCache<>(() -> this.<RelationType>getIncomingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
+    private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+    RoleTypeImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RoleType type) {
-        super(graknGraph, v, type);
+    RoleTypeImpl(VertexElement vertexElement, RoleType type) {
+        super(vertexElement, type);
     }
 
-    RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RoleType type, Boolean isImplicit) {
-        super(graknGraph, v, type, isImplicit);
+    RoleTypeImpl(VertexElement vertexElement, RoleType type, Boolean isImplicit) {
+        super(vertexElement, type, isImplicit);
     }
 
     @Override
@@ -155,8 +154,8 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
 
     @Override
     public void delete(){
-        boolean hasRelates = getVertex().edges(Direction.IN, Schema.EdgeLabel.RELATES.getLabel()).hasNext();
-        boolean hasPlays = getVertex().edges(Direction.IN, Schema.EdgeLabel.PLAYS.getLabel()).hasNext();
+        boolean hasRelates = neighbours(Direction.IN, Schema.EdgeLabel.RELATES).findAny().isPresent();
+        boolean hasPlays = neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).findAny().isPresent();
 
         boolean deletionNotAllowed = hasRelates || hasPlays;
 

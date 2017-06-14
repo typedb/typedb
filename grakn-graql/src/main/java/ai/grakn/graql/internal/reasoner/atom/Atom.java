@@ -197,9 +197,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return value variable name
      */
-    public Var getValueVariable() {
-        throw new IllegalArgumentException("getValueVariable called on Atom object " + getPattern());
-    }
+    public abstract Var getValueVariable();
 
     /**
      * @return set of predicates relevant to this atom
@@ -283,5 +281,5 @@ public abstract class Atom extends AtomicBase {
      * @param parentAtom atom to be unified with
      * @return unifier
      */
-    public abstract Unifier getUnifier(Atomic parentAtom);
+    public abstract Unifier getUnifier(Atom parentAtom);
 }

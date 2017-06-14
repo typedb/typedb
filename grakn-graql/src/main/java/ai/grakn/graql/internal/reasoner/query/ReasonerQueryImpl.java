@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -43,8 +44,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.util.ErrorMessage;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -98,7 +98,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     ReasonerQueryImpl(Atom atom) {
         if (atom.getParentQuery() == null) {
-            throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
+            throw GraqlQueryException.atomParentMissing(atom.toString());
         }
         this.graph = atom.getParentQuery().graph();
         addAtomic(AtomicFactory.create(atom, this));
@@ -108,7 +108,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public String toString(){
-        return atomSet.stream().filter(Atomic::isAtom).map(Atomic::toString).collect(Collectors.joining(", "));
+        return atomSet.stream().map(Atomic::toString).collect(Collectors.joining(", "));
     }
 
     @Override
@@ -170,9 +170,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     @Override
     public boolean isRuleResolvable() {
-        Iterator<Atom> it = atomSet.stream().filter(Atomic::isAtom).map(at -> (Atom) at).iterator();
-        while (it.hasNext()) {
-            if (it.next().isRuleResolvable()) {
+        for (Atom atom : selectAtoms()) {
+            if (atom.isRuleResolvable()) {
                 return true;
             }
         }
@@ -180,7 +179,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     private boolean isTransitive() {
-        return atomSet.stream().filter(this::containsEquivalentAtom).count() == 2;
+        return atomSet.stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(this::containsEquivalentAtom).count() == 2;
     }
 
     boolean isAtomic() {
@@ -276,17 +277,20 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param atom in question
      * @return true if query contains an equivalent atom
      */
-    private boolean containsEquivalentAtom(Atomic atom) {
+    private boolean containsEquivalentAtom(Atom atom) {
         return !getEquivalentAtoms(atom).isEmpty();
     }
 
-    Set<Atomic> getEquivalentAtoms(Atomic atom) {
-        return atomSet.stream().filter(at -> at.isEquivalent(atom)).collect(Collectors.toSet());
+    Set<Atom> getEquivalentAtoms(Atom atom) {
+        return atomSet.stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(at -> at.isEquivalent(atom))
+                .collect(Collectors.toSet());
     }
 
     @Override
     public Unifier getUnifier(ReasonerQuery parent) {
-        throw new IllegalStateException("Attempted to obtain unifiers on non-atomic queries.");
+        throw GraqlQueryException.getUnifierOfNonAtomicQuery();
     }
 
     /**
@@ -400,7 +404,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         if (!atomsToSelect.isEmpty()) atomsToSelect.forEach(orderedSelection::add);
 
         if (orderedSelection.isEmpty()) {
-            throw new IllegalStateException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(this.toString()));
+            throw GraqlQueryException.noAtomsSelected(this);
         }
         return orderedSelection;
     }
@@ -448,21 +452,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(e -> new IdPredicate(e.getKey(), e.getValue(), this))
                 .collect(Collectors.toSet());
         atomSet.addAll(predicates);
+
         return this;
     }
 
     boolean hasFullSubstitution(){
         return getSubstitution().keySet().containsAll(getVarNames());
-    }
-
-    private boolean requiresMaterialisation(){
-        for(Atom atom : selectAtoms()){
-            for (InferenceRule rule : atom.getApplicableRules())
-                if (rule.requiresMaterialisation(atom)){
-                    return true;
-                }
-        }
-        return false;
     }
 
     private Stream<Answer> fullJoin(Set<ReasonerAtomicQuery> subGoals,
@@ -533,7 +528,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Stream<Answer> resolve(boolean materialise, boolean explanation) {
-        if (materialise || requiresMaterialisation()) {
+        if (materialise) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
             return new QueryAnswerIterator(this).hasStream();

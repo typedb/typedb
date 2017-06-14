@@ -24,7 +24,6 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.regex.Pattern;
@@ -49,12 +48,12 @@ import static ai.grakn.util.Schema.generateResourceIndex;
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
-    ResourceImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+    ResourceImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    ResourceImpl(AbstractGraknGraph graknGraph, Vertex v, ResourceType<D> type, D value) {
-        super(graknGraph, v, type);
+    ResourceImpl(VertexElement vertexElement, ResourceType<D> type, D value) {
+        super(vertexElement, type);
         setValue(value);
     }
 
@@ -97,11 +96,12 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
             checkConformsToRegexes(value);
 
             ResourceTypeImpl<D> resourceType = (ResourceTypeImpl<D>) type();
-            Schema.ConceptProperty property = dataType().getConceptProperty();
+            Schema.VertexProperty property = dataType().getVertexProperty();
             //noinspection unchecked
-            setImmutableProperty(property, castValue(value), getProperty(property), (v) -> resourceType.getDataType().getPersistenceValue((D) v));
+            vertex().propertyImmutable(property, castValue(value), vertex().property(property), (v) -> resourceType.getDataType().getPersistenceValue((D) v));
+            vertex().propertyUnique(Schema.VertexProperty.INDEX, generateResourceIndex(type().getLabel(), value.toString()));
 
-            return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type().getLabel(), value.toString()));
+            return getThis();
         } catch (ClassCastException e) {
             throw GraphOperationException.invalidResourceValue(value, dataType());
         }
@@ -152,7 +152,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
      */
     @Override
     public D getValue(){
-        return dataType().getValue(getProperty(dataType().getConceptProperty()));
+        return dataType().getValue(vertex().property(dataType().getVertexProperty()));
     }
 
     @Override

@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.parser;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.AskQuery;
@@ -49,8 +50,7 @@ import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
-import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -348,7 +348,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         Function<List<Object>, Aggregate> aggregateMethod = aggregateMethods.get(name);
 
         if (aggregateMethod == null) {
-            throw new IllegalArgumentException(ErrorMessage.UNKNOWN_AGGREGATE.getMessage(name));
+            throw GraqlQueryException.unknownAggregate(name);
         }
 
         List<Object> arguments = ctx.argument().stream().map(this::visit).collect(toList());
@@ -670,7 +670,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     private String getString(TerminalNode string) {
         // Remove surrounding quotes
         String unquoted = string.getText().substring(1, string.getText().length() - 1);
-        return StringConverter.unescapeString(unquoted);
+        return StringUtil.unescapeString(unquoted);
     }
 
     /**

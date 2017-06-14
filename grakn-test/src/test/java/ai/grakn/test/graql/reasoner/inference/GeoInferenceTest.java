@@ -24,17 +24,14 @@ import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
 
+import ai.grakn.util.GraknTestSetup;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.stream.Collectors;
-
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -47,7 +44,7 @@ public class GeoInferenceTest {
 
     @BeforeClass
     public static void onStartup() throws Exception {
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     @Test
@@ -271,7 +268,7 @@ public class GeoInferenceTest {
         QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in;";
 
-        QueryAnswers answers = new QueryAnswers(iqb.materialise(false).<MatchQuery>parse(queryString).admin().stream().collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
         assertEquals(answers.size(), 51);
         assertEquals(answers, answers2);
@@ -281,12 +278,16 @@ public class GeoInferenceTest {
     public void testRelationVarQuery_WithAndWithoutRelationPlayers() {
         QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match $x isa is-located-in;";
-        String queryString2 = "match $x ($x1, $x2)isa is-located-in;select $x;";
+        String queryString2 = "match $x ($x1, $x2) isa is-located-in;select $x;";
 
-        QueryAnswers answers = queryAnswers(iqb.materialise(true).parse(queryString));
-        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString2));
-        assertEquals(answers.size(), 51);
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        QueryAnswers answers3 = queryAnswers(iqb.materialise(false).parse(queryString2));
+        QueryAnswers answers4 = queryAnswers(iqb.materialise(true).parse(queryString2));
         assertEquals(answers, answers2);
+        assertEquals(answers3, answers4);
+        assertEquals(answers.size(), 51);
+        assertEquals(answers3.size(), 51);
     }
 
     @Test
