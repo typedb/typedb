@@ -37,6 +37,7 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.MinimalCounterexampleHook;
@@ -364,19 +365,13 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     public static Collection<? extends Type> allTypesFrom(GraknGraph graph) {
-        return withImplicitConceptsVisible(graph, g -> g.admin().getMetaConcept().subTypes());
+        Function<GraknGraph, ? extends Collection<? extends Type>> function = g -> g.admin().getMetaConcept().subTypes();
+        return CommonUtil.withImplicitConceptsVisible(graph, function);
     }
 
     public static Collection<? extends Instance> allInstancesFrom(GraknGraph graph) {
-        return withImplicitConceptsVisible(graph, g -> g.admin().getMetaConcept().instances());
-    }
-
-    public static <T> T withImplicitConceptsVisible(GraknGraph graph, Function<GraknGraph, T> function) {
-        boolean implicitFlag = graph.implicitConceptsVisible();
-        graph.showImplicitConcepts(true);
-        T result = function.apply(graph);
-        graph.showImplicitConcepts(implicitFlag);
-        return result;
+        Function<GraknGraph, ? extends Collection<? extends Instance>> function = g -> g.admin().getMetaConcept().instances();
+        return CommonUtil.withImplicitConceptsVisible(graph, function);
     }
 
     @Override
