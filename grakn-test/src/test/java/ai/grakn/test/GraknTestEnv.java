@@ -161,18 +161,6 @@ public abstract class GraknTestEnv {
         engineGraknGraphFactory.refreshConnections();
     }
 
-    static String getUri(GraknEngineConfig config) {
-        return config.getProperty("server.host") + ":" + config.getProperty("server.port");
-    }
-
-    static String getHost(GraknEngineConfig config) {
-        return config.getProperty("server.host");
-    }
-
-    static String getPort(GraknEngineConfig config) {
-        return config.getProperty("server.port");
-    }
-
     static void setRestAssuredUri(GraknEngineConfig config) {
         RestAssured.baseURI = "http://" + config.uri();
     }
