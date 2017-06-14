@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -371,7 +372,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public Iterator<Answer> iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        Iterator<ReasonerAtomicQueryIterator> qIterator = getQueryStream()
+        Iterator<ReasonerAtomicQueryIterator> qIterator = getQueryStream(sub)
                 .map(q -> new ReasonerAtomicQueryIterator(q, sub, subGoals, cache))
                 .iterator();
         return Iterators.concat(qIterator);
@@ -380,11 +381,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * @return stream of atomic query obtained by inserting all inferred possible types (if ambiguous)
      */
-    private Stream<ReasonerAtomicQuery> getQueryStream(){
+    private Stream<ReasonerAtomicQuery> getQueryStream(Answer sub){
         Atom atom = getAtom();
         if (!atom.isRelation() || atom.getType() != null) return Stream.of(this);
         else{
-            List<RelationType> relationTypes = ((Relation) atom).inferPossibleRelationTypes();
+            List<RelationType> relationTypes = ((Relation) atom).inferPossibleRelationTypes(sub);
+            LOG.trace("AQ: " + this + ": inferred rel types for: " + relationTypes.stream().map(Type::getLabel).collect(Collectors.toList()));
             return relationTypes.stream()
                     .map(type -> ((Relation) AtomicFactory.create(atom, atom.getParentQuery())).addType(type))
                     .map(ReasonerAtomicQuery::new);
