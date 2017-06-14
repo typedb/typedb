@@ -24,6 +24,7 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static java.time.Instant.now;
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -45,6 +46,7 @@ import ai.grakn.test.SparkContext;
 import java.time.Duration;
 import java.time.Instant;
 import mjson.Json;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -64,8 +66,8 @@ public class TaskClientTest {
         new TasksController(spark, manager);
     });
 
-    @BeforeClass
-    public static void setUp() {
+    @Before
+    public void setUp() {
         client = TaskClient.of("localhost", ctx.port());
         when(manager.storage()).thenReturn(mock(TaskStateStorage.class));
     }
