@@ -34,4 +34,11 @@
         <Bug pattern="UR_UNINIT_READ_CALLED_FROM_SUPER_CONSTRUCTOR"/>
     </Match>
 
+    <!--Checks that singleton initialisers are synchronised. Excluded because we do not want -->
+    <!--to synchronise on the initialiser in SystemKeyspace - we would incur the overhead every time -->
+    <!--the system keyspace was touched. Instead we use a countdown latch in the class-->
+    <Match>
+        <Bug pattern="LI_LAZY_INIT_STATIC"/>
+    </Match>
+
 </FindBugsFilter>
