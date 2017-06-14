@@ -26,8 +26,9 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.CassandraHelper;
+import ai.grakn.util.KafkaHelper;
+import ai.grakn.util.RedisHelper;
 import com.jayway.restassured.RestAssured;
-import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
 import spark.Service;
 
@@ -36,9 +37,9 @@ import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.graql.Graql.var;
 
@@ -56,9 +57,7 @@ public abstract class GraknTestEnv {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestEnv.class);
 
     private static String CONFIG = System.getProperty("grakn.test-profile");
-    private static AtomicInteger KAFKA_COUNTER = new AtomicInteger(0);
 
-    private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
 
     public static void ensureCassandraRunning() throws Exception {
         if (usingTitan()) {
@@ -105,24 +104,20 @@ public abstract class GraknTestEnv {
         return server;
     }
 
+    static void startRedis(GraknEngineConfig config){
+        RedisHelper.startEmbedded(config.getPropertyAsInt(REDIS_SERVER_PORT));
+    }
+
+    static void stopRedis(){
+        RedisHelper.stopEmbedded();
+    }
+
     static void startKafka(GraknEngineConfig config) throws Exception {
-        // Clean-up ironically uses a lot of memory
-        if (KAFKA_COUNTER.getAndIncrement() == 0) {
-            LOG.info("Starting kafka...");
-            kafkaUnit.setKafkaBrokerConfig("log.cleaner.enable", "false");
-            kafkaUnit.startup();
-            kafkaUnit.createTopic(TaskState.Priority.HIGH.queue(), config.getAvailableThreads() * 2);
-            kafkaUnit.createTopic(TaskState.Priority.LOW.queue(), config.getAvailableThreads() * 2);
-            LOG.info("Kafka started.");
-        }
+        KafkaHelper.startEmbedded(config.getAvailableThreads(), TaskState.Priority.HIGH.queue(), TaskState.Priority.LOW.queue());
     }
 
     static void stopKafka() throws Exception {
-        if (KAFKA_COUNTER.decrementAndGet() == 0) {
-            LOG.info("Stopping kafka...");
-            kafkaUnit.shutdown();
-            LOG.info("Kafka stopped.");
-        }
+        KafkaHelper.stopEmbedded();
     }
 
     static void stopEngine(GraknEngineServer server) throws Exception {

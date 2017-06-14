@@ -27,7 +27,6 @@ import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import ai.grakn.util.RedisHelper;
 import com.jayway.restassured.RestAssured;
 import org.junit.rules.ExternalResource;
 
@@ -40,7 +39,9 @@ import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
 import static ai.grakn.test.GraknTestEnv.startEngine;
 import static ai.grakn.test.GraknTestEnv.startKafka;
+import static ai.grakn.test.GraknTestEnv.startRedis;
 import static ai.grakn.test.GraknTestEnv.stopEngine;
+import static ai.grakn.test.GraknTestEnv.stopRedis;
 
 /**
  * <p>
@@ -116,7 +117,7 @@ public class EngineContext extends ExternalResource {
             startKafka(config);
         }
 
-        RedisHelper.startEmbedded(config.getPropertyAsInt(REDIS_SERVER_PORT));
+        startRedis(config);
 
         @Nullable Class<? extends TaskManager> taskManagerClass = null;
 
@@ -150,7 +151,7 @@ public class EngineContext extends ExternalResource {
                 noThrow(GraknTestEnv::stopKafka, "Error stopping kafka");
             }
 
-            RedisHelper.stopEmbedded();
+            stopRedis();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
         }
