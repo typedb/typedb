@@ -41,6 +41,7 @@ import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import org.junit.Before;
@@ -57,8 +58,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestEnv.usingOrientDB;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -86,7 +85,7 @@ public class GraqlTest {
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
-        assumeFalse(usingOrientDB());
+        assumeFalse(GraknTestSetup.usingOrientDB());
 
         factory = context.factoryWithNewKeyspace();
     }
@@ -105,7 +104,7 @@ public class GraqlTest {
     @Test
     public void testDegrees() throws Exception {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         addOntologyAndEntities();
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
@@ -139,7 +138,7 @@ public class GraqlTest {
     @Test
     public void testStatisticsMethods() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             TypeLabel resourceTypeId = TypeLabel.of("my-resource");
@@ -188,7 +187,7 @@ public class GraqlTest {
     @Test
     public void testConnectedComponents() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             Map<String, Long> sizeMap =
@@ -203,7 +202,7 @@ public class GraqlTest {
     @Test
     public void testPath() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         addOntologyAndEntities();
 
@@ -248,7 +247,7 @@ public class GraqlTest {
     @Test
     public void testAnalyticsDoesNotCommitByMistake() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.putResourceType("number", ResourceType.DataType.LONG);
             graph.commit();

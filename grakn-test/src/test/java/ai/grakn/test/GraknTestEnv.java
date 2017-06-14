@@ -28,6 +28,7 @@ import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.EmbeddedCassandra;
 import ai.grakn.util.EmbeddedKafka;
 import ai.grakn.util.EmbeddedRedis;
+import ai.grakn.util.GraknTestSetup;
 import com.jayway.restassured.RestAssured;
 import org.slf4j.LoggerFactory;
 import spark.Service;
@@ -56,11 +57,8 @@ public abstract class GraknTestEnv {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestEnv.class);
 
-    private static String CONFIG = System.getProperty("grakn.test-profile");
-
-
     public static void ensureCassandraRunning() throws Exception {
-        if (usingTitan()) {
+        if (GraknTestSetup.usingTitan()) {
             EmbeddedCassandra.start();
         }
     }
@@ -168,18 +166,6 @@ public abstract class GraknTestEnv {
     public static String randomKeyspace(){
         // Embedded Casandra has problems dropping keyspaces that start with a number
         return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
-    }
-
-    public static boolean usingTinker() {
-        return "tinker".equals(CONFIG);
-    }
-
-    public static boolean usingTitan() {
-        return "titan".equals(CONFIG);
-    }
-
-    public static boolean usingOrientDB() {
-        return "orientdb".equals(CONFIG);
     }
 
     private static int getEphemeralPort() {

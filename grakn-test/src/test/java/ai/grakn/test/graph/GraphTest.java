@@ -10,6 +10,7 @@ import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTinkerGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.GraknTestSetup;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,7 +21,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -99,7 +99,7 @@ public class GraphTest {
 
     @Test
     public void afterCommitting_NumberOfOpenTransactionsDecrementsOnce() {
-        assumeFalse(usingTinker()); // Tinker graph only ever has one open transaction
+        assumeFalse(GraknTestSetup.usingTinker()); // Tinker graph only ever has one open transaction
 
         GraknSession session = engine.factoryWithNewKeyspace();
 
@@ -119,7 +119,7 @@ public class GraphTest {
 
     @Test
     public void closeGraphWhenOnlyOneTransactionIsOpen(){
-        assumeFalse(usingTinker()); //Tinker does not have any connections to close
+        assumeFalse(GraknTestSetup.usingTinker()); //Tinker does not have any connections to close
 
         GraknSession factory = engine.factoryWithNewKeyspace();
         GraknGraph graph = factory.open(GraknTxType.WRITE);
@@ -133,7 +133,7 @@ public class GraphTest {
 
     @Test
     public void whenAddingEntitiesToAbstractTypeCreatedInDifferentTransaction_Throw(){
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         String label = "An Abstract Thing";
 
