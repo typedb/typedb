@@ -27,6 +27,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.test.SparkContext;
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
@@ -338,6 +339,18 @@ public class TasksControllerTest {
         Response response = get(task.getId());
 
         assertThat(response.contentType(), equalTo(ContentType.APPLICATION_JSON.getMimeType()));
+    }
+
+    @Test
+    public void whenGettingNonExistingTaskById_TheResponseStatusIs404(){
+        TaskState task = createTask();
+
+        when(manager.storage().getState(task.getId())).thenThrow(GraknBackendException.stateStorageMissingId(task.getId()));
+
+        Response response = get(task.getId());
+
+        assertThat(exception(response), equalTo(GraknBackendException.stateStorageMissingId(task.getId()).getMessage()));
+        assertThat(response.statusCode(), equalTo(404));
     }
 
     @Test
