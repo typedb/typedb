@@ -136,7 +136,6 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         LOG.debug("started");
 
         timeTaskLastHandled = now();
-
         while (!wakeUp.get()) {
             try {
                 // Reading from both the regular consumer and recurring consumer every time means that we will handle
@@ -145,6 +144,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
                 // Exponential back-off: sleep longer and longer when receiving the same tasks
                 long timeSinceLastHandledTask = between(timeTaskLastHandled, now()).toMillis();
+
                 if (timeSinceLastHandledTask >= MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF) {
                     LOG.trace("has been  " + timeSinceLastHandledTask + " ms since handled task, sleeping for " + BACKOFF + "ms");
                     Thread.sleep(BACKOFF);

@@ -20,6 +20,7 @@ package ai.grakn.engine;
 
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
+import static java.lang.Math.min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +51,7 @@ public class GraknEngineConfig {
     public static final String JWT_SECRET_PROPERTY = "JWT.secret";
     public static final String PASSWORD_PROTECTED_PROPERTY = "password.protected";
     public static final String ADMIN_PASSWORD_PROPERTY = "admin.password";
-    
+
     public static final String SERVER_HOST_NAME = "server.host";
     public static final String SERVER_PORT_NUMBER = "server.port";
 
@@ -77,15 +78,18 @@ public class GraknEngineConfig {
     public static final String ZK_BACKOFF_BASE_SLEEP_TIME = "tasks.zookeeper.backoff.base_sleep";
     public static final String ZK_BACKOFF_MAX_RETRIES = "tasks.zookeeper.backoff.max_retries";
 
+    public static final int WEBSOCKET_TIMEOUT = 3600000;
+
     private static String configFilePath = null;
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.class);
 
-    private final int MAX_NUMBER_OF_THREADS = 120;
-    private final Properties prop;
+    private static final int MAX_NUMBER_OF_THREADS = 120;
+    private final Properties prop = new Properties();
     private int numOfThreads = -1;
 
     public static GraknEngineConfig create() {
+        setConfigFilePath();
         return GraknEngineConfig.read(getConfigFilePath());
     }
 
@@ -94,18 +98,17 @@ public class GraknEngineConfig {
     }
 
     private GraknEngineConfig(String path) {
-        getProjectPath();
-        prop = new Properties();
+        String projectPath = getProjectPath();
+        setGraknVersion();
         try (FileInputStream inputStream = new FileInputStream(path)){
             prop.load(inputStream);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("Could not load engine properties from {}", path);
         }
-        setGraknVersion();
         computeThreadsNumber();
-        LOG.info("Project directory in use: [" + getProjectPath() + "]");
-        LOG.info("Configuration file in use: [" + configFilePath + "]");
-        LOG.info("Number of threads set to [" + numOfThreads + "]");
+        LOG.info("Project directory in use: {}", projectPath);
+        LOG.info("Configuration file in use: {}", configFilePath);
+        LOG.info("Number of threads set to: {}", numOfThreads);
     }
 
     private void setGraknVersion(){
@@ -121,11 +124,11 @@ public class GraknEngineConfig {
      * If it is not set, it sets it to the default one.
      */
     private static void setConfigFilePath() {
-        configFilePath = (System.getProperty(SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE) != null) ? System.getProperty(SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE) : GraknEngineConfig.DEFAULT_CONFIG_FILE;
+        String configFileProperty = System.getProperty(SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE);
+        configFilePath = (configFileProperty != null) ? configFileProperty : DEFAULT_CONFIG_FILE;
         if (!Paths.get(configFilePath).isAbsolute()) {
             configFilePath = getProjectPath() + configFilePath;
         }
-
     }
 
     /**
@@ -134,20 +137,14 @@ public class GraknEngineConfig {
      * equal to the number of available processor to the current JVM.
      */
     private void computeThreadsNumber() {
-
         numOfThreads = Integer.parseInt(prop.getProperty(NUM_THREADS_PROPERTY));
-
         if (numOfThreads == 0) {
-            numOfThreads = Runtime.getRuntime().availableProcessors();
+            int availableProcessors = Runtime.getRuntime().availableProcessors();
+            LOG.warn("Number of threads set to 0 in properties. Running with {} processors instead.", availableProcessors);
+            numOfThreads = availableProcessors;
         }
-
-        if (numOfThreads > MAX_NUMBER_OF_THREADS) {
-            numOfThreads = MAX_NUMBER_OF_THREADS;
-        }
+        numOfThreads = min(MAX_NUMBER_OF_THREADS, numOfThreads);
     }
-
-
-    // Getters
 
     /**
      * @return Number of available threads to be used to instantiate new threadpools.
@@ -156,7 +153,6 @@ public class GraknEngineConfig {
         if (numOfThreads == -1) {
             computeThreadsNumber();
         }
-
         return numOfThreads;
     }
 
@@ -170,7 +166,6 @@ public class GraknEngineConfig {
         if (Paths.get(propertyPath).isAbsolute()) {
             return propertyPath;
         }
-
         return getProjectPath() + propertyPath;
     }
 
@@ -182,7 +177,6 @@ public class GraknEngineConfig {
         if (System.getProperty(SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY) == null) {
             System.setProperty(SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY, System.getProperty("user.dir"));
         }
-
         return System.getProperty(SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY) + "/";
     }
 
@@ -190,7 +184,6 @@ public class GraknEngineConfig {
      * @return The path to the config file currently in use. Default: /conf/main/grakn.properties
      */
     static String getConfigFilePath() {
-        if (configFilePath == null) setConfigFilePath();
         return configFilePath;
     }
 
@@ -201,13 +194,9 @@ public class GraknEngineConfig {
     public String getProperty(String property) {
          if(prop.containsKey(property)) {
              return prop.getProperty(property);
+         } else {
+            throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(property, configFilePath));
          }
-
-         if(configFilePath == null){
-             throw new RuntimeException(ErrorMessage.NO_CONFIG_FILE.getMessage(configFilePath));
-         }
-
-         throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(property, configFilePath));
     }
 
     public Optional<String> tryProperty(String property) {
@@ -218,18 +207,8 @@ public class GraknEngineConfig {
         return Integer.parseInt(getProperty(property));
     }
 
-    public int getPropertyAsInt(String property, int defaultValue) {
-        return prop.containsKey(property) ? Integer.parseInt(prop.getProperty(property))
-                                          : defaultValue;
-    }
-    
     public long getPropertyAsLong(String property) {
         return Long.parseLong(getProperty(property));
-    }
-    
-    public long getPropertyAsLong(String property, long defaultValue) {
-        return prop.containsKey(property) ? Long.parseLong(prop.getProperty(property))
-                                          : defaultValue;
     }
 
     public boolean getPropertyAsBool(String property, boolean defaultValue) {
@@ -238,9 +217,9 @@ public class GraknEngineConfig {
     }
 
     static final String GRAKN_ASCII =
-                      "     ___  ___  ___  _  __ _  _     ___  ___     %n" +
+                    "     ___  ___  ___  _  __ _  _     ___  ___     %n" +
                     "    / __|| _ \\/   \\| |/ /| \\| |   /   \\|_ _|    %n" +
                     "   | (_ ||   /| - || ' < | .` | _ | - | | |     %n" +
                     "    \\___||_|_\\|_|_||_|\\_\\|_|\\_|(_)|_|_||___|   %n%n" +
-                      " Web Dashboard available at [%s]";
+                    " Web Dashboard available at [%s]";
 }

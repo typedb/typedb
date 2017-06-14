@@ -49,8 +49,7 @@ public abstract class BackgroundTask {
      */
     public final void initialize(
             Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration,
-            TaskSubmitter taskSubmitter,
-            GraknEngineConfig engineConfig, RedisConnection redis,
+            TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig, RedisConnection redis,
             MetricRegistry metricRegistry) {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;

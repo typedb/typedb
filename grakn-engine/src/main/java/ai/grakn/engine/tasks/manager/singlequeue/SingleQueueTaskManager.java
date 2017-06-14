@@ -28,10 +28,14 @@ import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
+import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.connection.ZookeeperConnection;
+import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.EngineID;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
@@ -39,29 +43,23 @@ import com.codahale.metrics.Timer.Context;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.nio.charset.Charset;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import static java.util.concurrent.Executors.newFixedThreadPool;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import static java.util.stream.Collectors.toSet;
+import java.util.stream.Stream;
+import static java.util.stream.Stream.generate;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import static org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent.Type.CHILD_ADDED;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.charset.Charset;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
-import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
-import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
-import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
-import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static java.util.concurrent.Executors.newFixedThreadPool;
-import static java.util.stream.Collectors.toSet;
-import static java.util.stream.Stream.generate;
-import static org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent.Type.CHILD_ADDED;
 
 /**
  * {@link TaskManager} implementation that operates using a single Kafka queue and controls the
@@ -112,14 +110,13 @@ public class SingleQueueTaskManager implements TaskManager {
         //TODO only pass necessary Kafka properties
         this.producer = kafkaProducer(config.getProperties());
 
-        addTaskTimer = metricRegistry.timer(name(SingleQueueTaskManager.class, "add-task-timer"));
+        addTaskTimer = metricRegistry.timer(name(SingleQueueTaskManager.class, "add-task"));
+
         // Create thread pool for the task runners
         ThreadFactory taskRunnerPoolFactory = new ThreadFactoryBuilder()
                 .setNameFormat(TASK_RUNNER_THREAD_POOL_NAME)
                 .build();
-
         int capacity = config.getAvailableThreads();
-
         this.taskRunnerThreadPool = newFixedThreadPool(capacity * 2, taskRunnerPoolFactory);
 
         // Create and start the task runners
@@ -130,6 +127,12 @@ public class SingleQueueTaskManager implements TaskManager {
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
 
         stoppedTasks = new PathChildrenCache(zookeeper.connection(), TASKS_STOPPED_PREFIX, true);
+        handleStoppedTasks();
+        LockProvider.instantiate((lockPath, existingLock) -> new ZookeeperLock(zookeeper, lockPath));
+        LOG.debug("TaskManager started");
+    }
+
+    private void handleStoppedTasks() {
         stoppedTasks.getListenable().addListener((client, event) -> {
             if (event.getType() == CHILD_ADDED) {
                 TaskId id = TaskId.of(new String(event.getData().getData(), zkCharset));
@@ -142,10 +145,6 @@ public class SingleQueueTaskManager implements TaskManager {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        LockProvider.instantiate((lockPath, existingLock) -> new ZookeeperLock(zookeeper, lockPath));
-
-        LOG.debug("TaskManager started");
     }
 
     /**

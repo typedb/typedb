@@ -17,6 +17,7 @@
  */
 package ai.grakn.engine;
 
+import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
@@ -60,7 +61,6 @@ import spark.Service;
 
 public class GraknEngineServer implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
-    private static final int WEBSOCKET_TIMEOUT = 3600000;
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
             REST.WebPath.NEW_SESSION_URI,
             REST.WebPath.REMOTE_SHELL_URI,
@@ -77,24 +77,21 @@ public class GraknEngineServer implements AutoCloseable {
 
     private GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
-
         String redisUrl = prop.getProperty(GraknEngineConfig.REDIS_SERVER_URL);
         int redisPort = prop.getPropertyAsInt(GraknEngineConfig.REDIS_SERVER_PORT);
         redis = RedisConnection.create(redisUrl, redisPort);
-
         factory = EngineGraknGraphFactory.create(prop.getProperties());
         metricRegistry = new MetricRegistry();
         taskManager = startTaskManager();
-
         startHTTP();
-        printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
+        printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
+                prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
     }
 
     public static void main(String[] args) {
         GraknEngineConfig prop = GraknEngineConfig.create();
         // Start Engine
         GraknEngineServer server = start(prop);
-
         // close GraknEngineServer on SIGTERM
         Thread closeThread = new Thread(server::close, "GraknEngineServer-shutdown");
         Runtime.getRuntime().addShutdownHook(closeThread);
@@ -129,7 +126,6 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public void startHTTP() {
-
         boolean passwordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
 
         // TODO: Make sure controllers handle the null case
@@ -182,7 +178,7 @@ public class GraknEngineServer implements AutoCloseable {
 
         //Register exception handlers
         spark.exception(GraknBackendException.class, (e, req, res) -> handleGraknServerError(e, res));
-        spark.exception(Exception.class,                  (e, req, res) -> handleInternalError(e, res));
+        spark.exception(Exception.class, (e, req, res) -> handleInternalError(e, res));
     }
 
     public void stopHTTP() {

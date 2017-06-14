@@ -53,11 +53,11 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
 
     @Override
     public boolean start() {
+        final long shardingThreshold = engineConfiguration().getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
+        final int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
         Context context = metricRegistry()
                 .timer(name(UpdatingInstanceCountTask.class, "execution")).time();
         try {
-            long shardingThreshold = engineConfiguration().getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
-            int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
             EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
 
             Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
@@ -72,6 +72,9 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
 
             //Update counts
             jobs.forEach((key, value) -> {
+                metricRegistry()
+                        .histogram(name(UpdatingInstanceCountTask.class, "shard-size-increase"))
+                        .update(value);
                 Context contextSingle = metricRegistry()
                         .timer(name(UpdatingInstanceCountTask.class, "execution-single")).time();
                 try {
@@ -84,7 +87,14 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
             });
 
             //Shard anything which requires sharding
-            conceptToShard.forEach(type -> shardConcept(redis(), factory, keyspace, type, maxRetry, shardingThreshold));
+            conceptToShard.forEach(type -> {
+                Context contextSharding = metricRegistry().timer("sharding").time();
+                try {
+                    shardConcept(redis(), factory, keyspace, type, maxRetry, shardingThreshold);
+                } finally {
+                    contextSharding.stop();
+                }
+            });
 
             return true;
         } finally {
