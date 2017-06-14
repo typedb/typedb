@@ -30,6 +30,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -41,8 +42,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestEnv.usingOrientDB;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -68,7 +67,7 @@ public class AnalyticsTest {
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
-        assumeFalse(usingOrientDB());
+        assumeFalse(GraknTestSetup.usingOrientDB());
 
         factory = context.factoryWithNewKeyspace();
     }
@@ -76,7 +75,7 @@ public class AnalyticsTest {
     @Test
     public void testInferredResourceRelation() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             TypeLabel resourceTypeLabel = TypeLabel.of("degree");
@@ -105,7 +104,7 @@ public class AnalyticsTest {
     @Test
     public void testNullResourceDoesntBreakAnalytics() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // make slightly odd graph
@@ -138,7 +137,7 @@ public class AnalyticsTest {
     @Test
     public void testConcurrentAnalyticsJobsBySubmittingGraqlComputeQueries() {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         addOntologyAndEntities();
 

@@ -42,6 +42,7 @@
         <module>grakn-test-profiles</module>
         <module>grakn-factory</module>
         <module>grakn-client</module>
+        <module>grakn-test-tools</module>
     </modules>
 
     <properties>
@@ -72,6 +73,7 @@
         <orientdb.version>3.2.3.0</orientdb.version>
         <orientdb-gremlin-core.version>3.2.1</orientdb-gremlin-core.version>
         <logback.version>1.1.7</logback.version>
+        <janino.version>2.7.8</janino.version>
         <slf4j.version>1.7.20</slf4j.version>
         <csv.version>1.4</csv.version>
         <jool.version>3.8.5</jool.version>
@@ -94,6 +96,7 @@
         <redis.version>2.9.0</redis.version>
         <redis-test.version>0.6</redis-test.version>
         <guava-retrying.version>2.0.0</guava-retrying.version>
+        <cassandra-driver-core.version>3.1.2</cassandra-driver-core.version>
         <main.basedir>${project.parent.basedir}</main.basedir>
     </properties>
 
@@ -230,6 +233,13 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!--Jaino used for conditionals in log files-->
+        <dependency>
+            <groupId>org.codehaus.janino</groupId>
+            <artifactId>janino</artifactId>
+            <version>${janino.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

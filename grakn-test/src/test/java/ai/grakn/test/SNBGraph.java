@@ -19,7 +19,7 @@
 package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.test.graphs.TestGraph;
+import ai.grakn.graphs.TestGraph;
 
 import java.util.function.Consumer;
 
@@ -29,7 +29,7 @@ import java.util.function.Consumer;
  * @author Sheldon
  *
  */
-public class SNBGraph extends TestGraph{
+public class SNBGraph extends TestGraph {
 
     public static Consumer<GraknGraph> get() {
         return new SNBGraph().build();

@@ -18,6 +18,15 @@
         <skip-docker-tests>true</skip-docker-tests>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-test-tools</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
@@ -95,18 +104,6 @@
                             <artifactId>slf4j-nop</artifactId>
                         </exclusion>
                     </exclusions>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.cassandraunit</groupId>
-                    <artifactId>cassandra-unit</artifactId>
-                    <version>${cassandra-unit.version}</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>com.datastax.cassandra</groupId>
-                    <artifactId>cassandra-driver-core</artifactId>
-                    <version>3.1.2</version>
                     <scope>test</scope>
                 </dependency>
             </dependencies>
@@ -199,8 +196,4 @@
             </build>
         </profile>
     </profiles>
-
-
-
-
 </project>

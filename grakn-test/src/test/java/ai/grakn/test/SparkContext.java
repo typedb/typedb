@@ -14,7 +14,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
 package ai.grakn.test;
@@ -34,7 +33,7 @@ import java.util.function.Consumer;
 public class SparkContext extends ExternalResource {
 
     private final BiConsumer<Service, GraknEngineConfig> createControllers;
-    private final GraknEngineConfig config = GraknTestEnv.createTestConfig();
+    private final GraknEngineConfig config = GraknTestEngineSetup.createTestConfig();
 
     private Service spark;
 
@@ -68,7 +67,7 @@ public class SparkContext extends ExternalResource {
     }
 
     public void start() {
-        spark = GraknTestEnv.startSpark(config);
+        spark = GraknTestEngineSetup.startSpark(config);
 
         createControllers.accept(spark, config);
 
