@@ -62,6 +62,7 @@ node('slave1-dev-jenkins') {
 
         dir('grakn') {
             stage('Tear Down Grakn') {
+                archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
                 sh 'grakn-package/bin/grakn.sh stop'
                 sh 'rm -rf grakn-package'
             }
