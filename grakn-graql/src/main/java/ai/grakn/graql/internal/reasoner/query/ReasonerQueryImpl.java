@@ -115,7 +115,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public String toString(){
-        return atomSet.stream().map(Atomic::toString).collect(Collectors.joining(", "));
+        return "{\n" +
+                atomSet.stream()
+                        .filter(Atomic::isAtom)
+                        .filter(Atomic::isSelectable)
+                        .map(Atomic::toString)
+                        .collect(Collectors.joining(";\n")) +
+                "\n}";
     }
 
     @Override

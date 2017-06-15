@@ -108,6 +108,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
+    public String toString(){
+        return getAtom().toString();
+    }
+
+    @Override
     public int hashCode() {
         return super.hashCode() + 37;
     }
