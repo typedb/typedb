@@ -29,8 +29,6 @@ import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.GraknVersion;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +38,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -83,8 +80,6 @@ public class SystemKeyspace {
     protected static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
 
     private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
-    private static final AtomicBoolean factoryBeingInstantiated = new AtomicBoolean(false);
-    private static final CountDownLatch factoryInstantiated = new CountDownLatch(1);
     private static SystemKeyspace instance = null;
     private final InternalFactory factory;
 
@@ -104,20 +99,9 @@ public class SystemKeyspace {
      * @param engineUrl the url of engine to get the config from
      * @param properties the properties used to initialise the keyspace
      */
-    public static SystemKeyspace initialise(String engineUrl, Properties properties){
+    public synchronized static SystemKeyspace initialise(String engineUrl, Properties properties){
         if(instance == null){
-            if(factoryBeingInstantiated.compareAndSet(false, true)) {
-                instance = new SystemKeyspace(engineUrl, properties);
-                factoryInstantiated.countDown();
-            } else {
-                try {
-                    if(!factoryInstantiated.await(10, TimeUnit.SECONDS)){
-                        throw new IllegalStateException("System factory has not yet been initialised");
-                    }
-                } catch (InterruptedException e){
-                    throw new IllegalStateException("Interrupted while waiting for system graph to instantiate.");
-                }
-            }
+            instance = new SystemKeyspace(engineUrl, properties);
         }
 
         return instance;
