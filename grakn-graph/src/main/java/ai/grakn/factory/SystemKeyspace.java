@@ -218,42 +218,6 @@ public class SystemKeyspace {
      * @param graph The graph to contain the system ontology
      */
     private static void loadSystemOntology(GraknGraph graph){
-        //Task Data
-        ResourceType<String> status = graph.putResourceType("status", ResourceType.DataType.STRING);
-        ResourceType<Long> statuChangeTime = graph.putResourceType("status-change-time", ResourceType.DataType.LONG);
-        ResourceType<String> statusChangeBy = graph.putResourceType("status-change-by", ResourceType.DataType.STRING);
-        ResourceType<String> taskClassName = graph.putResourceType("task-class-name", ResourceType.DataType.STRING);
-        ResourceType<String> createdBy = graph.putResourceType("created-by", ResourceType.DataType.STRING);
-        ResourceType<String> engineId = graph.putResourceType("engine-id", ResourceType.DataType.STRING);
-        ResourceType<Long> runAt = graph.putResourceType("runAt", ResourceType.DataType.LONG);
-        ResourceType<Boolean> recurring = graph.putResourceType("recurring", ResourceType.DataType.BOOLEAN);
-        ResourceType<Long> recurInterval = graph.putResourceType("recur-interval", ResourceType.DataType.LONG);
-        ResourceType<String> taskFailure = graph.putResourceType("task-failure", ResourceType.DataType.STRING);
-        ResourceType<String> stackTrace = graph.putResourceType("stack-trace", ResourceType.DataType.STRING);
-        ResourceType<String> taskException = graph.putResourceType("task-exception", ResourceType.DataType.STRING);
-        ResourceType<String> taskCheckpoint = graph.putResourceType("task-checkpoint", ResourceType.DataType.STRING);
-        ResourceType<String> taskConfiguration = graph.putResourceType("task-configuration", ResourceType.DataType.STRING);
-        ResourceType<String> taskSerialized = graph.putResourceType("taskSerialized", ResourceType.DataType.STRING);
-        ResourceType<String> taskId = graph.putResourceType("taskId", ResourceType.DataType.STRING);
-
-        graph.putEntityType("scheduled-task").
-                resource(status).
-                resource(statuChangeTime).
-                resource(statusChangeBy).
-                resource(taskClassName).
-                resource(createdBy).
-                resource(engineId).
-                resource(runAt).
-                resource(recurring).
-                resource(recurInterval).
-                resource(taskFailure).
-                resource(stackTrace).
-                resource(taskException).
-                resource(taskCheckpoint).
-                resource(taskConfiguration).
-                resource(taskSerialized).
-                resource(taskId);
-
         //Keyspace data
         ResourceType<String> keyspaceName = graph.putResourceType("keyspace-name", ResourceType.DataType.STRING);
         graph.putEntityType("keyspace").key(keyspaceName);
