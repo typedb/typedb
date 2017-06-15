@@ -54,7 +54,6 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import static ai.grakn.migration.base.MigrationCLI.die;
-import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
 import static java.util.stream.Collectors.toSet;
 
 /**
