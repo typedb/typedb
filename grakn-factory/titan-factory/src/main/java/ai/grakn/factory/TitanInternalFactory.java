@@ -82,7 +82,7 @@ final public class TitanInternalFactory extends AbstractInternalFactory<GraknTit
 
     @Override
     GraknTitanGraph buildGraknGraphFromTinker(TitanGraph graph) {
-        return new GraknTitanGraph(graph, super.keyspace, super.engineUrl, super.properties);
+        return new GraknTitanGraph(graph, super.keyspace, super.engineUrl, super.properties, super.systemKeyspace);
     }
 
     @Override
