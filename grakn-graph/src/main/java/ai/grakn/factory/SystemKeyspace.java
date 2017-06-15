@@ -72,7 +72,6 @@ public class SystemKeyspace {
     // If there is a more natural home for this constant, feel free to put it there! (Boris)
     public static final String SYSTEM_GRAPH_NAME = "graknSystem";
     private static final String SYSTEM_VERSION = "system-version";
-    private static final String SYSTEM_ONTOLOGY_FILE = "system.gql";
     public static final TypeLabel KEYSPACE_ENTITY = TypeLabel.of("keyspace");
 
     public static final TypeLabel KEYSPACE_RESOURCE = TypeLabel.of("keyspace-name");
