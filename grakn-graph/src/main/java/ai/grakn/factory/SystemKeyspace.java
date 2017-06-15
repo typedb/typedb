@@ -93,7 +93,7 @@ public class SystemKeyspace {
      */
     public SystemKeyspace(String engineUrl, Properties properties){
         factory = FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties, this);
-        loadSystemOntology(factory);
+        loadSystemOntology();
     }
 
     /**
@@ -186,8 +186,8 @@ public class SystemKeyspace {
      * only consists of types, the inserts are idempotent and it is safe to load it
      * multiple times.
      */
-    void loadSystemOntology(InternalFactory factory) {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+    void loadSystemOntology() {
+        try (GraknGraph graph = factory().open(GraknTxType.WRITE)) {
             if (graph.getType(KEYSPACE_ENTITY) != null) {
                 checkVersion(graph);
                 return;
