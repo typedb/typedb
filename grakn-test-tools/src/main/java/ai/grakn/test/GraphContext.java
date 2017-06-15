@@ -45,8 +45,8 @@ import java.util.function.Consumer;
 public class GraphContext extends GraphLoader implements TestRule {
     private boolean assumption = true;
 
-    private GraphContext(Consumer<GraknGraph> preLoad, String ... files){
-        super(preLoad, files);
+    private GraphContext(Consumer<GraknGraph> preLoad){
+        super(preLoad);
     }
 
     public static GraphContext empty(){
@@ -58,12 +58,16 @@ public class GraphContext extends GraphLoader implements TestRule {
     }
 
     public static GraphContext preLoad(String ... files){
-        return getContext(null, files);
+        return getContext((graknGraph) -> {
+            for (String file : files) {
+                loadFromFile(graknGraph, file);
+            }
+        });
     }
 
-    private static GraphContext getContext(Consumer<GraknGraph> preLoad, String ... files){
+    private static GraphContext getContext(Consumer<GraknGraph> preLoad){
         GraknTestSetup.startCassandraIfNeeded();
-        return new GraphContext(preLoad, files);
+        return new GraphContext(preLoad);
     }
 
     public GraphContext assumeTrue(boolean bool){

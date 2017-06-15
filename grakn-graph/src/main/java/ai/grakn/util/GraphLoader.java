@@ -61,15 +61,13 @@ public class GraphLoader {
     private static Properties graphConfig;
 
     private final InternalFactory<?> factory;
-    private final String[] files;
     private Consumer<GraknGraph> preLoad;
     private boolean graphLoaded = false;
     private GraknGraph graph;
 
-    protected GraphLoader(Consumer<GraknGraph> preLoad, String ... files){
+    protected GraphLoader(Consumer<GraknGraph> preLoad){
         factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties());
         this.preLoad = preLoad;
-        this.files = files;
     }
 
     public static GraphLoader empty(){
@@ -81,7 +79,11 @@ public class GraphLoader {
     }
 
     public static GraphLoader preLoad(String [] files){
-        return new GraphLoader(null, files);
+        return new GraphLoader((graknGraph) -> {
+            for (String file : files) {
+                loadFromFile(graknGraph, file);
+            }
+        });
     }
 
     public GraknGraph graph(){
@@ -122,12 +124,6 @@ public class GraphLoader {
      */
     private void load(GraknGraph graph){
         if(preLoad != null) preLoad.accept(graph);
-
-        if (files != null) {
-            for (String file : files) {
-                loadFromFile(graph, file);
-            }
-        }
     }
 
     /**
@@ -169,14 +165,13 @@ public class GraphLoader {
         return System.getProperty(PROJECT_PROPERTY) + "/";
     }
 
-    //TODO: Cleanup up. Another duplicate method. Currently in GraknTestEnv
-    private static String randomKeyspace(){
+    public static String randomKeyspace(){
         // Embedded Casandra has problems dropping keyspaces that start with a number
         return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
     }
 
     //TODO: Cleanup again. Another duplicate. Currently in TestGraph
-    private static void loadFromFile(GraknGraph graph, String file) {
+    protected static void loadFromFile(GraknGraph graph, String file) {
         try {
             File graql = new File(file);
 
