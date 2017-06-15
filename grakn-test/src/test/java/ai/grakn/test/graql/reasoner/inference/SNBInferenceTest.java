@@ -24,7 +24,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.test.GraphContextOld;
+import ai.grakn.test.GraphContext;
 import ai.grakn.test.SNBGraph;
 
 import ai.grakn.test.GraknTestSetup;
@@ -42,7 +42,7 @@ import static org.junit.Assume.assumeTrue;
 public class SNBInferenceTest {
 
     @Rule
-    public final GraphContextOld snbGraph = GraphContextOld.preLoad(SNBGraph.get());
+    public final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get());
 
     @BeforeClass
     public static void onStartup() throws Exception {

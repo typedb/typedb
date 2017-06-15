@@ -26,7 +26,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.GraphContextOld;
+import ai.grakn.test.GraphContext;
 
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
@@ -50,7 +50,7 @@ public class GenealogyTest {
     private static QueryBuilder iqb;
 
     @ClassRule
-    public static final GraphContextOld genealogyGraph = GraphContextOld.preLoad(GenealogyGraph.get());
+    public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get());
 
     @BeforeClass
     public static void setUpClass() throws Exception {

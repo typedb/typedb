@@ -29,7 +29,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.test.GraphContextOld;
+import ai.grakn.test.GraphContext;
 import ai.grakn.test.SNBGraph;
 
 import ai.grakn.test.GraknTestSetup;
@@ -49,19 +49,19 @@ import static org.junit.Assume.assumeTrue;
 public class QueryTest {
 
     @ClassRule
-    public static final GraphContextOld snbGraph = GraphContextOld.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld geoGraph = GraphContextOld.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld admissionsGraph = GraphContextOld.preLoad(AdmissionsGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld ancestorGraph = GraphContextOld.preLoad("ancestor-friend-test.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext ancestorGraph = GraphContext.preLoad("src/test/graql/ancestor-friend-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld genealogyOntology = GraphContextOld.preLoad("genealogy/ontology.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext genealogyOntology = GraphContext.preLoad("src/test/graql/genealogy/ontology.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void setUpClass() throws Exception {
