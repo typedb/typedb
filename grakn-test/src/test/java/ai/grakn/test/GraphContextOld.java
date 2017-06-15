@@ -76,16 +76,6 @@ public class GraphContextOld implements TestRule {
         return graph;
     }
 
-    public void rollback() {
-        if (GraknTestSetup.usingTinker()) {
-            graph.admin().delete();
-            loadGraph();
-        } else if (!graph.isClosed()) {
-            graph.close();
-        }
-        graph = getEngineGraph();
-    }
-
     public void load(Consumer<GraknGraph> build){
         this.preLoad = build;
         loadGraph();
