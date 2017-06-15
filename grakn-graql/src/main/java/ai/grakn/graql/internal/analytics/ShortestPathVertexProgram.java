@@ -249,6 +249,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                 if (predecessors.length > 2) {
                     memory.set(MIDDLE, predecessors[2]);
                 }
+                //todo: be careful in tinkergraph as things set here cannot be got
+                return predecessors[0].equals(persistentProperties.get(SOURCE));
             }
             return memory.get(PREDECESSOR_FROM_SOURCE).equals(persistentProperties.get(SOURCE));
         }

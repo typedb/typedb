@@ -192,9 +192,6 @@ public class GraqlTest {
 
     @Test
     public void testPath() throws InvalidGraphException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         addOntologyAndEntities();
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {

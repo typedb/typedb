@@ -90,9 +90,6 @@ public class ShortestPathTest {
 
     @Test
     public void testShortestPath() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         List<String> correctPath;
         List<String> computedPath;
         addOntologyAndEntities();
