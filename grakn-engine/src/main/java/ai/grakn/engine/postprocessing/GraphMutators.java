@@ -30,8 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.GraknEngineConfig.LOADER_REPEAT_COMMITS;
-
 /**
  * <p>
  *     Abstract class containing utilities for graph mutations
