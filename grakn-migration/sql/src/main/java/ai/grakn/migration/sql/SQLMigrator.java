@@ -58,8 +58,6 @@ public class SQLMigrator {
             die("Cannot find file: " + options.getTemplate());
         }
 
-        printInitMessage(options, options.getLocation() + " using " + options.getQuery());
-
         try {
             if(options.hasDriver()) {
                 DriverManager.registerDriver(options.getDriver());

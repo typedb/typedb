@@ -26,8 +26,6 @@ import org.semanticweb.owlapi.apibinding.OWLManager;
 import java.io.File;
 import java.util.Optional;
 
-import static ai.grakn.migration.base.MigrationCLI.die;
-import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
 import static ai.grakn.migration.base.MigrationCLI.printWholeCompletionMessage;
 
 /**
@@ -55,10 +53,8 @@ public class Main {
     public static void runOwl(OwlMigrationOptions options){
         File owlfile = new File(options.getInput());
         if (!owlfile.exists()) {
-            die("Cannot find file: " + options.getInput());
+            MigrationCLI.die("Cannot find file: " + options.getInput());
         }
-
-        printInitMessage(options, owlfile.getPath());
 
         OWLMigrator migrator = new OWLMigrator();
         try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE)) {
@@ -69,7 +65,7 @@ public class Main {
             printWholeCompletionMessage(options);
         }
         catch (Throwable t) {
-            die(t);
+            MigrationCLI.die(t);
         }
     }
 }

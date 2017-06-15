@@ -37,8 +37,6 @@ import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static ai.grakn.migration.base.MigrationCLI.die;
-import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -71,14 +69,12 @@ public class CSVMigrator implements AutoCloseable {
         File csvTemplate = new File(options.getTemplate());
 
         if (!csvTemplate.exists()) {
-            die("Cannot find file: " + options.getTemplate());
+            MigrationCLI.die("Cannot find file: " + options.getTemplate());
         }
 
         if (!csvDataFile.exists()) {
-            die("Cannot find file: " + options.getInput());
+            MigrationCLI.die("Cannot find file: " + options.getInput());
         }
-
-        printInitMessage(options, csvDataFile.getPath());
 
         try (
                 CSVMigrator csvMigrator =
@@ -89,7 +85,7 @@ public class CSVMigrator implements AutoCloseable {
         ) {
             MigrationCLI.loadOrPrint(csvTemplate, csvMigrator.convert(), options);
         } catch (Throwable throwable) {
-            die(throwable);
+            MigrationCLI.die(throwable);
         }
     }
 

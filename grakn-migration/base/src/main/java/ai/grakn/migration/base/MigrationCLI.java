@@ -108,14 +108,15 @@ public class MigrationCLI {
         if(options.isNo()){
             migrator.print(template, data);
         } else {
+            printInitMessage(options);
             migrator.load(template, data,
                     options.getBatch(), options.getNumberActiveTasks(), options.getRetry());
             printWholeCompletionMessage(options);
         }
     }
 
-    public static void printInitMessage(MigrationOptions options, String dataToMigrate){
-        System.out.println("Migrating data " + dataToMigrate +
+    public static void printInitMessage(MigrationOptions options){
+        System.out.println("Migrating data " + options.getInput() +
                 " using Grakn Engine " + options.getUri() +
                 " into graph " + options.getKeyspace());
     }
