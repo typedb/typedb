@@ -74,9 +74,6 @@ public class AnalyticsTest {
 
     @Test
     public void testInferredResourceRelation() throws InvalidGraphException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             TypeLabel resourceTypeLabel = TypeLabel.of("degree");
             ResourceType<Long> degree = graph.putResourceType(resourceTypeLabel, ResourceType.DataType.LONG);
@@ -103,9 +100,6 @@ public class AnalyticsTest {
 
     @Test
     public void testNullResourceDoesntBreakAnalytics() throws InvalidGraphException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // make slightly odd graph
             TypeLabel resourceTypeId = TypeLabel.of("degree");

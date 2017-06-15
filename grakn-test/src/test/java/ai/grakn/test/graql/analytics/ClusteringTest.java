@@ -84,9 +84,6 @@ public class ClusteringTest {
 
     @Test
     public void testConnectedComponentOnEmptyGraph() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // test on an empty rule.graph()
             Map<String, Long> sizeMap = Graql.compute().withGraph(graph).cluster().execute();
@@ -100,9 +97,6 @@ public class ClusteringTest {
 
     @Test
     public void testConnectedComponentSize() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         Map<String, Long> sizeMap;
         Map<String, Set<String>> memberMap;
         Map<String, Long> sizeMapPersist;
@@ -139,9 +133,6 @@ public class ClusteringTest {
 
     @Test
     public void testConnectedComponentImplicitType() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         String aResourceTypeLabel = "aResourceTypeLabel";
 
         addOntologyAndEntities();
@@ -171,9 +162,6 @@ public class ClusteringTest {
 
     @Test
     public void testConnectedComponent() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         Map<String, Long> sizeMap;
         Map<String, Set<String>> memberMap;
 
@@ -233,7 +221,7 @@ public class ClusteringTest {
 
     @Test
     public void testConnectedComponentConcurrency() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
+        // TODO: move parallel test to integration tests
         assumeFalse(GraknTestSetup.usingTinker());
 
         addOntologyAndEntities();

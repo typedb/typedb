@@ -159,9 +159,6 @@ public class StatisticsTest {
 
     @Test
     public void testMinAndMax() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         Optional<Number> result;
 
         // resource-type has no instance
@@ -254,9 +251,6 @@ public class StatisticsTest {
 
     @Test
     public void testSum() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         Optional<Number> result;
 
         // resource-type has no instance
@@ -314,9 +308,6 @@ public class StatisticsTest {
 
     @Test
     public void testMean() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         Optional<Double> result;
 
         // resource-type has no instance
@@ -373,7 +364,7 @@ public class StatisticsTest {
 
     @Test
     public void testStd() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
+        // TODO: move parallel test to integration tests
         assumeFalse(GraknTestSetup.usingTinker());
 
         Optional<Double> result;

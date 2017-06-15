@@ -66,9 +66,6 @@ public class ShortestPathTest {
 
     @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFound() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         // test on an empty graph
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().path().from(entityId1).to(entityId2).execute();
@@ -77,9 +74,6 @@ public class ShortestPathTest {
 
     @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFoundSubgraph() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         addOntologyAndEntities();
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().path().from(entityId1).to(entityId4).in(thing, related).execute();
@@ -88,9 +82,6 @@ public class ShortestPathTest {
 
     @Test
     public void testShortestPathExceptionPathNotFound() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         addOntologyAndEntities();
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             assertFalse(graph.graql().compute().path().from(entityId1).to(entityId5).execute().isPresent());
@@ -155,7 +146,7 @@ public class ShortestPathTest {
 
     @Test
     public void testShortestPathConcurrency() {
-        // TODO: Fix in TinkerGraphComputer
+        // TODO: move parallel test to integration tests
         assumeFalse(GraknTestSetup.usingTinker());
 
         List<String> correctPath;
@@ -180,9 +171,6 @@ public class ShortestPathTest {
 
     @Test
     public void testShortestPathCastingWithThreeMessages() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         List<String> correctPath;
         List<String> computedPath;
         addOntologyAndEntities2();
@@ -214,7 +202,6 @@ public class ShortestPathTest {
 
     @Test
     public void testMultipleIndependentShortestPaths() throws InvalidGraphException {
-        assumeFalse(GraknTestSetup.usingTinker());
         Set<List<ConceptId>> validPaths = new HashSet<>();
         ConceptId startId;
         ConceptId endId;
