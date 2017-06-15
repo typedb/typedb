@@ -23,7 +23,6 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Printer;
-import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import com.google.common.collect.ImmutableList;
@@ -119,9 +118,9 @@ public class JsonPrinterTest {
 
     @Test
     public void testJsonRule() {
-        Rule jsonRule = movieContext.graph().getResourceType("name").getResource("expectation-movieGraph").owner().asRule();
+        Rule jsonRule = movieContext.graph().getResourceType("name").getResource("expectation-rule").owner().asRule();
         assertJsonEquals(
-                Json.object("id", jsonRule.getId().getValue(), "isa", "a-movieGraph-type", "lhs", jsonRule.getLHS().toString(), "rhs", jsonRule.getRHS().toString()),
+                Json.object("id", jsonRule.getId().getValue(), "isa", "a-rule-type", "lhs", jsonRule.getLHS().toString(), "rhs", jsonRule.getRHS().toString()),
                 jsonRule
         );
     }
