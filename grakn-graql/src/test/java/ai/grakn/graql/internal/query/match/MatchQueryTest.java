@@ -21,6 +21,8 @@ package ai.grakn.graql.internal.query.match;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -31,6 +33,7 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Order;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -54,6 +57,7 @@ import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -137,6 +141,9 @@ import static ai.grakn.matcher.MovieMatchers.tmdbVoteAverage;
 import static ai.grakn.matcher.MovieMatchers.tmdbVoteCount;
 import static ai.grakn.matcher.MovieMatchers.war;
 import static ai.grakn.util.ErrorMessage.MATCH_INVALID;
+import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
+import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
+import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
@@ -963,5 +970,146 @@ public class MatchQueryTest {
 
         assertThat(query, variable("x", everyItem(not(isInstance()))));
         assertThat(query, variable("y", everyItem(not(isInstance()))));
+    }
+
+    @Test
+    public void whenQueryIsLimitedToANegativeNumber_Throw() {
+        expectedException.expect(GraqlQueryException.class);
+        expectedException.expectMessage(NON_POSITIVE_LIMIT.getMessage(Long.MIN_VALUE));
+        //noinspection ResultOfMethodCallIgnored
+        movieGraph.graph().graql().match(var()).limit(Long.MIN_VALUE);
+    }
+
+    @Test
+    public void whenQueryIsLimitedToZero_Throw() {
+        expectedException.expect(GraqlQueryException.class);
+        expectedException.expectMessage(NON_POSITIVE_LIMIT.getMessage(0L));
+        //noinspection ResultOfMethodCallIgnored
+        movieGraph.graph().graql().match(var()).limit(0L);
+    }
+
+    @Test
+    public void whenQueryIsOffsetByANegativeNumber_Throw() {
+        expectedException.expect(GraqlQueryException.class);
+        expectedException.expectMessage(NEGATIVE_OFFSET.getMessage(Long.MIN_VALUE));
+        //noinspection ResultOfMethodCallIgnored
+        movieGraph.graph().graql().match(var()).offset(Long.MIN_VALUE);
+    }
+
+    @Test
+    public void testDistinctEmpty() {
+        Set<Concept> result2 = movieGraph.graph().graql().match(
+                var("x").isa("movie").has("title", var("y")),
+                var("y").has("name", "xxx")).select("y").distinct().execute()
+                .stream()
+                .map(stringConceptMap -> stringConceptMap.get("x"))
+                .collect(Collectors.toSet());
+        assertTrue(result2.isEmpty());
+    }
+
+    @Test
+    public void testDistinctTuple() {
+        int size = movieGraph.graph().graql().match(var("x").isa("genre")).execute().size();
+        size *= size;
+
+        List<Answer> result1 = movieGraph.graph().graql().match(
+                var("x").isa("genre"),
+                var("x").isa("genre"),
+                var("x").isa("genre"),
+                var("y").isa("genre")).distinct().execute();
+        assertEquals(size, result1.size());
+
+        List<Answer> result2 = movieGraph.graph().graql().match(
+                var().isa("genre"),
+                var().isa("genre"),
+                var().isa("genre"),
+                var().isa("genre"),
+                var().isa("genre")).distinct().execute();
+        assertEquals(1, result2.size());
+
+        List<Answer> result3 = movieGraph.graph().graql().match(
+                var("x").isa("genre"),
+                var("y").isa("genre")).distinct().execute();
+        assertEquals(size, result3.size());
+
+        List<Answer> result4 = movieGraph.graph().graql().match(
+                var().isa("genre"),
+                var("x").isa("genre"),
+                var("y").isa("genre")).distinct().execute();
+        assertEquals(size, result4.size());
+    }
+
+    @Test
+    public void whenSelectingVarNotInQuery_Throw() {
+        expectedException.expect(GraqlQueryException.class);
+        expectedException.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("x")));
+        movieGraph.graph().graql().match(var()).select("x").execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void testVarNameEmptySet() {
+        movieGraph.graph().graql().match(var()).select(Collections.EMPTY_SET).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void testVarNameNullSet() {
+        movieGraph.graph().graql().match(var()).select((Set<Var>) null).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void testVarNameNullString() {
+        movieGraph.graph().graql().match(var()).select((String) null).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void testOrderBy1() {
+        movieGraph.graph().graql().match(var().isa("movie")).orderBy((String) null, Order.desc).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void testOrderBy2() {
+        movieGraph.graph().graql().match(var().isa("movie")).orderBy((Var) null, Order.desc).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void testOrderBy3() {
+        movieGraph.graph().graql().match(var("x").isa("movie")).orderBy((String) null, Order.desc).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void testOrderBy4() {
+        movieGraph.graph().graql().match(var("x").isa("movie")).orderBy((Var) null, Order.desc).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void testOrderBy5() {
+        movieGraph.graph().graql().match(var("x").isa("movie")).orderBy("y", Order.asc).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void testOrderBy6() {
+        movieGraph.graph().graql().match(var("x").isa("movie")).orderBy("x", null).execute();
+    }
+
+    @Test(expected = Exception.class) //TODO: error message should be more specific
+    public void testOrderBy7() {
+        movieGraph.graph().graql().match(var("x").isa("movie"),
+                var().rel("x").rel("y")).orderBy("y", Order.asc).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void testOrderBy8() {
+        movieGraph.graph().graql().match(var("x").isa("movie")).orderBy("x", Order.asc).execute();
+    }
+
+    @Test
+    public void whenExecutingGraqlTraversalFromGraph_ReturnExpectedResults(){
+        EntityType type = movieGraph.graph().putEntityType("Concept Type");
+        Entity entity = type.addEntity();
+
+        Collection<Concept> results = movieGraph.graph().graql().match(var("x").isa(type.getLabel().getValue())).
+                execute().iterator().next().values();
+
+        assertThat(results, containsInAnyOrder(entity));
     }
 }

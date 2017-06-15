@@ -380,7 +380,7 @@ public class SNBInferenceTest {
 
     /**
      * Tests Bug #7416
-     * the $t variable in the query matches with $t from rules so if the rule var is not changed an extra condition is created
+     * the $t variable in the query matches with $t from rules so if the movieGraph var is not changed an extra condition is created
      * which renders the query unsatisfiable
      */
     @Test

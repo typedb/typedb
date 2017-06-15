@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
@@ -30,7 +31,9 @@ import ai.grakn.test.graphs.MovieGraph;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.List;
 import java.util.Map;
@@ -46,6 +49,7 @@ import static ai.grakn.graql.Graql.select;
 import static ai.grakn.graql.Graql.std;
 import static ai.grakn.graql.Graql.sum;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
 import static org.junit.Assert.assertEquals;
@@ -54,6 +58,9 @@ public class AggregateTest {
 
     @ClassRule
     public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     private QueryBuilder qb;
 
@@ -225,5 +232,35 @@ public class AggregateTest {
         double expected = sqrt(variance);
 
         assertEquals(expected, query.execute().get().doubleValue(), 0.01d);
+    }
+
+    @Test
+    public void testEmptyMatchCount() {
+        assertEquals(0L, rule.graph().graql().match(var().isa("runtime")).aggregate(count()).execute().longValue());
+        rule.graph().graql().match(var()).aggregate(count()).execute();
+    }
+
+    @Test(expected = Exception.class) // TODO: Would help if the error message is more specific
+    public void testVarsNotExist() {
+        rule.graph().graql().match(var("x").isa("movie")).aggregate(min("y")).execute();
+        System.out.println(rule.graph().graql().match(var("x").isa("movie")).aggregate(min("x")).execute());
+    }
+
+    @Test(expected = Exception.class)
+    public void testMinOnEntity() {
+        rule.graph().graql().match(var("x")).aggregate(min("x")).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void testIncorrectResourceDataType() {
+        rule.graph().graql().match(var("x").isa("movie").has("title", var("y")))
+                .aggregate(sum("y")).execute();
+    }
+
+    @Test
+    public void whenGroupVarIsNotInQuery_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("z")));
+        rule.graph().graql().match(var("x").isa("movie").has("title", var("y"))).aggregate(group("z", count())).execute();
     }
 }

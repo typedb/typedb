@@ -54,7 +54,7 @@ public class BenchmarkTests {
     }
 
     /**
-     * 2-rule transitive test with transitivity expressed in terms of two linear rules
+     * 2-movieGraph transitive test with transitivity expressed in terms of two linear rules
      * The rules are defined as:
      *
      * (Q-from: $x, Q-to: $y) isa Q;
@@ -109,8 +109,8 @@ public class BenchmarkTests {
     }
 
     /**
-     * single-rule transitivity test with initial data arranged in a chain of length N
-     * The rule is given as:
+     * single-movieGraph transitivity test with initial data arranged in a chain of length N
+     * The movieGraph is given as:
      *
      * (Q-from: $x, Q-to: $z) isa Q;
      * (Q-from: $z, Q-to: $y) isa Q;
@@ -183,8 +183,8 @@ public class BenchmarkTests {
     }
 
     /**
-     * single-rule transitivity test with initial data arranged in a N x N square grid.
-     * The rule is given as:
+     * single-movieGraph transitivity test with initial data arranged in a N x N square grid.
+     * The movieGraph is given as:
      *
      * (Q-from: $x, Q-to: $z) isa Q;
      * (Q-from: $z, Q-to: $y) isa Q;
@@ -254,7 +254,7 @@ public class BenchmarkTests {
     }
 
     /**
-     * single-rule mimicking transitivity test rule defined by two-hop relations
+     * single-movieGraph mimicking transitivity test movieGraph defined by two-hop relations
      * Initial data arranged in N x N square grid.
      *
      * Rule:

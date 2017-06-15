@@ -143,7 +143,7 @@ public class ReasoningTests {
         assumeTrue(GraknTestSetup.usingTinker());
     }
 
-    //The tests validate the correctness of the rule reasoning implementation w.r.t. the intended semantics of rules.
+    //The tests validate the correctness of the movieGraph reasoning implementation w.r.t. the intended semantics of rules.
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
     //as specified in the respective comments below.
 
@@ -283,7 +283,7 @@ public class ReasoningTests {
         assertEquals(answers.size(), 1);
     }
 
-    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    @Test //Expected result: When the head of a movieGraph contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources1() {
         QueryBuilder qb = testSet14.graph().graql().infer(true);
         String queryString1 = "match $x isa entity1, has res1 $y;";
@@ -320,7 +320,7 @@ public class ReasoningTests {
 
     //TODO potentially a graql bug when executing match insert on shared resources
     @Ignore
-    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    @Test //Expected result: When the head of a movieGraph contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources2() {
         QueryBuilder qb = testSet15.graph().graql().infer(true);
         String queryString1 = "match $x isa entity1, has res2 $y;";
@@ -339,7 +339,7 @@ public class ReasoningTests {
         assertTrue(answers3.iterator().next().get(var("y")).isResource());
     }
 
-    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    @Test //Expected result: When the head of a movieGraph contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources3() {
         QueryBuilder qb = testSet16.graph().graql().infer(true);
         String queryString1 = "match $x isa entity1, has res1 $y; $z isa relation1;";
@@ -363,7 +363,7 @@ public class ReasoningTests {
         );
     }
 
-    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    @Test //Expected result: When the head of a movieGraph contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources4() {
         QueryBuilder qb = testSet17.graph().graql().infer(true);
         String queryString1 = "match $x has res2 $r;";
@@ -371,7 +371,7 @@ public class ReasoningTests {
         assertEquals(answers.size(), 1);
     }
 
-    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    @Test //Expected result: When the head of a movieGraph contains resource assertions, the respective unique resources should be generated or reused.
     public void inferringSpecificResourceValue() {
         QueryBuilder qb = testSet18.graph().graql().infer(true);
         String queryString = "match $x has res1 'value';";
@@ -387,7 +387,7 @@ public class ReasoningTests {
         assertTrue(answers.containsAll(requeriedAnswers));
     }
 
-    @Test //Expected result: Two answers obtained only if the rule query containing sub type is correctly executed.
+    @Test //Expected result: Two answers obtained only if the movieGraph query containing sub type is correctly executed.
     public void instanceTypeHierarchyRespected_queryHasSuperTypes(){
         QueryBuilder qb = testSet19.graph().graql().infer(true);
         String queryString = "match " +
@@ -401,7 +401,7 @@ public class ReasoningTests {
         assertEquals(answers2.size(), 2);
     }
 
-    @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
+    @Test //Expected result: Single answer obtained only if the movieGraph query containing super type is correctly executed.
     public void instanceTypeHierarchyRespected_querySpecialisesType(){
         QueryBuilder qb = testSet19.graph().graql().infer(true);
         String queryString = "match " +
@@ -416,7 +416,7 @@ public class ReasoningTests {
         assertEquals(answers2.size(), 1);
     }
 
-    @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
+    @Test //Expected result: Single answer obtained only if the movieGraph query containing super type is correctly executed.
     public void instanceTypeHierarchyRespected_queryOverwritesTypes(){
         QueryBuilder qb = testSet19.graph().graql().infer(true);
         String queryString = "match " +
@@ -431,7 +431,7 @@ public class ReasoningTests {
         assertEquals(answers2.size(), 2);
     }
 
-    @Test //Expected result: Two answers obtained only if the rule query containing sub type is correctly executed.
+    @Test //Expected result: Two answers obtained only if the movieGraph query containing sub type is correctly executed.
     public void instanceTypeHierarchyRespected_queryHasSuperTypes_recursiveRule(){
         QueryBuilder qb = testSet19recursive.graph().graql().infer(true);
         String queryString = "match " +
@@ -445,7 +445,7 @@ public class ReasoningTests {
         assertEquals(answers2.size(), 2);
     }
 
-    @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
+    @Test //Expected result: Single answer obtained only if the movieGraph query containing super type is correctly executed.
     public void instanceTypeHierarchyRespected_querySpecialisesType_recursiveRule(){
         QueryBuilder qb = testSet19recursive.graph().graql().infer(true);
         String queryString = "match " +
@@ -460,7 +460,7 @@ public class ReasoningTests {
         assertEquals(answers2.size(), 1);
     }
 
-    @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
+    @Test //Expected result: Single answer obtained only if the movieGraph query containing super type is correctly executed.
     public void instanceTypeHierarchyRespected_queryOverwritesTypes_recursiveRule(){
         QueryBuilder qb = testSet19recursive.graph().graql().infer(true);
         String queryString = "match " +
@@ -475,7 +475,7 @@ public class ReasoningTests {
         assertEquals(answers2.size(), 2);
     }
 
-    @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
+    @Test //Expected result: Both queries should return a single equal match as they trigger the same movieGraph.
     public void reasoningOverRelationHierarchy(){
         QueryBuilder qb = testSet20.graph().graql().infer(true);
         String queryString = "match (role1: $x, role2: $y) isa relation1;";
@@ -486,7 +486,7 @@ public class ReasoningTests {
         assertEquals(answers, answers2);
     }
 
-    @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
+    @Test //Expected result: Both queries should return a single equal match as they trigger the same movieGraph.
     public void reasoningOverEntityHierarchy(){
         QueryBuilder qb = testSet21.graph().graql().infer(true);
         String queryString = "match $x isa entity1;";
@@ -529,7 +529,7 @@ public class ReasoningTests {
         assertEquals(answers, answers2);
     }
 
-    @Test //Expected result: Timeline is correctly recognised via applying resource comparisons in the rule body
+    @Test //Expected result: Timeline is correctly recognised via applying resource comparisons in the movieGraph body
     public void reasoningWithResourceValueComparison() {
         QueryBuilder qb = testSet25.graph().graql().infer(true);
         String queryString = "match (predecessor:$x1, successor:$x2) isa message-succession;";

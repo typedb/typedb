@@ -267,7 +267,7 @@ public class GraqlShellIT {
                 anything(),
                 "insert has name 'felix' isa man;",
                 anything(),
-                "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};",
+                "insert $my-movieGraph isa inference-movieGraph lhs {$x isa man;} rhs {$x isa person;};",
                 anything(),
                 "commit",
                 "match isa person, has name $x;"
@@ -286,7 +286,7 @@ public class GraqlShellIT {
                 anything(),
                 "match isa person, has name $x;",
                 // No results
-                "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};",
+                "insert $my-movieGraph isa inference-movieGraph lhs {$x isa man;} rhs {$x isa person;};",
                 anything(),
                 "commit",
                 "match isa person, has name $x;",

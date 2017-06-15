@@ -97,7 +97,7 @@ public class MovieGraphTest {
 
     @Test
     public void testRulesExists() {
-        RuleType ruleType = graknGraph.getRuleType("a-rule-type");
+        RuleType ruleType = graknGraph.getRuleType("a-movieGraph-type");
         assertEquals(2, ruleType.instances().size());
     }
 }

@@ -120,9 +120,9 @@ public class JsonPrinterTest {
 
     @Test
     public void testJsonRule() {
-        Rule jsonRule = movieContext.graph().getResourceType("name").getResource("expectation-rule").owner().asRule();
+        Rule jsonRule = movieContext.graph().getResourceType("name").getResource("expectation-movieGraph").owner().asRule();
         assertJsonEquals(
-                Json.object("id", jsonRule.getId().getValue(), "isa", "a-rule-type", "lhs", jsonRule.getLHS().toString(), "rhs", jsonRule.getRHS().toString()),
+                Json.object("id", jsonRule.getId().getValue(), "isa", "a-movieGraph-type", "lhs", jsonRule.getLHS().toString(), "rhs", jsonRule.getRHS().toString()),
                 jsonRule
         );
     }
