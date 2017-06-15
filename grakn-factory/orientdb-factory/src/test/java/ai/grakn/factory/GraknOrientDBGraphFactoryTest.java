@@ -46,7 +46,7 @@ public class GraknOrientDBGraphFactoryTest {
 
     @Before
     public void setUp() throws Exception {
-        orientGraphFactory = new OrientDBInternalFactory(TEST_NAME, TEST_URI, null);
+        orientGraphFactory = new OrientDBInternalFactory(TEST_NAME, TEST_URI, null, null);
     }
 
     @After
