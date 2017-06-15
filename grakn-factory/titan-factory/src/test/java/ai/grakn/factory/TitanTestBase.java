@@ -17,6 +17,7 @@ public abstract class TitanTestBase {
     private final static String TEST_SHARED = "shared";
     static TitanInternalFactory titanGraphFactory;
     final static Properties TEST_PROPERTIES = new Properties();
+    static SystemKeyspace SYSTEM_KEYSPACE;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -35,6 +36,7 @@ public abstract class TitanTestBase {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(CONFIG_LOCATION), e);
         }
 
-        titanGraphFactory = new TitanInternalFactory(TEST_SHARED, Grakn.IN_MEMORY, TEST_PROPERTIES);
+        SYSTEM_KEYSPACE = SystemKeyspace.initialise(Grakn.IN_MEMORY, TEST_PROPERTIES);
+        titanGraphFactory = new TitanInternalFactory(TEST_SHARED, Grakn.IN_MEMORY, TEST_PROPERTIES, SYSTEM_KEYSPACE);
     }
 }

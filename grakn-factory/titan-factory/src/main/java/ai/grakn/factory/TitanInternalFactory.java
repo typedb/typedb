@@ -66,8 +66,8 @@ final public class TitanInternalFactory extends AbstractInternalFactory<GraknTit
 
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
 
-    TitanInternalFactory(String keyspace, String engineUrl, Properties properties) {
-        super(keyspace, engineUrl, properties);
+    TitanInternalFactory(String keyspace, String engineUrl, Properties properties, SystemKeyspace systemKeyspace) {
+        super(keyspace, engineUrl, properties, systemKeyspace);
     }
 
     @Override
@@ -82,7 +82,7 @@ final public class TitanInternalFactory extends AbstractInternalFactory<GraknTit
 
     @Override
     GraknTitanGraph buildGraknGraphFromTinker(TitanGraph graph) {
-        return new GraknTitanGraph(graph, super.keyspace, super.engineUrl, super.properties);
+        return new GraknTitanGraph(graph, super.keyspace, super.engineUrl, super.properties, super.systemKeyspace);
     }
 
     @Override
