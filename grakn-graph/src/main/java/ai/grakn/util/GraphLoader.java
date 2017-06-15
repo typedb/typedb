@@ -61,8 +61,8 @@ public class GraphLoader {
     private static Properties graphConfig;
 
     private final InternalFactory<?> factory;
-    private final Consumer<GraknGraph> preLoad;
     private final String[] files;
+    private Consumer<GraknGraph> preLoad;
     private boolean graphLoaded = false;
     private GraknGraph graph;
 
@@ -99,6 +99,12 @@ public class GraphLoader {
         }
 
         return graph;
+    }
+
+    public void load(Consumer<GraknGraph> preLoad){
+        this.preLoad = preLoad;
+        graphLoaded = false;
+        graph();
     }
 
     public void rollback() {
