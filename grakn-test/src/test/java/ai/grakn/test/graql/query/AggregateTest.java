@@ -20,7 +20,7 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
-import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;

@@ -19,7 +19,7 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;

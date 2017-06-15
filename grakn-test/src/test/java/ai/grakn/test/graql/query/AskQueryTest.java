@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContextOld;
 

@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;

@@ -20,7 +20,7 @@ package ai.grakn.test.graql.graql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.GraphContextOld;
 import org.junit.Before;

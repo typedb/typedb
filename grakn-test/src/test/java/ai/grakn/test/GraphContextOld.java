@@ -28,7 +28,7 @@ import org.junit.runners.model.Statement;
 
 import java.util.function.Consumer;
 
-import static ai.grakn.graphs.TestGraph.loadFromFile;
+import static ai.grakn.test.graphs.TestGraph.loadFromFile;
 import static ai.grakn.test.GraknTestEngineSetup.randomKeyspace;
 
 /**

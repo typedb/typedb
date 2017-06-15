@@ -34,9 +34,12 @@ import java.util.function.Consumer;
  * <p>
  *     Contains utility methods and statically initialized environment variables to control
  *     Grakn unit tests.
+ *
+ *     This specific class extend {@link GraphLoader} and starts Cassandra instance via
+ *     {@link ai.grakn.util.EmbeddedCassandra} if needed.
  * </p>
  *
- * @author borislav
+ * @author borislav, fppt
  *
  */
 public class GraphContext extends GraphLoader implements TestRule {

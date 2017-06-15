@@ -28,6 +28,7 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.GraphContextOld;
 
+import ai.grakn.test.graphs.MovieGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;

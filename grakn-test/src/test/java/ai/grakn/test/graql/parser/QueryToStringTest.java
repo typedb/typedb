@@ -19,7 +19,7 @@
 package ai.grakn.test.graql.parser;
 
 import ai.grakn.concept.ResourceType;
-import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;

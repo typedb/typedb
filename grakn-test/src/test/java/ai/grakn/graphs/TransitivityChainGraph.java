@@ -25,6 +25,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 
