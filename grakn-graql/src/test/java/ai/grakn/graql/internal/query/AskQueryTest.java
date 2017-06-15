@@ -16,12 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.query;
+package ai.grakn.graql.internal.query;
 
-import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContextOld;
-
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.graphs.MovieGraph;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -36,7 +35,7 @@ import static org.junit.Assert.assertTrue;
 public class AskQueryTest {
 
     @ClassRule
-    public static final GraphContextOld graph = GraphContextOld.preLoad(MovieGraph.get());
+    public static final GraphContext graph = GraphContext.preLoad(MovieGraph.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

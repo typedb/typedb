@@ -16,15 +16,15 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.query;
+package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContextOld;
 import ai.grakn.matcher.MovieMatchers;
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.graphs.MovieGraph;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -56,7 +56,7 @@ public class MatchQueryModifierTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final GraphContextOld rule = GraphContextOld.preLoad(MovieGraph.get());
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
 
     @Before
     public void setUp() {

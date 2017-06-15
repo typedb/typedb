@@ -16,12 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.query;
+package ai.grakn.graql.internal.query;
 
-import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.Autocomplete;
-import ai.grakn.test.GraphContextOld;
-
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.graphs.MovieGraph;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.ClassRule;
@@ -40,7 +39,7 @@ public class AutocompleteTest {
     private final Set<String> types = ImmutableSet.of("production", "movie", "person");
 
     @ClassRule
-    public static final GraphContextOld rule = GraphContextOld.preLoad(MovieGraph.get());
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
 
     @Test
     public void whenAutocompletingAnEmptyQuery_CandidatesIncludeTypesAndKeywords() {

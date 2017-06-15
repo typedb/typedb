@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.query;
+package ai.grakn.graql.internal.query.pattern;
 
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;

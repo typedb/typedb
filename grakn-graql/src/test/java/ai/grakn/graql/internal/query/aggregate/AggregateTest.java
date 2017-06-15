@@ -16,17 +16,17 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.query;
+package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
-import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.GraphContextOld;
 import ai.grakn.matcher.MovieMatchers;
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.graphs.MovieGraph;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -53,7 +53,7 @@ import static org.junit.Assert.assertEquals;
 public class AggregateTest {
 
     @ClassRule
-    public static final GraphContextOld rule = GraphContextOld.preLoad(MovieGraph.get());
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
 
     private QueryBuilder qb;
 
@@ -83,7 +83,7 @@ public class AggregateTest {
         groups.forEach((movie, results) -> {
             results.forEach(result -> {
                 assertEquals(movie, result.get(Graql.var("x")));
-                assertEquals(rule.graph().getEntityType("person"), result.get(Graql.var("y")).asInstance().type());
+                Assert.assertEquals(rule.graph().getEntityType("person"), result.get(Graql.var("y")).asInstance().type());
             });
         });
     }
