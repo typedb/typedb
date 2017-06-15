@@ -25,7 +25,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;

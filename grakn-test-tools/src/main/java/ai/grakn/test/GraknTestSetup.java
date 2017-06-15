@@ -16,12 +16,14 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.util;
+package ai.grakn.test;
 
+
+import ai.grakn.util.EmbeddedCassandra;
 
 /**
  * <p>
- *     Helpes Setup Grakn Test Environment
+ *     Helps Setup Grakn Test Environment
  * </p>
  *
  * <p>
@@ -38,7 +40,7 @@ public class GraknTestSetup {
     /**
      * Starts cassandra if needed.
      */
-    public static void ensureCassandraRunning() {
+    public static void startCassandraIfNeeded() {
         if (GraknTestSetup.usingTitan()) {
             EmbeddedCassandra.start();
         }

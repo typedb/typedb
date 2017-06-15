@@ -20,6 +20,7 @@ package ai.grakn.util;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.test.GraknTestSetup;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,7 +46,7 @@ public class GraphLoaderTest {
     //TODO: Put this somewhere common
     @Before
     public void setup(){
-        GraknTestSetup.ensureCassandraRunning();
+        GraknTestSetup.startCassandraIfNeeded();
     }
 
     @Test

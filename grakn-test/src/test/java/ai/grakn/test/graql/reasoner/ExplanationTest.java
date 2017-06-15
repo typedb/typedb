@@ -31,7 +31,7 @@ import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.test.GraphContextOld;
 
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashSet;
 import java.util.List;

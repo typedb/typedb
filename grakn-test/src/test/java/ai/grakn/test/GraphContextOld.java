@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.util.GraknTestSetup;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -124,7 +123,7 @@ public class GraphContextOld implements TestRule {
             @Override
             public void evaluate() throws Throwable {
                 org.junit.Assume.assumeTrue(assumption);
-                GraknTestSetup.ensureCassandraRunning();
+                GraknTestSetup.startCassandraIfNeeded();
 
                 loadGraph();
 

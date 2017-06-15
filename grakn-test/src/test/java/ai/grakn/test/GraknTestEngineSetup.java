@@ -27,7 +27,6 @@ import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.EmbeddedKafka;
 import ai.grakn.util.EmbeddedRedis;
-import ai.grakn.util.GraknTestSetup;
 import com.jayway.restassured.RestAssured;
 import org.slf4j.LoggerFactory;
 import spark.Service;
@@ -87,7 +86,7 @@ public abstract class GraknTestEngineSetup {
         // we end up wanting to use the TitanFactory but without starting Cassandra first.
         LOG.info("starting engine...");
 
-        GraknTestSetup.ensureCassandraRunning();
+        GraknTestSetup.startCassandraIfNeeded();
 
         // start engine
         setRestAssuredUri(config);

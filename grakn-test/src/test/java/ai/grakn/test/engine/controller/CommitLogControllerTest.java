@@ -37,7 +37,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.SparkContext;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.jayway.restassured.http.ContentType;
@@ -86,7 +86,7 @@ public class CommitLogControllerTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        GraknTestSetup.ensureCassandraRunning();
+        GraknTestSetup.startCassandraIfNeeded();
     }
 
     @After

@@ -64,7 +64,7 @@ public class GraphLoader {
     private final String[] files;
     private GraknGraph graph;
 
-    private GraphLoader(Consumer<GraknGraph> preLoad, String ... files){
+    protected GraphLoader(Consumer<GraknGraph> preLoad, String ... files){
         factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties());
         this.preLoad = preLoad;
         this.files = files;
