@@ -18,16 +18,22 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import static ai.grakn.util.ErrorMessage.NULL_VALUE;
 import static ai.grakn.util.Schema.VertexProperty.RULE_LHS;
@@ -36,14 +42,28 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 
-public class RuleTest extends GraphTestBase{
+//NOTE: This test is inside the graql module due to the inability to have graql constructs inside the graph module
+public class RuleTest {
+    @org.junit.Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
     private Pattern lhs;
     private Pattern rhs;
+    private GraknGraph graknGraph;
+    private GraknSession session;
 
     @Before
     public void setupRules(){
+        session = Grakn.session(Grakn.IN_MEMORY, "absd");
+        graknGraph = Grakn.session(Grakn.IN_MEMORY, "absd").open(GraknTxType.WRITE);
         lhs = graknGraph.graql().parsePattern("$x isa entity-type");
         rhs = graknGraph.graql().parsePattern("$x isa entity-type");
+    }
+
+    @After
+    public void closeSession() throws Exception {
+        graknGraph.close();
+        session.close();
     }
 
     @Test

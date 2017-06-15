@@ -53,6 +53,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -67,9 +68,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toSet;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 
 /**
  * <p>
@@ -87,6 +85,7 @@ import java.lang.reflect.InvocationTargetException;
  */
 public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin {
     protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
+    private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
 
     //TODO: Is this the correct place for these config paths
     //----------------------------- Config Paths
@@ -101,14 +100,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ElementFactory elementFactory;
     private final GraphCache graphCache;
     
-    static Constructor<?> queryConstructor = null;    
+    private static Constructor<?> queryConstructor = null;
     static {
-        String queryBuilderClassName = "ai.grakn.graql.internal.query.QueryBuilderImpl";        
         try {
-            queryConstructor = Class.forName(queryBuilderClassName).getConstructor(GraknGraph.class);
+            queryConstructor = Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(GraknGraph.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-            throw new RuntimeException("The query builder implementation " + queryBuilderClassName + 
-                    " must be accessible in the classpath and have a one argument constructor taking a GraknGraph");
+            queryConstructor = null;
         }        
     }
     
@@ -314,6 +311,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public QueryBuilder graql(){
+        if(queryConstructor == null){
+            throw new RuntimeException("The query builder implementation " + QUERY_BUILDER_CLASS_NAME +
+                    " must be accessible in the classpath and have a one argument constructor taking a GraknGraph");
+        }
         try {
             return (QueryBuilder) queryConstructor.newInstance(this);
         } catch (Exception e) {

@@ -33,15 +33,10 @@ import ai.grakn.util.GraknVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -194,16 +189,11 @@ public class SystemKeyspace {
                 checkVersion(graph);
                 return;
             }
-            ClassLoader loader = SystemKeyspace.class.getClassLoader();
-            String query;
-            try (BufferedReader buffer = new BufferedReader(new InputStreamReader(loader.getResourceAsStream(SYSTEM_ONTOLOGY_FILE), StandardCharsets.UTF_8))) {
-                query = buffer.lines().collect(Collectors.joining("\n"));
-            }
-            graph.graql().parse(query).execute();
+            loadSystemOntology(graph);
             graph.getResourceType(SYSTEM_VERSION).putResource(GraknVersion.VERSION);
             graph.admin().commitNoLogs();
             LOG.info("Loaded system ontology to system keyspace.");
-        } catch (IOException | InvalidGraphException | NullPointerException e) {
+        } catch (InvalidGraphException | NullPointerException e) {
             e.printStackTrace(System.err);
             LOG.error("Could not load system ontology. The error was: " + e);
         }
@@ -220,5 +210,72 @@ public class SystemKeyspace {
         if(!GraknVersion.VERSION.equals(existingVersion.getValue())) {
             throw GraphOperationException.versionMistmatch(existingVersion);
         }
+    }
+
+    /**
+     * Loads the system ontology inside the provided grakn graph.
+     *
+     * @param graph The graph to contain the system ontology
+     */
+    private static void loadSystemOntology(GraknGraph graph){
+        //Task Data
+        ResourceType<String> status = graph.putResourceType("status", ResourceType.DataType.STRING);
+        ResourceType<Long> statuChangeTime = graph.putResourceType("status-change-time", ResourceType.DataType.LONG);
+        ResourceType<String> statusChangeBy = graph.putResourceType("status-change-by", ResourceType.DataType.STRING);
+        ResourceType<String> taskClassName = graph.putResourceType("task-class-name", ResourceType.DataType.STRING);
+        ResourceType<String> createdBy = graph.putResourceType("created-by", ResourceType.DataType.STRING);
+        ResourceType<String> engineId = graph.putResourceType("engine-id", ResourceType.DataType.STRING);
+        ResourceType<Long> runAt = graph.putResourceType("runAt", ResourceType.DataType.LONG);
+        ResourceType<Boolean> recurring = graph.putResourceType("recurring", ResourceType.DataType.BOOLEAN);
+        ResourceType<Long> recurInterval = graph.putResourceType("recur-interval", ResourceType.DataType.LONG);
+        ResourceType<String> taskFailure = graph.putResourceType("task-failure", ResourceType.DataType.STRING);
+        ResourceType<String> stackTrace = graph.putResourceType("stack-trace", ResourceType.DataType.STRING);
+        ResourceType<String> taskException = graph.putResourceType("task-exception", ResourceType.DataType.STRING);
+        ResourceType<String> taskCheckpoint = graph.putResourceType("task-checkpoint", ResourceType.DataType.STRING);
+        ResourceType<String> taskConfiguration = graph.putResourceType("task-configuration", ResourceType.DataType.STRING);
+        ResourceType<String> taskSerialized = graph.putResourceType("taskSerialized", ResourceType.DataType.STRING);
+        ResourceType<String> taskId = graph.putResourceType("taskId", ResourceType.DataType.STRING);
+
+        graph.putEntityType("scheduled-task").
+                resource(status).
+                resource(statuChangeTime).
+                resource(statusChangeBy).
+                resource(taskClassName).
+                resource(createdBy).
+                resource(engineId).
+                resource(runAt).
+                resource(recurring).
+                resource(recurInterval).
+                resource(taskFailure).
+                resource(stackTrace).
+                resource(taskException).
+                resource(taskCheckpoint).
+                resource(taskConfiguration).
+                resource(taskSerialized).
+                resource(taskId);
+
+        //Keyspace data
+        ResourceType<String> keyspaceName = graph.putResourceType("keyspace-name", ResourceType.DataType.STRING);
+        graph.putEntityType("keyspace").key(keyspaceName);
+
+        //User Data
+        ResourceType<String> userName = graph.putResourceType("user-name", ResourceType.DataType.STRING);
+        ResourceType<String> userPassword = graph.putResourceType("user-password", ResourceType.DataType.STRING);
+        ResourceType<String> userPasswordSalt = graph.putResourceType("user-password-salt", ResourceType.DataType.STRING);
+        ResourceType<String> userFirstName = graph.putResourceType("user-first-name", ResourceType.DataType.STRING);
+        ResourceType<String> userLastName = graph.putResourceType("user-last-name", ResourceType.DataType.STRING);
+        ResourceType<String> userEmail = graph.putResourceType("user-email", ResourceType.DataType.STRING);
+        ResourceType<Boolean> userIsAdmin = graph.putResourceType("user-is-admin", ResourceType.DataType.BOOLEAN);
+
+        graph.putEntityType("user").key(userName).
+                resource(userPassword).
+                resource(userPasswordSalt).
+                resource(userFirstName).
+                resource(userLastName).
+                resource(userEmail).
+                resource(userIsAdmin);
+
+        //System Version
+        graph.putResourceType("system-version", ResourceType.DataType.STRING);
     }
 }
