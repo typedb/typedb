@@ -33,9 +33,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static ai.grakn.migration.base.MigrationCLI.die;
-import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
-
 /**
  * The SQL migrator will execute the given SQL query and then apply the given template to those results.
  * @author alexandraorth
@@ -55,8 +52,7 @@ public class SQLMigrator {
         File sqlTemplate = new File(options.getTemplate());
 
         if(!sqlTemplate.exists()){
-            die("Cannot find file: " + options.getTemplate());
-            return;
+            MigrationCLI.die("Cannot find file: " + options.getTemplate());
         }
 
         try {
@@ -73,8 +69,7 @@ public class SQLMigrator {
             }
 
         } catch (Throwable throwable){
-            die(throwable);
-            return;
+            MigrationCLI.die(throwable);
         }
     }
 

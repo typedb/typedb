@@ -46,9 +46,9 @@ import static java.util.stream.Collectors.toMap;
  */
 public class CSVMigrator implements AutoCloseable {
 
-    public static final char SEPARATOR = ',';
-    public static final char QUOTE = '\"';
-    public static final String NULL_STRING = null;
+    static final char SEPARATOR = ',';
+    static final char QUOTE = '\"';
+    static final String NULL_STRING = null;
 
     private char separator = SEPARATOR;
     private char quote = QUOTE;
@@ -201,6 +201,6 @@ public class CSVMigrator implements AutoCloseable {
      * @param value object to check
      * @return if the value is valid
      */
-    protected boolean validValue(Object value){
+    private boolean validValue(Object value){
         return value != null;
     }}
