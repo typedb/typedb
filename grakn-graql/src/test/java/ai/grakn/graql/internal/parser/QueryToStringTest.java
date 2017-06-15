@@ -16,17 +16,16 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.parser;
+package ai.grakn.graql.internal.parser;
 
 import ai.grakn.concept.ResourceType;
-import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContextOld;
-
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.graphs.MovieGraph;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -45,7 +44,7 @@ public class QueryToStringTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final GraphContextOld rule = GraphContextOld.preLoad(MovieGraph.get());
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
 
     @Before
     public void setUp() {

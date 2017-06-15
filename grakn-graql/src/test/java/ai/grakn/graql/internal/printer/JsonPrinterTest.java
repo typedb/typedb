@@ -16,17 +16,16 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.printer;
+package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
-import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.GraphContextOld;
-
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.graphs.MovieGraph;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -46,7 +45,7 @@ public class JsonPrinterTest {
     private Printer printer;
 
     @ClassRule
-    public static final GraphContextOld movieContext = GraphContextOld.preLoad(MovieGraph.get());
+    public static final GraphContext movieContext = GraphContext.preLoad(MovieGraph.get());
 
     @Before
     public void setUp() {
