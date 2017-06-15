@@ -41,6 +41,7 @@ public class FactoryBuilderTest {
     private final static String KEYSPACE = "keyspace";
     private final static String ENGINE_URL = Grakn.IN_MEMORY;
     private final static Properties TEST_PROPERTIES = new Properties();
+    private final static SystemKeyspace SYSTEM_KEYSPACE = SystemKeyspace.initialise(ENGINE_URL, TEST_PROPERTIES);
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -56,15 +57,15 @@ public class FactoryBuilderTest {
 
     @Test
     public void whenBuildingInMemoryFactory_ReturnTinkerFactory(){
-        assertThat(FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES), instanceOf(TinkerInternalFactory.class));
+        assertThat(FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES, SYSTEM_KEYSPACE), instanceOf(TinkerInternalFactory.class));
     }
 
     @Test
     public void whenBuildingFactoriesWithTheSameProperties_ReturnSameGraphs(){
-        InternalFactory mgf1 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
-        InternalFactory mgf2 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
-        InternalFactory mgf3 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_PROPERTIES);
-        InternalFactory mgf4 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_PROPERTIES);
+        InternalFactory mgf1 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES, SYSTEM_KEYSPACE);
+        InternalFactory mgf2 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES, SYSTEM_KEYSPACE);
+        InternalFactory mgf3 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_PROPERTIES, SYSTEM_KEYSPACE);
+        InternalFactory mgf4 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_PROPERTIES, SYSTEM_KEYSPACE);
 
         assertEquals(mgf1, mgf2);
         assertEquals(mgf3, mgf4);

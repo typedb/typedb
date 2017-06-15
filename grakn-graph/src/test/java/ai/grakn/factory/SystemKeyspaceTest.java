@@ -12,7 +12,19 @@ import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
-import org.junit.Before;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -21,17 +33,31 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static ai.grakn.factory.SystemKeyspace.SYSTEM_GRAPH_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class SystemKeyspaceTest {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    @Before
+    private final static String TEST_CONFIG = "../conf/test/tinker/grakn.properties";
+    private final static Properties TEST_PROPERTIES = new Properties();
+
+    @BeforeClass
+    public static void setupProperties(){
+        try (InputStream in = new FileInputStream(TEST_CONFIG)){
+            TEST_PROPERTIES.load(in);
+        } catch (IOException e) {
+            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(TEST_CONFIG), e);
+        }
+    }
+
+    @After
     public void cleanSystemKeySpaceGraph(){
         try(GraknSession system = Grakn.session(Grakn.IN_MEMORY, SYSTEM_GRAPH_NAME)) {
             try (GraknGraph graph = system.open(GraknTxType.WRITE)) {
@@ -64,7 +90,7 @@ public class SystemKeyspaceTest {
         expectedException.expectMessage(ErrorMessage.VERSION_MISMATCH.getMessage(GraknVersion.VERSION, rubbishVersion));
 
         //This simulates accessing the system for the first time
-        SystemKeyspace.loadSystemOntology();
+        new SystemKeyspace(Grakn.IN_MEMORY, TEST_PROPERTIES);
     }
 
     @Test
@@ -76,7 +102,9 @@ public class SystemKeyspaceTest {
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system graph", spaces.contains(keyspace));
-            assertTrue(SystemKeyspace.containsKeyspace(keyspace));
+
+            SystemKeyspace systemKeyspace = SystemKeyspace.initialise(Grakn.IN_MEMORY, TEST_PROPERTIES);
+            assertTrue(systemKeyspace.containsKeyspace(keyspace));
         }
 
         graphs.forEach(GraknGraph::close);
@@ -130,8 +158,45 @@ public class SystemKeyspaceTest {
         Set<GraknGraph> systemGraphs = buildGraphs(systemKeyspaces.toArray(new String[systemKeyspaces.size()]));
 
         //Check only 2 graphs have been built
+        SystemKeyspace systemKeyspace = SystemKeyspace.initialise(Grakn.IN_MEMORY, TEST_PROPERTIES);
+
         assertEquals(graphs, systemGraphs);
-        assertFalse(SystemKeyspace.containsKeyspace(deletedGraph.getKeyspace()));
+        assertFalse(systemKeyspace.containsKeyspace(deletedGraph.getKeyspace()));
+    }
+
+    @Test
+    public void whenInstantiatingSystemGraphInMultipleThreads_InterruptedExceptionIsNotThrown() throws InterruptedException {
+        int numberThreads = 100;
+        ExecutorService executorService = Executors.newFixedThreadPool(numberThreads);
+
+        Collection<Callable<Integer>> threads = new ArrayList<>();
+        for(int i = 0; i < numberThreads; i ++){
+            int finalI = i;
+            threads.add(() -> {
+
+                // Implicitly instantiate system keyspace
+                SystemKeyspace systemKeyspace = SystemKeyspace.initialise(Grakn.IN_MEMORY, TEST_PROPERTIES);
+
+                // Check the system graph exists
+                systemKeyspace.containsKeyspace(SystemKeyspace.SYSTEM_GRAPH_NAME);
+
+                return finalI;
+            });
+        }
+
+        try {
+            // Open system graph concurrently
+            Collection<Future<Integer>> futures = executorService.invokeAll(threads);
+            for(Future future:futures){
+                future.get();
+            }
+        } catch (InterruptedException | ExecutionException e) {
+
+            // an exception was thrown, fail the test
+            fail("Exception was thrown instantiating system keyspace " + getFullStackTrace(e));
+
+            throw new RuntimeException(e);
+        }
     }
 
     private Set<GraknGraph> buildGraphs(String ... keyspaces){

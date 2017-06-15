@@ -23,6 +23,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.factory.FactoryBuilder;
 
+import ai.grakn.factory.SystemKeyspace;
 import java.util.Properties;
 
 /**
@@ -57,7 +58,7 @@ public class EngineGraknGraphFactory {
     }
 
     public GraknGraph getGraph(String keyspace, GraknTxType type){
-        return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).open(type);
+        return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties, SystemKeyspace.initialise(Grakn.DEFAULT_URI, properties)).open(type);
     }
 
     public Properties properties() {

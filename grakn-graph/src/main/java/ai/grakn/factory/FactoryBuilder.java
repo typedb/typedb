@@ -50,10 +50,10 @@ public class FactoryBuilder {
         throw new UnsupportedOperationException();
     }
 
-    public static InternalFactory<?> getFactory(String keyspace, String engineUrl, Properties properties){
+    public static InternalFactory<?> getFactory(String keyspace, String engineUrl, Properties properties, SystemKeyspace systemKeyspace){
         try{
             String factoryType = properties.get(FACTORY_TYPE).toString();
-            return getFactory(factoryType, keyspace, engineUrl, properties);
+            return getFactory(factoryType, keyspace, engineUrl, properties, systemKeyspace);
         } catch(MissingResourceException e){
             throw new IllegalArgumentException(ErrorMessage.MISSING_FACTORY_DEFINITION.getMessage());
         }
@@ -65,7 +65,7 @@ public class FactoryBuilder {
      *                    A valid example includes: ai.grakn.factory.TinkerInternalFactory
      * @return A graph factory which produces the relevant expected graph.
     */
-    static InternalFactory<?> getFactory(String factoryType, String keyspace, String engineUrl, Properties properties){
+    static InternalFactory<?> getFactory(String factoryType, String keyspace, String engineUrl, Properties properties, SystemKeyspace systemKeyspace){
         String key = factoryType + keyspace.toLowerCase();
         Log.debug("Get factory for " + key);
         InternalFactory<?> factory = openFactories.get(key);
@@ -73,7 +73,7 @@ public class FactoryBuilder {
             return factory;
         }
 
-       return newFactory(key, factoryType, keyspace, engineUrl, properties);
+       return newFactory(key, factoryType, keyspace, engineUrl, properties, systemKeyspace);
     }
 
     /**
@@ -85,12 +85,12 @@ public class FactoryBuilder {
      * @param properties Additional properties to apply to the graph
      * @return A new factory bound to a specific keyspace
      */
-    private static synchronized InternalFactory<?> newFactory(String key, String factoryType, String keyspace, String engineUrl, Properties properties){
+    private static synchronized InternalFactory<?> newFactory(String key, String factoryType, String keyspace, String engineUrl, Properties properties, SystemKeyspace systemKeyspace){
         InternalFactory<?> internalFactory;
         try {
             internalFactory = (InternalFactory<?>) Class.forName(factoryType)
-                    .getDeclaredConstructor(String.class, String.class, Properties.class)
-                    .newInstance(keyspace, engineUrl, properties);
+                    .getDeclaredConstructor(String.class, String.class, Properties.class, SystemKeyspace.class)
+                    .newInstance(keyspace, engineUrl, properties, systemKeyspace);
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);
         }

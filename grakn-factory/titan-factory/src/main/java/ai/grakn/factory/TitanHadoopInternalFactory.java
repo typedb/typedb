@@ -49,8 +49,8 @@ public class TitanHadoopInternalFactory extends AbstractInternalFactory<Abstract
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
     private final Logger LOG = LoggerFactory.getLogger(TitanHadoopInternalFactory.class);
 
-    TitanHadoopInternalFactory(String keyspace, String engineUrl, Properties properties) {
-        super(keyspace, engineUrl, properties);
+    TitanHadoopInternalFactory(String keyspace, String engineUrl, Properties properties, SystemKeyspace systemKeyspace) {
+        super(keyspace, engineUrl, properties, systemKeyspace);
 
         properties.setProperty(CLUSTER_KEYSPACE, keyspace);
         properties.setProperty(INPUT_KEYSPACE, keyspace);

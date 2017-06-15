@@ -25,6 +25,7 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.factory.InternalFactory;
 
+import ai.grakn.factory.SystemKeyspace;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -58,7 +59,7 @@ public class GraphLoader {
     private GraknGraph graph;
 
     private GraphLoader(Consumer<GraknGraph> preLoad){
-        factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties());
+        factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties(), SystemKeyspace.initialise(Grakn.IN_MEMORY, properties()));
         this.preLoad = preLoad;
 
         load();

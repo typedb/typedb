@@ -95,7 +95,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
 
     @Test
     public void testSingleton(){
-        TitanInternalFactory factory = new TitanInternalFactory("anothertest", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TitanInternalFactory factory = new TitanInternalFactory("anothertest", Grakn.IN_MEMORY, TEST_PROPERTIES, SYSTEM_KEYSPACE);
         GraknTitanGraph mg1 = factory.open(GraknTxType.BATCH);
         TitanGraph tinkerGraphMg1 = mg1.getTinkerPopGraph();
         mg1.close();
@@ -139,7 +139,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
     public void testMultithreadedRetrievalOfGraphs(){
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
-        TitanInternalFactory factory = new TitanInternalFactory("simplekeyspace", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TitanInternalFactory factory = new TitanInternalFactory("simplekeyspace", Grakn.IN_MEMORY, TEST_PROPERTIES, SYSTEM_KEYSPACE);
 
         for(int i = 0; i < 200; i ++) {
             futures.add(pool.submit(() -> {
@@ -172,7 +172,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
 
     @Test
     public void testGraphNotClosed() throws InvalidGraphException {
-        TitanInternalFactory factory = new TitanInternalFactory("stuff", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TitanInternalFactory factory = new TitanInternalFactory("stuff", Grakn.IN_MEMORY, TEST_PROPERTIES, SYSTEM_KEYSPACE);
         GraknTitanGraph graph = factory.open(GraknTxType.WRITE);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");
@@ -186,7 +186,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
 
     private static TitanGraph getGraph() {
         String name = UUID.randomUUID().toString().replaceAll("-", "");
-        titanGraphFactory = new TitanInternalFactory(name, Grakn.IN_MEMORY, TEST_PROPERTIES);
+        titanGraphFactory = new TitanInternalFactory(name, Grakn.IN_MEMORY, TEST_PROPERTIES, SYSTEM_KEYSPACE);
         Graph graph = titanGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph();
         assertThat(graph, instanceOf(TitanGraph.class));
         return (TitanGraph) graph;

@@ -46,6 +46,7 @@ import static org.junit.Assert.assertThat;
 public class GraknTinkerGraphFactoryTest {
     private final static String TEST_CONFIG = "../conf/test/tinker/grakn.properties";
     private final static Properties TEST_PROPERTIES = new Properties();
+    private final static SystemKeyspace SYSTEM_KEYSPACE = SystemKeyspace.initialise(Grakn.IN_MEMORY, TEST_PROPERTIES);
     private InternalFactory tinkerGraphFactory;
 
     @BeforeClass
@@ -62,7 +63,7 @@ public class GraknTinkerGraphFactoryTest {
 
     @Before
     public void setupTinkerGraphFactory(){
-        tinkerGraphFactory = new TinkerInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        tinkerGraphFactory = new TinkerInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES, SYSTEM_KEYSPACE);
     }
 
     @Test
@@ -101,12 +102,12 @@ public class GraknTinkerGraphFactoryTest {
     public void whenCreatingFactoryWithNullKeyspace_Throw(){
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(NULL_VALUE.getMessage("keyspace"));
-        tinkerGraphFactory = new TinkerInternalFactory(null, null, null);
+        tinkerGraphFactory = new TinkerInternalFactory(null, null, null, null);
     }
 
     @Test
     public void whenGettingGraphFromFactoryWithAlreadyOpenGraph_Throw(){
-        TinkerInternalFactory factory = new TinkerInternalFactory("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TinkerInternalFactory factory = new TinkerInternalFactory("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES, SYSTEM_KEYSPACE);
         factory.open(GraknTxType.WRITE);
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(TRANSACTION_ALREADY_OPEN.getMessage("mytest"));
@@ -115,7 +116,7 @@ public class GraknTinkerGraphFactoryTest {
 
     @Test
     public void whenGettingGraphFromFactoryClosingItAndGettingItAgain_ReturnGraph(){
-        TinkerInternalFactory factory = new TinkerInternalFactory("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TinkerInternalFactory factory = new TinkerInternalFactory("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES, SYSTEM_KEYSPACE);
         GraknGraph graph1 = factory.open(GraknTxType.WRITE);
         graph1.close();
         GraknTinkerGraph graph2 = factory.open(GraknTxType.WRITE);

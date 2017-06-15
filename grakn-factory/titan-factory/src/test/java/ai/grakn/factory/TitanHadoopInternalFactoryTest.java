@@ -47,7 +47,7 @@ public class TitanHadoopInternalFactoryTest {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(TEST_CONFIG), e);
         }
 
-        factory = new TitanHadoopInternalFactory("rubbish", "rubbish", TEST_PROPERTIES);
+        factory = new TitanHadoopInternalFactory("rubbish", "rubbish", TEST_PROPERTIES, SystemKeyspace.initialise("rubbish", TEST_PROPERTIES));
     }
 
     @Test(expected=UnsupportedOperationException.class)

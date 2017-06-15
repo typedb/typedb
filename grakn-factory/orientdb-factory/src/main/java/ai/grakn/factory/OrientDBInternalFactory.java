@@ -54,14 +54,14 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
     private final Logger LOG = LoggerFactory.getLogger(OrientDBInternalFactory.class);
     private final Map<String, OrientGraphFactory> openFactories;
 
-    public OrientDBInternalFactory(String keyspace, String engineUrl, Properties properties) {
-        super(keyspace, engineUrl, properties);
+    public OrientDBInternalFactory(String keyspace, String engineUrl, Properties properties, SystemKeyspace systemKeyspace) {
+        super(keyspace, engineUrl, properties, systemKeyspace);
         openFactories = new HashMap<>();
     }
 
     @Override
     GraknOrientDBGraph buildGraknGraphFromTinker(OrientGraph graph) {
-        return new GraknOrientDBGraph(graph, super.keyspace, super.engineUrl, super.properties);
+        return new GraknOrientDBGraph(graph, super.keyspace, super.engineUrl, super.properties, super.systemKeyspace);
     }
 
     @Override

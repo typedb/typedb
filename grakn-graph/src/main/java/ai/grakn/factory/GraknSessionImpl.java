@@ -143,7 +143,7 @@ public class GraknSessionImpl implements GraknSession {
         Properties properties = new Properties();
         properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());
 
-        return FactoryBuilder.getFactory(keyspace, engineUrl, properties);
+        return FactoryBuilder.getFactory(keyspace, engineUrl, properties, SystemKeyspace.initialise(engineUrl, properties));
     }
 
     /**
@@ -157,6 +157,6 @@ public class GraknSessionImpl implements GraknSession {
         inMemoryProperties.put(AbstractGraknGraph.NORMAL_CACHE_TIMEOUT_MS, 30_000);
         inMemoryProperties.put(FactoryBuilder.FACTORY_TYPE, TinkerInternalFactory.class.getName());
 
-        return FactoryBuilder.getFactory(TinkerInternalFactory.class.getName(), keyspace, Grakn.IN_MEMORY, inMemoryProperties);
+        return FactoryBuilder.getFactory(TinkerInternalFactory.class.getName(), keyspace, Grakn.IN_MEMORY, inMemoryProperties, SystemKeyspace.initialise(Grakn.IN_MEMORY, inMemoryProperties));
     }
 }
