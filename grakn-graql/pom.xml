@@ -57,15 +57,7 @@
             <artifactId>halbuilder-standard</artifactId>
             <version>${halbuilder-standard.version}</version>
         </dependency>
-        <!-- Test Dependency is required to be able to load graphs without needing engine -->
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-graph</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>

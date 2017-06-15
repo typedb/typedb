@@ -38,6 +38,13 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- Needed so we can create rule contexts -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+        </dependency>
+
         <!-- Used to create embedded cassandra for testing -->
         <dependency>
             <groupId>org.cassandraunit</groupId>
