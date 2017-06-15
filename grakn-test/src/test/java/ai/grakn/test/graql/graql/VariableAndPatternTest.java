@@ -20,12 +20,11 @@ package ai.grakn.test.graql.graql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.test.GraphContextOld;
-
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.graphs.MovieGraph;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -51,7 +50,7 @@ public class VariableAndPatternTest {
     private GraknGraph graph = rule.graph();
 
     @ClassRule
-    public static final GraphContextOld rule = GraphContextOld.preLoad(MovieGraph.get());
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

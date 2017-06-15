@@ -19,16 +19,17 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.GraphContextOld;
+import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.GraphContext;
 import ai.grakn.test.SparkContext;
 import ai.grakn.test.engine.controller.TasksControllerTest.JsonMapper;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
@@ -90,7 +91,7 @@ public class GraqlControllerGETTest {
     private static final JsonMapper jsonMapper = new JsonMapper();
 
     @ClassRule
-    public static GraphContextOld graphContext = GraphContextOld.preLoad(MovieGraph.get());
+    public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -114,7 +115,7 @@ public class GraqlControllerGETTest {
 
         when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
 
-        when(mockFactory.properties()).thenReturn(graphContext.factory().properties());
+        when(mockFactory.properties()).thenReturn(GraknEngineConfig.create().getProperties());
     }
 
     @Test
