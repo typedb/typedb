@@ -22,8 +22,9 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.internal.antlr.GraqlTemplateBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
 import ai.grakn.graql.internal.template.macro.Unescaped;
-import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.graql.macro.Macro;
+import ai.grakn.util.StringUtil;
+
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -401,7 +402,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         if(val instanceof Unescaped){
             return val.toString();
         }
-        return StringConverter.valueToString(val);
+        return StringUtil.valueToString(val);
     }
 
     private String formatVar(Object variable){

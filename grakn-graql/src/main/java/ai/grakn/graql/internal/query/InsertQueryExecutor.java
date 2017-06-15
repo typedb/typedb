@@ -25,6 +25,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -36,7 +37,7 @@ import ai.grakn.graql.internal.pattern.property.RhsProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -53,19 +54,7 @@ import java.util.Stack;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.util.CommonUtil.optionalOr;
-import static ai.grakn.util.ErrorMessage.INSERT_INSTANCE_WITH_NAME;
-import static ai.grakn.util.ErrorMessage.INSERT_ISA_AND_SUB;
-import static ai.grakn.util.ErrorMessage.INSERT_MULTIPLE_VALUES;
-import static ai.grakn.util.ErrorMessage.INSERT_NO_DATATYPE;
-import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
-import static ai.grakn.util.ErrorMessage.INSERT_RESOURCE_WITHOUT_VALUE;
-import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_LHS;
-import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_RHS;
-import static ai.grakn.util.ErrorMessage.INSERT_TYPE_WITHOUT_LABEL;
-import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
-import static ai.grakn.util.ErrorMessage.INSERT_WITHOUT_TYPE;
-import static ai.grakn.util.ErrorMessage.LABEL_NOT_FOUND;
+import static ai.grakn.util.CommonUtil.optionalOr;
 
 /**
  * A class for executing insert queries.
@@ -152,13 +141,13 @@ public class InsertQueryExecutor {
     public Concept getConcept(VarPatternAdmin var) {
         Var name = var.getVarName();
         if (visitedVars.contains(name)) {
-            throw new IllegalStateException(INSERT_RECURSIVE.getMessage(var.getPrintableName()));
+            throw GraqlQueryException.insertRecursive(var);
         }
 
         visitedVars.push(name);
         Concept concept = concepts.computeIfAbsent(name, n -> addConcept(var));
         assert concept != null : var ;
-        if (var.isUserDefinedName()) namedConcepts.put(name, concept);
+        if (var.getVarName().isUserDefinedName()) namedConcepts.put(name, concept);
         visitedVars.pop();
         return concept;
     }
@@ -175,7 +164,7 @@ public class InsertQueryExecutor {
 
         if (type.isPresent() && sub.isPresent()) {
             String printableName = var.getPrintableName();
-            throw new IllegalStateException(INSERT_ISA_AND_SUB.getMessage(printableName));
+            throw GraqlQueryException.insertIsaAndSub(printableName);
         }
 
         Optional<TypeLabel> typeLabel = var.getTypeLabel();
@@ -183,7 +172,7 @@ public class InsertQueryExecutor {
 
         typeLabel.ifPresent(label -> {
             if (type.isPresent()) {
-                throw new IllegalStateException(INSERT_INSTANCE_WITH_NAME.getMessage(label));
+                throw GraqlQueryException.insertInstanceWithLabel(label);
             }
         });
 
@@ -195,14 +184,14 @@ public class InsertQueryExecutor {
             return putInstance(id, var, type.get());
         } else if (id.isPresent()) {
             Concept concept = graph.getConcept(id.get());
-            if (concept == null) throw new IllegalStateException(INSERT_WITHOUT_TYPE.getMessage(id.get()));
+            if (concept == null) throw GraqlQueryException.insertWithoutType(id.get());
             return concept;
         } else if (typeLabel.isPresent()) {
             Concept concept = graph.getType(typeLabel.get());
-            if (concept == null) throw new IllegalStateException(LABEL_NOT_FOUND.getMessage(typeLabel.get()));
+            if (concept == null) throw GraqlQueryException.labelNotFound(typeLabel.get());
             return concept;
         } else {
-            throw new IllegalStateException(INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
+            throw GraqlQueryException.insertUndefinedVariable(var);
         }
     }
 
@@ -260,15 +249,15 @@ public class InsertQueryExecutor {
         } else if (type.isRuleType()) {
             return addOrGetInstance(id, () -> {
                 LhsProperty lhs = var.getProperty(LhsProperty.class)
-                        .orElseThrow(() -> new IllegalStateException(INSERT_RULE_WITHOUT_LHS.getMessage(var)));
+                        .orElseThrow(() -> GraqlQueryException.insertRuleWithoutLhs(var));
                 RhsProperty rhs = var.getProperty(RhsProperty.class)
-                        .orElseThrow(() -> new IllegalStateException(INSERT_RULE_WITHOUT_RHS.getMessage(var)));
+                        .orElseThrow(() -> GraqlQueryException.insertRuleWithoutRhs(var));
                 return type.asRuleType().putRule(lhs.getPattern(), rhs.getPattern());
             });
         } else if (type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
-            throw new IllegalStateException(var + " cannot be an instance of meta-type " + type.getLabel());
+            throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
         } else {
-            throw new RuntimeException("Unrecognized type " + type.getLabel());
+            throw CommonUtil.unreachableStatement("Can't recognize type " + type);
         }
     }
 
@@ -292,7 +281,7 @@ public class InsertQueryExecutor {
         } else if (superType.isRuleType()) {
             return graph.putRuleType(label).superType(superType.asRuleType());
         } else {
-            throw new IllegalStateException(ErrorMessage.INSERT_METATYPE.getMessage(label, superType.getLabel()));
+            throw GraqlQueryException.insertMetaType(label, superType);
         }
     }
 
@@ -313,10 +302,10 @@ public class InsertQueryExecutor {
      * This is because types must have specified labels.
      * @param label an optional label to get
      * @return the label, if present
-     * @throws IllegalStateException if the label was not present
+     * @throws GraqlQueryException if the label was not present
      */
-    private TypeLabel getTypeLabelOrThrow(Optional<TypeLabel> label) throws IllegalStateException {
-        return label.orElseThrow(() -> new IllegalStateException(INSERT_TYPE_WITHOUT_LABEL.getMessage()));
+    private TypeLabel getTypeLabelOrThrow(Optional<TypeLabel> label) throws GraqlQueryException {
+        return label.orElseThrow(GraqlQueryException::insertTypeWithoutLabel);
     }
 
     private Object getValue(VarPatternAdmin var) {
@@ -328,20 +317,20 @@ public class InsertQueryExecutor {
             Object value = properties.next().getPredicate().equalsValue().get();
 
             if (properties.hasNext()) {
-                throw new IllegalStateException(INSERT_MULTIPLE_VALUES.getMessage(
-                        value, properties.next().getPredicate())
-                );
+                throw GraqlQueryException.insertMultipleValues(properties.next().getPredicate(), value);
             }
 
             return value;
         } else {
-            throw new IllegalStateException(INSERT_RESOURCE_WITHOUT_VALUE.getMessage());
+            throw GraqlQueryException.insertResourceWithoutValue();
         }
     }
 
     /**
-     * Get the datatype of a {@link VarPatternAdmin} if specified, else throws an IllegalStateException
+     * Get the datatype of a {@link VarPatternAdmin} if specified
      * @return the datatype of the given var
+     *
+     * @throws GraqlQueryException if there is no data type specified
      */
     private ResourceType.DataType<?> getDataType(VarPatternAdmin var) {
         Optional<ResourceType.DataType<?>> directDataType =
@@ -352,9 +341,7 @@ public class InsertQueryExecutor {
 
         Optional<ResourceType.DataType<?>> dataType = optionalOr(directDataType, indirectDataType);
 
-        return dataType.orElseThrow(
-                () -> new IllegalStateException(INSERT_NO_DATATYPE.getMessage(var.getPrintableName()))
-        );
+        return dataType.orElseThrow(() -> GraqlQueryException.insertResourceTypeWithoutDataType(var));
     }
 
     private Optional<VarPatternAdmin> getSub(VarPatternAdmin var) {

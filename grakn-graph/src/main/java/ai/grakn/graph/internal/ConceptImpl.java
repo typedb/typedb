@@ -32,20 +32,13 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 
 /**
@@ -64,46 +57,19 @@ import java.util.stream.StreamSupport;
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
 abstract class ConceptImpl<T extends Concept> implements Concept {
-    private ConceptCache<Boolean> cachedIsShard = new ConceptCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_SHARD));
-    private final AbstractGraknGraph graknGraph;
-    private final ConceptId conceptId;
-    private final Vertex vertex;
+    private final VertexElement vertexElement;
 
     @SuppressWarnings("unchecked")
     T getThis(){
         return (T) this;
     }
 
-    ConceptImpl(AbstractGraknGraph graknGraph, Vertex v){
-        this.graknGraph = graknGraph;
-        conceptId = ConceptId.of(v.id());
-        vertex = v;
+    ConceptImpl(VertexElement vertexElement){
+        this.vertexElement = vertexElement;
     }
 
-    ConceptImpl(ConceptImpl concept){
-        this.graknGraph = concept.getGraknGraph();
-        this.conceptId = concept.getId();
-        this.vertex = concept.getVertex();
-    }
-
-    /**
-     *
-     * @param key The key of the property to mutate
-     * @param value The value to commit into the property
-     * @return The concept itself casted to the correct interface itself
-     */
-    private T setProperty(String key, Object value){
-        if(value == null) {
-            getVertex().property(key).remove();
-        } else {
-            VertexProperty<Object> foundProperty = getVertex().property(key);
-            if(foundProperty.isPresent() && foundProperty.value().equals(value)){
-               return getThis();
-            } else {
-                getVertex().property(key, value);
-            }
-        }
-        return getThis();
+    public VertexElement vertex() {
+        return vertexElement;
     }
 
     /**
@@ -116,321 +82,66 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     }
 
     /**
-     *
-     * @param key The key of the unique property to mutate
-     * @param value The new value of the unique property
-     * @return The concept itself casted to the correct interface itself
-     */
-    T setUniqueProperty(Schema.ConceptProperty key, String value){
-        if(!graknGraph.isBatchGraph()) {
-            Concept fetchedConcept = graknGraph.getConcept(key, value);
-            if (fetchedConcept != null) throw PropertyNotUniqueException.cannotChangeProperty(this, fetchedConcept, key, value);
-        }
-
-        return setProperty(key, value);
-    }
-
-    /**
      * Deletes the node and adds it neighbours for validation
      */
     void deleteNode(){
-        graknGraph.getTxCache().removeConcept(this);
-        // delete node
-        getVertex().remove();
+        vertex().graph().txCache().remove(this);
+        vertex().delete();
     }
 
     /**
-     * Helper method to cast a concept to it's correct type
-     * @param type The type to cast to
-     * @param <E> The type of the interface we are casting to.
-     * @return The concept itself casted to the defined interface
-     * @throws GraphOperationException when casting a concept incorrectly
+     *
+     * @param direction the direction of the neigouring concept to get
+     * @param label The edge label to traverse
+     * @return The neighbouring concepts found by traversing edges of a specific type
      */
-    private <E extends Concept> E castConcept(Class<E> type){
-        try {
-            return type.cast(this);
-        } catch(ClassCastException e){
-            throw GraphOperationException.invalidConceptCasting(this, type);
+    <X extends Concept> Stream<X> neighbours(Direction direction, Schema.EdgeLabel label){
+        switch (direction){
+            case BOTH:
+                return vertex().getEdgesOfType(direction, label).
+                        flatMap(edge -> Stream.of(
+                                vertex().graph().factory().buildConcept(edge.source()),
+                                vertex().graph().factory().buildConcept(edge.target())
+                        ));
+            case IN:
+                return vertex().getEdgesOfType(direction, label).map(edge ->
+                        vertex().graph().factory().buildConcept(edge.source())
+                );
+            case OUT:
+                return  vertex().getEdgesOfType(direction, label).map(edge ->
+                        vertex().graph().factory().buildConcept(edge.target())
+                );
+            default:
+                throw GraphOperationException.invalidDirection(direction);
+        }
+    }
+
+    EdgeElement putEdge(Concept to, Schema.EdgeLabel label){
+        return vertex().putEdge(((ConceptImpl) to).vertex(), label);
+    }
+
+    EdgeElement addEdge(Concept to, Schema.EdgeLabel label){
+        return vertex().addEdge(((ConceptImpl) to).vertex(), label);
+    }
+
+    void deleteEdge(Direction direction, Schema.EdgeLabel label, Concept... to) {
+        if (to.length == 0) {
+            vertex().deleteEdge(direction, label);
+        } else{
+            VertexElement[] targets = new VertexElement[to.length];
+            for (int i = 0; i < to.length; i++) {
+                targets[i] = ((ConceptImpl)to[i]).vertex();
+            }
+            vertex().deleteEdge(direction, label, targets);
         }
     }
 
     /**
      *
-     * @return A Type if the concept is a Type
+     * @return The base type of this concept which helps us identify the concept
      */
-    @Override
-    public Type asType() {
-        return castConcept(Type.class);
-    }
-
-    /**
-     *
-     * @return An Instance if the concept is an Instance
-     */
-    @Override
-    public Instance asInstance() {
-        return castConcept(Instance.class);
-    }
-
-    /**
-     *
-     * @return A Entity Type if the concept is a Entity Type
-     */
-    @Override
-    public EntityType asEntityType() {
-        return castConcept(EntityType.class);
-    }
-
-    /**
-     *
-     * @return A Role Type if the concept is a Role Type
-     */
-    @Override
-    public RoleType asRoleType() {
-        return castConcept(RoleType.class);
-    }
-
-    /**
-     *
-     * @return A Relation Type if the concept is a Relation Type
-     */
-    @Override
-    public RelationType asRelationType() {
-        return castConcept(RelationType.class);
-    }
-
-    /**
-     *
-     * @return A Resource Type if the concept is a Resource Type
-     */
-    @SuppressWarnings("unchecked")
-    @Override
-    public <D> ResourceType<D> asResourceType() {
-        return castConcept(ResourceType.class);
-    }
-
-    /**
-     *
-     * @return A Rule Type if the concept is a Rule Type
-     */
-    @Override
-    public RuleType asRuleType() {
-        return castConcept(RuleType.class);
-    }
-
-    /**
-     *
-     * @return An Entity if the concept is an Instance
-     */
-    @Override
-    public Entity asEntity() {
-        return castConcept(Entity.class);
-    }
-
-    /**
-     *
-     * @return A Relation if the concept is a Relation
-     */
-    @Override
-    public Relation asRelation() {
-        return castConcept(Relation.class);
-    }
-
-    /**
-     *
-     * @return A Resource if the concept is a Resource
-     */
-    @SuppressWarnings("unchecked")
-    @Override
-    public <D> Resource<D> asResource() {
-        return castConcept(Resource.class);
-    }
-
-    /**
-     *
-     * @return A Rule if the concept is a Rule
-     */@Override
-    public Rule asRule() {
-        return castConcept(Rule.class);
-    }
-
-    /**
-     *
-     * @return A casting if the concept is a casting
-     */
-    public CastingImpl asCasting(){
-        return (CastingImpl) this;
-    }
-
-    /**
-     *
-     * @return true if the concept is a Type
-     */
-    @Override
-    public boolean isType() {
-        return this instanceof Type;
-    }
-
-    /**
-     *
-     * @return true if the concept is an Instance
-     */
-    @Override
-    public boolean isInstance() {
-        return this instanceof Instance;
-    }
-
-    /**
-     *
-     * @return true if the concept is a Entity Type
-     */
-    @Override
-    public boolean isEntityType() {
-        return this instanceof EntityType;
-    }
-
-    /**
-     *
-     * @return true if the concept is a Role Type
-     */
-    @Override
-    public boolean isRoleType() {
-        return this instanceof RoleType;
-    }
-
-    /**
-     *
-     * @return true if the concept is a Relation Type
-     */
-    @Override
-    public boolean isRelationType() {
-        return this instanceof RelationType;
-    }
-
-    /**
-     *
-     * @return true if the concept is a Resource Type
-     */
-    @Override
-    public boolean isResourceType() {
-        return this instanceof ResourceType;
-    }
-
-    /**
-     *
-     * @return true if the concept is a Rule Type
-     */
-    @Override
-    public boolean isRuleType() {
-        return this instanceof RuleType;
-    }
-
-    /**
-     *
-     * @return true if the concept is a Entity
-     */
-    @Override
-    public boolean isEntity() {
-        return this instanceof Entity;
-    }
-
-    /**
-     *
-     * @return true if the concept is a Relation
-     */
-    @Override
-    public boolean isRelation() {
-        return this instanceof Relation;
-    }
-
-    /**
-     *
-     * @return true if the concept is a Resource
-     */
-    @Override
-    public boolean isResource() {
-        return this instanceof Resource;
-    }
-
-    /**
-     *
-     * @return true if the concept is a Rule
-     */
-    @Override
-    public boolean isRule() {
-        return this instanceof Rule;
-    }
-
-    /**
-     *
-     * @return true if the concept is a casting
-     */
-    public boolean isCasting(){
-        return this instanceof CastingImpl;
-    }
-
-    /**
-     *
-     * @param edgeType The edge label to traverse
-     * @return The neighbouring concepts found by traversing outgoing edges of a specific type
-     */
-    <X extends Concept> Stream<X> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
-        return getEdgesOfType(Direction.OUT, edgeType).map(EdgeImpl::getTarget);
-    }
-
-    /**
-     *
-     * @param edgeType The edge label to traverse
-     * @return The neighbouring concepts found by traversing incoming edges of a specific type
-     */
-    <X extends Concept> Stream<X> getIncomingNeighbours(Schema.EdgeLabel edgeType){
-        return getEdgesOfType(Direction.IN, edgeType).map(EdgeImpl::getSource);
-    }
-
-    /**
-     *
-     * @param key The key of the non-unique property to mutate
-     * @param value The value to commit into the property
-     * @return The concept itself casted to the correct interface
-     */
-    T setProperty(Schema.ConceptProperty key, Object value){
-        return setProperty(key.name(), value);
-    }
-
-    /**
-     *
-     * @param key The key of the non-unique property to retrieve
-     * @return The value stored in the property
-     */
-    public <X> X getProperty(Schema.ConceptProperty key){
-        VertexProperty<X> property = getVertex().property(key.name());
-        if(property != null && property.isPresent()) {
-            return property.value();
-        }
-        return null;
-    }
-    Boolean getPropertyBoolean(Schema.ConceptProperty key){
-        Boolean value = getProperty(key);
-        if(value == null) {
-            return false;
-        }
-        return value;
-    }
-
-    /**
-     *
-     * @return The tinkerpop vertex
-     */
-    Vertex getVertex() {
-        return vertex;
-    }
-
-    /**
-     *
-     * @return The base ttpe of this concept which helps us identify the concept
-     */
-    Schema.BaseType getBaseType(){
-        return Schema.BaseType.valueOf(getVertex().label());
+    Schema.BaseType baseType(){
+        return Schema.BaseType.valueOf(vertex().label());
     }
 
     /**
@@ -439,79 +150,9 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     @Override
     public ConceptId getId(){
-        return conceptId;
+        return ConceptId.of(vertex().id().getValue());
     }
 
-    /**
-     *
-     * @param direction The direction of the edges to retrieve
-     * @param type The type of the edges to retrieve
-     * @return A collection of edges from this concept in a particular direction of a specific type
-     */
-    Stream<EdgeImpl> getEdgesOfType(Direction direction, Schema.EdgeLabel type){
-        Iterable<Edge> iterable = () -> getVertex().edges(direction, type.getLabel());
-        return StreamSupport.stream(iterable.spliterator(), false).
-                map(edge -> getGraknGraph().getElementFactory().buildEdge(edge));
-    }
-
-    /**
-     *
-     * @return The grakn graph this concept is bound to.
-     */
-    protected AbstractGraknGraph<?> getGraknGraph() {return graknGraph;}
-
-    //--------- Create Links -------//
-    /**
-     *  @param to the target concept
-     * @param type the type of the edge to create
-     */
-    EdgeImpl putEdge(Concept to, Schema.EdgeLabel type){
-        ConceptImpl toConcept = (ConceptImpl) to;
-        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getId().getRawValue()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getId().getRawValue()).select("edge");
-        if(!traversal.hasNext()) {
-            return addEdge(toConcept, type);
-        } else {
-            return graknGraph.getElementFactory().buildEdge(traversal.next());
-        }
-    }
-
-    /**
-     *
-     * @param toConcept the target concept
-     * @param type the type of the edge to create
-     * @return The edge created
-     */
-    EdgeImpl addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
-        return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(getVertex(), type.getLabel()));
-    }
-
-    /**
-     *
-     * @param direction The direction of the edges to retrieve
-     * @param type The type of the edges to retrieve
-     */
-    void deleteEdges(Direction direction, Schema.EdgeLabel type){
-        getVertex().edges(direction, type.getLabel()).forEachRemaining(Element::remove);
-    }
-
-    /**
-     * Deletes an edge of a specific type going to a specific concept
-     * @param type The type of the edge
-     * @param toConcept The target concept
-     */
-    void deleteEdgeTo(Schema.EdgeLabel type, Concept toConcept){
-        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getId().getRawValue()).
-                outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getId().getRawValue()).select("edge");
-        if(traversal.hasNext()) {
-            traversal.next().remove();
-        }
-    }
-
-    private Edge addEdgeFrom(Vertex fromVertex, String type) {
-        return fromVertex.addEdge(type, getVertex());
-    }
-
-    //------------ Base Equality ------------
     /**
      *
      * @return The hash code of the underlying vertex
@@ -522,15 +163,19 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     @Override
     public boolean equals(Object object) {
-        //Compare Concept
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+
+        ConceptImpl concept = (ConceptImpl) object;
+
         //based on id because vertex comparisons are equivalent
-        return this == object || object instanceof ConceptImpl && ((ConceptImpl) object).getId().equals(getId());
+        return getId().equals(concept.getId());
     }
 
     @Override
     public final String toString(){
         try {
-            getGraknGraph().validVertex(vertex);
+            vertex().graph().validVertex(vertex().element());
             return innerToString();
         } catch (RuntimeException e){
             // Vertex is broken somehow. Most likely deleted.
@@ -539,7 +184,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     }
 
     protected String innerToString() {
-        String message = "Base Type [" + getBaseType() + "] ";
+        String message = "Base Type [" + baseType() + "] ";
         if(getId() != null) {
             message = message + "- Id [" + getId() + "] ";
         }
@@ -547,64 +192,252 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         return message;
     }
 
-    <X> void setImmutableProperty(Schema.ConceptProperty conceptProperty, X newValue, X foundValue, Function<X, Object> converter){
-        if(newValue == null){
-            throw GraphOperationException.settingNullProperty(conceptProperty);
-        }
-
-        if(foundValue != null){
-            if(!foundValue.equals(newValue)){
-                throw GraphOperationException.immutableProperty(foundValue, newValue, this, conceptProperty);
-            }
-        } else {
-            setProperty(conceptProperty, converter.apply(newValue));
-        }
-    }
-    
     @Override
     public int compareTo(Concept o) {
         return this.getId().compareTo(o.getId());
     }
 
     //----------------------------------- Sharding Functionality
-    T createShard(){
-        Vertex shardVertex = getGraknGraph().addVertex(getBaseType());
-        shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), getVertex());
-
-        ConceptImpl shardConcept = getGraknGraph().buildConcept(shardVertex);
-        shardConcept.isShard(true);
-        setProperty(Schema.ConceptProperty.CURRENT_SHARD, shardConcept.getId().getValue());
-
-        //noinspection unchecked
-        return (T) shardConcept;
+    Shard createShard(){
+        VertexElement shardVertex = vertex().graph().addVertex(Schema.BaseType.SHARD);
+        Shard shard = vertex().graph().factory().buildShard(this, shardVertex);
+        vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
+        return shard;
     }
 
-    Set<T> shards(){
-        return this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet());
+    Set<Shard> shards(){
+        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).map(edge ->
+                vertex().graph().factory().buildShard(edge.source())).collect(Collectors.toSet());
     }
 
-    //TODO: Return implementation rather than interface
-    T currentShard(){
-        String currentShardId = getProperty(Schema.ConceptProperty.CURRENT_SHARD);
-        return getGraknGraph().getConcept(ConceptId.of(currentShardId));
-    }
-
-    boolean isShard(){
-        return cachedIsShard.get();
-    }
-
-    void isShard(Boolean isShard){
-        if(isShard) setProperty(Schema.ConceptProperty.IS_SHARD, isShard);
-        cachedIsShard.set(isShard);
+    Shard currentShard(){
+        String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
+        Vertex shardVertex = vertex().graph().getTinkerTraversal().has(Schema.VertexProperty.ID.name(), currentShardId).next();
+        return vertex().graph().factory().buildShard(shardVertex);
     }
 
     long getShardCount(){
-        Long value = getProperty(Schema.ConceptProperty.SHARD_COUNT);
+        Long value = vertex().property(Schema.VertexProperty.SHARD_COUNT);
         if(value == null) return 0L;
         return value;
     }
 
     void setShardCount(Long instanceCount){
-        setProperty(Schema.ConceptProperty.SHARD_COUNT, instanceCount);
+        vertex().property(Schema.VertexProperty.SHARD_COUNT, instanceCount);
+    }
+
+    /**
+     * Helper method to cast a concept to it's correct type
+     * @param type The type to cast to
+     * @param <E> The type of the interface we are casting to.
+     * @return The concept itself casted to the defined interface
+     * @throws GraphOperationException when casting an element incorrectly
+     */
+    private <E extends Concept> E castConcept(Class<E> type){
+        try {
+            return type.cast(this);
+        } catch(ClassCastException e){
+            throw GraphOperationException.invalidCasting(this, type);
+        }
+    }
+
+    /**
+     *
+     * @return A Type if the element is a Type
+     */
+    @Override
+    public Type asType() {
+        return castConcept(Type.class);
+    }
+
+    /**
+     *
+     * @return An Instance if the element is an Instance
+     */
+    @Override
+    public Instance asInstance() {
+        return castConcept(Instance.class);
+    }
+
+    /**
+     *
+     * @return A Entity Type if the element is a Entity Type
+     */
+    @Override
+    public EntityType asEntityType() {
+        return castConcept(EntityType.class);
+    }
+
+    /**
+     *
+     * @return A Role Type if the element is a Role Type
+     */
+    @Override
+    public RoleType asRoleType() {
+        return castConcept(RoleType.class);
+    }
+
+    /**
+     *
+     * @return A Relation Type if the element is a Relation Type
+     */
+    @Override
+    public RelationType asRelationType() {
+        return castConcept(RelationType.class);
+    }
+
+    /**
+     *
+     * @return A Resource Type if the element is a Resource Type
+     */
+    @SuppressWarnings("unchecked")
+    @Override
+    public <D> ResourceType<D> asResourceType() {
+        return castConcept(ResourceType.class);
+    }
+
+    /**
+     *
+     * @return A Rule Type if the element is a Rule Type
+     */
+    @Override
+    public RuleType asRuleType() {
+        return castConcept(RuleType.class);
+    }
+
+    /**
+     *
+     * @return An Entity if the element is an Instance
+     */
+    @Override
+    public Entity asEntity() {
+        return castConcept(Entity.class);
+    }
+
+    /**
+     *
+     * @return A Relation if the element is a Relation
+     */
+    @Override
+    public Relation asRelation() {
+        return castConcept(Relation.class);
+    }
+
+    /**
+     *
+     * @return A Resource if the element is a Resource
+     */
+    @SuppressWarnings("unchecked")
+    @Override
+    public <D> Resource<D> asResource() {
+        return castConcept(Resource.class);
+    }
+
+    /**
+     *
+     * @return A Rule if the element is a Rule
+     */
+    @Override
+    public Rule asRule() {
+        return castConcept(Rule.class);
+    }
+
+    /**
+     *
+     * @return true if the element is a Type
+     */
+    @Override
+    public boolean isType() {
+        return this instanceof Type;
+    }
+
+    /**
+     *
+     * @return true if the element is an Instance
+     */
+    @Override
+    public boolean isInstance() {
+        return this instanceof Instance;
+    }
+
+    /**
+     *
+     * @return true if the element is a Entity Type
+     */
+    @Override
+    public boolean isEntityType() {
+        return this instanceof EntityType;
+    }
+
+    /**
+     *
+     * @return true if the element is a Role Type
+     */
+    @Override
+    public boolean isRoleType() {
+        return this instanceof RoleType;
+    }
+
+    /**
+     *
+     * @return true if the element is a Relation Type
+     */
+    @Override
+    public boolean isRelationType() {
+        return this instanceof RelationType;
+    }
+
+    /**
+     *
+     * @return true if the element is a Resource Type
+     */
+    @Override
+    public boolean isResourceType() {
+        return this instanceof ResourceType;
+    }
+
+    /**
+     *
+     * @return true if the element is a Rule Type
+     */
+    @Override
+    public boolean isRuleType() {
+        return this instanceof RuleType;
+    }
+
+    /**
+     *
+     * @return true if the element is a Entity
+     */
+    @Override
+    public boolean isEntity() {
+        return this instanceof Entity;
+    }
+
+    /**
+     *
+     * @return true if the element is a Relation
+     */
+    @Override
+    public boolean isRelation() {
+        return this instanceof Relation;
+    }
+
+    /**
+     *
+     * @return true if the element is a Resource
+     */
+    @Override
+    public boolean isResource() {
+        return this instanceof Resource;
+    }
+
+    /**
+     *
+     * @return true if the element is a Rule
+     */
+    @Override
+    public boolean isRule() {
+        return this instanceof Rule;
     }
 }

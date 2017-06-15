@@ -27,8 +27,6 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.var;
-
 /**
  *
  * <p>
@@ -43,7 +41,7 @@ public class NotEquals extends AtomicBase {
     private final Var refVarName;
 
     public NotEquals(Var varName, NeqProperty prop, ReasonerQuery parent){
-        super(var(varName).neq(var(prop.getVar().getVarName())).admin(), parent);
+        super(varName.neq(prop.getVar().getVarName()).admin(), parent);
         this.refVarName = prop.getVar().getVarName();
     }
     public NotEquals(NotEquals a){

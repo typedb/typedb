@@ -37,6 +37,8 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.MinimalCounterexampleHook;
@@ -49,8 +51,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.util.StringConverter.valueToString;
+//import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.StringUtil.valueToString;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -69,6 +71,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     private static StringBuilder graphSummary;
 
     private GraknGraph graph;
+    private QueryBuilder graql;
     private Boolean open = null;
 
     public GraknGraphs() {
@@ -112,6 +115,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
         // Clear graph before retrieving
         graph = factory.open(GraknTxType.WRITE);
+        graql = graph.graql();
         graph.admin().delete();
         graph = factory.open(GraknTxType.WRITE);
 
@@ -258,7 +262,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 RuleType ruleType = ruleType();
-                Rule rule = ruleType.putRule(var("x"), var("x"));// TODO: generate more complicated rules
+                Rule rule = ruleType.putRule(graql.parsePattern("$x"), graql.parsePattern("$x"));// TODO: generate more complicated rules
                 summaryAssign(rule, ruleType, "putRule", "var(\"x\")", "var(\"y\")");
             },
             () -> {
@@ -364,19 +368,13 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     public static Collection<? extends Type> allTypesFrom(GraknGraph graph) {
-        return withImplicitConceptsVisible(graph, g -> g.admin().getMetaConcept().subTypes());
+        Function<GraknGraph, ? extends Collection<? extends Type>> function = g -> g.admin().getMetaConcept().subTypes();
+        return CommonUtil.withImplicitConceptsVisible(graph, function);
     }
 
     public static Collection<? extends Instance> allInstancesFrom(GraknGraph graph) {
-        return withImplicitConceptsVisible(graph, g -> g.admin().getMetaConcept().instances());
-    }
-
-    public static <T> T withImplicitConceptsVisible(GraknGraph graph, Function<GraknGraph, T> function) {
-        boolean implicitFlag = graph.implicitConceptsVisible();
-        graph.showImplicitConcepts(true);
-        T result = function.apply(graph);
-        graph.showImplicitConcepts(implicitFlag);
-        return result;
+        Function<GraknGraph, ? extends Collection<? extends Instance>> function = g -> g.admin().getMetaConcept().instances();
+        return CommonUtil.withImplicitConceptsVisible(graph, function);
     }
 
     @Override

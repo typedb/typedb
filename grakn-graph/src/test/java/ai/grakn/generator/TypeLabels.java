@@ -19,13 +19,15 @@
 
 package ai.grakn.generator;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.util.CommonUtil;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.function.Function;
 
-import static ai.grakn.generator.GraknGraphs.withImplicitConceptsVisible;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -47,7 +49,7 @@ public class TypeLabels extends FromGraphGenerator<TypeLabel> {
     @Override
     public TypeLabel generateFromGraph() {
         if (mustBeUnused) {
-            return withImplicitConceptsVisible(graph(), graph -> {
+            Function<GraknGraph,TypeLabel> function = graph -> {
                 TypeLabel label;
 
                 int attempts = 0;
@@ -62,7 +64,8 @@ public class TypeLabels extends FromGraphGenerator<TypeLabel> {
                 } while (graph.getType(label) != null);
 
                 return label;
-            });
+            };
+            return CommonUtil.withImplicitConceptsVisible(graph(), function);
         } else {
             return metaSyntacticLabel();
         }

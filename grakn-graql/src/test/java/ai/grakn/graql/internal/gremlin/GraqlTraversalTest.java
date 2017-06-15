@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.graql.Graql;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
@@ -30,8 +31,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.util.CommonUtil;
+import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -71,15 +71,15 @@ import static org.mockito.Mockito.when;
 
 public class GraqlTraversalTest {
 
-    private static final Var a = Var.of("a");
-    private static final Var b = Var.of("b");
-    private static final Var c = Var.of("c");
-    private static final Var x = Var.of("x");
-    private static final Var y = Var.of("y");
-    private static final Var z = Var.of("z");
-    private static final Var xx = Var.of("xx");
-    private static final Var yy = Var.of("yy");
-    private static final Var zz = Var.of("zz");
+    private static final Var a = Graql.var("a");
+    private static final Var b = Graql.var("b");
+    private static final Var c = Graql.var("c");
+    private static final Var x = Graql.var("x");
+    private static final Var y = Graql.var("y");
+    private static final Var z = Graql.var("z");
+    private static final Var xx = Graql.var("xx");
+    private static final Var yy = Graql.var("yy");
+    private static final Var zz = Graql.var("zz");
     private static final Fragment xId = id(x, ConceptId.of("Titanic"));
     private static final Fragment xValue = value(x, eq("hello").admin());
     private static final Fragment yId = id(y, ConceptId.of("movie"));
@@ -168,7 +168,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void testAllTraversalsSimpleQuery() {
-        VarPattern pattern = Patterns.var(x).id(ConceptId.of("Titanic")).isa(Patterns.var(y).id(ConceptId.of("movie")));
+        VarPattern pattern = x.id(ConceptId.of("Titanic")).isa(y.id(ConceptId.of("movie")));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());
@@ -193,34 +193,34 @@ public class GraqlTraversalTest {
 
     @Test
     public void testOptimalShortQuery() {
-        assertNearlyOptimal(var(x).isa(var(y).id(ConceptId.of("movie"))));
+        assertNearlyOptimal(x.isa(y.id(ConceptId.of("movie"))));
     }
 
     @Test
     public void testOptimalBothId() {
-        assertNearlyOptimal(var(x).id(ConceptId.of("Titanic")).isa(var(y).id(ConceptId.of("movie"))));
+        assertNearlyOptimal(x.id(ConceptId.of("Titanic")).isa(y.id(ConceptId.of("movie"))));
     }
 
     @Test
     public void testOptimalByValue() {
-        assertNearlyOptimal(var(x).val("hello").isa(var(y).id(ConceptId.of("movie"))));
+        assertNearlyOptimal(x.val("hello").isa(y.id(ConceptId.of("movie"))));
     }
 
     @Test
     public void testOptimalAttachedResource() {
         assertNearlyOptimal(var()
-                .rel(var(x).isa(var(y).id(ConceptId.of("movie"))))
-                .rel(var(z).val("Titanic").isa(var("a").id(ConceptId.of("title")))));
+                .rel(x.isa(y.id(ConceptId.of("movie"))))
+                .rel(z.val("Titanic").isa(var("a").id(ConceptId.of("title")))));
     }
 
     @Ignore // TODO: This is now super-slow
     @Test
     public void makeSureTypeIsCheckedBeforeFollowingAShortcut() {
         assertNearlyOptimal(and(
-                var(x).id(ConceptId.of("xid")),
-                var().rel(var(x)).rel(var(y)),
-                var(y).isa(var(b).label("person")),
-                var().rel(var(y)).rel(var(z))
+                x.id(ConceptId.of("xid")),
+                var().rel(x).rel(y),
+                y.isa(b.label("person")),
+                var().rel(y).rel(z)
         ));
     }
 

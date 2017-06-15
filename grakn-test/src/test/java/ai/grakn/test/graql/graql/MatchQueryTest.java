@@ -20,7 +20,11 @@ package ai.grakn.test.graql.graql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -32,6 +36,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -41,8 +46,11 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
 import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
 import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class MatchQueryTest {
 
@@ -60,7 +68,7 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryIsLimitedToANegativeNumber_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(NON_POSITIVE_LIMIT.getMessage(Long.MIN_VALUE));
         //noinspection ResultOfMethodCallIgnored
         graph.graql().match(var()).limit(Long.MIN_VALUE);
@@ -68,7 +76,7 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryIsLimitedToZero_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(NON_POSITIVE_LIMIT.getMessage(0L));
         //noinspection ResultOfMethodCallIgnored
         graph.graql().match(var()).limit(0L);
@@ -76,7 +84,7 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryIsOffsetByANegativeNumber_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(NEGATIVE_OFFSET.getMessage(Long.MIN_VALUE));
         //noinspection ResultOfMethodCallIgnored
         graph.graql().match(var()).offset(Long.MIN_VALUE);
@@ -127,8 +135,8 @@ public class MatchQueryTest {
 
     @Test
     public void whenSelectingVarNotInQuery_Throw() {
-        exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Var.of("x")));
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("x")));
         graph.graql().match(var()).select("x").execute();
     }
 
@@ -186,6 +194,17 @@ public class MatchQueryTest {
     @Test(expected = Exception.class)
     public void testOrderBy8() {
         graph.graql().match(var("x").isa("movie")).orderBy("x", Order.asc).execute();
+    }
+
+    @Test
+    public void whenExecutingGraqlTraversalFromGraph_ReturnExpectedResults(){
+        EntityType type = graph.putEntityType("Concept Type");
+        Entity entity = type.addEntity();
+
+        Collection<Concept> results = graph.graql().match(var("x").isa(type.getLabel().getValue())).
+                execute().iterator().next().values();
+
+        assertThat(results, containsInAnyOrder(entity));
     }
 
 }

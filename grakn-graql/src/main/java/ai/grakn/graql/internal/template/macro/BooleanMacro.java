@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.macro.Macro;
 
 import com.google.common.collect.ImmutableSet;
@@ -41,12 +42,12 @@ public class BooleanMacro implements Macro<Boolean> {
     @Override
     public Boolean apply(List<Object> values) {
         if(values.size() != numberArguments){
-            throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
+            throw GraqlQueryException.wrongNumberOfMacroArguments(this, values);
         }
 
         String booleanValue = values.get(0).toString().toLowerCase();
         if(!allowedBooleanValues.contains(booleanValue)){
-            throw new IllegalArgumentException("Wrong value for boolean in argument " + values + " to macro " + name());
+            throw GraqlQueryException.wrongMacroArgumentType(this, "a boolean", booleanValue);
         }
 
         return Boolean.parseBoolean(booleanValue);

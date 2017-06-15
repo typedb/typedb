@@ -1,8 +1,8 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.util.EmbeddedCassandra;
 import ai.grakn.util.ErrorMessage;
-import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -24,11 +24,7 @@ public abstract class TitanTestBase {
 
     @BeforeClass
     public static void setupMain(){
-        try {
-            EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        EmbeddedCassandra.start();
 
         try (InputStream in = new FileInputStream(CONFIG_LOCATION)){
             TEST_PROPERTIES.load(in);

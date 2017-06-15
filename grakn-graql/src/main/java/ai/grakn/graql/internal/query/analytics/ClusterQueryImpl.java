@@ -148,9 +148,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
 
         ClusterQueryImpl<?> that = (ClusterQueryImpl<?>) o;
 
-        if (members != that.members) return false;
-        if (anySize != that.anySize) return false;
-        return clusterSize == that.clusterSize;
+        return members == that.members && anySize == that.anySize && clusterSize == that.clusterSize;
     }
 
     @Override

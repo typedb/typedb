@@ -32,6 +32,7 @@ import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import com.theoryinpractise.halbuilder.api.Representation;
@@ -84,7 +85,7 @@ public class HALUtils {
         } else if (instance.isRule()) {
             return Schema.BaseType.RULE;
         } else {
-            throw new RuntimeException("Unrecognized base type of " + instance);
+            throw CommonUtil.unreachableStatement("Unrecognised base type of " + instance);
         }
     }
 
@@ -102,7 +103,7 @@ public class HALUtils {
         } else if (type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
             return Schema.BaseType.TYPE;
         } else {
-            throw new RuntimeException("Unrecognized base type of " + type);
+            throw CommonUtil.unreachableStatement("Unrecognised base type of " + type);
         }
     }
 
@@ -146,7 +147,7 @@ public class HALUtils {
         if (atom.isRelation()) {
             Optional<VarPatternAdmin> var = atom.getPattern().getVars().stream().filter(x -> x.hasProperty(RelationProperty.class)).findFirst();
             VarPatternAdmin varAdmin = atom.getPattern().asVar();
-            if (var.isPresent() && !var.get().isUserDefinedName() && bothRolePlayersAreSelected(atom, matchQuery)) {
+            if (var.isPresent() && !var.get().getVarName().isUserDefinedName() && bothRolePlayersAreSelected(atom, matchQuery)) {
                 roleTypes.put(varAdmin, pairVarNamesRelationType(atom));
             }
         }
@@ -170,7 +171,7 @@ public class HALUtils {
     private static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQueryNoReasoner(MatchQuery matchQuery) {
         final Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
         matchQuery.admin().getPattern().getVars().forEach(var -> {
-            if (var.getProperty(RelationProperty.class).isPresent() && !var.isUserDefinedName() && bothRolePlayersAreSelectedNoReasoner(var,matchQuery)) {
+            if (var.getProperty(RelationProperty.class).isPresent() && !var.getVarName().isUserDefinedName() && bothRolePlayersAreSelectedNoReasoner(var,matchQuery)) {
                 Map<Var, String> tempMap = new HashMap<>();
                 var.getProperty(RelationProperty.class).get()
                         .getRelationPlayers().forEach(x -> {

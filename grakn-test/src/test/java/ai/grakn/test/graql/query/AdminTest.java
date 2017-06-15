@@ -23,6 +23,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -78,14 +79,14 @@ public class AdminTest {
     public void testDefaultGetSelectedNamesInQuery() {
         MatchQuery query = qb.match(var("x").isa(var("y")));
 
-        assertEquals(Sets.newHashSet(Var.of("x"), Var.of("y")), query.admin().getSelectedNames());
+        assertEquals(Sets.newHashSet(Graql.var("x"), Graql.var("y")), query.admin().getSelectedNames());
     }
 
     @Test
     public void testExplicitGetSelectedNamesInQuery() {
         MatchQuery query = qb.match(var("x").isa(var("y"))).select("x");
 
-        assertEquals(Sets.newHashSet(Var.of("x")), query.admin().getSelectedNames());
+        assertEquals(Sets.newHashSet(Graql.var("x")), query.admin().getSelectedNames());
     }
 
     @Test

@@ -104,7 +104,6 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
                 graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading));
             }
         }
-
         graknGraph.openTransaction(txType);
         return graknGraph;
     }

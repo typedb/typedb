@@ -124,7 +124,7 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
 
             for (String propertyConfig : configs) {
                 String[] propertyConfigs = propertyConfig.split(":");
-                Schema.ConceptProperty property = Schema.ConceptProperty.valueOf(propertyConfigs[0]);
+                Schema.VertexProperty property = Schema.VertexProperty.valueOf(propertyConfigs[0]);
                 boolean isUnique = Boolean.parseBoolean(propertyConfigs[1]);
 
                 OType orientDataType = getOrientDataType(property);
@@ -146,7 +146,7 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
         return graph;
     }
 
-    private OType getOrientDataType(Schema.ConceptProperty property){
+    private OType getOrientDataType(Schema.VertexProperty property){
         Class propertyDataType = property.getDataType();
 
         if(propertyDataType.equals(String.class)){

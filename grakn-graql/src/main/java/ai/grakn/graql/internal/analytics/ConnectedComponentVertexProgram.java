@@ -19,9 +19,7 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.TypeId;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
-import com.google.common.collect.Sets;
+import ai.grakn.exception.GraqlQueryException;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -29,8 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -45,18 +42,13 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
 
     private static final int MAX_ITERATION = 100;
     // element key
-    private static final String IS_ACTIVE_CASTING = "connectedComponentVertexProgram.isActiveCasting";
     public static final String CLUSTER_LABEL = "connectedComponentVertexProgram.clusterLabel";
 
     // memory key
     private static final String VOTE_TO_HALT = "connectedComponentVertexProgram.voteToHalt";
 
-    private static final Set<String> MEMORY_COMPUTE_KEYS = Sets.newHashSet(VOTE_TO_HALT);
+    private static final Set<String> MEMORY_COMPUTE_KEYS = Collections.singleton(VOTE_TO_HALT);
 
-    private static final String MESSAGE_FROM_ROLE_PLAYER = "R";
-    private static final String MESSAGE_FROM_ASSERTION = "A";
-
-    private String isActiveCasting;
     private String clusterLabel;
 
     public ConnectedComponentVertexProgram() {
@@ -65,22 +57,19 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public ConnectedComponentVertexProgram(Set<TypeId> selectedTypes, String randomId) {
         this.selectedTypes = selectedTypes;
 
-        isActiveCasting = IS_ACTIVE_CASTING + randomId;
         clusterLabel = CLUSTER_LABEL + randomId;
-        this.persistentProperties.put(IS_ACTIVE_CASTING, isActiveCasting);
         this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
-        this.isActiveCasting = (String) this.persistentProperties.get(IS_ACTIVE_CASTING);
         this.clusterLabel = (String) this.persistentProperties.get(CLUSTER_LABEL);
     }
 
     @Override
     public Set<String> getElementComputeKeys() {
-        return Sets.newHashSet(isActiveCasting, clusterLabel);
+        return Collections.singleton(clusterLabel);
     }
 
     @Override
@@ -99,49 +88,14 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                    String type = vertex.label();
-                    if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
-                        // each role-player sends 1 to castings following incoming edges
-                        messenger.sendMessage(messageScopeInRolePlayer, MESSAGE_FROM_ROLE_PLAYER);
-                    } else if (type.equals(Schema.BaseType.RELATION.name())) {
-                        // the assertion can also be a role-player, so sending 1 to castings following incoming edges
-                        messenger.sendMessage(messageScopeInRolePlayer, MESSAGE_FROM_ROLE_PLAYER);
-                        // send -1 to castings following outgoing edges
-                        messenger.sendMessage(messageScopeOutCasting, MESSAGE_FROM_ASSERTION);
-                    }
-                }
-                break;
-            case 1:
-                if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
-                    Set<String> messageSet = new HashSet<>();
-                    boolean hasBothMessages = false;
-                    Iterator<String> iterator = messenger.receiveMessages();
-                    while (iterator.hasNext()) {
-                        messageSet.add(iterator.next());
-                        if (messageSet.size() == 2) {
-                            hasBothMessages = true;
-                            break;
-                        }
-                    }
-                    // casting is active if both its assertion and role-player is in the subgraph
-                    vertex.property(isActiveCasting, hasBothMessages);
-                    if (hasBothMessages) {
-                        String id = vertex.id().toString();
-                        vertex.property(clusterLabel, id);
-                        messenger.sendMessage(messageScopeOutRolePlayer, id);
-                        messenger.sendMessage(messageScopeInCasting, id);
-                    }
-                } else if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
                     String id = vertex.id().toString();
                     vertex.property(clusterLabel, id);
-                    messenger.sendMessage(messageScopeInRolePlayer, id);
-                    messenger.sendMessage(messageScopeOutCasting, id);
+                    messenger.sendMessage(messageScopeShortcutIn, id);
+                    messenger.sendMessage(messageScopeShortcutOut, id);
                 }
                 break;
             default:
-                if (selectedTypes.contains(Utility.getVertexTypeId(vertex)) ||
-                        (vertex.label().equals(Schema.BaseType.CASTING.name()) &&
-                                (boolean) vertex.value(isActiveCasting))) {
+                if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
                     update(vertex, messenger, memory);
                 }
                 break;
@@ -154,8 +108,8 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                 (a, b) -> a.compareTo(b) > 0 ? a : b);
         if (max.compareTo(currentMax) > 0) {
             vertex.property(clusterLabel, max);
-            messenger.sendMessage(messageScopeIn, max);
-            messenger.sendMessage(messageScopeOut, max);
+            messenger.sendMessage(messageScopeShortcutIn, max);
+            messenger.sendMessage(messageScopeShortcutOut, max);
             memory.and(VOTE_TO_HALT, false);
         }
     }
@@ -169,11 +123,11 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         }
         if (memory.getIteration() == MAX_ITERATION) {
             LOGGER.debug("Reached Max Iteration: " + MAX_ITERATION + " !!!!!!!!");
-            throw new IllegalStateException(ErrorMessage.MAX_ITERATION_REACHED
-                    .getMessage(this.getClass().toString()));
+            throw GraqlQueryException.maxIterationsReached(this.getClass());
         }
 
         memory.or(VOTE_TO_HALT, true);
         return false;
     }
+
 }

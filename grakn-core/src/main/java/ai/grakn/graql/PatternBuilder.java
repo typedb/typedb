@@ -14,40 +14,25 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- */
-
-package ai.grakn.test;
-
-import ai.grakn.GraknGraph;
-import ai.grakn.test.graphs.TestGraph;
-
-import java.util.function.Consumer;
-
-/**
- * SNBGraph
- * 
- * @author Sheldon
  *
  */
-public class SNBGraph extends TestGraph{
 
-    public static Consumer<GraknGraph> get() {
-        return new SNBGraph().build();
-    }
+package ai.grakn.graql;
 
-    @Override
-    protected void buildOntology(GraknGraph graph) {
-        loadFromFile(graph, "ldbc-snb-ontology.gql");
-        loadFromFile(graph, "ldbc-snb-product-ontology.gql");
-    }
+import javax.annotation.CheckReturnValue;
 
-    @Override
-    protected void buildRules(GraknGraph graph) {
-        loadFromFile(graph, "ldbc-snb-rules.gql");
-    }
+/**
+ * An interface representing something that is or can be transformed into a {@link Pattern}.
+ *
+ * @author Felix Chapman
+ */
+public interface PatternBuilder {
 
-    @Override
-    protected void buildInstances(GraknGraph graph) {
-        loadFromFile(graph, "ldbc-snb-data.gql");
-    }
+    /**
+     * Change this into a {@link Pattern}. Does not modify the existing object.
+     *
+     * @return a {@link Pattern} from this object.
+     */
+    @CheckReturnValue
+    Pattern pattern();
 }

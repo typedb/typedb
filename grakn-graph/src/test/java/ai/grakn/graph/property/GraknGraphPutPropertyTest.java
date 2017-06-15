@@ -105,7 +105,7 @@ public class GraknGraphPutPropertyTest {
         assumeFalse(type.isEntityType());
 
         exception.expect(PropertyNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.ConceptProperty.TYPE_LABEL.name(), type.getLabel(), type));
+        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
 
         graph.putEntityType(type.getLabel());
     }
@@ -145,7 +145,7 @@ public class GraknGraphPutPropertyTest {
         assumeFalse(type.isResourceType());
 
         exception.expect(PropertyNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.ConceptProperty.TYPE_LABEL.name(), type.getLabel(), type));
+        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
 
         graph.putResourceType(type.getLabel(), dataType);
     }
@@ -161,7 +161,7 @@ public class GraknGraphPutPropertyTest {
         if(isMetaLabel(typeLabel)) {
             exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeLabel));
         } else {
-            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
+            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE.name()));
         }
 
         graph.putResourceType(typeLabel, dataType);
@@ -186,7 +186,7 @@ public class GraknGraphPutPropertyTest {
         assumeFalse(type.isRuleType());
 
         exception.expect(PropertyNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.ConceptProperty.TYPE_LABEL.name(), type.getLabel(), type));
+        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
 
         graph.putRuleType(type.getLabel());
     }
@@ -219,7 +219,7 @@ public class GraknGraphPutPropertyTest {
         assumeFalse(type.isRelationType());
 
         exception.expect(PropertyNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.ConceptProperty.TYPE_LABEL.name(), type.getLabel(), type));
+        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
 
         graph.putRelationType(type.getLabel());
     }
@@ -252,7 +252,7 @@ public class GraknGraphPutPropertyTest {
         assumeFalse(type.isRoleType());
 
         exception.expect(PropertyNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.ConceptProperty.TYPE_LABEL.name(), type.getLabel(), type));
+        exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
 
         graph.putRoleType(type.getLabel());
     }

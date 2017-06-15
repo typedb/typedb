@@ -659,7 +659,7 @@ public class TemplateParserTest {
 
     @Test
     public void keyWithSpacesFailsTest(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
 
         String template = "insert $x isa person has name <First Name>;    ";
         String expected = "insert $x0 has name \"Phil Collins\" isa person;";
@@ -679,10 +679,9 @@ public class TemplateParserTest {
 
     @Test
     public void testGraqlParsingException(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         String template = "<<<<<<<";
-        //noinspection ResultOfMethodCallIgnored
-        Graql.parseTemplate(template, new HashMap<>());
+        Graql.parseTemplate(template, new HashMap<>()).forEach(q -> {});
     }
 
     @Test
@@ -730,14 +729,14 @@ public class TemplateParserTest {
     }
 
     private void assertParseContains(String template, Map<String, Object> data, String... expected){
-        List<String> result = Graql.parseTemplate(template, data).stream().map(Query::toString).collect(toList());
+        List<String> result = Graql.parseTemplate(template, data).map(Query::toString).collect(toList());
         for(String e:expected){
             assertThat(result, hasItem(e));
         }
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
-        List<Query> result = Graql.parseTemplate(template, data);
+        List<Query> result = Graql.parseTemplate(template, data).collect(toList());
         assertEquals(parse(expected), result.get(0));
     }
 }

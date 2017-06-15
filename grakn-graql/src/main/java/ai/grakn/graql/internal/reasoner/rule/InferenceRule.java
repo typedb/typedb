@@ -22,12 +22,14 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
@@ -38,11 +40,9 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
-import java.util.HashSet;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -73,7 +73,7 @@ public class InferenceRule {
 
         //run time check for head atom validity
         if (!getHead().getAtom().isAllowedToFormRuleHead()){
-            throw new IllegalArgumentException(ErrorMessage.DISALLOWED_ATOM_IN_RULE_HEAD.getMessage(getHead().getAtom(), this.toString()));
+            throw GraqlQueryException.disallowedAtomInRuleHead(this.getHead().getAtom().toString(), this.toString());
         }
     }
 

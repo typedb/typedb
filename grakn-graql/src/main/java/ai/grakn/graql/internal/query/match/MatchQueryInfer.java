@@ -19,19 +19,19 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.util.CommonUtil.optionalOr;
+import static ai.grakn.util.CommonUtil.optionalOr;
 
 /**
  * Modifier that specifies the graph to execute the match query with.
@@ -47,9 +47,7 @@ class MatchQueryInfer extends MatchQueryModifier {
 
     @Override
     public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
-        GraknGraph graph = optionalOr(optionalGraph, inner.getGraph()).orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
-        );
+        GraknGraph graph = optionalOr(optionalGraph, inner.getGraph()).orElseThrow(GraqlQueryException::noGraph);
 
         if (!ReasonerUtils.hasRules(graph)) return inner.stream(optionalGraph);
 

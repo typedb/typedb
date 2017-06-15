@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
@@ -39,14 +40,14 @@ public class IntMacro implements Macro<Integer> {
     @Override
     public Integer apply(List<Object> values) {
         if(values.size() != numberArguments){
-            throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
+            throw GraqlQueryException.wrongNumberOfMacroArguments(this, values);
         }
 
         String intValue = values.get(0).toString();
         try {
             return Integer.parseInt(intValue);
         } catch (NumberFormatException e){
-            throw new IllegalArgumentException("Value [" + intValue + "] is not an integer in macro " + name());
+            throw GraqlQueryException.wrongMacroArgumentType(this, "an integer", intValue);
         }
     }
 

@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -33,7 +34,6 @@ import ai.grakn.util.ErrorMessage;
 import java.util.Collection;
 import java.util.Set;
 
-import static ai.grakn.util.ErrorMessage.INSERT_UNSUPPORTED_PROPERTY;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 
 /**
@@ -79,9 +79,9 @@ public abstract class RuleProperty extends AbstractVarProperty implements Unique
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         if (!concept.isRule()) {
-            throw new IllegalStateException(INSERT_UNSUPPORTED_PROPERTY.getMessage(getName(), RULE.getLabel()));
+            throw GraqlQueryException.insertUnsupportedProperty(this.getName(), RULE);
         }
     }
 

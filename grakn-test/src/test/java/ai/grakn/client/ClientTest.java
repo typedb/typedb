@@ -37,7 +37,7 @@ public class ClientTest {
         EngineContext engine = EngineContext.startInMemoryServer();
         engine.before();
 
-        boolean running = Client.serverIsRunning(Grakn.DEFAULT_URI);
+        boolean running = Client.serverIsRunning(engine.uri());
         assertTrue(running);
 
         // Check that we've loaded the ontology

@@ -22,14 +22,13 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.util.ErrorMessage;
 
 /**
  *
@@ -77,12 +76,12 @@ public class IdPredicate extends Predicate<ConceptId>{
     protected ConceptId extractPredicate(VarPatternAdmin var){ return var.admin().getId().orElse(null);}
 
     private static VarPatternAdmin createIdVar(Var varName, ConceptId typeId){
-        return Graql.var(varName).id(typeId).admin();
+        return varName.id(typeId).admin();
     }
 
     private static VarPatternAdmin createIdVar(Var varName, LabelProperty prop, GraknGraph graph){
         Type type = graph.getType(prop.getLabelValue());
-        if (type == null) throw new IllegalArgumentException(ErrorMessage.CANNOT_CREATE_IDPREDICATE.getMessage(prop.getLabelValue()));
-        return Graql.var(varName).id(type.getId()).admin();
+        if (type == null) throw GraqlQueryException.labelNotFound(prop.getLabelValue());
+        return varName.id(type.getId()).admin();
     }
 }

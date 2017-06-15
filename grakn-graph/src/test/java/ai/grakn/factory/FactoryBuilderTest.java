@@ -20,7 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.exception.GraphOperationException;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,7 +51,7 @@ public class FactoryBuilderTest {
         try (InputStream in = new FileInputStream(TEST_CONFIG)){
             TEST_PROPERTIES.load(in);
         } catch (IOException e) {
-            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(TEST_CONFIG), e);
+            throw GraphOperationException.invalidGraphConfig(TEST_CONFIG);
         }
     }
 

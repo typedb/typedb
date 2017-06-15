@@ -23,21 +23,25 @@ import ai.grakn.GraknSession;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
+import com.jayway.restassured.RestAssured;
 import org.junit.rules.ExternalResource;
 
 import javax.annotation.Nullable;
 
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_URL;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static ai.grakn.test.GraknTestEnv.randomKeyspace;
-import static ai.grakn.test.GraknTestEnv.startEngine;
-import static ai.grakn.test.GraknTestEnv.startKafka;
-import static ai.grakn.test.GraknTestEnv.startRedis;
-import static ai.grakn.test.GraknTestEnv.stopEngine;
-import static ai.grakn.test.GraknTestEnv.stopRedis;
+import static ai.grakn.test.GraknTestEngineSetup.randomKeyspace;
+import static ai.grakn.test.GraknTestEngineSetup.startEngine;
+import static ai.grakn.test.GraknTestEngineSetup.startKafka;
+import static ai.grakn.test.GraknTestEngineSetup.startRedis;
+import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
+import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
 
 /**
  * <p>
@@ -53,7 +57,7 @@ public class EngineContext extends ExternalResource {
     private final boolean startKafka;
     private final boolean startSingleQueueEngine;
     private final boolean startStandaloneEngine;
-    private final GraknEngineConfig config = GraknEngineConfig.create();
+    private final GraknEngineConfig config = GraknTestEngineSetup.createTestConfig();
 
     private EngineContext(boolean startKafka, boolean startSingleQueueEngine, boolean startStandaloneEngine){
         this.startSingleQueueEngine = startSingleQueueEngine;
@@ -86,17 +90,29 @@ public class EngineContext extends ExternalResource {
         return config;
     }
 
+    public RedisConnection redis() {
+        return RedisConnection.create(config.getProperty(REDIS_SERVER_URL), config.getPropertyAsInt(REDIS_SERVER_PORT));
+    }
+
     public TaskManager getTaskManager(){
         return server.getTaskManager();
     }
 
+    public String uri() {
+        return config.uri();
+    }
+
     //TODO Rename this method to "sessionWithNewKeyspace"
     public GraknSession factoryWithNewKeyspace() {
-        return Grakn.session(GraknTestEnv.getUri(config), randomKeyspace());
+        return Grakn.session(uri(), randomKeyspace());
     }
 
     @Override
     public void before() throws Throwable {
+        RestAssured.baseURI = "http://" + config.getProperty("server.host") + ":" + config.getProperty("server.port");        
+        if (!config.getPropertyAsBool("test.start.embedded.components", true)) {
+            return;
+        }
         if(startKafka){
             startKafka(config);
         }
@@ -121,6 +137,9 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void after() {
+        if (!config.getPropertyAsBool("test.start.embedded.components", true)) {
+            return;
+        }
         noThrow(MockBackgroundTask::clearTasks, "Error clearing tasks");
 
         try {
@@ -129,7 +148,7 @@ public class EngineContext extends ExternalResource {
             }
 
             if(startKafka){
-                noThrow(GraknTestEnv::stopKafka, "Error stopping kafka");
+                noThrow(GraknTestEngineSetup::stopKafka, "Error stopping kafka");
             }
 
             stopRedis();

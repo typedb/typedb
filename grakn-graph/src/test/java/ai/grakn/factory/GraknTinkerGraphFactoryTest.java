@@ -24,7 +24,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTinkerGraph;
-import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -55,7 +54,7 @@ public class GraknTinkerGraphFactoryTest {
         try (InputStream in = new FileInputStream(TEST_CONFIG)){
             TEST_PROPERTIES.load(in);
         } catch (IOException e) {
-            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(TEST_CONFIG), e);
+            throw GraphOperationException.invalidGraphConfig(TEST_CONFIG);
         }
     }
 

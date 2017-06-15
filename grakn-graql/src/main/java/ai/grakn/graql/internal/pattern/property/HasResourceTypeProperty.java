@@ -24,6 +24,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -33,7 +34,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
 import java.util.Collection;
@@ -76,9 +76,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         this.resourceType = resourceType;
         this.required = required;
 
-        TypeLabel resourceTypeLabel = resourceType.getTypeLabel().orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_LABEL_SPECIFIED_FOR_HAS.getMessage())
-        );
+        TypeLabel resourceTypeLabel = resourceType.getTypeLabel().orElseThrow(GraqlQueryException::noLabelSpecifiedForHas);
 
         VarPattern role = Graql.label(Schema.MetaSchema.ROLE.getLabel());
 
@@ -96,7 +94,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         this.ownerRole = ownerRole.admin();
         this.valueRole = valueRole.admin();
         this.relationOwner = relationType.relates(this.ownerRole).admin();
-        this.relationValue = var(relationType.admin().getVarName()).relates(this.valueRole).admin();
+        this.relationValue = relationType.admin().getVarName().relates(this.valueRole).admin();
 
     }
 
@@ -142,7 +140,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Type entityTypeConcept = concept.asType();
         ResourceType resourceTypeConcept = insertQueryExecutor.getConcept(resourceType).asResourceType();
 
@@ -172,10 +170,10 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
-        Var varName = var.getVarName();
+        Var varName = var.getVarName().asUserDefined();
         TypeLabel typeLabel = this.getResourceType().getTypeLabel().orElse(null);
         //isa part
-        VarPatternAdmin resVar = var(varName).has(Graql.label(typeLabel)).admin();
+        VarPatternAdmin resVar = varName.has(Graql.label(typeLabel)).admin();
         return new TypeAtom(resVar, parent);
     }
 }
