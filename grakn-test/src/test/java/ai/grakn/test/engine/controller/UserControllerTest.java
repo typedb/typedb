@@ -20,7 +20,7 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 import ai.grakn.test.SparkContext;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -38,7 +38,7 @@ public class UserControllerTest {
     private UsersHandler users;
 
     @ClassRule
-    public static final GraphContext graph = GraphContext.empty();
+    public static final GraphContextOld graph = GraphContextOld.empty();
 
     @Rule
     public final SparkContext ctx = SparkContext.withControllers(spark -> {

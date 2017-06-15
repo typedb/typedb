@@ -26,7 +26,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.BeforeClass;
@@ -50,7 +50,7 @@ public class MovieGraphTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @ClassRule
-    public static final GraphContext context = GraphContext.preLoad(MovieGraph.get());
+    public static final GraphContextOld context = GraphContextOld.preLoad(MovieGraph.get());
 
     @BeforeClass
     public static void setUp() throws IOException{

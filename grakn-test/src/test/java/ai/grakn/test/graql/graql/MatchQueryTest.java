@@ -28,7 +28,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -57,7 +57,7 @@ public class MatchQueryTest {
     private GraknGraph graph = rule.graph();
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final GraphContextOld rule = GraphContextOld.preLoad(MovieGraph.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

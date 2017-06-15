@@ -24,9 +24,8 @@ import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 import ai.grakn.test.matcher.MovieMatchers;
 import org.junit.Assert;
 import org.junit.Before;
@@ -54,7 +53,7 @@ import static org.junit.Assert.assertEquals;
 public class AggregateTest {
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final GraphContextOld rule = GraphContextOld.preLoad(MovieGraph.get());
 
     private QueryBuilder qb;
 

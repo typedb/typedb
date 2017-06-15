@@ -25,7 +25,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -46,7 +46,7 @@ public class JsonPrinterTest {
     private Printer printer;
 
     @ClassRule
-    public static final GraphContext movieContext = GraphContext.preLoad(MovieGraph.get());
+    public static final GraphContextOld movieContext = GraphContextOld.preLoad(MovieGraph.get());
 
     @Before
     public void setUp() {

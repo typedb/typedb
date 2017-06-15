@@ -4,7 +4,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graphs.AcademyGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 import mjson.Json;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -17,7 +17,7 @@ import static org.junit.Assert.assertTrue;
 public class HALBuilderTest {
 
     @ClassRule
-    public static final GraphContext academyGraph = GraphContext.preLoad(AcademyGraph.get());
+    public static final GraphContextOld academyGraph = GraphContextOld.preLoad(AcademyGraph.get());
 
     @Test
     public void whenReceivingHALResponse_EnsureResponseContainsConceptDetails() {

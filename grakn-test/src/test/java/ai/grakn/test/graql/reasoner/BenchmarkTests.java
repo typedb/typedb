@@ -31,7 +31,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -46,7 +46,7 @@ import static org.junit.Assert.assertEquals;
 public class BenchmarkTests {
 
     @Rule
-    public final GraphContext graphContext = GraphContext.empty();
+    public final GraphContextOld graphContext = GraphContextOld.empty();
 
     @Before
     public void setUpGraph(){

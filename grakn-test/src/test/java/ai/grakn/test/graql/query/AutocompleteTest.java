@@ -20,7 +20,7 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.Autocomplete;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -40,7 +40,7 @@ public class AutocompleteTest {
     private final Set<String> types = ImmutableSet.of("production", "movie", "person");
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final GraphContextOld rule = GraphContextOld.preLoad(MovieGraph.get());
 
     @Test
     public void whenAutocompletingAnEmptyQuery_CandidatesIncludeTypesAndKeywords() {

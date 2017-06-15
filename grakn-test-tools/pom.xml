@@ -31,6 +31,13 @@
 
 
     <dependencies>
+        <!-- Needed to be able to create graphs in a rule context -->
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-graph</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Used to create embedded cassandra for testing -->
         <dependency>
             <groupId>org.cassandraunit</groupId>

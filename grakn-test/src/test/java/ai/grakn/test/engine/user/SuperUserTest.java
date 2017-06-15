@@ -18,7 +18,7 @@
 package ai.grakn.test.engine.user;
 
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 import mjson.Json;
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -35,7 +35,7 @@ import org.junit.Test;
 public class SuperUserTest {
 
     @ClassRule
-    public static final GraphContext graph = GraphContext.empty();
+    public static final GraphContextOld graph = GraphContextOld.empty();
 
     private static final String adminPassword = "top secret";
     private final UsersHandler users = UsersHandler.create(adminPassword, graph.factory());

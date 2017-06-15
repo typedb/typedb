@@ -27,7 +27,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 
 import org.apache.commons.lang.StringUtils;
 import org.junit.ClassRule;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertThat;
 public class GraqlPrinterTest {
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final GraphContextOld rule = GraphContextOld.preLoad(MovieGraph.get());
 
     @Test
     public void testRelationOutput() {

@@ -38,7 +38,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.Schema;
@@ -90,7 +90,7 @@ public class InsertQueryTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+    public static final GraphContextOld movieGraph = GraphContextOld.preLoad(MovieGraph.get());
 
     @Before
     public void setUp() {

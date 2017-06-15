@@ -27,7 +27,7 @@ import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -49,10 +49,10 @@ public class QueryErrorTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final GraphContextOld rule = GraphContextOld.preLoad(MovieGraph.get());
 
     @ClassRule
-    public static final GraphContext empty = GraphContext.empty();
+    public static final GraphContextOld empty = GraphContextOld.empty();
 
     private QueryBuilder qb;
 

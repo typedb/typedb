@@ -24,7 +24,7 @@ import ai.grakn.graphs.CWGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 
 import ai.grakn.util.GraknTestSetup;
 import org.junit.BeforeClass;
@@ -42,10 +42,10 @@ public class CWInferenceTest {
     private static QueryBuilder iqb;
 
     @ClassRule
-    public static GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static GraphContextOld cwGraph = GraphContextOld.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static GraphContext cwGraph2 = GraphContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static GraphContextOld cwGraph2 = GraphContextOld.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {

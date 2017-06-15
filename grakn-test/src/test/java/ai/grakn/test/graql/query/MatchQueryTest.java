@@ -38,7 +38,7 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 import ai.grakn.util.GraphLoader;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
@@ -178,7 +178,7 @@ public class MatchQueryTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+    public static final GraphContextOld movieGraph = GraphContextOld.preLoad(MovieGraph.get());
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

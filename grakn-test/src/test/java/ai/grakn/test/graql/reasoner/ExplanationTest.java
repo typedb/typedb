@@ -29,7 +29,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 
 import ai.grakn.util.GraknTestSetup;
 import com.google.common.collect.ImmutableMap;
@@ -50,13 +50,13 @@ public class ExplanationTest {
 
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContextOld geoGraph = GraphContextOld.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContextOld genealogyGraph = GraphContextOld.preLoad(GenealogyGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext explanationGraph = GraphContext.preLoad("explanationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContextOld explanationGraph = GraphContextOld.preLoad("explanationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     private static Concept polibuda, uw;
     private static Concept warsaw;

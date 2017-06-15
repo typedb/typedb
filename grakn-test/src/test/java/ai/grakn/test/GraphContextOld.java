@@ -36,7 +36,8 @@ import static ai.grakn.test.GraknTestEngineSetup.randomKeyspace;
  *
  * @author alexandraorth
  */
-public class GraphContext implements TestRule {
+@Deprecated
+public class GraphContextOld implements TestRule {
 
     private EngineGraknGraphFactory factory;
     private GraknGraph graph;
@@ -45,26 +46,26 @@ public class GraphContext implements TestRule {
     private String[] files;
     private boolean assumption = true;
 
-    private GraphContext(Consumer<GraknGraph> build, String[] files){
+    private GraphContextOld(Consumer<GraknGraph> build, String[] files){
         this.factory = EngineGraknGraphFactory.create(GraknEngineConfig.create().getProperties());
         this.preLoad = build;
         this.files = files;
         this.keyspace = randomKeyspace();
     }
 
-    public static GraphContext empty(){
-        return new GraphContext(null, null);
+    public static GraphContextOld empty(){
+        return new GraphContextOld(null, null);
     }
 
-    public static GraphContext preLoad(Consumer<GraknGraph> build){
-        return new GraphContext(build, null);
+    public static GraphContextOld preLoad(Consumer<GraknGraph> build){
+        return new GraphContextOld(build, null);
     }
 
-    public static GraphContext preLoad(String... filesToLoad){
-        return new GraphContext(null, filesToLoad);
+    public static GraphContextOld preLoad(String... filesToLoad){
+        return new GraphContextOld(null, filesToLoad);
     }
 
-    public GraphContext assumeTrue(boolean bool){
+    public GraphContextOld assumeTrue(boolean bool){
         this.assumption = bool;
         return this;
     }
@@ -128,7 +129,7 @@ public class GraphContext implements TestRule {
                 loadGraph();
 
                 try (GraknGraph graph = getEngineGraph()){
-                    GraphContext.this.graph = graph;
+                    GraphContextOld.this.graph = graph;
                     base.evaluate();
                 }
             }

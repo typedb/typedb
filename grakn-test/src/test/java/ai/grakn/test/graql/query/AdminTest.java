@@ -27,10 +27,9 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 
 import com.google.common.collect.Sets;
 import org.junit.Before;
@@ -51,7 +50,7 @@ import static org.junit.Assert.assertFalse;
 public class AdminTest {
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final GraphContextOld rule = GraphContextOld.preLoad(MovieGraph.get());
 
     private QueryBuilder qb;
 

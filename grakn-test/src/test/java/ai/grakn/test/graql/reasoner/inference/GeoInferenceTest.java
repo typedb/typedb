@@ -25,7 +25,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraphContextOld;
 
 import ai.grakn.util.GraknTestSetup;
 import org.junit.BeforeClass;
@@ -40,7 +40,7 @@ import static org.junit.Assume.assumeTrue;
 public class GeoInferenceTest {
 
     @Rule
-    public final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+    public final GraphContextOld geoGraph = GraphContextOld.preLoad(GeoGraph.get());
 
     @BeforeClass
     public static void onStartup() throws Exception {
