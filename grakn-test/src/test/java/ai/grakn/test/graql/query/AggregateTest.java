@@ -26,7 +26,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraphContextOld;
-import ai.grakn.test.matcher.MovieMatchers;
+import ai.grakn.matcher.MovieMatchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;

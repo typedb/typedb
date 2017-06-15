@@ -14,10 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.test.matcher;
+package ai.grakn.matcher;
 
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
@@ -34,7 +33,6 @@ import org.hamcrest.TypeSafeMatcher;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.test.matcher.MatchableConcept.NAME_TYPES;
 import static ai.grakn.util.Schema.MetaSchema.CONCEPT;
 import static ai.grakn.util.Schema.MetaSchema.CONSTRAINT_RULE;
 import static ai.grakn.util.Schema.MetaSchema.ENTITY;
@@ -255,7 +253,7 @@ public class GraknMatchers {
             @Override
             Iterable<? super MatchableConcept> transform(MatchableConcept item) {
                 return item.get().asInstance().resources().stream()
-                        .filter(resource -> NAME_TYPES.contains(resource.type().getLabel()))
+                        .filter(resource -> MatchableConcept.NAME_TYPES.contains(resource.type().getLabel()))
                         .map(MatchableConcept::new)
                         .collect(toSet());
             }

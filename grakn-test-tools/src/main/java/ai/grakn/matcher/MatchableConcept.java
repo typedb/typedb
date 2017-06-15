@@ -14,22 +14,18 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.test.matcher;
+package ai.grakn.matcher;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.StringUtil;
-
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Optional;
-
-import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 
 /**
  * Wraps a {@link Concept} in order to provide a prettier {@link Object#toString()} representation. This is done using
@@ -60,7 +56,7 @@ public class MatchableConcept {
 
             return "instance(" + value.map(StringUtil::valueToString).orElse("") + ")";
         } else {
-            return "type(" + typeLabelToString(concept.asType().getLabel()) + ")";
+            return "type(" + concept.asType().getLabel() + ")";
         }
     }
 }
