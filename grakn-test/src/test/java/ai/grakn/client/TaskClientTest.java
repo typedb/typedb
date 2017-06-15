@@ -47,6 +47,7 @@ import ai.grakn.test.SparkContext;
 import java.time.Duration;
 import java.time.Instant;
 import mjson.Json;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -66,8 +67,8 @@ public class TaskClientTest {
         new TasksController(spark, manager, new MetricRegistry());
     });
 
-    @BeforeClass
-    public static void setUp() {
+    @Before
+    public void setUp() {
         client = TaskClient.of("localhost", ctx.port());
         when(manager.storage()).thenReturn(mock(TaskStateStorage.class));
     }
@@ -126,10 +127,9 @@ public class TaskClientTest {
     public void whenGettingStatusOfATaskAndSeverHasNotStoredTask_TheClientThrowsStorageException(){
         TaskState task = createTask();
         when(manager.storage().getState(task.getId()))
-                .thenThrow(GraknBackendException.stateStorage(task.getId().getValue()));
+                .thenThrow(GraknBackendException.stateStorage());
 
         exception.expect(GraknBackendException.class);
-        exception.expectMessage(containsString(task.getId().getValue()));
 
         client.getStatus(task.getId());
     }
