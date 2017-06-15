@@ -22,7 +22,8 @@ package ai.grakn.test.matcher;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.internal.util.StringConverter;
+import ai.grakn.util.StringUtil;
+
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -57,7 +58,7 @@ public class MatchableConcept {
                     .filter(resource -> NAME_TYPES.contains(resource.type().getLabel()))
                     .map(Resource::getValue).findFirst();
 
-            return "instance(" + value.map(StringConverter::valueToString).orElse("") + ")";
+            return "instance(" + value.map(StringUtil::valueToString).orElse("") + ")";
         } else {
             return "type(" + typeLabelToString(concept.asType().getLabel()) + ")";
         }

@@ -14,25 +14,32 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.graql.internal.reasoner.explanation;
 
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.RuleType;
-import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.admin.AnswerExplanation;
 
-public class Rules extends AbstractInstanceGenerator<Rule, RuleType> {
+/**
+ *
+ * <p>
+ * Explanation class for a join explanation - resulting from merging atoms in a conjunction.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
+public class JoinExplanation extends Explanation {
 
-    public Rules() {
-        super(Rule.class, RuleTypes.class);
+
+    public JoinExplanation(){ super();}
+    private JoinExplanation(JoinExplanation exp){
+        super(exp.getQuery(), exp.getAnswers());
     }
 
     @Override
-    protected Rule newInstance(RuleType type) {
-        // TODO: generate more complicated rules
-        QueryBuilder graql = this.graph().graql();
-        return type.putRule(graql.parsePattern("$x"), graql.parsePattern("$x"));
-    }
+    public AnswerExplanation copy(){ return new JoinExplanation(this);}
+
+    @Override
+    public boolean isJoinExplanation(){ return true;}
 }

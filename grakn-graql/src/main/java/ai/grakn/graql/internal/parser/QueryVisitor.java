@@ -50,7 +50,7 @@ import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
-import ai.grakn.graql.internal.util.StringConverter;
+import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -670,7 +670,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     private String getString(TerminalNode string) {
         // Remove surrounding quotes
         String unquoted = string.getText().substring(1, string.getText().length() - 1);
-        return StringConverter.unescapeString(unquoted);
+        return StringUtil.unescapeString(unquoted);
     }
 
     /**
