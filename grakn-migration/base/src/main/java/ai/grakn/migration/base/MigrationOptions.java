@@ -99,6 +99,10 @@ public class MigrationOptions {
         return resolvePath(command.getOptionValue("i"));
     }
 
+    public boolean hasInput(){
+        return command.hasOption("i");
+    }
+
     public String getTemplate() {
         if(!command.hasOption("t")){
             die("Template file missing (-t)");

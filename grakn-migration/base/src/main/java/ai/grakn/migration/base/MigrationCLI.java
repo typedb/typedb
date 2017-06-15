@@ -113,7 +113,7 @@ public class MigrationCLI {
     }
 
     public static void printInitMessage(MigrationOptions options){
-        System.out.println("Migrating data " + options.getInput() +
+        System.out.println("Migrating data " + (options.hasInput() ? options.getInput() : "") +
                 " using Grakn Engine " + options.getUri() +
                 " into graph " + options.getKeyspace());
     }
