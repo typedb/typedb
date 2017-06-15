@@ -1,40 +1,35 @@
-package ai.grakn.test.engine.controller;
-
-import ai.grakn.engine.controller.AuthController;
-import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.engine.util.JWTHandler;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.SparkContext;
-import com.jayway.restassured.response.Response;
-import mjson.Json;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+package ai.grakn.engine.controller;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@Ignore
-public class AuthControllerTest{
+import org.junit.Ignore;
+import org.junit.Test;
+
+import com.jayway.restassured.response.Response;
+
+import ai.grakn.engine.EngineTestHelper;
+import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.user.UsersHandler;
+import ai.grakn.engine.util.JWTHandler;
+import mjson.Json;
+
+/**
+ * 
+ * @author borislav
+ *
+ */
+public class AuthControllerTest extends ControllerTestBase {
 
     private static final JWTHandler jwtHandler = JWTHandler.create("secret token");
 
-    private UsersHandler usersHandler;
+    private UsersHandler usersHandler = UsersHandler.create(
+            EngineTestHelper.config().getProperty(GraknEngineConfig.ADMIN_PASSWORD_PROPERTY), 
+                                                  EngineGraknGraphFactory.create(EngineTestHelper.config().getProperties()));
 
-    @ClassRule
-    public static final GraphContext graph = GraphContext.empty();
 
-    @Rule
-    public final SparkContext ctx = SparkContext.withControllers(spark -> {
-        usersHandler = UsersHandler.create("top secret", graph.factory());
-        new AuthController(spark, true, jwtHandler, usersHandler);
-    });
-
-    // TODO: Un-ignore these tests now that the config is not always a singleton
-    //Ignoring a couple of randomly failing tests. I will probably need to create a new config file with password protection enabled.
-    //Or maybe find alternative to singleton.
     @Test
     public void newSessionWithNonExistingUser() {
         Json body = Json.object("username", "navarro", "password", "ciaone");
@@ -116,7 +111,6 @@ public class AuthControllerTest{
 
     }
 
-    @Ignore
     @Test
     public void requestWithoutToken(){
         Json body = Json.object("username", "giulio", "password", "ciao");

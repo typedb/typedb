@@ -54,7 +54,8 @@ public class UserController {
         this.users = usersHandler;
 
         spark.get(REST.WebPath.ALL_USERS, this::findUsers);
-        spark.get(REST.WebPath.ONE_USER, this::getUser);
+        //spark.get(REST.WebPath.ONE_USER, this::getUser);
+        spark.get("/user/one/:user-name", this::getUser);
         spark.post(REST.WebPath.ONE_USER, this::createUser);
         spark.delete(REST.WebPath.ONE_USER, this::removeUser);
         spark.put(REST.WebPath.ONE_USER, this::updateUser);
@@ -85,7 +86,7 @@ public class UserController {
     @ApiOperation(value = "Get one user.")
     @ApiImplicitParam(name = "user-name", value = "Username of user.", required = true, dataType = "string", paramType = "path")
     private Json getUser(Request request, Response response) {
-        return users.getUser(request.queryParams(UsersHandler.USER_NAME));
+        return users.getUser(request.params("user-name"));
     }
     
     @POST
