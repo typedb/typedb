@@ -130,7 +130,7 @@ public class AnalyticsTest {
 
     @Test
     public void testConcurrentAnalyticsJobsBySubmittingGraqlComputeQueries() {
-        // TODO: Fix on TinkerGraphComputer
+        // TODO: move parallel tests to integration tests
         assumeFalse(GraknTestSetup.usingTinker());
 
         addOntologyAndEntities();

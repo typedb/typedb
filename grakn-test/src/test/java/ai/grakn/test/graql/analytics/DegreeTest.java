@@ -72,9 +72,6 @@ public class DegreeTest {
 
     @Test
     public void testDegrees() throws Exception {
-        // TODO: move parallel test to integration tests
-        assumeFalse(GraknTestSetup.usingTinker());
-
         // create instances
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
@@ -117,7 +114,9 @@ public class DegreeTest {
 
         // compute degrees
         List<Long> list = new ArrayList<>(4);
-        for (long i = 0L; i < 1L; i++) {
+        long workerNumber = 4L;
+        if (GraknTestSetup.usingTinker()) workerNumber = 1L;
+        for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
         GraknSparkComputer.clear();

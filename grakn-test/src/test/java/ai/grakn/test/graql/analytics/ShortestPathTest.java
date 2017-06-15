@@ -143,9 +143,6 @@ public class ShortestPathTest {
 
     @Test
     public void testShortestPathConcurrency() {
-        // TODO: move parallel test to integration tests
-        assumeFalse(GraknTestSetup.usingTinker());
-
         List<String> correctPath;
         addOntologyAndEntities();
         GraknSparkComputer.clear();
@@ -153,7 +150,9 @@ public class ShortestPathTest {
         correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(), entityId1.getValue());
 
         List<Long> list = new ArrayList<>(2);
-        for (long i = 0L; i < 2L; i++) {
+        long workerNumber = 2L;
+        if (GraknTestSetup.usingTinker()) workerNumber = 1L;
+        for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
         Set<List<String>> result = list.parallelStream().map(i -> {

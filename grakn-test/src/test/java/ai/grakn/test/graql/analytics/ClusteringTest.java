@@ -221,13 +221,12 @@ public class ClusteringTest {
 
     @Test
     public void testConnectedComponentConcurrency() throws Exception {
-        // TODO: move parallel test to integration tests
-        assumeFalse(GraknTestSetup.usingTinker());
-
         addOntologyAndEntities();
 
         List<Long> list = new ArrayList<>(4);
-        for (long i = 0L; i < 4L; i++) {
+        long workerNumber = 4L;
+        if (GraknTestSetup.usingTinker()) workerNumber = 1L;
+        for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
 
