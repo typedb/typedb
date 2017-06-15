@@ -68,7 +68,7 @@ class ReasonerQueryImplCumulativeIterator extends ReasonerQueryIterator{
 
         if (atomicQueryIterator.hasNext() && !nextList.isEmpty()) {
             Answer feederSub  = atomicQueryIterator.next();
-            queryIterator = new ReasonerQueryImplCumulativeIterator(feederSub.merge(partialSub), nextList, subGoals, cache);
+            queryIterator = new ReasonerQueryImplCumulativeIterator(feederSub.merge(partialSub, true), nextList, subGoals, cache);
             return hasNext();
         }
         return false;

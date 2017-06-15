@@ -148,12 +148,8 @@ public class QueryAnswer implements Answer {
             exp = exp.merge(a2.getExplanation());
             if(!this.getExplanation().isJoinExplanation()) exp.addAnswer(this);
             if(!a2.getExplanation().isJoinExplanation()) exp.addAnswer(a2);
-        }  else {
-            //ensure no excess variables present if doing lookup-lookup merge
-            if (exp.isLookupExplanation()) {
-                merged = merged.filterVars(exp.getQuery().getVarNames());
-            }
         }
+
         return merged.setExplanation(exp);
     }
 
