@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.query;
+package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -29,7 +29,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -38,9 +37,10 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.GraphContextOld;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -90,7 +90,7 @@ public class InsertQueryTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final GraphContextOld movieGraph = GraphContextOld.preLoad(MovieGraph.get());
+    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
 
     @Before
     public void setUp() {

@@ -16,17 +16,17 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.query;
+package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.test.GraphContextOld;
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.junit.After;
@@ -52,7 +52,7 @@ public class DeleteQueryTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final GraphContextOld movieGraph = GraphContextOld.preLoad(MovieGraph.get());
+    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
