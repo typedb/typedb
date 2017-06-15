@@ -59,14 +59,13 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     protected G graph = null;
     private G batchLoadingGraph = null;
 
-    AbstractInternalFactory(String keyspace, String engineUrl, Properties properties){
+    AbstractInternalFactory(String keyspace, String engineUrl, Properties properties, SystemKeyspace systemKeyspace){
         if(keyspace == null) throw GraphOperationException.nullKeyspace();
 
         this.keyspace = keyspace.toLowerCase();
         this.engineUrl = engineUrl;
         this.properties = properties;
-
-        this.systemKeyspace = SystemKeyspace.initialise(engineUrl, properties);
+        this.systemKeyspace =  systemKeyspace;
     }
 
     abstract M buildGraknGraphFromTinker(G graph);

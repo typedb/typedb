@@ -86,7 +86,7 @@ public class SystemKeyspace {
     private static final AtomicBoolean factoryBeingInstantiated = new AtomicBoolean(false);
     private static final CountDownLatch factoryInstantiated = new CountDownLatch(1);
     private static SystemKeyspace instance = null;
-    private InternalFactory factory;
+    private final InternalFactory factory;
 
     /**
      * Initialises the system keyspace for a specific running instance of engine.
@@ -94,12 +94,9 @@ public class SystemKeyspace {
      * @param engineUrl the url of engine to get the config from
      * @param properties the properties used to initialise the keyspace
      */
-    private SystemKeyspace(String engineUrl, Properties properties){
-        if(factoryBeingInstantiated.compareAndSet(false, true)){
-            factory = FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties);
-            loadSystemOntology(factory);
-            factoryInstantiated.countDown();
-        }
+    public SystemKeyspace(String engineUrl, Properties properties){
+        factory = FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties, this);
+        loadSystemOntology(factory);
     }
 
     /**
@@ -109,7 +106,18 @@ public class SystemKeyspace {
      */
     public static SystemKeyspace initialise(String engineUrl, Properties properties){
         if(instance == null){
-            instance = new SystemKeyspace(engineUrl, properties);
+            if(factoryBeingInstantiated.compareAndSet(false, true)) {
+                instance = new SystemKeyspace(engineUrl, properties);
+                factoryInstantiated.countDown();
+            } else {
+                try {
+                    if(!factoryInstantiated.await(10, TimeUnit.SECONDS)){
+                        throw new IllegalStateException("System factory has not yet been initialised");
+                    }
+                } catch (InterruptedException e){
+                    throw new IllegalStateException("Interrupted while waiting for system graph to instantiate.");
+                }
+            }
         }
 
         return instance;
@@ -121,13 +129,6 @@ public class SystemKeyspace {
      * @return Factory to provide the system keyspace
      */
     private InternalFactory factory(){
-        try {
-            if(!factoryInstantiated.await(10, TimeUnit.SECONDS)){
-                throw new IllegalStateException("System factory has not yet been initialised");
-            }
-        } catch (InterruptedException e){
-            throw new IllegalStateException("Interrupted while waiting for system graph to instantiate.");
-        }
         return factory;
     }
 

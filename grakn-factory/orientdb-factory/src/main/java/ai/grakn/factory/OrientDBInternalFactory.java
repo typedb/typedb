@@ -54,8 +54,8 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
     private final Logger LOG = LoggerFactory.getLogger(OrientDBInternalFactory.class);
     private final Map<String, OrientGraphFactory> openFactories;
 
-    public OrientDBInternalFactory(String keyspace, String engineUrl, Properties properties) {
-        super(keyspace, engineUrl, properties);
+    public OrientDBInternalFactory(String keyspace, String engineUrl, Properties properties, SystemKeyspace systemKeyspace) {
+        super(keyspace, engineUrl, properties, systemKeyspace);
         openFactories = new HashMap<>();
     }
 

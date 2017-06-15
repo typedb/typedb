@@ -39,8 +39,8 @@ import java.util.Properties;
  */
 public class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, TinkerGraph> {
 
-    TinkerInternalFactory(String keyspace, String engineUrl, Properties properties){
-        super(keyspace, engineUrl, properties);
+    TinkerInternalFactory(String keyspace, String engineUrl, Properties properties, SystemKeyspace systemKeyspace){
+        super(keyspace, engineUrl, properties, systemKeyspace);
     }
 
     boolean isClosed(TinkerGraph innerGraph) {
