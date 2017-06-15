@@ -195,7 +195,7 @@ final public class TitanInternalFactory extends AbstractInternalFactory<GraknTit
     }
 
     private static void makePropertyKeys(TitanManagement management){
-        stream(Schema.ConceptProperty.values()).forEach(property ->
+        stream(Schema.VertexProperty.values()).forEach(property ->
                 makePropertyKey(management, property.name(), property.getDataType()));
 
         stream(Schema.EdgeProperty.values()).forEach(property ->

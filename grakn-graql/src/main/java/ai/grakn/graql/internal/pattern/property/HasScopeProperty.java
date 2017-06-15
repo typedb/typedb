@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
-import ai.grakn.graql.Graql;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -83,14 +83,14 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Instance scopeInstance = insertQueryExecutor.getConcept(scope).asInstance();
         concept.asType().scope(scopeInstance);
     }
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        ConceptId scopeId = scope.getId().orElseThrow(() -> failDelete(this));
+        ConceptId scopeId = scope.getId().orElseThrow(() -> GraqlQueryException.failDelete(this));
         concept.asType().deleteScope(graph.getConcept(scopeId));
     }
 
@@ -112,13 +112,13 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName();
+        Var varName = var.getVarName().asUserDefined();
         VarPatternAdmin scopeVar = this.getScope();
-        Var scopeVariable = scopeVar.getVarName();
+        Var scopeVariable = scopeVar.getVarName().asUserDefined();
         IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent);
 
         //isa part
-        VarPatternAdmin scVar = Graql.var(varName).hasScope(Graql.var(scopeVariable)).admin();
+        VarPatternAdmin scVar = varName.hasScope(scopeVariable).admin();
         return new TypeAtom(scVar, predicate, parent);
     }
 }

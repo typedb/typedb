@@ -25,9 +25,10 @@ import ai.grakn.graql.ComputeQueryBuilder;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.PatternBuilder;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.VarPatternBuilder;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -47,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * A starting point for creating queries.
@@ -95,7 +97,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return a match query that will find matches of the given patterns
      */
     @Override
-    public MatchQuery match(Pattern... patterns) {
+    public MatchQuery match(PatternBuilder... patterns) {
         return match(Arrays.asList(patterns));
     }
 
@@ -104,7 +106,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return a match query that will find matches of the given patterns
      */
     @Override
-    public MatchQuery match(Collection<? extends Pattern> patterns) {
+    public MatchQuery match(Collection<? extends PatternBuilder> patterns) {
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
         MatchQueryBase base = new MatchQueryBase(conjunction);
         MatchQuery query = infer ? base.infer(materialise).admin() : base;
@@ -116,7 +118,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return an insert query that will insert the given variables into the graph
      */
     @Override
-    public InsertQuery insert(VarPattern... vars) {
+    public InsertQuery insert(VarPatternBuilder... vars) {
         return insert(Arrays.asList(vars));
     }
 
@@ -125,7 +127,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return an insert query that will insert the given variables into the graph
      */
     @Override
-    public InsertQuery insert(Collection<? extends VarPattern> vars) {
+    public InsertQuery insert(Collection<? extends VarPatternBuilder> vars) {
         ImmutableList<VarPatternAdmin> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
         return new InsertQueryImpl(varAdmins, Optional.empty(), graph);
     }
@@ -166,7 +168,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     @Override
-    public <T extends Query<?>> List<T> parseList(String queryString) {
+    public <T extends Query<?>> Stream<T> parseList(String queryString) {
         return queryParser.parseList(queryString);
     }
 
@@ -176,7 +178,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return a resolved graql query
      */
     @Override
-    public <T extends Query<?>> List<T> parseTemplate(String template, Map<String, Object> data){
+    public <T extends Query<?>> Stream<T> parseTemplate(String template, Map<String, Object> data){
         return parseList(templateParser.parseTemplate(template, data));
     }
 

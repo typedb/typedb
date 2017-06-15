@@ -14,18 +14,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.graql.internal.util;
+package ai.grakn.util;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.graql.Var;
+import ai.grakn.GraknGraph;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.Iterator;
-import java.util.Map;
+import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -35,18 +34,39 @@ import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toMap;
-
 /**
- * Common utility methods used within Graql.
+ * Common utility methods used within Grakn.
  *
- * Some of these methods are Graql-specific, others add important "missing" methods to Java/Guava classes.
+ * Some of these methods are Grakn-specific, others add important "missing" methods to Java/Guava classes.
  *
  * @author Felix Chapman
  */
 public class CommonUtil {
 
     private CommonUtil() {}
+
+    public static void withImplicitConceptsVisible(GraknGraph graph, Runnable function) {
+        withImplicitConceptsVisible(graph, g -> {
+            function.run();
+            return null;
+        });
+    }
+
+    public static <T> T withImplicitConceptsVisible(GraknGraph graph, Supplier<T> function) {
+        return withImplicitConceptsVisible(graph, g -> function.get());
+    }
+
+    public static <T> T withImplicitConceptsVisible(GraknGraph graph, Function<GraknGraph, T> function) {
+        boolean implicitFlag = graph.implicitConceptsVisible();
+        graph.showImplicitConcepts(true);
+        T result;
+        try {
+            result = function.apply(graph);
+        } finally {
+            graph.showImplicitConcepts(implicitFlag);
+        }
+        return result;
+    }
 
     /**
      * @param optional the optional to change into a stream
@@ -57,25 +77,24 @@ public class CommonUtil {
         return optional.map(Stream::of).orElseGet(Stream::empty);
     }
 
-    public static <T> Optional<T> tryNext(Iterator<T> iterator) {
-        if (iterator.hasNext()) {
-            return Optional.of(iterator.next());
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    public static <T> Optional<T> tryAny(Iterable<T> iterable) {
-        return tryNext(iterable.iterator());
-    }
-
     @SafeVarargs
     public static <T> Optional<T> optionalOr(Optional<T>... options) {
         return Stream.of(options).flatMap(CommonUtil::optionalToStream).findFirst();
     }
 
-    public static Map<String, Concept> resultVarNameToString(Map<Var, Concept> result) {
-        return result.entrySet().stream().collect(toMap(entry -> entry.getKey().getValue(), Map.Entry::getValue));
+    @CheckReturnValue
+    public static RuntimeException unreachableStatement(Throwable cause) {
+        return unreachableStatement(null, cause);
+    }
+
+    @CheckReturnValue
+    public static RuntimeException unreachableStatement(String message) {
+        return unreachableStatement(message, null);
+    }
+
+    @CheckReturnValue
+    public static RuntimeException unreachableStatement(String message, Throwable cause) {
+        return new RuntimeException("Statement expected to be unreachable: " + message, cause);
     }
 
     public static <T> Collector<T, ?, ImmutableSet<T>> toImmutableSet() {

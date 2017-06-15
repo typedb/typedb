@@ -35,7 +35,7 @@ public class UpdatingInstanceCountTaskTest {
 
     @Test
     public void whenUpdatingInstanceCounts_EnsureRedisIsUpdated() throws InterruptedException {
-        RedisConnection redis = RedisConnection.getConnection();
+        RedisConnection redis = engine.redis();
         String keyspace = UUID.randomUUID().toString();
         String entityType1 = "e1";
         String entityType2 = "e2";
@@ -82,7 +82,7 @@ public class UpdatingInstanceCountTaskTest {
         EntityType et2;
 
         //Create Simple Graph
-        try(GraknGraph graknGraph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)){
+        try(GraknGraph graknGraph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
             et1 = graknGraph.putEntityType("et1");
             et2 = graknGraph.putEntityType("et2");
             graknGraph.admin().commitNoLogs();
@@ -106,9 +106,9 @@ public class UpdatingInstanceCountTaskTest {
         checkShardCount(keyspace, et2, 1);
     }
     private void checkShardCount(String keyspace, Concept concept, int expectedValue){
-        try(GraknGraph graknGraph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)){
+        try(GraknGraph graknGraph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
             int shards = graknGraph.admin().getTinkerTraversal().
-                    has(Schema.ConceptProperty.ID.name(), concept.getId().getValue()).
+                    has(Schema.VertexProperty.ID.name(), concept.getId().getValue()).
                     in(Schema.EdgeLabel.SHARD.getLabel()).toList().size();
 
             assertEquals(expectedValue, shards);

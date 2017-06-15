@@ -10,6 +10,7 @@ import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTinkerGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.GraknTestSetup;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,7 +21,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -53,7 +53,7 @@ public class GraphTest {
     }
 
     private void addThingToBatch(String keyspace){
-        try(GraknGraph graphBatchLoading = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)) {
+        try(GraknGraph graphBatchLoading = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)) {
             graphBatchLoading.getEntityType("thing").addEntity();
             graphBatchLoading.commit();
         } catch (Exception e){
@@ -64,7 +64,7 @@ public class GraphTest {
     @Test
     public void whenFetchingGraphsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureGraphsAreTheSame() throws InvalidGraphException {
         String key = "mykeyspace";
-        GraknGraph graph1 = Grakn.session(Grakn.DEFAULT_URI, key).open(GraknTxType.WRITE);
+        GraknGraph graph1 = Grakn.session(engine.uri(), key).open(GraknTxType.WRITE);
         graph1.close();
         GraknGraph graph2 = engine.server().factory().getGraph(key, GraknTxType.WRITE);
         assertEquals(graph1, graph2);
@@ -99,7 +99,7 @@ public class GraphTest {
 
     @Test
     public void afterCommitting_NumberOfOpenTransactionsDecrementsOnce() {
-        assumeFalse(usingTinker()); // Tinker graph only ever has one open transaction
+        assumeFalse(GraknTestSetup.usingTinker()); // Tinker graph only ever has one open transaction
 
         GraknSession session = engine.factoryWithNewKeyspace();
 
@@ -119,7 +119,7 @@ public class GraphTest {
 
     @Test
     public void closeGraphWhenOnlyOneTransactionIsOpen(){
-        assumeFalse(usingTinker()); //Tinker does not have any connections to close
+        assumeFalse(GraknTestSetup.usingTinker()); //Tinker does not have any connections to close
 
         GraknSession factory = engine.factoryWithNewKeyspace();
         GraknGraph graph = factory.open(GraknTxType.WRITE);
@@ -133,11 +133,11 @@ public class GraphTest {
 
     @Test
     public void whenAddingEntitiesToAbstractTypeCreatedInDifferentTransaction_Throw(){
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         String label = "An Abstract Thing";
 
-        try(GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "abstractTest")){
+        try(GraknSession session = Grakn.session(engine.uri(), "abstractTest")){
             try(GraknGraph graph = session.open(GraknTxType.WRITE)){
                 graph.putEntityType(label).setAbstract(true);
                 graph.commit();
@@ -147,7 +147,7 @@ public class GraphTest {
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(IS_ABSTRACT.getMessage(label));
 
-        try(GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "abstractTest")){
+        try(GraknSession session = Grakn.session(engine.uri(), "abstractTest")){
             try(GraknGraph graph = session.open(GraknTxType.WRITE)){
                 graph.getEntityType(label).addEntity();
             }

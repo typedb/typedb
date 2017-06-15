@@ -28,13 +28,13 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.junit.Test;
 
-import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -52,7 +52,7 @@ public class EntityTest extends GraphTestBase{
     }
 
     @Test
-    public void whenDeletingInstanceInRelationShip_TheInstanceAndCastingsAreDeleteTheRelationRemains() throws GraphOperationException{
+    public void whenDeletingInstanceInRelationShip_TheInstanceAndCastingsAreDeletedAndTheRelationRemains() throws GraphOperationException{
         //Ontology
         EntityType type = graknGraph.putEntityType("Concept Type");
         RelationType relationType = graknGraph.putRelationType("relationTypes");
@@ -61,9 +61,9 @@ public class EntityTest extends GraphTestBase{
         RoleType role3 = graknGraph.putRoleType("role3");
 
         //Data
-        Instance rolePlayer1 = type.addEntity();
-        Instance rolePlayer2 = type.addEntity();
-        Instance rolePlayer3 = type.addEntity();
+        InstanceImpl<?, ?> rolePlayer1 = (InstanceImpl) type.addEntity();
+        InstanceImpl<?, ?> rolePlayer2 = (InstanceImpl) type.addEntity();
+        InstanceImpl<?, ?> rolePlayer3 = (InstanceImpl) type.addEntity();
 
         relationType.relates(role1);
         relationType.relates(role2);
@@ -75,19 +75,18 @@ public class EntityTest extends GraphTestBase{
                 addRolePlayer(role2, rolePlayer2).
                 addRolePlayer(role3, rolePlayer3);
 
-        CastingImpl casting1 = ((InstanceImpl<?, ?>) rolePlayer1).castings().iterator().next();
-        CastingImpl casting2 = ((InstanceImpl<?, ?>) rolePlayer2).castings().iterator().next();
-        CastingImpl casting3 = ((InstanceImpl<?, ?>) rolePlayer3).castings().iterator().next();
-        Set<CastingImpl> castings = relation.getMappingCasting();
+        Casting rp1 = rolePlayer1.castingsInstance().findAny().get();
+        Casting rp2 = rolePlayer2.castingsInstance().findAny().get();
+        Casting rp3 = rolePlayer3.castingsInstance().findAny().get();
 
-        assertThat(relation.getMappingCasting(), containsInAnyOrder(casting1, casting2, casting3));
+        assertThat(relation.castingsRelation().collect(Collectors.toSet()), containsInAnyOrder(rp1, rp2, rp3));
 
         //Delete And Check Again
         ConceptId idOfDeleted = rolePlayer1.getId();
         rolePlayer1.delete();
 
         assertNull(graknGraph.getConcept(idOfDeleted));
-        assertThat(relation.getMappingCasting(), containsInAnyOrder(casting2, casting3));
+        assertThat(relation.castingsRelation().collect(Collectors.toSet()), containsInAnyOrder(rp2, rp3));
     }
 
     @Test
@@ -95,12 +94,10 @@ public class EntityTest extends GraphTestBase{
         EntityType type = graknGraph.putEntityType("Concept Type");
         RelationType relationType = graknGraph.putRelationType("relationTypes");
         RoleType role1 = graknGraph.putRoleType("role1");
-        RoleType role2 = graknGraph.putRoleType("role2");
         Instance rolePlayer1 = type.addEntity();
 
         Relation relation = relationType.addRelation().
-                addRolePlayer(role1, rolePlayer1).
-                addRolePlayer(role2, null);
+                addRolePlayer(role1, rolePlayer1);
 
         assertNotNull(graknGraph.getConcept(relation.getId()));
 

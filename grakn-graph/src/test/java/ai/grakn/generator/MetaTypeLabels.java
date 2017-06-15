@@ -25,7 +25,7 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
  * Generator that generates meta type names only

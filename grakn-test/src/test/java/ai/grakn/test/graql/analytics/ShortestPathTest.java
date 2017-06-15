@@ -9,10 +9,12 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.GraknTestSetup;
 import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -27,8 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestEnv.usingOrientDB;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
@@ -53,20 +53,21 @@ public class ShortestPathTest {
     public GraknSession factory;
 
     @ClassRule
-    public static EngineContext rule = EngineContext.startInMemoryServer();
+    // TODO: Don't set port once bug #15130 is fixed
+    public static EngineContext rule = EngineContext.startInMemoryServer().port(4567);
 
     @Before
     public void setUp() {
         // TODO: Fix tests in orientdb
-        assumeFalse(usingOrientDB());
+        assumeFalse(GraknTestSetup.usingOrientDB());
 
         factory = rule.factoryWithNewKeyspace();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFound() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         // test on an empty graph
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
@@ -74,10 +75,10 @@ public class ShortestPathTest {
         }
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFoundSubgraph() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         addOntologyAndEntities();
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
@@ -88,7 +89,7 @@ public class ShortestPathTest {
     @Test
     public void testShortestPathExceptionPathNotFound() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         addOntologyAndEntities();
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
@@ -99,7 +100,7 @@ public class ShortestPathTest {
     @Test
     public void testShortestPath() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         List<String> correctPath;
         List<String> computedPath;
@@ -155,7 +156,7 @@ public class ShortestPathTest {
     @Test
     public void testShortestPathConcurrency() {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         List<String> correctPath;
         addOntologyAndEntities();
@@ -180,7 +181,7 @@ public class ShortestPathTest {
     @Test
     public void testShortestPathCastingWithThreeMessages() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         List<String> correctPath;
         List<String> computedPath;
@@ -213,7 +214,7 @@ public class ShortestPathTest {
 
     @Test
     public void testMultipleIndependentShortestPaths() throws InvalidGraphException {
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
         Set<List<ConceptId>> validPaths = new HashSet<>();
         ConceptId startId;
         ConceptId endId;

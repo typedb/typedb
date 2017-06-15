@@ -44,7 +44,7 @@ public enum ErrorMessage {
     REGEX_NOT_STRING("The Resource Type [%s] is not of type String so it cannot support regular expressions"),
     CLOSED_CLEAR("The session for graph has been closed due to deleting the graph"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The transaction was not %s. The graph was actually effected directly"),
-    IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
+    IMMUTABLE_VALUE("The value [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
@@ -63,6 +63,9 @@ public enum ErrorMessage {
     CONCEPT_HAS_NO_SHARD("Concept [%s] does not have any shard"),
     IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),
     CLOSE_GRAPH_FAILURE("Unable to close graph [%s]"),
+    VERSION_MISMATCH("You are attempting to use Grakn Version [%s] with a graph build using version [%s], this is not supported."),
+    NO_TYPE("Concept [%s] does not have a type"),
+    INVALID_DIRECTION("Cannot traverse an edge in direction [%s]"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -178,6 +181,7 @@ public enum ErrorMessage {
     UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
     UNAVAILABLE_PROPERTY("Property requested [%s] has not been defined. See configuration file [%s] for configured properties."),
     MISSING_MANDATORY_REQUEST_PARAMETERS("Missing mandatory query parameter [%s]"),
+    MISSING_MANDATORY_BODY_REQUEST_PARAMETERS("Missing mandatory parameter in body [%s]"),
     MISSING_REQUEST_BODY("Empty body- it should contain the Graql query to be executed."),
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
     INVALID_CONTENT_TYPE("Invalid combination of query [%s] and content type [%s]"),

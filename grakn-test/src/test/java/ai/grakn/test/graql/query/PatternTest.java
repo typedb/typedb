@@ -33,7 +33,7 @@ public class PatternTest {
 
     @Test
     public void testVarPattern() {
-        Pattern x = var("x");
+        Pattern x = var("x").pattern();
 
         assertTrue(x.admin().isVar());
         assertFalse(x.admin().isDisjunction());

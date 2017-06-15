@@ -19,7 +19,6 @@
 package ai.grakn.engine.tasks.connection;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.GraknEngineConfig;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -39,25 +38,17 @@ import java.util.function.Function;
  * @author fppt
  */
 public class RedisConnection {
-    private static final GraknEngineConfig config = GraknEngineConfig.getInstance();
-    private static final RedisConnection redis = new RedisConnection();
 
     private JedisPool jedisPool;
 
-    private RedisConnection(){
+    private RedisConnection(String url, int port){
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(128);
-        jedisPool = new JedisPool(poolConfig, config.getProperty(GraknEngineConfig.REDIS_SERVER_URL),
-                config.getPropertyAsInt(GraknEngineConfig.REDIS_SERVER_PORT));
+        jedisPool = new JedisPool(poolConfig, url, port);
     }
 
-    /**
-     * Returns and possibly initliases a connection pool to the redis server.
-     *
-     * @return a connction to the redis server.
-     */
-    public static RedisConnection getConnection(){
-        return redis;
+    public static RedisConnection create(String url, int port) {
+        return new RedisConnection(url, port);
     }
 
     /**

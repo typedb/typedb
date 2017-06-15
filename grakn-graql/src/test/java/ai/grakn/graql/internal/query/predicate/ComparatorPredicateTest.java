@@ -19,6 +19,7 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
+import ai.grakn.exception.GraqlQueryException;
 import com.google.common.collect.ImmutableList;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.junit.Rule;
@@ -76,7 +77,7 @@ public class ComparatorPredicateTest {
     public void whenPassedAnUnsupportedType_Throw() {
         ImmutableList<Integer> value = ImmutableList.of(1, 2, 3);
 
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(INVALID_VALUE.getMessage(value.getClass()));
         new MyComparatorPredicate(value);
     }

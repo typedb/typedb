@@ -31,6 +31,7 @@ import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.test.GraphContext;
 
+import ai.grakn.util.GraknTestSetup;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,7 +42,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
@@ -50,13 +50,13 @@ public class ExplanationTest {
 
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext explanationGraph = GraphContext.preLoad("explanationTest.gql").assumeTrue(usingTinker());
+    public static final GraphContext explanationGraph = GraphContext.preLoad("explanationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     private static Concept polibuda, uw;
     private static Concept warsaw;
@@ -67,7 +67,7 @@ public class ExplanationTest {
 
     @BeforeClass
     public static void onStartup() throws Exception {
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
         GraknGraph graph = geoGraph.graph();
         iqb = graph.graql().infer(true).materialise(false);
         polibuda = getConcept(graph, "name", "Warsaw-Polytechnics");
@@ -82,10 +82,10 @@ public class ExplanationTest {
     public void testExplanationTreeCorrect_TransitiveClosure() {
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
 
-        Answer answer1 = new QueryAnswer(ImmutableMap.of(Var.of("x"), polibuda, Var.of("y"), warsaw));
-        Answer answer2 = new QueryAnswer(ImmutableMap.of(Var.of("x"), polibuda, Var.of("y"), masovia));
-        Answer answer3 = new QueryAnswer(ImmutableMap.of(Var.of("x"), polibuda, Var.of("y"), poland));
-        Answer answer4 = new QueryAnswer(ImmutableMap.of(Var.of("x"), polibuda, Var.of("y"), europe));
+        Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), warsaw));
+        Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), masovia));
+        Answer answer3 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), poland));
+        Answer answer4 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), europe));
 
         List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
@@ -131,8 +131,8 @@ public class ExplanationTest {
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$y isa country;$y has name 'Poland';";
 
-        Answer answer1 = new QueryAnswer(ImmutableMap.of(Var.of("x"), polibuda, Var.of("y"), poland));
-        Answer answer2 = new QueryAnswer(ImmutableMap.of(Var.of("x"), uw, Var.of("y"), poland));
+        Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), poland));
+        Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), uw, Graql.var("y"), poland));
 
         List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));

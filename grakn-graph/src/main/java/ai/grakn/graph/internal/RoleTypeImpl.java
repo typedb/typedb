@@ -25,13 +25,13 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -50,19 +50,19 @@ import java.util.stream.Collectors;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    private ConceptCache<Set<Type>> cachedDirectPlayedByTypes = new ConceptCache<>(() -> this.<Type>getIncomingNeighbours(Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private ConceptCache<Set<RelationType>> cachedRelationTypes = new ConceptCache<>(() -> this.<RelationType>getIncomingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
+    private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+    RoleTypeImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RoleType type) {
-        super(graknGraph, v, type);
+    RoleTypeImpl(VertexElement vertexElement, RoleType type) {
+        super(vertexElement, type);
     }
 
-    RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RoleType type, Boolean isImplicit) {
-        super(graknGraph, v, type, isImplicit);
+    RoleTypeImpl(VertexElement vertexElement, RoleType type, Boolean isImplicit) {
+        super(vertexElement, type, isImplicit);
     }
 
     @Override
@@ -131,11 +131,12 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
 
     /**
      *
-     * @return The castings of this role
+     * @return Get all the roleplayers of this role type
      */
-    public Set<CastingImpl> castings(){
-        return shards().stream().flatMap(shard ->
-                ((TypeImpl<?,?>) shard).<CastingImpl>getIncomingNeighbours(Schema.EdgeLabel.ISA)).collect(Collectors.toSet());
+    public Stream<Casting> rolePlayers(){
+        return relationTypes().stream().
+                flatMap(relationType -> relationType.instances().stream()).
+                flatMap(relation -> ((RelationImpl)relation).castingsRelation(this));
     }
 
     /**
@@ -153,10 +154,15 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
 
     @Override
     public void delete(){
-        boolean hasRelates = getVertex().edges(Direction.IN, Schema.EdgeLabel.RELATES.getLabel()).hasNext();
-        boolean hasPlays = getVertex().edges(Direction.IN, Schema.EdgeLabel.PLAYS.getLabel()).hasNext();
+        boolean hasRelates = neighbours(Direction.IN, Schema.EdgeLabel.RELATES).findAny().isPresent();
+        boolean hasPlays = neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).findAny().isPresent();
 
-        if(hasRelates || hasPlays){
+        boolean deletionNotAllowed = hasRelates || hasPlays;
+
+        //This check is independent as it is slower than the ones above
+        if(!deletionNotAllowed) deletionNotAllowed = rolePlayers().findAny().isPresent();
+
+        if(deletionNotAllowed){
             throw GraphOperationException.typeCannotBeDeleted(getLabel());
         } else {
             super.delete();

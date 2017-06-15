@@ -301,10 +301,7 @@ public class GraqlShell {
 
         String queries = loadQuery(graqlPath);
 
-        Graql.withoutGraph()
-                .parseList(queries).stream()
-                .map(p -> (Query) p)
-                .forEach(batchMutatorClient::add);
+        Graql.parseList(queries).forEach(batchMutatorClient::add);
 
         batchMutatorClient.waitToFinish();
     }

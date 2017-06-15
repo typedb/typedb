@@ -30,13 +30,18 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -57,30 +62,30 @@ import java.util.stream.Collectors;
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
-    private ConceptCache<TypeLabel> cachedInternalType = new ConceptCache<>(() -> {
-        int typeId = getProperty(Schema.ConceptProperty.INSTANCE_TYPE_ID);
-        Type type = getGraknGraph().getConcept(Schema.ConceptProperty.TYPE_ID, typeId);
+    private Cache<TypeLabel> cachedInternalType = new Cache<>(() -> {
+        int typeId = vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID);
+        Type type = vertex().graph().getConcept(Schema.VertexProperty.TYPE_ID, typeId);
         return type.getLabel();
     });
 
-    private ConceptCache<V> cachedType = new ConceptCache<>(() -> {
-        ConceptImpl<?> currentType = (ConceptImpl) this.getOutgoingNeighbours(Schema.EdgeLabel.ISA).findFirst().orElse(null);
+    private Cache<V> cachedType = new Cache<>(() -> {
+        Optional<EdgeElement> typeEdge = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
+                flatMap(edge -> edge.target().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).findAny();
 
-        while (currentType.isShard()){
-            currentType = (ConceptImpl) currentType.getOutgoingNeighbours(Schema.EdgeLabel.SHARD).findFirst().orElse(null);
+        if(!typeEdge.isPresent()) {
+            throw GraphOperationException.noType(this);
         }
 
-        //noinspection unchecked
-        return (V) currentType;
+        return vertex().graph().factory().buildConcept(typeEdge.get().target());
     });
 
-    InstanceImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+    InstanceImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    InstanceImpl(AbstractGraknGraph graknGraph, Vertex v, V type) {
-        super(graknGraph, v);
-        type(type);
+    InstanceImpl(VertexElement vertexElement, V type) {
+        this(vertexElement);
+        type((TypeImpl) type);
     }
 
     /**
@@ -88,26 +93,20 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     @Override
     public void delete() {
-        InstanceImpl<?, ?> parent = this;
-        Set<CastingImpl> castings = parent.castings();
-        getGraknGraph().getTxCache().removedInstance(type().getId());
+        Set<Relation> relations = castingsInstance().map(Casting::getRelation).collect(Collectors.toSet());
+
+        vertex().graph().txCache().removedInstance(type().getId());
         deleteNode();
-        for(CastingImpl casting: castings){
-            Set<Relation> relations = casting.getRelations();
-            getGraknGraph().getTxCache().trackConceptForValidation(casting);
 
-            for(Relation relation : relations) {
-                if(relation.type().isImplicit()){//For now implicit relations die
-                    relation.delete();
-                } else {
-                    RelationImpl rel = (RelationImpl) relation;
-                    getGraknGraph().getTxCache().trackConceptForValidation(rel);
-                    rel.cleanUp();
-                }
+        relations.forEach(relation -> {
+            if(relation.type().isImplicit()){//For now implicit relations die
+                relation.delete();
+            } else {
+                RelationImpl rel = (RelationImpl) relation;
+                vertex().graph().txCache().trackForValidation(rel);
+                rel.cleanUp();
             }
-
-            casting.deleteNode();
-        }
+        });
     }
 
     /**
@@ -115,7 +114,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return The inner index value of some concepts.
      */
     public String getIndex(){
-        return getProperty(Schema.ConceptProperty.INDEX);
+        return vertex().property(Schema.VertexProperty.INDEX);
     }
 
     /**
@@ -139,22 +138,22 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     }
 
     /**
+     * Castings are retrieved from the perspective of the {@link Instance} which is a role player in a {@link Relation}
      *
-     * @return All the {@link CastingImpl} that this Instance is linked with
+     * @return All the {@link Casting} which this instance is cast into the role
      */
-    public Set<CastingImpl> castings(){
-        Set<CastingImpl> castings = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(casting -> castings.add((CastingImpl) casting));
-        return castings;
+    Stream<Casting> castingsInstance(){
+        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).
+                map(edge -> vertex().graph().factory().buildRolePlayer(edge));
     }
 
     <X extends Instance> Set<X> getShortcutNeighbours(){
         Set<X> foundNeighbours = new HashSet<X>();
-        getGraknGraph().getTinkerTraversal().
-                has(Schema.ConceptProperty.ID.name(), getId().getValue()).
+        vertex().graph().getTinkerTraversal().
+                has(Schema.VertexProperty.ID.name(), getId().getValue()).
                 in(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 out(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                forEachRemaining(vertex -> foundNeighbours.add(getGraknGraph().buildConcept(vertex)));
+                forEachRemaining(vertex -> foundNeighbours.add(vertex().graph().buildConcept(vertex)));
         return foundNeighbours;
     }
 
@@ -166,20 +165,17 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     @Override
     public Collection<Relation> relations(RoleType... roleTypes) {
         Set<Relation> relations = new HashSet<>();
-        Set<TypeLabel> roleTypeLabels = Arrays.stream(roleTypes).map(RoleType::getLabel).collect(Collectors.toSet());
+        GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerTraversal().
+                has(Schema.VertexProperty.ID.name(), getId().getValue());
 
-        InstanceImpl<?, ?> parent = this;
-
-        parent.castings().forEach(c -> {
-            CastingImpl casting = c.asCasting();
-            if (roleTypeLabels.size() != 0) {
-                if (roleTypeLabels.contains(casting.getInternalType())) {
-                    relations.addAll(casting.getRelations());
-                }
-            } else {
-                relations.addAll(casting.getRelations());
-            }
-        });
+        if(roleTypes.length == 0){
+            traversal.in(Schema.EdgeLabel.SHORTCUT.getLabel());
+        } else {
+            Set<Integer> roleTypesIds = Arrays.stream(roleTypes).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
+            traversal.inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                    has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).outV();
+        }
+        traversal.forEachRemaining(v -> relations.add(vertex().graph().buildConcept(v)));
 
         return relations;
     }
@@ -190,10 +186,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     @Override
     public Collection<RoleType> plays() {
-        Set<RoleType> roleTypes = new HashSet<>();
-        ConceptImpl<?> parent = this;
-        parent.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(((CastingImpl)c).getRole()));
-        return roleTypes;
+        return castingsInstance().map(Casting::getRoleType).collect(Collectors.toSet());
     }
 
 
@@ -219,9 +212,9 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
 
 
         TypeLabel label = resource.type().getLabel();
-        RelationType hasResource = getGraknGraph().getType(has.getLabel(label));
-        RoleType hasResourceTarget = getGraknGraph().getType(hasOwner.getLabel(label));
-        RoleType hasResourceValue = getGraknGraph().getType(hasValue.getLabel(label));
+        RelationType hasResource = vertex().graph().getType(has.getLabel(label));
+        RoleType hasResourceTarget = vertex().graph().getType(hasOwner.getLabel(label));
+        RoleType hasResourceValue = vertex().graph().getType(hasValue.getLabel(label));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
             throw GraphOperationException.hasNotAllowed(this, resource, type);
@@ -247,9 +240,9 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @param type The type of this concept
      * @return The concept itself casted to the correct interface
      */
-    protected T type(V type) {
+    protected T type(TypeImpl type) {
         if(type != null){
-            putEdge(type, Schema.EdgeLabel.ISA);
+            type.currentShard().link(this);
             setInternalType(type());
         }
         return getThis();
@@ -262,7 +255,8 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     private T setInternalType(Type type){
         cachedInternalType.set(type.getLabel());
-        return setProperty(Schema.ConceptProperty.INSTANCE_TYPE_ID, type.getTypeId().getValue());
+        vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID, type.getTypeId().getValue());
+        return getThis();
     }
 
     /**

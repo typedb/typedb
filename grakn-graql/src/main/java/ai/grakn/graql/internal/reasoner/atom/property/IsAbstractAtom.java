@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.atom.property;
 
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -36,7 +35,7 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 public class IsAbstractAtom extends AtomicBase {
 
     public IsAbstractAtom(Var varName, ReasonerQuery parent){
-        super(Graql.var(varName).isAbstract().admin(), parent);
+        super(varName.isAbstract().admin(), parent);
     }
 
     private IsAbstractAtom(IsAbstractAtom a){ super(a);}

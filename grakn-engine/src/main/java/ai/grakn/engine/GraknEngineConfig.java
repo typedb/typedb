@@ -83,13 +83,7 @@ public class GraknEngineConfig {
 
     private final int MAX_NUMBER_OF_THREADS = 120;
     private final Properties prop;
-    private static GraknEngineConfig instance = null;
     private int numOfThreads = -1;
-
-    public synchronized static GraknEngineConfig getInstance() {
-        if (instance == null) instance = GraknEngineConfig.create();
-        return instance;
-    }
 
     public static GraknEngineConfig create() {
         return GraknEngineConfig.read(getConfigFilePath());
@@ -223,24 +217,18 @@ public class GraknEngineConfig {
     public int getPropertyAsInt(String property) {
         return Integer.parseInt(getProperty(property));
     }
-
-    public int getPropertyAsInt(String property, int defaultValue) {
-        return prop.containsKey(property) ? Integer.parseInt(prop.getProperty(property))
-                                          : defaultValue;
-    }
     
     public long getPropertyAsLong(String property) {
         return Long.parseLong(getProperty(property));
     }
-    
-    public long getPropertyAsLong(String property, long defaultValue) {
-        return prop.containsKey(property) ? Long.parseLong(prop.getProperty(property))
+
+    public boolean getPropertyAsBool(String property, boolean defaultValue) {
+        return prop.containsKey(property) ? Boolean.parseBoolean(prop.getProperty(property))
                                           : defaultValue;
     }
 
-    boolean getPropertyAsBool(String property, boolean defaultValue) {
-        return prop.containsKey(property) ? Boolean.parseBoolean(prop.getProperty(property))
-                                          : defaultValue;
+    public String uri() {
+        return getProperty(SERVER_HOST_NAME) + ":" + getProperty(SERVER_PORT_NUMBER);
     }
 
     static final String GRAKN_ASCII =

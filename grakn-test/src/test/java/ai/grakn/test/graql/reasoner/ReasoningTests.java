@@ -21,26 +21,35 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
-import java.util.List;
-import java.util.Set;
-import org.elasticsearch.common.collect.Sets;
+import ai.grakn.util.GraknTestSetup;
+import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
+
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static ai.grakn.util.Schema.ImplicitType.HAS;
+import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
+import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -49,89 +58,89 @@ import static org.junit.Assume.assumeTrue;
 public class ReasoningTests {
 
     @ClassRule
-    public static final GraphContext testSet1 = GraphContext.preLoad("testSet1.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet1 = GraphContext.preLoad("testSet1.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet2 = GraphContext.preLoad("testSet2.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet2 = GraphContext.preLoad("testSet2.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet3 = GraphContext.preLoad("testSet3.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet3 = GraphContext.preLoad("testSet3.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet4 = GraphContext.preLoad("testSet4.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet4 = GraphContext.preLoad("testSet4.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet5 = GraphContext.preLoad("testSet5.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet5 = GraphContext.preLoad("testSet5.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet6 = GraphContext.preLoad("testSet6.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet6 = GraphContext.preLoad("testSet6.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet7 = GraphContext.preLoad("testSet7.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet7 = GraphContext.preLoad("testSet7.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet8 = GraphContext.preLoad("testSet8.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet8 = GraphContext.preLoad("testSet8.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet9 = GraphContext.preLoad("testSet9.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet9 = GraphContext.preLoad("testSet9.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet10 = GraphContext.preLoad("testSet10.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet10 = GraphContext.preLoad("testSet10.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet11 = GraphContext.preLoad("testSet11.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet11 = GraphContext.preLoad("testSet11.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet12 = GraphContext.preLoad("testSet12.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet12 = GraphContext.preLoad("testSet12.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet13 = GraphContext.preLoad("testSet13.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet13 = GraphContext.preLoad("testSet13.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet14 = GraphContext.preLoad("testSet14.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet14 = GraphContext.preLoad("testSet14.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet15 = GraphContext.preLoad("testSet15.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet15 = GraphContext.preLoad("testSet15.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet16 = GraphContext.preLoad("testSet16.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet16 = GraphContext.preLoad("testSet16.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet17 = GraphContext.preLoad("testSet17.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet17 = GraphContext.preLoad("testSet17.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet18 = GraphContext.preLoad("testSet18.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet18 = GraphContext.preLoad("testSet18.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet19 = GraphContext.preLoad("testSet19.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet19 = GraphContext.preLoad("testSet19.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet19recursive = GraphContext.preLoad("testSet19-recursive.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet19recursive = GraphContext.preLoad("testSet19-recursive.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet20 = GraphContext.preLoad("testSet20.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet20 = GraphContext.preLoad("testSet20.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet21 = GraphContext.preLoad("testSet21.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet21 = GraphContext.preLoad("testSet21.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet22 = GraphContext.preLoad("testSet22.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet22 = GraphContext.preLoad("testSet22.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet23 = GraphContext.preLoad("testSet23.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet23 = GraphContext.preLoad("testSet23.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet24 = GraphContext.preLoad("testSet24.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet24 = GraphContext.preLoad("testSet24.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet25 = GraphContext.preLoad("testSet25.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet25 = GraphContext.preLoad("testSet25.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet26 = GraphContext.preLoad("testSet26.gql").assumeTrue(usingTinker());
+    public static final GraphContext testSet26 = GraphContext.preLoad("testSet26.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @Before
     public void onStartup() throws Exception {
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     //The tests validate the correctness of the rule reasoning implementation w.r.t. the intended semantics of rules.
@@ -286,6 +295,29 @@ public class ReasoningTests {
         assertEquals(answers1.size(), 2);
     }
 
+    @Test
+    public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
+        assertFalse(testSet14.graph().implicitConceptsVisible());
+
+        QueryBuilder withInference = testSet14.graph().graql().infer(true);
+        QueryBuilder withoutInference = testSet14.graph().graql().infer(false);
+
+        VarPattern owner = label(HAS_OWNER.getLabel("res1"));
+        VarPattern value = label(HAS_VALUE.getLabel("res1"));
+        VarPattern hasRes = label(HAS.getLabel("res1"));
+
+        Function<QueryBuilder, MatchQuery> query = qb -> qb.match(
+                var().rel(owner, "x").rel(value, "y").isa(hasRes),
+                var("a").has("res1", var("b"))  // This pattern is added only to encourage reasoning to activate
+        );
+
+        Set<Answer> resultsWithInference = query.apply(withInference).stream().collect(toSet());
+        Set<Answer> resultsWithoutInference = query.apply(withoutInference).stream().collect(toSet());
+
+        assertThat(resultsWithoutInference, not(empty()));
+        assertThat(Sets.difference(resultsWithoutInference, resultsWithInference), empty());
+    }
+
     //TODO potentially a graql bug when executing match insert on shared resources
     @Ignore
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
@@ -298,13 +330,13 @@ public class ReasoningTests {
         String queryString2 = "match $x isa res2;";
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
         assertEquals(answers2.size(), 1);
-        assertTrue(answers2.iterator().next().get(Var.of("x")).isResource());
+        assertTrue(answers2.iterator().next().get(var("x")).isResource());
         String queryString3 = "match $x isa res1; $y isa res2;";
         QueryAnswers answers3 = queryAnswers(qb.parse(queryString3));
         assertEquals(answers3.size(), 1);
 
-        assertTrue(answers3.iterator().next().get(Var.of("x")).isResource());
-        assertTrue(answers3.iterator().next().get(Var.of("y")).isResource());
+        assertTrue(answers3.iterator().next().get(var("x")).isResource());
+        assertTrue(answers3.iterator().next().get(var("y")).isResource());
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
@@ -315,9 +347,9 @@ public class ReasoningTests {
         assertEquals(answers1.size(), 1);
         answers1.forEach(ans ->
                 {
-                    assertTrue(ans.get(Var.of("x")).isEntity());
-                    assertTrue(ans.get(Var.of("y")).isResource());
-                    assertTrue(ans.get(Var.of("z")).isRelation());
+                    assertTrue(ans.get(var("x")).isEntity());
+                    assertTrue(ans.get(var("y")).isResource());
+                    assertTrue(ans.get(var("z")).isRelation());
                 }
         );
         String queryString2 = "match $x isa relation1, has res1 $y;";
@@ -325,8 +357,8 @@ public class ReasoningTests {
         assertEquals(answers2.size(), 1);
         answers2.forEach(ans ->
                 {
-                    assertTrue(ans.get(Var.of("x")).isRelation());
-                    assertTrue(ans.get(Var.of("y")).isResource());
+                    assertTrue(ans.get(var("x")).isRelation());
+                    assertTrue(ans.get(var("y")).isResource());
                 }
         );
     }
@@ -474,7 +506,7 @@ public class ReasoningTests {
     }
 
     @Test //Expected result: The same set of results is always returned
-    public void reasoningWithLimitHigherThanNumberOfResultsReturnsConsistentResults(){
+    public void reasoningWithLimitHigherThanNumberOfResults_ReturnsConsistentResults(){
         QueryBuilder qb = testSet23.graph().graql().infer(true);
         String queryString = "match (friend1:$x1, friend2:$x2) isa knows-trans;limit 60;";
         QueryAnswers oldAnswers = queryAnswers(qb.parse(queryString));
@@ -522,7 +554,7 @@ public class ReasoningTests {
                 "$rel2 (role1: $c, role2: $b) isa relation1;";
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
         assertEquals(answers2.size(), 2);
-        Set<Var> vars = Sets.newHashSet(Var.of("b"), Var.of("p"), Var.of("c"), Var.of("rel1"), Var.of("rel2"));
+        Set<Var> vars = Sets.newHashSet(var("b"), var("p"), var("c"), var("rel1"), var("rel2"));
         answers2.forEach(ans -> assertTrue(ans.keySet().containsAll(vars)));
     }
 
