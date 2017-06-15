@@ -103,8 +103,8 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @Test
     public void whenCreatingGraphsWithDifferentKeyspace_EnsureCaseIsIgnored(){
-        TitanInternalFactory factory1 =  new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES);
-        TitanInternalFactory factory2 = new TitanInternalFactory("Case", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TitanInternalFactory factory1 =  new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES, SYSTEM_KEYSPACE);
+        TitanInternalFactory factory2 = new TitanInternalFactory("Case", Grakn.IN_MEMORY, TEST_PROPERTIES, SYSTEM_KEYSPACE);
         GraknTitanGraph case1 = factory1.open(GraknTxType.WRITE);
         GraknTitanGraph case2 = factory2.open(GraknTxType.WRITE);
 
@@ -113,7 +113,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @Test
     public void whenClosingTheGraph_EnsureTheTransactionIsClosed(){
-        GraknTitanGraph graph = new TitanInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        GraknTitanGraph graph = new TitanInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES, SYSTEM_KEYSPACE).open(GraknTxType.WRITE);
 
         String entityTypeLabel = "Hello";
 
@@ -131,7 +131,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @Test
     public void whenCreatingDateResource_EnsureDateCanBeRetrieved(){
-        GraknTitanGraph graph = new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        GraknTitanGraph graph = new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES, SYSTEM_KEYSPACE).open(GraknTxType.WRITE);
         ResourceType<LocalDateTime> dateType = graph.putResourceType("date", ResourceType.DataType.DATE);
         LocalDateTime now = LocalDateTime.now();
         Resource<LocalDateTime> date = dateType.putResource(now);
