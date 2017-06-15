@@ -26,6 +26,8 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 
 /**
  * Matchers for use with the movie dataset.
+ *
+ * @author Felix Chapman
  */
 public class MovieMatchers {
 

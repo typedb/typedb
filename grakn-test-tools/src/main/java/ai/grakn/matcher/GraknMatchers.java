@@ -46,6 +46,8 @@ import static org.hamcrest.Matchers.is;
 
 /**
  * Collection of static methods to create {@link Matcher} instances for tests.
+ *
+ * @author Felix Chapman
  */
 public class GraknMatchers {
 
@@ -277,55 +279,52 @@ public class GraknMatchers {
         return types;
     }
 
-}
+    /**
+     * A matcher for testing properties on objects.
+     */
+    private static abstract class PropertyEqualsMatcher<T, S> extends PropertyMatcher<T, S> {
 
-
-/**
- * A matcher for testing properties on objects.
- */
-abstract class PropertyEqualsMatcher<T, S> extends PropertyMatcher<T, S> {
-
-    PropertyEqualsMatcher(S expected) {
-        super(is(expected));
-    }
-}
-
-
-/**
- * A matcher for testing properties on objects.
- */
-abstract class PropertyMatcher<T, S> extends TypeSafeDiagnosingMatcher<T> {
-
-    private final Matcher<? extends S> matcher;
-
-    PropertyMatcher(Matcher<? extends S> matcher) {
-        this.matcher = matcher;
-    }
-
-    @Override
-    protected final boolean matchesSafely(T item, Description mismatch) {
-        S transformed = transform(item);
-
-        if (matcher.matches(transformed)) {
-            return true;
-        } else {
-            mismatch.appendText(getName()).appendText("(");
-            matcher.describeMismatch(transformed, mismatch);
-            mismatch.appendText(")");
-            return false;
+        PropertyEqualsMatcher(S expected) {
+            super(is(expected));
         }
     }
 
-    @Override
-    public final void describeTo(Description description) {
-        description.appendText(getName()).appendText("(").appendDescriptionOf(innerMatcher()).appendText(")");
+    /**
+     * A matcher for testing properties on objects.
+     */
+    private static abstract class PropertyMatcher<T, S> extends TypeSafeDiagnosingMatcher<T> {
+
+        private final Matcher<? extends S> matcher;
+
+        PropertyMatcher(Matcher<? extends S> matcher) {
+            this.matcher = matcher;
+        }
+
+        @Override
+        protected final boolean matchesSafely(T item, Description mismatch) {
+            S transformed = transform(item);
+
+            if (matcher.matches(transformed)) {
+                return true;
+            } else {
+                mismatch.appendText(getName()).appendText("(");
+                matcher.describeMismatch(transformed, mismatch);
+                mismatch.appendText(")");
+                return false;
+            }
+        }
+
+        @Override
+        public final void describeTo(Description description) {
+            description.appendText(getName()).appendText("(").appendDescriptionOf(innerMatcher()).appendText(")");
+        }
+
+        public abstract String getName();
+
+        public Matcher<?> innerMatcher() {
+            return matcher;
+        }
+
+        abstract S transform(T item);
     }
-
-    public abstract String getName();
-
-    public Matcher<?> innerMatcher() {
-        return matcher;
-    }
-
-    abstract S transform(T item);
 }

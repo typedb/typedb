@@ -33,6 +33,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.function.Consumer;
 
+/**
+ *
+ * @author fppt, Felix Chapman
+ */
 public class MovieGraph extends TestGraph {
 
     private static EntityType production, movie, person, genre, character, cluster, language;

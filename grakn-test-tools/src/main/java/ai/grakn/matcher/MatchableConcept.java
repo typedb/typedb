@@ -30,6 +30,8 @@ import java.util.Optional;
 /**
  * Wraps a {@link Concept} in order to provide a prettier {@link Object#toString()} representation. This is done using
  * {@link MatchableConcept#NAME_TYPES}, a hard-coded set of common 'name' variables such as "name" and "title'.
+ *
+ * @author Felix Chapman
  */
 public class MatchableConcept {
 
