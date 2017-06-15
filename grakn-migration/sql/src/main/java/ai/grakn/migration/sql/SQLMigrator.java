@@ -51,11 +51,12 @@ public class SQLMigrator {
                 .forEach(SQLMigrator::runSQL);
     }
 
-    public static void runSQL(SQLMigrationOptions options) {
+    private static void runSQL(SQLMigrationOptions options) {
         File sqlTemplate = new File(options.getTemplate());
 
         if(!sqlTemplate.exists()){
             die("Cannot find file: " + options.getTemplate());
+            return;
         }
 
         try {
@@ -73,6 +74,7 @@ public class SQLMigrator {
 
         } catch (Throwable throwable){
             die(throwable);
+            return;
         }
     }
 

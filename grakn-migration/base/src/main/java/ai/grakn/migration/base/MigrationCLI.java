@@ -154,8 +154,7 @@ public class MigrationCLI {
         try {
             return Files.readLines(file, StandardCharsets.UTF_8).stream().collect(joining("\n"));
         } catch (IOException e) {
-            die("Could not read file " + file.getPath());
-            throw new RuntimeException(e);
+            throw die("Could not read file " + file.getPath());
         }
     }
 
