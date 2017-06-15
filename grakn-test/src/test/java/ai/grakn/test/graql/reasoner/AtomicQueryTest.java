@@ -41,9 +41,9 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.test.GraphContextOld;
-import ai.grakn.test.SNBGraph;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.SNBGraph;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
@@ -67,22 +67,22 @@ import static org.junit.Assume.assumeTrue;
 public class AtomicQueryTest {
 
     @ClassRule
-    public static final GraphContextOld snbGraph = GraphContextOld.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld geoGraph = GraphContextOld.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld admissionsGraph = GraphContextOld.preLoad(AdmissionsGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld cwGraph = GraphContextOld.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld ancestorGraph = GraphContextOld.preLoad("ancestor-friend-test.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext ancestorGraph = GraphContext.preLoad("src/test/graql/ancestor-friend-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld unificationWithTypesSet = GraphContextOld.preLoad("unificationWithTypesTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext unificationWithTypesSet = GraphContext.preLoad("src/test/graql/unificationWithTypesTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

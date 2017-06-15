@@ -63,13 +63,13 @@ public class GraphLoader {
     private final InternalFactory<?> factory;
     private final Consumer<GraknGraph> preLoad;
     private final String[] files;
+    private boolean graphLoaded = false;
     private GraknGraph graph;
 
     protected GraphLoader(Consumer<GraknGraph> preLoad, String ... files){
         factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties());
         this.preLoad = preLoad;
         this.files = files;
-        load();
     }
 
     public static GraphLoader empty(){
@@ -86,6 +86,15 @@ public class GraphLoader {
 
     public GraknGraph graph(){
         if(graph == null || graph.isClosed()){
+            //Load the graph if we need to
+            if(!graphLoaded) {
+                try(GraknGraph graph = factory.open(GraknTxType.WRITE)){
+                    load(graph);
+                    graph.commit();
+                    graphLoaded = true;
+                }
+            }
+
             graph = factory.open(GraknTxType.WRITE);
         }
 
@@ -95,7 +104,7 @@ public class GraphLoader {
     public void rollback() {
         if (graph instanceof GraknTinkerGraph) {
             graph.admin().delete();
-            load();
+            graphLoaded = false;
         } else if (!graph.isClosed()) {
             graph.close();
         }
@@ -103,19 +112,15 @@ public class GraphLoader {
     }
 
     /**
-     * Loads the graph using the specified Preloader
+     * Loads the graph using the specified Preloaders
      */
-    private void load(){
-        try (GraknGraph graph = graph()) {
-            if(preLoad != null) preLoad.accept(graph);
+    private void load(GraknGraph graph){
+        if(preLoad != null) preLoad.accept(graph);
 
-            if (files != null) {
-                for (String file : files) {
-                    loadFromFile(graph, file);
-                }
+        if (files != null) {
+            for (String file : files) {
+                loadFromFile(graph, file);
             }
-
-            graph.commit();
         }
     }
 

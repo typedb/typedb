@@ -57,7 +57,7 @@ public class GraphContext extends GraphLoader implements TestRule {
         return getContext(build);
     }
 
-    public static GraphContext preLoad(String [] files){
+    public static GraphContext preLoad(String ... files){
         return getContext(null, files);
     }
 
