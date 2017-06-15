@@ -209,7 +209,7 @@ public class CWInferenceTest {
         GraknGraph localGraph = cwGraph2.graph();
         QueryBuilder lqb = localGraph.graql().infer(false);
         QueryBuilder ilqb = localGraph.graql().infer(true);
-        RuleType inferenceRule = localGraph.getRuleType("inference-movieGraph");
+        RuleType inferenceRule = localGraph.getRuleType("inference-rule");
 
         localGraph.putEntityType("region");
 
