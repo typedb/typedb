@@ -48,7 +48,7 @@
     <appender name="MAIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${configuredLogDir}/${graknLogFileName}</file>
         <encoder>
-            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%date{ISO8601} HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>${graknLogFileName}-%d{yyyy-MM}.%i.log</fileNamePattern>
@@ -62,7 +62,7 @@
     <appender name="POST-PROCESSING" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${configuredLogDir}/${graknPPLogFileName}</file>
         <encoder>
-            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%date{ISO8601} HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>${graknPPLogFileName}-%d{yyyy-MM}.%i.log</fileNamePattern>
