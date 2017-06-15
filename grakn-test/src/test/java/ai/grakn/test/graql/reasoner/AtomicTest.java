@@ -333,7 +333,7 @@ public class AtomicTest {
         assertEquals(4, relation.getApplicableRules().size());
     }
 
-    @Test //should assign (role1: $x, role: $y, role1: $z) which is incompatible with any of the movieGraph heads
+    @Test //should assign (role1: $x, role: $y, role1: $z) which is incompatible with any of the rule heads
     public void testRuleApplicability_WithWildcard_MissingMappings(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z);$y isa entity1; $z isa entity5;}";
@@ -417,7 +417,7 @@ public class AtomicTest {
         assertThat(type4.getApplicableRules(), empty());
     }
 
-    @Test //test movieGraph applicability for atom with unspecified roles with missing relation players but with possible ambiguous role mapping
+    @Test //test rule applicability for atom with unspecified roles with missing relation players but with possible ambiguous role mapping
     public void testRuleApplicability_MissingRelationPlayers_TypeContradiction(){
         GraknGraph graph = ruleApplicabilitySetWithTypes.graph();
         String relationString = "{($x, $y);$x isa entity2; $y isa entity4;}";
@@ -441,7 +441,7 @@ public class AtomicTest {
         assertEquals(1, relation.getApplicableRules().size());
     }
 
-    //NB: although the movieGraph will be triggered it will find no results
+    //NB: although the rule will be triggered it will find no results
     @Ignore
     @Test
     public void testRuleApplicability_InstancesDoNotMatchRule_NoRoleTypes(){
@@ -458,7 +458,7 @@ public class AtomicTest {
         assertThat(relation.getApplicableRules(), empty());
     }
 
-    //NB: although the movieGraph will be triggered it will find no results
+    //NB: although the rule will be triggered it will find no results
     @Ignore
     @Test
     public void testRuleApplicability_InstancesDoNotMatchRule_NoRoleTypes_NoRelationType(){

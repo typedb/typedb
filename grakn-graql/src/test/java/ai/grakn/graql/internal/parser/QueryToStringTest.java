@@ -107,12 +107,12 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithRhsToString() {
-        assertValidToString(qb.insert(var("x").isa("a-movieGraph-type").rhs(and(qb.parsePatterns("$x isa movie;")))));
+        assertValidToString(qb.insert(var("x").isa("a-rule-type").rhs(and(qb.parsePatterns("$x isa movie;")))));
     }
 
     @Test
     public void testQueryWithLhsToString() {
-        assertValidToString(qb.insert(var("x").isa("a-movieGraph-type").lhs(and(qb.parsePatterns("$x isa movie;")))));
+        assertValidToString(qb.insert(var("x").isa("a-rule-type").lhs(and(qb.parsePatterns("$x isa movie;")))));
     }
 
     private void assertValidToString(InsertQuery query){

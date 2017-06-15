@@ -88,7 +88,7 @@ public class ClusteringTest {
         assumeFalse(GraknTestSetup.usingTinker());
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            // test on an empty movieGraph.graph()
+            // test on an empty rule.graph()
             Map<String, Long> sizeMap = Graql.compute().withGraph(graph).cluster().execute();
             assertTrue(sizeMap.isEmpty());
             Map<String, Set<String>> memberMap = graph.graql().compute().cluster().members().execute();

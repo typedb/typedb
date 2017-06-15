@@ -59,7 +59,7 @@ public class GenealogyTest {
     }
 
     /*
-    test for first movieGraph file:
+    test for first rule file:
     match $x isa person has first-name $name;
     match (child: $x, parent: $y) isa parentship;
     match (spouse1: $x, spouse2: $y) isa marriage;
@@ -288,7 +288,7 @@ public class GenealogyTest {
     }
 
     /*
-    test for the second movieGraph file:
+    test for the second rule file:
     match ($x, $y) isa cousins;
     match (parent-in-law: $x, child-in-law: $y) isa in-laws;
     */
@@ -395,7 +395,7 @@ public class GenealogyTest {
     }
 
     /*
-    test for the last movieGraph-file:
+    test for the last rule-file:
     match (mother: $x);
     match (son: $x);
     match (grandfather: $x); (grandparent: $x, grandchild: $y);
