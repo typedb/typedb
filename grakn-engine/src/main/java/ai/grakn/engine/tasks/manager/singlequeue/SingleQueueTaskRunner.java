@@ -21,6 +21,9 @@ package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskCheckpoint;
@@ -29,28 +32,22 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.util.EngineID;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
+import static java.time.Instant.now;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.time.Instant;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static java.time.Duration.between;
-import static java.time.Instant.now;
 
 /**
  * The {@link SingleQueueTaskRunner} is used by the {@link SingleQueueTaskManager} to execute tasks from a Kafka queue.
@@ -74,6 +71,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final Timer readRecordsTimer;
     private final Meter stopMeter;
     private final Meter resubmitMeter;
+    private final Histogram recordsSize;
     private MetricRegistry metricRegistry;
     private final Timer executeTimer;
 
@@ -109,6 +107,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 .meter(name(SingleQueueTaskRunner.class, "stop"));
         this.resubmitMeter = metricRegistry
                 .meter(name(SingleQueueTaskRunner.class, "resubmit"));
+        this.recordsSize = metricRegistry
+                .histogram(name(SingleQueueTaskRunner.class, "records-size"));
         this.metricRegistry = metricRegistry;
     }
 
@@ -173,13 +173,16 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         Context context = readRecordsTimer.time();
         try{
             ConsumerRecords<TaskState, TaskConfiguration> records = theConsumer.poll(1000);
+            int size = 0;
             for (ConsumerRecord<TaskState, TaskConfiguration> record : records) {
                 TaskState task = record.key();
                 TaskConfiguration configuration = record.value();
                 handleTask(task, configuration);
                 offsetStorage.saveOffset(theConsumer, new TopicPartition(record.topic(), record.partition()));
                 LOG.trace("{} acknowledged", task.getId());
+                size++;
             }
+            recordsSize.update(size);
         } finally {
             context.stop();
         }
