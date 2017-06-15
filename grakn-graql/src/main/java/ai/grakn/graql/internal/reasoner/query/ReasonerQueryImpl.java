@@ -205,19 +205,25 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .collect(Collectors.toCollection(LinkedList::new));
 
         Atom top = atoms.getFirst();
-
+        Set<Var> subbedVars = getIdPredicates().stream().map(IdPredicate::getVarName).collect(Collectors.toSet());
         while (!atoms.isEmpty()) {
+
+            subbedVars.addAll(top.getVarNames());
             queries.add(new ReasonerAtomicQuery(top));
             atoms.remove(top);
 
-            Set<Var> subbedVars = Sets.difference(
-                    top.getVarNames(),
-                    top.getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet())
-            );
-
-            top = atoms.stream()
+            //look at neighbours up to two hops away
+            top = top.getNeighbours().filter(atoms::contains)
+                    .flatMap(at -> Stream.concat(Stream.of(at), at.getNeighbours().filter(atoms::contains)))
                     .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
                     .findFirst().orElse(null);
+
+            //top is disconnected atom
+            if (top == null) {
+                top = atoms.stream()
+                        .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
+                        .findFirst().orElse(null);
+            }
         }
         return queries;
     }
@@ -425,6 +431,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return true;
     }
 
+    /**
+     * @return substitution obtained from all id predicates (including internal) in the query
+     */
     Answer getSubstitution(){
         Set<IdPredicate> predicates = this.getTypeConstraints().stream()
                 .map(TypeAtom::getPredicate)
