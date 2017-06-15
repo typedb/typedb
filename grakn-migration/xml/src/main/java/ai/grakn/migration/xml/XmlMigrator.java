@@ -82,8 +82,6 @@ public class XmlMigrator implements AutoCloseable {
             die("Cannot find file: " + options.getTemplate());
         }
 
-        printInitMessage(options, xmlDataFile.getPath());
-
         try(XmlMigrator xmlMigrator = new XmlMigrator(xmlDataFile)){
             if (options.getElement() != null) {
                 xmlMigrator.element(options.getElement());
