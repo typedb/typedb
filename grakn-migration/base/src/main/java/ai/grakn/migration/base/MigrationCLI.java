@@ -26,6 +26,8 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.Schema;
 import com.google.common.io.Files;
+import java.util.Collections;
+import java.util.stream.Collectors;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.yaml.snakeyaml.Yaml;
@@ -49,9 +51,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.var;
-import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 /**
  *
@@ -66,39 +66,37 @@ public class MigrationCLI {
         // get the options from the command line
         T baseOptions = constructor.apply(args);
 
-        // if there is configuration, create multiple options objects from the config
+        // If there is configuration, create multiple options objects from the config
         if(baseOptions.getConfiguration() != null){
             return extractOptionsFromConfiguration(baseOptions.getConfiguration(), args).stream()
                     .map(constructor)
                     .map(MigrationCLI::validate)
-                    .collect(toList());
+                    .collect(Collectors.toList());
+        } else { // Otherwise, create options from the base options
+            return Collections.singletonList(validate(baseOptions));
         }
-
-        return singletonList(validate(baseOptions));
     }
 
-    public static <T extends MigrationOptions> Optional<T> validate(T options){
-        try {
-            if (options.isHelp()) {
-                printHelpMessage(options);
-            }
-
-            if(options.getNumberOptions() == 0){
-                printHelpMessage(options);
-                throw new IllegalArgumentException("Helping");
-            } else if(options.getNumberOptions() == 1 && options.isHelp()){
-                throw new IllegalArgumentException("Helping");
-            }
-
-            if(!Client.serverIsRunning(options.getUri())){
-                System.out.println(COULD_NOT_CONNECT);
-            }
-
-            //noinspection unchecked
-            return Optional.of(options);
-        } catch (Throwable e){
+    private static <T extends MigrationOptions> Optional<T> validate(T options){
+        // Print the help message
+        if (options.isHelp()) {
+            printHelpMessage(options);
             return Optional.empty();
         }
+
+        // Check that options were provided
+        if(options.getNumberOptions() == 0){
+            printHelpMessage(options);
+            return Optional.empty();
+        }
+
+        // Check that engine is running
+        if(!Client.serverIsRunning(options.getUri())){
+            System.err.println(COULD_NOT_CONNECT);
+            return Optional.empty();
+        }
+
+        return Optional.of(options);
     }
 
     public static void loadOrPrint(File templateFile, Stream<Map<String, Object>> data, MigrationOptions options){
