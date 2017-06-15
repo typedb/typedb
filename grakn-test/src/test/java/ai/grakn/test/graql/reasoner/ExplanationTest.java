@@ -220,6 +220,21 @@ public class ExplanationTest {
         assertEquals(answers.size(), 0);
     }
 
+    @Test
+    public void testExplainingConjunctions(){
+        GraknGraph expGraph = explanationGraph.graph();
+        QueryBuilder eiqb = expGraph.graql().infer(true);
+
+        String queryString = "match " +
+                "(role1: $x, role2: $w) isa inferredRelation;" +
+                "$x has name $xName;" +
+                "$w has name $wName;";
+
+        MatchQuery query = eiqb.parse(queryString);
+        List<Answer> answers = query.execute();
+        answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
+    }
+
     private static Concept getConcept(GraknGraph graph, String typeLabel, Object val){
         return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).execute().iterator().next().get("x");
     }
@@ -245,7 +260,6 @@ public class ExplanationTest {
                 .collect(Collectors.toSet());
         for (Answer a : answers){
             if (!isExplanationConsistentWithAnswer(a)){
-                System.out.println(a.getExplanation().getClass());
                 return false;
             }
         }
