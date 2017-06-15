@@ -22,6 +22,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import java.util.Iterator;
@@ -58,9 +59,6 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
 
         LOG.trace("CQ: " + query);
 
-        //LinkedList<ReasonerQueryImpl> queries = query.getResolutionPlan();
-        //queryIterator = new ReasonerQueryImplCumulativeIterator(new QueryAnswer(), queries, subGoals, cache);
-
         queryIterator = getQueryIterator(query, subGoals, cache);
     }
 
@@ -69,7 +67,7 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
                                               QueryCache<ReasonerAtomicQuery> cache){
         if (!query.isRuleResolvable()){
             return query.getMatchQuery().stream()
-                    .map(at -> at.explain(new LookupExplanation(query)))
+                    .map(at -> at.explain(new JoinExplanation(query, at)))
                     .iterator();
         }
 

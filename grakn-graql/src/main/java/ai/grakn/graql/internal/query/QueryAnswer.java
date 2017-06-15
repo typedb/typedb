@@ -141,13 +141,18 @@ public class QueryAnswer implements Answer {
     public Answer merge(Answer a2, boolean mergeExplanation){
         if(a2.isEmpty()) return this;
         AnswerExplanation exp = this.getExplanation();
-        QueryAnswer merged = new QueryAnswer(a2);
+        Answer merged = new QueryAnswer(a2);
         merged.putAll(this);
 
         if(mergeExplanation) {
             exp = exp.merge(a2.getExplanation());
             if(!this.getExplanation().isJoinExplanation()) exp.addAnswer(this);
             if(!a2.getExplanation().isJoinExplanation()) exp.addAnswer(a2);
+        }  else {
+            //ensure no excess variables present if doing lookup-lookup merge
+            if (exp.isLookupExplanation()) {
+                merged = merged.filterVars(exp.getQuery().getVarNames());
+            }
         }
         return merged.setExplanation(exp);
     }
