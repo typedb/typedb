@@ -32,8 +32,8 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
@@ -41,9 +41,9 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.test.GraphContextOld;
-import ai.grakn.test.SNBGraph;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.SNBGraph;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -73,31 +73,31 @@ import static org.junit.Assume.assumeTrue;
 public class AtomicTest {
 
     @ClassRule
-    public static final GraphContextOld snbGraph = GraphContextOld.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld cwGraph = GraphContextOld.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld genealogyOntology = GraphContextOld.preLoad("genealogy/ontology.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext genealogyOntology = GraphContext.preLoad("src/test/graql/genealogy/ontology.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld typeInferenceSet = GraphContextOld.preLoad("typeInferenceTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext typeInferenceSet = GraphContext.preLoad("src/test/graql/typeInferenceTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld ruleApplicabilitySet = GraphContextOld.preLoad("ruleApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext ruleApplicabilitySet = GraphContext.preLoad("src/test/graql/ruleApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld resourceApplicabilitySet = GraphContextOld.preLoad("resourceApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext resourceApplicabilitySet = GraphContext.preLoad("src/test/graql/resourceApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld ruleApplicabilitySetWithTypes = GraphContextOld.preLoad("ruleApplicabilityTestWithTypes.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext ruleApplicabilitySetWithTypes = GraphContext.preLoad("src/test/graql/ruleApplicabilityTestWithTypes.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld ruleApplicabilityInstanceTypesSet = GraphContextOld.preLoad("testSet19.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext ruleApplicabilityInstanceTypesSet = GraphContext.preLoad("src/test/graql/testSet19.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContextOld ruleApplicabilitySingleRoleSet = GraphContextOld.preLoad("testSet22.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext ruleApplicabilitySingleRoleSet = GraphContext.preLoad("src/test/graql/testSet22.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {
