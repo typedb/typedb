@@ -45,7 +45,6 @@ import java.util.stream.Stream;
 public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> {
 
     public QueryCache(){ super();}
-    public QueryCache(boolean explanation){ super(explanation);}
 
     @Override
     public QueryAnswers record(Q query, QueryAnswers answers) {

@@ -54,15 +54,4 @@ public class ReasonerQueries {
     public static ReasonerAtomicQuery atomic(ReasonerQueryImpl q){
         return new ReasonerAtomicQuery(q);
     }
-
-    /**
-     * construct Q' = Q \ atom
-     * @param q entry query
-     * @param atom atom to be removed
-     * @return Q'
-     */
-    static ReasonerQueryImpl prime(ReasonerQueryImpl q, Atom atom){
-        ReasonerQueryImpl query = q.removeAtom(atom);
-        return query.isAtomic()? new ReasonerAtomicQuery(query) : query;
-    }
 }
