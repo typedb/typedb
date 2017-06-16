@@ -32,7 +32,7 @@ import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.SchemaViolationException;
 import org.junit.ClassRule;

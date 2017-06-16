@@ -32,7 +32,7 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;

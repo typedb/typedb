@@ -17,7 +17,7 @@
  */
 package ai.grakn.test.migration.export;
 
-import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.migration.export.GraphWriter;
 import ai.grakn.test.GraphContext;
 

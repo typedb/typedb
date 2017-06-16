@@ -13,7 +13,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.engine.postprocessing.ResourceDeduplicationTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import mjson.Json;
 import org.junit.After;

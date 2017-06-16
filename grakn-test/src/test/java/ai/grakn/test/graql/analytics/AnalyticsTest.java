@@ -30,7 +30,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.ClassRule;

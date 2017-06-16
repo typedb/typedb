@@ -27,7 +27,7 @@ import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;

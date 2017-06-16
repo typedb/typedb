@@ -68,7 +68,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
         if(!includeAbstract()){
             types = types.stream().filter(type -> Schema.MetaSchema.isMetaLabel(type.getLabel()) || !type.isAbstract()).collect(toSet());
         }
-        
+
         if (types.isEmpty() && includeNonMeta()) {
             TypeLabel label = genFromGraph(TypeLabels.class).mustBeUnused().generate(random, status);
             assert graph().getType(label) == null;

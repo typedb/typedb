@@ -26,7 +26,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
 
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
