@@ -38,7 +38,4 @@ public class FailingMockTask extends MockBackgroundTask {
     protected void executeResumeInner(TaskCheckpoint checkpoint) {
         throw new RuntimeException("deliberate test failure");
     }
-
-    @Override
-    public void pause() {}
 }

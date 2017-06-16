@@ -19,15 +19,17 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.SparkContext;
 import ai.grakn.test.engine.controller.TasksControllerTest.JsonMapper;
+import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
@@ -44,7 +46,6 @@ import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.ID_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
-import static ai.grakn.test.GraknTestEnv.usingTitan;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Graql.INFER;
@@ -114,7 +115,7 @@ public class GraqlControllerGETTest {
 
         when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
 
-        when(mockFactory.properties()).thenReturn(graphContext.factory().properties());
+        when(mockFactory.properties()).thenReturn(GraknEngineConfig.create().getProperties());
     }
 
     @Test
@@ -436,7 +437,7 @@ public class GraqlControllerGETTest {
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
     public void ZGETGraqlComputePathWithTextType_ResponseIsCorrect() {
-        assumeTrue(usingTitan());
+        assumeTrue(GraknTestSetup.usingTitan());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -451,7 +452,7 @@ public class GraqlControllerGETTest {
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseContentTypeIsHAL() {
-        assumeTrue(usingTitan());
+        assumeTrue(GraknTestSetup.usingTitan());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -465,7 +466,7 @@ public class GraqlControllerGETTest {
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseStatusIs200() {
-        assumeTrue(usingTitan());
+        assumeTrue(GraknTestSetup.usingTitan());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -479,7 +480,7 @@ public class GraqlControllerGETTest {
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseIsNotEmpty() {
-        assumeTrue(usingTitan());
+        assumeTrue(GraknTestSetup.usingTitan());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -493,7 +494,7 @@ public class GraqlControllerGETTest {
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseContainsValidHALObjects() {
-        assumeTrue(usingTitan());
+        assumeTrue(GraknTestSetup.usingTitan());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();

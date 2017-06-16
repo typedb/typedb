@@ -13,13 +13,13 @@ import java.util.Set;
 public class PostProcessingTestUtils {
 
     static boolean checkUnique(GraknGraph graph, String key) {
-        return graph.admin().getTinkerTraversal().has(Schema.ConceptProperty.INDEX.name(), key).toList().size() < 2;
+        return graph.admin().getTinkerTraversal().has(Schema.VertexProperty.INDEX.name(), key).toList().size() < 2;
     }
     
     static <T> String indexOf(GraknGraph graph, Resource<T> resource) {
         Vertex originalResource = graph.admin().getTinkerTraversal()
                                         .hasId(resource.getId().getValue()).next();
-        return originalResource.value(Schema.ConceptProperty.INDEX.name());
+        return originalResource.value(Schema.VertexProperty.INDEX.name());
     }
     
     @SuppressWarnings("unchecked")
@@ -31,9 +31,9 @@ public class PostProcessingTestUtils {
         Vertex vertexResourceTypeShard = graph.getTinkerTraversal()
                 .hasId(resourceType.getId().getValue()).in(Schema.EdgeLabel.SHARD.getLabel()).next();
         Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
-        resourceVertex.property(Schema.ConceptProperty.INDEX.name(),originalResource.value(Schema.ConceptProperty.INDEX.name()));
-        resourceVertex.property(resourceType.getDataType().getConceptProperty().name(), resource.getValue());
-        resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());
+        resourceVertex.property(Schema.VertexProperty.INDEX.name(),originalResource.value(Schema.VertexProperty.INDEX.name()));
+        resourceVertex.property(resourceType.getDataType().getVertexProperty().name(), resource.getValue());
+        resourceVertex.property(Schema.VertexProperty.ID.name(), resourceVertex.id().toString());
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceTypeShard);
         return (Resource<T>)graknGraph.admin().buildConcept(resourceVertex);
     }
@@ -47,9 +47,9 @@ public class PostProcessingTestUtils {
                 .hasId(resourceType.getId().getValue()).in(Schema.EdgeLabel.SHARD.getLabel()).next();
 
         Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
-        resourceVertex.property(Schema.ConceptProperty.INDEX.name(),originalResource.value(Schema.ConceptProperty.INDEX.name()));
-        resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), originalResource.value(Schema.ConceptProperty.VALUE_STRING.name()));
-        resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());
+        resourceVertex.property(Schema.VertexProperty.INDEX.name(),originalResource.value(Schema.VertexProperty.INDEX.name()));
+        resourceVertex.property(Schema.VertexProperty.VALUE_STRING.name(), originalResource.value(Schema.VertexProperty.VALUE_STRING.name()));
+        resourceVertex.property(Schema.VertexProperty.ID.name(), resourceVertex.id().toString());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceTypeShard);
         // This is done to push the concept into the cache

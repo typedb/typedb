@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
@@ -33,7 +33,6 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -49,30 +48,16 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
 
     static final Logger LOGGER = LoggerFactory.getLogger(GraknVertexProgram.class);
 
-    static final MessageScope.Local<?> messageScopeIn = MessageScope.Local.of(() -> __.<Vertex>inE(
-            Schema.EdgeLabel.CASTING.getLabel(),
-            Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
-    static final MessageScope.Local<?> messageScopeOut = MessageScope.Local.of(() -> __.<Vertex>outE(
-            Schema.EdgeLabel.CASTING.getLabel(),
-            Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
-    private static final Set<MessageScope> messageScopeSet = Sets.newHashSet(messageScopeIn, messageScopeOut);
-
-    static final MessageScope.Local<?> messageScopeInCasting = MessageScope.Local.of(() -> __.<Vertex>inE(
-            Schema.EdgeLabel.CASTING.getLabel()));
-    static final MessageScope.Local<?> messageScopeOutCasting = MessageScope.Local.of(() -> __.<Vertex>outE(
-            Schema.EdgeLabel.CASTING.getLabel()));
-    static final MessageScope.Local<?> messageScopeInRolePlayer = MessageScope.Local.of(() -> __.<Vertex>inE(
-            Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
-    static final MessageScope.Local<?> messageScopeOutRolePlayer = MessageScope.Local.of(() -> __.<Vertex>outE(
-            Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
-    static final Set<MessageScope> messageScopeSetInstance =
-            Sets.newHashSet(messageScopeInRolePlayer, messageScopeOutCasting);
-    static final Set<MessageScope> messageScopeSetCasting =
-            Sets.newHashSet(messageScopeInCasting, messageScopeOutRolePlayer);
+    static final MessageScope.Local<?> messageScopeShortcutIn = MessageScope.Local.of(() -> __.inE(
+            Schema.EdgeLabel.SHORTCUT.getLabel()));
+    static final MessageScope.Local<?> messageScopeShortcutOut = MessageScope.Local.of(() -> __.outE(
+            Schema.EdgeLabel.SHORTCUT.getLabel()));
+    static final Set<MessageScope> messageScopeSetShortcut =
+            Sets.newHashSet(messageScopeShortcutIn, messageScopeShortcutOut);
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        return messageScopeSet;
+        return messageScopeSetShortcut;
     }
 
     @Override
@@ -121,39 +106,7 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
         try {
             return (GraknVertexProgram) super.clone();
         } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(
-                    ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(), e.getMessage()), e);
-        }
-    }
-
-    void degreeStepInstance(Vertex vertex, Messenger<Long> messenger) {
-        String type = vertex.label();
-        if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
-            // each role-player sends 1 to castings following incoming edges
-            messenger.sendMessage(messageScopeInRolePlayer, 1L);
-        } else if (type.equals(Schema.BaseType.RELATION.name())) {
-            // the assertion can also be role-player, so sending 1 to castings following incoming edges
-            messenger.sendMessage(messageScopeInRolePlayer, 1L);
-            // send -1 to castings following outgoing edges
-            messenger.sendMessage(messageScopeOutCasting, -1L);
-        }
-    }
-
-    void degreeStepCasting(Messenger<Long> messenger) {
-        boolean hasPlayer = false;
-        long assertionCount = 0;
-        Iterator<Long> iterator = messenger.receiveMessages();
-        while (iterator.hasNext()) {
-            long message = iterator.next();
-            // count number of assertions connected
-            if (message < 0) assertionCount++;
-            else hasPlayer = true;
-        }
-
-        // make sure this role-player is in the subgraph
-        if (hasPlayer) {
-            messenger.sendMessage(messageScopeInCasting, 1L);
-            messenger.sendMessage(messageScopeOutRolePlayer, assertionCount);
+            throw CommonUtil.unreachableStatement(e);
         }
     }
 

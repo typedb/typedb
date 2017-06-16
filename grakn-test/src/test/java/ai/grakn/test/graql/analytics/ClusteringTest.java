@@ -32,6 +32,7 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -46,8 +47,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestEnv.usingOrientDB;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -71,13 +70,14 @@ public class ClusteringTest {
     private ConceptId entityId4;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startInMemoryServer();
+    // TODO: Don't set port once bug #15130 is fixed
+    public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
     private GraknSession factory;
 
     @Before
     public void setUp() {
         // TODO: Fix tests in orientdb
-        assumeFalse(usingOrientDB());
+        assumeFalse(GraknTestSetup.usingOrientDB());
 
         factory = context.factoryWithNewKeyspace();
     }
@@ -85,7 +85,7 @@ public class ClusteringTest {
     @Test
     public void testConnectedComponentOnEmptyGraph() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // test on an empty rule.graph()
@@ -101,7 +101,7 @@ public class ClusteringTest {
     @Test
     public void testConnectedComponentSize() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         Map<String, Long> sizeMap;
         Map<String, Set<String>> memberMap;
@@ -140,7 +140,7 @@ public class ClusteringTest {
     @Test
     public void testConnectedComponentImplicitType() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         String aResourceTypeLabel = "aResourceTypeLabel";
 
@@ -172,7 +172,7 @@ public class ClusteringTest {
     @Test
     public void testConnectedComponent() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         Map<String, Long> sizeMap;
         Map<String, Set<String>> memberMap;
@@ -234,7 +234,7 @@ public class ClusteringTest {
     @Test
     public void testConnectedComponentConcurrency() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         addOntologyAndEntities();
 

@@ -120,9 +120,7 @@ public class UserController {
     @ApiImplicitParam(name = "user", value = "A JSON object representing the user.", dataType = "String", paramType = "body")
     private boolean updateUser(Request request, Response response) {
         Json user = Json.read(request.body());
-        if (!users.userExists(user.at(UsersHandler.USER_NAME).asString())) {
-            return false;
-        }
-        return users.updateUser(user);
+        return users.userExists(user.at(UsersHandler.USER_NAME).asString()) && users
+                .updateUser(user);
     }
 }

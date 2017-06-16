@@ -28,10 +28,12 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.junit.Before;
@@ -46,8 +48,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestEnv.usingOrientDB;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -76,14 +76,15 @@ public class StatisticsTest {
     private ConceptId entityId4;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startInMemoryServer();
+    // TODO: Don't set port once bug #15130 is fixed
+    public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
 
     private GraknSession factory;
 
     @Before
     public void setUp() {
         // TODO: Fix tests in orientdb
-        assumeFalse(usingOrientDB());
+        assumeFalse(GraknTestSetup.usingOrientDB());
 
         factory = context.factoryWithNewKeyspace();
     }
@@ -96,20 +97,20 @@ public class StatisticsTest {
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             //TODO: add more detailed error messages
             // resources-type is not set
-            assertIllegalStateExceptionThrown(graph.graql().compute().max().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().min().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().mean().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().sum().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().std().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().median().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().max().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().min().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().mean().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().sum().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().std().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().median().in(thing)::execute);
 
             // if it's not a resource-type
-            assertIllegalStateExceptionThrown(graph.graql().compute().max().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().min().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().mean().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().sum().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().std().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().median().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().max().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().min().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().mean().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().sum().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().std().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().median().of(thing)::execute);
 
             // resource-type has no instance
             assertFalse(graph.graql().compute().max().of(resourceType7).execute().isPresent());
@@ -128,29 +129,29 @@ public class StatisticsTest {
             assertFalse(graph.graql().compute().mean().of(resourceType3).execute().isPresent());
 
             // resource-type has incorrect data type
-            assertIllegalStateExceptionThrown(graph.graql().compute().max().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().min().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().mean().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().sum().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().std().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().median().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().max().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().min().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().mean().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().sum().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().std().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().median().of(resourceType4)::execute);
 
             // resource-types have different data types
             Set<TypeLabel> resourceTypes = Sets.newHashSet(TypeLabel.of(resourceType1), TypeLabel.of(resourceType2));
-            assertIllegalStateExceptionThrown(graph.graql().compute().max().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().min().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().mean().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().sum().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().std().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().median().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().max().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().min().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().mean().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().sum().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().std().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().median().of(resourceTypes)::execute);
         }
     }
 
-    private void assertIllegalStateExceptionThrown(Supplier<Optional> method) {
+    private void assertGraqlQueryExceptionThrown(Supplier<Optional> method) {
         boolean exceptionThrown = false;
         try {
             method.get();
-        } catch (IllegalStateException e) {
+        } catch (GraqlQueryException e) {
             exceptionThrown = true;
         }
         assertTrue(exceptionThrown);
@@ -159,7 +160,7 @@ public class StatisticsTest {
     @Test
     public void testMinAndMax() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         Optional<Number> result;
 
@@ -254,7 +255,7 @@ public class StatisticsTest {
     @Test
     public void testSum() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         Optional<Number> result;
 
@@ -314,7 +315,7 @@ public class StatisticsTest {
     @Test
     public void testMean() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         Optional<Double> result;
 
@@ -373,7 +374,7 @@ public class StatisticsTest {
     @Test
     public void testStd() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         Optional<Double> result;
 
@@ -446,7 +447,7 @@ public class StatisticsTest {
     @Test
     public void testMedian() throws Exception {
         // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         Optional<Number> result;
 

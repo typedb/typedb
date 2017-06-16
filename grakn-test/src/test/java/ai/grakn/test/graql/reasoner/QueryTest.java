@@ -32,6 +32,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.SNBGraph;
 
+import ai.grakn.test.GraknTestSetup;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -39,7 +40,6 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -49,23 +49,23 @@ import static org.junit.Assume.assumeTrue;
 public class QueryTest {
 
     @ClassRule
-    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql").assumeTrue(usingTinker());
+    public static final GraphContext ancestorGraph = GraphContext.preLoad("src/test/graql/ancestor-friend-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext genealogyOntology = GraphContext.preLoad("genealogy/ontology.gql").assumeTrue(usingTinker());
+    public static final GraphContext genealogyOntology = GraphContext.preLoad("src/test/graql/genealogy/ontology.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     @Test //simple equality tests between original and a copy of a query
@@ -118,7 +118,6 @@ public class QueryTest {
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
         ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, graph), graph);
         assertNotEquals(query, query2);
-        assertNotEquals(query.hashCode(), query2.hashCode());
     }
     
     @Test //tests various configurations of alpha-equivalence with extra type atoms present

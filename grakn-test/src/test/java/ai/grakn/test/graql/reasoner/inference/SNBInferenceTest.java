@@ -18,22 +18,22 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.SNBGraph;
 
+import ai.grakn.test.GraknTestSetup;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -46,7 +46,7 @@ public class SNBInferenceTest {
 
     @BeforeClass
     public static void onStartup() throws Exception {
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     /**
@@ -371,7 +371,7 @@ public class SNBInferenceTest {
         String queryString2 = "match $x isa person; $y isa person;$y has name 'Miguel Gonzalez';" +
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; select $x, $z;";
         Unifier unifier = new UnifierImpl();
-        unifier.addMapping(Var.of("z"), Var.of("y"));
+        unifier.addMapping(Graql.var("z"), Graql.var("y"));
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 =  queryAnswers(iqb.materialise(false).parse(queryString2)).unify(unifier);

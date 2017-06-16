@@ -33,6 +33,7 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -47,8 +48,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestEnv.usingOrientDB;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -57,14 +56,15 @@ import static org.junit.Assume.assumeFalse;
 public class DegreeTest {
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startInMemoryServer();
+    // TODO: Don't set port once bug #15130 is fixed
+    public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
     private GraknSession factory;
     private GraknGraph graph;
 
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
-        assumeFalse(usingOrientDB());
+        assumeFalse(GraknTestSetup.usingOrientDB());
 
         factory = context.factoryWithNewKeyspace();
         graph = factory.open(GraknTxType.WRITE);
@@ -73,7 +73,7 @@ public class DegreeTest {
     @Test
     public void testDegrees() throws Exception {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         // create instances
         EntityType thing = graph.putEntityType("thing");
@@ -187,7 +187,7 @@ public class DegreeTest {
                     }
             ));
 
-            degrees3 = graph.graql().compute().degree().of("thing").in("thing", "related").execute();
+            degrees3 = graph.graql().compute().degree().of("thing").in("related").execute();
             assertEquals(2, degrees3.size());
             assertEquals(2, degrees3.get(1L).size());
             assertEquals(1, degrees3.get(3L).size());
@@ -203,7 +203,7 @@ public class DegreeTest {
     @Test
     public void testSubIsAccountedForInSubgraph() throws Exception {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
@@ -229,7 +229,7 @@ public class DegreeTest {
     @Test
     public void testDegreeIsCorrect() throws InvalidGraphException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
@@ -320,7 +320,7 @@ public class DegreeTest {
     @Test
     public void testDegreeMissingRolePlayer() throws Exception {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
@@ -360,7 +360,7 @@ public class DegreeTest {
     public void testDegreeAssertionAboutAssertion()
             throws InvalidGraphException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
@@ -448,7 +448,7 @@ public class DegreeTest {
     public void testDegreeTernaryRelationships()
             throws InvalidGraphException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         // make relation
         RoleType productionWithCast = graph.putRoleType("production-with-cast");
@@ -487,7 +487,7 @@ public class DegreeTest {
     public void testDegreeOneRolePlayerMultipleRoles()
             throws InvalidGraphException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
@@ -531,7 +531,7 @@ public class DegreeTest {
     public void testDegreeRolePlayerWrongType()
             throws InvalidGraphException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");

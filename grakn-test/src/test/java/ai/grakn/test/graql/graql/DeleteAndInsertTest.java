@@ -19,11 +19,11 @@
 package ai.grakn.test.graql.graql;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graphs.MovieGraph;
-import ai.grakn.graql.Var;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.test.GraphContext;
-
+import ai.grakn.test.graphs.MovieGraph;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -54,14 +54,14 @@ public class DeleteAndInsertTest {
 
     @Test
     public void whenDeletingAVariableNotInTheQuery_Throw() {
-        exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Var.of("y")));
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("y")));
         graph.graql().match(var("x").isa("movie")).delete("y").execute();
     }
 
     @Test
     public void whenDeletingAnEmptyPattern_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
         graph.graql().match(var()).delete(Collections.EMPTY_SET).execute();
     }
@@ -88,7 +88,7 @@ public class DeleteAndInsertTest {
 
     @Test
     public void whenMatchInsertingAnEmptyPattern_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
         graph.graql().match(var()).insert(Collections.EMPTY_SET).execute();
     }
@@ -105,7 +105,7 @@ public class DeleteAndInsertTest {
 
     @Test
     public void whenInsertingAnEmptyPattern_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
         graph.graql().insert(Collections.EMPTY_SET).execute();
     }

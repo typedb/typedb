@@ -19,7 +19,6 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -31,10 +30,11 @@ import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Set;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -57,11 +57,8 @@ public class TypeAtom extends Binary{
 
     public TypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
     public TypeAtom(VarPatternAdmin pattern, IdPredicate p, ReasonerQuery par) { super(pattern, p, par);}
-    public TypeAtom(Var var, Var valueVar, ConceptId typeId, ReasonerQuery par){
-        this(var, valueVar, new IdPredicate(Graql.var(valueVar).id(typeId).admin(), par), par);
-    }
     public TypeAtom(Var var, Var valueVar, IdPredicate p, ReasonerQuery par){
-        this(Graql.var(var).isa(Graql.var(valueVar)).admin(), p, par);
+        this(var.isa(valueVar).admin(), p, par);
     }
     protected TypeAtom(TypeAtom a) { super(a);}
 

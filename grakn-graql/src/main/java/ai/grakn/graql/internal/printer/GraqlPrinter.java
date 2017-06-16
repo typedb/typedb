@@ -26,7 +26,8 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.util.ANSI;
-import ai.grakn.graql.internal.util.CommonUtil;
+import ai.grakn.util.CommonUtil;
+import ai.grakn.util.StringUtil;
 
 import java.util.Collection;
 import java.util.Map;
@@ -37,7 +38,6 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
-import static ai.grakn.graql.internal.util.StringConverter.valueToString;
 
 /**
  * Default printer that prints results in Graql syntax
@@ -62,7 +62,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
         return sb -> {
             // Display values for resources and ids for everything else
             if (concept.isResource()) {
-                sb.append(colorKeyword("val ")).append(valueToString(concept.asResource().getValue()));
+                sb.append(colorKeyword("val ")).append(StringUtil.valueToString(concept.asResource().getValue()));
             } else if (concept.isType()) {
                 Type type = concept.asType();
                 sb.append(colorKeyword("label ")).append(colorType(type));
@@ -105,7 +105,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             if (concept.isInstance() && resourceTypes.length > 0) {
                 concept.asInstance().resources(resourceTypes).forEach(resource -> {
                     String resourceType = colorType(resource.type());
-                    String value = valueToString(resource.getValue());
+                    String value = StringUtil.valueToString(resource.getValue());
                     sb.append(colorKeyword(" has ")).append(resourceType).append(" ").append(value);
                 });
             }

@@ -28,12 +28,12 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,56 +70,41 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     private final TypeId cachedTypeId;
     private final TypeLabel cachedTypeLabel;
-    private ConceptCache<Boolean> cachedIsImplicit = new ConceptCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
-    private ConceptCache<Boolean> cachedIsAbstract = new ConceptCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
-    private ConceptCache<T> cachedSuperType = new ConceptCache<>(() -> this.<T>getOutgoingNeighbours(Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private ConceptCache<Set<T>> cachedDirectSubTypes = new ConceptCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
-    private ConceptCache<Set<T>> cachedShards = new ConceptCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
+    private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
+    private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
+    private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
+    private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private Cache<Set<T>> cachedShards = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
 
     //This cache is different in order to keep track of which plays are required
-    private ConceptCache<Map<RoleType, Boolean>> cachedDirectPlays = new ConceptCache<>(() -> {
+    private Cache<Map<RoleType, Boolean>> cachedDirectPlays = new Cache<>(() -> {
         Map<RoleType, Boolean> roleTypes = new HashMap<>();
 
-        getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-            RoleType roleType = edge.getTarget();
-            Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
+        vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
+            RoleType roleType = vertex().graph().factory().buildConcept(edge.target());
+            Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
             roleTypes.put(roleType, required);
         });
 
         return roleTypes;
     });
 
-    TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
-        VertexProperty<String> typeLabel = v.property(Schema.ConceptProperty.TYPE_LABEL.name());
-        if(typeLabel.isPresent()) {
-            cachedTypeLabel = TypeLabel.of(typeLabel.value());
-            cachedTypeId = TypeId.of(v.value(Schema.ConceptProperty.TYPE_ID.name()));
-            isShard(false);
-        } else {
-            cachedTypeLabel = TypeLabel.of("SHARDED TYPE-" + getId().getValue()); //This is just a place holder it is never actually committed
-            cachedTypeId = null; //Shards don't have indexed Ids
-            isShard(true);
-        }
+    TypeImpl(VertexElement vertexElement) {
+        super(vertexElement);
+        String typeLabel = vertex().property(Schema.VertexProperty.TYPE_LABEL);
+        cachedTypeLabel = TypeLabel.of(typeLabel);
+        cachedTypeId = TypeId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
     }
 
-    TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType) {
-        this(graknGraph, v);
+    TypeImpl(VertexElement vertexElement, T superType) {
+        this(vertexElement);
         if(superType() == null) superType(superType);
     }
 
-    TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType, Boolean isImplicit) {
-        this(graknGraph, v, superType);
-        setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity());
+    TypeImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
+        this(vertexElement, superType);
+        vertex().propertyImmutable(Schema.VertexProperty.IS_IMPLICIT, isImplicit, vertex().property(Schema.VertexProperty.IS_IMPLICIT), Function.identity());
         cachedIsImplicit.set(isImplicit);
-    }
-
-    TypeImpl(TypeImpl<T, V> type) {
-        super(type);
-        this.cachedTypeLabel = type.getLabel();
-        this.cachedTypeId = type.getTypeId();
-        type.cachedIsImplicit.ifPresent(value -> this.cachedIsImplicit.set(value));
-        type.cachedIsAbstract.ifPresent(value -> this.cachedIsAbstract.set(value));
     }
 
     /**
@@ -135,16 +120,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         cachedDirectPlays.flush();
     }
 
-    @Override
-    Set<T> shards(){
-        return cachedShards.get();
-    }
-
-    @Override
-    boolean isShard(){
-        return cachedTypeLabel == null || cachedTypeLabel.getValue().startsWith("SHARDED TYPE-");
-    }
-
     /**
      * Utility method used to create or find an instance of this type
      *
@@ -153,8 +128,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param producer The factory method to produce the instance if it doesn't exist
      * @return A new or already existing instance
      */
-    V putInstance(Schema.BaseType instanceBaseType, Supplier<V> finder, BiFunction<Vertex, T, V> producer) {
-        getGraknGraph().checkMutation();
+    V putInstance(Schema.BaseType instanceBaseType, Supplier<V> finder, BiFunction<VertexElement, T, V> producer) {
+        vertex().graph().checkMutationAllowed();
 
         V instance = finder.get();
         if(instance == null) instance = addInstance(instanceBaseType, producer);
@@ -168,8 +143,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param producer The factory method to produce the instance
      * @return A new instance
      */
-    V addInstance(Schema.BaseType instanceBaseType, BiFunction<Vertex, T, V> producer){
-        getGraknGraph().checkMutation();
+    V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer){
+        vertex().graph().checkMutationAllowed();
 
         if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
             throw GraphOperationException.metaTypeImmutable(getLabel());
@@ -177,11 +152,11 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         if(isAbstract()) throw GraphOperationException.addingInstancesToAbstractType(this);
 
-        Vertex instanceVertex = getGraknGraph().addVertex(instanceBaseType);
+        VertexElement instanceVertex = vertex().graph().addVertex(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
-            getGraknGraph().getTxCache().addedInstance(getId());
+            vertex().graph().txCache().addedInstance(getId());
         }
-        return producer.apply(instanceVertex, currentShard());
+        return producer.apply(instanceVertex, getThis());
     }
 
     /**
@@ -225,27 +200,26 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     }
 
     private Collection<ResourceType> resources(Schema.ImplicitType implicitType){
-        boolean implicitFlag = getGraknGraph().implicitConceptsVisible();
+        return CommonUtil.withImplicitConceptsVisible(vertex().graph(), () -> {
+            //TODO: Make this less convoluted
+            String [] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
+            String prefix = implicitIdentifiers[0] + "-";
+            String suffix = "-" + implicitIdentifiers[1];
 
-        //TODO: Make this less convoluted
-        String [] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
-        String prefix = implicitIdentifiers[0] + "-";
-        String suffix = "-" + implicitIdentifiers[1];
+            vertex().graph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retrieved
 
-        getGraknGraph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retrieved
+            Set<ResourceType> resourceTypes = new HashSet<>();
+            //A traversal is not used in this caching so that ontology caching can be taken advantage of.
+            plays().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
+                String roleTypeLabel = roleType.getLabel().getValue();
+                if(roleTypeLabel.startsWith(prefix) && roleTypeLabel.endsWith(suffix)){ //This is the implicit type we want
+                    String resourceTypeLabel = roleTypeLabel.replace(prefix, "").replace(suffix, "");
+                    resourceTypes.add(vertex().graph().getResourceType(resourceTypeLabel));
+                }
+            }));
 
-        Set<ResourceType> resourceTypes = new HashSet<>();
-        //A traversal is not used in this caching so that ontology caching can be taken advantage of.
-        plays().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
-            String roleTypeLabel = roleType.getLabel().getValue();
-            if(roleTypeLabel.startsWith(prefix) && roleTypeLabel.endsWith(suffix)){ //This is the implicit type we want
-                String resourceTypeLabel = roleTypeLabel.replace(prefix, "").replace(suffix, "");
-                resourceTypes.add(getGraknGraph().getResourceType(resourceTypeLabel));
-            }
-        }));
-
-        getGraknGraph().showImplicitConcepts(implicitFlag);
-        return resourceTypes;
+            return resourceTypes;
+        });
     }
 
     Map<RoleType, Boolean> directPlays(){
@@ -253,21 +227,20 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     }
 
     private <X extends Concept> Set<X> filterImplicitStructures(Set<X> types){
-        if (!getGraknGraph().implicitConceptsVisible() && !types.isEmpty() && types.iterator().next().isType()) {
+        if (!vertex().graph().implicitConceptsVisible() && !types.isEmpty() && types.iterator().next().isType()) {
             return types.stream().filter(t -> !t.asType().isImplicit()).collect(Collectors.toSet());
         }
         return types;
     }
 
     /**
-     * Deletes the concept as  type
+     * Deletes the concept as type
      */
     @Override
     public void delete(){
-        checkTypeMutation();
-        boolean hasSubs = getVertex().edges(Direction.IN, Schema.EdgeLabel.SUB.getLabel()).hasNext();
-        boolean hasInstances = getGraknGraph().getTinkerTraversal().hasId(getId().getRawValue()).
-                in(Schema.EdgeLabel.SHARD.getLabel()).in(Schema.EdgeLabel.ISA.getLabel()).hasNext();
+        checkTypeMutationAllowed();
+        boolean hasSubs = neighbours(Direction.IN, Schema.EdgeLabel.SUB).findAny().isPresent();
+        boolean hasInstances = currentShard().links().findAny().isPresent();
 
         if(hasSubs || hasInstances){
             throw GraphOperationException.typeCannotBeDeleted(getLabel());
@@ -290,8 +263,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             cachedDirectSubTypes.clear();
             cachedDirectPlays.clear();
 
-            //Clear Global ConceptCache
-            getGraknGraph().getTxCache().removeConcept(this);
+            //Clear Global Cache
+            vertex().graph().txCache().remove(this);
         }
     }
 
@@ -375,24 +348,18 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public Collection<V> instances() {
         final Set<V> instances = new HashSet<>();
 
-        if(isShard()){
-            instances.addAll(this.<V>getIncomingNeighbours(Schema.EdgeLabel.ISA).collect(Collectors.toSet()));
-        } else {
-            GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerPopGraph().traversal().V()
-                    .has(Schema.ConceptProperty.TYPE_ID.name(), getTypeId().getValue())
-                    .union(__.identity(),
-                            __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
-                    ).unfold()
-                    .in(Schema.EdgeLabel.SHARD.getLabel())
-                    .in(Schema.EdgeLabel.ISA.getLabel());
+        GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerPopGraph().traversal().V()
+                .has(Schema.VertexProperty.TYPE_ID.name(), getTypeId().getValue())
+                .union(__.identity(),
+                        __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
+                ).unfold()
+                .in(Schema.EdgeLabel.SHARD.getLabel())
+                .in(Schema.EdgeLabel.ISA.getLabel());
 
-            traversal.forEachRemaining(vertex -> {
-                ConceptImpl<Concept> concept = getGraknGraph().getElementFactory().buildConcept(vertex);
-                if (concept != null && !concept.isCasting()) {
-                    instances.add((V) concept);
-                }
-            });
-        }
+        traversal.forEachRemaining(vertex -> {
+            ConceptImpl<Concept> concept = vertex().graph().factory().buildConcept(vertex);
+            if (concept != null) instances.add((V) concept);
+        });
 
         return Collections.unmodifiableCollection(filterImplicitStructures(instances));
     }
@@ -422,7 +389,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public Collection<Rule> getRulesOfHypothesis() {
         Set<Rule> rules = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> rules.add(concept.asRule()));
+        neighbours(Direction.IN, Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> rules.add(concept.asRule()));
         return Collections.unmodifiableCollection(rules);
     }
 
@@ -433,7 +400,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public Collection<Rule> getRulesOfConclusion() {
         Set<Rule> rules = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.CONCLUSION).forEach(concept -> rules.add(concept.asRule()));
+        neighbours(Direction.IN, Schema.EdgeLabel.CONCLUSION).forEach(concept -> rules.add(concept.asRule()));
         return Collections.unmodifiableCollection(rules);
     }
 
@@ -444,7 +411,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public Set<Instance> scopes() {
         HashSet<Instance> scopes = new HashSet<>();
-        getOutgoingNeighbours(Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asInstance()));
+        neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asInstance()));
         return scopes;
     }
 
@@ -465,7 +432,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public T deleteScope(Instance scope) {
-        deleteEdgeTo(Schema.EdgeLabel.HAS_SCOPE, scope);
+        deleteEdge(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE, (Concept) scope);
         return getThis();
     }
 
@@ -475,7 +442,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The Type itself
      */
     public T superType(T newSuperType) {
-        checkTypeMutation();
+        checkTypeMutationAllowed();
 
         T oldSuperType = superType();
         if(oldSuperType == null || (!oldSuperType.equals(newSuperType))) {
@@ -489,7 +456,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             }
 
             //Modify the graph once we have checked no loop occurs
-            deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
+            deleteEdge(Direction.OUT, Schema.EdgeLabel.SUB);
             putEdge(newSuperType, Schema.EdgeLabel.SUB);
 
             //Update the sub types of the old super type
@@ -505,8 +472,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             //Track any existing data if there is some
             instances().forEach(concept -> {
                 if (concept.isInstance()) {
-                    ((InstanceImpl<?, ?>) concept).castings().forEach(
-                            instance -> getGraknGraph().getTxCache().trackConceptForValidation(instance));
+                    ((InstanceImpl<?, ?>) concept).castingsInstance().forEach(
+                            rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
                 }
             });
         }
@@ -541,7 +508,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     }
 
     T plays(RoleType roleType, boolean required) {
-        checkTypeMutation();
+        checkTypeMutationAllowed();
 
         //Update the internal cache of role types played
         cachedDirectPlays.ifPresent(map -> map.put(roleType, required));
@@ -549,10 +516,10 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         //Update the cache of types played by the role
         ((RoleTypeImpl) roleType).addCachedDirectPlaysByType(this);
 
-        EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS);
+        EdgeElement edge = putEdge(roleType, Schema.EdgeLabel.PLAYS);
 
         if (required) {
-            edge.setProperty(Schema.EdgeProperty.REQUIRED, true);
+            edge.property(Schema.EdgeProperty.REQUIRED, true);
         }
 
         return getThis();
@@ -574,17 +541,18 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public T deletePlays(RoleType roleType) {
-        checkTypeMutation();
-        deleteEdgeTo(Schema.EdgeLabel.PLAYS, roleType);
+        checkTypeMutationAllowed();
+        deleteEdge(Direction.OUT, Schema.EdgeLabel.PLAYS, (Concept) roleType);
         cachedDirectPlays.ifPresent(set -> set.remove(roleType));
         ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(this);
 
-        //Add castings to tracking to make sure they can still be played.
+        //Add roleplayers to tracking to make sure they can still be played.
         instances().forEach(concept -> {
             if (concept.isInstance()) {
-                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> getGraknGraph().getTxCache().trackConceptForValidation(casting));
+                ((InstanceImpl<?, ?>) concept).castingsInstance().forEach(rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
             }
         });
+
 
         return getThis();
     }
@@ -603,21 +571,19 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The Type itself.
      */
     public T setAbstract(Boolean isAbstract) {
-        if(!Schema.MetaSchema.isMetaLabel(getLabel()) && isAbstract &&
-                this.<TypeImpl>getIncomingNeighbours(Schema.EdgeLabel.SHARD).anyMatch(thing ->
-                        thing.getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().isPresent())){
+        if(!Schema.MetaSchema.isMetaLabel(getLabel()) && isAbstract && currentShard().links().findAny().isPresent()){
             throw GraphOperationException.addingInstancesToAbstractType(this);
         }
 
-        setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
+        property(Schema.VertexProperty.IS_ABSTRACT, isAbstract);
         cachedIsAbstract.set(isAbstract);
         return getThis();
     }
 
-    @Override
-    T setProperty(Schema.ConceptProperty key, Object value){
-        checkTypeMutation();
-        return super.setProperty(key, value);
+    T property(Schema.VertexProperty key, Object value){
+        if(!Schema.VertexProperty.CURRENT_TYPE_ID.equals(key)) checkTypeMutationAllowed();
+        vertex().property(key, value);
+        return getThis();
     }
 
     /**
@@ -625,9 +591,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * 1. The type is not a meta-type
      * 2. The graph is not batch loading
      */
-    void checkTypeMutation(){
-        if(isShard()) return;
-        getGraknGraph().checkOntologyMutation();
+    void checkTypeMutationAllowed(){
+        vertex().graph().checkOntologyMutationAllowed();
         if(Schema.MetaSchema.isMetaLabel(getLabel())){
             throw GraphOperationException.metaTypeImmutable(getLabel());
         }
@@ -644,7 +609,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     public T has(ResourceType resourceType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
         //Check if this is a met type
-        checkTypeMutation();
+        checkTypeMutationAllowed();
 
         //Check if resource type is the meta
         if(Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())){
@@ -652,9 +617,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         }
 
         TypeLabel resourceTypeLabel = resourceType.getLabel();
-        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(hasOwner.getLabel(resourceTypeLabel));
-        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(hasValue.getLabel(resourceTypeLabel));
-        RelationType relationType = getGraknGraph().putRelationTypeImplicit(has.getLabel(resourceTypeLabel)).
+        RoleType ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(resourceTypeLabel));
+        RoleType valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(resourceTypeLabel));
+        RelationType relationType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceTypeLabel)).
                 relates(ownerRole).
                 relates(valueRole);
 
@@ -662,9 +627,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         ResourceType resourceTypeSuper = resourceType.superType();
         TypeLabel superLabel = resourceTypeSuper.getLabel();
         if(!Schema.MetaSchema.RESOURCE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
-            RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
-            RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
-            RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(has.getLabel(superLabel)).
+            RoleType ownerRoleSuper = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
+            RoleType valueRoleSuper = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
+            RelationType relationTypeSuper = vertex().graph().putRelationTypeImplicit(has.getLabel(superLabel)).
                     relates(ownerRoleSuper).relates(valueRoleSuper);
 
             //Create the super type edges from sub role/relations to super roles/relation

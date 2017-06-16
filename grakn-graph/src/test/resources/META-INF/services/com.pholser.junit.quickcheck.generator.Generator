@@ -28,7 +28,8 @@ ai.grakn.generator.ResourceTypes
 ai.grakn.generator.RoleTypes
 ai.grakn.generator.Entities
 ai.grakn.generator.Relations
-ai.grakn.generator.Rules
+#TODO: Re-enable when graph can support creating graql constructs
+#ai.grakn.generator.Rules
 ai.grakn.generator.Resources
 ai.grakn.generator.MetaTypeLabels
 ai.grakn.generator.Methods

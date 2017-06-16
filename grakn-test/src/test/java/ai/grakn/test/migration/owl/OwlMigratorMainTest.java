@@ -50,7 +50,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
     @Test
     public void owlMainFileTest(){
         String owlFile = getFile("owl", "shakespeare.owl").getAbsolutePath();
-        runAndAssertDataCorrect("owl", "-input", owlFile, "-keyspace", keyspace);
+        runAndAssertDataCorrect("owl", "-u", engine.uri(), "-input", owlFile, "-keyspace", keyspace);
     }
 
     @Test
@@ -74,7 +74,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
     public void runAndAssertDataCorrect(String... args){
         run(args);
 
-        graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
+        graph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE);
         EntityType top = graph.getEntityType("tThing");
         EntityType type = graph.getEntityType("tAuthor");
         assertNotNull(type);

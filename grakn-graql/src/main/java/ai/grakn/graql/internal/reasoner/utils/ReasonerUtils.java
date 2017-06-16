@@ -24,6 +24,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
@@ -39,13 +40,11 @@ import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import java.util.stream.Stream;
 import javafx.util.Pair;
 
 import java.util.ArrayList;
@@ -57,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
@@ -152,7 +152,7 @@ public class ReasonerUtils {
     public static IdPredicate getIdPredicate(Var typeVariable, VarPatternAdmin typeVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
         IdPredicate predicate = null;
         //look for id predicate among vars
-        if(typeVar.isUserDefinedName()) {
+        if(typeVar.getVarName().isUserDefinedName()) {
             predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
         } else {
             LabelProperty nameProp = typeVar.getProperty(LabelProperty.class).orElse(null);
@@ -172,7 +172,7 @@ public class ReasonerUtils {
      */
     public static Set<ValuePredicate> getValuePredicates(Var valueVariable, VarPatternAdmin valueVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
         Set<ValuePredicate> predicates = new HashSet<>();
-        if(valueVar.isUserDefinedName()){
+        if(valueVar.getVarName().isUserDefinedName()){
             vars.stream()
                     .filter(v -> v.getVarName().equals(valueVariable))
                     .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.getVarName(), vp.getPredicate(), parent)))
@@ -360,7 +360,7 @@ public class ReasonerUtils {
      */
     public static Rule createTransitiveRule(RelationType relType, TypeLabel fromRoleLabel, TypeLabel toRoleLabel, GraknGraph graph){
         final int arity = relType.relates().size();
-        if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
+        if (arity != 2) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPatternAdmin startVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "z").admin();
         VarPatternAdmin endVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "z").rel(Graql.label(toRoleLabel), "y").admin();
@@ -379,7 +379,7 @@ public class ReasonerUtils {
      */
     public static Rule createReflexiveRule(RelationType relType, TypeLabel fromRoleLabel, TypeLabel toRoleLabel, GraknGraph graph){
         final int arity = relType.relates().size();
-        if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
+        if (arity != 2) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPattern body = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y");
         VarPattern head = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "x");
@@ -399,15 +399,15 @@ public class ReasonerUtils {
         final int parentArity = parent.relates().size();
         final int childArity = child.relates().size();
         if (parentArity != childArity || parentArity != roleMappings.size()) {
-            throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
+            throw GraqlQueryException.ruleCreationArityMismatch();
         }
         VarPattern parentVar = var().isa(Graql.label(parent.getLabel()));
         VarPattern childVar = var().isa(Graql.label(child.getLabel()));
 
         for (Map.Entry<TypeLabel, TypeLabel> entry : roleMappings.entrySet()) {
-            Var varName = Var.anon();
-            parentVar = parentVar.rel(Graql.label(entry.getKey()), var(varName));
-            childVar = childVar.rel(Graql.label(entry.getValue()), var(varName));
+            Var varName = var().asUserDefined();
+            parentVar = parentVar.rel(Graql.label(entry.getKey()), varName);
+            childVar = childVar.rel(Graql.label(entry.getValue()), varName);
         }
         return graph.admin().getMetaRuleInference().putRule(childVar, parentVar);
     }
@@ -424,18 +424,18 @@ public class ReasonerUtils {
     public static Rule createPropertyChainRule(RelationType relation, TypeLabel fromRoleLabel, TypeLabel toRoleLabel,
                                                LinkedHashMap<RelationType, Pair<TypeLabel, TypeLabel>> chain, GraknGraph graph){
         Stack<Var> varNames = new Stack<>();
-        varNames.push(Var.of("x"));
+        varNames.push(var("x"));
         Set<VarPatternAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
-            Var varName = Var.anon();
+            Var varName = var().asUserDefined();
             VarPatternAdmin var = var().isa(Graql.label(relType.getLabel()))
-                    .rel(Graql.label(rolePair.getKey()), var(varNames.peek()))
-                    .rel(Graql.label(rolePair.getValue()), var(varName)).admin();
+                    .rel(Graql.label(rolePair.getKey()), varNames.peek())
+                    .rel(Graql.label(rolePair.getValue()), varName).admin();
             varNames.push(varName);
             bodyVars.add(var);
         });
 
-        VarPattern headVar = var().isa(Graql.label(relation.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), var(varNames.peek()));
+        VarPattern headVar = var().isa(Graql.label(relation.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), varNames.peek());
         return graph.admin().getMetaRuleInference().putRule(Patterns.conjunction(bodyVars), headVar);
     }
 

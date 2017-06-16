@@ -46,13 +46,7 @@ public class CountMapReduce extends GraknMapReduce<Long> {
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
-        // use the ghost node detector here again
-        if (!selectedTypes.isEmpty()) {
-            if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                emitter.emit(NullObject.instance(), 1L);
-                return;
-            }
-        } else if (baseTypes.contains(vertex.label())) {
+        if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
             emitter.emit(NullObject.instance(), 1L);
             return;
         }

@@ -19,9 +19,9 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Optional;
@@ -44,12 +44,12 @@ class MatchQuerySelect extends MatchQueryModifier {
 
         for (Var name : names) {
             if (!selectedNames.contains(name)) {
-                throw new IllegalArgumentException(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(name));
+                throw GraqlQueryException.varNotInQuery(name);
             }
         }
 
         if (names.isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessage.SELECT_NONE_SELECTED.getMessage());
+            throw GraqlQueryException.noSelectedVars();
         }
 
         this.names = names;

@@ -20,12 +20,13 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graphs.AdmissionsGraph;
 import ai.grakn.graphs.CWGraph;
 import ai.grakn.graphs.GeoGraph;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -33,16 +34,16 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.SNBGraph;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
@@ -56,7 +57,6 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.subFilter;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -67,36 +67,36 @@ import static org.junit.Assume.assumeTrue;
 public class AtomicQueryTest {
 
     @ClassRule
-    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(usingTinker());
+    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql").assumeTrue(usingTinker());
+    public static final GraphContext ancestorGraph = GraphContext.preLoad("src/test/graql/ancestor-friend-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext unificationWithTypesSet = GraphContext.preLoad("unificationWithTypesTest.gql").assumeTrue(usingTinker());
+    public static final GraphContext unificationWithTypesSet = GraphContext.preLoad("src/test/graql/unificationWithTypesTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
     public static void setUpClass() {
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     @Test
     public void testWhenConstructingNonAtomicQuery_ExceptionIsThrown() {
         String patternString = "{$x isa person;$y isa product;($x, $y) isa recommendation;($y, $t) isa typing;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, snbGraph.graph());
-        exception.expect(IllegalStateException.class);
+        exception.expect(GraqlQueryException.class);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, snbGraph.graph());
     }
 
@@ -136,8 +136,8 @@ public class AtomicQueryTest {
 
         answers.add(new QueryAnswer(
                 ImmutableMap.of(
-                        Var.of("x"), getConcept("Bob"),
-                        Var.of("y"), getConcept("Colour of Magic")))
+                        Graql.var("x"), getConcept("Bob"),
+                        Graql.var("y"), getConcept("Colour of Magic")))
         );
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
 
@@ -204,7 +204,7 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern, graph);
         Unifier unifier = childQuery.getUnifier(parentQuery);
-        assertTrue(Sets.intersection(unifier.keySet(), Sets.newHashSet(Var.of("x"), Var.of("y"))).isEmpty());
+        assertTrue(Sets.intersection(unifier.keySet(), Sets.newHashSet(Graql.var("x"), Graql.var("y"))).isEmpty());
     }
 
     @Test
@@ -218,8 +218,8 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
         Unifier unifier = childQuery.getUnifier(parentQuery);
         Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
-                Var.of("y1"), Var.of("x1"),
-                Var.of("y2"), Var.of("x2")
+                Graql.var("y1"), Graql.var("x1"),
+                Graql.var("y2"), Graql.var("x2")
         ));
         assertTrue(unifier.containsAll(correctUnifier));
     }
@@ -235,8 +235,8 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
         Unifier unifier = childQuery.getUnifier(parentQuery);
         Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
-                Var.of("y1"), Var.of("x1"),
-                Var.of("y2"), Var.of("x2")
+                Graql.var("y1"), Graql.var("x1"),
+                Graql.var("y2"), Graql.var("x2")
         ));
         assertTrue(unifier.containsAll(correctUnifier));
     }
@@ -256,9 +256,9 @@ public class AtomicQueryTest {
         Unifier unifier = childQuery.getUnifier(parentQuery);
         Unifier unifier2 = childQuery2.getUnifier(parentQuery);
         Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
-                Var.of("y1"), Var.of("x1"),
-                Var.of("y2"), Var.of("x2"),
-                Var.of("y3"), Var.of("x3")
+                Graql.var("y1"), Graql.var("x1"),
+                Graql.var("y2"), Graql.var("x2"),
+                Graql.var("y3"), Graql.var("x3")
         ));
         assertTrue(unifier.containsAll(correctUnifier));
         assertTrue(unifier2.containsAll(correctUnifier));
@@ -279,9 +279,9 @@ public class AtomicQueryTest {
         Unifier unifier = childQuery.getUnifier(parentQuery);
         Unifier unifier2 = childQuery2.getUnifier(parentQuery);
         Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
-                Var.of("y1"), Var.of("x1"),
-                Var.of("y2"), Var.of("x2"),
-                Var.of("y3"), Var.of("x3")
+                Graql.var("y1"), Graql.var("x1"),
+                Graql.var("y2"), Graql.var("x2"),
+                Graql.var("y3"), Graql.var("x3")
         ));
         assertTrue(unifier.containsAll(correctUnifier));
         assertTrue(unifier2.containsAll(correctUnifier));
@@ -302,9 +302,9 @@ public class AtomicQueryTest {
         Unifier unifier = childQuery.getUnifier(parentQuery);
         Unifier unifier2 = childQuery2.getUnifier(parentQuery);
         Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
-                Var.of("y1"), Var.of("x1"),
-                Var.of("y2"), Var.of("x2"),
-                Var.of("y3"), Var.of("x3")
+                Graql.var("y1"), Graql.var("x1"),
+                Graql.var("y2"), Graql.var("x2"),
+                Graql.var("y3"), Graql.var("x3")
         ));
         assertTrue(unifier.containsAll(correctUnifier));
         assertTrue(unifier2.containsAll(correctUnifier));

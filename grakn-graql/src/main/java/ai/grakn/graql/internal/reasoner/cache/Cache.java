@@ -47,11 +47,8 @@ import java.util.stream.Stream;
  */
 public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>{
 
-    protected final boolean explanation;
     protected final Map<Q, Pair<Q, T>> cache = new HashMap<>();
 
-    public Cache(){ this.explanation = false;}
-    public Cache(boolean explanation){ this.explanation = explanation;}
     public boolean contains(Q query){ return cache.containsKey(query);}
     public Set<Q> getQueries(){ return cache.keySet();}
 

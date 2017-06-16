@@ -28,7 +28,7 @@ import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 
-public class MatrixGraph extends TestGraph{
+public class MatrixGraph extends TestGraph {
 
     private final static TypeLabel key = TypeLabel.of("index");
     private final static String gqlFile = "matrix-test.gql";

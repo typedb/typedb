@@ -93,7 +93,7 @@ public abstract class Atom extends AtomicBase {
      * compute base resolution priority of this atom
      * @return priority value
      */
-    public int computePriority(){
+    private int computePriority(){
         return computePriority(getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet()));
     }
 
@@ -197,9 +197,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return value variable name
      */
-    public Var getValueVariable() {
-        throw new IllegalArgumentException("getValueVariable called on Atom object " + getPattern());
-    }
+    public abstract Var getValueVariable();
 
     /**
      * @return set of predicates relevant to this atom

@@ -21,6 +21,7 @@ package ai.grakn.test.graql.reasoner.inference;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
+import ai.grakn.test.GraknTestSetup;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,16 +31,14 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-import static ai.grakn.test.GraknTestEnv.*;
-
 public class WineInferenceTest {
 
     @Rule
-    public final GraphContext wineGraph = GraphContext.preLoad("wines-test.gql", "wines-rules.gql");
+    public final GraphContext wineGraph = GraphContext.preLoad("src/test/graql/wines-test.gql", "src/test/graql/wines-rules.gql");
 
     @BeforeClass
     public static void setUpClass() {
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     @Test

@@ -31,7 +31,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class AdmissionsGraph extends TestGraph{
+public class AdmissionsGraph extends TestGraph {
 
     private static ResourceType<String> key;
 

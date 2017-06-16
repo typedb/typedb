@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
@@ -28,6 +29,7 @@ import ai.grakn.graql.internal.reasoner.explanation.Explanation;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -97,7 +99,7 @@ public class QueryAnswer implements Answer {
 
     @Override
     public Concept get(String var) {
-        return map.get(Var.of(var));
+        return map.get(Graql.var(var));
     }
 
     @Override

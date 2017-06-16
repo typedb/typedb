@@ -18,11 +18,13 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import com.google.common.collect.ImmutableList;
-import java.util.Collections;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.Collections;
 
 import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -38,7 +40,7 @@ public class IntMacroTest {
 
     @Test
     public void applyIntMacroToNoArguments_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         intMacro.apply(Collections.emptyList());
@@ -46,7 +48,7 @@ public class IntMacroTest {
 
     @Test
     public void applyIntMacroToMoreThanOneArgument_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         intMacro.apply(ImmutableList.of("1.0", "2.0"));
@@ -59,7 +61,7 @@ public class IntMacroTest {
 
     @Test
     public void applyIntMacroToInvalidValue_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("is not an integer"));
 
         intMacro.apply(ImmutableList.of("invalid"));
@@ -72,7 +74,7 @@ public class IntMacroTest {
 
     @Test
     public void applyIntMacroToDoubleValue_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("is not an integer"));
 
         intMacro.apply(ImmutableList.of("15.0"));
@@ -80,7 +82,7 @@ public class IntMacroTest {
 
     @Test
     public void applyIntMacroToIntValueWithUnderscores_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("is not an integer"));
 
         intMacro.apply(ImmutableList.of("15_000"));

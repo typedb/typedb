@@ -29,7 +29,7 @@ import java.util.function.Consumer;
 
 import static com.google.common.math.IntMath.pow;
 
-public class PathGraphSymmetric extends TestGraph{
+public class PathGraphSymmetric extends TestGraph {
 
     private final static TypeLabel key = TypeLabel.of("index");
     private final static String gqlFile = "path-test-symmetric.gql";

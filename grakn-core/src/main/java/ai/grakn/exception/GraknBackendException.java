@@ -70,8 +70,8 @@ public class GraknBackendException extends GraknException {
     /**
      * Thrown when the task state storage cannot be accessed.
      */
-    public static GraknBackendException stateStorage(String error){
-        return new GraknBackendException(STATE_STORAGE_ERROR.getMessage() + error);
+    public static GraknBackendException stateStorage(){
+        return new GraknBackendException(STATE_STORAGE_ERROR.getMessage());
     }
 
     /**

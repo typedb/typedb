@@ -29,6 +29,8 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -39,6 +41,7 @@ import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import org.junit.Before;
@@ -55,8 +58,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestEnv.usingOrientDB;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -78,12 +79,13 @@ public class GraqlTest {
     private String relationId24;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startInMemoryServer();
+    // TODO: Don't set port once bug #15130 is fixed
+    public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
 
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
-        assumeFalse(usingOrientDB());
+        assumeFalse(GraknTestSetup.usingOrientDB());
 
         factory = context.factoryWithNewKeyspace();
     }
@@ -102,7 +104,7 @@ public class GraqlTest {
     @Test
     public void testDegrees() throws Exception {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         addOntologyAndEntities();
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
@@ -126,7 +128,7 @@ public class GraqlTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = GraqlQueryException.class)
     public void testInvalidIdWithAnalytics() {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum of thing;").execute();
@@ -136,7 +138,7 @@ public class GraqlTest {
     @Test
     public void testStatisticsMethods() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             TypeLabel resourceTypeId = TypeLabel.of("my-resource");
@@ -185,7 +187,7 @@ public class GraqlTest {
     @Test
     public void testConnectedComponents() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             Map<String, Long> sizeMap =
@@ -200,7 +202,7 @@ public class GraqlTest {
     @Test
     public void testPath() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
 
         addOntologyAndEntities();
 
@@ -219,7 +221,7 @@ public class GraqlTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = GraqlQueryException.class)
     public void testNonResourceTypeAsSubgraphForAnalytics() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.putEntityType(thing);
@@ -227,11 +229,11 @@ public class GraqlTest {
         }
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            graph.graql().parse("compute sum in thing;").execute();
+            graph.graql().parse("compute sum of thing;").execute();
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = GraqlSyntaxException.class)
     public void testErrorWhenNoSubgrapForAnalytics() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum;").execute();
@@ -245,7 +247,7 @@ public class GraqlTest {
     @Test
     public void testAnalyticsDoesNotCommitByMistake() throws InvalidGraphException {
         // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        assumeFalse(GraknTestSetup.usingTinker());
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.putResourceType("number", ResourceType.DataType.LONG);
             graph.commit();

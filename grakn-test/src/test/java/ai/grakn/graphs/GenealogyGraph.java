@@ -23,7 +23,7 @@ import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 
-public class GenealogyGraph extends TestGraph{
+public class GenealogyGraph extends TestGraph {
 
     final private static String ontologyFile = "genealogy/ontology.gql";
     final private static String dataFile = "genealogy/data.gql";

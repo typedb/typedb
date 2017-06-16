@@ -40,8 +40,8 @@ public class InsertQueryImplTest {
     private final Optional<MatchQueryAdmin> match1 = Optional.of(Graql.match(var("x").isa("movie")).admin());
     private final Optional<MatchQueryAdmin> match2 = Optional.of(Graql.match(var("y").isa("movie")).admin());
 
-    private final ImmutableCollection<VarPatternAdmin> vars1 = ImmutableSet.of(var("x").admin());
-    private final ImmutableCollection<VarPatternAdmin> vars2 = ImmutableSet.of(var("y").admin());
+    private final ImmutableCollection<VarPatternAdmin> vars1 = ImmutableSet.of(var("x").pattern().admin());
+    private final ImmutableCollection<VarPatternAdmin> vars2 = ImmutableSet.of(var("y").pattern().admin());
 
     @Test
     public void insertQueriesWithTheSameVarsAndMatchQueryAreEqual() {

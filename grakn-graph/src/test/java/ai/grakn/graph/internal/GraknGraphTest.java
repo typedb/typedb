@@ -4,7 +4,6 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -30,7 +29,6 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -146,18 +144,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void whenBuildingAConceptFromAVertex_ReturnConcept(){
         EntityTypeImpl et = (EntityTypeImpl) graknGraph.putEntityType("Sample Entity Type");
-        assertEquals(et, graknGraph.admin().buildConcept(et.getVertex()));
-    }
-
-    @Test
-    public void whenExecutingGraqlTraversalFromGraph_ReturnExpectedResults(){
-        EntityType type = graknGraph.putEntityType("Concept Type");
-        Entity entity = type.addEntity();
-
-        Collection<Concept> results = graknGraph.graql().match(var("x").isa(type.getLabel().getValue())).
-                execute().iterator().next().values();
-
-        assertThat(results, containsInAnyOrder(entity));
+        assertEquals(et, graknGraph.factory().buildConcept(et.vertex()));
     }
 
     @Test
@@ -360,6 +347,7 @@ public class GraknGraphTest extends GraphTestBase {
         failAtOpeningGraph(session, GraknTxType.WRITE, keyspace);
         failAtOpeningGraph(session, GraknTxType.READ, keyspace);
     }
+
     private void failAtOpeningGraph(GraknSession session, GraknTxType txType, String keyspace){
         Exception exception = null;
         try{
@@ -376,7 +364,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void whenShardingSuperNode_EnsureNewInstancesGoToNewShard(){
         EntityTypeImpl entityType = (EntityTypeImpl) graknGraph.putEntityType("The Special Type");
-        EntityType s1 = entityType.currentShard();
+        Shard s1 = entityType.currentShard();
 
         //Add 3 instances to first shard
         Entity s1_e1 = entityType.addEntity();
@@ -384,7 +372,7 @@ public class GraknGraphTest extends GraphTestBase {
         Entity s1_e3 = entityType.addEntity();
         graknGraph.admin().shard(entityType.getId());
 
-        EntityType s2 = entityType.currentShard();
+        Shard s2 = entityType.currentShard();
 
         //Add 5 instances to second shard
         Entity s2_e1 = entityType.addEntity();
@@ -394,7 +382,7 @@ public class GraknGraphTest extends GraphTestBase {
         Entity s2_e5 = entityType.addEntity();
 
         graknGraph.admin().shard(entityType.getId());
-        EntityType s3 = entityType.currentShard();
+        Shard s3 = entityType.currentShard();
 
         //Add 2 instances to 3rd shard
         Entity s3_e1 = entityType.addEntity();
@@ -404,121 +392,8 @@ public class GraknGraphTest extends GraphTestBase {
         assertThat(entityType.shards(), containsInAnyOrder(s1, s2, s3));
 
         //Check shards have correct instances
-        assertThat(s1.instances(), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
-        assertThat(s2.instances(), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
-        assertThat(s3.instances(), containsInAnyOrder(s3_e1, s3_e2));
-    }
-
-    @Test
-    public void checkComplexSampleOntologyCanLoad() throws InvalidGraphException {
-        graknGraph.graql().parse("insert\n" +
-                "user-interaction sub relation is-abstract;\n" +
-                "qa sub user-interaction\n" +
-                "    has helpful-votes\n" +
-                "    has unhelpful-votes\n" +
-                "    relates asked-question\n" +
-                "    relates given-answer\n" +
-                "    relates item;\n" +
-                "product-review sub user-interaction\n" +
-                "    has rating\n" +
-                "    relates reviewer\n" +
-                "    relates feedback\n" +
-                "    relates item;\n" +
-                "comment sub entity\n" +
-                "    has text\n" +
-                "    has time;\n" +
-                "time sub resource datatype long;\n" +
-                "question sub comment\n" +
-                "    plays asked-question; \n" +
-                "yes-no sub question;\n" +
-                "open sub question;\n" +
-                "answer sub comment\n" +
-                "    plays given-answer\n" +
-                "    has answer-type;\n" +
-                "answer-type sub resource datatype string;\n" +
-                "review sub comment\n" +
-                "    plays feedback\n" +
-                "    has summary;\n" +
-                "summary sub text;\n" +
-                "text sub resource datatype string;\n" +
-                "rating sub resource datatype double;\n" +
-                "helpful-votes sub resource datatype long;\n" +
-                "unhelpful-votes sub resource datatype long;\n" +
-                "ID sub resource is-abstract datatype string;\n" +
-                "product sub entity\n" +
-                "    has asin\n" +
-                "    has price\n" +
-                "    has image-url\n" +
-                "    has brand\n" +
-                "    has name\n" +
-                "    has text\n" +
-                "    plays item\n" +
-                "    plays recommended;\n" +
-                "asin sub ID;\n" +
-                "image-url sub resource datatype string;\n" +
-                "brand sub name;\n" +
-                "price sub resource datatype double;\n" +
-                "category sub entity\n" +
-                "    has name\n" +
-                "    plays subcategory\n" +
-                "    plays supercategory\n" +
-                "    plays 'label'\n" +
-                "    plays item\n" +
-                "    plays recommended;\n" +
-                "name sub resource datatype string;\n" +
-                "hierarchy sub relation\n" +
-                "    relates subcategory\n" +
-                "    relates supercategory;\n" +
-                "category-assignment sub relation\n" +
-                "    has rank\n" +
-                "    relates item #product\n" +
-                "    relates 'label'; #category \n" +
-                "rank sub resource datatype long;\n" +
-                "user sub entity\n" +
-                "    has uid\n" +
-                "    has username\n" +
-                "    plays reviewer\n" +
-                "    plays buyer;\n" +
-                "uid sub ID;\n" +
-                "username sub name;\n" +
-                "completed-recommendation sub relation\n" +
-                "    relates successful-recommendation\n" +
-                "    relates buyer;\n" +
-                "implied-recommendation sub relation\n" +
-                "    relates category-recommendation\n" +
-                "    relates product-recommendation;\n" +
-                "recommendation sub relation is-abstract\n" +
-                "    plays successful-recommendation\n" +
-                "    plays product-recommendation;\n" +
-                "co-categories sub relation\n" +
-                "    plays category-recommendation\n" +
-                "    relates item\n" +
-                "    relates recommended;\n" +
-                "also-viewed sub recommendation\n" +
-                "    relates item\n" +
-                "    relates recommended;\n" +
-                "also-bought sub recommendation\n" +
-                "    relates item\n" +
-                "    relates recommended;\n" +
-                "bought-together sub recommendation\n" +
-                "    relates item\n" +
-                "    relates recommended;\n" +
-                "transaction sub relation\n" +
-                "    relates buyer\n" +
-                "    relates item;\n" +
-                "asked-question sub role;\n" +
-                "given-answer sub role;\n" +
-                "item sub role;\n" +
-                "feedback sub role;\n" +
-                "reviewer sub role;\n" +
-                "buyer sub role;\n" +
-                "recommended sub role;\n" +
-                "subcategory sub role;\n" +
-                "supercategory sub role;\n" +
-                "'label' sub role;\n" +
-                "successful-recommendation sub role;\n" +
-                "category-recommendation sub role;\n" +
-                "product-recommendation sub role;").execute();
-        graknGraph.commit();
+        assertThat(s1.links().collect(Collectors.toSet()), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
+        assertThat(s2.links().collect(Collectors.toSet()), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
+        assertThat(s3.links().collect(Collectors.toSet()), containsInAnyOrder(s3_e1, s3_e2));
     }
 }
