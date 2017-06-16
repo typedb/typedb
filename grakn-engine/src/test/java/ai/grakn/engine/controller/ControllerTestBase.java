@@ -1,5 +1,8 @@
 package ai.grakn.engine.controller;
 
+import java.util.ArrayList;
+
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import com.jayway.restassured.RestAssured;
@@ -26,5 +29,24 @@ public class ControllerTestBase {
     @BeforeClass
     public static void ensureEngineRunning() {
         EngineTestHelper.engine();
+    }
+    
+    protected static ArrayList<Runnable> cleanupOperations = new ArrayList<Runnable>();
+    
+    /**
+     * Add some operation do perform at the end of the test class execution to cleanup
+     * state before other test classes are run.
+     * @param op
+     */
+    protected static void cleanup(Runnable op) {
+        cleanupOperations.add(op);
+    }
+    
+    /**
+     * Execute all cleanup operations added by individual tests.
+     */
+    @AfterClass
+    public static void cleanup() {
+        cleanupOperations.forEach(r -> r.run() );
     }
 }

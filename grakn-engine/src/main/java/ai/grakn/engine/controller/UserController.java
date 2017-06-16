@@ -56,7 +56,7 @@ public class UserController {
         spark.get(REST.WebPath.ALL_USERS, this::findUsers);
         spark.get(REST.WebPath.ONE_USER + "/:user-name", this::getUser);
         spark.post(REST.WebPath.ONE_USER, this::createUser);
-        spark.delete(REST.WebPath.ONE_USER, this::removeUser);
+        spark.delete(REST.WebPath.ONE_USER + "/:user-name", this::removeUser);
         spark.put(REST.WebPath.ONE_USER, this::updateUser);
     }
 
@@ -111,7 +111,7 @@ public class UserController {
     @ApiOperation(value = "Delete a user.")
     @ApiImplicitParam(name = "user-name", value = "Username of user.", required = true, dataType = "string", paramType = "path")
     private boolean removeUser(Request request, Response response) {
-        return users.removeUser(request.queryParams(UsersHandler.USER_NAME));
+        return users.removeUser(request.params(UsersHandler.USER_NAME));
     }
     
     @PUT

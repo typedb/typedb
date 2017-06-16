@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller;
 
 import static com.jayway.restassured.RestAssured.get;
+import static com.jayway.restassured.RestAssured.when;
 import static com.jayway.restassured.RestAssured.given;
 
 import org.junit.Assert;
@@ -41,5 +42,7 @@ public class UserControllerTest extends ControllerTestBase {
 
         //Check he is there
         Assert.assertEquals(userName, get("/user/one/" + userName).jsonPath().getString("user-name"));
+        
+        cleanup(() -> when().delete("/user/one/" + userName).then().statusCode(200));
     }
 }

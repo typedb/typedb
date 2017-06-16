@@ -34,12 +34,8 @@ public class AuthControllerTest extends ControllerTestBase {
     public void newSessionWithNonExistingUser() {
         Json body = Json.object("username", "navarro", "password", "ciaone");
 
-        Response dataResponse = given().
-                contentType("application/json").
-                body(body.toString()).when().
-                post("/auth/session/");
-
-        dataResponse.then().assertThat().statusCode(401);
+        Response dataResponse = given().body(body.toString()).post("/auth/session/");
+        dataResponse.then().statusCode(401);
     }
 
     @Test
@@ -50,11 +46,8 @@ public class AuthControllerTest extends ControllerTestBase {
 
         Json body = Json.object("username", "mark", "password", "ciao");
 
-        Response dataResponseWrongUser = given().
-                contentType("application/json").
-                body(body.toString()).when().
-                post("/auth/session/");
-        dataResponseWrongUser.then().assertThat().statusCode(401);
+        Response dataResponseWrongUser = given().body(body.toString()).post("/auth/session/");
+        dataResponseWrongUser.then().statusCode(401);
     }
 
     @Test
@@ -65,11 +58,8 @@ public class AuthControllerTest extends ControllerTestBase {
 
         Json body = Json.object("username", "marco", "password", "hello");
 
-        Response dataResponseWrongPass = given().
-                contentType("application/json").
-                body(body.toString()).when().
-                post("/auth/session/");
-        dataResponseWrongPass.then().assertThat().statusCode(401);
+        Response dataResponseWrongPass = given().body(body.toString()).post("/auth/session/");
+        dataResponseWrongPass.then().statusCode(401);
     }
 
     @Ignore
@@ -83,10 +73,7 @@ public class AuthControllerTest extends ControllerTestBase {
         Json body = Json.object("username", "giulio", "password", "ciao");
 
         //Ask for a new Token
-        Response dataResponse = given().
-                        contentType("application/json").
-                        body(body.toString()).when().
-                        post("/auth/session/");
+        Response dataResponse = given().body(body.toString()).post("/auth/session/");
 
         dataResponse.then().assertThat().statusCode(200);
         String token = dataResponse.asString();
@@ -96,18 +83,15 @@ public class AuthControllerTest extends ControllerTestBase {
         //Try to execute query WRONG token in request
         Response dataResponseNonAuthenticated = given().
                 header("Authorization", "Bearer aaaaaaaaaa.bbbbbbbbbbb.cccccccccccc").
-                contentType("application/json").
                 body(body.toString()).when().
                 get("/graph/ontology");
-        dataResponseNonAuthenticated.then().assertThat().statusCode(401);
+        dataResponseNonAuthenticated.then().statusCode(401);
 
         //Try to execute query with token in request
         Response dataResponseAuthenticated = given().
                 header("Authorization", "Bearer " + token).
-                contentType("application/json").
-                body(body.toString()).when().
-                get("/graph/ontology");
-        dataResponseAuthenticated.then().assertThat().statusCode(200);
+                body(body.toString()).get("/graph/ontology");
+        dataResponseAuthenticated.then().statusCode(200);
 
     }
 
@@ -118,10 +102,8 @@ public class AuthControllerTest extends ControllerTestBase {
 
         //Try to execute query without token in request, malformed request
         Response dataResponseMalformed = given().
-                contentType("application/json").
-                body(body.toString()).when().
-                get("/graph/ontology");
-        dataResponseMalformed.then().assertThat().statusCode(400);
+                body(body.toString()).get("/graph/ontology");
+        dataResponseMalformed.then().statusCode(400);
     }
 
 }
