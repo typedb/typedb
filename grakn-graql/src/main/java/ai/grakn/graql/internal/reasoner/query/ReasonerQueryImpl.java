@@ -254,38 +254,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return queries;
     }
 
-    LinkedList<ReasonerQueryImpl> getOldResolutionPlan(){
-        LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
-
-        LinkedList<Atom> atoms = selectAtoms().stream()
-                .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
-                .collect(Collectors.toCollection(LinkedList::new));
-
-        Atom top = atoms.getFirst();
-
-        Set<Var> subbedVars = getIdPredicates().stream().map(IdPredicate::getVarName).collect(Collectors.toSet());
-        while (!atoms.isEmpty()) {
-
-            subbedVars.addAll(top.getVarNames());
-            queries.add(new ReasonerAtomicQuery(top));
-            atoms.remove(top);
-
-            //look at neighbours up to two hops away
-            top = top.getNeighbours().filter(atoms::contains)
-                    .flatMap(at -> Stream.concat(Stream.of(at), at.getNeighbours().filter(atoms::contains)))
-                    .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                    .findFirst().orElse(null);
-
-            //top is disconnected atom
-            if (top == null) {
-                top = atoms.stream()
-                        .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                        .findFirst().orElse(null);
-            }
-        }
-        return queries;
-    }
-
     /**
      * @return set of id predicates contained in this query
      */
