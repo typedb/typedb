@@ -47,6 +47,19 @@ public class ControllerTestBase {
      */
     @AfterClass
     public static void cleanup() {
-        cleanupOperations.forEach(r -> r.run() );
+        final ArrayList<Throwable> cleanupFailures = new ArrayList<Throwable>();
+        cleanupOperations.forEach(r -> {
+            try {
+                r.run(); 
+            }
+            catch (Throwable t) {
+                cleanupFailures.add(t);
+            }
+        });
+        cleanupOperations.clear();
+        if (!cleanupFailures.isEmpty()) {
+            cleanupFailures.forEach(t -> t.printStackTrace(System.err) );
+            throw new RuntimeException("There are failures during test cleanup, see stderr for a printout of all of them.");
+        }
     }
 }
