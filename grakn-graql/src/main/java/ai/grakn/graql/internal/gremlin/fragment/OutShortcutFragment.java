@@ -86,8 +86,7 @@ class OutShortcutFragment extends AbstractFragment {
 
     @Override
     public double fragmentCost(double previousCost) {
-        long numRolePlayers = roleTypeLabels.isPresent() ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
-        return previousCost * numRolePlayers;
+        return roleTypeLabels.isPresent() ? COST_ROLE_PLAYERS_PER_ROLE : COST_ROLE_PLAYERS_PER_RELATION;
     }
 
     @Override

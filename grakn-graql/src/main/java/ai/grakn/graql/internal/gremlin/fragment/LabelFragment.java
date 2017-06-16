@@ -49,7 +49,7 @@ class LabelFragment extends AbstractFragment {
 
     @Override
     public double fragmentCost(double previousCost) {
-        return 1;
+        return COST_INDEX;
     }
 
     @Override

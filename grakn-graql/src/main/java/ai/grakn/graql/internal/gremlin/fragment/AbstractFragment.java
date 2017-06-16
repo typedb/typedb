@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -29,21 +30,37 @@ import java.util.Set;
 
 import static ai.grakn.util.CommonUtil.optionalToStream;
 
-abstract class AbstractFragment implements Fragment{
+abstract class AbstractFragment implements Fragment {
 
     // TODO: Find a better way to represent these values (either abstractly, or better estimates)
-    static final long NUM_INSTANCES_PER_TYPE = 100;
-    static final long NUM_INSTANCES_PER_SCOPE = 100;
-    static final long NUM_RELATIONS_PER_CASTING = 10;
-    static final long NUM_SUBTYPES_PER_TYPE = 3;
-    static final long NUM_CASTINGS_PER_INSTANCE = 3;
-    static final long NUM_RELATIONS_PER_INSTANCE = NUM_RELATIONS_PER_CASTING * NUM_CASTINGS_PER_INSTANCE;
-    static final long NUM_SCOPES_PER_INSTANCE = 3;
-    static final long NUM_TYPES_PER_ROLE = 3;
-    static final long NUM_ROLES_PER_TYPE = 3;
-    static final long NUM_ROLE_PLAYERS_PER_RELATION = 2;
-    static final long NUM_ROLE_PLAYERS_PER_ROLE = 1;
-    static final long NUM_RESOURCES_PER_VALUE = 2;
+
+    private static final long NUM_INSTANCES_PER_TYPE = 100;
+    private static final long NUM_INSTANCES_PER_SCOPE = 100;
+    private static final long NUM_SUBTYPES_PER_TYPE = 3;
+    private static final long NUM_RELATIONS_PER_INSTANCE = 30;
+    private static final long NUM_SCOPES_PER_INSTANCE = 3;
+    private static final long NUM_TYPES_PER_ROLE = 3;
+    private static final long NUM_ROLES_PER_TYPE = 3;
+    private static final long NUM_ROLE_PLAYERS_PER_RELATION = 2;
+    private static final long NUM_ROLE_PLAYERS_PER_ROLE = 1;
+    private static final long NUM_RESOURCES_PER_VALUE = 2;
+
+    static final double COST_INSTANCES_PER_TYPE = Math.log1p(NUM_INSTANCES_PER_TYPE);
+    static final double COST_INSTANCES_PER_SCOPE = Math.log1p(NUM_INSTANCES_PER_SCOPE);
+    static final double COST_SUBTYPES_PER_TYPE = Math.log1p(NUM_SUBTYPES_PER_TYPE);
+    static final double COST_RELATIONS_PER_INSTANCE = Math.log1p(NUM_RELATIONS_PER_INSTANCE);
+    static final double COST_SCOPES_PER_INSTANCE = Math.log1p(NUM_SCOPES_PER_INSTANCE);
+    static final double COST_TYPES_PER_ROLE = Math.log1p(NUM_TYPES_PER_ROLE);
+    static final double COST_ROLES_PER_TYPE = Math.log1p(NUM_ROLES_PER_TYPE);
+    static final double COST_ROLE_PLAYERS_PER_RELATION = Math.log1p(NUM_ROLE_PLAYERS_PER_RELATION);
+    static final double COST_ROLE_PLAYERS_PER_ROLE = Math.log1p(NUM_ROLE_PLAYERS_PER_ROLE);
+    static final double COST_RESOURCES_PER_VALUE = Math.log1p(NUM_RESOURCES_PER_VALUE);
+
+    static final double COST_INDEX = 0D;
+    static final double COST_SAME_AS_PREVIOUS = Math.log1p(1);
+    static final double COST_NEQ = Math.log1p(0.5);
+    static final double COST_DATA_TYPE = Math.log1p(1D / ResourceType.DataType.SUPPORTED_TYPES.size());
+    static final double COST_UNSPECIFIC_PREDICATE = Math.log1p(0.5);
 
     private final Var start;
     private final Optional<Var> end;

@@ -42,6 +42,6 @@ class InSubFragment extends AbstractFragment {
 
     @Override
     public double fragmentCost(double previousCost) {
-        return previousCost * NUM_SUBTYPES_PER_TYPE;
+        return COST_SUBTYPES_PER_TYPE;
     }
 }

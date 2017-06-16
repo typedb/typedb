@@ -44,6 +44,6 @@ class InHasScopeFragment extends AbstractFragment {
 
     @Override
     public double fragmentCost(double previousCost) {
-        return previousCost * NUM_SCOPES_PER_INSTANCE;
+        return COST_SCOPES_PER_INSTANCE;
     }
 }

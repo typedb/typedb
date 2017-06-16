@@ -45,6 +45,6 @@ class InIsaFragment extends AbstractFragment {
 
     @Override
     public double fragmentCost(double previousCost) {
-        return previousCost * NUM_INSTANCES_PER_TYPE;
+        return COST_INSTANCES_PER_TYPE;
     }
 }

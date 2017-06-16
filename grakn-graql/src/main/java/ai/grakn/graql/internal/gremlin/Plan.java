@@ -72,7 +72,7 @@ class Plan implements Comparable<Plan> {
             return false;
         }
 
-        double cost = !costs.isEmpty() ? costs.peek() : 1;
+        double cost = !costs.isEmpty() ? costs.peek() : 0D;
 
         double newCost = fragmentCost(newFragment, cost, names);
         totalCost += newCost;

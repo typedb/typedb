@@ -105,7 +105,7 @@ public class GreedyTraversalPlan {
     private static List<Fragment> semiOptimalConjunction(ConjunctionQuery query, long maxTraversalAttempts) {
         Plan initialPlan = Plan.base();
 
-        Map<Integer, Set<String>> varNameSetCluster = new HashMap<>();
+        Map<Integer, Set<String>> varNameSetMap = new HashMap<>();
         final int[] index = {0};
         query.getEquivalentFragmentSets().stream().flatMap(EquivalentFragmentSet::stream).forEach(fragment -> {
 
@@ -114,7 +114,7 @@ public class GreedyTraversalPlan {
             Set<String> fragmentVarNameSet = fragmentVarsSet.stream().map(Var::getValue).collect(Collectors.toSet());
 
             List<Integer> setsWithVarInCommon = new ArrayList<>();
-            varNameSetCluster.forEach((setIndex, varNameSet) -> {
+            varNameSetMap.forEach((setIndex, varNameSet) -> {
                 if (!Collections.disjoint(varNameSet, fragmentVarNameSet)) {
                     setsWithVarInCommon.add(setIndex);
                 }
@@ -122,21 +122,21 @@ public class GreedyTraversalPlan {
 
             if (setsWithVarInCommon.isEmpty()) {
                 index[0] += 1;
-                varNameSetCluster.put(index[0], fragmentVarNameSet);
+                varNameSetMap.put(index[0], fragmentVarNameSet);
             } else {
                 Iterator<Integer> iterator = setsWithVarInCommon.iterator();
                 Integer firstSet = iterator.next();
-                varNameSetCluster.get(firstSet).addAll(fragmentVarNameSet);
+                varNameSetMap.get(firstSet).addAll(fragmentVarNameSet);
                 while (iterator.hasNext()) {
                     Integer nextSet = iterator.next();
-                    varNameSetCluster.get(firstSet).addAll(varNameSetCluster.get(nextSet));
-                    varNameSetCluster.remove(nextSet);
+                    varNameSetMap.get(firstSet).addAll(varNameSetMap.get(nextSet));
+                    varNameSetMap.remove(nextSet);
                 }
             }
         });
-        if (varNameSetCluster.size() != 1) {
-            System.out.println("varNameSetCluster = " + varNameSetCluster.size());
-            varNameSetCluster.entrySet().forEach(
+        if (varNameSetMap.size() != 1) {
+            System.out.println("varNameSetMap = " + varNameSetMap.size());
+            varNameSetMap.entrySet().forEach(
                     SetEntry -> System.out.println("     SetEntry : " + SetEntry));
         }
 
@@ -162,6 +162,9 @@ public class GreedyTraversalPlan {
             numTraversalAttempts *= numFragments;
             numFragments -= 1;
         }
+
+        System.out.println("depth = " + depth);
+        depth = 1;
 
         Plan plan = initialPlan.copy();
 

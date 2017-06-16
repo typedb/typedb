@@ -55,9 +55,9 @@ public class GraqlTraversal {
     //             V            V
     private final ImmutableSet<ImmutableList<Fragment>> fragments;
 
-    // TODO: Find a better way to represent these values
     // Just a pretend big number
     private static final long NUM_VERTICES_ESTIMATE = 10_000;
+    private static final double COST_NEW_TRAVERSAL = Math.log1p(NUM_VERTICES_ESTIMATE);
 
     private GraqlTraversal(Set<? extends List<Fragment>> fragments) {
         this.fragments = fragments.stream().map(ImmutableList::copyOf).collect(toImmutableSet());
@@ -170,7 +170,7 @@ public class GraqlTraversal {
     static double fragmentListCost(List<Fragment> fragments) {
         Set<Var> names = new HashSet<>();
 
-        double cost = 1;
+        double cost = 0;
         double listCost = 0;
 
         for (Fragment fragment : fragments) {
@@ -187,7 +187,7 @@ public class GraqlTraversal {
             return fragment.fragmentCost(previousCost);
         } else {
             // Restart traversal, meaning we are navigating from all vertices
-            return fragment.fragmentCost(NUM_VERTICES_ESTIMATE) * previousCost;
+            return COST_NEW_TRAVERSAL;
         }
     }
 
