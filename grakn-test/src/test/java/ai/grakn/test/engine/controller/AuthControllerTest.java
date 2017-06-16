@@ -1,34 +1,45 @@
 package ai.grakn.test.engine.controller;
 
+import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.engine.controller.AuthController;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.JWTHandler;
-import ai.grakn.test.GraphContext;
 import ai.grakn.test.SparkContext;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+//TODO: when unignoring this test the mocks need to be property integrated
 @Ignore
 public class AuthControllerTest{
-
+    private static GraknGraph mockGraph;
+    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
     private static final JWTHandler jwtHandler = JWTHandler.create("secret token");
 
     private UsersHandler usersHandler;
 
-    @ClassRule
-    public static final GraphContext graph = GraphContext.empty();
+    @Before
+    public void setupMock(){
+        mockGraph = mock(GraknGraph.class, Mockito.RETURNS_DEEP_STUBS);
+        when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
+        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
+    }
 
     @Rule
     public final SparkContext ctx = SparkContext.withControllers(spark -> {
-        usersHandler = UsersHandler.create("top secret", graph.factory());
+        usersHandler = UsersHandler.create("top secret", mockFactory);
         new AuthController(spark, true, jwtHandler, usersHandler);
     });
 

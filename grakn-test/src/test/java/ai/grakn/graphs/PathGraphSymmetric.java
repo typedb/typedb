@@ -23,12 +23,13 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 
 import static com.google.common.math.IntMath.pow;
 
-public class PathGraphSymmetric extends TestGraph{
+public class PathGraphSymmetric extends TestGraph {
 
     private final static TypeLabel key = TypeLabel.of("index");
     private final static String gqlFile = "path-test-symmetric.gql";

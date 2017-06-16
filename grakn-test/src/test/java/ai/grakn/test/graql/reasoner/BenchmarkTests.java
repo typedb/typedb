@@ -32,7 +32,6 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.test.GraphContext;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

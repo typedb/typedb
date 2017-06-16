@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.test.graphs.TestGraph;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,7 +31,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class AdmissionsGraph extends TestGraph{
+public class AdmissionsGraph extends TestGraph {
 
     private static ResourceType<String> key;
 

@@ -38,7 +38,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraphContext;
 
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
@@ -140,8 +140,7 @@ public class LazyTest {
         Stream<Answer> join = join(
                 query.getMatchQuery().admin().stream(),
                 query2.getMatchQuery().admin().stream(),
-                ImmutableSet.copyOf(joinVars),
-                true
+                ImmutableSet.copyOf(joinVars)
                 )
                 .map(a -> a.filterVars(rule.getHead().getVarNames()))
                 .distinct()
@@ -155,8 +154,7 @@ public class LazyTest {
         List<Answer> collect = QueryAnswerStream.join(
                 stream,
                 stream2,
-                ImmutableSet.copyOf(joinVars),
-                true)
+                ImmutableSet.copyOf(joinVars))
                 .collect(Collectors.toList());
         assertEquals(collect.size(), 40);
     }

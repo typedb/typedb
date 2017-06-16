@@ -37,7 +37,6 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -51,7 +50,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-//import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.StringUtil.valueToString;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
@@ -59,6 +57,8 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.stream.Collectors.joining;
+
+//import static ai.grakn.graql.Graql.var;
 
 /**
  * Generator to create random {@link GraknGraph}s.
@@ -71,7 +71,6 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     private static StringBuilder graphSummary;
 
     private GraknGraph graph;
-    private QueryBuilder graql;
     private Boolean open = null;
 
     public GraknGraphs() {
@@ -115,7 +114,6 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
         // Clear graph before retrieving
         graph = factory.open(GraknTxType.WRITE);
-        graql = graph.graql();
         graph.admin().delete();
         graph = factory.open(GraknTxType.WRITE);
 
@@ -260,11 +258,12 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 ruleType1.superType(ruleType2);
                 summary(ruleType1, "superType", ruleType2);
             },
-            () -> {
+            //TODO: re-enable when grakn-graph can create graql constructs
+            /*() -> {
                 RuleType ruleType = ruleType();
                 Rule rule = ruleType.putRule(graql.parsePattern("$x"), graql.parsePattern("$x"));// TODO: generate more complicated rules
                 summaryAssign(rule, ruleType, "putRule", "var(\"x\")", "var(\"y\")");
-            },
+            },*/
             () -> {
                 Instance instance = instance();
                 Resource resource = resource();
