@@ -95,7 +95,7 @@ public class SystemKeyspace {
      * @param engineUrl the url of engine to get the config from
      * @param properties the properties used to initialise the keyspace
      */
-    static void initialise(String engineUrl, Properties properties){
+    public static void initialise(String engineUrl, Properties properties){
         initialiseFactory(() -> FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties));
     }
 
