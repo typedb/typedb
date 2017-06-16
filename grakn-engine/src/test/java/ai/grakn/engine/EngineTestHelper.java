@@ -17,6 +17,9 @@ public class EngineTestHelper {
     
     private static volatile GraknEngineConfig config = null;
     
+    /**
+     * Create (once only, statically) the GraknEngineConfig as per configuration file and return it.
+     */
     public static synchronized GraknEngineConfig config() {
         if (config != null) {
             return config;
@@ -48,6 +51,9 @@ public class EngineTestHelper {
         server = GraknEngineServer.start(config());        
     }
     
+    /**
+     * Shutdown the engine server.
+     */
     public static synchronized void noEngine() {
         if (server == null) {
             return;

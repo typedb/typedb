@@ -54,8 +54,7 @@ public class UserController {
         this.users = usersHandler;
 
         spark.get(REST.WebPath.ALL_USERS, this::findUsers);
-        //spark.get(REST.WebPath.ONE_USER, this::getUser);
-        spark.get("/user/one/:user-name", this::getUser);
+        spark.get(REST.WebPath.ONE_USER + "/:user-name", this::getUser);
         spark.post(REST.WebPath.ONE_USER, this::createUser);
         spark.delete(REST.WebPath.ONE_USER, this::removeUser);
         spark.put(REST.WebPath.ONE_USER, this::updateUser);

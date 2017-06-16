@@ -20,6 +20,7 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.engine.TaskId;
 import static ai.grakn.engine.TaskStatus.FAILED;
+
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
@@ -29,6 +30,7 @@ import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.test.SparkContext;
+
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
