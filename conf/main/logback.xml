@@ -51,7 +51,7 @@
             <pattern>%date{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${graknLogFileName}-%d{yyyy-MM}.%i.log</fileNamePattern>
+            <fileNamePattern>${graknLogFileName}-%d{yyyy-MM}.%i.log.gz</fileNamePattern>
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
@@ -65,7 +65,7 @@
             <pattern>%date{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${graknPPLogFileName}-%d{yyyy-MM}.%i.log</fileNamePattern>
+            <fileNamePattern>${graknPPLogFileName}-%d{yyyy-MM}.%i.log.gz</fileNamePattern>
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
