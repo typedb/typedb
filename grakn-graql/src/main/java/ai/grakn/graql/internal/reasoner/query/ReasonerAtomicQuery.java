@@ -109,7 +109,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public String toString(){
-        return getAtom().toString();
+        return getAtoms().stream()
+                .filter(Atomic::isAtom)
+                .map(Atomic::toString).collect(Collectors.joining(", "));
     }
 
     @Override
