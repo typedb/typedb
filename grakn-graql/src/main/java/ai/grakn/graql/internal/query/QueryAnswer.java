@@ -178,7 +178,8 @@ public class QueryAnswer implements Answer {
         Answer unified = new QueryAnswer();
         Multimap<Var, Concept> answerMultimap = HashMultimap.create();
 
-        this.entrySet()
+        this.entrySet().stream()
+                .filter(e -> unifier.keySet().contains(e.getKey()))
                 .forEach(e -> {
                     Var var = e.getKey();
                     Collection<Var> uvars = unifier.get(var);
