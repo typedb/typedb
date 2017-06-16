@@ -719,7 +719,7 @@ public class Relation extends TypeAtom {
             getRelationPlayerMappings(parentAtom)
                     .forEach(rpm -> unifier.addMapping(rpm.getKey().getRolePlayer().getVarName(), rpm.getValue().getRolePlayer().getVarName()));
         }
-        return unifier;
+        return unifier.removeTrivialMappings();
     }
 
     @Override

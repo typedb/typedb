@@ -110,10 +110,13 @@ public abstract class BinaryBase extends Atom {
         if (parentAtom.isUserDefinedName()){
             Var childVarName = this.getVarName();
             Var parentVarName = parentAtom.getVarName();
-            unifier.addMapping(childVarName, parentVarName);
+            if (!childVarName.equals(parentVarName)) {
+                unifier.addMapping(childVarName, parentVarName);
+            }
         }
         if (!childValVarName.getValue().isEmpty()
-                && !parentValVarName.getValue().isEmpty()){
+                && !parentValVarName.getValue().isEmpty()
+                && !childValVarName.equals(parentValVarName)) {
             unifier.addMapping(childValVarName, parentValVarName);
         }
         return unifier;
