@@ -24,7 +24,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -57,7 +59,7 @@ public class SystemKeyspaceTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    @After
+    @Before
     public void cleanSystemKeySpaceGraph(){
         try(GraknSession system = Grakn.session(Grakn.IN_MEMORY, SYSTEM_GRAPH_NAME)) {
             try (GraknGraph graph = system.open(GraknTxType.WRITE)) {
@@ -158,51 +160,6 @@ public class SystemKeyspaceTest {
         //Check only 2 graphs have been built
         assertEquals(graphs, systemGraphs);
         assertFalse(SystemKeyspace.containsKeyspace(deletedGraph.getKeyspace()));
-    }
-
-    @Test
-    public void whenInstantiatingSystemGraphInMultipleThreads_InterruptedExceptionIsNotThrown() throws InterruptedException {
-
-        // Dereference the factory in our mocked system keyspace
-        SystemKeyspaceMock.dereference();
-
-        int numberThreads = 100;
-        ExecutorService executorService = Executors.newFixedThreadPool(numberThreads);
-
-        Collection<Callable<Integer>> threads = new ArrayList<>();
-        for(int i = 0; i < numberThreads; i ++){
-            int finalI = i;
-            threads.add(() -> {
-
-                // Implicitly instantiate system keyspace
-                SystemKeyspaceMock.initialise(new TinkerInternalFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, Grakn.IN_MEMORY, TEST_PROPERTIES));
-
-                // Check the system graph exists
-                SystemKeyspaceMock.containsKeyspace(SystemKeyspace.SYSTEM_GRAPH_NAME);
-
-                // Close the mock
-                SystemKeyspaceMock.close();
-
-                return finalI;
-            });
-        }
-
-        try {
-            // Open system graph concurrently
-            Collection<Future<Integer>> futures = executorService.invokeAll(threads);
-            for(Future future:futures){
-                future.get();
-            }
-        } catch (InterruptedException | ExecutionException e) {
-
-            // an exception was thrown, fail the test
-            fail("Exception was thrown instantiating system keyspace " + getFullStackTrace(e));
-
-            throw new RuntimeException(e);
-        } finally {
-            // Dereference the factory in our mocked system keyspace
-            SystemKeyspaceMock.dereference();
-        }
     }
 
     private Set<GraknGraph> buildGraphs(String ... keyspaces){
