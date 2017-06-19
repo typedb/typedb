@@ -149,7 +149,7 @@ public class ResourceDeduplicationMapReduceIT {
     @After
     public void emptyGraph() {
         GraknGraph graph = factory.open(GraknTxType.WRITE);
-        graph.admin().delete(true);
+        graph.admin().delete();
     }
     
     /**

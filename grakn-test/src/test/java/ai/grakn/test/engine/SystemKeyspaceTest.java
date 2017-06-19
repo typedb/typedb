@@ -138,7 +138,7 @@ public class SystemKeyspaceTest {
 
         //Delete a graph entirely
         GraknGraph deletedGraph = graphs.iterator().next();
-        deletedGraph.admin().delete(true);
+        deletedGraph.admin().delete();
         graphs.remove(deletedGraph);
 
         // Get system keyspaces
@@ -161,7 +161,7 @@ public class SystemKeyspaceTest {
 
         //Delete a graph entirely
         GraknGraph deletedGraph = graphs.iterator().next();
-        deletedGraph.admin().delete(true);
+        deletedGraph.admin().delete();
         graphs.remove(deletedGraph);
 
         // Get system keyspaces
