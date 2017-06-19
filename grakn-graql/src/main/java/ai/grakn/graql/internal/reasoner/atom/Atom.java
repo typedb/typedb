@@ -41,7 +41,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.query.aggregate.Aggregates.count;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesCompatible;
 
 /**
