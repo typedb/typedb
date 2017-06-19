@@ -25,7 +25,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.test.graphs.TestGraph;
 
@@ -159,41 +158,40 @@ public class CWGraph extends TestGraph {
         RuleType inferenceRule = graph.admin().getMetaRuleInference();
 
         //R1: "It is a crime for an American to sell weapons to hostile nations"
-        Pattern R1_LHS = Graql.and(
-                graph.graql().parsePatterns("$x isa person;$x has nationality 'American';" +
-                "$y isa weapon;" +
-                "$z isa country;$z has alignment 'hostile';" +
-                "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;"));
+        Pattern R1_LHS = graph.graql().parsePattern("{$x isa person;$x has nationality 'American';" +
+                        "$y isa weapon;" +
+                        "$z isa country;$z has alignment 'hostile';" +
+                        "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;}");
 
-        Pattern R1_RHS = Graql.and(graph.graql().parsePatterns("$x isa criminal;"));
+        Pattern R1_RHS = graph.graql().parsePattern("{$x isa criminal;}");
         inferenceRule.putRule(R1_LHS, R1_RHS);
 
         //R2: "Missiles are a kind of a weapon"
-        Pattern R2_LHS = Graql.and(graph.graql().parsePatterns("$x isa missile;"));
-        Pattern R2_RHS = Graql.and(graph.graql().parsePatterns("$x isa weapon;"));
+        Pattern R2_LHS = graph.graql().parsePattern("{$x isa missile;}");
+        Pattern R2_RHS = graph.graql().parsePattern("{$x isa weapon;}");
         inferenceRule.putRule(R2_LHS, R2_RHS);
 
         //R3: "If a country is an enemy of America then it is hostile"
-        Pattern R3_LHS = Graql.and(
-                graph.graql().parsePatterns("$x isa country;" +
+        Pattern R3_LHS = graph.graql().parsePattern(
+                "{$x isa country;" +
                 "($x, $y) isa is-enemy-of;" +
-                "$y isa country;$y has name 'America';"));
-        Pattern R3_RHS = Graql.and(graph.graql().parsePatterns("$x has alignment 'hostile';"));
+                "$y isa country;$y has name 'America';}");
+        Pattern R3_RHS = graph.graql().parsePattern("{$x has alignment 'hostile';}");
         inferenceRule.putRule(R3_LHS, R3_RHS);
 
         //R4: "If a rocket is self-propelled and guided, it is a missile"
-        Pattern R4_LHS = Graql.and(graph.graql().parsePatterns("$x isa rocket;$x has propulsion 'gsp';"));
-        Pattern R4_RHS = Graql.and(graph.graql().parsePatterns("$x isa missile;"));
+        Pattern R4_LHS = graph.graql().parsePattern("{$x isa rocket;$x has propulsion 'gsp';}");
+        Pattern R4_RHS = graph.graql().parsePattern("{$x isa missile;}");
         inferenceRule.putRule(R4_LHS, R4_RHS);
 
-        Pattern R5_LHS = Graql.and(
-                graph.graql().parsePatterns("$x isa person;" +
+        Pattern R5_LHS = graph.graql().parsePattern(
+                "{$x isa person;" +
                 "$y isa country;" +
                 "$z isa weapon;" +
                 "($x, $y) isa is-paid-by;" +
-                "($y, $z) isa owns;"));
+                "($y, $z) isa owns;}");
 
-        Pattern R5_RHS = Graql.and(graph.graql().parsePatterns("(seller: $x, buyer: $y, transaction-item: $z) isa transaction;"));
+        Pattern R5_RHS = graph.graql().parsePattern("{(seller: $x, buyer: $y, transaction-item: $z) isa transaction;}");
         inferenceRule.putRule(R5_LHS, R5_RHS);
     }
 }
