@@ -55,7 +55,7 @@ public class Migrator {
     private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
     public static final int BATCH_SIZE = 25;
     public static final int ACTIVE_TASKS = 25;
-    public static final boolean RETRY = false;
+    private static final boolean RETRY = false;
 
     private final String uri;
     private final String keyspace;

@@ -68,10 +68,10 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+
 import org.mockito.Mockito;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -117,10 +117,13 @@ public class TasksControllerTest {
     }
 
     @Test
-    @Ignore("Fails randomly when running on travis")
     public void afterSendingTaskWithRunAt_ItIsDelayedInStorage(){
         Instant runAt = now();
-        send(Collections.emptyMap(), defaultParams());
+
+        Map<String, String> defaultParams = defaultParams();
+        defaultParams.put(TASK_RUN_AT_PARAMETER, Long.toString(runAt.toEpochMilli()));
+        send(Collections.emptyMap(), defaultParams);
+
         verify(manager).addTask(argThat(argument -> argument.schedule().runAt().equals(runAt)), any());
     }
 
@@ -411,11 +414,12 @@ public class TasksControllerTest {
     }
 
     private Map<String, String> defaultParams(){
-        return ImmutableMap.of(
-                TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
-                TASK_CREATOR_PARAMETER, this.getClass().getName(),
-                TASK_RUN_AT_PARAMETER, Long.toString(now().toEpochMilli())
-        );
+        Map<String, String> params = new HashMap<>();
+        params.put(TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName());
+        params.put(TASK_CREATOR_PARAMETER, this.getClass().getName());
+        params.put(TASK_RUN_AT_PARAMETER, Long.toString(now().toEpochMilli()));
+
+        return params;
     }
 
     private Response send(){
@@ -423,7 +427,7 @@ public class TasksControllerTest {
     }
 
     private Response send(TaskState.Priority priority){
-        Map<String, String> params = new HashMap<>(defaultParams());
+        Map<String, String> params = defaultParams();
         params.put(TASK_PRIORITY_PARAMETER, priority.name());
         return send(Collections.emptyMap(), params);
     }

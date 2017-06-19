@@ -12,7 +12,21 @@ import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -21,12 +35,26 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static ai.grakn.factory.SystemKeyspace.SYSTEM_GRAPH_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class SystemKeyspaceTest {
+
+    private final static String TEST_CONFIG = "../conf/test/tinker/grakn.properties";
+    private final static Properties TEST_PROPERTIES = new Properties();
+
+    @BeforeClass
+    public static void setupProperties(){
+        try (InputStream in = new FileInputStream(TEST_CONFIG)){
+            TEST_PROPERTIES.load(in);
+        } catch (IOException e) {
+            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(TEST_CONFIG), e);
+        }
+    }
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -64,7 +92,7 @@ public class SystemKeyspaceTest {
         expectedException.expectMessage(ErrorMessage.VERSION_MISMATCH.getMessage(GraknVersion.VERSION, rubbishVersion));
 
         //This simulates accessing the system for the first time
-        SystemKeyspace.loadSystemOntology();
+        SystemKeyspace.loadSystemOntology(SystemKeyspace.factory);
     }
 
     @Test

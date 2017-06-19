@@ -221,7 +221,7 @@ public class ExplanationTest {
     }
 
     @Test
-    public void testExplanationWithQueryGrouping(){
+    public void testExplainingConjunctions(){
         GraknGraph expGraph = explanationGraph.graph();
         QueryBuilder eiqb = expGraph.graql().infer(true);
 
