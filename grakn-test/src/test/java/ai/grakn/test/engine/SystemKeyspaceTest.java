@@ -178,10 +178,6 @@ public class SystemKeyspaceTest {
 
         //Insert fake version number
         try(GraknGraph graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)){
-            //Check original version number is correct
-            assertEquals(GraknVersion.VERSION,
-                    graph.getResourceType("system-version").instances().iterator().next().getValue().toString());
-
             //Delete old version number
             graph.getResourceType(versionResourceType).instances().forEach(Concept::delete);
             //Add Fake Version
