@@ -16,14 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.reasoner;
+package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.test.graphs.AdmissionsGraph;
-import ai.grakn.test.graphs.CWGraph;
-import ai.grakn.test.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -34,7 +31,6 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -43,6 +39,9 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
+import ai.grakn.test.graphs.AdmissionsGraph;
+import ai.grakn.test.graphs.CWGraph;
+import ai.grakn.test.graphs.GeoGraph;
 import ai.grakn.test.graphs.SNBGraph;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
