@@ -20,7 +20,7 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.RuleType;
-import ai.grakn.graphs.CWGraph;
+import ai.grakn.test.graphs.CWGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
