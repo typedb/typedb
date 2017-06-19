@@ -24,7 +24,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graphs.GeoGraph;
+import ai.grakn.test.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;

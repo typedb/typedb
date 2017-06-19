@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graphs;
+package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
@@ -26,12 +26,14 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
-import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 
-import static ai.grakn.graql.Graql.and;
-
+/**
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class GeoGraph extends TestGraph {
 
     private static ResourceType<String> key;
@@ -41,11 +43,14 @@ public class GeoGraph extends TestGraph {
 
     private static RoleType geoEntity, entityLocation;
 
-    private static Instance Europe, NorthAmerica;
+    private static Instance Europe;
     private static Instance Warsaw, Wroclaw, London, Munich, Paris, Milan;
     private static Instance Masovia, Silesia, GreaterLondon, Bavaria, IleDeFrance, Lombardy;
     private static Instance Poland, England, Germany, France, Italy;
-    private static Instance UW, PW, Imperial, UniversityOfMunich, UCL;
+    private static Instance UW;
+    private static Instance PW;
+    private static Instance Imperial;
+    private static Instance UCL;
 
     public static Consumer<GraknGraph> get(){
         return new GeoGraph().build();
@@ -106,7 +111,7 @@ public class GeoGraph extends TestGraph {
         Germany = putEntity(graph, "Germany", country, key.getLabel());
         Bavaria = putEntity(graph, "Bavaria", region, key.getLabel());
         Munich = putEntity(graph, "Munich", city, key.getLabel());
-        UniversityOfMunich = putEntity(graph, "University of Munich", university, key.getLabel());
+        putEntity(graph, "University of Munich", university, key.getLabel());
 
         France = putEntity(graph, "France", country, key.getLabel());
         IleDeFrance = putEntity(graph, "IleDeFrance", region, key.getLabel());
@@ -196,10 +201,10 @@ public class GeoGraph extends TestGraph {
     @Override
     public void buildRules(GraknGraph graph) {
         RuleType inferenceRule = graph.admin().getMetaRuleInference();
-        Pattern transitivity_LHS = and(graph.graql().parsePatterns(
-                "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
-        Pattern transitivity_RHS = and(graph.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
+        Pattern transitivity_LHS = graph.graql().parsePattern(
+                "{(geo-entity: $x, entity-location: $y) isa is-located-in;" +
+                "(geo-entity: $y, entity-location: $z) isa is-located-in;}");
+        Pattern transitivity_RHS = graph.graql().parsePattern("{(geo-entity: $x, entity-location: $z) isa is-located-in;}");
         inferenceRule.putRule(transitivity_LHS, transitivity_RHS);
     }
 }

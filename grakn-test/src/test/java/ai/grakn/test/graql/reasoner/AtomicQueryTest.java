@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.test.graphs.AdmissionsGraph;
 import ai.grakn.test.graphs.CWGraph;
-import ai.grakn.graphs.GeoGraph;
+import ai.grakn.test.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
