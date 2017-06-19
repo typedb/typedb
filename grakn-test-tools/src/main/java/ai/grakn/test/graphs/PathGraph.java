@@ -28,6 +28,11 @@ import java.util.function.Consumer;
 
 import static com.google.common.math.IntMath.pow;
 
+/**
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class PathGraph extends TestGraph {
 
     private final static TypeLabel key = TypeLabel.of("index");

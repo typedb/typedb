@@ -26,6 +26,11 @@ import ai.grakn.concept.TypeLabel;
 
 import java.util.function.Consumer;
 
+/**
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class PathGraphII extends TestGraph {
 
     private final static TypeLabel key = TypeLabel.of("index");

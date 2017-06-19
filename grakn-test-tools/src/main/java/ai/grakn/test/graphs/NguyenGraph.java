@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graphs;
+package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
@@ -24,10 +24,14 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 
+/**
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class NguyenGraph extends TestGraph {
 
     private final static TypeLabel key = TypeLabel.of("index");
@@ -54,17 +58,17 @@ public class NguyenGraph extends TestGraph {
     private void buildExtensionalDB(GraknGraph graph, int n) {
         RoleType Rfrom = graph.getRoleType("R-rA");
         RoleType Rto = graph.getRoleType("R-rB");
-        RoleType Qfrom = graph.getRoleType("Q-rA");
-        RoleType Qto = graph.getRoleType("Q-rB");
+        RoleType qfrom = graph.getRoleType("Q-rA");
+        RoleType qto = graph.getRoleType("Q-rB");
         RoleType Pfrom = graph.getRoleType("P-rA");
         RoleType Pto = graph.getRoleType("P-rB");
 
         EntityType entity = graph.getEntityType("entity2");
         EntityType aEntity = graph.getEntityType("a-entity");
         EntityType bEntity = graph.getEntityType("b-entity");
-        RelationType R = graph.getRelationType("R");
-        RelationType P = graph.getRelationType("P");
-        RelationType Q = graph.getRelationType("Q");
+        RelationType r = graph.getRelationType("R");
+        RelationType p = graph.getRelationType("P");
+        RelationType q = graph.getRelationType("Q");
 
         ConceptId cId = putEntity(graph, "c", entity, key).getId();
         ConceptId dId = putEntity(graph, "d", entity, key).getId();
@@ -80,31 +84,31 @@ public class NguyenGraph extends TestGraph {
         }
 
 
-        P.addRelation()
+        p.addRelation()
                 .addRolePlayer(Pfrom, graph.getConcept(cId))
                 .addRolePlayer(Pto, graph.getConcept(dId));
 
-        R.addRelation()
+        r.addRelation()
                 .addRolePlayer(Rfrom, graph.getConcept(dId))
                 .addRolePlayer(Rto, graph.getConcept(eId));
 
-        Q.addRelation()
-                .addRolePlayer(Qfrom, graph.getConcept(eId))
-                .addRolePlayer(Qto, graph.getConcept(aInstancesIds[0]));
+        q.addRelation()
+                .addRolePlayer(qfrom, graph.getConcept(eId))
+                .addRolePlayer(qto, graph.getConcept(aInstancesIds[0]));
 
         for(int i = 0 ; i <= n ;i++){
-            P.addRelation()
+            p.addRelation()
                     .addRolePlayer(Pfrom, graph.getConcept(bInstancesIds[i]))
                     .addRolePlayer(Pto, graph.getConcept(cId));
-            P.addRelation()
+            p.addRelation()
                     .addRolePlayer(Pfrom, graph.getConcept(cId))
                     .addRolePlayer(Pto, graph.getConcept(bInstancesIds[i]));
-            Q.addRelation()
-                    .addRolePlayer(Qfrom, graph.getConcept(aInstancesIds[i]))
-                    .addRolePlayer(Qto, graph.getConcept(bInstancesIds[i]));
-            Q.addRelation()
-                    .addRolePlayer(Qfrom, graph.getConcept(bInstancesIds[i]))
-                    .addRolePlayer(Qto, graph.getConcept(aInstancesIds[i+1]));
+            q.addRelation()
+                    .addRolePlayer(qfrom, graph.getConcept(aInstancesIds[i]))
+                    .addRolePlayer(qto, graph.getConcept(bInstancesIds[i]));
+            q.addRelation()
+                    .addRolePlayer(qfrom, graph.getConcept(bInstancesIds[i]))
+                    .addRolePlayer(qto, graph.getConcept(aInstancesIds[i+1]));
         }
     }
 }
