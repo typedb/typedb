@@ -6,7 +6,11 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
 import java.util.function.Function;
 import org.junit.After;
@@ -20,6 +24,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.engine.SystemKeyspace.SYSTEM_GRAPH_NAME;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -42,30 +47,29 @@ public class SystemKeyspaceTest {
         }
     }
 
-//    @Test
-//    public void whenOpeningGraphBuiltUsingDifferentVersionOfGrakn_Throw(){
-//        String versionResourceType = "system-version";
-//        String rubbishVersion = "Hippo Version";
-//        //Insert fake version number
-//        try(GraknGraph graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)){
-//            //Check original version number is correct
-//            assertEquals(GraknVersion.VERSION,
-//                    graph.getResourceType("system-version").instances().iterator().next().getValue().toString());
-//
-//            //Delete old version number
-//            graph.getResourceType(versionResourceType).instances().forEach(Concept::delete);
-//            //Add Fake Version
-//            graph.getResourceType(versionResourceType).putResource(rubbishVersion);
-//            graph.commit();
-//        }
-//
-//        expectedException.expect(GraphOperationException.class);
-//        expectedException.expectMessage(ErrorMessage.VERSION_MISMATCH.getMessage(GraknVersion.VERSION, rubbishVersion));
-//
-//        //This simulates accessing the system for the first time
-////        SystemKeyspace systemKeyspace = new SystemKeyspace(EngineGraknGraphFactory.create(TEST_PROPERTIES));
-//        fail();
-//    }
+    @Test
+    public void whenOpeningGraphBuiltUsingDifferentVersionOfGrakn_Throw(){
+        String versionResourceType = "system-version";
+        String rubbishVersion = "Hippo Version";
+        //Insert fake version number
+        try(GraknGraph graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)){
+            //Check original version number is correct
+            assertEquals(GraknVersion.VERSION,
+                    graph.getResourceType("system-version").instances().iterator().next().getValue().toString());
+
+            //Delete old version number
+            graph.getResourceType(versionResourceType).instances().forEach(Concept::delete);
+            //Add Fake Version
+            graph.getResourceType(versionResourceType).putResource(rubbishVersion);
+            graph.commit();
+        }
+
+        expectedException.expect(GraphOperationException.class);
+        expectedException.expectMessage(ErrorMessage.VERSION_MISMATCH.getMessage(GraknVersion.VERSION, rubbishVersion));
+
+        //This simulates accessing the system for the first time
+        new SystemKeyspace(engine.server().factory());
+    }
 
     @Test
     public void whenCreatingGraphsUsingEngineFactory_EnsureKeySpacesAreAddedToSystemGraph() {
