@@ -141,7 +141,7 @@ public class QueryAnswer implements Answer {
     public Answer merge(Answer a2, boolean mergeExplanation){
         if(a2.isEmpty()) return this;
         AnswerExplanation exp = this.getExplanation();
-        QueryAnswer merged = new QueryAnswer(a2);
+        Answer merged = new QueryAnswer(a2);
         merged.putAll(this);
 
         if(mergeExplanation) {
@@ -149,7 +149,9 @@ public class QueryAnswer implements Answer {
             if(!this.getExplanation().isJoinExplanation()) exp.addAnswer(this);
             if(!a2.getExplanation().isJoinExplanation()) exp.addAnswer(a2);
         }
-        return merged.setExplanation(exp);
+
+        return merged
+                .setExplanation(exp);
     }
 
     @Override

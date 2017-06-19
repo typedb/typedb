@@ -18,6 +18,18 @@ relation1 sub relation
 	relates role1
 	relates role2;
 
+relation2 sub relation
+	relates role1
+	relates role2;
+
+relation3 sub relation
+	relates role1
+	relates role2;
+
+inferredRelation sub relation
+    relates role1
+    relates role2;
+
 #Resources
 
 "name" sub resource, datatype string;
@@ -26,8 +38,22 @@ $a1 isa entity1, has name "a1";
 $a2 isa entity1, has name "a2";
 $b isa entity1, has name "b";
 $c isa entity1, has name "c";
+
+(role1:$a1, role2:$c) isa relation2;
+(role1:$a2, role2:$c) isa relation2;
 (role1:$a1, role2:$b) isa relation1;
-(role1:$a1, role2:$c) isa relation1;
 (role1:$a2, role2:$b) isa relation1;
-(role1:$a2, role2:$c) isa relation1;
-(role1:$b, role2:$c) isa relation1;
+(role1:$b, role2:$c) isa inferredRelation;
+
+
+isa inference-rule
+	lhs {
+		(role1: $x, role2: $y) isa relation1;
+		($y, $z) isa inferredRelation;
+		($z, $u) isa relation2;
+		($u, $v) isa relation1;
+		(role1: $v, role2: $w) isa inferredRelation;
+	}
+	rhs {
+		(role1: $x, role2: $w) isa inferredRelation;
+	};
