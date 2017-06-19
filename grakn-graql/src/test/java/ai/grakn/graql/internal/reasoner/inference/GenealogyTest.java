@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.reasoner.inference;
+package ai.grakn.graql.internal.reasoner.inference;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.test.graphs.GenealogyGraph;
