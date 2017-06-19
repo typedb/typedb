@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
@@ -59,25 +58,13 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
 
         LOG.trace("CQ: " + query);
 
-        this.queryIterator = getQueryIterator(q, subGoals, cache);
-    }
-
-    private Iterator<Answer> getQueryIterator(ReasonerQueryImpl query,
-                                      Set<ReasonerAtomicQuery> subGoals,
-                                      QueryCache<ReasonerAtomicQuery> cache){
-        if (query.isRuleResolvable()){
-            return query.getMatchQuery().stream()
-                    .map(at -> at.explain(new LookupExplanation(query)))
-                    .iterator();
-        }
-
         LinkedList<ReasonerAtomicQuery> queries = query.getResolutionPlan();
 
         LOG.trace("CQ plan:\n" + queries.stream()
-                .map(ReasonerQuery::toString)
+                .map(aq -> aq.getAtom().toString() + (aq.isRuleResolvable()? "*" : ""))
                 .collect(Collectors.joining("\n"))
         );
-        return new ReasonerQueryImplCumulativeIterator(new QueryAnswer(), queries, subGoals, cache);
+        queryIterator = new ReasonerQueryImplCumulativeIterator(new QueryAnswer(), queries, subGoals, cache);
     }
 
 

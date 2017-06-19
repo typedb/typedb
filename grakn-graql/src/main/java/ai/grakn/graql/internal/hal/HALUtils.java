@@ -54,24 +54,24 @@ public class HALUtils {
 
     // - Edges names
 
-    final static String ISA_EDGE = "isa";
-    final static String SUB_EDGE = "sub";
+    final static String ISA_EDGE = Schema.EdgeLabel.ISA.getLabel();
+    final static String SUB_EDGE = Schema.EdgeLabel.SUB.getLabel();
     final static String OUTBOUND_EDGE = "OUT";
     final static String INBOUND_EDGE = "IN";
-    final static String HAS_ROLE_EDGE = "has-role";
-    final static String HAS_RESOURCE_EDGE = "has-resource";
-    final static String PLAYS_ROLE_EDGE = "plays-role";
+    final static String RELATES_EDGE = Schema.EdgeLabel.RELATES.getLabel();
+    final static String HAS_EDGE = "has";
+    final static String PLAYS_EDGE = Schema.EdgeLabel.PLAYS.getLabel();
     final static String HAS_EMPTY_ROLE_EDGE = "EMPTY-GRAKN-ROLE";
 
 
     // - State properties
 
-    final static String ID_PROPERTY = "_id";
-    final static String TYPE_PROPERTY = "_type";
-    final static String BASETYPE_PROPERTY = "_baseType";
-    final static String DIRECTION_PROPERTY = "_direction";
-    final static String VALUE_PROPERTY = "_value";
-    final static String NAME_PROPERTY = "_name";
+    public final static String ID_PROPERTY = "_id";
+    public final static String TYPE_PROPERTY = "_type";
+    public final static String BASETYPE_PROPERTY = "_baseType";
+    public final static String DIRECTION_PROPERTY = "_direction";
+    public final static String VALUE_PROPERTY = "_value";
+    public final static String NAME_PROPERTY = "_name";
 
 
     static Schema.BaseType getBaseType(Instance instance) {

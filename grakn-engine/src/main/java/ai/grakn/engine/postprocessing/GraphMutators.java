@@ -30,8 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.GraknEngineConfig.LOADER_REPEAT_COMMITS;
-
 /**
  * <p>
  *     Abstract class containing utilities for graph mutations
@@ -46,7 +44,16 @@ import static ai.grakn.engine.GraknEngineConfig.LOADER_REPEAT_COMMITS;
 public abstract class GraphMutators {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphMutators.class);
-    private static final int MAX_RETRY = GraknEngineConfig.getInstance().getPropertyAsInt(LOADER_REPEAT_COMMITS);
+    private static final GraknEngineConfig config = GraknEngineConfig.getInstance();
+
+    private static final int MAX_RETRY = config.getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+
+    //TODO Really hideous hack that will be removed when we move SystemKeyspace to engine
+    static {
+        SystemKeyspace.initialise(
+                config.getProperty(GraknEngineConfig.SERVER_HOST_NAME) + ":" + config.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER),
+                config.getProperties());
+    }
 
     /**
      *

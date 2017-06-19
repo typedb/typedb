@@ -18,6 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -25,6 +26,7 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
@@ -32,6 +34,8 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
+import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
@@ -43,12 +47,12 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleTypeConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverterImpl;
 import ai.grakn.graql.internal.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import java.util.Collections;
 import javafx.util.Pair;
 
 import java.util.ArrayList;
@@ -62,8 +66,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesDisjoint;
@@ -90,8 +92,6 @@ public class Relation extends TypeAtom {
     private Multimap<RoleType, Var> roleVarMap = null;
     private Multimap<RoleType, String> roleConceptIdMap = null;
     private Set<RelationPlayer> relationPlayers = null;
-
-    private static final Logger LOG = LoggerFactory.getLogger(Relation.class);
 
     public Relation(VarPatternAdmin pattern, IdPredicate predicate, ReasonerQuery par) { super(pattern, predicate, par);}
     public Relation(Var name, Var typeVariable, Map<Var, VarPattern> roleMap, IdPredicate pred, ReasonerQuery par) {
@@ -351,21 +351,45 @@ public class Relation extends TypeAtom {
     }
 
     /**
+     * @param sub answer
+     * @return entity types inferred from answer entity information
+     */
+    private Set<Type> inferEntityTypes(Answer sub) {
+        if (sub.isEmpty()) return Collections.emptySet();
+
+        Set<Var> subbedVars = Sets.intersection(getRolePlayers(), sub.keySet());
+        Set<Var> untypedVars = Sets.difference(subbedVars, getParentQuery().getVarTypeMap().keySet());
+        return untypedVars.stream()
+                .map(v -> new Pair<>(v, sub.get(v)))
+                .filter(p -> p.getValue().isEntity())
+                .map(e -> {
+                    Concept c = e.getValue();
+                    return c.asInstance().type();
+                })
+                .collect(toSet());
+    }
+
+    /**
      * infer relation types that this relation atom can potentially have
      * NB: entity types and role types are treated separately as they behave differently:
      * entity types only play the explicitly defined roles (not the relevant part of the hierarchy of the specified role)
      * @return list of relation types this atom can have ordered by the number of compatible role types
      */
-    public List<RelationType> inferPossibleRelationTypes() {
+    public List<RelationType> inferPossibleRelationTypes(Answer sub) {
         //look at available role types
         Multimap<RelationType, RoleType> compatibleTypesFromRoles = getCompatibleRelationTypesWithRoles(getExplicitRoleTypes(), new RoleTypeConverter());
 
         //look at entity types
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
+
+        //explicit types
         Set<Type> types = getRolePlayers().stream()
                 .filter(varTypeMap::containsKey)
                 .map(varTypeMap::get)
                 .collect(toSet());
+
+        //types deduced from substitution
+        inferEntityTypes(sub).forEach(types::add);
 
         Multimap<RelationType, RoleType> compatibleTypesFromTypes = getCompatibleRelationTypesWithRoles(types, new TypeConverterImpl());
 
@@ -379,11 +403,6 @@ public class Relation extends TypeAtom {
             compatibleTypes = compatibleTypesFromRoles;
         }
 
-        LOG.trace("Inferring relation type of atom: " + this + getTypeConstraints());
-        LOG.trace("Compatible relation types: " + compatibleTypes.asMap().entrySet().stream()
-                .sorted(Comparator.comparing(e -> -e.getValue().size()))
-                .map(e -> e.getKey().getLabel() + "[" + e.getValue().size() + "]").collect(Collectors.joining(", ")));
-
         return compatibleTypes.asMap().entrySet().stream()
                 .sorted(Comparator.comparing(e -> -e.getValue().size()))
                 .map(Map.Entry::getKey)
@@ -391,15 +410,15 @@ public class Relation extends TypeAtom {
                 .collect(Collectors.toList());
     }
 
-    private Relation inferRelationType(){
-        List<RelationType> relationTypes = inferPossibleRelationTypes();
+    private Relation inferRelationType(Answer sub){
+        List<RelationType> relationTypes = inferPossibleRelationTypes(sub);
         if (relationTypes.size() == 1) addType(relationTypes.iterator().next());
         return this;
     }
 
     @Override
     public void inferTypes() {
-        if (getPredicate() == null) inferRelationType();
+        if (getPredicate() == null) inferRelationType(new QueryAnswer());
         if (getExplicitRoleTypes().size() < getRelationPlayers().size() && getType() != null) computeRoleVarTypeMap();
     }
 
@@ -657,12 +676,22 @@ public class Relation extends TypeAtom {
 
         //self-consistent procedure until no non-empty mappings present
         while( compatibleMappings.asMap().values().stream().filter(s -> !s.isEmpty()).count() > 0) {
-            //prioritise mappings with equivalent types and unambiguous mappings
             Map.Entry<RelationPlayer, RelationPlayer> entry = compatibleMappings.entries().stream()
+                    //prioritise mappings with equivalent types and unambiguous mappings
                     .sorted(Comparator.comparing(e -> {
                         Type parentType = parentVarTypeMap.get(e.getKey().getRolePlayer().getVarName());
                         Type childType = childVarTypeMap.get(e.getValue().getRolePlayer().getVarName());
                         return !(parentType != null && childType != null && parentType.equals(childType));
+                    }))
+                    //prioritise mappings with sam var substitution (idpredicates)
+                    .sorted(Comparator.comparing(e -> {
+                        IdPredicate parentId = parentAtom.getIdPredicates().stream()
+                                .filter(p -> p.getVarName().equals(e.getKey().getRolePlayer().getVarName()))
+                                .findFirst().orElse(null);
+                        IdPredicate childId = getIdPredicates().stream()
+                                .filter(p -> p.getVarName().equals(e.getValue().getRolePlayer().getVarName()))
+                                .findFirst().orElse(null);
+                        return !(parentId != null && childId != null && parentId.getPredicate().equals(childId.getPredicate()));
                     }))
                     .sorted(Comparator.comparing(e -> compatibleMappings.get(e.getKey()).size()))
                     .findFirst().orElse(null);
@@ -679,13 +708,11 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public Unifier getUnifier(Atomic pAtom) {
-        if (!(pAtom instanceof TypeAtom)) {
-            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
-        }
+    public Unifier getUnifier(Atom pAtom) {
+        if (this.equals(pAtom)) return new UnifierImpl();
 
         Unifier unifier = super.getUnifier(pAtom);
-        if (((Atom) pAtom).isRelation()) {
+        if (pAtom.isRelation()) {
             Relation parentAtom = (Relation) pAtom;
 
             getRelationPlayerMappings(parentAtom)

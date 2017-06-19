@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -153,16 +154,17 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         ReasonerAtomicQuery parent = (ReasonerAtomicQuery) p;
         Unifier unifier = getAtom().getUnifier(parent.getAtom());
         //get type unifiers
-        Set<Atomic> unified = new HashSet<>();
-        getAtom().getTypeConstraints().forEach(type -> {
-            Set<Atomic> toUnify = Sets.difference(parent.getEquivalentAtoms(type), unified);
-            Atomic equiv = toUnify.stream().findFirst().orElse(null);
-            //only apply if unambiguous
-            if (equiv != null && toUnify.size() == 1){
-                unifier.merge(type.getUnifier(equiv));
-                unified.add(equiv);
-            }
-        });
+        Set<Atom> unified = new HashSet<>();
+        getAtom().getTypeConstraints()
+                .forEach(type -> {
+                    Set<Atom> toUnify = Sets.difference(parent.getEquivalentAtoms(type), unified);
+                    Atom equiv = toUnify.stream().findFirst().orElse(null);
+                    //only apply if unambiguous
+                    if (equiv != null && toUnify.size() == 1){
+                        unifier.merge(type.getUnifier(equiv));
+                        unified.add(equiv);
+                    }
+                });
         return unifier;
     }
 
@@ -173,6 +175,23 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public Stream<Answer> lookup(Cache<ReasonerAtomicQuery, ?> cache) {
         boolean queryVisited = cache.contains(this);
         return queryVisited ? cache.getAnswerStream(this) : DBlookup(cache);
+    }
+
+    /**
+     * check whether specific answer to this query exists in cache/db
+     * @param cache qieru cache
+     * @param sub specific answer
+     * @return found answer if any, otherwise empty answer
+     */
+    Answer lookupAnswer(QueryCache<ReasonerAtomicQuery> cache, Answer sub) {
+        boolean queryVisited = cache.contains(this);
+        if (queryVisited){
+            Answer answer = cache.getAnswer(this, sub);
+            if (!answer.isEmpty()) return answer;
+        }
+
+        List<Answer> match = new ReasonerAtomicQuery(this).addSubstitution(sub).getMatchQuery().execute();
+        return match.isEmpty()? new QueryAnswer() : match.iterator().next();
     }
 
     Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
@@ -353,7 +372,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public Iterator<Answer> iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        Iterator<ReasonerAtomicQueryIterator> qIterator = getQueryStream()
+        Iterator<ReasonerAtomicQueryIterator> qIterator = getQueryStream(sub)
                 .map(q -> new ReasonerAtomicQueryIterator(q, sub, subGoals, cache))
                 .iterator();
         return Iterators.concat(qIterator);
@@ -362,11 +381,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * @return stream of atomic query obtained by inserting all inferred possible types (if ambiguous)
      */
-    private Stream<ReasonerAtomicQuery> getQueryStream(){
+    private Stream<ReasonerAtomicQuery> getQueryStream(Answer sub){
         Atom atom = getAtom();
         if (!atom.isRelation() || atom.getType() != null) return Stream.of(this);
         else{
-            List<RelationType> relationTypes = ((Relation) atom).inferPossibleRelationTypes();
+            List<RelationType> relationTypes = ((Relation) atom).inferPossibleRelationTypes(sub);
+            LOG.trace("AQ: " + this + ": inferred rel types for: " + relationTypes.stream().map(Type::getLabel).collect(Collectors.toList()));
             return relationTypes.stream()
                     .map(type -> ((Relation) AtomicFactory.create(atom, atom.getParentQuery())).addType(type))
                     .map(ReasonerAtomicQuery::new);
