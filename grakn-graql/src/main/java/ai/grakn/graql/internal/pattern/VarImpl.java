@@ -19,39 +19,21 @@
 
 package ai.grakn.graql.internal.pattern;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarPatternBuilder;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.Disjunction;
-import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Default implementation of {@link Var}.
  *
  * @author Felix Chapman
  */
-final class VarImpl implements Var, VarPatternAdmin {
+final class VarImpl extends AbstractVarPattern implements Var {
 
     private final String value;
 
@@ -87,13 +69,18 @@ final class VarImpl implements Var, VarPatternAdmin {
     }
 
     @Override
-    public VarPattern pattern() {
-        return new VarPatternImpl(this, ImmutableSet.of());
+    public String shortName() {
+        return "$" + StringUtils.left(value, 3);
     }
 
     @Override
-    public String shortName() {
-        return "$" + StringUtils.left(value, 3);
+    public Var getVarName() {
+        return this;
+    }
+
+    @Override
+    protected Set<VarProperty> properties() {
+        return ImmutableSet.of();
     }
 
     @Override
@@ -114,265 +101,5 @@ final class VarImpl implements Var, VarPatternAdmin {
     @Override
     public int hashCode() {
         return value.hashCode();
-    }
-
-    @Override
-    public VarPattern id(ConceptId id) {
-        return pattern().id(id);
-    }
-
-    @Override
-    public VarPattern label(String label) {
-        return pattern().label(label);
-    }
-
-    @Override
-    public VarPattern label(TypeLabel label) {
-        return pattern().label(label);
-    }
-
-    @Override
-    public VarPattern val(Object value) {
-        return pattern().val(value);
-    }
-
-    @Override
-    public VarPattern val(ValuePredicate predicate) {
-        return pattern().val(predicate);
-    }
-
-    @Override
-    public VarPattern has(String type, Object value) {
-        return pattern().has(type, value);
-    }
-
-    @Override
-    public VarPattern has(String type, ValuePredicate predicate) {
-        return pattern().has(type, predicate);
-    }
-
-    @Override
-    public VarPattern has(String type, VarPatternBuilder varPattern) {
-        return pattern().has(type, varPattern);
-    }
-
-    @Override
-    public VarPattern has(TypeLabel type, VarPatternBuilder varPattern) {
-        return pattern().has(type, varPattern);
-    }
-
-    @Override
-    public VarPattern isa(String type) {
-        return pattern().isa(type);
-    }
-
-    @Override
-    public VarPattern isa(VarPatternBuilder type) {
-        return pattern().isa(type);
-    }
-
-    @Override
-    public VarPattern sub(String type) {
-        return pattern().sub(type);
-    }
-
-    @Override
-    public VarPattern sub(VarPatternBuilder type) {
-        return pattern().sub(type);
-    }
-
-    @Override
-    public VarPattern relates(String type) {
-        return pattern().relates(type);
-    }
-
-    @Override
-    public VarPattern relates(VarPatternBuilder type) {
-        return pattern().relates(type);
-    }
-
-    @Override
-    public VarPattern plays(String type) {
-        return pattern().plays(type);
-    }
-
-    @Override
-    public VarPattern plays(VarPatternBuilder type) {
-        return pattern().plays(type);
-    }
-
-    @Override
-    public VarPattern hasScope(VarPatternBuilder type) {
-        return pattern().hasScope(type);
-    }
-
-    @Override
-    public VarPattern has(String type) {
-        return pattern().has(type);
-    }
-
-    @Override
-    public VarPattern has(VarPatternBuilder type) {
-        return pattern().has(type);
-    }
-
-    @Override
-    public VarPattern key(String type) {
-        return pattern().key(type);
-    }
-
-    @Override
-    public VarPattern key(VarPatternBuilder type) {
-        return pattern().key(type);
-    }
-
-    @Override
-    public VarPattern rel(String roleplayer) {
-        return pattern().rel(roleplayer);
-    }
-
-    @Override
-    public VarPattern rel(VarPatternBuilder roleplayer) {
-        return pattern().rel(roleplayer);
-    }
-
-    @Override
-    public VarPattern rel(String roletype, String roleplayer) {
-        return pattern().rel(roletype, roleplayer);
-    }
-
-    @Override
-    public VarPattern rel(VarPatternBuilder roletype, String roleplayer) {
-        return pattern().rel(roletype, roleplayer);
-    }
-
-    @Override
-    public VarPattern rel(String roletype, VarPatternBuilder roleplayer) {
-        return pattern().rel(roletype, roleplayer);
-    }
-
-    @Override
-    public VarPattern rel(VarPatternBuilder roletype, VarPatternBuilder roleplayer) {
-        return pattern().rel(roletype, roleplayer);
-    }
-
-    @Override
-    public VarPattern isAbstract() {
-        return pattern().isAbstract();
-    }
-
-    @Override
-    public VarPattern datatype(ResourceType.DataType<?> datatype) {
-        return pattern().datatype(datatype);
-    }
-
-    @Override
-    public VarPattern regex(String regex) {
-        return pattern().regex(regex);
-    }
-
-    @Override
-    public VarPattern lhs(Pattern lhs) {
-        return pattern().lhs(lhs);
-    }
-
-    @Override
-    public VarPattern rhs(Pattern rhs) {
-        return pattern().rhs(rhs);
-    }
-
-    @Override
-    public VarPattern neq(String var) {
-        return pattern().neq(var);
-    }
-
-    @Override
-    public VarPattern neq(VarPatternBuilder varPattern) {
-        return pattern().neq(varPattern);
-    }
-
-    @Override
-    public Var getVarName() {
-        return this;
-    }
-
-    @Override
-    public VarPatternAdmin setVarName(Var name) {
-        return (VarPatternAdmin) name;
-    }
-
-    @Override
-    public Stream<VarProperty> getProperties() {
-        return Stream.of();
-    }
-
-    @Override
-    public <T extends VarProperty> Stream<T> getProperties(Class<T> type) {
-        return Stream.of();
-    }
-
-    @Override
-    public <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type) {
-        return Optional.empty();
-    }
-
-    @Override
-    public <T extends VarProperty> boolean hasProperty(Class<T> type) {
-        return false;
-    }
-
-    @Override
-    public <T extends VarProperty> VarPatternAdmin mapProperty(Class<T> type, UnaryOperator<T> mapper) {
-        return this;
-    }
-
-    @Override
-    public Optional<ConceptId> getId() {
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<TypeLabel> getTypeLabel() {
-        return Optional.empty();
-    }
-
-    @Override
-    public Collection<VarPatternAdmin> getInnerVars() {
-        return ImmutableSet.of(this);
-    }
-
-    @Override
-    public Collection<VarPatternAdmin> getImplicitInnerVars() {
-        return ImmutableSet.of(this);
-    }
-
-    @Override
-    public Set<TypeLabel> getTypeLabels() {
-        return ImmutableSet.of();
-    }
-
-    @Override
-    public String getPrintableName() {
-        return toString();
-    }
-
-    @Override
-    public Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm() {
-        // a disjunction containing only one option
-        Conjunction<VarPatternAdmin> conjunction = Patterns.conjunction(Collections.singleton(this));
-        return Patterns.disjunction(Collections.singleton(conjunction));
-    }
-
-    @Override
-    public Set<Var> commonVarNames() {
-        return getInnerVars().stream()
-                .filter(v -> v.getVarName().isUserDefinedName())
-                .map(VarPatternAdmin::getVarName)
-                .collect(toSet());
-    }
-
-    @Override
-    public VarPatternAdmin admin() {
-        return this;
     }
 }
