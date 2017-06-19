@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graphs;
+package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
@@ -24,10 +24,14 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 
+/**
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class DiagonalGraph extends TestGraph {
 
     private final static TypeLabel key = TypeLabel.of("name");
@@ -62,13 +66,14 @@ public class DiagonalGraph extends TestGraph {
         RelationType vertical = graph.getRelationType("vertical");
         ConceptId[][] instanceIds = new ConceptId[n][m];
         long inserts = 0;
-        for(int i = 0 ; i < n ;i++)
-            for(int j = 0 ; j < m ;j++) {
+        for(int i = 0 ; i < n ;i++) {
+            for (int j = 0; j < m; j++) {
                 instanceIds[i][j] = putEntity(graph, "a" + i + "," + j, entity1, key).getId();
                 inserts++;
                 if (inserts % 100 == 0) System.out.println("inst inserts: " + inserts);
 
             }
+        }
 
         for(int i = 0 ; i < n ; i++) {
             for (int j = 0; j < m; j++) {

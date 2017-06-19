@@ -20,7 +20,7 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graphs.DiagonalGraph;
+import ai.grakn.test.graphs.DiagonalGraph;
 import ai.grakn.graphs.MatrixGraph;
 import ai.grakn.graphs.MatrixGraphII;
 import ai.grakn.test.graphs.NguyenGraph;
