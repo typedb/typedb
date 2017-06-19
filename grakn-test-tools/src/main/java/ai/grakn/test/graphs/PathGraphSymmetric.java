@@ -16,19 +16,23 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graphs;
+package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 
 import static com.google.common.math.IntMath.pow;
 
+/**
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class PathGraphSymmetric extends TestGraph {
 
     private final static TypeLabel key = TypeLabel.of("index");
