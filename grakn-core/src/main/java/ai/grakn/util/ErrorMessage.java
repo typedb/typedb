@@ -192,6 +192,7 @@ public enum ErrorMessage {
     TASK_STATE_RETRIEVAL_FAILURE("Could not get state from storage %s"),
     ENGINE_UNAVAILABLE("Cannot reach Grakn engine on [%s:%s]"),
     AUTHENTICATION_FAILURE("Authentication parameters are incorrect or invalid"),
+    CANNOT_DELETE_KEYSPACE("Could not delete keyspace [%s]"),
 
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),

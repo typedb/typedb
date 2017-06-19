@@ -111,7 +111,7 @@ public class SystemController {
         if(deletionComplete){
             response.status(200);
         } else {
-            throw GraknServerException.internalError("Could not delete keyspace " + keyspace);
+            throw GraknServerException.couldNotDelete(keyspace);
         }
 
         return deletionComplete;
