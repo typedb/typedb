@@ -121,7 +121,7 @@ public class VariableAndPatternTest {
                 .collect(Collectors.toSet());
         assertFalse(resultSet1.isEmpty());
 
-        Set<VarPattern> varSet11 = Sets.newHashSet((VarPattern) var("x"));
+        Set<VarPattern> varSet11 = Sets.newHashSet(var("x"));
         varSet11.addAll(varSet1);
         Set<Concept> resultSet11 = graph.graql().match(varSet11).select("x").execute()
                 .stream()
