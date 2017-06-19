@@ -73,8 +73,9 @@ public class PathGraphSymmetric extends TestGraph {
             int m = pow(children, i);
             for (int j = 0; j < m; j++) {
                 putEntity(graph, "a" + i + "," + j, vertex, key);
-                if (j != 0 && j % 100 ==0)
+                if (j != 0 && j % 100 ==0) {
                     System.out.println(j + " entities out of " + m + " inserted");
+                }
             }
         }
 
@@ -93,8 +94,9 @@ public class PathGraphSymmetric extends TestGraph {
                             .addRolePlayer(arcTo, getInstance(graph, "a" + (i + 1) + "," + (j * children + c)));
 
                 }
-                if (j!= 0 && j % 100 == 0)
-                    System.out.println("level " + i + "/" + (n-1) + ": " + j + " entities out of " + m + " connected");
+                if (j!= 0 && j % 100 == 0) {
+                    System.out.println("level " + i + "/" + (n - 1) + ": " + j + " entities out of " + m + " connected");
+                }
             }
         }
 
