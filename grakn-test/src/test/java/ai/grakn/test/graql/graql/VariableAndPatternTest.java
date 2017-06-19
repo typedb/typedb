@@ -93,7 +93,7 @@ public class VariableAndPatternTest {
         var1 = var().pattern();
         var2 = var().pattern();
         assertTrue(var1.equals(var1));
-        assertTrue(var1.equals(var2));
+        assertFalse(var1.equals(var2));
 
         var1 = var("x").pattern();
         var2 = var("y").pattern();
