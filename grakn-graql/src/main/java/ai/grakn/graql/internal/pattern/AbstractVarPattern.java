@@ -354,7 +354,7 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     @Override
     public final VarPatternAdmin setVarName(Var name) {
         Preconditions.checkState(getVarName().isUserDefinedName(), ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
-        return new VarPatternImpl(name, properties());
+        return Patterns.varPattern(name, properties());
     }
 
     @Override
@@ -381,7 +381,7 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
             }
         }).collect(toImmutableSet());
 
-        return new VarPatternImpl(getVarName(), newProperties);
+        return Patterns.varPattern(getVarName(), newProperties);
     }
 
     private VarPattern addCasting(RelationPlayer relationPlayer) {
@@ -399,15 +399,15 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
         return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }
 
-    private VarPatternImpl addProperty(VarProperty property) {
+    private VarPatternAdmin addProperty(VarProperty property) {
         if (property.isUnique()) {
             testUniqueProperty((UniqueVarProperty) property);
         }
-        return new VarPatternImpl(getVarName(), Sets.union(properties(), ImmutableSet.of(property)));
+        return Patterns.varPattern(getVarName(), Sets.union(properties(), ImmutableSet.of(property)));
     }
 
     private AbstractVarPattern removeProperty(VarProperty property) {
-        return new VarPatternImpl(getVarName(), Sets.difference(properties(), ImmutableSet.of(property)));
+        return (AbstractVarPattern) Patterns.varPattern(getVarName(), Sets.difference(properties(), ImmutableSet.of(property)));
     }
 
     /**
