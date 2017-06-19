@@ -16,17 +16,21 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graphs;
+package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 
+/**
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class TailRecursionGraph extends TestGraph {
 
     private final static TypeLabel key = TypeLabel.of("index");
@@ -53,26 +57,28 @@ public class TailRecursionGraph extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknGraph graph, int n, int m) {
-        RoleType Qfrom = graph.getRoleType("Q-from");
-        RoleType Qto = graph.getRoleType("Q-to");
+        RoleType qfrom = graph.getRoleType("Q-from");
+        RoleType qto = graph.getRoleType("Q-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
         EntityType bEntity = graph.getEntityType("b-entity");
-        RelationType Q = graph.getRelationType("Q");
+        RelationType q = graph.getRelationType("Q");
 
         putEntity(graph, "a0", aEntity, key);
-        for(int i = 1 ; i <= m + 1 ;i++)
-            for(int j = 1 ; j <= n ;j++)
+        for(int i = 1 ; i <= m + 1 ;i++) {
+            for (int j = 1; j <= n; j++) {
                 putEntity(graph, "b" + i + "," + j, bEntity, key);
+            }
+        }
 
         for (int j = 1; j <= n; j++) {
-            Q.addRelation()
-                    .addRolePlayer(Qfrom, getInstance(graph, "a0"))
-                    .addRolePlayer(Qto, getInstance(graph, "b1" + "," + j));
+            q.addRelation()
+                    .addRolePlayer(qfrom, getInstance(graph, "a0"))
+                    .addRolePlayer(qto, getInstance(graph, "b1" + "," + j));
             for(int i = 1 ; i <= m ;i++) {
-                Q.addRelation()
-                        .addRolePlayer(Qfrom, getInstance(graph, "b" + i + "," + j))
-                        .addRolePlayer(Qto, getInstance(graph, "b" + (i + 1) + "," + j));
+                q.addRelation()
+                        .addRolePlayer(qfrom, getInstance(graph, "b" + i + "," + j))
+                        .addRolePlayer(qto, getInstance(graph, "b" + (i + 1) + "," + j));
             }
         }
     }
