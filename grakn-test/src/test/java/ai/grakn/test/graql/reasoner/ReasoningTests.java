@@ -129,6 +129,9 @@ public class ReasoningTests {
     @ClassRule
     public static final GraphContext testSet26 = GraphContext.preLoad("testSet26.gql").assumeTrue(usingTinker());
 
+    @ClassRule
+    public static final GraphContext testSet27 = GraphContext.preLoad("testSet27.gql").assumeTrue(usingTinker());
+
     @Before
     public void onStartup() throws Exception {
         assumeTrue(usingTinker());
@@ -536,6 +539,16 @@ public class ReasoningTests {
         assertEquals(answers2.size(), 2);
         Set<Var> vars = Sets.newHashSet(Var.of("b"), Var.of("p"), Var.of("c"), Var.of("rel1"), Var.of("rel2"));
         answers2.forEach(ans -> assertTrue(ans.keySet().containsAll(vars)));
+    }
+
+    @Test //Expected result: 2 relations obtained by correctly finding reified relations
+    public void reasoningWithNeqProperty() {
+        QueryBuilder qb = testSet27.graph().graql().infer(true);
+        String queryString = "match (related-state: $s) isa holds;";
+
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        QueryAnswers exact = queryAnswers(qb.parse("match $s isa state, has name 's2';"));
+        assertEquals(answers, exact);
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
