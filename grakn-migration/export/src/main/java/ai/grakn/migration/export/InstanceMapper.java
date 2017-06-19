@@ -26,6 +26,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.util.CommonUtil;
 
 import java.util.Map;
 import java.util.Set;
@@ -46,18 +47,17 @@ public class InstanceMapper {
      * @return Graql representation of given instance
      */
     public static VarPattern map(Instance instance){
-        VarPattern mapped = var();
         if(instance.isEntity()){
-            mapped = map(instance.asEntity());
+            return map(instance.asEntity());
         } else if(instance.isResource()){
-            mapped = map(instance.asResource());
+            return map(instance.asResource());
         } else if(instance.isRelation()){
-            mapped = map(instance.asRelation());
+            return map(instance.asRelation());
         } else if(instance.isRule()){
-            mapped = map(instance.asRule());
+            return map(instance.asRule());
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised instance " + instance);
         }
-
-        return mapped;
     }
 
     /**
