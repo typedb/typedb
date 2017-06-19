@@ -240,7 +240,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public Set<Predicate> getPredicates() {
         return getAtoms().stream()
                 .filter(Atomic::isPredicate).map(at -> (Predicate) at)
-               // .filter(at -> !at.isNeqPredicate())
                 .collect(Collectors.toSet());
     }
 
@@ -266,8 +265,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return set of neq predicates contained in this query
      */
     private Set<NeqPredicate> getNeqPredicates() {
-        return getAtoms().stream()
-                .filter(Atomic::isPredicate).map(at -> (Predicate) at)
+        return getPredicates().stream()
                 .filter(Predicate::isNeqPredicate).map(at -> (NeqPredicate) at)
                 .collect(Collectors.toSet());
     }
@@ -566,13 +564,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     Stream<Answer> resolve(boolean materialise, boolean explanation, LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
 
+        Set<NeqPredicate> neqPredicates = getNeqPredicates();
+        neqPredicates.forEach(this::removeAtomic);
+
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());
         Stream<Answer> answerStream = atomicQuery.resolve(materialise, explanation, cache, dCache);
         Set<Var> joinedVars = atomicQuery.getVarNames();
-
-        Set<NeqPredicate> neqPredicates = getNeqPredicates();
-        neqPredicates.forEach(this::removeAtomic);
 
         while (atIt.hasNext()) {
             atomicQuery = new ReasonerAtomicQuery(atIt.next());

@@ -25,6 +25,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -40,6 +41,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.query.aggregate.Aggregates.count;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesCompatible;
 
 /**
@@ -114,7 +116,13 @@ public abstract class Atom extends AtomicBase {
                 .flatMap(at -> at.getVarNames().stream())
                 .collect(Collectors.toSet());
         priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
-        priority += getPredicates().stream().filter(Predicate::isNeqPredicate).count() * ResolutionStrategy.INEQUALITY_PREDICATE;
+
+        //inequality predicates with unmapped variable
+        priority += getPredicates().stream()
+                .filter(Predicate::isNeqPredicate)
+                .map(p -> (NeqPredicate) p)
+                .map(Predicate::getPredicate)
+                .filter(v -> !subbedVars.contains(v)).count() * ResolutionStrategy.INEQUALITY_PREDICATE;
         return priority;
     }
 
