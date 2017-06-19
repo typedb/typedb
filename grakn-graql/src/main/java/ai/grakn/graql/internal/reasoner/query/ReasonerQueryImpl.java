@@ -107,7 +107,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public String toString(){
-        return atomSet.stream().map(Atomic::toString).collect(Collectors.joining(", "));
+        return "{\n" +
+                atomSet.stream()
+                        .filter(Atomic::isAtom)
+                        .filter(Atomic::isSelectable)
+                        .map(Atomic::toString)
+                        .collect(Collectors.joining(";\n")) +
+                "\n}";
     }
 
     @Override
@@ -234,6 +240,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public Set<Predicate> getPredicates() {
         return getAtoms().stream()
                 .filter(Atomic::isPredicate).map(at -> (Predicate) at)
+               // .filter(at -> !at.isNeqPredicate())
                 .collect(Collectors.toSet());
     }
 
@@ -258,8 +265,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return set of neq predicates contained in this query
      */
-    public Set<NeqPredicate> getNeqPredicates() {
-        return getPredicates().stream()
+    private Set<NeqPredicate> getNeqPredicates() {
+        return getAtoms().stream()
+                .filter(Atomic::isPredicate).map(at -> (Predicate) at)
                 .filter(Predicate::isNeqPredicate).map(at -> (NeqPredicate) at)
                 .collect(Collectors.toSet());
     }
@@ -531,13 +539,15 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                                boolean materialise,
                                boolean explanation,
                                boolean differentialJoin) {
+
+        Set<NeqPredicate> neqPredicates = getNeqPredicates();
+        neqPredicates.forEach(this::removeAtomic);
+
         Stream<Answer> join = differentialJoin?
                 differentialJoin(subGoals, cache, dCache, materialise, explanation) :
                 fullJoin(subGoals, cache, dCache, materialise, explanation);
 
-        Set<NeqPredicate> neqPredicates = getNeqPredicates();
-        return join
-                .filter(a -> nonEqualsFilter(a, neqPredicates));
+        return join.filter(a -> nonEqualsFilter(a, neqPredicates));
     }
 
     @Override
@@ -560,6 +570,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());
         Stream<Answer> answerStream = atomicQuery.resolve(materialise, explanation, cache, dCache);
         Set<Var> joinedVars = atomicQuery.getVarNames();
+
+        Set<NeqPredicate> neqPredicates = getNeqPredicates();
+        neqPredicates.forEach(this::removeAtomic);
+
         while (atIt.hasNext()) {
             atomicQuery = new ReasonerAtomicQuery(atIt.next());
             Stream<Answer> subAnswerStream = atomicQuery.resolve(materialise, explanation, cache, dCache);
@@ -568,7 +582,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             joinedVars.addAll(atomicQuery.getVarNames());
         }
 
-        Set<NeqPredicate> neqPredicates = getNeqPredicates();
+
         Set<Var> vars = this.getVarNames();
         return answerStream
                 .filter(a -> nonEqualsFilter(a, neqPredicates))

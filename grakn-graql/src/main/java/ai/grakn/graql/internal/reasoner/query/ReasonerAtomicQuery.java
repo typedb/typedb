@@ -37,6 +37,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
@@ -64,6 +65,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
@@ -101,6 +103,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public ReasonerQuery copy(){ return new ReasonerAtomicQuery(this);}
+
+    @Override
+    public String toString(){
+        return getAtoms().stream()
+                .map(Atomic::toString).collect(Collectors.joining(", "));
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -279,13 +287,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                           boolean differentialJoin){
         Atom atom = this.getAtom();
 
-        LOG.trace("Applying rule to: " + this + rule);
-        LOG.trace("t: " + ruleUnifier);
-        LOG.trace("tp: " + permutationUnifier);
+        LOG.trace("Applying rule " + rule.getRuleId());
 
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
         Set<Var> varsToRetain = rule.hasDisconnectedHead()? ruleBody.getVarNames() : ruleHead.getVarNames();
+
+        LOG.trace("Rule body: " + ruleBody);
 
         subGoals.add(this);
         Stream<Answer> answers = ruleBody
