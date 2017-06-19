@@ -37,6 +37,7 @@ public class FibonacciQueue<E> extends AbstractQueue<E> {
     private final Function<FibonacciHeap<E, ?>.Entry, E> getValue = new Function<FibonacciHeap<E, ?>.Entry, E>() {
         @Override
         public E apply(FibonacciHeap<E, ?>.Entry input) {
+            assert input != null;
             return input.value;
         }
     };
