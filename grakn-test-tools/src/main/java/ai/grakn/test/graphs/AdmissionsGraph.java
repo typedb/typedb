@@ -16,13 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graphs;
+package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.test.graphs.TestGraph;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -31,6 +30,11 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class AdmissionsGraph extends TestGraph {
 
     private static ResourceType<String> key;
