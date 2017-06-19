@@ -49,26 +49,21 @@ public class SystemKeyspaceTest {
 
     @Test
     public void whenOpeningGraphBuiltUsingDifferentVersionOfGrakn_Throw(){
-        String versionResourceType = "system-version";
-        String rubbishVersion = "Hippo Version";
-        //Insert fake version number
-        try(GraknGraph graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)){
-            //Check original version number is correct
-            assertEquals(GraknVersion.VERSION,
-                    graph.getResourceType("system-version").instances().iterator().next().getValue().toString());
+        try {
+            String rubbishVersion = "Hippo Version";
 
-            //Delete old version number
-            graph.getResourceType(versionResourceType).instances().forEach(Concept::delete);
-            //Add Fake Version
-            graph.getResourceType(versionResourceType).putResource(rubbishVersion);
-            graph.commit();
+            //Insert fake version number
+            setVersionInSystemGraph(rubbishVersion);
+
+            expectedException.expect(GraphOperationException.class);
+            expectedException.expectMessage(ErrorMessage.VERSION_MISMATCH.getMessage(GraknVersion.VERSION, rubbishVersion));
+
+            //This simulates accessing the system for the first time
+            new SystemKeyspace(engine.server().factory());
+        } finally {
+            // reset real version
+            setVersionInSystemGraph(GraknVersion.VERSION);
         }
-
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(ErrorMessage.VERSION_MISMATCH.getMessage(GraknVersion.VERSION, rubbishVersion));
-
-        //This simulates accessing the system for the first time
-        new SystemKeyspace(engine.server().factory());
     }
 
     @Test
@@ -176,6 +171,23 @@ public class SystemKeyspaceTest {
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(graph.getKeyspace()));
         }
         assertFalse(engine.server().factory().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
+    }
+
+    private void setVersionInSystemGraph(String version){
+        String versionResourceType = "system-version";
+
+        //Insert fake version number
+        try(GraknGraph graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)){
+            //Check original version number is correct
+            assertEquals(GraknVersion.VERSION,
+                    graph.getResourceType("system-version").instances().iterator().next().getValue().toString());
+
+            //Delete old version number
+            graph.getResourceType(versionResourceType).instances().forEach(Concept::delete);
+            //Add Fake Version
+            graph.getResourceType(versionResourceType).putResource(version);
+            graph.commit();
+        }
     }
 
     private Set<GraknGraph> buildGraphs(Function<String, GraknGraph> graphProvider, String ... keyspaces){
