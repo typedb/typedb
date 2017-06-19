@@ -29,7 +29,6 @@ import com.google.common.io.Files;
 import java.util.Collections;
 import java.util.stream.Collectors;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.BufferedWriter;
@@ -151,16 +150,12 @@ public class MigrationCLI {
         try {
             return Files.readLines(file, StandardCharsets.UTF_8).stream().collect(joining("\n"));
         } catch (IOException e) {
-            throw die("Could not read file " + file.getPath());
+            throw new IllegalArgumentException("Could not read file " + file.getPath(), e);
         }
     }
 
-    public static RuntimeException die(Throwable throwable){
-        return die(ExceptionUtils.getFullStackTrace(throwable));
-    }
-
-    public static RuntimeException die(String errorMsg) {
-        throw new RuntimeException(errorMsg);
+    public static void die(String errorMsg) {
+        System.err.println(errorMsg);
     }
 
     private static void printHelpMessage(MigrationOptions options){

@@ -28,7 +28,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.contrib.java.lang.system.SystemErrRule;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -41,6 +41,8 @@ import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.PASS;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.URL;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.USER;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.setupExample;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 public class SQLMigratorMainTest {
 
@@ -52,7 +54,8 @@ public class SQLMigratorMainTest {
     private GraknGraph graph;
 
     @Rule
-    public final ExpectedException exception = ExpectedException.none();
+    public final SystemErrRule sysOut = new SystemErrRule().enableLog();
+
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
@@ -79,53 +82,48 @@ public class SQLMigratorMainTest {
 
     @Test
     public void sqlMainNoKeyspace(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Keyspace missing (-k)");
         run("sql", "-u", engine.uri(), "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-user", USER);
+        assertThat(sysOut.getLog(), containsString("Keyspace missing (-k)"));
     }
 
     @Test
     public void sqlMainNoUserTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("No username specified (-user)");
         run("sql", "-u", engine.uri(), "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-k", keyspace);
+        assertThat(sysOut.getLog(), containsString("No username specified (-user)"));
     }
 
     @Test
     public void sqlMainNoPassTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("No password specified (-pass)");
         run("sql", "-u", engine.uri(), "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query, "-k", keyspace);
+        assertThat(sysOut.getLog(), containsString("No password specified (-pass)"));
     }
 
     @Test
     public void sqlMainNoURLTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("No db specified (-location)");
         run("sql", "-u", engine.uri(), "-driver", DRIVER, "-q", query, "-t", templateFile);
+        assertThat(sysOut.getLog(), containsString("No db specified (-location)"));
     }
 
     @Test
     public void sqlMainNoQueryTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("No SQL query specified (-query)");
         run("sql", "-u", engine.uri(), "-t", templateFile, "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-k", keyspace);
+        assertThat(sysOut.getLog(), containsString("No SQL query specified (-query)"));
+
     }
 
     @Test
     public void sqlMainNoTemplateTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Template file missing (-t)");
         run("sql", "-u", engine.uri(), "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-q", query);
+        assertThat(sysOut.getLog(), containsString("Template file missing (-t)"));
     }
 
     @Test
     public void sqlMainTemplateNoExistTest(){
-        exception.expect(RuntimeException.class);
         run("sql", "-u", engine.uri(), "-t", templateFile + "wrong", "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-q", query);
+        assertThat(sysOut.getLog(), containsString("Cannot find file"));
     }
 
     @Test

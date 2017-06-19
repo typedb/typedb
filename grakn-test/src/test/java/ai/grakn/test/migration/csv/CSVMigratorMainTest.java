@@ -27,12 +27,14 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.contrib.java.lang.system.SystemErrRule;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 public class CSVMigratorMainTest {
     private GraknSession factory;
@@ -45,7 +47,7 @@ public class CSVMigratorMainTest {
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Rule
-    public final ExpectedException exception = ExpectedException.none();
+    public final SystemErrRule sysErr = new SystemErrRule().enableLog();
 
     @Before
     public void setup(){
@@ -115,28 +117,26 @@ public class CSVMigratorMainTest {
 
     @Test
     public void csvMainNoTemplateNameTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Template file missing (-t)");
         run("-input", dataFile);
+        assertThat(sysErr.getLog(), containsString("Template file missing (-t)"));
     }
 
     @Test
     public void csvMainInvalidTemplateFileTest(){
-        exception.expect(RuntimeException.class);
         run("-input", dataFile + "wrong", "-template", templateFile + "wrong");
+        assertThat(sysErr.getLog(), containsString("Cannot find file"));
     }
 
     @Test
     public void csvMainThrowableTest(){
-        exception.expect(RuntimeException.class);
         run("-input", dataFile, "-template", templateFile, "-batch", "hello");
+        assertThat(sysErr.getLog(), containsString("Cannot find file"));
     }
 
     @Test
     public void unknownArgumentTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Unrecognized option: -whale");
         run("-whale", "");
+        assertThat(sysErr.getLog(), containsString("Unrecognized option: -whale"));
     }
 
     private void run(String... args){

@@ -69,7 +69,7 @@ public class MigrationOptions {
 
     public String getKeyspace() {
         if(!command.hasOption("k")){
-            die("Keyspace missing (-k)");
+            throw new IllegalArgumentException("Keyspace missing (-k)");
         }
 
         return command.getOptionValue("k");
@@ -93,7 +93,7 @@ public class MigrationOptions {
 
     public String getInput() {
         if(!command.hasOption("i")){
-            die("Data file missing (-i)");
+            throw new IllegalArgumentException("Data file missing (-i)");
         }
 
         return resolvePath(command.getOptionValue("i"));
@@ -105,7 +105,7 @@ public class MigrationOptions {
 
     public String getTemplate() {
         if(!command.hasOption("t")){
-            die("Template file missing (-t)");
+            throw new IllegalArgumentException("Template file missing (-t)");
         }
 
         return resolvePath(command.getOptionValue("t"));

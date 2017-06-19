@@ -93,7 +93,7 @@ public class XmlMigrator implements AutoCloseable {
             }
             MigrationCLI.loadOrPrint(xmlTemplateFile, xmlMigrator.convert(), options);
         } catch (Throwable throwable){
-            die(throwable);
+            die(throwable.getMessage());
         }
     }
     

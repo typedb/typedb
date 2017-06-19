@@ -85,7 +85,7 @@ public class CSVMigrator implements AutoCloseable {
         ) {
             MigrationCLI.loadOrPrint(csvTemplate, csvMigrator.convert(), options);
         } catch (Throwable throwable) {
-            MigrationCLI.die(throwable);
+            MigrationCLI.die(throwable.getMessage());
         }
     }
 

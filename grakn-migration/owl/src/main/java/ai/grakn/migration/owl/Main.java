@@ -68,7 +68,7 @@ public class Main {
             printWholeCompletionMessage(options);
         }
         catch (Throwable t) {
-            MigrationCLI.die(t);
+            MigrationCLI.die(t.getMessage());
         }
     }
 }

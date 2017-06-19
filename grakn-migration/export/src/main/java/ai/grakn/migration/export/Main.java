@@ -37,10 +37,9 @@ public class Main {
                 .forEach(Main::runExport);
     }
 
-    public static void runExport(GraphWriterOptions options) {
+    private static void runExport(GraphWriterOptions options) {
         if(!options.exportOntology() && !options.exportData()) {
-            System.out.println("Missing arguments -ontology and/or -data");
-            MigrationCLI.die("");
+            MigrationCLI.die("Missing arguments -ontology and/or -data");
         }
 
         try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.READ)) {
