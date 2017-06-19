@@ -19,7 +19,7 @@
 package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.tasks.connection.RedisConnection;
+import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Preconditions;
 import java.util.function.Consumer;
@@ -36,7 +36,8 @@ public abstract class BackgroundTask {
     private @Nullable TaskConfiguration configuration = null;
     private @Nullable Consumer<TaskCheckpoint> saveCheckpoint = null;
     private @Nullable GraknEngineConfig engineConfig = null;
-    private @Nullable RedisConnection redis = null;
+    private @Nullable
+    RedisCountStorage redis = null;
     private @Nullable MetricRegistry metricRegistry = null;
 
     /**
@@ -49,7 +50,7 @@ public abstract class BackgroundTask {
      */
     public final void initialize(
             Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration,
-            TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig, RedisConnection redis,
+            TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig, RedisCountStorage redis,
             MetricRegistry metricRegistry) {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
@@ -134,7 +135,7 @@ public abstract class BackgroundTask {
         return engineConfig;
     }
 
-    public final RedisConnection redis() {
+    public final RedisCountStorage redis() {
         Preconditions.checkNotNull(redis, "BackgroundTask#initialise must be called before retrieving redis connection");
         return redis;
     }

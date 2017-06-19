@@ -26,7 +26,7 @@ import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.connection.RedisConnection;
+import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.REST;
 import static com.codahale.metrics.MetricRegistry.name;
@@ -123,10 +123,11 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @return true if sharding is needed.
      */
     private static boolean updateShardCounts(
-            RedisConnection redis, String keyspace, ConceptId conceptId, long value, long shardingThreshold){
-        long numShards = redis.getCount(RedisConnection.getKeyNumShards(keyspace, conceptId));
+            RedisCountStorage redis, String keyspace, ConceptId conceptId, long value, long shardingThreshold){
+        long numShards = redis.getCount(RedisCountStorage.getKeyNumShards(keyspace, conceptId));
         if(numShards == 0) numShards = 1;
-        long numInstances = redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace, conceptId), value);
+        long numInstances = redis.adjustCount(
+                RedisCountStorage.getKeyNumInstances(keyspace, conceptId), value);
         return numInstances > shardingThreshold * numShards;
     }
 
@@ -141,7 +142,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @param conceptId The id of the concept to shard
      */
     private static void shardConcept(
-            RedisConnection redis, EngineGraknGraphFactory factory, String keyspace, ConceptId conceptId, int maxRetry,
+            RedisCountStorage redis, EngineGraknGraphFactory factory, String keyspace, ConceptId conceptId, int maxRetry,
             long shardingThreshold){
         Lock engineLock = LockProvider.getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
@@ -157,7 +158,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
                 });
 
                 //Update number of shards
-                redis.adjustCount(RedisConnection.getKeyNumShards(keyspace, conceptId), 1);
+                redis.adjustCount(RedisCountStorage.getKeyNumShards(keyspace, conceptId), 1);
             }
         } finally {
             engineLock.unlock();

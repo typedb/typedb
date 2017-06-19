@@ -37,18 +37,23 @@ import java.util.function.Function;
  *
  * @author fppt
  */
-public class RedisConnection {
+public class RedisCountStorage {
 
     private JedisPool jedisPool;
 
-    private RedisConnection(String url, int port){
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        poolConfig.setMaxTotal(128);
-        jedisPool = new JedisPool(poolConfig, url, port);
+    private RedisCountStorage(JedisPool jedisPool){
+        this.jedisPool = jedisPool;
     }
 
-    public static RedisConnection create(String url, int port) {
-        return new RedisConnection(url, port);
+    public static RedisCountStorage create(JedisPool jedisPool) {
+        return new RedisCountStorage(jedisPool);
+    }
+
+    public static RedisCountStorage create(String url, int port) {
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setMaxTotal(128);
+        JedisPool jedisPool = new JedisPool(poolConfig, url, port);
+        return new RedisCountStorage(jedisPool);
     }
 
     /**
@@ -104,5 +109,9 @@ public class RedisConnection {
     }
     public static String getKeyNumShards(String keyspace, ConceptId conceptId){
         return "NS_" + keyspace + "_" + conceptId.getValue();
+    }
+
+    public JedisPool getJedisPool() {
+        return jedisPool;
     }
 }

@@ -31,7 +31,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.connection.RedisConnection;
+import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.Meter;
@@ -81,7 +81,7 @@ public class StandaloneTaskManager implements TaskManager {
     private final ScheduledExecutorService schedulingService;
     private final EngineID engineID;
     private final GraknEngineConfig config;
-    private final RedisConnection redis;
+    private final RedisCountStorage redis;
     private MetricRegistry metricRegistry;
     private final Timer addTaskTimer;
     private final Timer executeTaskTimer;
@@ -89,7 +89,7 @@ public class StandaloneTaskManager implements TaskManager {
     private final Meter stoppedMeter;
     private final Meter completedMeter;
 
-    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis, MetricRegistry metricRegistry) {
+    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config, RedisCountStorage redis, MetricRegistry metricRegistry) {
         this.engineID = engineId;
         this.config = config;
         this.redis = redis;

@@ -10,7 +10,7 @@ import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.connection.RedisConnection;
+import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -35,7 +35,7 @@ public class UpdatingInstanceCountTaskTest {
 
     @Test
     public void whenUpdatingInstanceCounts_EnsureRedisIsUpdated() throws InterruptedException {
-        RedisConnection redis = engine.redis();
+        RedisCountStorage redis = engine.redis();
         String keyspace = UUID.randomUUID().toString();
         String entityType1 = "e1";
         String entityType2 = "e2";
@@ -44,15 +44,15 @@ public class UpdatingInstanceCountTaskTest {
         createAndExecuteCountTask(keyspace, ConceptId.of(entityType1), 6L);
         createAndExecuteCountTask(keyspace, ConceptId.of(entityType2), 3L);
         // Check cache in redis has been updated
-        assertEquals(6L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, ConceptId.of(entityType1))));
-        assertEquals(3L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, ConceptId.of(entityType2))));
+        assertEquals(6L, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace, ConceptId.of(entityType1))));
+        assertEquals(3L, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace, ConceptId.of(entityType2))));
 
         //Create Artificial configuration
         createAndExecuteCountTask(keyspace, ConceptId.of(entityType1), 1L);
         createAndExecuteCountTask(keyspace, ConceptId.of(entityType2), -1L);
         // Check cache in redis has been updated
-        assertEquals(7L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, ConceptId.of(entityType1))));
-        assertEquals(2L, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, ConceptId.of(entityType2))));
+        assertEquals(7L, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace, ConceptId.of(entityType1))));
+        assertEquals(2L, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace, ConceptId.of(entityType2))));
     }
 
     private void createAndExecuteCountTask(String keyspace, ConceptId conceptId, long count){

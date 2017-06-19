@@ -30,7 +30,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
-import ai.grakn.engine.tasks.connection.RedisConnection;
+import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
@@ -80,7 +80,7 @@ public class SingleQueueTaskManager implements TaskManager {
     private final PathChildrenCache stoppedTasks;
     private final ExternalOffsetStorage offsetStorage;
     private final GraknEngineConfig config;
-    private final RedisConnection redis;
+    private final RedisCountStorage redis;
 
     private final Timer addTaskTimer;
 
@@ -98,7 +98,7 @@ public class SingleQueueTaskManager implements TaskManager {
      *  + Create and run an instance of SingleQueueTaskRunner
      *  + Add oneself to the leader elector by instantiating failoverelector
      */
-    public SingleQueueTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis, MetricRegistry metricRegistry) {
+    public SingleQueueTaskManager(EngineID engineId, GraknEngineConfig config, RedisCountStorage redis, MetricRegistry metricRegistry) {
         this.config = config;
         this.redis = redis;
         this.zookeeper = new ZookeeperConnection(config);

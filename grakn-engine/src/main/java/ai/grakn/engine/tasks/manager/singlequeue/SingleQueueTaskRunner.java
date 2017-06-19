@@ -30,7 +30,7 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.connection.RedisConnection;
+import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.util.EngineID;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import com.codahale.metrics.Histogram;
@@ -67,7 +67,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
     private final EngineID engineID;
     private final GraknEngineConfig engineConfig;
-    private final RedisConnection redis;
+    private final RedisCountStorage redis;
     private final Timer readRecordsTimer;
     private final Meter stopMeter;
     private final Meter resubmitMeter;
@@ -88,7 +88,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      */
     public SingleQueueTaskRunner(
             SingleQueueTaskManager manager, EngineID engineID, GraknEngineConfig config,
-            RedisConnection redis,
+            RedisCountStorage redis,
             ExternalOffsetStorage offsetStorage,
             Consumer<TaskState, TaskConfiguration> consumer,
             MetricRegistry metricRegistry){

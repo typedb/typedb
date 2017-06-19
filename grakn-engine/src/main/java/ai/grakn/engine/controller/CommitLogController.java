@@ -24,21 +24,20 @@ import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.util.REST;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import spark.Request;
-import spark.Response;
-import spark.Service;
-
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import java.util.Optional;
-
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import spark.Request;
+import spark.Response;
+import spark.Service;
 
 /**
  * A controller which core submits commit logs to so we can post-process jobs for cleanup.
@@ -82,6 +81,7 @@ public class CommitLogController {
         String keyspace = Optional.ofNullable(req.queryParams(KEYSPACE_PARAM)).orElse(defaultKeyspace);
 
         // Instances to post process
+        // TODO why is there a delay?
         TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass(), postProcessingDelay);
         TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(keyspace, req.body());
 
@@ -89,12 +89,13 @@ public class CommitLogController {
         TaskState countingTaskState = UpdatingInstanceCountTask.createTask(this.getClass());
         TaskConfiguration countingTaskConfiguration = UpdatingInstanceCountTask.createConfig(keyspace, req.body());
 
-        // Send two tasks to the pipeline
-        manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration);
-        manager.addTask(countingTaskState, countingTaskConfiguration);
+        // TODO Use an engine wide executor here
+        CompletableFuture.allOf(
+                CompletableFuture.runAsync(() -> manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration)),
+                CompletableFuture.runAsync(() -> manager.addTask(countingTaskState, countingTaskConfiguration)))
+                .join();
 
-
-
+        // TODO return Json
         return "PP Task [ " + postProcessingTaskState.getId().getValue() + " ] and Counting task [" + countingTaskState.getId().getValue() + "] created for graph [" + keyspace + "]";
     }
 }

@@ -23,7 +23,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.connection.RedisConnection;
+import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
@@ -90,8 +90,8 @@ public class EngineContext extends ExternalResource {
         return config;
     }
 
-    public RedisConnection redis() {
-        return RedisConnection.create(config.getProperty(REDIS_SERVER_URL), config.getPropertyAsInt(REDIS_SERVER_PORT));
+    public RedisCountStorage redis() {
+        return RedisCountStorage.create(config.getProperty(REDIS_SERVER_URL), config.getPropertyAsInt(REDIS_SERVER_PORT));
     }
 
     public TaskManager getTaskManager(){
@@ -109,6 +109,7 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void before() throws Throwable {
+        config.setConfigProperty(REDIS_SERVER_PORT, "5246");
         RestAssured.baseURI = "http://" + config.getProperty("server.host") + ":" + config.getProperty("server.port");        
         if (!config.getPropertyAsBool("test.start.embedded.components", true)) {
             return;

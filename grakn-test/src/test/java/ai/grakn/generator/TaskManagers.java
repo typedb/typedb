@@ -20,7 +20,8 @@ package ai.grakn.generator;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.connection.RedisConnection;
+import ai.grakn.engine.tasks.connection.RedisCountStorage;
+import ai.grakn.engine.tasks.manager.RedisTaskManager;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.util.EngineID;
@@ -28,12 +29,12 @@ import com.codahale.metrics.MetricRegistry;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-
-import com.yammer.metrics.core.MetricsRegistry;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * TaskManagers
@@ -41,6 +42,7 @@ import java.util.Map;
  * @author alex
  */
 public class TaskManagers extends Generator<TaskManager> {
+    private static final Logger LOG = LoggerFactory.getLogger(TaskManagers.class);
 
     @SuppressWarnings("unchecked")
     private Class<? extends TaskManager>[] taskManagerClasses = new Class[]{
@@ -60,17 +62,20 @@ public class TaskManagers extends Generator<TaskManager> {
 
     @Override
     public TaskManager generate(SourceOfRandomness random, GenerationStatus status) {
-        Class<? extends TaskManager> taskManagerToReturn = random.choose(taskManagerClasses);
+        Class<? extends TaskManager> taskManagerToReturn = RedisTaskManager.class;
 
         GraknEngineConfig config = GraknEngineConfig.create();
-
+        RedisCountStorage redisCountStorage = RedisCountStorage
+                .create(config.getProperty(GraknEngineConfig.REDIS_SERVER_URL),
+                        Integer.parseInt(config.getProperty(GraknEngineConfig.REDIS_SERVER_PORT)));
         if(!taskManagers.containsKey(taskManagerToReturn)){
             try {
                 Constructor<? extends TaskManager> constructor =
-                        taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class, RedisConnection.class, MetricsRegistry.class);
+                        taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class, RedisCountStorage.class, MetricRegistry.class);
                 // TODO this doesn't take a Redis connection. Make sure this is what we expect
-                taskManagers.put(taskManagerToReturn, constructor.newInstance(EngineID.me(), config, null, new MetricRegistry()));
+                taskManagers.put(taskManagerToReturn, constructor.newInstance(EngineID.me(), config, redisCountStorage, new MetricRegistry()));
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                LOG.error("Could not instantiate task manager {}", e.getMessage());
                 throw new RuntimeException(e);
             }
         }

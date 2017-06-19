@@ -19,55 +19,44 @@
 package ai.grakn.test.engine.tasks.manager;
 
 import ai.grakn.engine.TaskStatus;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
-import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.engine.util.EngineID;
-import ai.grakn.generator.TaskManagers;
-import ai.grakn.generator.TaskStates;
-import ai.grakn.test.EngineContext;
-import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
-import com.google.common.collect.ImmutableList;
-import com.pholser.junit.quickcheck.Property;
-import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import mjson.Json;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
-
-import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.tasks.TaskSchedule.now;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
+import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskResumes;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
+import ai.grakn.engine.util.EngineID;
+import ai.grakn.generator.TaskManagers;
+import ai.grakn.generator.TaskStates;
+import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
+import com.google.common.collect.ImmutableList;
+import com.pholser.junit.quickcheck.Property;
+import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import java.time.Duration;
 import static java.time.Duration.between;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import static java.util.stream.Collectors.toList;
+import java.util.stream.Stream;
+import mjson.Json;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -76,9 +65,15 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
+import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Test all implementations of the TaskManager interface
@@ -94,8 +89,8 @@ public class TaskManagerTest {
         MockBackgroundTask.clearTasks();
     }
 
-    @ClassRule
-    public static EngineContext kafka = EngineContext.startKafkaServer();
+//    @ClassRule
+//    public static EngineContext kafka = EngineContext.startKafkaServer();
 
     @AfterClass
     public static void closeTaskManagers(){

@@ -27,6 +27,8 @@ import ai.grakn.engine.TaskId;
  *
  * <p>
  *     Provides common methods for scheduling tasks for execution and stopping task execution.
+ *     At the moment it assumes that upon construction, some threads will be started that
+ *     take care of consuming the elements of the queue.
  * </p>
  *
  * @author Denis Lobanov, alexandraorth

@@ -29,7 +29,7 @@ import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.connection.RedisConnection;
+import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
@@ -49,6 +49,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -72,14 +74,18 @@ public class GraknEngineServer implements AutoCloseable {
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
     private final EngineGraknGraphFactory factory;
-    private final RedisConnection redis;
+    private final RedisCountStorage redis;
     private final MetricRegistry metricRegistry;
 
     private GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
         String redisUrl = prop.getProperty(GraknEngineConfig.REDIS_SERVER_URL);
         int redisPort = prop.getPropertyAsInt(GraknEngineConfig.REDIS_SERVER_PORT);
-        redis = RedisConnection.create(redisUrl, redisPort);
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        // TODO Make this configurable
+        poolConfig.setMaxTotal(32);
+        JedisPool jedisPool = new JedisPool(poolConfig, redisUrl, redisPort);
+        redis = RedisCountStorage.create(jedisPool);
         factory = EngineGraknGraphFactory.create(prop.getProperties());
         metricRegistry = new MetricRegistry();
         taskManager = startTaskManager();
@@ -112,11 +118,11 @@ public class GraknEngineServer implements AutoCloseable {
      */
     private TaskManager startTaskManager() {
         String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
-
         try {
             Class<TaskManager> taskManagerClass = (Class<TaskManager>) Class.forName(taskManagerClassName);
             Constructor<TaskManager> constructor =
-                    taskManagerClass.getConstructor(EngineID.class, GraknEngineConfig.class, RedisConnection.class, MetricRegistry.class);
+                    taskManagerClass.getConstructor(EngineID.class, GraknEngineConfig.class, RedisCountStorage.class, MetricRegistry.class);
+            LOG.info("Instantiating task manager {}", taskManagerClass.getCanonicalName());
             return constructor.newInstance(engineId, prop, redis, metricRegistry);
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException e) {
             throw new IllegalArgumentException("Invalid or unavailable TaskManager class", e);
