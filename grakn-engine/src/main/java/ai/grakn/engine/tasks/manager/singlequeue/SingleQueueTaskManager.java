@@ -20,6 +20,7 @@
 package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.ZookeeperLock;
@@ -79,6 +80,7 @@ public class SingleQueueTaskManager implements TaskManager {
     private final ExternalOffsetStorage offsetStorage;
     private final GraknEngineConfig config;
     private final RedisConnection redis;
+    private final SystemKeyspace systemKeyspace;
 
     private Set<SingleQueueTaskRunner> taskRunners;
     private ExecutorService taskRunnerThreadPool;
@@ -94,9 +96,10 @@ public class SingleQueueTaskManager implements TaskManager {
      *  + Create and run an instance of SingleQueueTaskRunner
      *  + Add oneself to the leader elector by instantiating failoverelector
      */
-    public SingleQueueTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis) {
+    public SingleQueueTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis, SystemKeyspace systemKeyspace) {
         this.config = config;
         this.redis = redis;
+        this.systemKeyspace = systemKeyspace;
         this.zookeeper = new ZookeeperConnection(config);
         this.storage = new TaskStateZookeeperStore(zookeeper);
         this.offsetStorage = new ExternalOffsetStorage(zookeeper);
@@ -239,6 +242,6 @@ public class SingleQueueTaskManager implements TaskManager {
      * @return New instance of a SingleQueueTaskRunner
      */
     private SingleQueueTaskRunner newTaskRunner(EngineID engineId, String priority){
-        return new SingleQueueTaskRunner(this, engineId, config, redis, offsetStorage, newConsumer(priority));
+        return new SingleQueueTaskRunner(this, engineId, config, redis, systemKeyspace, offsetStorage, newConsumer(priority));
     }
 }

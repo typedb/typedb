@@ -26,7 +26,7 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;

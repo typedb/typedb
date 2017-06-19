@@ -28,7 +28,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiOperation;

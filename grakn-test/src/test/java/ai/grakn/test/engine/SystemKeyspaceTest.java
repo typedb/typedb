@@ -1,4 +1,4 @@
-package ai.grakn.factory;
+package ai.grakn.engine;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.factory.SystemKeyspace.SYSTEM_GRAPH_NAME;
+import static ai.grakn.engine.SystemKeyspace.SYSTEM_GRAPH_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

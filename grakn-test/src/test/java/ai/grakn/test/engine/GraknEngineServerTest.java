@@ -30,6 +30,7 @@ import org.junit.rules.ExpectedException;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.engine.GraknEngineConfig.ZK_CONNECTION_TIMEOUT;
 import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
@@ -65,5 +66,10 @@ public class GraknEngineServerTest {
         try (GraknEngineServer server = GraknEngineServer.start(conf)) {
             assertThat(server.getTaskManager(), instanceOf(SingleQueueTaskManager.class));
         }
+    }
+
+    @Test
+    public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded(){
+        fail();
     }
 }

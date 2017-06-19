@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

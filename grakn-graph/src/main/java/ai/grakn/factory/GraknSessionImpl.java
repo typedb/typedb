@@ -36,7 +36,9 @@ import java.util.Properties;
 
 import static ai.grakn.util.EngineCommunicator.contactEngine;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
+import static ai.grakn.util.REST.WebPath.System.INITIALISE;
 import static mjson.Json.read;
 
 /**
@@ -138,7 +140,7 @@ public class GraknSessionImpl implements GraknSession {
      * @return A new or existing grakn graph factory with the defined name connecting to the specified remote location
      */
     private static InternalFactory<?> configureGraphFactoryRemote(String keyspace, String engineUrl, String graphType){
-        String restFactoryUri = engineUrl + CONFIGURATION + "?" + GRAPH_CONFIG_PARAM + "=" + graphType;
+        String restFactoryUri = engineUrl + INITIALISE + "?" + GRAPH_CONFIG_PARAM + "=" + graphType + "&" + KEYSPACE_PARAM + "=" + keyspace;
 
         Properties properties = new Properties();
         properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());

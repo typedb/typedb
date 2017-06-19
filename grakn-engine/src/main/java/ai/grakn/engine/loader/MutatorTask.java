@@ -60,7 +60,7 @@ public class MutatorTask extends BackgroundTask {
         int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
         EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
 
-        GraphMutators.runBatchMutationWithRetry(factory, keyspace, maxRetry, (graph) ->
+        GraphMutators.runBatchMutationWithRetry(factory, systemKeyspace(), keyspace, maxRetry, (graph) ->
                 insertQueriesInOneTransaction(graph, inserts)
         );
 

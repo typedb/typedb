@@ -37,6 +37,7 @@ import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
 import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
 import static com.jayway.restassured.RestAssured.get;
+import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -101,5 +102,10 @@ public class SystemControllerTest {
         graph.close();
         batch.close();
         graph2.close();
+    }
+
+    @Test
+    public void testNewCode(){
+	    fail();
     }
 }

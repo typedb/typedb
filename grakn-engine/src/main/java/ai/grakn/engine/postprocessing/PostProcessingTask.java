@@ -73,7 +73,7 @@ public class PostProcessingTask extends BackgroundTask {
             String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
             int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
-            GraphMutators.runGraphMutationWithRetry(factory, keyspace, maxRetry,
+            GraphMutators.runGraphMutationWithRetry(factory, systemKeyspace(), keyspace, maxRetry,
                     (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
         });
 

@@ -24,7 +24,7 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.JWTHandler;
-import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.util.EmbeddedKafka;
 import ai.grakn.util.EmbeddedRedis;
 import com.jayway.restassured.RestAssured;
@@ -115,8 +115,9 @@ public abstract class GraknTestEngineSetup {
     static void stopEngine(GraknEngineServer server) throws Exception {
         LOG.info("stopping engine...");
 
-        server.close();
+        // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
         clearGraphs(server.factory());
+        server.close();
 
         LOG.info("engine stopped.");
 
@@ -142,9 +143,10 @@ public abstract class GraknTestEngineSetup {
                         keyspaceNames.add(y.asResource().getValue().toString());
                     }));
         }
+
         keyspaceNames.forEach(name -> {
             GraknGraph graph = engineGraknGraphFactory.getGraph(name, GraknTxType.WRITE);
-            graph.admin().delete();            
+            graph.admin().delete(false);
         });
         engineGraknGraphFactory.refreshConnections();
     }

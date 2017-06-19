@@ -20,6 +20,7 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -70,7 +71,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
         });
 
         //Shard anything which requires sharding
-        conceptToShard.forEach(type -> shardConcept(redis(), factory, keyspace, type, maxRetry, shardingThreshold));
+        conceptToShard.forEach(type -> shardConcept(redis(), factory, systemKeyspace(), keyspace, type, maxRetry, shardingThreshold));
 
         return true;
     }
@@ -114,7 +115,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @param conceptId The id of the concept to shard
      */
     private static void shardConcept(
-            RedisConnection redis, EngineGraknGraphFactory factory, String keyspace, ConceptId conceptId, int maxRetry,
+            RedisConnection redis, EngineGraknGraphFactory factory, SystemKeyspace systemKeyspace, String keyspace, ConceptId conceptId, int maxRetry,
             long shardingThreshold){
         Lock engineLock = LockProvider.getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
@@ -124,7 +125,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
             if (updateShardCounts(redis, keyspace, conceptId, 0, shardingThreshold)) {
 
                 //Shard
-                GraphMutators.runGraphMutationWithRetry(factory, keyspace, maxRetry, graph -> {
+                GraphMutators.runGraphMutationWithRetry(factory, systemKeyspace, keyspace, maxRetry, graph -> {
                     graph.admin().shard(conceptId);
                     graph.admin().commitNoLogs();
                 });

@@ -73,6 +73,7 @@ public class GraknEngineServer implements AutoCloseable {
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
     private final EngineGraknGraphFactory factory;
+    private final SystemKeyspace systemKeyspace;
     private final RedisConnection redis;
 
     private GraknEngineServer(GraknEngineConfig prop) {
@@ -84,6 +85,7 @@ public class GraknEngineServer implements AutoCloseable {
 
         factory = EngineGraknGraphFactory.create(prop.getProperties());
         taskManager = startTaskManager();
+        systemKeyspace = new SystemKeyspace(factory);
 
         startHTTP();
         printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
@@ -118,8 +120,8 @@ public class GraknEngineServer implements AutoCloseable {
         try {
             Class<TaskManager> taskManagerClass = (Class<TaskManager>) Class.forName(taskManagerClassName);
             Constructor<TaskManager> constructor =
-                    taskManagerClass.getConstructor(EngineID.class, GraknEngineConfig.class, RedisConnection.class);
-            return constructor.newInstance(engineId, prop, redis);
+                    taskManagerClass.getConstructor(EngineID.class, GraknEngineConfig.class, RedisConnection.class, SystemKeyspace.class);
+            return constructor.newInstance(engineId, prop, redis, systemKeyspace);
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException e) {
             throw new IllegalArgumentException("Invalid or unavailable TaskManager class", e);
         } catch (InvocationTargetException e) {
@@ -149,7 +151,7 @@ public class GraknEngineServer implements AutoCloseable {
         new GraqlController(factory, spark);
         new ConceptController(factory, spark);
         new DashboardController(factory, spark);
-        new SystemController(factory, spark);
+        new SystemController(factory, systemKeyspace, spark);
         new AuthController(spark, passwordProtected, jwtHandler, usersHandler);
         new UserController(spark, usersHandler);
         new CommitLogController(spark, defaultKeyspace, postProcessingDelay, taskManager);
@@ -215,6 +217,10 @@ public class GraknEngineServer implements AutoCloseable {
 
     public EngineGraknGraphFactory factory() {
         return factory;
+    }
+
+    public SystemKeyspace systemKeyspace(){
+        return systemKeyspace;
     }
 
     /**
