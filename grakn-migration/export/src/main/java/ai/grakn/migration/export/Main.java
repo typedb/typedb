@@ -24,8 +24,6 @@ import ai.grakn.migration.base.MigrationCLI;
 
 import java.util.Optional;
 
-import static ai.grakn.migration.base.MigrationCLI.die;
-
 /**
  * Export data from a Grakn graph to Graql statements - prints to System.out
  * @author alexandraorth
@@ -42,13 +40,10 @@ public class Main {
     public static void runExport(GraphWriterOptions options) {
         if(!options.exportOntology() && !options.exportData()) {
             System.out.println("Missing arguments -ontology and/or -data");
-            die("");
+            MigrationCLI.die("");
         }
 
-        System.out.println("Writing graph " + options.getKeyspace() + " using Grakn Engine " +
-                options.getUri() + " to System.out");
-
-        try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE)) {
+        try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.READ)) {
             GraphWriter graphWriter = new GraphWriter(graph);
 
             if (options.exportOntology()) {
