@@ -39,7 +39,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.test.GraphContext;
-import ai.grakn.test.SNBGraph;
+import ai.grakn.test.graphs.SNBGraph;
 import ai.grakn.test.GraknTestSetup;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;

@@ -43,7 +43,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
-import ai.grakn.test.SNBGraph;
+import ai.grakn.test.graphs.SNBGraph;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;

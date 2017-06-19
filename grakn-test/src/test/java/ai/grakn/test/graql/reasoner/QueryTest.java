@@ -30,7 +30,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.GraphContext;
-import ai.grakn.test.SNBGraph;
+import ai.grakn.test.graphs.SNBGraph;
 
 import ai.grakn.test.GraknTestSetup;
 import com.google.common.collect.Sets;

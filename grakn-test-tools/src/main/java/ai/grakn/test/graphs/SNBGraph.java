@@ -16,10 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test;
+package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 

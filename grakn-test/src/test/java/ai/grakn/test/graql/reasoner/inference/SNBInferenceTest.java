@@ -25,7 +25,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.test.GraphContext;
-import ai.grakn.test.SNBGraph;
+import ai.grakn.test.graphs.SNBGraph;
 
 import ai.grakn.test.GraknTestSetup;
 import org.junit.BeforeClass;
