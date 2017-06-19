@@ -29,16 +29,26 @@ import ai.grakn.graql.Pattern;
 
 import java.util.function.Consumer;
 
+/**
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class CWGraph extends TestGraph {
 
     private static ResourceType<String> key;
 
-    private static EntityType person, criminal, weapon, rocket, missile, country;
+    private static EntityType person;
+    private static EntityType weapon;
+    private static EntityType rocket;
+    private static EntityType country;
     
     private static ResourceType<String> alignment, propulsion, nationality;
 
-    private static RelationType isEnemyOf, isPaidBy, owns, transaction;
-    
+    private static RelationType isEnemyOf;
+    private static RelationType isPaidBy;
+    private static RelationType owns;
+
     private static RoleType enemySource, enemyTarget;
     private static RoleType owner, ownedItem;
     private static RoleType payee, payer;
@@ -77,7 +87,7 @@ public class CWGraph extends TestGraph {
                 .resource(key)
                 .resource(nationality);
 
-        criminal = graph.putEntityType("criminal");
+        graph.putEntityType("criminal");
 
         weapon = graph.putEntityType("weapon")
                 .plays(transactionItem)
@@ -90,7 +100,7 @@ public class CWGraph extends TestGraph {
                 .resource(key)
                 .resource(propulsion);
 
-        missile = graph.putEntityType("missile")
+        graph.putEntityType("missile")
                 .superType(weapon)
                 .plays(transactionItem)
                 .resource(key);
@@ -113,7 +123,7 @@ public class CWGraph extends TestGraph {
                 .relates(enemySource)
                 .relates(enemyTarget);
 
-        transaction = graph.putRelationType("transaction")
+        graph.putRelationType("transaction")
                 .relates(seller)
                 .relates(buyer)
                 .relates(transactionItem);
