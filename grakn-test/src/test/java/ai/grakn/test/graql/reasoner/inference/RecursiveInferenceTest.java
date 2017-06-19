@@ -25,7 +25,7 @@ import ai.grakn.graphs.MatrixGraph;
 import ai.grakn.graphs.MatrixGraphII;
 import ai.grakn.graphs.NguyenGraph;
 import ai.grakn.graphs.PathGraph;
-import ai.grakn.graphs.PathGraphII;
+import ai.grakn.test.graphs.PathGraphII;
 import ai.grakn.test.graphs.PathGraphSymmetric;
 import ai.grakn.test.graphs.TailRecursionGraph;
 import ai.grakn.test.graphs.TransitivityChainGraph;
