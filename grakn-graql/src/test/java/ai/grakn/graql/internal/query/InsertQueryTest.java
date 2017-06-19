@@ -733,14 +733,14 @@ public class InsertQueryTest {
     public void testInsertNonRuleWithLhs() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("lhs", RULE.getLabel()));
-        qb.insert(var().isa("movie").lhs(var("x").pattern())).execute();
+        qb.insert(var().isa("movie").lhs(var("x"))).execute();
     }
 
     @Test
     public void testInsertNonRuleWithRHS() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("rhs", RULE.getLabel()));
-        qb.insert(label("thing").sub("movie").rhs(var("x").pattern())).execute();
+        qb.insert(label("thing").sub("movie").rhs(var("x"))).execute();
     }
 
     @Test

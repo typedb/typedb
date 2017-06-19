@@ -28,7 +28,6 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarPatternBuilder;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.RelationPlayer;
@@ -85,11 +84,6 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     public abstract Var getVarName();
 
     protected abstract Set<VarProperty> properties();
-
-    @Override
-    public final VarPattern pattern() {
-        return this;
-    }
 
     @Override
     public final VarPatternAdmin admin() {
@@ -212,13 +206,13 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     }
 
     @Override
-    public final VarPattern has(String type, VarPatternBuilder varPattern) {
+    public final VarPattern has(String type, VarPattern varPattern) {
         return has(TypeLabel.of(type), varPattern);
     }
 
     @Override
-    public final VarPattern has(TypeLabel type, VarPatternBuilder varPattern) {
-        return addProperty(HasResourceProperty.of(type, varPattern.pattern().admin()));
+    public final VarPattern has(TypeLabel type, VarPattern varPattern) {
+        return addProperty(HasResourceProperty.of(type, varPattern.admin()));
     }
 
     @Override
@@ -227,8 +221,8 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     }
 
     @Override
-    public final VarPattern isa(VarPatternBuilder type) {
-        return addProperty(new IsaProperty(type.pattern().admin()));
+    public final VarPattern isa(VarPattern type) {
+        return addProperty(new IsaProperty(type.admin()));
     }
 
     @Override
@@ -237,8 +231,8 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     }
 
     @Override
-    public final VarPattern sub(VarPatternBuilder type) {
-        return addProperty(new SubProperty(type.pattern().admin()));
+    public final VarPattern sub(VarPattern type) {
+        return addProperty(new SubProperty(type.admin()));
     }
 
     @Override
@@ -247,8 +241,8 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     }
 
     @Override
-    public final VarPattern relates(VarPatternBuilder type) {
-        return addProperty(new RelatesProperty(type.pattern().admin()));
+    public final VarPattern relates(VarPattern type) {
+        return addProperty(new RelatesProperty(type.admin()));
     }
 
     @Override
@@ -257,13 +251,13 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     }
 
     @Override
-    public final VarPattern plays(VarPatternBuilder type) {
-        return addProperty(new PlaysProperty(type.pattern().admin(), false));
+    public final VarPattern plays(VarPattern type) {
+        return addProperty(new PlaysProperty(type.admin(), false));
     }
 
     @Override
-    public final VarPattern hasScope(VarPatternBuilder type) {
-        return addProperty(new HasScopeProperty(type.pattern().admin()));
+    public final VarPattern hasScope(VarPattern type) {
+        return addProperty(new HasScopeProperty(type.admin()));
     }
 
     @Override
@@ -272,8 +266,8 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     }
 
     @Override
-    public final VarPattern has(VarPatternBuilder type) {
-        return addProperty(new HasResourceTypeProperty(type.pattern().admin(), false));
+    public final VarPattern has(VarPattern type) {
+        return addProperty(new HasResourceTypeProperty(type.admin(), false));
     }
 
     @Override
@@ -282,8 +276,8 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     }
 
     @Override
-    public final VarPattern key(VarPatternBuilder type) {
-        return addProperty(new HasResourceTypeProperty(type.pattern().admin(), true));
+    public final VarPattern key(VarPattern type) {
+        return addProperty(new HasResourceTypeProperty(type.admin(), true));
     }
 
     @Override
@@ -292,8 +286,8 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     }
 
     @Override
-    public final VarPattern rel(VarPatternBuilder roleplayer) {
-        return addCasting(RelationPlayerImpl.of(roleplayer.pattern().admin()));
+    public final VarPattern rel(VarPattern roleplayer) {
+        return addCasting(RelationPlayerImpl.of(roleplayer.admin()));
     }
 
     @Override
@@ -302,18 +296,18 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     }
 
     @Override
-    public final VarPattern rel(VarPatternBuilder roletype, String roleplayer) {
+    public final VarPattern rel(VarPattern roletype, String roleplayer) {
         return rel(roletype, Graql.var(roleplayer));
     }
 
     @Override
-    public final VarPattern rel(String roletype, VarPatternBuilder roleplayer) {
+    public final VarPattern rel(String roletype, VarPattern roleplayer) {
         return rel(Graql.label(roletype), roleplayer);
     }
 
     @Override
-    public final VarPattern rel(VarPatternBuilder roletype, VarPatternBuilder roleplayer) {
-        return addCasting(RelationPlayerImpl.of(roletype.pattern().admin(), roleplayer.pattern().admin()));
+    public final VarPattern rel(VarPattern roletype, VarPattern roleplayer) {
+        return addCasting(RelationPlayerImpl.of(roletype.admin(), roleplayer.admin()));
     }
 
     @Override
@@ -347,8 +341,8 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     }
 
     @Override
-    public final VarPattern neq(VarPatternBuilder varPattern) {
-        return addProperty(new NeqProperty(varPattern.pattern().admin()));
+    public final VarPattern neq(VarPattern varPattern) {
+        return addProperty(new NeqProperty(varPattern.admin()));
     }
 
     @Override

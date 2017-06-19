@@ -90,13 +90,13 @@ public class VariableAndPatternTest {
         VarPattern var1;
         VarPattern var2;
 
-        var1 = var().pattern();
-        var2 = var().pattern();
+        var1 = var();
+        var2 = var();
         assertTrue(var1.equals(var1));
         assertFalse(var1.equals(var2));
 
-        var1 = var("x").pattern();
-        var2 = var("y").pattern();
+        var1 = var("x");
+        var2 = var("y");
         assertTrue(var1.equals(var1));
         assertFalse(var1.equals(var2));
 
@@ -121,7 +121,7 @@ public class VariableAndPatternTest {
                 .collect(Collectors.toSet());
         assertFalse(resultSet1.isEmpty());
 
-        Set<VarPattern> varSet11 = Sets.newHashSet(var("x").pattern());
+        Set<VarPattern> varSet11 = Sets.newHashSet((VarPattern) var("x"));
         varSet11.addAll(varSet1);
         Set<Concept> resultSet11 = graph.graql().match(varSet11).select("x").execute()
                 .stream()
@@ -129,7 +129,7 @@ public class VariableAndPatternTest {
                 .collect(Collectors.toSet());
         assertEquals(resultSet11, resultSet1);
 
-        varSet11.add(var("z").pattern());
+        varSet11.add(var("z"));
         resultSet11 = graph.graql().match(varSet11).execute()
                 .stream()
                 .map(stringConceptMap -> stringConceptMap.get("x"))
