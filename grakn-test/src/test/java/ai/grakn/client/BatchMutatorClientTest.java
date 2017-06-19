@@ -29,15 +29,11 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.junit.rules.ExpectedException;
 
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.graql.Graql.insert;
@@ -45,12 +41,10 @@ import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 import static java.util.stream.Stream.generate;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -61,9 +55,6 @@ public class BatchMutatorClientTest {
     private GraknSession session;
 
     @Rule
-    public final SystemOutRule systemOut = new SystemOutRule().enableLog();
-
-    @Rule
     public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
@@ -72,35 +63,6 @@ public class BatchMutatorClientTest {
     @Before
     public void setupSession(){
         this.session = engine.factoryWithNewKeyspace();
-    }
-
-    @Test
-    @Ignore("Testing log output, it's pretty flimsy. It's also prone to race conditions. Ignored until bug fix so PRs can pass")
-    public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged() throws InterruptedException {
-        CountDownLatch callbackCompleted = new CountDownLatch(1);
-
-        // Create a BatchMutatorClient with a callback that will fail
-        BatchMutatorClient loader = loader();
-        loader.setTaskCompletionConsumer((json) -> {
-            try {
-                throw new RuntimeException("deliberate failure");
-            } finally {
-                callbackCompleted.countDown();
-            }
-        });
-
-        // Load some queries
-        generate(this::query).limit(1).forEach(loader::add);
-
-        // Wait for queries to finish
-        loader.waitToFinish();
-
-        // Wait for callback function to execute - Callbacks are run asynchronously
-        boolean callbackSuccessfullyCompleted = callbackCompleted.await(1, TimeUnit.MINUTES);
-        assertTrue("callback completed withing timeout", callbackSuccessfullyCompleted);
-
-        // Verify that the logger received the failed log message
-        assertThat(systemOut.getLog(), containsString("error in callback"));
     }
 
     @Test

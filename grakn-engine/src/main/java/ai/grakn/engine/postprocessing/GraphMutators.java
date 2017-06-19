@@ -20,6 +20,7 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.util.ErrorMessage;

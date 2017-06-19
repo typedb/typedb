@@ -219,9 +219,9 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     public Unifier getUnifier(Atom parentAtom) {
         if (!(parentAtom instanceof TypeAtom)) return super.getUnifier(parentAtom);
 
+        //case when parent is a type atom
         Unifier unifier = new UnifierImpl();
         unifier.addMapping(this.getValueVariable(), parentAtom.getVarName());
-        if (parentAtom.containsVar(this.getVarName())) unifier.addMapping(this.getVarName(), Graql.var());
         return unifier;
     }
 

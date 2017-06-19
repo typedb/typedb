@@ -54,7 +54,6 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import static ai.grakn.migration.base.MigrationCLI.die;
-import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -81,8 +80,6 @@ public class XmlMigrator implements AutoCloseable {
         if(!xmlTemplateFile.exists() || xmlTemplateFile.isDirectory()){
             die("Cannot find file: " + options.getTemplate());
         }
-
-        printInitMessage(options, xmlDataFile.getPath());
 
         try(XmlMigrator xmlMigrator = new XmlMigrator(xmlDataFile)){
             if (options.getElement() != null) {

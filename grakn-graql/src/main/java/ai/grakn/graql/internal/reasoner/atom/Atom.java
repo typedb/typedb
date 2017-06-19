@@ -93,7 +93,7 @@ public abstract class Atom extends AtomicBase {
      * compute base resolution priority of this atom
      * @return priority value
      */
-    public int computePriority(){
+    private int computePriority(){
         return computePriority(getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet()));
     }
 

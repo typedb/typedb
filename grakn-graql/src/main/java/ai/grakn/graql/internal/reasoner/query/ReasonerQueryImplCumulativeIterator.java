@@ -41,14 +41,14 @@ import java.util.Set;
 class ReasonerQueryImplCumulativeIterator extends ReasonerQueryIterator{
     private final Answer partialSub;
 
-    private final LinkedList<ReasonerAtomicQuery> nextList;
+    private final LinkedList<ReasonerQueryImpl> nextList;
     private final QueryCache<ReasonerAtomicQuery> cache;
     private final Set<ReasonerAtomicQuery> subGoals;
 
     private final Iterator<Answer> atomicQueryIterator;
     private Iterator<Answer> queryIterator;
 
-    ReasonerQueryImplCumulativeIterator(Answer sub, LinkedList<ReasonerAtomicQuery> qs,
+    ReasonerQueryImplCumulativeIterator(Answer sub, LinkedList<ReasonerQueryImpl> qs,
                                         Set<ReasonerAtomicQuery> subGoals,
                                         QueryCache<ReasonerAtomicQuery> cache){
         this.subGoals = subGoals;
@@ -68,7 +68,7 @@ class ReasonerQueryImplCumulativeIterator extends ReasonerQueryIterator{
 
         if (atomicQueryIterator.hasNext() && !nextList.isEmpty()) {
             Answer feederSub  = atomicQueryIterator.next();
-            queryIterator = new ReasonerQueryImplCumulativeIterator(feederSub.merge(partialSub), nextList, subGoals, cache);
+            queryIterator = new ReasonerQueryImplCumulativeIterator(feederSub.merge(partialSub, true), nextList, subGoals, cache);
             return hasNext();
         }
         return false;
