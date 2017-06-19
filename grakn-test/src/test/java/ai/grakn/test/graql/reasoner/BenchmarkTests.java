@@ -21,7 +21,7 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.test.graphs.DiagonalGraph;
-import ai.grakn.graphs.MatrixGraphII;
+import ai.grakn.test.graphs.MatrixGraphII;
 import ai.grakn.test.graphs.TransitivityChainGraph;
 import ai.grakn.test.graphs.TransitivityMatrixGraph;
 import ai.grakn.graql.MatchQuery;

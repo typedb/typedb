@@ -20,7 +20,7 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graphs.GeoGraph;
-import ai.grakn.graphs.MatrixGraphII;
+import ai.grakn.test.graphs.MatrixGraphII;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;

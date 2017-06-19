@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graphs;
+package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
@@ -25,10 +25,14 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 
+/**
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class MatrixGraphII extends TestGraph {
 
     private final static TypeLabel key = TypeLabel.of("index");
@@ -62,9 +66,11 @@ public class MatrixGraphII extends TestGraph {
         RelationType Q = graph.getRelationType("Q");
         ConceptId[][] aInstancesIds = new ConceptId[n+1][m+1];
         Instance aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
-        for(int i = 1 ; i <= n ;i++)
-            for(int j = 1 ; j <= m ;j++)
+        for(int i = 1 ; i <= n ;i++) {
+            for (int j = 1; j <= m; j++) {
                 aInstancesIds[i][j] = putEntity(graph, "a" + i + "," + j, aEntity, key).getId();
+            }
+        }
 
         Q.addRelation()
                 .addRolePlayer(Qfrom, aInst)
