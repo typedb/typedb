@@ -1,7 +1,7 @@
 package ai.grakn.test.graql.hal;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graphs.AcademyGraph;
+import ai.grakn.test.graphs.AcademyGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.test.GraphContext;
