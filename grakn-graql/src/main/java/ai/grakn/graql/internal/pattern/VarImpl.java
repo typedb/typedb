@@ -28,17 +28,30 @@ import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.VarPatternBuilder;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.Disjunction;
+import ai.grakn.graql.admin.UniqueVarProperty;
+import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Default implementation of {@link Var}.
  *
  * @author Felix Chapman
  */
-final class VarImpl implements Var {
+final class VarImpl implements Var, VarPatternAdmin {
 
     private final String value;
 
@@ -276,5 +289,90 @@ final class VarImpl implements Var {
     @Override
     public VarPattern neq(VarPatternBuilder varPattern) {
         return pattern().neq(varPattern);
+    }
+
+    @Override
+    public Var getVarName() {
+        return this;
+    }
+
+    @Override
+    public VarPatternAdmin setVarName(Var name) {
+        return (VarPatternAdmin) name;
+    }
+
+    @Override
+    public Stream<VarProperty> getProperties() {
+        return Stream.of();
+    }
+
+    @Override
+    public <T extends VarProperty> Stream<T> getProperties(Class<T> type) {
+        return Stream.of();
+    }
+
+    @Override
+    public <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type) {
+        return Optional.empty();
+    }
+
+    @Override
+    public <T extends VarProperty> boolean hasProperty(Class<T> type) {
+        return false;
+    }
+
+    @Override
+    public <T extends VarProperty> VarPatternAdmin mapProperty(Class<T> type, UnaryOperator<T> mapper) {
+        return this;
+    }
+
+    @Override
+    public Optional<ConceptId> getId() {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<TypeLabel> getTypeLabel() {
+        return Optional.empty();
+    }
+
+    @Override
+    public Collection<VarPatternAdmin> getInnerVars() {
+        return ImmutableSet.of(this);
+    }
+
+    @Override
+    public Collection<VarPatternAdmin> getImplicitInnerVars() {
+        return ImmutableSet.of(this);
+    }
+
+    @Override
+    public Set<TypeLabel> getTypeLabels() {
+        return ImmutableSet.of();
+    }
+
+    @Override
+    public String getPrintableName() {
+        return toString();
+    }
+
+    @Override
+    public Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm() {
+        // a disjunction containing only one option
+        Conjunction<VarPatternAdmin> conjunction = Patterns.conjunction(Collections.singleton(this));
+        return Patterns.disjunction(Collections.singleton(conjunction));
+    }
+
+    @Override
+    public Set<Var> commonVarNames() {
+        return getInnerVars().stream()
+                .filter(v -> v.getVarName().isUserDefinedName())
+                .map(VarPatternAdmin::getVarName)
+                .collect(toSet());
+    }
+
+    @Override
+    public VarPatternAdmin admin() {
+        return this;
     }
 }
