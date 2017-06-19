@@ -22,6 +22,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AskQuery;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarPattern;
@@ -36,8 +37,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collections;
+import java.util.Set;
+
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
+import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
@@ -322,6 +328,30 @@ public class DeleteQueryTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("delet"), containsString("val")));
         qb.match(var("x").isa("movie")).delete(var("x").val("hello")).execute();
+    }
+
+    @Test
+    public void whenDeletingAVariableNotInTheQuery_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("y")));
+        movieGraph.graph().graql().match(var("x").isa("movie")).delete("y").execute();
+    }
+
+    @Test
+    public void whenDeletingAnEmptyPattern_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(NO_PATTERNS.getMessage());
+        movieGraph.graph().graql().match(var()).delete(Collections.EMPTY_SET).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void deleteVarNameNullSet() {
+        movieGraph.graph().graql().match(var()).delete((Set<VarPattern>) null).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void whenDeleteIsPassedNull_Throw() {
+        movieGraph.graph().graql().match(var()).delete((String) null).execute();
     }
 
     private boolean exists(MatchQuery query) {
