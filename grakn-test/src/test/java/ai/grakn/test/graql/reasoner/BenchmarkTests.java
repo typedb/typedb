@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graphs.DiagonalGraph;
 import ai.grakn.graphs.MatrixGraphII;
 import ai.grakn.graphs.TransitivityChainGraph;
-import ai.grakn.graphs.TransitivityMatrixGraph;
+import ai.grakn.test.graphs.TransitivityMatrixGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;

@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graphs;
+package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
@@ -25,10 +25,14 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.test.graphs.TestGraph;
 
 import java.util.function.Consumer;
 
+/**
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class TransitivityMatrixGraph extends TestGraph {
 
     private final static TypeLabel key = TypeLabel.of("index");
@@ -55,32 +59,34 @@ public class TransitivityMatrixGraph extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknGraph graph, int n, int m) {
-        RoleType Qfrom = graph.getRoleType("Q-from");
-        RoleType Qto = graph.getRoleType("Q-to");
+        RoleType qfrom = graph.getRoleType("Q-from");
+        RoleType qto = graph.getRoleType("Q-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
-        RelationType Q = graph.getRelationType("Q");
+        RelationType q = graph.getRelationType("Q");
         Instance aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
         ConceptId[][] aInstanceIds = new ConceptId[n][m];
-        for(int i = 0 ; i < n ;i++)
-            for(int j = 0 ; j < m ;j++)
+        for(int i = 0 ; i < n ;i++) {
+            for (int j = 0; j < m; j++) {
                 aInstanceIds[i][j] = putEntity(graph, "a" + i + "," + j, aEntity, key).getId();
+            }
+        }
         
-        Q.addRelation()
-                .addRolePlayer(Qfrom, aInst)
-                .addRolePlayer(Qto, graph.getConcept(aInstanceIds[0][0]));
+        q.addRelation()
+                .addRolePlayer(qfrom, aInst)
+                .addRolePlayer(qto, graph.getConcept(aInstanceIds[0][0]));
 
         for(int i = 0 ; i < n ; i++) {
             for (int j = 0; j < m ; j++) {
                 if ( i < n - 1 ) {
-                    Q.addRelation()
-                            .addRolePlayer(Qfrom, graph.getConcept(aInstanceIds[i][j]))
-                            .addRolePlayer(Qto, graph.getConcept(aInstanceIds[i+1][j]));
+                    q.addRelation()
+                            .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i][j]))
+                            .addRolePlayer(qto, graph.getConcept(aInstanceIds[i+1][j]));
                 }
                 if ( j < m - 1){
-                    Q.addRelation()
-                            .addRolePlayer(Qfrom, graph.getConcept(aInstanceIds[i][j]))
-                            .addRolePlayer(Qto, graph.getConcept(aInstanceIds[i][j+1]));
+                    q.addRelation()
+                            .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i][j]))
+                            .addRolePlayer(qto, graph.getConcept(aInstanceIds[i][j+1]));
                 }
             }
         }

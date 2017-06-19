@@ -29,7 +29,7 @@ import ai.grakn.graphs.PathGraphII;
 import ai.grakn.graphs.PathGraphSymmetric;
 import ai.grakn.graphs.TailRecursionGraph;
 import ai.grakn.graphs.TransitivityChainGraph;
-import ai.grakn.graphs.TransitivityMatrixGraph;
+import ai.grakn.test.graphs.TransitivityMatrixGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
