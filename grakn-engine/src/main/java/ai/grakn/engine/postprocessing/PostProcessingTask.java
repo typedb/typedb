@@ -63,7 +63,6 @@ public class PostProcessingTask extends BackgroundTask {
      */
     @Override
     public boolean start() {
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
         Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.RESOURCE, configuration());
 
         allToPostProcess.entrySet().forEach(e -> {
@@ -73,7 +72,7 @@ public class PostProcessingTask extends BackgroundTask {
             String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
             int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
-            GraphMutators.runGraphMutationWithRetry(factory, systemKeyspace(), keyspace, maxRetry,
+            GraphMutators.runGraphMutationWithRetry(factory(), keyspace, maxRetry,
                     (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
         });
 

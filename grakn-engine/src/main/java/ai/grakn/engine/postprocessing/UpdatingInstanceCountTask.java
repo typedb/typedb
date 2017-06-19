@@ -55,7 +55,6 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
     public boolean start() {
         long shardingThreshold = engineConfiguration().getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
         int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
 
         Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
         String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
@@ -71,7 +70,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
         });
 
         //Shard anything which requires sharding
-        conceptToShard.forEach(type -> shardConcept(redis(), factory, systemKeyspace(), keyspace, type, maxRetry, shardingThreshold));
+        conceptToShard.forEach(type -> shardConcept(redis(), factory(), keyspace, type, maxRetry, shardingThreshold));
 
         return true;
     }
@@ -115,7 +114,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @param conceptId The id of the concept to shard
      */
     private static void shardConcept(
-            RedisConnection redis, EngineGraknGraphFactory factory, SystemKeyspace systemKeyspace, String keyspace, ConceptId conceptId, int maxRetry,
+            RedisConnection redis, EngineGraknGraphFactory factory, String keyspace, ConceptId conceptId, int maxRetry,
             long shardingThreshold){
         Lock engineLock = LockProvider.getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
@@ -125,7 +124,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
             if (updateShardCounts(redis, keyspace, conceptId, 0, shardingThreshold)) {
 
                 //Shard
-                GraphMutators.runGraphMutationWithRetry(factory, systemKeyspace, keyspace, maxRetry, graph -> {
+                GraphMutators.runGraphMutationWithRetry(factory, keyspace, maxRetry, graph -> {
                     graph.admin().shard(conceptId);
                     graph.admin().commitNoLogs();
                 });

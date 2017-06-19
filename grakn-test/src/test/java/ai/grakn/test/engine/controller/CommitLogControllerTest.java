@@ -80,7 +80,7 @@ public class CommitLogControllerTest {
     public static SparkContext ctx = SparkContext.withControllers((spark, config) -> {
         EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(config.getProperties());
         new CommitLogController(spark, config.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY), 100, manager);
-        new SystemController(factory, new SystemKeyspace(factory), spark);
+        new SystemController(factory, spark);
     });
 
     private Json commitLog;

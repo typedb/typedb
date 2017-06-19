@@ -21,7 +21,6 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
-import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
@@ -57,14 +56,13 @@ public class ConceptControllerTest {
 
     private static GraknGraph mockGraph;
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
-    private static SystemKeyspace systemKeyspace = mock(SystemKeyspace.class);
 
     @ClassRule
     public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(mockFactory, systemKeyspace, spark);
+        new SystemController(mockFactory, spark);
         new ConceptController(mockFactory, spark);
     });
 

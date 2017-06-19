@@ -76,7 +76,7 @@ public class SystemKeyspaceTest {
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system graph", spaces.contains(keyspace));
-            assertTrue(engine.server().systemKeyspace().containsKeyspace(keyspace));
+            assertTrue(engine.server().factory().systemKeyspace().containsKeyspace(keyspace));
         }
 
         graphs.forEach(GraknGraph::close);
@@ -91,7 +91,7 @@ public class SystemKeyspaceTest {
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system graph", spaces.contains(keyspace));
-            assertTrue(engine.server().systemKeyspace().containsKeyspace(keyspace));
+            assertTrue(engine.server().factory().systemKeyspace().containsKeyspace(keyspace));
         }
 
         graphs.forEach(GraknGraph::close);
@@ -148,7 +148,7 @@ public class SystemKeyspaceTest {
         for(GraknGraph graph:graphs){
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(graph.getKeyspace()));
         }
-        assertFalse(engine.server().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
+        assertFalse(engine.server().factory().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
     }
 
     @Test
@@ -171,7 +171,7 @@ public class SystemKeyspaceTest {
         for(GraknGraph graph:graphs){
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(graph.getKeyspace()));
         }
-        assertFalse(engine.server().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
+        assertFalse(engine.server().factory().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
     }
 
     private Set<GraknGraph> buildGraphs(Function<String, GraknGraph> graphProvider, String ... keyspaces){

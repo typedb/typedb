@@ -118,7 +118,7 @@ public class PostProcessingTest {
                                 Schema.BaseType.RESOURCE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))
         );
-        task.initialize(null, configuration, (x, y) -> {}, engine.config(), null, engine.server().systemKeyspace());
+        task.initialize(null, configuration, (x, y) -> {}, engine.config(), null, engine.server().factory());
 
         task.start();
 

@@ -75,11 +75,9 @@ import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
 public class SystemController {
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
     private final EngineGraknGraphFactory factory;
-    private final SystemKeyspace systemKeyspace;
 
-    public SystemController(EngineGraknGraphFactory factory, SystemKeyspace systemKeyspace, Service spark) {
+    public SystemController(EngineGraknGraphFactory factory , Service spark) {
         this.factory = factory;
-        this.systemKeyspace = systemKeyspace;
 
         spark.get(INITIALISE,         this::initialiseSession);
         spark.get(KEYSPACES,          this::getKeyspaces);
@@ -93,7 +91,7 @@ public class SystemController {
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
     private String initialiseSession(Request request, Response response){
         String keyspace = request.queryParams(KEYSPACE_PARAM);
-        boolean keyspaceInitialised = systemKeyspace.ensureKeyspaceInitialised(keyspace);
+        boolean keyspaceInitialised = factory.systemKeyspace().ensureKeyspaceInitialised(keyspace);
 
         if(keyspaceInitialised) {
             return getConfiguration(request, response);
@@ -109,7 +107,7 @@ public class SystemController {
     private boolean deleteKeyspace(Request request, Response response){
         String keyspace = request.queryParams(KEYSPACE_PARAM);
 
-        boolean deletionComplete = systemKeyspace.deleteKeyspace(keyspace);
+        boolean deletionComplete = factory.systemKeyspace().deleteKeyspace(keyspace);
         if(deletionComplete){
             response.status(200);
         } else {

@@ -75,13 +75,13 @@ public class GraknEngineServerTest {
 
         GraknEngineConfig conf = GraknEngineConfig.create();
         try (GraknEngineServer server = GraknEngineServer.start(conf)) {
-            assertNotNull(server.systemKeyspace());
+            assertNotNull(server.factory().systemKeyspace());
 
             // init a random keyspace
             String keyspaceName = "thisisarandomwhalekeyspace";
-            server.systemKeyspace().ensureKeyspaceInitialised(keyspaceName);
+            server.factory().systemKeyspace().ensureKeyspaceInitialised(keyspaceName);
 
-            assertTrue(server.systemKeyspace().containsKeyspace(keyspaceName));
+            assertTrue(server.factory().systemKeyspace().containsKeyspace(keyspaceName));
         }
     }
 }

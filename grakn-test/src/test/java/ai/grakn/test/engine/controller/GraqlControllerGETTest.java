@@ -20,7 +20,6 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
@@ -88,7 +87,6 @@ public class GraqlControllerGETTest {
     private static GraknGraph mockGraph;
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
-    private static SystemKeyspace mockSystemKeyspace = mock(SystemKeyspace.class);
 
     private static final JsonMapper jsonMapper = new JsonMapper();
 
@@ -97,7 +95,7 @@ public class GraqlControllerGETTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(mockFactory, mockSystemKeyspace, spark);
+        new SystemController(mockFactory, spark);
         new GraqlController(mockFactory, spark);
     }).port(4567); // TODO: Don't use the default port when bug #15130 is fixed
 
