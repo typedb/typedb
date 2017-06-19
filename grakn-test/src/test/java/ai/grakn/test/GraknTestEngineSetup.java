@@ -116,8 +116,8 @@ public abstract class GraknTestEngineSetup {
         LOG.info("stopping engine...");
 
         // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
-        clearGraphs(server.factory());
         server.close();
+        clearGraphs(server);
 
         LOG.info("engine stopped.");
 
@@ -133,10 +133,10 @@ public abstract class GraknTestEngineSetup {
         return spark;
     }
 
-    private static void clearGraphs(EngineGraknGraphFactory engineGraknGraphFactory) {
+    private static void clearGraphs(GraknEngineServer server) {
         // Drop all keyspaces
         final Set<String> keyspaceNames = new HashSet<String>();
-        try(GraknGraph systemGraph = engineGraknGraphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try(GraknGraph systemGraph = server.factory().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .execute()
                     .forEach(x -> x.values().forEach(y -> {
@@ -145,10 +145,10 @@ public abstract class GraknTestEngineSetup {
         }
 
         keyspaceNames.forEach(name -> {
-            GraknGraph graph = engineGraknGraphFactory.getGraph(name, GraknTxType.WRITE);
-            graph.admin().delete(false);
+            GraknGraph graph = server.factory().getGraph(name, GraknTxType.WRITE);
+            graph.admin().delete();
         });
-        engineGraknGraphFactory.refreshConnections();
+        server.factory().refreshConnections();
     }
 
     static void setRestAssuredUri(GraknEngineConfig config) {

@@ -78,8 +78,9 @@ public class CommitLogControllerTest {
 
     @ClassRule
     public static SparkContext ctx = SparkContext.withControllers((spark, config) -> {
+        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(config.getProperties());
         new CommitLogController(spark, config.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY), 100, manager);
-        new SystemController(EngineGraknGraphFactory.create(config.getProperties()), spark);
+        new SystemController(factory, new SystemKeyspace(factory), spark);
     });
 
     private Json commitLog;
@@ -189,8 +190,8 @@ public class CommitLogControllerTest {
                             argument.json().at(KEYSPACE).asString().equals(TIM) &&
                             argument.json().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
         } finally {
-            Grakn.session(ctx.uri(), BOB).open(GraknTxType.WRITE).admin().delete();
-            Grakn.session(ctx.uri(), TIM).open(GraknTxType.WRITE).admin().delete();
+            Grakn.session(ctx.uri(), BOB).open(GraknTxType.WRITE).admin().delete(true);
+            Grakn.session(ctx.uri(), TIM).open(GraknTxType.WRITE).admin().delete(true);
 
             bob.close();
             tim.close();
