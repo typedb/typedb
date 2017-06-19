@@ -58,85 +58,85 @@ import static org.junit.Assume.assumeTrue;
 public class ReasoningTests {
 
     @ClassRule
-    public static final GraphContext testSet1 = GraphContext.preLoad("src/test/graql/testSet1.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet1 = GraphContext.preLoad("testSet1.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet2 = GraphContext.preLoad("src/test/graql/testSet2.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet2 = GraphContext.preLoad("testSet2.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet3 = GraphContext.preLoad("src/test/graql/testSet3.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet3 = GraphContext.preLoad("testSet3.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet4 = GraphContext.preLoad("src/test/graql/testSet4.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet4 = GraphContext.preLoad("testSet4.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet5 = GraphContext.preLoad("src/test/graql/testSet5.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet5 = GraphContext.preLoad("testSet5.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet6 = GraphContext.preLoad("src/test/graql/testSet6.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet6 = GraphContext.preLoad("testSet6.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet7 = GraphContext.preLoad("src/test/graql/testSet7.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet7 = GraphContext.preLoad("testSet7.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet8 = GraphContext.preLoad("src/test/graql/testSet8.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet8 = GraphContext.preLoad("testSet8.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet9 = GraphContext.preLoad("src/test/graql/testSet9.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet9 = GraphContext.preLoad("testSet9.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet10 = GraphContext.preLoad("src/test/graql/testSet10.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet10 = GraphContext.preLoad("testSet10.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet11 = GraphContext.preLoad("src/test/graql/testSet11.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet11 = GraphContext.preLoad("testSet11.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet12 = GraphContext.preLoad("src/test/graql/testSet12.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet12 = GraphContext.preLoad("testSet12.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet13 = GraphContext.preLoad("src/test/graql/testSet13.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet13 = GraphContext.preLoad("testSet13.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet14 = GraphContext.preLoad("src/test/graql/testSet14.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet14 = GraphContext.preLoad("testSet14.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet15 = GraphContext.preLoad("src/test/graql/testSet15.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet15 = GraphContext.preLoad("testSet15.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet16 = GraphContext.preLoad("src/test/graql/testSet16.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet16 = GraphContext.preLoad("testSet16.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet17 = GraphContext.preLoad("src/test/graql/testSet17.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet17 = GraphContext.preLoad("testSet17.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet18 = GraphContext.preLoad("src/test/graql/testSet18.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet18 = GraphContext.preLoad("testSet18.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet19 = GraphContext.preLoad("src/test/graql/testSet19.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet19 = GraphContext.preLoad("testSet19.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet19recursive = GraphContext.preLoad("src/test/graql/testSet19-recursive.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet19recursive = GraphContext.preLoad("testSet19-recursive.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet20 = GraphContext.preLoad("src/test/graql/testSet20.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet20 = GraphContext.preLoad("testSet20.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet21 = GraphContext.preLoad("src/test/graql/testSet21.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet21 = GraphContext.preLoad("testSet21.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet22 = GraphContext.preLoad("src/test/graql/testSet22.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet22 = GraphContext.preLoad("testSet22.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet23 = GraphContext.preLoad("src/test/graql/testSet23.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet23 = GraphContext.preLoad("testSet23.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet24 = GraphContext.preLoad("src/test/graql/testSet24.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet24 = GraphContext.preLoad("testSet24.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet25 = GraphContext.preLoad("src/test/graql/testSet25.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet25 = GraphContext.preLoad("testSet25.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSet26 = GraphContext.preLoad("src/test/graql/testSet26.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext testSet26 = GraphContext.preLoad("testSet26.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @Before
     public void onStartup() throws Exception {

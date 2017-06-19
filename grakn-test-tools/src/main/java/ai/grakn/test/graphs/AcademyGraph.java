@@ -19,6 +19,7 @@
 package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.test.GraphContext;
 
 import java.util.function.Consumer;
 
@@ -40,9 +41,9 @@ public class AcademyGraph extends TestGraph {
     @Override
     public Consumer<GraknGraph> build() {
         return (GraknGraph graph) -> {
-            loadFromFile(graph, ontologyFile);
-            loadFromFile(graph, dataFile);
-            loadFromFile(graph, rulesFile);
+            GraphContext.loadFromFile(graph, ontologyFile);
+            GraphContext.loadFromFile(graph, dataFile);
+            GraphContext.loadFromFile(graph, rulesFile);
         };
     }
 }

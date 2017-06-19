@@ -78,10 +78,10 @@ public class AtomicQueryTest {
     public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ancestorGraph = GraphContext.preLoad("src/test/graql/ancestor-friend-test.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext unificationWithTypesSet = GraphContext.preLoad("src/test/graql/unificationWithTypesTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext unificationWithTypesSet = GraphContext.preLoad("unificationWithTypesTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

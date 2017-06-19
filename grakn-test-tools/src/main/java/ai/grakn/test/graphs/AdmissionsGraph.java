@@ -22,12 +22,8 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.test.GraphContext;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -145,13 +141,6 @@ public class AdmissionsGraph extends TestGraph {
 
     @Override
     protected void buildRules(GraknGraph graph) {
-        try {
-            List<String> lines = Files.readAllLines(Paths.get("src/test/graql/admission-rules.gql"), StandardCharsets.UTF_8);
-            String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            graph.graql().parse(query).execute();
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
+        GraphContext.loadFromFile(graph, "admission-rules.gql");
     }
 }

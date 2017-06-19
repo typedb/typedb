@@ -23,6 +23,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.test.GraphContext;
 import com.google.common.math.IntMath;
 
 import java.util.function.Consumer;
@@ -93,7 +94,7 @@ public abstract class AbstractPathGraph extends TestGraph {
     @Override
     public Consumer<GraknGraph> build(){
         return (GraknGraph graph) -> {
-            loadFromFile(graph, gqlFile);
+            GraphContext.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };
     }

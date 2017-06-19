@@ -25,6 +25,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.test.GraphContext;
 
 import java.util.function.Consumer;
 
@@ -51,7 +52,7 @@ public class TransitivityChainGraph extends TestGraph {
     @Override
     public Consumer<GraknGraph> build(){
         return (GraknGraph graph) -> {
-            loadFromFile(graph, gqlFile);
+            GraphContext.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n);
         };
     }

@@ -58,10 +58,10 @@ public class QueryTest {
     public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ancestorGraph = GraphContext.preLoad("src/test/graql/ancestor-friend-test.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext genealogyOntology = GraphContext.preLoad("src/test/graql/genealogy/ontology.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext genealogyOntology = GraphContext.preLoad("genealogy/ontology.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void setUpClass() throws Exception {

@@ -34,7 +34,7 @@ import static org.junit.Assume.assumeTrue;
 public class WineInferenceTest {
 
     @Rule
-    public final GraphContext wineGraph = GraphContext.preLoad("src/test/graql/wines-test.gql", "src/test/graql/wines-rules.gql");
+    public final GraphContext wineGraph = GraphContext.preLoad("wines-test.gql", "wines-rules.gql");
 
     @BeforeClass
     public static void setUpClass() {

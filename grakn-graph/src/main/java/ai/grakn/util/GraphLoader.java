@@ -170,8 +170,7 @@ public class GraphLoader {
         return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
     }
 
-    //TODO: Cleanup again. Another duplicate. Currently in TestGraph
-    protected static void loadFromFile(GraknGraph graph, String file) {
+    public static void loadFromFile(GraknGraph graph, String file) {
         try {
             File graql = new File(file);
 

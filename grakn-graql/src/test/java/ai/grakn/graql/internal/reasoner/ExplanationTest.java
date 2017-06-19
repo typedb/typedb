@@ -56,7 +56,7 @@ public class ExplanationTest {
     public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext explanationGraph = GraphContext.preLoad("src/test/graql/explanationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext explanationGraph = GraphContext.preLoad("explanationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     private static Concept polibuda, uw;
     private static Concept warsaw;

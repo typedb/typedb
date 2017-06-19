@@ -33,7 +33,6 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
@@ -78,25 +77,25 @@ public class AtomicTest {
     public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext typeInferenceSet = GraphContext.preLoad("src/test/graql/typeInferenceTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext typeInferenceSet = GraphContext.preLoad("typeInferenceTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilitySet = GraphContext.preLoad("src/test/graql/ruleApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext ruleApplicabilitySet = GraphContext.preLoad("ruleApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext resourceApplicabilitySet = GraphContext.preLoad("src/test/graql/resourceApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext resourceApplicabilitySet = GraphContext.preLoad("resourceApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilitySetWithTypes = GraphContext.preLoad("src/test/graql/ruleApplicabilityTestWithTypes.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext ruleApplicabilitySetWithTypes = GraphContext.preLoad("ruleApplicabilityTestWithTypes.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilityInstanceTypesSet = GraphContext.preLoad("src/test/graql/testSet19.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext ruleApplicabilityInstanceTypesSet = GraphContext.preLoad("testSet19.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilitySingleRoleSet = GraphContext.preLoad("src/test/graql/testSet22.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext ruleApplicabilitySingleRoleSet = GraphContext.preLoad("testSet22.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext unificationTestSet = GraphContext.preLoad("src/test/graql/unificationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext unificationTestSet = GraphContext.preLoad("unificationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {
