@@ -89,6 +89,7 @@ public class Edge<V> {
         return new Predicate<Edge<T>>() {
             @Override
             public boolean apply(Edge<T> input) {
+                assert input != null;
                 return input.destination.equals(node);
             }
         };
@@ -103,6 +104,7 @@ public class Edge<V> {
         return new Predicate<Edge<T>>() {
             @Override
             public boolean apply(Edge<T> input) {
+                assert input != null;
                 return (requiredSourceByDest.containsKey(input.destination) &&
                         !input.source.equals(requiredSourceByDest.get(input.destination)));
             }
@@ -113,6 +115,7 @@ public class Edge<V> {
         return new Predicate<Edge<T>>() {
             @Override
             public boolean apply(Edge<T> input) {
+                assert input != null;
                 return input.source.equals(input.destination);
             }
         };

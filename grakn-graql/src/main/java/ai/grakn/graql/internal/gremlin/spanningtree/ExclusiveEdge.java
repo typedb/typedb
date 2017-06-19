@@ -28,6 +28,7 @@ import java.util.List;
  * An edge, together with a list of edges that can't be in the final answer if 'edge' is.
  *
  * @param <V> nodes
+ * @author Jason Liu
  * @author sthomson@cs.cmu.edu
  */
 public class ExclusiveEdge<V> implements Comparable<ExclusiveEdge<V>> {
@@ -52,5 +53,24 @@ public class ExclusiveEdge<V> implements Comparable<ExclusiveEdge<V>> {
     @Override
     public int compareTo(ExclusiveEdge<V> exclusiveEdge) {
         return Doubles.compare(weight, exclusiveEdge.weight);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        final ExclusiveEdge that = (ExclusiveEdge) o;
+        return edge != null && edge.equals(that.edge) &&
+                excluded != null && excluded.equals(that.excluded) &&
+                Double.compare(weight, that.weight) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = edge != null ? edge.hashCode() : 0;
+        result = result * 31 + (excluded != null ? excluded.hashCode() : 0);
+        result = result * 31 + Double.valueOf(weight).hashCode();
+        return result;
     }
 }

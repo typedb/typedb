@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.gremlin.spanningtree.datastructure;
 
-import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
@@ -47,6 +46,7 @@ import static com.google.common.collect.Iterators.transform;
  * @param <V> the type of the values stored in the heap
  * @param <P> the type of the priorities
  * @author Sam Thomson
+ * @author Jason Liu
  */
 public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> {
     public final static int MAX_CAPACITY = Integer.MAX_VALUE;
@@ -232,12 +232,11 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      */
     private Iterator<Entry> siblingsAndBelow(Optional<Entry> oEntry) {
         if (!oEntry.isPresent()) return Iterators.emptyIterator();
-        return concat(transform(getCycle(oEntry.get()).iterator(), new Function<Entry, Iterator<Entry>>() {
-            @Override
-            public Iterator<Entry> apply(Entry entry) {
-                return concat(singletonIterator(entry), siblingsAndBelow(entry.oFirstChild));
-            }
-        }));
+        return concat(transform(getCycle(oEntry.get()).iterator(),
+                entry -> {
+                    assert entry != null;
+                    return concat(singletonIterator(entry), siblingsAndBelow(entry.oFirstChild));
+                }));
     }
 
     private LinkedList<Entry> getCycle(Entry start) {

@@ -50,6 +50,8 @@ public class KBestArborescences {
     /**
      * Find the k-best arborescences of `graph`, rooted in the given node `root`.
      */
+    private static final double delta = 0.0001;
+
     public static <V> List<Weighted<Arborescence<V>>> getKBestArborescences(WeightedGraph<V> graph, V root, int k) {
         // remove all edges incoming to `root`. resulting arborescence is then forced to be rooted at `root`.
         return getKBestArborescences(graph.filterEdges(not(Edge.hasDestination(root))), k);
@@ -78,7 +80,7 @@ public class KBestArborescences {
             final Set<Edge<V>> newBanned = copyOf(concat(item.banned, singleton(item.edgeToBan)));
             final Weighted<Arborescence<V>> jthBest =
                     ChuLiuEdmonds.getMaxArborescence(graph, item.required, newBanned);
-            assert jthBest.weight == wItem.weight;
+            assert Math.abs(jthBest.weight - wItem.weight) < delta;
             results.add(jthBest);
             // subset of solutions in item that *don't* have `edgeToBan`, except `jthBest`
             queue.addAll(scoreSubsetOfSolutions(graph, item.required, newBanned, jthBest).asSet());
