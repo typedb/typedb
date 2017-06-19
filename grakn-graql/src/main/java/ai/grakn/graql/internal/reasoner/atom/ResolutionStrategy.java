@@ -42,7 +42,7 @@ public final class ResolutionStrategy {
     /**
      * priority modifier if a given atom is a resource atom attached to a relation
      */
-    public static final int RESOURCE_REIFIYING_RELATION = 15;
+    public static final int RESOURCE_REIFIYING_RELATION = 20;
 
     /**
      * priority modifier if a given atom is a type atom
