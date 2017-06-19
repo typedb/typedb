@@ -191,6 +191,16 @@ public class GraqlShell {
         }
 
         Optional<List<String>> queries = Optional.ofNullable(cmd.getOptionValue("e")).map(Lists::newArrayList);
+
+        if (queries.isPresent()) {
+            for (String query : queries.get()) {
+                if (!query.contains("$")) {
+                    System.err.println(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage());
+                    break;
+                }
+            }
+        }
+
         String[] filePaths = cmd.getOptionValues("f");
 
         // Print usage message if requested or if invalid arguments provided
