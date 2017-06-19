@@ -291,8 +291,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         ReasonerAtomicQuery ruleHead = rule.getHead();
         Set<Var> varsToRetain = rule.hasDisconnectedHead()? ruleBody.getVarNames() : ruleHead.getVarNames();
 
-        LOG.trace("Rule body: " + ruleBody);
-
         subGoals.add(this);
         Stream<Answer> answers = ruleBody
                 .computeJoin(subGoals, cache, dCache, materialise, explanation, differentialJoin)
