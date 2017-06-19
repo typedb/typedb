@@ -125,6 +125,10 @@ public class SystemKeyspace {
      * @param keyspace the keyspace to be removed from the system graph
      */
     public boolean deleteKeyspace(String keyspace){
+        if(keyspace.equals(SYSTEM_GRAPH_NAME)){
+           return false;
+        }
+
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
             Resource<String> resource = keyspaceName.getResource(keyspace);
