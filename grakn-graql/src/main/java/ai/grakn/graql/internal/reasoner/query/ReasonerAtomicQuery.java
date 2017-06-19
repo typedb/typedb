@@ -108,6 +108,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
+    public String toString(){
+        return getAtoms().stream()
+                .filter(Atomic::isAtom)
+                .map(Atomic::toString).collect(Collectors.joining(", "));
+    }
+
+    @Override
     public int hashCode() {
         return super.hashCode() + 37;
     }

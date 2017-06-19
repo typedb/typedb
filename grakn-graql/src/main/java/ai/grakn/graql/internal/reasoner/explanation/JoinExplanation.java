@@ -18,7 +18,11 @@
 
 package ai.grakn.graql.internal.reasoner.explanation;
 
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -31,8 +35,15 @@ import ai.grakn.graql.admin.AnswerExplanation;
  */
 public class JoinExplanation extends Explanation {
 
-
     public JoinExplanation(){ super();}
+    public JoinExplanation(ReasonerQueryImpl q, Answer mergedAnswer){
+        super(q, q.selectAtoms().stream()
+                .map(ReasonerQueries::atomic)
+                .map(aq -> mergedAnswer.filterVars(aq.getVarNames()).explain(new LookupExplanation(aq)))
+                .collect(Collectors.toSet())
+        );
+    }
+
     private JoinExplanation(JoinExplanation exp){
         super(exp.getQuery(), exp.getAnswers());
     }

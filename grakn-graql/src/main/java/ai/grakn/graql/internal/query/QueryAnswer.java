@@ -150,8 +150,7 @@ public class QueryAnswer implements Answer {
             if(!a2.getExplanation().isJoinExplanation()) exp.addAnswer(a2);
         }
 
-        return merged
-                .setExplanation(exp);
+        return merged.setExplanation(exp);
     }
 
     @Override
