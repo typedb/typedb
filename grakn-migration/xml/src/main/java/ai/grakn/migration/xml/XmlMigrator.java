@@ -187,9 +187,6 @@ public class XmlMigrator implements AutoCloseable {
                     else if ("xs:int".equals(type.name())) {
                        value = Integer.parseInt(el.getTextContent().trim());
                     }
-                    else if ("xs:int".equals(type.name())) {
-                        value = Integer.parseInt(el.getTextContent().trim());
-                    }
                     else if ("xs:double".equals(type.name())) {
                         value = Double.parseDouble(el.getTextContent().trim());
                     }
