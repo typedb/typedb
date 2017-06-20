@@ -22,6 +22,7 @@ import ai.grakn.client.BatchMutatorClient;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.macro.Macro;
 import mjson.Json;
@@ -142,9 +143,9 @@ public class Migrator {
      * @param data data used in the template
      * @return an insert query
      */
-    protected List<InsertQuery> template(String template, Map<String, Object> data){
+    protected List<Query> template(String template, Map<String, Object> data){
         try {
-            return queryBuilder.<InsertQuery>parseTemplate(template, data).collect(toList());
+            return queryBuilder.parseTemplate(template, data).collect(toList());
 
             //TODO Graql should throw a GraqlParsingException so we do not need to catch IllegalArgumentException
         } catch (GraqlSyntaxException | IllegalArgumentException e){
