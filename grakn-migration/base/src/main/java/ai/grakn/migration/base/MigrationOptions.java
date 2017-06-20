@@ -28,7 +28,6 @@ import org.apache.commons.cli.ParseException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static ai.grakn.migration.base.MigrationCLI.die;
 import static java.lang.Integer.parseInt;
 
 /**
