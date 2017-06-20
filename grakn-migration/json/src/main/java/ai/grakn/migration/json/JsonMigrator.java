@@ -46,10 +46,14 @@ public class JsonMigrator implements AutoCloseable {
     private final Set<Reader> readers;
 
     public static void main(String[] args) {
-        MigrationCLI.init(args, JsonMigrationOptions::new).stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(JsonMigrator::runJson);
+        try {
+            MigrationCLI.init(args, JsonMigrationOptions::new).stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach(JsonMigrator::runJson);
+        } catch (Throwable throwable){
+            MigrationCLI.die(throwable.getMessage());
+        }
     }
 
     private static void runJson(JsonMigrationOptions options){
@@ -57,17 +61,15 @@ public class JsonMigrator implements AutoCloseable {
         File jsonTemplateFile = new File(options.getTemplate());
 
         if(!jsonDataFile.exists()){
-            MigrationCLI.die("Cannot find file: " + options.getInput());
+            throw new IllegalArgumentException("Cannot find file: " + options.getInput());
         }
 
         if(!jsonTemplateFile.exists() || jsonTemplateFile.isDirectory()){
-            MigrationCLI.die("Cannot find file: " + options.getTemplate());
+            throw new IllegalArgumentException("Cannot find file: " + options.getTemplate());
         }
 
         try(JsonMigrator jsonMigrator = new JsonMigrator(jsonDataFile)){
             MigrationCLI.loadOrPrint(jsonTemplateFile, jsonMigrator.convert(), options);
-        } catch (Throwable throwable){
-            MigrationCLI.die(throwable.getMessage());
         }
     }
 

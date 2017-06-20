@@ -128,12 +128,6 @@ public class CSVMigratorMainTest {
     }
 
     @Test
-    public void csvMainThrowableTest(){
-        run("-input", dataFile, "-template", templateFile, "-batch", "hello");
-        assertThat(sysErr.getLog(), containsString("Cannot find file"));
-    }
-
-    @Test
     public void unknownArgumentTest(){
         run("-whale", "");
         assertThat(sysErr.getLog(), containsString("Unrecognized option: -whale"));
