@@ -53,7 +53,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import static ai.grakn.migration.base.MigrationCLI.die;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -63,10 +62,14 @@ import static java.util.stream.Collectors.toSet;
 public class XmlMigrator implements AutoCloseable {
     
     public static void main(String[] args) {
-        MigrationCLI.init(args, XmlMigrationOptions::new).stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(XmlMigrator::runXml);
+        try {
+            MigrationCLI.init(args, XmlMigrationOptions::new).stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach(XmlMigrator::runXml);
+        } catch (Throwable throwable){
+            MigrationCLI.die(throwable.getMessage());
+        }
     }
     
     public static void runXml(XmlMigrationOptions options){
@@ -74,26 +77,25 @@ public class XmlMigrator implements AutoCloseable {
         File xmlTemplateFile = new File(options.getTemplate());
 
         if(!xmlDataFile.exists()){
-            die("Cannot find file: " + options.getInput());
+            throw new IllegalArgumentException("Cannot find file: " + options.getInput());
         }
 
         if(!xmlTemplateFile.exists() || xmlTemplateFile.isDirectory()){
-            die("Cannot find file: " + options.getTemplate());
+            throw new IllegalArgumentException("Cannot find file: " + options.getTemplate());
         }
 
         try(XmlMigrator xmlMigrator = new XmlMigrator(xmlDataFile)){
             if (options.getElement() != null) {
                 xmlMigrator.element(options.getElement());
+            } else {
+                throw new IllegalArgumentException("Please specify XML element for the top-level data item.");
             }
-            else {
-                die("Please specify XML element for the top-level data item.");
-            }
+
             if (options.getSchemaFile() != null) {
                 xmlMigrator.schema(new XmlSchema().read(new File(options.getSchemaFile())));
             }
+
             MigrationCLI.loadOrPrint(xmlTemplateFile, xmlMigrator.convert(), options);
-        } catch (Throwable throwable){
-            die(throwable.getMessage());
         }
     }
     
@@ -104,10 +106,9 @@ public class XmlMigrator implements AutoCloseable {
     
     /**
      * Construct a XmlMigrator to migrate data in the given file or dir
-     * @param template parametrized graql insert query
      * @param xmlFileOrDir either a XML file or a directory containing XML files
      */
-    public XmlMigrator(File xmlFileOrDir){
+    public XmlMigrator(File xmlFileOrDir) {
         File[] files = {xmlFileOrDir};
         if(xmlFileOrDir.isDirectory()){
             files = xmlFileOrDir.listFiles(xmlFiles);
@@ -118,7 +119,6 @@ public class XmlMigrator implements AutoCloseable {
 
     /**
      * Construct a XmlMigrator to migrate data in given reader
-     * @param template parametrized graql insert query
      * @param reader reader over the data to be migrated
      */
     public XmlMigrator(Reader reader){
@@ -150,7 +150,7 @@ public class XmlMigrator implements AutoCloseable {
      * Close the readers
      * @throws Exception
      */
-    public void close() throws Exception {
+    public void close() {
         readers.forEach((reader) -> {
             try {
                 reader.close();
