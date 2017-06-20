@@ -29,7 +29,6 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.admin.GraknAdmin;
-import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.GraknVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

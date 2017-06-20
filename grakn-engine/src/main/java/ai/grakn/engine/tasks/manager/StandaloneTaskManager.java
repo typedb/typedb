@@ -20,7 +20,6 @@
 package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;

@@ -20,7 +20,6 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;

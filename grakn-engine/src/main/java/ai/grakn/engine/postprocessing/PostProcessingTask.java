@@ -21,7 +21,6 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
