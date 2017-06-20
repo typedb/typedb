@@ -90,4 +90,15 @@ public class GraknExecuteQueryControllerTest {
         resp.then().statusCode(200);
         Assert.assertEquals(true,resp.jsonPath().getBoolean("response"));
     }
+    
+    @Test
+    public void testBadQuery() {
+        sendQuery(" gibberish ads a;49 agfdgdsf").then().statusCode(400);
+    }
+    
+    @Test
+    public void testBadAccept() {
+        sendQuery("match $x isa movie; ask;", "application/msword", true, false, -1).then().statusCode(406);        
+    }
+    
 }

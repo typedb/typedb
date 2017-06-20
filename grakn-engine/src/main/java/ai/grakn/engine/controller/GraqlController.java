@@ -112,7 +112,6 @@ public class GraqlController {
     @POST
     @Path("/execute")
     @ApiOperation(value = "Execute an arbitrary Gralql queryEndpoints used to query the graph by ID or Graql match query and build HAL objects.")
-    @Produces({"application/json", "text/plain"})
     private Json executeGraql(Request request, Response response) {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         String queryString = mandatoryQueryParameter(request, QUERY);
@@ -130,7 +129,9 @@ public class GraqlController {
                 return respond(response, query, APPLICATION_JSON, Json.object());
             }
             else if (query instanceof InsertQuery) {
-                return respond(response, query, APPLICATION_JSON, executeInsertQuery((InsertQuery) query));
+                Json resp = respond(response, query, APPLICATION_JSON, executeInsertQuery((InsertQuery) query));
+                graph.commit();
+                return resp;
             }
             else {
                 return respond(response, query, acceptType, executeReadQuery(request, query, acceptType));
