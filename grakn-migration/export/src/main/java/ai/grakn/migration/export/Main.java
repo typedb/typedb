@@ -31,15 +31,19 @@ import java.util.Optional;
 public class Main {
 
     public static void main(String[] args){
-        MigrationCLI.init(args, GraphWriterOptions::new).stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(Main::runExport);
+        try{
+            MigrationCLI.init(args, GraphWriterOptions::new).stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach(Main::runExport);
+        } catch (Throwable throwable){
+            MigrationCLI.die(throwable.getMessage());
+        }
     }
 
     private static void runExport(GraphWriterOptions options) {
         if(!options.exportOntology() && !options.exportData()) {
-            MigrationCLI.die("Missing arguments -ontology and/or -data");
+            throw new IllegalArgumentException("Missing arguments -ontology and/or -data");
         }
 
         try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.READ)) {
