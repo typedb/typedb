@@ -59,11 +59,12 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         LinkedList<ReasonerAtomicQuery> queries = query.getResolutionPlan();
 
         LOG.trace("CQ plan:\n" + queries.stream()
-                .map(aq -> aq.getAtom().toString() + (aq.isRuleResolvable()? "*" : ""))
+                .map(aq -> aq.toString() + (aq.isRuleResolvable()? "*" : ""))
                 .collect(Collectors.joining("\n"))
         );
         queryIterator = new ReasonerQueryImplCumulativeIterator(new QueryAnswer(), queries, subGoals, cache);
     }
+
 
     @Override
     public boolean hasNext() {

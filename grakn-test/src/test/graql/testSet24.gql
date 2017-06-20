@@ -17,6 +17,10 @@ relation1 sub relation
 	relates role1
 	relates role2;
 
+relation2 sub relation
+    relates role1
+    relates role2;
+
 #Rules
 
 isa inference-rule
@@ -28,8 +32,19 @@ isa inference-rule
 		(role1:$x, role2:$y) isa relation1;
 	};
 
+isa inference-rule
+	lhs {
+		$x isa entity1;
+		$y isa entity1;
+		$x != $y;
+	}
+	rhs {
+		(role1:$x, role2:$y) isa relation2;
+	};
+
 #Data
 
 $x isa entity1;
 $y isa entity1;
 $z isa entity1;
+

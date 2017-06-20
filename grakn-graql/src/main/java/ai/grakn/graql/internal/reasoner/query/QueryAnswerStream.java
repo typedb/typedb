@@ -23,9 +23,9 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import com.google.common.collect.ImmutableSet;
@@ -76,10 +76,10 @@ public class QueryAnswerStream {
         return true;
     }
 
-    static boolean nonEqualsFilter(Answer answer, Set<NotEquals> atoms) {
+    static boolean nonEqualsFilter(Answer answer, Set<NeqPredicate> atoms) {
         if(atoms.isEmpty()) return true;
-        for (NotEquals atom : atoms) {
-            if (!NotEquals.notEqualsOperator(answer, atom)) {
+        for (NeqPredicate atom : atoms) {
+            if (!NeqPredicate.notEqualsOperator(answer, atom)) {
                 return false;
             }
         }

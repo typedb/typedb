@@ -103,6 +103,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public ReasonerQuery copy(){ return new ReasonerAtomicQuery(this);}
 
     @Override
+    public String toString(){
+        return getAtoms().stream()
+                .map(Atomic::toString).collect(Collectors.joining(", "));
+    }
+
+    @Override
     public boolean equals(Object obj) {
         return !(obj == null || this.getClass() != obj.getClass()) && super.equals(obj);
     }
@@ -279,9 +285,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                           boolean differentialJoin){
         Atom atom = this.getAtom();
 
-        LOG.trace("Applying rule to: " + this + rule);
-        LOG.trace("t: " + ruleUnifier);
-        LOG.trace("tp: " + permutationUnifier);
+        LOG.trace("Applying rule " + rule.getRuleId());
 
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
