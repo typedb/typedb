@@ -54,8 +54,8 @@ public class EngineGraknGraphFactory {
     private EngineGraknGraphFactory(Properties properties) {
         this.properties = new Properties();
         this.properties.putAll(properties);
-        this.systemKeyspace = new SystemKeyspace(this);
         this.engineURI = properties.getProperty(GraknEngineConfig.SERVER_HOST_NAME) + ":" + properties.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER);
+        this.systemKeyspace = new SystemKeyspace(this);
     }
 
     public synchronized void refreshConnections(){

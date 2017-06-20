@@ -138,6 +138,8 @@ public class SystemKeyspace {
             resource.delete();
 
             openSpaces.remove(keyspace);
+
+            graph.admin().commitNoLogs();
         }
 
         return true;
