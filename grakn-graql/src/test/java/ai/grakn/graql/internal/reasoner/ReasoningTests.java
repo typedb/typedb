@@ -138,6 +138,9 @@ public class ReasoningTests {
     @ClassRule
     public static final GraphContext testSet26 = GraphContext.preLoad("testSet26.gql").assumeTrue(GraknTestSetup.usingTinker());
 
+    @ClassRule
+    public static final GraphContext testSet27 = GraphContext.preLoad("testSet27.gql").assumeTrue(GraknTestSetup.usingTinker());
+
     @Before
     public void onStartup() throws Exception {
         assumeTrue(GraknTestSetup.usingTinker());
@@ -529,6 +532,18 @@ public class ReasoningTests {
         assertEquals(answers, answers2);
     }
 
+    @Test //Expected result: Relations between all entity instances including relation between each instance and itself
+    public void reasoningWithEntityTypes_WithNeqProperty() {
+        QueryBuilder qb = testSet24.graph().graql().infer(true);
+        QueryBuilder qbm = testSet24.graph().graql().infer(true).materialise(true);
+        String queryString = "match (role1:$x1, role2:$x2) isa relation2;";
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        assertEquals(answers.size(), 6);
+        QueryAnswers answers2 = queryAnswers(qbm.parse(queryString));
+        assertEquals(answers2.size(), 6);
+        assertEquals(answers, answers2);
+    }
+
     @Test //Expected result: Timeline is correctly recognised via applying resource comparisons in the rule body
     public void reasoningWithResourceValueComparison() {
         QueryBuilder qb = testSet25.graph().graql().infer(true);
@@ -556,6 +571,16 @@ public class ReasoningTests {
         assertEquals(answers2.size(), 2);
         Set<Var> vars = Sets.newHashSet(var("b"), var("p"), var("c"), var("rel1"), var("rel2"));
         answers2.forEach(ans -> assertTrue(ans.keySet().containsAll(vars)));
+    }
+
+    @Test //Expected result: 2 relations obtained by correctly finding reified relations
+    public void reasoningWithNeqProperty() {
+        QueryBuilder qb = testSet27.graph().graql().infer(true);
+        String queryString = "match (related-state: $s) isa holds;";
+
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        QueryAnswers exact = queryAnswers(qb.parse("match $s isa state, has name 's2';"));
+        assertEquals(answers, exact);
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {

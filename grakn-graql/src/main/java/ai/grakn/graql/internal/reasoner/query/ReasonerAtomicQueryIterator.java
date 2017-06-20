@@ -101,8 +101,6 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
         Unifier ruleUnifier = rc.getRuleUnifier();
         Unifier permutationUnifier = rc.getPermutationUnifier();
 
-        LOG.trace("Applying rule: " + rule.getRuleId());
-
         //delta' = theta . thetaP . delta
         Answer sub = query.getSubstitution();
         Unifier uInv = ruleUnifier.inverse();

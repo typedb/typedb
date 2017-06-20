@@ -229,15 +229,18 @@ public class HALConceptData {
 
 
     private void generateRelationEmbedded(Representation halResource, Relation rel, int separationDegree) {
-
         rel.allRolePlayers().forEach((roleType, instanceSet) -> {
             instanceSet.forEach(instance -> {
-                // Relations attached to relations are handled in embedRelationsPlaysRole method.
-                // We filter out relations to resources.
-                if (instance != null && !instance.isRelation()) {
+                if (instance != null) {
                     Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
                             .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-                    handleConcept(roleResource, instance, separationDegree - 1);
+                    if (!instance.isRelation()) {
+                        handleConcept(roleResource, instance, separationDegree - 1);
+                    } else {
+                        // If instance is a relation we just add state properties to HAL representation
+                        // without including its role players.
+                        generateStateAndLinks(roleResource, instance);
+                    }
                     halResource.withRepresentation(roleType.getLabel().getValue(), roleResource);
                 }
             });

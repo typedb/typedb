@@ -16,68 +16,69 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom;
+package ai.grakn.graql.internal.reasoner.atom.predicate;
 
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
  *
  * <p>
- * Implementation of atom corresponding to {@link NeqProperty}.
+ * Predicate implementation specialising it to be an inequality predicate. Corresponds to graql {@link NeqProperty}.
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-public class NotEquals extends AtomicBase {
+public class NeqPredicate extends Predicate<Var> {
 
-    private final Var refVarName;
-
-    public NotEquals(Var varName, NeqProperty prop, ReasonerQuery parent){
+    public NeqPredicate(Var varName, NeqProperty prop, ReasonerQuery parent){
         super(varName.neq(prop.getVar().getVarName()).admin(), parent);
-        this.refVarName = prop.getVar().getVarName();
     }
-    public NotEquals(NotEquals a){
+    public NeqPredicate(NeqPredicate a){
         super(a);
-        this.refVarName = a.getReferenceVarName();
     }
 
     @Override
-    public boolean equals(Object obj){
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        NotEquals a2 = (NotEquals) obj;
-        return getVarName().equals(a2.getVarName()) &&
-                getReferenceVarName().equals(a2.getReferenceVarName());
+    public String toString(){ return "[" + getVarName() + "!=" + getReferenceVarName() + "]";}
+
+    @Override
+    public Atomic copy() { return new NeqPredicate(this);}
+
+    @Override
+    public String getPredicateValue() {
+        return getPredicate().getValue();
     }
 
     @Override
-    public int hashCode(){
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        hashCode = hashCode * 37 + this.refVarName.hashCode();
-        return hashCode;
+    protected Var extractPredicate(VarPatternAdmin pattern) {
+        return pattern.getProperties(NeqProperty.class).iterator().next().getVar().getVarName();
     }
-    @Override
-    public boolean isEquivalent(Object obj) { return true;}
 
     @Override
-    public int equivalenceHashCode() { return 1;}
+    public boolean isNeqPredicate(){ return true;}
 
     @Override
-    public Atomic copy() { return new NotEquals(this);}
+    public Set<Var> getVarNames(){
+        Set<Var> vars = super.getVarNames();
+        vars.add(getReferenceVarName());
+        return vars;
+    }
 
-    private Var getReferenceVarName(){ return refVarName;}
+    private Var getReferenceVarName(){
+        return getPredicate();
+    }
 
-    public static boolean notEqualsOperator(Answer answer, NotEquals atom) {
-        return !answer.get(atom.getVarName()).equals(answer.get(atom.refVarName));
+    public static boolean notEqualsOperator(Answer answer, NeqPredicate atom) {
+        return !answer.get(atom.getVarName()).equals(answer.get(atom.getReferenceVarName()));
     }
 
     /**
@@ -87,6 +88,7 @@ public class NotEquals extends AtomicBase {
      */
     public QueryAnswers filter(QueryAnswers answers){
         QueryAnswers results = new QueryAnswers();
+        Var refVarName = getReferenceVarName();
         answers.stream()
                 .filter(answer -> !answer.get(getVarName()).equals(answer.get(refVarName)))
                 .forEach(results::add);
@@ -99,6 +101,7 @@ public class NotEquals extends AtomicBase {
      * @return filtered answer stream
      */
     public Stream<Answer> filter(Stream<Answer> answers){
+        Var refVarName = getReferenceVarName();
         return answers.filter(answer -> !answer.get(getVarName()).equals(answer.get(refVarName)));
     }
 }
