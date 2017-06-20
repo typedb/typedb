@@ -55,6 +55,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -64,6 +66,7 @@ import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.ErrorMessage.INSERT_UNSUPPORTED_PROPERTY;
+import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
@@ -778,6 +781,40 @@ public class InsertQueryTest {
         assertEquals(relation.rolePlayers(), ImmutableSet.of(cluster, godfather, muppets));
         assertEquals(relation.rolePlayers(clusterOfProduction), ImmutableSet.of(cluster));
         assertEquals(relation.rolePlayers(productionWithCluster), ImmutableSet.of(godfather, muppets));
+    }
+
+    @Test(expected = Exception.class)
+    public void matchInsertNullVar() {
+        movieGraph.graph().graql().match(var("x").isa("movie")).insert((VarPattern) null).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void matchInsertNullCollection() {
+        movieGraph.graph().graql().match(var("x").isa("movie")).insert((Collection<? extends VarPattern>) null).execute();
+    }
+
+    @Test
+    public void whenMatchInsertingAnEmptyPattern_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(NO_PATTERNS.getMessage());
+        movieGraph.graph().graql().match(var()).insert(Collections.EMPTY_SET).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void insertNullVar() {
+        movieGraph.graph().graql().insert((VarPattern) null).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void insertNullCollection() {
+        movieGraph.graph().graql().insert((Collection<? extends VarPattern>) null).execute();
+    }
+
+    @Test
+    public void whenInsertingAnEmptyPattern_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(NO_PATTERNS.getMessage());
+        movieGraph.graph().graql().insert(Collections.EMPTY_SET).execute();
     }
 
     private void assertInsert(VarPattern... vars) {
