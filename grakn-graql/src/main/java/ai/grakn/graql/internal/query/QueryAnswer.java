@@ -150,8 +150,7 @@ public class QueryAnswer implements Answer {
             if(!a2.getExplanation().isJoinExplanation()) exp.addAnswer(a2);
         }
 
-        return merged
-                .setExplanation(exp);
+        return merged.setExplanation(exp);
     }
 
     @Override
@@ -184,7 +183,7 @@ public class QueryAnswer implements Answer {
                 .forEach(e -> {
                     Var var = e.getKey();
                     Collection<Var> uvars = unifier.get(var);
-                    if (uvars.isEmpty()) {
+                    if (uvars.isEmpty() && !unifier.values().contains(var)) {
                         answerMultimap.put(var, e.getValue());
                     } else {
                         uvars.forEach(uv -> answerMultimap.put(uv, e.getValue()));

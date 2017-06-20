@@ -75,6 +75,10 @@ public class GraphContext extends GraphLoader implements TestRule {
         return this;
     }
 
+    public static void loadFromFile(GraknGraph graph, String file) {
+        GraphLoader.loadFromFile(graph, "../grakn-test-tools/src/main/graql/" + file);
+    }
+
     @Override
     public Statement apply(final Statement base, Description description) {
 
