@@ -72,11 +72,6 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    public void closeSession(){
-        super.closeSession();
-    }
-
-    @Override
     public boolean isSessionClosed() {
         return getTinkerPopGraph().isClosed();
     }
