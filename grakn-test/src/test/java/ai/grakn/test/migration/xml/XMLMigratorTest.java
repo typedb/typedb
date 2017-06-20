@@ -37,10 +37,6 @@ public class XMLMigratorTest {
         keyspace = GraphLoader.randomKeyspace();
         session = Grakn.session(engine.uri(), keyspace);
 
-        // load the ontology
-        MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "no-attributes/ontology.gql"));
-
-        // migrate the data
         migrateXMLWithElement("THING");
     }
 
@@ -72,6 +68,9 @@ public class XMLMigratorTest {
     }
 
     private static void migrateXMLWithElement(String element){
+        // load the ontology
+        MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "no-attributes/ontology.gql"));
+
         // load the data
         Migrator migrator = Migrator.to(engine.uri(), keyspace);
 
