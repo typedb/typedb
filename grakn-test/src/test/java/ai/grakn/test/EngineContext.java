@@ -27,6 +27,7 @@ import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
+import ai.grakn.util.GraphLoader;
 import com.jayway.restassured.RestAssured;
 import org.junit.rules.ExternalResource;
 
@@ -36,7 +37,6 @@ import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_URL;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static ai.grakn.test.GraknTestEngineSetup.randomKeyspace;
 import static ai.grakn.test.GraknTestEngineSetup.startEngine;
 import static ai.grakn.test.GraknTestEngineSetup.startKafka;
 import static ai.grakn.test.GraknTestEngineSetup.startRedis;
@@ -104,7 +104,7 @@ public class EngineContext extends ExternalResource {
 
     //TODO Rename this method to "sessionWithNewKeyspace"
     public GraknSession factoryWithNewKeyspace() {
-        return Grakn.session(uri(), randomKeyspace());
+        return Grakn.session(uri(), GraphLoader.randomKeyspace());
     }
 
     @Override

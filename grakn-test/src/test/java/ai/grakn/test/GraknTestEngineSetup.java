@@ -27,7 +27,6 @@ import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.EmbeddedKafka;
 import ai.grakn.util.EmbeddedRedis;
-import ai.grakn.util.GraknTestSetup;
 import com.jayway.restassured.RestAssured;
 import org.slf4j.LoggerFactory;
 import spark.Service;
@@ -36,7 +35,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
@@ -87,7 +85,7 @@ public abstract class GraknTestEngineSetup {
         // we end up wanting to use the TitanFactory but without starting Cassandra first.
         LOG.info("starting engine...");
 
-        GraknTestSetup.ensureCassandraRunning();
+        GraknTestSetup.startCassandraIfNeeded();
 
         // start engine
         setRestAssuredUri(config);
@@ -153,11 +151,6 @@ public abstract class GraknTestEngineSetup {
 
     static void setRestAssuredUri(GraknEngineConfig config) {
         RestAssured.baseURI = "http://" + config.uri();
-    }
-
-    public static String randomKeyspace(){
-        // Embedded Casandra has problems dropping keyspaces that start with a number
-        return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
     }
 
     private static int getEphemeralPort() {

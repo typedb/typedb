@@ -30,18 +30,14 @@ import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.GraknVersion;
+import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -77,17 +73,17 @@ public class SystemKeyspace {
     // If there is a more natural home for this constant, feel free to put it there! (Boris)
     public static final String SYSTEM_GRAPH_NAME = "graknSystem";
     private static final String SYSTEM_VERSION = "system-version";
-    private static final String SYSTEM_ONTOLOGY_FILE = "system.gql";
     public static final TypeLabel KEYSPACE_ENTITY = TypeLabel.of("keyspace");
 
     public static final TypeLabel KEYSPACE_RESOURCE = TypeLabel.of("keyspace-name");
 
     protected static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
     private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
-    private static final AtomicBoolean isFactorySet = new AtomicBoolean(false);
-    private static InternalFactory factory;
+    static final AtomicBoolean factoryBeingInstantiated = new AtomicBoolean(false);
+    static CountDownLatch factoryInstantiated = new CountDownLatch(1);
+    static InternalFactory factory;
 
-    private SystemKeyspace(){
+    SystemKeyspace(){
     }
 
     /**
@@ -95,7 +91,7 @@ public class SystemKeyspace {
      * @param engineUrl the url of engine to get the config from
      * @param properties the properties used to initialise the keyspace
      */
-    static void initialise(String engineUrl, Properties properties){
+    public static void initialise(String engineUrl, Properties properties){
         initialiseFactory(() -> FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties));
     }
 
@@ -109,14 +105,24 @@ public class SystemKeyspace {
     }
 
     private static void initialiseFactory(Supplier<InternalFactory> factoryInitialiser){
-        if(isFactorySet.compareAndSet(false, true)){
+        if(factoryBeingInstantiated.compareAndSet(false, true)){
             factory = factoryInitialiser.get();
-            loadSystemOntology();
+            loadSystemOntology(factory);
+            factoryInstantiated.countDown();
         }
     }
 
+    /**
+     * Get the system keyspace for this instance of engine. Wait for the system keyspace to be
+     * instantiated if necessary.
+     * @return Factory to provide the system keyspace
+     */
     private static InternalFactory factory(){
-        if(factory == null) throw new IllegalStateException("System factory has not yet been initialised");
+        try {
+            factoryInstantiated.await();
+        } catch (InterruptedException e){
+            throw new IllegalStateException("Interrupted while waiting for system graph to instantiate.");
+        }
         return factory;
     }
 
@@ -188,22 +194,17 @@ public class SystemKeyspace {
      * only consists of types, the inserts are idempotent and it is safe to load it
      * multiple times.
      */
-    static void loadSystemOntology() {
-        try (GraknGraph graph = factory().open(GraknTxType.WRITE)) {
+    static void loadSystemOntology(InternalFactory factory) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             if (graph.getType(KEYSPACE_ENTITY) != null) {
                 checkVersion(graph);
                 return;
             }
-            ClassLoader loader = SystemKeyspace.class.getClassLoader();
-            String query;
-            try (BufferedReader buffer = new BufferedReader(new InputStreamReader(loader.getResourceAsStream(SYSTEM_ONTOLOGY_FILE), StandardCharsets.UTF_8))) {
-                query = buffer.lines().collect(Collectors.joining("\n"));
-            }
-            graph.graql().parse(query).execute();
+            loadSystemOntology(graph);
             graph.getResourceType(SYSTEM_VERSION).putResource(GraknVersion.VERSION);
             graph.admin().commitNoLogs();
             LOG.info("Loaded system ontology to system keyspace.");
-        } catch (IOException | InvalidGraphException | NullPointerException e) {
+        } catch (InvalidGraphException | NullPointerException e) {
             e.printStackTrace(System.err);
             LOG.error("Could not load system ontology. The error was: " + e);
         }
@@ -220,5 +221,36 @@ public class SystemKeyspace {
         if(!GraknVersion.VERSION.equals(existingVersion.getValue())) {
             throw GraphOperationException.versionMistmatch(existingVersion);
         }
+    }
+
+    /**
+     * Loads the system ontology inside the provided grakn graph.
+     *
+     * @param graph The graph to contain the system ontology
+     */
+    private static void loadSystemOntology(GraknGraph graph){
+        //Keyspace data
+        ResourceType<String> keyspaceName = graph.putResourceType("keyspace-name", ResourceType.DataType.STRING);
+        graph.putEntityType("keyspace").key(keyspaceName);
+
+        //User Data
+        ResourceType<String> userName = graph.putResourceType("user-name", ResourceType.DataType.STRING);
+        ResourceType<String> userPassword = graph.putResourceType("user-password", ResourceType.DataType.STRING);
+        ResourceType<String> userPasswordSalt = graph.putResourceType("user-password-salt", ResourceType.DataType.STRING);
+        ResourceType<String> userFirstName = graph.putResourceType("user-first-name", ResourceType.DataType.STRING);
+        ResourceType<String> userLastName = graph.putResourceType("user-last-name", ResourceType.DataType.STRING);
+        ResourceType<String> userEmail = graph.putResourceType("user-email", ResourceType.DataType.STRING);
+        ResourceType<Boolean> userIsAdmin = graph.putResourceType("user-is-admin", ResourceType.DataType.BOOLEAN);
+
+        graph.putEntityType("user").key(userName).
+                resource(userPassword).
+                resource(userPasswordSalt).
+                resource(userFirstName).
+                resource(userLastName).
+                resource(userEmail).
+                resource(userIsAdmin);
+
+        //System Version
+        graph.putResourceType("system-version", ResourceType.DataType.STRING);
     }
 }

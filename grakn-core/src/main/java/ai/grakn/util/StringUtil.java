@@ -17,11 +17,11 @@
  */
 package ai.grakn.util;
 
+import org.apache.commons.lang.StringEscapeUtils;
+
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
-
-import org.apache.commons.lang.StringEscapeUtils;
 
 /**
  * <p>
@@ -74,5 +74,4 @@ public class StringUtil {
             return value.toString();
         }
     }
-
 }

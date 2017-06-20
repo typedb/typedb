@@ -30,7 +30,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -74,9 +74,6 @@ public class AnalyticsTest {
 
     @Test
     public void testInferredResourceRelation() throws InvalidGraphException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             TypeLabel resourceTypeLabel = TypeLabel.of("degree");
             ResourceType<Long> degree = graph.putResourceType(resourceTypeLabel, ResourceType.DataType.LONG);
@@ -103,9 +100,6 @@ public class AnalyticsTest {
 
     @Test
     public void testNullResourceDoesntBreakAnalytics() throws InvalidGraphException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // make slightly odd graph
             TypeLabel resourceTypeId = TypeLabel.of("degree");
@@ -136,7 +130,7 @@ public class AnalyticsTest {
 
     @Test
     public void testConcurrentAnalyticsJobsBySubmittingGraqlComputeQueries() {
-        // TODO: Fix on TinkerGraphComputer
+        // TODO: move parallel tests to integration tests
         assumeFalse(GraknTestSetup.usingTinker());
 
         addOntologyAndEntities();

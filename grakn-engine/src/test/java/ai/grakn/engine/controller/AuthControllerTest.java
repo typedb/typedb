@@ -3,7 +3,6 @@ package ai.grakn.engine.controller;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -28,7 +27,6 @@ public class AuthControllerTest extends ControllerTestBase {
     private UsersHandler usersHandler = UsersHandler.create(
             EngineTestHelper.config().getProperty(GraknEngineConfig.ADMIN_PASSWORD_PROPERTY), 
                                                   EngineGraknGraphFactory.create(EngineTestHelper.config().getProperties()));
-
 
     @Test
     public void newSessionWithNonExistingUser() {

@@ -81,7 +81,7 @@ public class SQLMigratorMainTest {
     public void sqlMainNoKeyspace(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Keyspace missing (-k)");
-        run("sql", "-u", engine.uri(), "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile);
+        run("sql", "-u", engine.uri(), "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-user", USER);
     }
 
     @Test

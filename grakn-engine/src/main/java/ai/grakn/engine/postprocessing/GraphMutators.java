@@ -20,6 +20,7 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.factory.SystemKeyspace;
@@ -74,6 +75,11 @@ public abstract class GraphMutators {
             EngineGraknGraphFactory factory, String keyspace, GraknTxType txType, int maxRetry,
             Consumer<GraknGraph> mutatingFunction
     ){
+        //TODO Really hideous hack that will be removed when we move SystemKeyspace to engine
+        SystemKeyspace.initialise(
+                factory.properties().getProperty(GraknEngineConfig.SERVER_HOST_NAME) + ":" + factory.properties().getProperty(GraknEngineConfig.SERVER_PORT_NUMBER),
+                factory.properties());
+
         if(!SystemKeyspace.containsKeyspace(keyspace)){ //This may be slow.
             LOG.warn("Attempting to execute mutation on graph [" + keyspace + "] which no longer exists");
             return;

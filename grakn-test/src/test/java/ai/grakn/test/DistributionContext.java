@@ -23,7 +23,6 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
-import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.GraknVersion;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
@@ -109,7 +108,7 @@ public class DistributionContext extends ExternalResource {
 
         unzipDistribution();
 
-        GraknTestSetup.ensureCassandraRunning();
+        GraknTestSetup.startCassandraIfNeeded();
 
         startKafka(GraknEngineConfig.create());
 

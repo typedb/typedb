@@ -41,7 +41,7 @@ import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import org.junit.Before;
@@ -103,9 +103,6 @@ public class GraqlTest {
 
     @Test
     public void testDegrees() throws Exception {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         addOntologyAndEntities();
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             Map<Long, Set<String>> degrees = graph.graql().<DegreeQuery>parse("compute degrees;").execute();
@@ -137,9 +134,6 @@ public class GraqlTest {
 
     @Test
     public void testStatisticsMethods() throws InvalidGraphException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             TypeLabel resourceTypeId = TypeLabel.of("my-resource");
 
@@ -186,9 +180,6 @@ public class GraqlTest {
 
     @Test
     public void testConnectedComponents() throws InvalidGraphException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             Map<String, Long> sizeMap =
                     graph.graql().<ClusterQuery<Map<String, Long>>>parse("compute cluster;").execute();
@@ -201,9 +192,6 @@ public class GraqlTest {
 
     @Test
     public void testPath() throws InvalidGraphException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         addOntologyAndEntities();
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
@@ -246,8 +234,6 @@ public class GraqlTest {
 
     @Test
     public void testAnalyticsDoesNotCommitByMistake() throws InvalidGraphException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.putResourceType("number", ResourceType.DataType.LONG);
             graph.commit();

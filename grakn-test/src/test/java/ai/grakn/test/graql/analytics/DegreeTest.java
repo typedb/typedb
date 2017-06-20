@@ -33,7 +33,7 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -72,9 +72,6 @@ public class DegreeTest {
 
     @Test
     public void testDegrees() throws Exception {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         // create instances
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
@@ -117,7 +114,9 @@ public class DegreeTest {
 
         // compute degrees
         List<Long> list = new ArrayList<>(4);
-        for (long i = 0L; i < 4L; i++) {
+        long workerNumber = 4L;
+        if (GraknTestSetup.usingTinker()) workerNumber = 1L;
+        for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
         GraknSparkComputer.clear();
@@ -129,6 +128,8 @@ public class DegreeTest {
             }
         }).collect(Collectors.toSet());
         result.forEach(degrees -> {
+            System.out.println(degrees);
+            System.out.println(correctDegrees);
             assertEquals(3, degrees.size());
             degrees.forEach((key, value) -> value.forEach(
                     id -> {
@@ -202,9 +203,6 @@ public class DegreeTest {
 
     @Test
     public void testSubIsAccountedForInSubgraph() throws Exception {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -228,9 +226,6 @@ public class DegreeTest {
 
     @Test
     public void testDegreeIsCorrect() throws InvalidGraphException, ExecutionException, InterruptedException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -319,9 +314,6 @@ public class DegreeTest {
 
     @Test
     public void testDegreeMissingRolePlayer() throws Exception {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -359,9 +351,6 @@ public class DegreeTest {
     @Test
     public void testDegreeAssertionAboutAssertion()
             throws InvalidGraphException, ExecutionException, InterruptedException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -447,9 +436,6 @@ public class DegreeTest {
     @Test
     public void testDegreeTernaryRelationships()
             throws InvalidGraphException, ExecutionException, InterruptedException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         // make relation
         RoleType productionWithCast = graph.putRoleType("production-with-cast");
         RoleType actor = graph.putRoleType("actor");
@@ -486,9 +472,6 @@ public class DegreeTest {
     @Test
     public void testDegreeOneRolePlayerMultipleRoles()
             throws InvalidGraphException, ExecutionException, InterruptedException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -530,9 +513,6 @@ public class DegreeTest {
     @Test
     public void testDegreeRolePlayerWrongType()
             throws InvalidGraphException, ExecutionException, InterruptedException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");

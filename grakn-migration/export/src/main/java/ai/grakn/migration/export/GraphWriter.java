@@ -69,8 +69,8 @@ public class GraphWriter {
      */
     private String join(Stream<VarPattern> stream){
         return stream
+                .filter(varPattern -> varPattern.admin().getProperties().findAny().isPresent())
                 .map(Object::toString)
-                .filter(s -> !s.isEmpty())
                 .collect(joining(EOL, "", EOL));
     }
 

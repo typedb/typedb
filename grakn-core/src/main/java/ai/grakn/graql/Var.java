@@ -26,7 +26,7 @@ import java.util.function.Function;
  *
  * @author Felix Chapman
  */
-public interface Var extends VarPatternBuilder {
+public interface Var extends VarPattern {
 
     /**
      * Get the string name of the variable (without prefixed "$")

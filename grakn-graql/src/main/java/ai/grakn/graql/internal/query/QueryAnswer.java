@@ -141,7 +141,7 @@ public class QueryAnswer implements Answer {
     public Answer merge(Answer a2, boolean mergeExplanation){
         if(a2.isEmpty()) return this;
         AnswerExplanation exp = this.getExplanation();
-        QueryAnswer merged = new QueryAnswer(a2);
+        Answer merged = new QueryAnswer(a2);
         merged.putAll(this);
 
         if(mergeExplanation) {
@@ -149,6 +149,7 @@ public class QueryAnswer implements Answer {
             if(!this.getExplanation().isJoinExplanation()) exp.addAnswer(this);
             if(!a2.getExplanation().isJoinExplanation()) exp.addAnswer(a2);
         }
+
         return merged.setExplanation(exp);
     }
 
@@ -182,7 +183,7 @@ public class QueryAnswer implements Answer {
                 .forEach(e -> {
                     Var var = e.getKey();
                     Collection<Var> uvars = unifier.get(var);
-                    if (uvars.isEmpty()) {
+                    if (uvars.isEmpty() && !unifier.values().contains(var)) {
                         answerMultimap.put(var, e.getValue());
                     } else {
                         uvars.forEach(uv -> answerMultimap.put(uv, e.getValue()));
