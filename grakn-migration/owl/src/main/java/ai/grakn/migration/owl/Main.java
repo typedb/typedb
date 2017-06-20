@@ -45,16 +45,20 @@ import static ai.grakn.migration.base.MigrationCLI.printWholeCompletionMessage;
 public class Main {
 
     public static void main(String[] args) {
-        MigrationCLI.init(args, OwlMigrationOptions::new).stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(Main::runOwl);
+        try {
+            MigrationCLI.init(args, OwlMigrationOptions::new).stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach(Main::runOwl);
+        } catch (Throwable t){
+            MigrationCLI.die(t.getMessage());
+        }
     }
 
     private static void runOwl(OwlMigrationOptions options){
         File owlfile = new File(options.getInput());
         if (!owlfile.exists()) {
-            MigrationCLI.die("Cannot find file: " + options.getInput());
+            throw new IllegalArgumentException("Cannot find file: " + options.getInput());
         }
 
         printInitMessage(options);
@@ -66,8 +70,7 @@ public class Main {
                     .migrate();
 
             printWholeCompletionMessage(options);
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             MigrationCLI.die(t.getMessage());
         }
     }
