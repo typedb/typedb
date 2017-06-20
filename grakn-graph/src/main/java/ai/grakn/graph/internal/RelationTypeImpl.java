@@ -84,6 +84,8 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         checkTypeMutation();
         putEdge(roleType, Schema.EdgeLabel.RELATES);
 
+        //TODO: the following lines below this comment should only be executed if the edge is added
+
         //ConceptCache the Role internally
         cachedRelates.ifPresent(set -> set.add(roleType));
 
