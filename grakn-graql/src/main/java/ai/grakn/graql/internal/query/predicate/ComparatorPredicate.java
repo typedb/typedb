@@ -22,12 +22,10 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarPatternBuilder;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.util.Schema;
 import ai.grakn.util.StringUtil;
-
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -57,10 +55,10 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
      * @param value the value that this predicate is testing against
      */
     ComparatorPredicate(Object value) {
-        if (value instanceof VarPatternBuilder) {
+        if (value instanceof VarPattern) {
             this.originalValue = Optional.empty();
             this.value = Optional.empty();
-            this.var = Optional.of(((VarPatternBuilder) value).pattern().admin());
+            this.var = Optional.of(((VarPattern) value).admin());
         } else {
             // Convert integers to longs for consistency
             if (value instanceof Integer) {

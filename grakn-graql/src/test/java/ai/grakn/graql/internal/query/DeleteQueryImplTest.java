@@ -37,8 +37,8 @@ public class DeleteQueryImplTest {
     private final MatchQuery match1 = Graql.match(var("x").isa("movie"));
     private final MatchQuery match2 = Graql.match(var("y").isa("movie"));
 
-    private final Collection<VarPatternAdmin> deleters1 = Sets.newHashSet(var("x").pattern().admin());
-    private final Collection<VarPatternAdmin> deleters2 = Sets.newHashSet(var("y").pattern().admin());
+    private final Collection<VarPatternAdmin> deleters1 = Sets.newHashSet(var("x").admin());
+    private final Collection<VarPatternAdmin> deleters2 = Sets.newHashSet(var("y").admin());
 
     @Test
     public void deleteQueriesWithTheSameMatchQueryAndDeletersAreEqual() {

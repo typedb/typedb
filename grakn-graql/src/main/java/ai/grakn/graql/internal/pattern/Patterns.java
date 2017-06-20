@@ -63,7 +63,7 @@ public class Patterns {
             properties.addAll(var.getProperties().iterator());
         }
 
-        return new VarPatternImpl(name, properties.build());
+        return varPattern(name, properties.build());
     }
 
     public static Var var() {
@@ -74,4 +74,11 @@ public class Patterns {
         return new VarImpl(value, true);
     }
 
+    static VarPatternAdmin varPattern(Var name, Set<VarProperty> properties) {
+        if (properties.isEmpty()) {
+            return name.admin();
+        } else {
+            return new VarPatternImpl(name, properties);
+        }
+    }
 }
