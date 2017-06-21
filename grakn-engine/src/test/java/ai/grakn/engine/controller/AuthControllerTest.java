@@ -3,6 +3,8 @@ package ai.grakn.engine.controller;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -20,8 +22,11 @@ import mjson.Json;
  * @author borislav
  *
  */
-public class AuthControllerTest extends ControllerTestBase {
+public class AuthControllerTest  {
 
+    @ClassRule
+    public static ControllerFixture fixture = ControllerFixture.INSTANCE;
+    
     private static final JWTHandler jwtHandler = JWTHandler.create("secret token");
 
     private UsersHandler usersHandler = UsersHandler.create(

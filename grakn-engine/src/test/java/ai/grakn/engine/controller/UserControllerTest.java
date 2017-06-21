@@ -23,17 +23,23 @@ import static com.jayway.restassured.RestAssured.when;
 import static com.jayway.restassured.RestAssured.given;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
 import com.jayway.restassured.response.Response;
 import ai.grakn.engine.user.UsersHandler;
 import mjson.Json;
 
-public class UserControllerTest extends ControllerTestBase {
+public class UserControllerTest  {
+    
+    @ClassRule
+    public static ControllerFixture fixture = ControllerFixture.INSTANCE;
     
     @Test
-    public void testAddNewUser(){
+    public void testAddNewUser() {        
         String userName = "person";
         String password = "password";
+
+        fixture.cleanup(() -> when().delete("/user/one/" + userName).then().statusCode(200));
 
         //Add New User
         Json body = Json.object(UsersHandler.USER_NAME, userName, UsersHandler.USER_PASSWORD, password);
@@ -42,7 +48,10 @@ public class UserControllerTest extends ControllerTestBase {
 
         //Check he is there
         Assert.assertEquals(userName, get("/user/one/" + userName).jsonPath().getString("user-name"));
-        
-        cleanup(() -> when().delete("/user/one/" + userName).then().statusCode(200));
+    }
+    
+    @Test
+    public void testMissingUserLookup() {
+        get("/user/one/nobody").then().statusCode(404);
     }
 }

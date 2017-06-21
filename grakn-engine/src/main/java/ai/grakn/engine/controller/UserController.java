@@ -85,7 +85,11 @@ public class UserController {
     @ApiOperation(value = "Get one user.")
     @ApiImplicitParam(name = "user-name", value = "Username of user.", required = true, dataType = "string", paramType = "path")
     private Json getUser(Request request, Response response) {
-        return users.getUser(request.params("user-name"));
+        Json result = users.getUser(request.params("user-name"));
+        if (result.isNull()) {
+            response.status(404);
+        }
+        return result;
     }
     
     @POST
