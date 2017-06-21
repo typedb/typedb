@@ -79,6 +79,11 @@ public final class ResolutionStrategy {
     public static final int BOUND_VARIABLE = -2;
 
     /**
+     * priority modifier if an atom has an inequality predicate
+     */
+    public static final int INEQUALITY_PREDICATE = -1000;
+
+    /**
      * priority modifier for each specific value predicate a given atom (resource) has
      */
     public static final int SPECIFIC_VALUE_PREDICATE = 20;
