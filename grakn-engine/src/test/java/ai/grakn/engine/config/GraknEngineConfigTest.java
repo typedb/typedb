@@ -16,8 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine;
+package ai.grakn.engine.config;
 
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Rule;
 import org.junit.Test;

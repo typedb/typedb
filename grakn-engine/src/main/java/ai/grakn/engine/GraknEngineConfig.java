@@ -189,7 +189,7 @@ public class GraknEngineConfig {
     /**
      * @return The path to the config file currently in use. Default: /conf/main/grakn.properties
      */
-    static String getConfigFilePath() {
+    public static String getConfigFilePath() {
         if (configFilePath == null) setConfigFilePath();
         return configFilePath;
     }
