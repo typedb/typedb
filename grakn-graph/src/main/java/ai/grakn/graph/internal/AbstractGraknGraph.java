@@ -661,7 +661,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
 
         //TODO We should not hit the REST endpoint when deleting keyspaces through a graph
-        //TODO retrieved from and EngineGraknGraphFactory
+        // retrieved from and EngineGraknGraphFactory
         //Remove the graph from the system keyspace
         EngineCommunicator.contactEngine(getDeleteKeyspaceEndpoint(), REST.HttpConn.DELETE_METHOD);
     }
