@@ -19,6 +19,7 @@
 package ai.grakn.exception;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
@@ -39,6 +40,7 @@ import java.util.Set;
 import static ai.grakn.util.ErrorMessage.INSERT_INSTANCE_WITH_NAME;
 import static ai.grakn.util.ErrorMessage.INSERT_ISA_AND_SUB;
 import static ai.grakn.util.ErrorMessage.INSERT_MULTIPLE_VALUES;
+import static ai.grakn.util.ErrorMessage.INSERT_NEW_TYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_NO_DATATYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
 import static ai.grakn.util.ErrorMessage.INSERT_RESOURCE_WITHOUT_VALUE;
@@ -299,5 +301,9 @@ public class GraqlQueryException extends GraknException{
 
     public static GraqlQueryException insertResourceTypeWithoutDataType(VarPatternAdmin var) {
         return new GraqlQueryException(INSERT_NO_DATATYPE.getMessage(var.getPrintableName()));
+    }
+
+    public static GraqlQueryException insertNewType(Instance instance, Type type) {
+        return new GraqlQueryException(INSERT_NEW_TYPE.getMessage(instance, type));
     }
 }
