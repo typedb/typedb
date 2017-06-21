@@ -99,12 +99,12 @@ public class XMLMigratorTest {
 
     private static void migrateXMLWithElement(String element, String template){
         // load the ontology
-        MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "no-attributes/ontology.gql"));
+        MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "ontology.gql"));
 
         // load the data
         Migrator migrator = Migrator.to(engine.uri(), keyspace);
 
-        File xmlFile = MigratorTestUtils.getFile("xml", "no-attributes/data.xml");
+        File xmlFile = MigratorTestUtils.getFile("xml", "data.xml");
 
         XmlMigrator xmlMigrator = new XmlMigrator(xmlFile);
         xmlMigrator.element(element);
