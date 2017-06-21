@@ -1,6 +1,0 @@
-insert
-
-$thing isa thing
-    has name <NAME.textContent>
-    has price <NAME.price>;
-

@@ -1,11 +1,7 @@
 <THINGS>
-    <THING price="2.44">
-        <NAME>Bloodroot</NAME>
-    </THING>
-    <THING price="9.37">
-        <NAME>Columbine</NAME>
-    </THING>
-    <THING price="6.81">
-        <NAME>Marsh Marigold</NAME>
+    <THING NAME="Bob">
+        innerText
+        <NAME>Charlie</NAME>
+        <NAME NAME="Alice"/>
     </THING>
 </THINGS>

@@ -48,6 +48,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
@@ -104,7 +105,6 @@ public class XmlMigrator implements AutoCloseable {
     
     /**
      * Construct a XmlMigrator to migrate data in the given file or dir
-     * @param template parametrized graql insert query
      * @param xmlFileOrDir either a XML file or a directory containing XML files
      */
     public XmlMigrator(File xmlFileOrDir){
@@ -118,7 +118,6 @@ public class XmlMigrator implements AutoCloseable {
 
     /**
      * Construct a XmlMigrator to migrate data in given reader
-     * @param template parametrized graql insert query
      * @param reader reader over the data to be migrated
      */
     public XmlMigrator(Reader reader){
@@ -163,12 +162,12 @@ public class XmlMigrator implements AutoCloseable {
     /**
      * Convert data in XML element to a Map<String, Object> or plain text depending on its content.
      * 
-     * @param data XML element (a tag) to convert
+     * @param node XML element (a tag) to convert
      * @return A String containing the text content of the element or a Map with its nested elements.
      */
     Map<String, Object> digest(Element node) {
         Map<String, Object> result = new HashMap<String, Object>();
-        Map<String, Object> attributes = new HashMap<String, Object>();
+
         StringBuilder textContent = new StringBuilder();
         NodeList children = node.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
@@ -207,19 +206,22 @@ public class XmlMigrator implements AutoCloseable {
                     }
                     break;
                 }
-                case Node.ATTRIBUTE_NODE: {
-                    Attr attr = (Attr)node;
-                    attributes.put(attr.getName(), attr.getValue());
-                    break;
-                }
                 default:
-                    textContent.append(child.getTextContent());
+                    textContent.append(child.getTextContent().trim());
             }
         }
-        result.putAll(attributes);
-        if (result.isEmpty()) {
+
+        NamedNodeMap attributes = node.getAttributes();
+        for(int i = 0; i < attributes.getLength(); i++){
+            Attr attr = (Attr) attributes.item(i);
+            result.put("~" + attr.getName(), attr.getValue());
+        }
+
+        if(textContent.length() > 0) {
             result.put("textContent", textContent.toString());
         }
+
+        System.out.println(result);
         return result;
     }
 
