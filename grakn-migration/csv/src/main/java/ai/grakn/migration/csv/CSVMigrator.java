@@ -63,7 +63,7 @@ public class CSVMigrator implements AutoCloseable {
                     .map(Optional::get)
                     .forEach(CSVMigrator::runCSV);
         } catch (Throwable e){
-            MigrationCLI.die(e.getMessage());
+            System.err.println(e.getMessage());
         }
     }
 
@@ -88,7 +88,7 @@ public class CSVMigrator implements AutoCloseable {
         ) {
             MigrationCLI.loadOrPrint(csvTemplate, csvMigrator.convert(), options);
         } catch (Throwable throwable) {
-            MigrationCLI.die(throwable.getMessage());
+            System.err.println(throwable.getMessage());
         }
     }
 

@@ -37,7 +37,7 @@ public class Main {
                     .map(Optional::get)
                     .forEach(Main::runExport);
         } catch (Throwable throwable){
-            MigrationCLI.die(throwable.getMessage());
+            System.err.println(throwable.getMessage());
         }
     }
 

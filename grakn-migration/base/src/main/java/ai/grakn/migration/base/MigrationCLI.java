@@ -154,10 +154,6 @@ public class MigrationCLI {
         }
     }
 
-    public static void die(String errorMsg) {
-        System.err.println(errorMsg);
-    }
-
     private static void printHelpMessage(MigrationOptions options){
         HelpFormatter helpFormatter = new HelpFormatter();
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(System.out, Charset.defaultCharset());

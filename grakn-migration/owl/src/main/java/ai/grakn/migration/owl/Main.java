@@ -51,7 +51,7 @@ public class Main {
                     .map(Optional::get)
                     .forEach(Main::runOwl);
         } catch (Throwable t){
-            MigrationCLI.die(t.getMessage());
+            System.err.println(t.getMessage());
         }
     }
 
@@ -71,7 +71,7 @@ public class Main {
 
             printWholeCompletionMessage(options);
         } catch (Throwable t) {
-            MigrationCLI.die(t.getMessage());
+            System.err.println(t.getMessage());
         }
     }
 }

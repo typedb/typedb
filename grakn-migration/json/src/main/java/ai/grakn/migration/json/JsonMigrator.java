@@ -52,7 +52,7 @@ public class JsonMigrator implements AutoCloseable {
                     .map(Optional::get)
                     .forEach(JsonMigrator::runJson);
         } catch (Throwable throwable){
-            MigrationCLI.die(throwable.getMessage());
+            System.err.println(throwable.getMessage());
         }
     }
 
