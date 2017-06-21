@@ -221,7 +221,6 @@ public class XmlMigrator implements AutoCloseable {
             result.put("textContent", textContent.toString());
         }
 
-        System.out.println(result);
         return result;
     }
 

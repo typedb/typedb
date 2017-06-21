@@ -48,6 +48,8 @@ public class XMLMigratorTest {
 
             EntityType thingType = graph.getEntityType("thing");
             thingType.instances().forEach(Concept::delete);
+
+            graph.commit();
         }
     }
 
