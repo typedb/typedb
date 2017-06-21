@@ -23,6 +23,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -159,37 +160,29 @@ abstract class AbstractFragment implements Fragment {
         return result;
     }
 
-    Set<Weighted<DirectedEdge<String>>> getDirectedEdgesOut(String edge) {
-        String start = getStart().getValue();
-        String end = getEnd().get().getValue();
-        String middle = start + edge + end;
+    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesOut(String edge) {
+
+        Node start = new Node(getStart());
+        Node end = new Node(getEnd().get());
+        Node middle = new Node(start + edge + end);
         return Sets.newHashSet(
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
                 weighted(DirectedEdge.from(middle).to(end), 0));
     }
 
-    Set<Weighted<DirectedEdge<String>>> getDirectedEdgesOut(Var edge) {
-        String start = getStart().getValue();
-        String end = getEnd().get().getValue();
-        String middle = edge.getValue();
+    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesIn(String edge) {
+        Node start = new Node(getStart());
+        Node end = new Node(getEnd().get());
+        Node middle = new Node(end + edge + start);
         return Sets.newHashSet(
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
                 weighted(DirectedEdge.from(middle).to(end), 0));
     }
 
-    Set<Weighted<DirectedEdge<String>>> getDirectedEdgesIn(String edge) {
-        String start = getStart().getValue();
-        String end = getEnd().get().getValue();
-        String middle = end + edge + start;
-        return Sets.newHashSet(
-                weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
-                weighted(DirectedEdge.from(middle).to(end), 0));
-    }
-
-    Set<Weighted<DirectedEdge<String>>> getDirectedEdgesIn(Var edge) {
-        String start = getStart().getValue();
-        String end = getEnd().get().getValue();
-        String middle = edge.getValue();
+    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesBoth(Var edge) {
+        Node start = new Node(getStart());
+        Node end = new Node(getEnd().get());
+        Node middle = new Node(edge);
         return Sets.newHashSet(
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
                 weighted(DirectedEdge.from(middle).to(end), 0));

@@ -23,6 +23,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -124,7 +125,7 @@ public interface Fragment {
      *
      * @return a set of edges
      */
-    default Set<Weighted<DirectedEdge<String>>> getDirectedEdges() {
+    default Set<Weighted<DirectedEdge<Node>>> getDirectedEdges() {
         return Collections.emptySet();
     }
 }

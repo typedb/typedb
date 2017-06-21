@@ -23,6 +23,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -92,8 +93,8 @@ class OutShortcutFragment extends AbstractFragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<String>>> getDirectedEdges() {
-        return getDirectedEdgesOut(edge);
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges() {
+        return getDirectedEdgesBoth(edge);
     }
 
     @Override

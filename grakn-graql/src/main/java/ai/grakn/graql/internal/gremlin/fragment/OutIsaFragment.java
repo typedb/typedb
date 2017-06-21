@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -53,7 +54,7 @@ class OutIsaFragment extends AbstractFragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<String>>> getDirectedEdges() {
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges() {
         return getDirectedEdgesOut("-[isa]->");
     }
 }
