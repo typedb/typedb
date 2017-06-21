@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.gremlin.spanningtree;
 
 import ai.grakn.graql.internal.gremlin.spanningtree.datastructure.FibonacciQueue;
 import ai.grakn.graql.internal.gremlin.spanningtree.datastructure.Partition;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.Edge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Pair;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.base.Optional;
@@ -93,12 +93,12 @@ class EdgeQueueMap<V> {
         this.queueByDestination = Maps.newHashMap();
     }
 
-    public void addEdge(Weighted<Edge<V>> edge) {
+    public void addEdge(Weighted<DirectedEdge<V>> edge) {
         final V destination = partition.componentOf(edge.val.destination);
         if (!queueByDestination.containsKey(destination)) {
             queueByDestination.put(destination, EdgeQueue.create(destination, partition));
         }
-        final List<Edge<V>> replaces = Lists.newLinkedList();
+        final List<DirectedEdge<V>> replaces = Lists.newLinkedList();
         queueByDestination.get(destination).addEdge(ExclusiveEdge.of(edge.val, replaces, edge.weight));
     }
 
@@ -110,13 +110,13 @@ class EdgeQueueMap<V> {
         return queueByDestination.get(component).popBestEdge(best);
     }
 
-    public EdgeQueue merge(V component, Iterable<Pair<EdgeQueue<V>, Weighted<Edge<V>>>> queuesToMerge) {
+    public EdgeQueue merge(V component, Iterable<Pair<EdgeQueue<V>, Weighted<DirectedEdge<V>>>> queuesToMerge) {
         final EdgeQueue<V> result = EdgeQueue.create(component, partition);
-        for (Pair<EdgeQueue<V>, Weighted<Edge<V>>> queueAndReplace : queuesToMerge) {
+        for (Pair<EdgeQueue<V>, Weighted<DirectedEdge<V>>> queueAndReplace : queuesToMerge) {
             final EdgeQueue<V> queue = queueAndReplace.first;
-            final Weighted<Edge<V>> replace = queueAndReplace.second;
+            final Weighted<DirectedEdge<V>> replace = queueAndReplace.second;
             for (ExclusiveEdge<V> wEdgeAndExcluded : queue.edges) {
-                final List<Edge<V>> replaces = wEdgeAndExcluded.excluded;
+                final List<DirectedEdge<V>> replaces = wEdgeAndExcluded.excluded;
                 replaces.add(replace.val);
                 result.addEdge(ExclusiveEdge.of(
                         wEdgeAndExcluded.edge,

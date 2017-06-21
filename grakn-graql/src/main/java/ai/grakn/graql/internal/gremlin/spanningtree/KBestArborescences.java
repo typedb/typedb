@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.spanningtree;
 
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.Edge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Pair;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
@@ -54,7 +54,7 @@ public class KBestArborescences {
 
     public static <V> List<Weighted<Arborescence<V>>> getKBestArborescences(WeightedGraph<V> graph, V root, int k) {
         // remove all edges incoming to `root`. resulting arborescence is then forced to be rooted at `root`.
-        return getKBestArborescences(graph.filterEdges(not(Edge.hasDestination(root))), k);
+        return getKBestArborescences(graph.filterEdges(not(DirectedEdge.hasDestination(root))), k);
     }
 
     /**
@@ -70,14 +70,14 @@ public class KBestArborescences {
         if (k < 2) return results;
         final PriorityQueue<Weighted<SubsetOfSolutions<V>>> queue = Queues.newPriorityQueue();
         // find the edge you need to ban to get the 2nd best
-        final Set<Edge<V>> empty = ImmutableSet.of();
+        final Set<DirectedEdge<V>> empty = ImmutableSet.of();
         queue.addAll(scoreSubsetOfSolutions(graph, empty, empty, best).asSet());
         for (int j = 2; j <= k && !queue.isEmpty(); j++) {
             final Weighted<SubsetOfSolutions<V>> wItem = queue.poll();
             final SubsetOfSolutions<V> item = wItem.val;
             // divide this subset into 2: things that have `edgeToBan`, and those that don't.
             // We have already pre-calculated that `jthBest` will not contain `edgeToBan`
-            final Set<Edge<V>> newBanned = copyOf(concat(item.banned, singleton(item.edgeToBan)));
+            final Set<DirectedEdge<V>> newBanned = copyOf(concat(item.banned, singleton(item.edgeToBan)));
             final Weighted<Arborescence<V>> jthBest =
                     ChuLiuEdmonds.getMaxArborescence(graph, item.required, newBanned);
             assert Math.abs(jthBest.weight - wItem.weight) < delta;
@@ -85,7 +85,7 @@ public class KBestArborescences {
             // subset of solutions in item that *don't* have `edgeToBan`, except `jthBest`
             queue.addAll(scoreSubsetOfSolutions(graph, item.required, newBanned, jthBest).asSet());
             // subset of solutions in item that *do* have `edgeToBan`, except `bestArborescence`
-            final Set<Edge<V>> newRequired = copyOf(concat(item.required, singleton(item.edgeToBan)));
+            final Set<DirectedEdge<V>> newRequired = copyOf(concat(item.required, singleton(item.edgeToBan)));
             queue.addAll(scoreSubsetOfSolutions(graph, newRequired, item.banned, item.bestArborescence).asSet());
         }
         return results;
@@ -93,15 +93,15 @@ public class KBestArborescences {
 
     static <V> Optional<Weighted<SubsetOfSolutions<V>>>
     scoreSubsetOfSolutions(WeightedGraph<V> graph,
-                           Set<Edge<V>> required,
-                           Set<Edge<V>> banned,
+                           Set<DirectedEdge<V>> required,
+                           Set<DirectedEdge<V>> banned,
                            Weighted<Arborescence<V>> wBestArborescence) {
         final WeightedGraph<V> filtered =
-                graph.filterEdges(and(not(Edge.competesWith(required)), not(Edge.isIn(banned))));
-        final Optional<Pair<Edge<V>, Double>> oEdgeToBanAndDiff =
+                graph.filterEdges(and(not(DirectedEdge.competesWith(required)), not(DirectedEdge.isIn(banned))));
+        final Optional<Pair<DirectedEdge<V>, Double>> oEdgeToBanAndDiff =
                 getNextBestArborescence(filtered, wBestArborescence.val);
         if (oEdgeToBanAndDiff.isPresent()) {
-            final Pair<Edge<V>, Double> edgeToBanAndDiff = oEdgeToBanAndDiff.get();
+            final Pair<DirectedEdge<V>, Double> edgeToBanAndDiff = oEdgeToBanAndDiff.get();
             return Optional.of(weighted(
                     new SubsetOfSolutions<V>(
                             edgeToBanAndDiff.first,
@@ -120,10 +120,10 @@ public class KBestArborescences {
      * second best solution will be)
      * Corresponds to the NEXT function in Camerini et al. 1980
      */
-    private static <V> Optional<Pair<Edge<V>, Double>> getNextBestArborescence(WeightedGraph<V> graph,
-                                                                               Arborescence<V> bestArborescence) {
+    private static <V> Optional<Pair<DirectedEdge<V>, Double>> getNextBestArborescence(WeightedGraph<V> graph,
+                                                                                       Arborescence<V> bestArborescence) {
         final PartialSolution<V> partialSolution =
-                PartialSolution.initialize(graph.filterEdges(not(Edge.isAutoCycle())));
+                PartialSolution.initialize(graph.filterEdges(not(DirectedEdge.isAutoCycle())));
         // In the beginning, subgraph has no edges, so no SCC has in-edges.
         final Queue<V> componentsWithNoInEdges = Lists.newLinkedList(graph.getNodes());
 
@@ -209,15 +209,15 @@ public class KBestArborescences {
      * to the k-best list, and we're trying to decide whether the next best in this subset is k+1-best overall.
      */
     static class SubsetOfSolutions<V> {
-        final Edge<V> edgeToBan;
+        final DirectedEdge<V> edgeToBan;
         final Weighted<Arborescence<V>> bestArborescence;
-        final Set<Edge<V>> required;
-        final Set<Edge<V>> banned;
+        final Set<DirectedEdge<V>> required;
+        final Set<DirectedEdge<V>> banned;
 
-        public SubsetOfSolutions(Edge<V> edgeToBan,
+        public SubsetOfSolutions(DirectedEdge<V> edgeToBan,
                                  Weighted<Arborescence<V>> bestArborescence,
-                                 Set<Edge<V>> required,
-                                 Set<Edge<V>> banned) {
+                                 Set<DirectedEdge<V>> required,
+                                 Set<DirectedEdge<V>> banned) {
             this.edgeToBan = edgeToBan;
             this.bestArborescence = bestArborescence;
             this.required = required;

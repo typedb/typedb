@@ -34,13 +34,13 @@ public abstract class WeightedGraph<V> {
 
     public abstract double getWeightOf(V source, V dest);
 
-    public abstract Collection<Weighted<Edge<V>>> getIncomingEdges(V destinationNode);
+    public abstract Collection<Weighted<DirectedEdge<V>>> getIncomingEdges(V destinationNode);
 
-    public WeightedGraph<V> filterEdges(Predicate<Edge<V>> predicate) {
-        final List<Weighted<Edge<V>>> allEdges = Lists.newArrayList();
+    public WeightedGraph<V> filterEdges(Predicate<DirectedEdge<V>> predicate) {
+        final List<Weighted<DirectedEdge<V>>> allEdges = Lists.newArrayList();
         for (V node : getNodes()) {
-            final Collection<Weighted<Edge<V>>> incomingEdges = getIncomingEdges(node);
-            for (Weighted<Edge<V>> edge : incomingEdges) {
+            final Collection<Weighted<DirectedEdge<V>>> incomingEdges = getIncomingEdges(node);
+            for (Weighted<DirectedEdge<V>> edge : incomingEdges) {
                 if (predicate.apply(edge.val)) {
                     allEdges.add(edge);
                 }

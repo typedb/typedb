@@ -22,9 +22,12 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
@@ -33,12 +36,12 @@ import java.util.Set;
  * <p>
  * A fragment is composed of four things:
  * <ul>
- *     <li>A gremlin traversal function, that takes a gremlin traversal and appends some new gremlin steps</li>
- *     <li>A starting variable name, where the gremlin traversal must start from</li>
- *     <li>An optional ending variable name, if the gremlin traversal navigates to a new Graql variable</li>
- *     <li>A priority, that describes how efficient this traversal is to help with ordering the traversals</li>
+ * <li>A gremlin traversal function, that takes a gremlin traversal and appends some new gremlin steps</li>
+ * <li>A starting variable name, where the gremlin traversal must start from</li>
+ * <li>An optional ending variable name, if the gremlin traversal navigates to a new Graql variable</li>
+ * <li>A priority, that describes how efficient this traversal is to help with ordering the traversals</li>
  * </ul>
- *
+ * <p>
  * Variable names refer to Graql variables. Some of these variable names may be randomly-generated UUIDs, such as for
  * castings.
  * <p>
@@ -64,7 +67,7 @@ public interface Fragment {
 
     /**
      * @param traversal the traversal to extend with this Fragment
-     * @param graph the graph to execute the traversal on
+     * @param graph     the graph to execute the traversal on
      */
     void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph);
 
@@ -114,5 +117,14 @@ public interface Fragment {
      */
     default boolean hasFixedFragmentCost() {
         return false;
+    }
+
+    /**
+     * Convert the fragment to a set of weighted edges for query planning
+     *
+     * @return a set of edges
+     */
+    default Set<Weighted<DirectedEdge<String>>> getDirectedEdges() {
+        return Collections.emptySet();
     }
 }

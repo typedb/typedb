@@ -76,12 +76,12 @@ public class DenseWeightedGraph<V> extends WeightedGraph<V> {
     }
 
     @Override
-    public Collection<Weighted<Edge<V>>> getIncomingEdges(V destinationNode) {
+    public Collection<Weighted<DirectedEdge<V>>> getIncomingEdges(V destinationNode) {
         if (!indexOf.containsKey(destinationNode)) return Collections.emptySet();
         final int dest = indexOf.get(destinationNode);
-        List<Weighted<Edge<V>>> results = Lists.newArrayList();
+        List<Weighted<DirectedEdge<V>>> results = Lists.newArrayList();
         for (int src = 0; src < nodes.size(); src++) {
-            results.add(Weighted.weighted(Edge.from(nodes.get(src)).to(destinationNode), weights[src][dest]));
+            results.add(Weighted.weighted(DirectedEdge.from(nodes.get(src)).to(destinationNode), weights[src][dest]));
         }
         return results;
     }

@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -105,40 +106,22 @@ public class GreedyTraversalPlan {
     private static List<Fragment> semiOptimalConjunction(ConjunctionQuery query, long maxTraversalAttempts) {
         Plan initialPlan = Plan.base();
 
-        Map<Integer, Set<String>> varNameSetMap = new HashMap<>();
-        final int[] index = {0};
-        query.getEquivalentFragmentSets().stream().flatMap(EquivalentFragmentSet::stream).forEach(fragment -> {
+        Collection<Set<Fragment>> connectedFragmentSets = getDisconnectedQuerySet(query);
+        System.out.println("connectedFragmentSets = " + connectedFragmentSets.size());
+        connectedFragmentSets.forEach(set -> System.out.println("     SetEntry : " + set));
 
-            Set<Var> fragmentVarsSet = Sets.newHashSet(fragment.getVariableNames());
-            fragmentVarsSet.addAll(fragment.getDependencies());
-            Set<String> fragmentVarNameSet = fragmentVarsSet.stream().map(Var::getValue).collect(Collectors.toSet());
-
-            List<Integer> setsWithVarInCommon = new ArrayList<>();
-            varNameSetMap.forEach((setIndex, varNameSet) -> {
-                if (!Collections.disjoint(varNameSet, fragmentVarNameSet)) {
-                    setsWithVarInCommon.add(setIndex);
-                }
-            });
-
-            if (setsWithVarInCommon.isEmpty()) {
-                index[0] += 1;
-                varNameSetMap.put(index[0], fragmentVarNameSet);
-            } else {
-                Iterator<Integer> iterator = setsWithVarInCommon.iterator();
-                Integer firstSet = iterator.next();
-                varNameSetMap.get(firstSet).addAll(fragmentVarNameSet);
-                while (iterator.hasNext()) {
-                    Integer nextSet = iterator.next();
-                    varNameSetMap.get(firstSet).addAll(varNameSetMap.get(nextSet));
-                    varNameSetMap.remove(nextSet);
-                }
-            }
+        connectedFragmentSets.forEach(fragmentSet -> {
+            final Set<Fragment> startingFragmentSet = new HashSet<>();
+            Plan plan = Plan.base();
+            fragmentSet.stream()
+                    .filter(fragment -> {
+                        if (fragment.hasFixedFragmentCost() && plan.tryPush(fragment)) {
+                            startingFragmentSet.add(fragment);
+                            return false;
+                        }
+                        return true;
+                    });
         });
-        if (varNameSetMap.size() != 1) {
-            System.out.println("varNameSetMap = " + varNameSetMap.size());
-            varNameSetMap.entrySet().forEach(
-                    SetEntry -> System.out.println("     SetEntry : " + SetEntry));
-        }
 
         // Should always start with fragments with fixed cost
         // So remove them from fragmentSets and add them to the plan
@@ -162,9 +145,6 @@ public class GreedyTraversalPlan {
             numTraversalAttempts *= numFragments;
             numFragments -= 1;
         }
-
-        System.out.println("depth = " + depth);
-        depth = 1;
 
         Plan plan = initialPlan.copy();
 
@@ -190,13 +170,50 @@ public class GreedyTraversalPlan {
         return plan.fragments();
     }
 
+    private static Collection<Set<Fragment>> getDisconnectedQuerySet(ConjunctionQuery query) {
+        Map<Integer, Set<String>> varNameSetMap = new HashMap<>();
+        Map<Integer, Set<Fragment>> fragmentSetMap = new HashMap<>();
+        final int[] index = {0};
+        query.getEquivalentFragmentSets().stream().flatMap(EquivalentFragmentSet::stream).forEach(fragment -> {
+
+            Set<Var> fragmentVarsSet = Sets.newHashSet(fragment.getVariableNames());
+            fragmentVarsSet.addAll(fragment.getDependencies());
+            Set<String> fragmentVarNameSet = fragmentVarsSet.stream().map(Var::getValue).collect(Collectors.toSet());
+
+            List<Integer> setsWithVarInCommon = new ArrayList<>();
+            varNameSetMap.forEach((setIndex, varNameSet) -> {
+                if (!Collections.disjoint(varNameSet, fragmentVarNameSet)) {
+                    setsWithVarInCommon.add(setIndex);
+                }
+            });
+
+            if (setsWithVarInCommon.isEmpty()) {
+                index[0] += 1;
+                varNameSetMap.put(index[0], fragmentVarNameSet);
+                fragmentSetMap.put(index[0], Sets.newHashSet(fragment));
+            } else {
+                Iterator<Integer> iterator = setsWithVarInCommon.iterator();
+                Integer firstSet = iterator.next();
+                varNameSetMap.get(firstSet).addAll(fragmentVarNameSet);
+                fragmentSetMap.get(firstSet).add(fragment);
+                while (iterator.hasNext()) {
+                    Integer nextSet = iterator.next();
+                    varNameSetMap.get(firstSet).addAll(varNameSetMap.get(nextSet));
+                    fragmentSetMap.get(firstSet).addAll(fragmentSetMap.get(nextSet));
+                    varNameSetMap.remove(nextSet);
+                    fragmentSetMap.remove(nextSet);
+                }
+            }
+        });
+        return fragmentSetMap.values();
+    }
+
     /**
      * Find a traversal plan that will satisfy the given equivalent fragment sets
      *
      * @param plan         the plan so far
      * @param fragmentSets a set of equivalent fragment sets that must all be covered by the plan
      * @param depth        the maximum depth the plan is allowed to descend in the tree
-     * @return a new plan that extends the given plan
      */
     private static void extendPlan(Plan plan, List<Plan> allPlans, Set<EquivalentFragmentSet> fragmentSets, long depth) {
 

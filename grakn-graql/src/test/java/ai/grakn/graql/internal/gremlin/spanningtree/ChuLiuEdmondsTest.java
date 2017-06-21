@@ -1,7 +1,7 @@
 package ai.grakn.graql.internal.gremlin.spanningtree;
 
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DenseWeightedGraph;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.Edge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
@@ -19,15 +19,15 @@ public class ChuLiuEdmondsTest {
     final static double DELTA = 0.001;
     final static double NINF = Double.NEGATIVE_INFINITY;
     final static WeightedGraph<Integer> graph = SparseWeightedGraph.from(ImmutableList.of(
-            weighted(Edge.from(0).to(1), 5),
-            weighted(Edge.from(0).to(2), 1),
-            weighted(Edge.from(0).to(3), 1),
-            weighted(Edge.from(1).to(2), 11),
-            weighted(Edge.from(1).to(3), 4),
-            weighted(Edge.from(2).to(1), 10),
-            weighted(Edge.from(2).to(3), 5),
-            weighted(Edge.from(3).to(1), 9),
-            weighted(Edge.from(3).to(2), 8)
+            weighted(DirectedEdge.from(0).to(1), 5),
+            weighted(DirectedEdge.from(0).to(2), 1),
+            weighted(DirectedEdge.from(0).to(3), 1),
+            weighted(DirectedEdge.from(1).to(2), 11),
+            weighted(DirectedEdge.from(1).to(3), 4),
+            weighted(DirectedEdge.from(2).to(1), 10),
+            weighted(DirectedEdge.from(2).to(3), 5),
+            weighted(DirectedEdge.from(3).to(1), 9),
+            weighted(DirectedEdge.from(3).to(2), 8)
     ));
 
     static <V> void assertEdgesSumToScore(WeightedGraph<V> originalEdgeWeights, Weighted<Arborescence<V>> bestTree) {
@@ -87,8 +87,8 @@ public class ChuLiuEdmondsTest {
     public void testRequiredAndBannedEdges() {
         final Weighted<Arborescence<Integer>> weightedSpanningTree = ChuLiuEdmonds.getMaxArborescence(
                 graph,
-                ImmutableSet.of(Edge.from(0).to(1)),
-                ImmutableSet.of(Edge.from(2).to(3)));
+                ImmutableSet.of(DirectedEdge.from(0).to(1)),
+                ImmutableSet.of(DirectedEdge.from(2).to(3)));
         final Map<Integer, Integer> maxBranching = weightedSpanningTree.val.parents;
         assertEquals(0, maxBranching.get(1).intValue());
         assertEquals(1, maxBranching.get(2).intValue());
@@ -102,8 +102,8 @@ public class ChuLiuEdmondsTest {
     public void testRequiredAndBannedEdges2() {
         final Weighted<Arborescence<Integer>> weightedSpanningTree = ChuLiuEdmonds.getMaxArborescence(
                 graph,
-                ImmutableSet.of(Edge.from(0).to(3), Edge.from(3).to(1)),
-                ImmutableSet.of(Edge.from(1).to(2))
+                ImmutableSet.of(DirectedEdge.from(0).to(3), DirectedEdge.from(3).to(1)),
+                ImmutableSet.of(DirectedEdge.from(1).to(2))
         );
         final Map<Integer, Integer> maxBranching = weightedSpanningTree.val.parents;
         assertEquals(3, maxBranching.get(1).intValue());
@@ -118,21 +118,21 @@ public class ChuLiuEdmondsTest {
     public void testElevenNodeGraph() {
         // make a graph with a bunch of nested cycles so we can exercise the recursive part of the algorithm.
         final WeightedGraph<Integer> graph = SparseWeightedGraph.from(ImmutableList.of(
-                weighted(Edge.from(0).to(8), 0),
-                weighted(Edge.from(1).to(2), 10),
-                weighted(Edge.from(1).to(4), 5),
-                weighted(Edge.from(2).to(3), 9),
-                weighted(Edge.from(3).to(1), 8),
-                weighted(Edge.from(4).to(5), 9),
-                weighted(Edge.from(5).to(6), 10),
-                weighted(Edge.from(6).to(4), 8),
-                weighted(Edge.from(6).to(7), 5),
-                weighted(Edge.from(7).to(8), 10),
-                weighted(Edge.from(8).to(2), 5),
-                weighted(Edge.from(8).to(9), 8),
-                weighted(Edge.from(8).to(10), 1),
-                weighted(Edge.from(9).to(7), 9),
-                weighted(Edge.from(10).to(3), 3)
+                weighted(DirectedEdge.from(0).to(8), 0),
+                weighted(DirectedEdge.from(1).to(2), 10),
+                weighted(DirectedEdge.from(1).to(4), 5),
+                weighted(DirectedEdge.from(2).to(3), 9),
+                weighted(DirectedEdge.from(3).to(1), 8),
+                weighted(DirectedEdge.from(4).to(5), 9),
+                weighted(DirectedEdge.from(5).to(6), 10),
+                weighted(DirectedEdge.from(6).to(4), 8),
+                weighted(DirectedEdge.from(6).to(7), 5),
+                weighted(DirectedEdge.from(7).to(8), 10),
+                weighted(DirectedEdge.from(8).to(2), 5),
+                weighted(DirectedEdge.from(8).to(9), 8),
+                weighted(DirectedEdge.from(8).to(10), 1),
+                weighted(DirectedEdge.from(9).to(7), 9),
+                weighted(DirectedEdge.from(10).to(3), 3)
         ));
         final Weighted<Arborescence<Integer>> weightedSpanningTree = ChuLiuEdmonds.getMaxArborescence(graph, 0);
 

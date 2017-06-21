@@ -20,11 +20,17 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Set;
+
+import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 
 class InPlaysFragment extends AbstractFragment {
@@ -61,4 +67,8 @@ class InPlaysFragment extends AbstractFragment {
         return COST_TYPES_PER_ROLE;
     }
 
+    @Override
+    public Set<Weighted<DirectedEdge<String>>> getDirectedEdges() {
+        return getDirectedEdgesIn("-[plays]->");
+    }
 }

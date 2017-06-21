@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.spanningtree;
 
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.Edge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
@@ -52,7 +52,7 @@ public class Arborescence<V> {
         return Arborescence.of(ImmutableMap.<T, T>of());
     }
 
-    public boolean contains(Edge<V> e) {
+    public boolean contains(DirectedEdge<V> e) {
         final V dest = e.destination;
         return parents.containsKey(dest) && parents.get(dest).equals(e.source);
     }

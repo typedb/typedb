@@ -21,10 +21,13 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Set;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 

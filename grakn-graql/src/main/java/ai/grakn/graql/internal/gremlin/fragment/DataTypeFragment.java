@@ -60,7 +60,6 @@ class DataTypeFragment extends AbstractFragment {
         DataTypeFragment that = (DataTypeFragment) o;
 
         return dataType != null ? dataType.equals(that.dataType) : that.dataType == null;
-
     }
 
     @Override

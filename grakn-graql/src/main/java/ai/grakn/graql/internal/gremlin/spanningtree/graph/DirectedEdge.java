@@ -31,11 +31,11 @@ import java.util.Set;
  * @param <V> the type of the node
  * @author Sam Thomson
  */
-public class Edge<V> {
+public class DirectedEdge<V> {
     public final V source;
     public final V destination;
 
-    public Edge(V source, V destination) {
+    public DirectedEdge(V source, V destination) {
         this.source = source;
         this.destination = destination;
     }
@@ -50,8 +50,8 @@ public class Edge<V> {
             this.source = source;
         }
 
-        public Edge<V> to(V destination) {
-            return new Edge<V>(source, destination);
+        public DirectedEdge<V> to(V destination) {
+            return new DirectedEdge<V>(source, destination);
         }
     }
 
@@ -79,31 +79,31 @@ public class Edge<V> {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final Edge other = (Edge) obj;
+        final DirectedEdge other = (DirectedEdge) obj;
         return this.source == other.source && this.destination == other.destination;
     }
 
     //// Edge Predicates
 
-    public static <T> Predicate<Edge<T>> hasDestination(final T node) {
-        return new Predicate<Edge<T>>() {
+    public static <T> Predicate<DirectedEdge<T>> hasDestination(final T node) {
+        return new Predicate<DirectedEdge<T>>() {
             @Override
-            public boolean apply(Edge<T> input) {
+            public boolean apply(DirectedEdge<T> input) {
                 assert input != null;
                 return input.destination.equals(node);
             }
         };
     }
 
-    public static <T> Predicate<Edge<T>> competesWith(final Set<Edge<T>> required) {
+    public static <T> Predicate<DirectedEdge<T>> competesWith(final Set<DirectedEdge<T>> required) {
         final ImmutableMap.Builder<T, T> requiredSourceByDestinationBuilder = ImmutableMap.builder();
-        for (Edge<T> edge : required) {
+        for (DirectedEdge<T> edge : required) {
             requiredSourceByDestinationBuilder.put(edge.destination, edge.source);
         }
         final Map<T, T> requiredSourceByDest = requiredSourceByDestinationBuilder.build();
-        return new Predicate<Edge<T>>() {
+        return new Predicate<DirectedEdge<T>>() {
             @Override
-            public boolean apply(Edge<T> input) {
+            public boolean apply(DirectedEdge<T> input) {
                 assert input != null;
                 return (requiredSourceByDest.containsKey(input.destination) &&
                         !input.source.equals(requiredSourceByDest.get(input.destination)));
@@ -111,20 +111,20 @@ public class Edge<V> {
         };
     }
 
-    public static <T> Predicate<Edge<T>> isAutoCycle() {
-        return new Predicate<Edge<T>>() {
+    public static <T> Predicate<DirectedEdge<T>> isAutoCycle() {
+        return new Predicate<DirectedEdge<T>>() {
             @Override
-            public boolean apply(Edge<T> input) {
+            public boolean apply(DirectedEdge<T> input) {
                 assert input != null;
                 return input.source.equals(input.destination);
             }
         };
     }
 
-    public static <T> Predicate<Edge<T>> isIn(final Set<Edge<T>> banned) {
-        return new Predicate<Edge<T>>() {
+    public static <T> Predicate<DirectedEdge<T>> isIn(final Set<DirectedEdge<T>> banned) {
+        return new Predicate<DirectedEdge<T>>() {
             @Override
-            public boolean apply(Edge<T> input) {
+            public boolean apply(DirectedEdge<T> input) {
                 return banned.contains(input);
             }
         };

@@ -1,7 +1,7 @@
 package ai.grakn.graql.internal.gremlin.spanningtree;
 
 import ai.grakn.graql.internal.gremlin.spanningtree.datastructure.Partition;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.Edge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
@@ -19,7 +19,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class KBestArborescencesTest {
-    private final static ImmutableSet<Edge<Integer>> empty = ImmutableSet.of();
+    private final static ImmutableSet<DirectedEdge<Integer>> empty = ImmutableSet.of();
     // tied for first, can appear in either order
     private final static Weighted<Arborescence<Integer>> bestA = Weighted.weighted(Arborescence.of(ImmutableMap.of(
             1, 0,
@@ -87,17 +87,17 @@ public class KBestArborescencesTest {
     @Test
     public void testSeekDoesntReturnAncestor() {
         final Weighted<Arborescence<Integer>> bestArborescence = bestA;
-        final ExclusiveEdge<Integer> maxInEdge = ExclusiveEdge.of(Edge.from(1).to(2), 11.0);
+        final ExclusiveEdge<Integer> maxInEdge = ExclusiveEdge.of(DirectedEdge.from(1).to(2), 11.0);
         final EdgeQueueMap.EdgeQueue<Integer> edgeQueue =
                 EdgeQueueMap.EdgeQueue.create(maxInEdge.edge.destination, Partition.singletons(ChuLiuEdmondsTest.graph.getNodes()));
-        edgeQueue.addEdge(ExclusiveEdge.of(Edge.from(0).to(2), 1.0));
-        edgeQueue.addEdge(ExclusiveEdge.of(Edge.from(3).to(2), 8.0));
+        edgeQueue.addEdge(ExclusiveEdge.of(DirectedEdge.from(0).to(2), 1.0));
+        edgeQueue.addEdge(ExclusiveEdge.of(DirectedEdge.from(3).to(2), 8.0));
         final Optional<ExclusiveEdge<Integer>> nextBestEdge =
                 KBestArborescences.seek(maxInEdge, bestArborescence.val, edgeQueue);
         assertTrue(nextBestEdge.isPresent());
         // 3 -> 2 is an ancestor in bestArborescence, so seek should not return it
-        Assert.assertNotEquals(Edge.from(3).to(2), nextBestEdge.get().edge);
-        Assert.assertEquals(Edge.from(0).to(2), nextBestEdge.get().edge);
+        Assert.assertNotEquals(DirectedEdge.from(3).to(2), nextBestEdge.get().edge);
+        Assert.assertEquals(DirectedEdge.from(0).to(2), nextBestEdge.get().edge);
     }
 
     @Test
@@ -107,14 +107,14 @@ public class KBestArborescencesTest {
                 1, 2,
                 3, 2
         ));
-        final ExclusiveEdge<Integer> maxInEdge = ExclusiveEdge.of(Edge.from(2).to(1), 10.0);
+        final ExclusiveEdge<Integer> maxInEdge = ExclusiveEdge.of(DirectedEdge.from(2).to(1), 10.0);
         final EdgeQueueMap.EdgeQueue<Integer> edgeQueue =
                 EdgeQueueMap.EdgeQueue.create(maxInEdge.edge.destination, Partition.singletons(ChuLiuEdmondsTest.graph.getNodes()));
-        edgeQueue.addEdge(ExclusiveEdge.of(Edge.from(0).to(1), 5.0));
-        edgeQueue.addEdge(ExclusiveEdge.of(Edge.from(3).to(1), 9.0));
+        edgeQueue.addEdge(ExclusiveEdge.of(DirectedEdge.from(0).to(1), 5.0));
+        edgeQueue.addEdge(ExclusiveEdge.of(DirectedEdge.from(3).to(1), 9.0));
         final Optional<ExclusiveEdge<Integer>> nextBestEdge = KBestArborescences.seek(maxInEdge, best, edgeQueue);
         assertTrue(nextBestEdge.isPresent());
-        Assert.assertEquals(Edge.from(3).to(1), nextBestEdge.get().edge);
+        Assert.assertEquals(DirectedEdge.from(3).to(1), nextBestEdge.get().edge);
         Assert.assertEquals(9.0, nextBestEdge.get().weight, ChuLiuEdmondsTest.DELTA);
     }
 
@@ -124,24 +124,24 @@ public class KBestArborescencesTest {
                 KBestArborescences.scoreSubsetOfSolutions(ChuLiuEdmondsTest.graph, empty, empty, bestA);
         assertTrue(oItem.isPresent());
         final KBestArborescences.SubsetOfSolutions<Integer> item = oItem.get().val;
-        Assert.assertEquals(Edge.from(0).to(1), item.edgeToBan);
+        Assert.assertEquals(DirectedEdge.from(0).to(1), item.edgeToBan);
         Assert.assertEquals(0.0, item.bestArborescence.weight - oItem.get().weight, ChuLiuEdmondsTest.DELTA);
     }
 
     @Test
     public void testNextWithRequiredEdges() {
         final Optional<Weighted<KBestArborescences.SubsetOfSolutions<Integer>>> oItem =
-                KBestArborescences.scoreSubsetOfSolutions(ChuLiuEdmondsTest.graph, ImmutableSet.of(Edge.from(0).to(1)), empty, bestA);
+                KBestArborescences.scoreSubsetOfSolutions(ChuLiuEdmondsTest.graph, ImmutableSet.of(DirectedEdge.from(0).to(1)), empty, bestA);
         assertTrue(oItem.isPresent());
         final KBestArborescences.SubsetOfSolutions<Integer> item = oItem.get().val;
-        Assert.assertEquals(Edge.from(2).to(3), item.edgeToBan);
+        Assert.assertEquals(DirectedEdge.from(2).to(3), item.edgeToBan);
         Assert.assertEquals(1.0, item.bestArborescence.weight - oItem.get().weight, ChuLiuEdmondsTest.DELTA);
     }
 
     @Test
     public void testNextReturnsAbsentWhenTreesAreExhausted() {
         final WeightedGraph<Integer> oneTreeGraph = SparseWeightedGraph.from(
-                ImmutableSet.of(Weighted.weighted(Edge.from(0).to(1), 1.0))
+                ImmutableSet.of(Weighted.weighted(DirectedEdge.from(0).to(1), 1.0))
         );
         final Weighted<Arborescence<Integer>> best = ChuLiuEdmonds.getMaxArborescence(oneTreeGraph, 0);
         final Optional<Weighted<KBestArborescences.SubsetOfSolutions<Integer>>> pair =
