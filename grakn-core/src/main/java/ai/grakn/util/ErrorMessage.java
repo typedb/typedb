@@ -150,6 +150,7 @@ public enum ErrorMessage {
     INSERT_RESOURCE_WITHOUT_VALUE("cannot insert a resource without specifying a value"),
     INSERT_INSTANCE_WITH_NAME("cannot insert an instance with a name: %s"),
     INSERT_NON_RESOURCE_WITH_VALUE("cannot set value on an instance of %s because it is not a resource-type"),
+    INSERT_NEW_TYPE("instance '%s' already has a type. cannot set new type '%s'"),
 
     DELETE_VALUE("deleting values is not supported"),
     DELETE_RESOURCE_TYPE_NO_ID("resource type to delete from concept %s has no id specified"),
