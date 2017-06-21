@@ -78,17 +78,13 @@ public class CommitLogControllerTest {
 
     @ClassRule
     public static SparkContext ctx = SparkContext.withControllers((spark, config) -> {
+        GraknTestSetup.startCassandraIfNeeded();
         EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(config.getProperties());
         new CommitLogController(spark, config.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY), 100, manager);
         new SystemController(factory, spark);
     });
 
     private Json commitLog;
-
-    @BeforeClass
-    public static void setUp() throws Exception {
-        GraknTestSetup.startCassandraIfNeeded();
-    }
 
     @After
     public void resetMockitoMockCounts(){
@@ -196,19 +192,6 @@ public class CommitLogControllerTest {
             bob.close();
             tim.close();
         }
-    }
-
-    @Test
-    public void whenCommittingSystemGraph_CommitLogsNotSent() throws InvalidGraphException {
-        GraknGraph graph1 = Grakn.session(ctx.uri(), SystemKeyspace.SYSTEM_GRAPH_NAME).open(GraknTxType.WRITE);
-        ResourceType<String> resourceType = graph1.putResourceType("New Resource Type", ResourceType.DataType.STRING);
-        resourceType.putResource("a");
-        resourceType.putResource("b");
-        resourceType.putResource("c");
-        graph1.commit();
-
-        verify(manager, never()).addTask(any(), any());
-        verify(manager, never()).addTask(any(), any());
     }
 
     private void sendFakeCommitLog() {
