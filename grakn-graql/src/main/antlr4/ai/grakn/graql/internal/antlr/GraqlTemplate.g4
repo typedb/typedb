@@ -40,8 +40,8 @@ string        : resolve | macro | STRING;
 list          : resolve | macro;
 nil           : NULL;
 bool
-// : LPAREN boolean RPAREN     #groupExpression
- : NOT bool                   #notExpression
+ : LPAREN bool RPAREN         #groupExpression
+ | NOT bool                   #notExpression
  | literal EQ literal         #eqExpression
  | literal NEQ literal        #notEqExpression
  | bool OR bool               #orExpression

@@ -121,10 +121,10 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         return null;
     }
 
-//    @Override
-//    public Object visitGroupExpression(GraqlTemplateParser.GroupExpressionContext ctx){
-//       return this.visit(ctx.expr());
-//    }
+    @Override
+    public Boolean visitGroupExpression(GraqlTemplateParser.GroupExpressionContext ctx){
+       return this.visitBool(ctx.bool());
+    }
 
     @Override
     public Boolean visitOrExpression(GraqlTemplateParser.OrExpressionContext ctx) {
