@@ -254,7 +254,7 @@ public class InsertQueryExecutor {
                         .orElseThrow(() -> GraqlQueryException.insertRuleWithoutRhs(var));
                 return type.asRuleType().putRule(lhs.getPattern(), rhs.getPattern());
             });
-        } else if (type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
+        } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
         } else {
             throw CommonUtil.unreachableStatement("Can't recognize type " + type);

@@ -629,9 +629,9 @@ public class InsertQueryTest {
     public void testErrorWhenAddingInstanceOfConcept() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(
-                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.CONCEPT.getLabel().getValue()))
+                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.THING.getLabel().getValue()))
         );
-        qb.insert(var("my-thing").isa(Schema.MetaSchema.CONCEPT.getLabel().getValue())).execute();
+        qb.insert(var("my-thing").isa(Schema.MetaSchema.THING.getLabel().getValue())).execute();
     }
 
     @Test

@@ -100,7 +100,7 @@ public class HALUtils {
             return Schema.BaseType.RULE_TYPE;
         } else if (type.isRoleType()) {
             return Schema.BaseType.ROLE_TYPE;
-        } else if (type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
+        } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             return Schema.BaseType.TYPE;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised base type of " + type);

@@ -249,7 +249,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private boolean initialiseMetaConcepts(){
         boolean ontologyInitialised = false;
         if(isMetaOntologyNotInitialised()){
-            VertexElement type = addTypeVertex(Schema.MetaSchema.CONCEPT.getId(), Schema.MetaSchema.CONCEPT.getLabel(), Schema.BaseType.TYPE);
+            VertexElement type = addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
             VertexElement entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
             VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
             VertexElement resourceType = addTypeVertex(Schema.MetaSchema.RESOURCE.getId(), Schema.MetaSchema.RESOURCE.getLabel(), Schema.BaseType.RESOURCE_TYPE);
@@ -600,7 +600,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public Type getMetaConcept() {
-        return getType(Schema.MetaSchema.CONCEPT.getId());
+        return getType(Schema.MetaSchema.THING.getId());
     }
 
     @Override

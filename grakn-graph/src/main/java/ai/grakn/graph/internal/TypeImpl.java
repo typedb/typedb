@@ -285,7 +285,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         superSet.add(getThis());
         T superParent = superType();
 
-        while(superParent != null && !Schema.MetaSchema.CONCEPT.getLabel().equals(superParent.getLabel())){
+        while(superParent != null && !Schema.MetaSchema.THING.getLabel().equals(superParent.getLabel())){
             superSet.add(superParent);
             //noinspection unchecked
             superParent = (T) superParent.superType();

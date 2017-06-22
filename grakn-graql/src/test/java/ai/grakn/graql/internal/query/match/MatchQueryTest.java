@@ -711,7 +711,7 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchAllInstances() {
-        MatchQuery query = qb.match(x.isa(Schema.MetaSchema.CONCEPT.getLabel().getValue()));
+        MatchQuery query = qb.match(x.isa(Schema.MetaSchema.THING.getLabel().getValue()));
 
         // Make sure there a reasonable number of results
         assertThat(query.execute(), hasSize(greaterThan(10)));

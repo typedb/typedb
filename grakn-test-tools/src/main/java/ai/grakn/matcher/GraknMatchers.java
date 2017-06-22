@@ -33,7 +33,7 @@ import org.hamcrest.TypeSafeMatcher;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.util.Schema.MetaSchema.CONCEPT;
+import static ai.grakn.util.Schema.MetaSchema.THING;
 import static ai.grakn.util.Schema.MetaSchema.CONSTRAINT_RULE;
 import static ai.grakn.util.Schema.MetaSchema.ENTITY;
 import static ai.grakn.util.Schema.MetaSchema.INFERENCE_RULE;
@@ -51,7 +51,7 @@ import static org.hamcrest.Matchers.is;
  */
 public class GraknMatchers {
 
-    public static final Matcher<MatchableConcept> concept = type(CONCEPT.getLabel());
+    public static final Matcher<MatchableConcept> concept = type(THING.getLabel());
     public static final Matcher<MatchableConcept> entity = type(ENTITY.getLabel());
     public static final Matcher<MatchableConcept> resource = type(RESOURCE.getLabel());
     public static final Matcher<MatchableConcept> rule = type(RULE.getLabel());

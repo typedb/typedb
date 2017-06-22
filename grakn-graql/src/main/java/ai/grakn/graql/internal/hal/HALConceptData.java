@@ -276,7 +276,7 @@ public class HALConceptData {
     }
 
     private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
-        if (!type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
+        if (!type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             Stream<? extends Instance> instancesStream = type.instances().stream().filter(instance -> (!instance.isType() || !instance.asType().isImplicit())).skip(offset);
             if (limit >= 0) instancesStream = instancesStream.limit(limit);
             instancesStream.forEach(instance -> {
