@@ -53,7 +53,7 @@ public class PostProcessingTest extends GraphTestBase{
         roleType1 = graknGraph.putRoleType("role 1");
         roleType2 = graknGraph.putRoleType("role 2");
         relationType = graknGraph.putRelationType("rel type").relates(roleType1).relates(roleType2);
-        EntityType thing = graknGraph.putEntityType("thing").plays(roleType1).plays(roleType2);
+        EntityType thing = graknGraph.putEntityType("thingy").plays(roleType1).plays(roleType2);
         instance1 = (InstanceImpl) thing.addEntity();
         instance2 = (InstanceImpl) thing.addEntity();
         thing.addEntity();
