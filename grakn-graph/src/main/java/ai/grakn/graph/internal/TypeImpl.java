@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -56,8 +56,8 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
  * </p>
  *
  * <p>
- *     Types are used to model the behaviour of {@link Instance} and how they relate to each other.
- *     They also aid in categorising {@link Instance} to different types.
+ *     Types are used to model the behaviour of {@link Thing} and how they relate to each other.
+ *     They also aid in categorising {@link Thing} to different types.
  * </p>
  *
  * @author fppt
@@ -65,7 +65,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
  * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
  */
-class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type{
+class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
     private final TypeId cachedTypeId;
@@ -409,20 +409,20 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return A list of the Instances which scope this Relation
      */
     @Override
-    public Set<Instance> scopes() {
-        HashSet<Instance> scopes = new HashSet<>();
+    public Set<Thing> scopes() {
+        HashSet<Thing> scopes = new HashSet<>();
         neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asInstance()));
         return scopes;
     }
 
     /**
      *
-     * @param instance A new instance which can scope this concept
+     * @param thing A new thing which can scope this concept
      * @return The concept itself
      */
     @Override
-    public T scope(Instance instance) {
-        putEdge(instance, Schema.EdgeLabel.HAS_SCOPE);
+    public T scope(Thing thing) {
+        putEdge(thing, Schema.EdgeLabel.HAS_SCOPE);
         return getThis();
     }
 
@@ -431,7 +431,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The Relation itself
      */
     @Override
-    public T deleteScope(Instance scope) {
+    public T deleteScope(Thing scope) {
         deleteEdge(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE, (Concept) scope);
         return getThis();
     }
@@ -472,7 +472,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             //Track any existing data if there is some
             instances().forEach(concept -> {
                 if (concept.isInstance()) {
-                    ((InstanceImpl<?, ?>) concept).castingsInstance().forEach(
+                    ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
                             rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
                 }
             });
@@ -549,7 +549,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         //Add roleplayers to tracking to make sure they can still be played.
         instances().forEach(concept -> {
             if (concept.isInstance()) {
-                ((InstanceImpl<?, ?>) concept).castingsInstance().forEach(rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
+                ((ThingImpl<?, ?>) concept).castingsInstance().forEach(rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
             }
         });
 

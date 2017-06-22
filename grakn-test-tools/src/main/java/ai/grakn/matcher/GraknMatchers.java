@@ -18,7 +18,7 @@
 
 package ai.grakn.matcher;
 
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
@@ -267,9 +267,9 @@ public class GraknMatchers {
         };
     }
 
-    private static Set<Type> getTypes(Instance instance) {
+    private static Set<Type> getTypes(Thing thing) {
         Set<Type> types = Sets.newHashSet();
-        Type type = instance.type();
+        Type type = thing.type();
 
         while (type != null) {
             types.add(type);

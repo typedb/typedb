@@ -20,7 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import org.junit.Test;
@@ -40,8 +40,8 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RelationType hunts = graknGraph.putRelationType("hunts");
         RoleTypeImpl witcher = (RoleTypeImpl) graknGraph.putRoleType("witcher");
         RoleTypeImpl monster = (RoleTypeImpl) graknGraph.putRoleType("monster");
-        Instance geralt = hunter.addEntity();
-        InstanceImpl werewolf = (InstanceImpl) wolf.addEntity();
+        Thing geralt = hunter.addEntity();
+        ThingImpl werewolf = (ThingImpl) wolf.addEntity();
 
         RelationImpl assertion = (RelationImpl) hunts.addRelation().
                 addRolePlayer(witcher, geralt).addRolePlayer(monster, werewolf);
@@ -124,9 +124,9 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RoleType hunter = graknGraph.putRoleType("hunter");
         RoleType monster = graknGraph.putRoleType("monster");
         RoleType creature = graknGraph.putRoleType("creature");
-        Instance cthulhu = fakeType.addEntity();
-        Instance werewolf = fakeType.addEntity();
-        Instance cartman = fakeType.addEntity();
+        Thing cthulhu = fakeType.addEntity();
+        Thing werewolf = fakeType.addEntity();
+        Thing cartman = fakeType.addEntity();
         RelationType kills = graknGraph.putRelationType("kills");
         RelationType naps = graknGraph.putRelationType("naps").relates(napper);
 

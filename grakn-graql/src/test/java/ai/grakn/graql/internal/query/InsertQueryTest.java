@@ -22,7 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -770,9 +770,9 @@ public class InsertQueryTest {
                 var("r").rel("cluster-of-production", "c").rel("production-with-cluster", "g").rel("production-with-cluster", "m").isa("has-cluster")
         ).execute();
 
-        Instance cluster = results.get(0).get("c").asInstance();
-        Instance godfather = results.get(0).get("g").asInstance();
-        Instance muppets = results.get(0).get("m").asInstance();
+        Thing cluster = results.get(0).get("c").asInstance();
+        Thing godfather = results.get(0).get("g").asInstance();
+        Thing muppets = results.get(0).get("m").asInstance();
         Relation relation = results.get(0).get("r").asRelation();
 
         RoleType clusterOfProduction = movieGraph.graph().getRoleType("cluster-of-production");

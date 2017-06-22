@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -787,7 +787,7 @@ public class MatchQueryTest {
     public void testMatchAllResourcesUsingResourceName() {
         MatchQuery query = qb.match(var().has("title", "Godfather").has("resource", x));
 
-        Instance godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
         Set<Resource<?>> expected = Sets.newHashSet(godfather.resources());
 
         Set<Resource<?>> results = query.get("x").map(Concept::asResource).collect(toSet());
@@ -815,7 +815,7 @@ public class MatchQueryTest {
 
     @Test
     public void testLookupResourcesOnId() {
-        Instance godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
         ConceptId id = godfather.getId();
         MatchQuery query = qb.match(var().id(id).has("title", x));
 

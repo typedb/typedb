@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.printer;
 
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
@@ -93,7 +93,7 @@ public class GraqlPrinterTest {
     public void testResourceOutputNoResources() {
         Printer printer = Printers.graql(true);
 
-        Instance godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
 
         String repr = printer.graqlString(godfather);
 
@@ -111,7 +111,7 @@ public class GraqlPrinterTest {
                 true, rule.graph().getResourceType("title"), rule.graph().getResourceType("tmdb-vote-count"), rule.graph().getResourceType("name")
         );
 
-        Instance godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
 
         String repr = printer.graqlString(godfather);
 

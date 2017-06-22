@@ -29,8 +29,8 @@ import java.util.Collection;
  * </p>
  *
  * <p>
- *     Types are used to model the behaviour of {@link Instance} and how they relate to each other.
- *     They also aid in categorising {@link Instance} to different types.
+ *     Types are used to model the behaviour of {@link Thing} and how they relate to each other.
+ *     They also aid in categorising {@link Thing} to different types.
  * </p>
  *
  * @see EntityType
@@ -90,7 +90,7 @@ public interface Type extends Concept {
      * @param scope The category of this Type
      * @return The Type itself.
      */
-    Type scope(Instance scope);
+    Type scope(Thing scope);
 
     /**
      * Delete the scope specified.
@@ -98,7 +98,7 @@ public interface Type extends Concept {
      * @param scope The Instances that is currently scoping this Type.
      * @return The Type itself
      */
-    Type deleteScope(Instance scope);
+    Type deleteScope(Thing scope);
 
     //------------------------------------- Accessors ---------------------------------
     /**
@@ -162,7 +162,7 @@ public interface Type extends Concept {
      * @return All the indirect instances of this type.
      */
     @CheckReturnValue
-    Collection<? extends Instance> instances();
+    Collection<? extends Thing> instances();
 
     /**
      * Return if the type is set to abstract.
@@ -208,7 +208,7 @@ public interface Type extends Concept {
      * @return A list of the Instances that scope this Type.
      */
     @CheckReturnValue
-    Collection<Instance> scopes();
+    Collection<Thing> scopes();
 
     //------------------------------------- Other ----------------------------------
     /**

@@ -638,7 +638,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return getType(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
-    void putShortcutEdge(InstanceImpl toInstance, RelationImpl fromRelation, RoleTypeImpl roleType){
+    void putShortcutEdge(ThingImpl toInstance, RelationImpl fromRelation, RoleTypeImpl roleType){
         boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getTypeId().getValue()).

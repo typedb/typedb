@@ -21,7 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -43,8 +43,8 @@ public class OntologyMutationTest extends GraphTestBase{
     private EntityType woman;
     private EntityType man;
     private EntityType car;
-    private Instance alice;
-    private Instance bob;
+    private Thing alice;
+    private Thing bob;
 
     @Before
     public void buildMarriageGraph() throws InvalidGraphException {

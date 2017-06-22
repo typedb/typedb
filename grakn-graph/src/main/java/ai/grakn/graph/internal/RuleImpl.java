@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
@@ -34,7 +35,7 @@ import java.util.HashSet;
  * </p>
  *
  * <p>
- *     It can behave like any other {@link ai.grakn.concept.Instance} but primarily serves as a way of extracting
+ *     It can behave like any other {@link Thing} but primarily serves as a way of extracting
  *     implicit data from the graph. By defining the LHS (if statment) and RHS (then conclusion) it is possible to
  *     automatically materialise new concepts based on these rules.
  * </p>
@@ -42,7 +43,7 @@ import java.util.HashSet;
  * @author fppt
  *
  */
-class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
+class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
     RuleImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
