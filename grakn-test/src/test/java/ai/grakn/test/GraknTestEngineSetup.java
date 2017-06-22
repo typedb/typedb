@@ -24,7 +24,7 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.JWTHandler;
-import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.util.EmbeddedKafka;
 import ai.grakn.util.EmbeddedRedis;
 import com.jayway.restassured.RestAssured;
@@ -115,8 +115,9 @@ public abstract class GraknTestEngineSetup {
     static void stopEngine(GraknEngineServer server) throws Exception {
         LOG.info("stopping engine...");
 
+        // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
         server.close();
-        clearGraphs(server.factory());
+        clearGraphs(server);
 
         LOG.info("engine stopped.");
 
@@ -132,21 +133,22 @@ public abstract class GraknTestEngineSetup {
         return spark;
     }
 
-    private static void clearGraphs(EngineGraknGraphFactory engineGraknGraphFactory) {
+    private static void clearGraphs(GraknEngineServer server) {
         // Drop all keyspaces
         final Set<String> keyspaceNames = new HashSet<String>();
-        try(GraknGraph systemGraph = engineGraknGraphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try(GraknGraph systemGraph = server.factory().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .execute()
                     .forEach(x -> x.values().forEach(y -> {
                         keyspaceNames.add(y.asResource().getValue().toString());
                     }));
         }
+
         keyspaceNames.forEach(name -> {
-            GraknGraph graph = engineGraknGraphFactory.getGraph(name, GraknTxType.WRITE);
-            graph.admin().delete();            
+            GraknGraph graph = server.factory().getGraph(name, GraknTxType.WRITE);
+            graph.admin().delete();
         });
-        engineGraknGraphFactory.refreshConnections();
+        server.factory().refreshConnections();
     }
 
     static void setRestAssuredUri(GraknEngineConfig config) {

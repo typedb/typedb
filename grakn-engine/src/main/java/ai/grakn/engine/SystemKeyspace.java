@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.factory;
+package ai.grakn.engine;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
@@ -25,19 +25,15 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.admin.GraknAdmin;
-import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.GraknVersion;
-import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 
 /**
  * <p>
@@ -74,86 +70,38 @@ public class SystemKeyspace {
     public static final String SYSTEM_GRAPH_NAME = "graknSystem";
     private static final String SYSTEM_VERSION = "system-version";
     public static final TypeLabel KEYSPACE_ENTITY = TypeLabel.of("keyspace");
-
     public static final TypeLabel KEYSPACE_RESOURCE = TypeLabel.of("keyspace-name");
 
-    protected static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
-    private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
-    static final AtomicBoolean factoryBeingInstantiated = new AtomicBoolean(false);
-    static CountDownLatch factoryInstantiated = new CountDownLatch(1);
-    static InternalFactory factory;
+    private static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
+    private final ConcurrentHashMap<String, Boolean> openSpaces;
+    private final EngineGraknGraphFactory factory;
 
-    SystemKeyspace(){
-    }
-
-    /**
-     * Initialises the system keyspace for a specific running instance of engine
-     * @param engineUrl the url of engine to get the config from
-     * @param properties the properties used to initialise the keyspace
-     */
-    public static void initialise(String engineUrl, Properties properties){
-        initialiseFactory(() -> FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties));
-    }
-
-    /**
-     * Initialises the system keyspace for a specific running instance of engine.
-     * This initializer is used when the first graph created is the system graph.
-     * @param internalFactory the factory to use when initialising the system graph.
-     */
-    static void initialise(InternalFactory internalFactory){
-        initialiseFactory(() -> internalFactory);
-    }
-
-    private static void initialiseFactory(Supplier<InternalFactory> factoryInitialiser){
-        if(factoryBeingInstantiated.compareAndSet(false, true)){
-            factory = factoryInitialiser.get();
-            loadSystemOntology(factory);
-            factoryInstantiated.countDown();
-        }
-    }
-
-    /**
-     * Get the system keyspace for this instance of engine. Wait for the system keyspace to be
-     * instantiated if necessary.
-     * @return Factory to provide the system keyspace
-     */
-    private static InternalFactory factory(){
-        try {
-            factoryInstantiated.await();
-        } catch (InterruptedException e){
-            throw new IllegalStateException("Interrupted while waiting for system graph to instantiate.");
-        }
-        return factory;
-    }
-
-    /**
-     * Closes the system keyspace if there are no pending transactions on it.
-     */
-    public static void close(){
-        AbstractGraknGraph system = factory().open(GraknTxType.READ);
-        system.close();
-        if (!system.isSessionClosed() && system.numOpenTx() == 0) {
-            system.closeSession();
-        }
+    public SystemKeyspace(EngineGraknGraphFactory factory){
+        this.factory = factory;
+        this.openSpaces = new ConcurrentHashMap<>();
+        loadSystemOntology();
     }
 
     /**
      * Notify that we just opened a keyspace with the same engineUrl & config.
      */
-    static void keyspaceOpened(String keyspace) {
-        openSpaces.computeIfAbsent(keyspace, name -> {
-            try (GraknGraph graph = factory().open(GraknTxType.WRITE)) {
-                ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
-                Resource<String> resource = keyspaceName.putResource(keyspace);
-                if (resource.owner() == null) {
-                    graph.<EntityType>getType(KEYSPACE_ENTITY).addEntity().resource(resource);
-                }
-                graph.admin().commitNoLogs();
-            } catch (InvalidGraphException e) {
-                throw new RuntimeException("Could not add keyspace [" + keyspace + "] to system graph", e);
+     public boolean ensureKeyspaceInitialised(String keyspace) {
+         if(openSpaces.containsKey(keyspace)){
+             return true;
+         }
+
+        try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+            ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
+            Resource<String> resource = keyspaceName.putResource(keyspace);
+            if (resource.owner() == null) {
+                graph.<EntityType>getType(KEYSPACE_ENTITY).addEntity().resource(resource);
             }
-            return true;
-        });
+            graph.admin().commitNoLogs();
+        } catch (InvalidGraphException e) {
+            throw new RuntimeException("Could not add keyspace [" + keyspace + "] to system graph", e);
+        }
+
+        return true;
     }
 
     /**
@@ -163,8 +111,8 @@ public class SystemKeyspace {
      * @param keyspace The keyspace which might be in the system
      * @return true if the keyspace is in the system
      */
-    public static boolean containsKeyspace(String keyspace){
-        try (GraknGraph graph = factory().open(GraknTxType.READ)) {
+    public boolean containsKeyspace(String keyspace){
+        try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
             return graph.getResourceType(KEYSPACE_RESOURCE.getValue()).getResource(keyspace) != null;
         }
     }
@@ -175,18 +123,26 @@ public class SystemKeyspace {
      *
      * @param keyspace the keyspace to be removed from the system graph
      */
-    public static void deleteKeyspace(String keyspace){
-        try (GraknGraph graph = factory().open(GraknTxType.WRITE)) {
+    public boolean deleteKeyspace(String keyspace){
+        if(keyspace.equals(SYSTEM_GRAPH_NAME)){
+           return false;
+        }
+
+        try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
             Resource<String> resource = keyspaceName.getResource(keyspace);
 
-            if(resource == null) return;
+            if(resource == null) return false;
             Instance instance = resource.owner();
             if(instance != null) instance.delete();
             resource.delete();
 
             openSpaces.remove(keyspace);
+
+            graph.admin().commitNoLogs();
         }
+
+        return true;
     }
 
     /**
@@ -194,8 +150,8 @@ public class SystemKeyspace {
      * only consists of types, the inserts are idempotent and it is safe to load it
      * multiple times.
      */
-    static void loadSystemOntology(InternalFactory factory) {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+    void loadSystemOntology() {
+        try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             if (graph.getType(KEYSPACE_ENTITY) != null) {
                 checkVersion(graph);
                 return;
@@ -216,7 +172,7 @@ public class SystemKeyspace {
      *
      * @throws ai.grakn.exception.GraphOperationException when the versions do not match
      */
-    private static void checkVersion(GraknGraph graph){
+    private void checkVersion(GraknGraph graph){
         Resource existingVersion = graph.getResourceType(SYSTEM_VERSION).instances().iterator().next();
         if(!GraknVersion.VERSION.equals(existingVersion.getValue())) {
             throw GraphOperationException.versionMistmatch(existingVersion);
@@ -228,7 +184,7 @@ public class SystemKeyspace {
      *
      * @param graph The graph to contain the system ontology
      */
-    private static void loadSystemOntology(GraknGraph graph){
+    private void loadSystemOntology(GraknGraph graph){
         //Keyspace data
         ResourceType<String> keyspaceName = graph.putResourceType("keyspace-name", ResourceType.DataType.STRING);
         graph.putEntityType("keyspace").key(keyspaceName);

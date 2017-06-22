@@ -54,6 +54,8 @@ public class REST {
          * URIs to System Controller endpoints
          */
         public static class System {
+            public static final String DELETE_KEYSPACE = "/deleteKeyspace";
+            public static final String INITIALISE = "/initialise";
             public static final String CONFIGURATION = "/configuration";
             public static final String KEYSPACES = "/keyspaces";
         }
