@@ -53,7 +53,7 @@ public class AnalyticsTest {
     public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
     private GraknSession factory;
 
-    private static final String thing = "thing";
+    private static final String thing = "thingy";
     private static final String anotherThing = "anotherThing";
     private static final String related = "related";
 

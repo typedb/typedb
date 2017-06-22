@@ -67,7 +67,7 @@ public class GraqlTest {
 
     public GraknSession factory;
 
-    private static final String thing = "thing";
+    private static final String thing = "thingy";
     private static final String anotherThing = "anotherThing";
     private static final String related = "related";
 

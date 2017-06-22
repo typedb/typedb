@@ -129,7 +129,7 @@ public class JsonMigratorTest {
         load(factory, getFile("json", "all-types/schema.gql"));
 
         String template = "" +
-                "insert $x isa thing\n" +
+                "insert $x isa thingy\n" +
                 "  has a-boolean <a-boolean>\n" +
                 "  has a-number  <a-number>\n" +
                 "  for (int in <array-of-ints> ) do {\n" +
@@ -141,7 +141,7 @@ public class JsonMigratorTest {
         declareAndLoad(template, "all-types/data.json");
 
         GraknGraph graph = factory.open(GraknTxType.WRITE);
-        EntityType rootType = graph.getEntityType("thing");
+        EntityType rootType = graph.getEntityType("thingy");
         Collection<Entity> things = rootType.instances();
         assertEquals(1, things.size());
 
