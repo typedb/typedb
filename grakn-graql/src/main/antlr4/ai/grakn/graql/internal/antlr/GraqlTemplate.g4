@@ -23,36 +23,36 @@ statement
  | replaceStatement
  ;
 
-forStatement : FOR LPAREN (ID IN expr | expr) RPAREN DO block ;
+forStatement : FOR LPAREN (ID IN list | list) RPAREN DO block ;
 
 ifStatement   : ifPartial elseIfPartial* elsePartial? ;
-ifPartial     : IF LPAREN expr RPAREN DO block ;
-elseIfPartial : ELSEIF LPAREN expr RPAREN DO block ;
+ifPartial     : IF LPAREN bool RPAREN DO block ;
+elseIfPartial : ELSEIF LPAREN bool RPAREN DO block ;
 elsePartial   : ELSE block ;
 
 macro
- : ID_MACRO LPAREN expr? (',' expr)* RPAREN
+ : ID_MACRO LPAREN literal? (',' literal)* RPAREN
  ;
 
-// evaluate and return value
-expr
- : LPAREN expr RPAREN     #groupExpression
- | NOT expr               #notExpression
- | expr EQ expr           #eqExpression
- | expr NEQ expr          #notEqExpression
- | expr OR expr           #orExpression
- | expr AND expr          #andExpression
- | expr GREATER expr      #greaterExpression
- | expr GREATEREQ expr    #greaterEqExpression
- | expr LESS expr         #lessExpression
- | expr LESSEQ expr       #lessEqExpression
- | STRING                 #stringExpression
- | INT                    #intExpression
- | DOUBLE                 #doubleExpression
- | BOOLEAN                #booleanExpression
- | NULL                   #nullExpression
- | resolve                #resolveExpression
- | macro                  #macroExpression
+literal       : resolve | macro | nil | string | number | BOOLEAN;
+number        : resolve | macro | INT | DOUBLE;
+string        : resolve | macro | STRING;
+list          : resolve | macro;
+nil           : NULL;
+bool
+// : LPAREN boolean RPAREN     #groupExpression
+ : NOT bool                   #notExpression
+ | literal EQ literal         #eqExpression
+ | literal NEQ literal        #notEqExpression
+ | bool OR bool               #orExpression
+ | bool AND bool              #andExpression
+ | number GREATER number      #greaterExpression
+ | number GREATEREQ number    #greaterEqExpression
+ | number LESS number         #lessExpression
+ | number LESSEQ number       #lessEqExpression
+ | resolve                    #booleanResolve
+ | macro                      #booleanMacro
+ | BOOLEAN                    #booleanConstant
  ;
 
 resolve
@@ -115,6 +115,7 @@ LESSEQ      : '<=';
 LPAREN      : '(';
 RPAREN      : ')';
 DOLLAR      : '$';
+AT          : '@';
 QUOTE       : '"';
 SQOUTE      : '\'';
 
@@ -125,8 +126,8 @@ BOOLEAN     : 'true' | 'false' ;
 ID          : [a-zA-Z0-9_-]+ ('.' [a-zA-Z0-9_-]+ )*;
 STRING      : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';
 
-ID_GRAQL    : '$' ID;
-ID_MACRO    : '@' ID;
+ID_GRAQL    : DOLLAR ID;
+ID_MACRO    : AT ID;
 
 // hidden channels
 WS          : [ \t\r\n]                  -> channel(1);
