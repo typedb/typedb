@@ -117,14 +117,12 @@ public class GreedyTraversalPlan {
         connectedFragmentSets.forEach(set -> System.out.println("     SetEntry : " + set));
 
         connectedFragmentSets.forEach(fragmentSet -> {
-            final Set<Fragment> startingFragmentSet = new HashSet<>();
-            final Set<Node> startingNodeSet = new HashSet<>();
+            final Set<Node> nodesWithFixedCost = new HashSet<>();
             Plan plan = Plan.base();
             Set<Weighted<DirectedEdge<Node>>> weightedGraph = fragmentSet.stream()
                     .filter(fragment -> {
                         if (fragment.hasFixedFragmentCost() && plan.tryPush(fragment)) {
-                            startingFragmentSet.add(fragment);
-                            startingNodeSet.add(new Node(fragment.getStart()));
+                            nodesWithFixedCost.add(new Node(fragment.getStart()));
                             return false;
                         }
                         return true;
@@ -132,12 +130,14 @@ public class GreedyTraversalPlan {
                     .flatMap(fragment -> fragment.getDirectedEdges().stream())
                     .collect(Collectors.toSet());
             SparseWeightedGraph<Node> sparseWeightedGraph = SparseWeightedGraph.from(weightedGraph);
-            if (!startingNodeSet.isEmpty()) {
-                Arborescence<Node> arborescence = startingNodeSet.stream()
-                        .map(node -> ChuLiuEdmonds.getMaxArborescence(sparseWeightedGraph, node))
-                        .max(Weighted::compareTo).get().val;
-                System.out.println("arborescence = " + arborescence);
-            }
+
+            final Collection<Node> startingNodes = nodesWithFixedCost.isEmpty() ?
+                    sparseWeightedGraph.getNodes() : nodesWithFixedCost;
+
+            Arborescence<Node> arborescence = startingNodes.stream()
+                    .map(node -> ChuLiuEdmonds.getMaxArborescence(sparseWeightedGraph, node))
+                    .max(Weighted::compareTo).get().val;
+            System.out.println("arborescence = " + arborescence);
         });
 
         // Should always start with fragments with fixed cost

@@ -54,6 +54,6 @@ class InRelatesFragment extends AbstractFragment {
 
     @Override
     public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges() {
-        return getDirectedEdgesIn("-[relates]->");
+        return getDirectedEdgesIn("(relates)");
     }
 }

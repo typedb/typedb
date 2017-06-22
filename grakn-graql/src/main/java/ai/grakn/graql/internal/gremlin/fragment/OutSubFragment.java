@@ -52,6 +52,6 @@ class OutSubFragment extends AbstractFragment {
 
     @Override
     public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges() {
-        return getDirectedEdgesOut("-[sub]->");
+        return getDirectedEdgesOut("(sub)");
     }
 }

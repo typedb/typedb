@@ -54,6 +54,6 @@ class InHasScopeFragment extends AbstractFragment {
 
     @Override
     public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges() {
-        return getDirectedEdgesIn("-[has-scope]->");
+        return getDirectedEdgesIn("(has-scope)");
     }
 }

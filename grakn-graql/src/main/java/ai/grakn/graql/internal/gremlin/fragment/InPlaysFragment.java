@@ -68,6 +68,6 @@ class InPlaysFragment extends AbstractFragment {
 
     @Override
     public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges() {
-        return getDirectedEdgesIn("-[plays]->");
+        return getDirectedEdgesIn("(plays)");
     }
 }

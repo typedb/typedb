@@ -55,6 +55,6 @@ class OutIsaFragment extends AbstractFragment {
 
     @Override
     public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges() {
-        return getDirectedEdgesOut("-[isa]->");
+        return getDirectedEdgesOut("(isa)");
     }
 }
