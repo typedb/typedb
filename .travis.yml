@@ -25,4 +25,3 @@ script:
     - bash <(curl -s https://codecov.io/bash)
 before_install:
   - npm config set registry http://registry.npmjs.org/
-  - npm install -g npm
