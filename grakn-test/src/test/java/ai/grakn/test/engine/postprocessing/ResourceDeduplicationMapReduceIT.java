@@ -11,7 +11,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.engine.postprocessing.ResourceDeduplicationTask;
-import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.test.EngineContext;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.checkUnique;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;

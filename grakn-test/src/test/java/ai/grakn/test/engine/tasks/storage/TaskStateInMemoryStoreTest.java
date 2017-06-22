@@ -19,10 +19,10 @@
 package ai.grakn.test.engine.tasks.storage;
 
 import ai.grakn.engine.TaskId;
-import ai.grakn.engine.tasks.TaskSchedule;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
+import ai.grakn.engine.tasks.manager.TaskSchedule;
+import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskStateStorage;
+import ai.grakn.engine.tasks.manager.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import org.junit.Before;

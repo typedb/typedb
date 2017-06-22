@@ -22,7 +22,9 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.EngineContext;
+import java.util.List;
 import org.junit.Test;
 
 import static ai.grakn.graql.Graql.var;
@@ -42,7 +44,8 @@ public class ClientTest {
 
         // Check that we've loaded the ontology
         try(GraknGraph graph = engine.server().factory().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)){
-            assertEquals(1, graph.graql().match(var("x").label("scheduled-task")).execute().size());
+            List<Answer> x = graph.graql().match(var("x").label("scheduled-task")).execute();
+            assertEquals(1, x.size());
         }
 
         engine.after();

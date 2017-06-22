@@ -86,7 +86,6 @@
         <java-jwt.version>2.2.1</java-jwt.version>
         <kafka.version>0.10.1.0</kafka.version>
         <kafka-unit.version>0.6</kafka-unit.version>
-        <curator.version>2.11.1</curator.version>
         <zookeeper.version>3.4.9</zookeeper.version>
         <mockito.version>2.6.4</mockito.version>
         <hamcrest.version>1.3</hamcrest.version>

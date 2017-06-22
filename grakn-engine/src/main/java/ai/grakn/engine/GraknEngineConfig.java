@@ -59,6 +59,7 @@ public class GraknEngineConfig {
 
     public static final String REDIS_SERVER_URL = "redis.host";
     public static final String REDIS_SERVER_PORT = "redis.port";
+    public static final String REDIS_SENTINEL_MASTER = "redis.sentinel-master";
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
 
@@ -70,13 +71,6 @@ public class GraknEngineConfig {
 
     // Delay for the post processing task in milliseconds
     public static final String POST_PROCESSING_TASK_DELAY = "tasks.postprocessing.delay";
-
-    public static final String ZK_SERVERS = "tasks.zookeeper.servers";
-    public static final String ZK_NAMESPACE = "tasks.zookeeper.namespace";
-    public static final String ZK_SESSION_TIMEOUT = "tasks.zookeeper.session_timeout_ms";
-    public static final String ZK_CONNECTION_TIMEOUT = "tasks.zookeeper.connection_timeout_ms";
-    public static final String ZK_BACKOFF_BASE_SLEEP_TIME = "tasks.zookeeper.backoff.base_sleep";
-    public static final String ZK_BACKOFF_MAX_RETRIES = "tasks.zookeeper.backoff.max_retries";
 
     public static final int WEBSOCKET_TIMEOUT = 3600000;
 

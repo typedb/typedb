@@ -19,8 +19,10 @@
 
 package ai.grakn.engine;
 
-import javax.annotation.CheckReturnValue;
 import java.util.UUID;
+import javax.annotation.CheckReturnValue;
+import org.apache.tinkerpop.shaded.jackson.annotation.JsonCreator;
+import org.apache.tinkerpop.shaded.jackson.annotation.JsonProperty;
 
 /**
  * An identifier for a task
@@ -28,7 +30,7 @@ import java.util.UUID;
  * @author Felix Chapman
  */
 public final class TaskId {
-    private final String value;
+    private String value;
 
     @CheckReturnValue
     public static TaskId of(String value) {
@@ -40,7 +42,12 @@ public final class TaskId {
         return new TaskId(UUID.randomUUID().toString());
     }
 
-    private TaskId(String value) {
+    // For Jackson
+    public TaskId() {
+    }
+
+    @JsonCreator
+    public TaskId(@JsonProperty("value") String value) {
         this.value = value;
     }
 
@@ -48,6 +55,7 @@ public final class TaskId {
      * Get the string value of the task ID
      */
     @CheckReturnValue
+    @JsonProperty("value")
     public String getValue() {
         return value;
     }

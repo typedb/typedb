@@ -1,6 +1,6 @@
 package ai.grakn.engine.loader;
 
-import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.graql.Graql;
 import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;

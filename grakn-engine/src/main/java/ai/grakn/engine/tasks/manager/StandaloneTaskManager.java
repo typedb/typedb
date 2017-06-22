@@ -25,14 +25,7 @@ import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskCheckpoint;
-import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.TaskSchedule;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
-import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
@@ -82,7 +75,7 @@ public class StandaloneTaskManager implements TaskManager {
     private final EngineID engineID;
     private final GraknEngineConfig config;
     private final RedisCountStorage redis;
-    private MetricRegistry metricRegistry;
+    private final MetricRegistry metricRegistry;
     private final Timer addTaskTimer;
     private final Timer executeTaskTimer;
     private final Meter failedMeter;
@@ -104,13 +97,6 @@ public class StandaloneTaskManager implements TaskManager {
 
         schedulingService = Executors.newScheduledThreadPool(1);
         executorService = Executors.newFixedThreadPool(config.getAvailableThreads());
-
-        LockProvider.instantiate((lockName, existingLock) -> {
-            if(existingLock != null){
-                return existingLock;
-            }
-            return new NonReentrantLock();
-        });
 
         addTaskTimer = metricRegistry.timer(name(StandaloneTaskManager.class, "add-task-timer"));
         executeTaskTimer = metricRegistry.timer(name(StandaloneTaskManager.class, "execute-task-timer"));
@@ -160,6 +146,17 @@ public class StandaloneTaskManager implements TaskManager {
         } finally {
             context.stop();
         }
+    }
+
+    @Override
+    public void start() {
+        LockProvider.instantiate((lockName, existingLock) -> {
+            if(existingLock != null){
+                return existingLock;
+            }
+            // TODO: why non reentrant?
+            return new NonReentrantLock();
+        });
     }
 
     public void stopTask(TaskId id) {

@@ -16,9 +16,10 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.tasks;
+package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.TaskId;
+import java.io.Closeable;
 
 /**
  * <p>
@@ -33,7 +34,12 @@ import ai.grakn.engine.TaskId;
  *
  * @author Denis Lobanov, alexandraorth
  */
-public interface TaskManager extends TaskSubmitter{
+public interface TaskManager extends TaskSubmitter, Closeable {
+
+    /**
+     * Make sure the manager is initialized and starts processing tasks
+     */
+    void start();
 
     /**
      * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the

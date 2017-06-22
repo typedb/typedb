@@ -21,10 +21,10 @@ package ai.grakn.test.engine.tasks;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskSchedule;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.manager.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskSchedule;
+import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import com.google.common.collect.ImmutableMultiset;
@@ -46,7 +46,7 @@ import java.util.Set;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.engine.tasks.TaskSchedule.now;
+import static ai.grakn.engine.tasks.manager.TaskSchedule.now;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
@@ -91,28 +91,24 @@ public class BackgroundTaskTestUtils {
 
     public static void waitForStatus(TaskStateStorage storage, TaskId task, Set<TaskStatus> status) {
         Instant initial = Instant.now();
-
-        while(true) {
-            long duration = Duration.between(initial, Instant.now()).toMillis();
-            if (duration > 120000){
-                TaskStatus finalStatus = storage.containsTask(task) ? storage.getState(task).status() : null;
-                LOG.warn("Waiting for status of " + task + " to be any of " + status + ", but status is " + finalStatus);
-                initial = Instant.now();
-            }
-
+        long duration = Duration.between(initial, Instant.now()).toMillis();
+        while(duration < 5000) {
             if (storage.containsTask(task)) {
                 TaskStatus currentStatus = storage.getState(task).status();
                 if (status.contains(currentStatus)) {
                     return;
                 }
             }
-
             try {
-                Thread.sleep(100);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
+                break;
             }
+            duration = Duration.between(initial, Instant.now()).toMillis();
         }
+        TaskStatus finalStatus = storage.containsTask(task) ? storage.getState(task).status() : null;
+        LOG.warn("Waiting for status of " + task + " to be any of " + status + ", but status is " + finalStatus);
     }
 
     public static Multiset<TaskId> completableTasks(List<TaskState> tasks) {

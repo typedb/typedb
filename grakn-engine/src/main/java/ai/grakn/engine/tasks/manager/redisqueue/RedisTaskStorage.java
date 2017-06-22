@@ -17,20 +17,21 @@
  *
  */
 
-package ai.grakn.engine.tasks.manager;
+package ai.grakn.engine.tasks.manager.redisqueue;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.GraknBackendException;
 import java.util.Base64;
 import java.util.Set;
+import javax.annotation.Nullable;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.lang.SerializationUtils;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
+import redis.clients.util.Pool;
 
 
 /**
@@ -40,19 +41,20 @@ import redis.clients.jedis.JedisPool;
  */
 public class RedisTaskStorage implements TaskStateStorage {
 
-    private JedisPool redis;
+    private Pool<Jedis> redis;
 
-    private RedisTaskStorage(JedisPool redis) {
+    private RedisTaskStorage(Pool<Jedis> redis) {
         this.redis = redis;
     }
 
-    public static RedisTaskStorage create(JedisPool jedisPool) {
+    public static RedisTaskStorage create(Pool<Jedis> jedisPool) {
         return new RedisTaskStorage(jedisPool);
     }
 
     @Override
     public TaskId newState(TaskState state) throws GraknBackendException {
-        return null;
+        updateState(state);
+        return state.getId();
     }
 
     @Override
@@ -67,10 +69,15 @@ public class RedisTaskStorage implements TaskStateStorage {
     }
 
     @Override
+    @Nullable
     public TaskState getState(TaskId id) throws GraknBackendException {
         try(Jedis jedis = redis.getResource()){
             String value = jedis.get(id.getValue());
-            return (TaskState) org.apache.commons.lang.SerializationUtils.deserialize(Base64.getDecoder().decode(value));
+            if (value != null) {
+                return (TaskState) org.apache.commons.lang.SerializationUtils.deserialize(Base64.getDecoder().decode(value));
+            } else {
+                return null;
+            }
         }
     }
 
@@ -86,5 +93,10 @@ public class RedisTaskStorage implements TaskStateStorage {
     public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy,
             EngineID runningOnEngine, int limit, int offset) {
         return null;
+    }
+
+    public boolean isTaskMarkedStopped(TaskId id) {
+        TaskState state = getState(id);
+        return state != null && state.getStatus().equals(TaskStatus.STOPPED);
     }
 }

@@ -24,7 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.GraknTestSetup;

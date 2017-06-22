@@ -20,9 +20,9 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
-import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.manager.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.util.REST;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;

@@ -20,28 +20,24 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
+import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
 import ai.grakn.engine.GraknEngineServer;
+import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.util.EmbeddedKafka;
+import static ai.grakn.graql.Graql.var;
 import ai.grakn.util.EmbeddedRedis;
 import ai.grakn.util.GraknTestSetup;
 import com.jayway.restassured.RestAssured;
-import org.slf4j.LoggerFactory;
-import spark.Service;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-
-import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
-import static ai.grakn.graql.Graql.var;
+import org.slf4j.LoggerFactory;
+import spark.Service;
 
 /**
  * <p>
@@ -104,14 +100,6 @@ public abstract class GraknTestEngineSetup {
 
     static void stopRedis(){
         EmbeddedRedis.stop();
-    }
-
-    static void startKafka(GraknEngineConfig config) throws Exception {
-        EmbeddedKafka.start(config.getAvailableThreads(), TaskState.Priority.HIGH.queue(), TaskState.Priority.LOW.queue());
-    }
-
-    static void stopKafka() throws Exception {
-        EmbeddedKafka.stop();
     }
 
     static void stopEngine(GraknEngineServer server) throws Exception {

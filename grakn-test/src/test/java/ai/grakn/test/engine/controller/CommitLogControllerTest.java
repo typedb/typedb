@@ -33,7 +33,7 @@ import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
-import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.SparkContext;

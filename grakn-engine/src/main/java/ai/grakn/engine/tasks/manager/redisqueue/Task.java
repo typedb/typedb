@@ -16,10 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.tasks.manager;
+package ai.grakn.engine.tasks.manager.redisqueue;
 
-import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.manager.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskState;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.auto.value.AutoValue;
 import java.io.Serializable;
 
@@ -29,21 +31,26 @@ import java.io.Serializable;
  * @author Domenico Corapi
  */
 @AutoValue
-abstract class Task implements QueableTask, Serializable {
+@JsonDeserialize(builder = AutoValue_Task.Builder.class)
+abstract class Task implements Serializable {
+    @JsonProperty("taskId")
     public abstract String getId();
+    @JsonProperty("taskState")
     public abstract TaskState getTaskState();
+    @JsonProperty("taskConfiguration")
     public abstract TaskConfiguration getTaskConfiguration();
 
     public static Builder builder() {
         return new AutoValue_Task.Builder();
     }
 
-
-
     @AutoValue.Builder
     public abstract static class Builder {
+        @JsonProperty("taskId")
         public abstract Builder setId(String newId);
+        @JsonProperty("taskState")
         public abstract Builder setTaskState(TaskState newTaskState);
+        @JsonProperty("taskConfiguration")
         public abstract Builder setTaskConfiguration(TaskConfiguration newTaskConfiguration);
         public abstract Task build();
     }

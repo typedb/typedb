@@ -19,11 +19,11 @@
 package ai.grakn.engine.tasks.connection;
 
 import ai.grakn.concept.ConceptId;
+import java.util.function.Function;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
-
-import java.util.function.Function;
+import redis.clients.util.Pool;
 
 /**
  * <p>
@@ -39,19 +39,20 @@ import java.util.function.Function;
  */
 public class RedisCountStorage {
 
-    private JedisPool jedisPool;
+    private Pool<Jedis> jedisPool;
 
-    private RedisCountStorage(JedisPool jedisPool){
+    private RedisCountStorage(Pool<Jedis> jedisPool){
         this.jedisPool = jedisPool;
     }
 
-    public static RedisCountStorage create(JedisPool jedisPool) {
+    public static RedisCountStorage create(Pool<Jedis> jedisPool) {
         return new RedisCountStorage(jedisPool);
     }
 
     public static RedisCountStorage create(String url, int port) {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(128);
+        // TODO provide a constructor for sentinels
         JedisPool jedisPool = new JedisPool(poolConfig, url, port);
         return new RedisCountStorage(jedisPool);
     }
@@ -111,7 +112,7 @@ public class RedisCountStorage {
         return "NS_" + keyspace + "_" + conceptId.getValue();
     }
 
-    public JedisPool getJedisPool() {
+    public Pool<Jedis> getJedisPool() {
         return jedisPool;
     }
 }

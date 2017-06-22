@@ -28,8 +28,10 @@ import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.session.RemoteSession;
-import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
+import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
+import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
@@ -37,8 +39,7 @@ import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
@@ -49,8 +50,11 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.JedisSentinelPool;
+import redis.clients.util.Pool;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -79,12 +83,7 @@ public class GraknEngineServer implements AutoCloseable {
 
     private GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
-        String redisUrl = prop.getProperty(GraknEngineConfig.REDIS_SERVER_URL);
-        int redisPort = prop.getPropertyAsInt(GraknEngineConfig.REDIS_SERVER_PORT);
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        // TODO Make this configurable
-        poolConfig.setMaxTotal(32);
-        JedisPool jedisPool = new JedisPool(poolConfig, redisUrl, redisPort);
+        Pool<Jedis> jedisPool = instantiateRedis(prop);
         redis = RedisCountStorage.create(jedisPool);
         factory = EngineGraknGraphFactory.create(prop.getProperties());
         metricRegistry = new MetricRegistry();
@@ -118,17 +117,16 @@ public class GraknEngineServer implements AutoCloseable {
      */
     private TaskManager startTaskManager() {
         String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
-        try {
-            Class<TaskManager> taskManagerClass = (Class<TaskManager>) Class.forName(taskManagerClassName);
-            Constructor<TaskManager> constructor =
-                    taskManagerClass.getConstructor(EngineID.class, GraknEngineConfig.class, RedisCountStorage.class, MetricRegistry.class);
-            LOG.info("Instantiating task manager {}", taskManagerClass.getCanonicalName());
-            return constructor.newInstance(engineId, prop, redis, metricRegistry);
-        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException e) {
-            throw new IllegalArgumentException("Invalid or unavailable TaskManager class", e);
-        } catch (InvocationTargetException e) {
-            throw (RuntimeException) e.getCause();
+        TaskManager taskManager;
+        if (taskManagerClassName.contains("RedisTaskManager")) {
+            taskManager = new RedisTaskManager(engineId, prop, redis, metricRegistry);
+        } else if (taskManagerClassName.contains("StandaloneTaskManager")) {
+            taskManager = new StandaloneTaskManager(engineId, prop, redis, metricRegistry);
+        } else {
+            throw new IllegalStateException("Unexpected task manager requested: " + taskManagerClassName);
         }
+        taskManager.start();
+        return taskManager;
     }
 
     public void startHTTP() {
@@ -279,6 +277,18 @@ public class GraknEngineServer implements AutoCloseable {
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
 
+    private Pool<Jedis> instantiateRedis(GraknEngineConfig prop) {
+        String redisUrl = prop.getProperty(GraknEngineConfig.REDIS_SERVER_URL);
+        int redisPort = prop.getPropertyAsInt(GraknEngineConfig.REDIS_SERVER_PORT);
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        // TODO Make this configurable
+        poolConfig.setMaxTotal(32);
+        Optional<String> sentinelMaster = prop.tryProperty(GraknEngineConfig.REDIS_SENTINEL_MASTER);
+        return sentinelMaster.isPresent() ?
+                new JedisSentinelPool(sentinelMaster.get(), ImmutableSet
+                        .of(String.format("%s:%s", redisUrl, redisPort)), poolConfig) :
+                new JedisPool(poolConfig, redisUrl, redisPort);
+    }
 
     /**
      * Method that prints a welcome message, listening address and path to the LOG that will be used.

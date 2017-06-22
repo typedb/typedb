@@ -21,10 +21,10 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.engine.TaskId;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import ai.grakn.engine.controller.TasksController;
-import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.TaskSchedule;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.tasks.manager.TaskSchedule;
+import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.GraknBackendException;
@@ -45,8 +45,11 @@ import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import static com.jayway.restassured.RestAssured.with;
+import com.jayway.restassured.config.ObjectMapperConfig;
+import com.jayway.restassured.config.RestAssuredConfig;
 import com.jayway.restassured.mapper.ObjectMapper;
 import com.jayway.restassured.mapper.ObjectMapperDeserializationContext;
 import com.jayway.restassured.mapper.ObjectMapperSerializationContext;
@@ -57,7 +60,6 @@ import java.time.Instant;
 import static java.time.Instant.now;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import mjson.Json;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
@@ -289,7 +291,7 @@ public class TasksControllerTest {
 
     @Test
     public void afterSendingBulkWithNoTask_OkAndEmptyResponse(){
-        Response response = send(Collections.emptyList());
+        Response response = send(ImmutableList.of());
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
         assertThat(Json.read(response.body().asString()), equalTo(Json.array()));
     }
@@ -441,12 +443,23 @@ public class TasksControllerTest {
 
     private Response send(Map<String, String> configuration, Map<String, String> params, int times){
         Json jsonParams = makeJsonTask(configuration, params);
-        return send(Collections.nCopies(times, jsonParams));
+        return send(copy(times, jsonParams));
     }
 
-    private Response send(List<Json> tasks){
-        RequestSpecification request = with().body(
-                Json.object().set("tasks", tasks));
+    // Using this because nCopies is not serialised correctly into Json
+    private ImmutableList<Json> copy(int times, Json jsonParams) {
+        Builder<Json> builder = ImmutableList.builder();
+        for(int i = 0; i < times; i++) {
+            builder.add((Json)org.apache.commons.lang.SerializationUtils.clone(jsonParams));
+        }
+        return builder.build();
+    }
+
+    private <T> Response send(ImmutableList<T> tasks){
+        Json tasksList = Json.make(ImmutableMap.of("tasks", tasks));
+        RequestSpecification request = with()
+                .config(new RestAssuredConfig().objectMapperConfig(new ObjectMapperConfig(jsonMapper)))
+                .body(tasksList);
         return request.post(String.format("http://%s%s", ctx.uri(), TASKS));
     }
 

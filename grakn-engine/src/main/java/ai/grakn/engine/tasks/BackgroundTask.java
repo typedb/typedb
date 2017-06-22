@@ -20,6 +20,10 @@ package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
+import ai.grakn.engine.tasks.manager.TaskCheckpoint;
+import ai.grakn.engine.tasks.manager.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Preconditions;
 import java.util.function.Consumer;
@@ -32,12 +36,13 @@ import javax.annotation.Nullable;
  */
 public abstract class BackgroundTask {
 
-    private @Nullable TaskSubmitter taskSubmitter = null;
-    private @Nullable TaskConfiguration configuration = null;
+    private @Nullable
+    TaskSubmitter taskSubmitter = null;
+    private @Nullable
+    TaskConfiguration configuration = null;
     private @Nullable Consumer<TaskCheckpoint> saveCheckpoint = null;
     private @Nullable GraknEngineConfig engineConfig = null;
-    private @Nullable
-    RedisCountStorage redis = null;
+    private @Nullable RedisCountStorage redis = null;
     private @Nullable MetricRegistry metricRegistry = null;
 
     /**

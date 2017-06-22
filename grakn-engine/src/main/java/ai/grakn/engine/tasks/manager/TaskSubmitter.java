@@ -16,18 +16,14 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.tasks;
+package ai.grakn.engine.tasks.manager;
 
-import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
+
+import ai.grakn.engine.tasks.BackgroundTask;
 
 /**
  * <p>
  *     Submits Background Tasks for processing
- * </p>
- *
- * <p>
- *     Allows tasks to be submitted for processing. Any task submitted is added to {@link TaskStateStorage}
- *     and is later executed by Task runner such as {@link SingleQueueTaskRunner}.
  * </p>
  *
  * @author fppt
