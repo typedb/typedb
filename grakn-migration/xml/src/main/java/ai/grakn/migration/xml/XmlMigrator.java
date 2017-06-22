@@ -68,7 +68,7 @@ public class XmlMigrator implements AutoCloseable {
                     .map(Optional::get)
                     .forEach(XmlMigrator::runXml);
         } catch (Throwable throwable){
-            MigrationCLI.die(throwable.getMessage());
+            System.err.println(throwable.getMessage());
         }
     }
     
@@ -163,7 +163,7 @@ public class XmlMigrator implements AutoCloseable {
     /**
      * Convert data in XML element to a Map<String, Object> or plain text depending on its content.
      * 
-     * @param data XML element (a tag) to convert
+     * @param node XML element (a tag) to convert
      * @return A String containing the text content of the element or a Map with its nested elements.
      */
     Map<String, Object> digest(Element node) {
