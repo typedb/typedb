@@ -1,7 +1,9 @@
 package ai.grakn.test.graql.hal;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.test.graphs.AcademyGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.graphs.AcademyGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.test.GraphContext;
@@ -9,6 +11,7 @@ import mjson.Json;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static ai.grakn.graql.internal.hal.HALBuilder.HALExploreConcept;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -28,9 +31,18 @@ public class HALBuilderTest {
         response.asJsonList().forEach(halObj -> {
             assertEquals(halObj.at("_baseType").asString(), "ENTITY");
             assertTrue(halObj.at("_links").at("self").at("href").asString().contains(keyspace));
+            assertTrue(halObj.at("_links").at("explore").asJsonList().get(0).at("href").asString().contains("explore"));
             assertTrue(halObj.has("_type"));
             assertTrue(halObj.has("_id"));
         });
+    }
+
+    @Test
+    public void whenExecuteExploreHAL_EnsureHALResponseContainsCorrectExploreLinks() {
+        Json response = getHALRepresentation(academyGraph.graph(), "match $x isa entity; limit 5;");
+        String conceptId = response.asJsonList().get(0).at("_id").asString();
+        Json halObj = getHALExploreRepresentation(academyGraph.graph(), conceptId);
+        assertTrue(halObj.at("_links").at("explore").asJsonList().get(0).at("href").asString().contains("explore"));
     }
 
 
@@ -86,6 +98,11 @@ public class HALBuilderTest {
     private Json getHALRepresentation(GraknGraph graph, String queryString) {
         Query<?> query = graph.graql().materialise(false).infer(true).parse(queryString);
         return renderHALArrayData((MatchQuery) query, 0, 5);
+    }
+
+    private Json getHALExploreRepresentation(GraknGraph graph, String conceptId) {
+        Concept concept = graph.getConcept(ConceptId.of(conceptId));
+        return Json.read(HALExploreConcept(concept, graph.getKeyspace(), 0, 5));
     }
 
     private Json getHALRepresentationNoInference(GraknGraph graph, String queryString) {
