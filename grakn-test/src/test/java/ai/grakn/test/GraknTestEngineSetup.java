@@ -24,18 +24,17 @@ import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
 import ai.grakn.engine.GraknEngineServer;
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.util.JWTHandler;
-import ai.grakn.factory.SystemKeyspace;
-import static ai.grakn.graql.Graql.var;
+import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.util.EmbeddedKafka;
 import ai.grakn.util.EmbeddedRedis;
-import ai.grakn.util.GraknTestSetup;
 import com.jayway.restassured.RestAssured;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
+
+import static ai.grakn.graql.Graql.var;
 import org.slf4j.LoggerFactory;
 import spark.Service;
 
@@ -83,7 +82,7 @@ public abstract class GraknTestEngineSetup {
         // we end up wanting to use the TitanFactory but without starting Cassandra first.
         LOG.info("starting engine...");
 
-        GraknTestSetup.ensureCassandraRunning();
+        GraknTestSetup.startCassandraIfNeeded();
 
         // start engine
         setRestAssuredUri(config);
@@ -105,8 +104,9 @@ public abstract class GraknTestEngineSetup {
     static void stopEngine(GraknEngineServer server) throws Exception {
         LOG.info("stopping engine...");
 
+        // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
         server.close();
-        clearGraphs(server.factory());
+        clearGraphs(server);
 
         LOG.info("engine stopped.");
 
@@ -122,30 +122,26 @@ public abstract class GraknTestEngineSetup {
         return spark;
     }
 
-    private static void clearGraphs(EngineGraknGraphFactory engineGraknGraphFactory) {
+    private static void clearGraphs(GraknEngineServer server) {
         // Drop all keyspaces
         final Set<String> keyspaceNames = new HashSet<String>();
-        try(GraknGraph systemGraph = engineGraknGraphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try(GraknGraph systemGraph = server.factory().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .execute()
                     .forEach(x -> x.values().forEach(y -> {
                         keyspaceNames.add(y.asResource().getValue().toString());
                     }));
         }
+
         keyspaceNames.forEach(name -> {
-            GraknGraph graph = engineGraknGraphFactory.getGraph(name, GraknTxType.WRITE);
-            graph.admin().delete();            
+            GraknGraph graph = server.factory().getGraph(name, GraknTxType.WRITE);
+            graph.admin().delete();
         });
-        engineGraknGraphFactory.refreshConnections();
+        server.factory().refreshConnections();
     }
 
     static void setRestAssuredUri(GraknEngineConfig config) {
         RestAssured.baseURI = "http://" + config.uri();
-    }
-
-    public static String randomKeyspace(){
-        // Embedded Casandra has problems dropping keyspaces that start with a number
-        return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
     }
 
     private static int getEphemeralPort() {

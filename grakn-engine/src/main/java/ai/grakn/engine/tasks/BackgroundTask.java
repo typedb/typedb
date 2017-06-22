@@ -25,7 +25,10 @@ import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import com.codahale.metrics.MetricRegistry;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import com.google.common.base.Preconditions;
+
+import javax.annotation.Nullable;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
@@ -42,11 +45,13 @@ public abstract class BackgroundTask {
     TaskConfiguration configuration = null;
     private @Nullable Consumer<TaskCheckpoint> saveCheckpoint = null;
     private @Nullable GraknEngineConfig engineConfig = null;
+    private @Nullable EngineGraknGraphFactory factory = null;
     private @Nullable RedisCountStorage redis = null;
     private @Nullable MetricRegistry metricRegistry = null;
 
     /**
      * Initialize the {@link BackgroundTask}. This must be called prior to any other call to {@link BackgroundTask}.
+     *
      * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
      *                       the task to resume from this point should it crash.
      * @param configuration  The configuration needed to execute the task
@@ -56,13 +61,14 @@ public abstract class BackgroundTask {
     public final void initialize(
             Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration,
             TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig, RedisCountStorage redis,
-            MetricRegistry metricRegistry) {
+            MetricRegistry metricRegistry, EngineGraknGraphFactory factory) {) {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
         this.saveCheckpoint = saveCheckpoint;
         this.engineConfig = engineConfig;
         this.redis = redis;
         this.metricRegistry = metricRegistry;
+        this.factory = factory;
     }
 
     /**
@@ -145,6 +151,10 @@ public abstract class BackgroundTask {
         return redis;
     }
 
+    public final EngineGraknGraphFactory factory(){
+        Preconditions.checkNotNull(factory, "BackgroundTask#initialise must be called before retrieving the engine factory");
+        return factory;
+    }
     public final MetricRegistry metricRegistry() {
         Preconditions.checkNotNull(metricRegistry, "BackgroundTask#initialise must be called before retrieving metrics registry");
         return metricRegistry;

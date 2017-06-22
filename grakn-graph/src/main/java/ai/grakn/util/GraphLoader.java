@@ -22,16 +22,23 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.factory.InternalFactory;
+import ai.grakn.graph.internal.GraknTinkerGraph;
+import ai.grakn.graql.Query;
+import com.google.common.io.Files;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -54,14 +61,13 @@ public class GraphLoader {
     private static Properties graphConfig;
 
     private final InternalFactory<?> factory;
-    private final Consumer<GraknGraph> preLoad;
+    private Consumer<GraknGraph> preLoad;
+    private boolean graphLoaded = false;
     private GraknGraph graph;
 
-    private GraphLoader(Consumer<GraknGraph> preLoad){
+    protected GraphLoader(Consumer<GraknGraph> preLoad){
         factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties());
         this.preLoad = preLoad;
-
-        load();
     }
 
     public static GraphLoader empty(){
@@ -72,23 +78,52 @@ public class GraphLoader {
         return new GraphLoader(build);
     }
 
+    public static GraphLoader preLoad(String [] files){
+        return new GraphLoader((graknGraph) -> {
+            for (String file : files) {
+                loadFromFile(graknGraph, file);
+            }
+        });
+    }
+
     public GraknGraph graph(){
         if(graph == null || graph.isClosed()){
+            //Load the graph if we need to
+            if(!graphLoaded) {
+                try(GraknGraph graph = factory.open(GraknTxType.WRITE)){
+                    load(graph);
+                    graph.commit();
+                    graphLoaded = true;
+                }
+            }
+
             graph = factory.open(GraknTxType.WRITE);
         }
 
         return graph;
     }
 
-    /**
-     * Loads the graph using the specified Preloader
-     */
-    private void load(){
-        try (GraknGraph graph = graph()) {
-            if(preLoad != null) preLoad.accept(graph);
+    public void load(Consumer<GraknGraph> preLoad){
+        this.preLoad = preLoad;
+        graphLoaded = false;
+        graph();
+    }
 
-            graph.commit();
+    public void rollback() {
+        if (graph instanceof GraknTinkerGraph) {
+            graph.admin().delete();
+            graphLoaded = false;
+        } else if (!graph.isClosed()) {
+            graph.close();
         }
+        graph = graph();
+    }
+
+    /**
+     * Loads the graph using the specified Preloaders
+     */
+    private void load(GraknGraph graph){
+        if(preLoad != null) preLoad.accept(graph);
     }
 
     /**
@@ -130,9 +165,20 @@ public class GraphLoader {
         return System.getProperty(PROJECT_PROPERTY) + "/";
     }
 
-    //TODO: Cleanup up. Another duplicate method. Currently in GraknTestEnv
-    private static String randomKeyspace(){
+    public static String randomKeyspace(){
         // Embedded Casandra has problems dropping keyspaces that start with a number
         return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
+    }
+
+    public static void loadFromFile(GraknGraph graph, String file) {
+        try {
+            File graql = new File(file);
+
+            graph.graql()
+                    .parseList(Files.readLines(graql, StandardCharsets.UTF_8).stream().collect(Collectors.joining("\n")))
+                    .forEach(Query::execute);
+        } catch (IOException |InvalidGraphException e){
+            throw new RuntimeException(e);
+        }
     }
 }

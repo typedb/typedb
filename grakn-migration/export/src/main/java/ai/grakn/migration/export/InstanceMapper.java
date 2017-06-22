@@ -26,7 +26,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarPatternBuilder;
+import ai.grakn.util.CommonUtil;
 
 import java.util.Map;
 import java.util.Set;
@@ -47,18 +47,17 @@ public class InstanceMapper {
      * @return Graql representation of given instance
      */
     public static VarPattern map(Instance instance){
-        VarPatternBuilder mapped = var();
         if(instance.isEntity()){
-            mapped = map(instance.asEntity());
+            return map(instance.asEntity());
         } else if(instance.isResource()){
-            mapped = map(instance.asResource());
+            return map(instance.asResource());
         } else if(instance.isRelation()){
-            mapped = map(instance.asRelation());
+            return map(instance.asRelation());
         } else if(instance.isRule()){
-            mapped = map(instance.asRule());
+            return map(instance.asRule());
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised instance " + instance);
         }
-
-        return mapped.pattern();
     }
 
     /**
@@ -80,7 +79,7 @@ public class InstanceMapper {
     //TODO resources on relations
     private static VarPattern map(Relation relation){
         if(relation.type().isImplicit()){
-            return var().pattern();
+            return var();
         }
 
         VarPattern var = base(relation);
@@ -95,7 +94,7 @@ public class InstanceMapper {
      */
     private static VarPattern map(Resource resource){
         if(isHasResourceResource(resource)){
-            return var().pattern();
+            return var();
         }
 
         VarPattern var = base(resource);

@@ -20,7 +20,6 @@ package ai.grakn.engine.loader;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.postprocessing.GraphMutators;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
@@ -60,9 +59,8 @@ public class MutatorTask extends BackgroundTask {
         metricRegistry().histogram(name(MutatorTask.class, "jobs")).update(inserts.size());
         String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
         int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
 
-        GraphMutators.runBatchMutationWithRetry(factory, keyspace, maxRetry, (graph) ->
+        GraphMutators.runBatchMutationWithRetry(factory(), keyspace, maxRetry, (graph) ->
                 insertQueriesInOneTransaction(graph, inserts)
         );
 

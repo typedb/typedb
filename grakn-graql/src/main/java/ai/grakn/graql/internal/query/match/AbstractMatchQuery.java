@@ -32,7 +32,6 @@ import ai.grakn.graql.Order;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarPatternBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -139,29 +138,29 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final InsertQuery insert(VarPatternBuilder... vars) {
+    public final InsertQuery insert(VarPattern... vars) {
         return insert(Arrays.asList(vars));
     }
 
     @Override
-    public final InsertQuery insert(Collection<? extends VarPatternBuilder> vars) {
+    public final InsertQuery insert(Collection<? extends VarPattern> vars) {
         ImmutableMultiset<VarPatternAdmin> varAdmins = ImmutableMultiset.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(varAdmins, admin());
     }
 
     @Override
-    public final DeleteQuery delete(VarPatternBuilder... deleters) {
+    public final DeleteQuery delete(VarPattern... deleters) {
         return delete(Arrays.asList(deleters));
     }
 
     @Override
     public final DeleteQuery delete(String... names) {
-        List<VarPattern> deleters = Arrays.stream(names).map(Graql::var).map(Var::pattern).collect(toList());
+        List<VarPattern> deleters = Arrays.stream(names).map(Graql::var).collect(toList());
         return delete(deleters);
     }
 
     @Override
-    public final DeleteQuery delete(Collection<? extends VarPatternBuilder> deleters) {
+    public final DeleteQuery delete(Collection<? extends VarPattern> deleters) {
         return Queries.delete(AdminConverter.getVarAdmins(deleters), this);
     }
 

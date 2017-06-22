@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.template;
 
 import com.google.common.collect.Sets;
-import org.apache.commons.lang.ObjectUtils;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -119,7 +118,7 @@ public class Scope {
         }
         else {
             // Unknown variable
-            return ObjectUtils.NULL;
+            return null;
         }
     }
 

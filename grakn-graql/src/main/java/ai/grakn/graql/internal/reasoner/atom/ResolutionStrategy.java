@@ -42,7 +42,7 @@ public final class ResolutionStrategy {
     /**
      * priority modifier if a given atom is a resource atom attached to a relation
      */
-    public static final int RESOURCE_REIFIYING_RELATION = 15;
+    public static final int RESOURCE_REIFIYING_RELATION = 20;
 
     /**
      * priority modifier if a given atom is a type atom
@@ -77,6 +77,11 @@ public final class ResolutionStrategy {
      * priority modifier for guard (type atom) the atom has - favour boundary rather than bulk atoms
      */
     public static final int BOUND_VARIABLE = -2;
+
+    /**
+     * priority modifier if an atom has an inequality predicate
+     */
+    public static final int INEQUALITY_PREDICATE = -1000;
 
     /**
      * priority modifier for each specific value predicate a given atom (resource) has

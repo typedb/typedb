@@ -25,6 +25,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -93,7 +94,7 @@ public abstract class Atom extends AtomicBase {
      * compute base resolution priority of this atom
      * @return priority value
      */
-    public int computePriority(){
+    private int computePriority(){
         return computePriority(getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet()));
     }
 
@@ -114,6 +115,13 @@ public abstract class Atom extends AtomicBase {
                 .flatMap(at -> at.getVarNames().stream())
                 .collect(Collectors.toSet());
         priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
+
+        //inequality predicates with unmapped variable
+        priority += getPredicates().stream()
+                .filter(Predicate::isNeqPredicate)
+                .map(p -> (NeqPredicate) p)
+                .map(Predicate::getPredicate)
+                .filter(v -> !subbedVars.contains(v)).count() * ResolutionStrategy.INEQUALITY_PREDICATE;
         return priority;
     }
 
@@ -203,10 +211,9 @@ public abstract class Atom extends AtomicBase {
      * @return set of predicates relevant to this atom
      */
     public Set<Predicate> getPredicates() {
-        Set<Predicate> predicates = new HashSet<>();
-        predicates.addAll(getValuePredicates());
-        predicates.addAll(getIdPredicates());
-        return predicates;
+        return ((ReasonerQueryImpl) getParentQuery()).getPredicates().stream()
+                .filter(atom -> this.containsVar(atom.getVarName()))
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -214,7 +221,7 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<IdPredicate> getIdPredicates() {
         return ((ReasonerQueryImpl) getParentQuery()).getIdPredicates().stream()
-                .filter(atom -> containsVar(atom.getVarName()))
+                .filter(atom -> this.containsVar(atom.getVarName()))
                 .collect(Collectors.toSet());
     }
 

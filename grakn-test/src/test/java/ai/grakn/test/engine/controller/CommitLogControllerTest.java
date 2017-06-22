@@ -35,9 +35,9 @@ import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.test.SparkContext;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
@@ -79,16 +79,13 @@ public class CommitLogControllerTest {
 
     @ClassRule
     public static SparkContext ctx = SparkContext.withControllers((spark, config) -> {
+        GraknTestSetup.startCassandraIfNeeded();
+        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(config.getProperties());
         new CommitLogController(spark, config.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY), 100, manager);
-        new SystemController(EngineGraknGraphFactory.create(config.getProperties()), spark, new MetricRegistry());
+        new SystemController(factory, spark, new MetricRegistry());
     });
 
     private Json commitLog;
-
-    @BeforeClass
-    public static void setUp() throws Exception {
-        GraknTestSetup.ensureCassandraRunning();
-    }
 
     @After
     public void resetMockitoMockCounts(){
@@ -196,19 +193,6 @@ public class CommitLogControllerTest {
             bob.close();
             tim.close();
         }
-    }
-
-    @Test
-    public void whenCommittingSystemGraph_CommitLogsNotSent() throws InvalidGraphException {
-        GraknGraph graph1 = Grakn.session(ctx.uri(), SystemKeyspace.SYSTEM_GRAPH_NAME).open(GraknTxType.WRITE);
-        ResourceType<String> resourceType = graph1.putResourceType("New Resource Type", ResourceType.DataType.STRING);
-        resourceType.putResource("a");
-        resourceType.putResource("b");
-        resourceType.putResource("c");
-        graph1.commit();
-
-        verify(manager, never()).addTask(any(), any());
-        verify(manager, never()).addTask(any(), any());
     }
 
     private void sendFakeCommitLog() {

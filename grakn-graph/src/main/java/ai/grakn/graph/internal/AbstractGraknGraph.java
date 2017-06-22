@@ -36,7 +36,6 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.QueryBuilder;
@@ -53,6 +52,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -67,9 +67,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toSet;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 
 /**
  * <p>
@@ -87,6 +84,7 @@ import java.lang.reflect.InvocationTargetException;
  */
 public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin {
     protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
+    private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
 
     //TODO: Is this the correct place for these config paths
     //----------------------------- Config Paths
@@ -101,14 +99,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ElementFactory elementFactory;
     private final GraphCache graphCache;
     
-    static Constructor<?> queryConstructor = null;    
+    private static Constructor<?> queryConstructor = null;
     static {
-        String queryBuilderClassName = "ai.grakn.graql.internal.query.QueryBuilderImpl";        
         try {
-            queryConstructor = Class.forName(queryBuilderClassName).getConstructor(GraknGraph.class);
+            queryConstructor = Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(GraknGraph.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-            throw new RuntimeException("The query builder implementation " + queryBuilderClassName + 
-                    " must be accessible in the classpath and have a one argument constructor taking a GraknGraph");
+            queryConstructor = null;
         }        
     }
     
@@ -314,6 +310,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public QueryBuilder graql(){
+        if(queryConstructor == null){
+            throw new RuntimeException("The query builder implementation " + QUERY_BUILDER_CLASS_NAME +
+                    " must be accessible in the classpath and have a one argument constructor taking a GraknGraph");
+        }
         try {
             return (QueryBuilder) queryConstructor.newInstance(this);
         } catch (Exception e) {
@@ -660,8 +660,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         clearGraph();
         txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
 
+        //TODO We should not hit the REST endpoint when deleting keyspaces through a graph
+        // retrieved from and EngineGraknGraphFactory
         //Remove the graph from the system keyspace
-        SystemKeyspace.deleteKeyspace(getKeyspace());
+        EngineCommunicator.contactEngine(getDeleteKeyspaceEndpoint(), REST.HttpConn.DELETE_METHOD);
     }
 
     //This is overridden by vendors for more efficient clearing approaches
@@ -757,8 +759,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         LOG.trace("Graph committed.");
 
-        //No post processing should ever be done for the system keyspace
-        if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && submissionNeeded) {
+        if(submissionNeeded) {
             return Optional.of(conceptLog.toString());
         }
         return Optional.empty();
@@ -785,6 +786,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             return Grakn.IN_MEMORY;
         }
         return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
+    }
+
+    private String getDeleteKeyspaceEndpoint(){
+        if(Grakn.IN_MEMORY.equals(engine)) {
+            return Grakn.IN_MEMORY;
+        }
+        return engine + REST.WebPath.System.DELETE_KEYSPACE + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
     public void validVertex(Vertex vertex){

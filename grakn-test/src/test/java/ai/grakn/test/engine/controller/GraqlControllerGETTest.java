@@ -19,17 +19,19 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.QueryBuilder;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.SparkContext;
 import ai.grakn.test.engine.controller.TasksControllerTest.JsonMapper;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
@@ -77,7 +79,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-
 //TODO Run in name order until TP Bug #13730 Fixed
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GraqlControllerGETTest {
@@ -85,6 +86,7 @@ public class GraqlControllerGETTest {
     private static GraknGraph mockGraph;
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
+    private static SystemKeyspace mockSystemKeyspace = mock(SystemKeyspace.class);
 
     private static final JsonMapper jsonMapper = new JsonMapper();
 
@@ -112,9 +114,11 @@ public class GraqlControllerGETTest {
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
         when(mockGraph.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
+        when(mockSystemKeyspace.ensureKeyspaceInitialised(any())).thenReturn(true);
 
-        when(mockFactory.properties()).thenReturn(graphContext.factory().properties());
+        when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
+        when(mockFactory.systemKeyspace()).thenReturn(mockSystemKeyspace);
+        when(mockFactory.properties()).thenReturn(GraknEngineConfig.create().getProperties());
     }
 
     @Test

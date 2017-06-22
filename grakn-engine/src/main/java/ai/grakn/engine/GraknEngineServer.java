@@ -119,9 +119,9 @@ public class GraknEngineServer implements AutoCloseable {
         String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
         TaskManager taskManager;
         if (taskManagerClassName.contains("RedisTaskManager")) {
-            taskManager = new RedisTaskManager(engineId, prop, redis, metricRegistry);
+            taskManager = new RedisTaskManager(engineId, prop, redis, factory, metricRegistry);
         } else if (taskManagerClassName.contains("StandaloneTaskManager")) {
-            taskManager = new StandaloneTaskManager(engineId, prop, redis, metricRegistry);
+            taskManager = new StandaloneTaskManager(engineId, prop, redis, factory, metricRegistry);
         } else {
             throw new IllegalStateException("Unexpected task manager requested: " + taskManagerClassName);
         }
@@ -166,7 +166,7 @@ public class GraknEngineServer implements AutoCloseable {
         spark.ipAddress(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME));
 
         // Set port
-        spark.port(prop.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER));
+        spark.port(Integer.parseInt(prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER)));
 
         // Set the external static files folder
         spark.staticFiles.externalLocation(prop.getPath(GraknEngineConfig.STATIC_FILES_PATH));

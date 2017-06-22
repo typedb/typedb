@@ -21,25 +21,23 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskSchedule;
-import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.engine.tasks.TaskSchedule;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
-import static com.codahale.metrics.MetricRegistry.name;
-import com.codahale.metrics.Timer.Context;
+import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -64,35 +62,22 @@ public class PostProcessingTask extends BackgroundTask {
      */
     @Override
     public boolean start() {
-        Context context = metricRegistry()
-                .timer(name(PostProcessingTask.class, "execution")).time();
-        try {
-            EngineGraknGraphFactory factory = EngineGraknGraphFactory
-                    .create(engineConfiguration().getProperties());
-            Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(
-                    Schema.BaseType.RESOURCE, configuration());
-            metricRegistry().histogram(name(PostProcessingTask.class, "jobs"))
-                    .update(allToPostProcess.size());
-            allToPostProcess.forEach((conceptIndex, conceptIds) -> {
+        Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.RESOURCE, configuration());
 
-                String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
-                int maxRetry = engineConfiguration()
-                        .getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+        allToPostProcess.entrySet().forEach(e -> {
+            String conceptIndex = e.getKey();
+            Set<ConceptId> conceptIds = e.getValue();
 
-                Context contextSingle = metricRegistry().timer(name(PostProcessingTask.class, "execution-single")).time();
-                try {
-                    GraphMutators.runGraphMutationWithRetry(factory, keyspace, maxRetry,
-                            (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
-                } finally {
-                    contextSingle.stop();
-                }
-            });
+            String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
+            int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
-            LOG.debug(JOB_FINISHED, Schema.BaseType.RESOURCE.name(), allToPostProcess);
-            return true;
-        } finally {
-            context.stop();
-        }
+            GraphMutators.runGraphMutationWithRetry(factory(), keyspace, maxRetry,
+                    (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
+        });
+
+        LOG.debug(JOB_FINISHED, Schema.BaseType.RESOURCE.name(), allToPostProcess);
+
+        return true;
     }
 
     /**

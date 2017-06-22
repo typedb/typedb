@@ -20,10 +20,10 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graphs.DiagonalGraph;
-import ai.grakn.graphs.MatrixGraphII;
-import ai.grakn.graphs.TransitivityChainGraph;
-import ai.grakn.graphs.TransitivityMatrixGraph;
+import ai.grakn.test.graphs.DiagonalGraph;
+import ai.grakn.test.graphs.MatrixGraphII;
+import ai.grakn.test.graphs.TransitivityChainGraph;
+import ai.grakn.test.graphs.TransitivityMatrixGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
@@ -32,7 +32,6 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.test.GraphContext;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

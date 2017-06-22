@@ -10,7 +10,7 @@ import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTinkerGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;

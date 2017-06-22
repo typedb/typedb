@@ -25,10 +25,9 @@ import ai.grakn.graql.ComputeQueryBuilder;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.PatternBuilder;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarPatternBuilder;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -97,7 +96,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return a match query that will find matches of the given patterns
      */
     @Override
-    public MatchQuery match(PatternBuilder... patterns) {
+    public MatchQuery match(Pattern... patterns) {
         return match(Arrays.asList(patterns));
     }
 
@@ -106,7 +105,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return a match query that will find matches of the given patterns
      */
     @Override
-    public MatchQuery match(Collection<? extends PatternBuilder> patterns) {
+    public MatchQuery match(Collection<? extends Pattern> patterns) {
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
         MatchQueryBase base = new MatchQueryBase(conjunction);
         MatchQuery query = infer ? base.infer(materialise).admin() : base;
@@ -118,7 +117,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return an insert query that will insert the given variables into the graph
      */
     @Override
-    public InsertQuery insert(VarPatternBuilder... vars) {
+    public InsertQuery insert(VarPattern... vars) {
         return insert(Arrays.asList(vars));
     }
 
@@ -127,7 +126,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return an insert query that will insert the given variables into the graph
      */
     @Override
-    public InsertQuery insert(Collection<? extends VarPatternBuilder> vars) {
+    public InsertQuery insert(Collection<? extends VarPattern> vars) {
         ImmutableList<VarPatternAdmin> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
         return new InsertQueryImpl(varAdmins, Optional.empty(), graph);
     }

@@ -31,6 +31,20 @@
 
 
     <dependencies>
+        <!-- Needed to be able to create graphs in a rule context -->
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-graph</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Needed so we can create rule contexts -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+        </dependency>
+
         <!-- Used to create embedded cassandra for testing -->
         <dependency>
             <groupId>org.cassandraunit</groupId>
@@ -73,5 +87,18 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        
+        <dependency>
+            <groupId>com.sparkjava</groupId>
+            <artifactId>spark-core</artifactId>
+            <version>${spark-core.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        
     </dependencies>
 </project>

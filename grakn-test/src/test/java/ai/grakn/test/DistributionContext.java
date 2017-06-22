@@ -102,8 +102,9 @@ public class DistributionContext extends ExternalResource {
     @Override
     public void before() throws Throwable {
         assertPackageBuilt();
+
         unzipDistribution();
-        GraknTestSetup.ensureCassandraRunning();
+        GraknTestSetup.startCassandraIfNeeded();
         engineProcess = newEngineProcess(port);
         waitForEngine(port);
     }

@@ -58,8 +58,6 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
         Context context = metricRegistry()
                 .timer(name(UpdatingInstanceCountTask.class, "execution")).time();
         try {
-            EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
-
             Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
             metricRegistry().histogram(name(UpdatingInstanceCountTask.class, "jobs"))
                     .update(jobs.size());
@@ -90,7 +88,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
             conceptToShard.forEach(type -> {
                 Context contextSharding = metricRegistry().timer("sharding").time();
                 try {
-                    shardConcept(redis(), factory, keyspace, type, maxRetry, shardingThreshold);
+                    shardConcept(redis(), factory(), keyspace, type, maxRetry, shardingThreshold);
                 } finally {
                     contextSharding.stop();
                 }

@@ -406,7 +406,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     public VarPattern visitVarPattern(GraqlParser.VarPatternContext ctx) {
         VarPattern var;
         if (ctx.VARIABLE() != null) {
-            var = getVariable(ctx.VARIABLE()).pattern();
+            var = getVariable(ctx.VARIABLE());
         } else {
             var = visitVariable(ctx.variable());
         }
@@ -442,8 +442,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     public UnaryOperator<VarPattern> visitPropHas(GraqlParser.PropHasContext ctx) {
         TypeLabel type = visitLabel(ctx.label());
 
-        Var resourceVar = ctx.VARIABLE() != null ? getVariable(ctx.VARIABLE()) : var();
-        VarPattern resource = resourceVar.pattern();
+        VarPattern resource = ctx.VARIABLE() != null ? getVariable(ctx.VARIABLE()) : var();
 
         if (ctx.predicate() != null) {
             resource = resource.val(visitPredicate(ctx.predicate()));
@@ -545,11 +544,11 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public VarPattern visitVariable(GraqlParser.VariableContext ctx) {
         if (ctx == null) {
-            return var().pattern();
+            return var();
         } else if (ctx.label() != null) {
             return Graql.label(visitLabel(ctx.label()));
         } else {
-            return getVariable(ctx.VARIABLE()).pattern();
+            return getVariable(ctx.VARIABLE());
         }
     }
 
@@ -600,7 +599,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public VarPattern visitValueVariable(GraqlParser.ValueVariableContext ctx) {
-        return getVariable(ctx.VARIABLE()).pattern();
+        return getVariable(ctx.VARIABLE());
     }
 
     @Override

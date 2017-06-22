@@ -7,11 +7,7 @@
 [![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
 [![Download count](http://shields.grakn.ai/github/downloads/graknlabs/grakn/total.svg)](https://grakn.ai/download/latest)
 
-Copyright (C) 2016-2017  Grakn Labs Limited.  
-
-### Version 0.12.1
-
-For release notes, please see our separate changelog file.   
+Copyright (C) 2016-2017  Grakn Labs Limited.
 
 ## Licensing
 
@@ -32,7 +28,7 @@ This product includes software developed by [Grakn Labs](http://grakn.ai/).  It'
 
 Operating System: Unix based systems (Linux and Mac OS X)
 
-Grakn requires Java 8 (Standard Edition) with the $JAVA_HOME set accordingly. Grakn also requires Maven 3, nodejs and npm to be installed and configured correctly (you should be able to install packages global for your user via npm without needing sudo).
+Grakn requires Oracle Java 8 (Standard Edition) with the $JAVA_HOME set accordingly. Grakn also requires Maven 3, nodejs and npm to be installed and configured correctly (you should be able to install packages global for your user via npm without needing sudo).
 
   
 ## Disclaimer  

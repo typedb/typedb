@@ -32,7 +32,7 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -84,9 +84,6 @@ public class ClusteringTest {
 
     @Test
     public void testConnectedComponentOnEmptyGraph() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // test on an empty rule.graph()
             Map<String, Long> sizeMap = Graql.compute().withGraph(graph).cluster().execute();
@@ -100,9 +97,6 @@ public class ClusteringTest {
 
     @Test
     public void testConnectedComponentSize() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         Map<String, Long> sizeMap;
         Map<String, Set<String>> memberMap;
         Map<String, Long> sizeMapPersist;
@@ -139,9 +133,6 @@ public class ClusteringTest {
 
     @Test
     public void testConnectedComponentImplicitType() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         String aResourceTypeLabel = "aResourceTypeLabel";
 
         addOntologyAndEntities();
@@ -171,9 +162,6 @@ public class ClusteringTest {
 
     @Test
     public void testConnectedComponent() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         Map<String, Long> sizeMap;
         Map<String, Set<String>> memberMap;
 
@@ -233,13 +221,12 @@ public class ClusteringTest {
 
     @Test
     public void testConnectedComponentConcurrency() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         addOntologyAndEntities();
 
         List<Long> list = new ArrayList<>(4);
-        for (long i = 0L; i < 4L; i++) {
+        long workerNumber = 4L;
+        if (GraknTestSetup.usingTinker()) workerNumber = 1L;
+        for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
 

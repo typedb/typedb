@@ -762,7 +762,7 @@ public class QueryParserTest {
         int numQueries = 10_000;
         String matchInsertString = "match $x; insert $y;";
         String longQueryString = Strings.repeat(matchInsertString, numQueries);
-        Query<?> matchInsert = match(var("x")).insert(var("y").pattern());
+        Query<?> matchInsert = match(var("x")).insert(var("y"));
 
         List<Query<?>> queries = parseList(longQueryString).collect(toList());
 

@@ -19,8 +19,9 @@
 package ai.grakn.test.graql.shell;
 
 import ai.grakn.graql.GraqlShell;
+import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.test.DistributionContext;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -129,6 +130,18 @@ public class GraqlShellIT {
 
         // When using '-e', only results should be printed, no prompt or query
         assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
+    }
+
+    @Test
+    public void whenUsingExecuteOptionAndPassingQueriesWithoutVariables_PrintWarning() throws Exception {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        String result = testShell("", err, "-e", "match sub entity;");
+
+        // There should still be a result...
+        assertThat(result, containsString("{}"));
+
+        // ...but also a warning
+        assertThat(err.toString(), containsString(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage()));
     }
 
     @Test
@@ -373,11 +386,11 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void testErrorWhenEngineNotRunning() throws Exception {
+    public void whenEngineIsNotRunning_ShowAnError() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell("", err, "-r", "localhost:7654");
 
-        assertFalse(err.toString().isEmpty());
+        assertThat(err.toString(), containsString(ErrorMessage.COULD_NOT_CONNECT.getMessage()));
     }
 
     @Test

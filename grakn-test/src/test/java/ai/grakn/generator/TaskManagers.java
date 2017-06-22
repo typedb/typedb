@@ -19,6 +19,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
 /**
  * TaskManagers
  * 
- * @author alex
+ * @author alexandraorth
  */
 public class TaskManagers extends Generator<TaskManager> {
     private static final Logger LOG = LoggerFactory.getLogger(TaskManagers.class);
@@ -73,7 +74,7 @@ public class TaskManagers extends Generator<TaskManager> {
                 Constructor<? extends TaskManager> constructor =
                         taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class, RedisCountStorage.class, MetricRegistry.class);
                 // TODO this doesn't take a Redis connection. Make sure this is what we expect
-                taskManagers.put(taskManagerToReturn, constructor.newInstance(EngineID.me(), config, redisCountStorage, new MetricRegistry()));
+                taskManagers.put(taskManagerToReturn, constructor.newInstance(EngineID.me(), config, redisCountStorage, null, new MetricRegistry()));
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
                 LOG.error("Could not instantiate task manager", e);
                 throw new RuntimeException(e);

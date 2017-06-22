@@ -85,8 +85,8 @@ import static ai.grakn.util.REST.RemoteShell.TYPES;
 import static ai.grakn.util.REST.RemoteShell.USERNAME;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static ai.grakn.util.Schema.BaseType.TYPE;
-import static ai.grakn.util.Schema.MetaSchema.INFERENCE_RULE;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
+import static ai.grakn.util.Schema.MetaSchema.INFERENCE_RULE;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
@@ -191,6 +191,16 @@ public class GraqlShell {
         }
 
         Optional<List<String>> queries = Optional.ofNullable(cmd.getOptionValue("e")).map(Lists::newArrayList);
+
+        if (queries.isPresent()) {
+            for (String query : queries.get()) {
+                if (!query.contains("$")) {
+                    System.err.println(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage());
+                    break;
+                }
+            }
+        }
+
         String[] filePaths = cmd.getOptionValues("f");
 
         // Print usage message if requested or if invalid arguments provided
@@ -209,6 +219,11 @@ public class GraqlShell {
         String outputFormat = cmd.getOptionValue("o", DEFAULT_OUTPUT_FORMAT);
         Optional<String> username = Optional.ofNullable(cmd.getOptionValue("u"));
         Optional<String> password = Optional.ofNullable(cmd.getOptionValue("p"));
+
+        if (!client.serverIsRunning(uriString)) {
+            System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
+            return;
+        }
 
         boolean showImplicitTypes = cmd.hasOption("i");
         boolean infer = cmd.hasOption("n");

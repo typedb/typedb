@@ -19,13 +19,10 @@
 package ai.grakn.test.engine.tasks.manager;
 
 import ai.grakn.engine.TaskStatus;
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import ai.grakn.engine.tasks.manager.TaskCheckpoint;
-import ai.grakn.engine.tasks.manager.TaskManager;
-import ai.grakn.engine.tasks.manager.TaskSchedule;
-import static ai.grakn.engine.tasks.manager.TaskSchedule.now;
-import static ai.grakn.engine.tasks.manager.TaskSchedule.recurring;
-import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskSchedule;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
