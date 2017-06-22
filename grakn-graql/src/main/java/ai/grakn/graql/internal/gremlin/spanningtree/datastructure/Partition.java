@@ -94,7 +94,7 @@ public class Partition<V> {
      * Determines whether the two items are in the same component or not
      */
     public boolean sameComponent(V a, V b) {
-        return componentOf(a) == componentOf(b);
+        return componentOf(a).equals(componentOf(b));
     }
 
     public Set<V> getNodes() {

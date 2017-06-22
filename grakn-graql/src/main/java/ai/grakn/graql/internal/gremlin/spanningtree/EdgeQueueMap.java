@@ -58,7 +58,7 @@ class EdgeQueueMap<V> {
 
         public void addEdge(ExclusiveEdge<V> exclusiveEdge) {
             // only add if source is external to SCC
-            if (partition.componentOf(exclusiveEdge.edge.source) == component) return;
+            if (partition.componentOf(exclusiveEdge.edge.source).equals(component)) return;
             edges.add(exclusiveEdge);
         }
 

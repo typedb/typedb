@@ -2,10 +2,12 @@ package ai.grakn.graql.internal.gremlin.spanningtree;
 
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DenseWeightedGraph;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
@@ -41,6 +43,22 @@ public class ChuLiuEdmondsTest {
     }
 
     @Test
+    public void testNegativeWeightWithNodeObject() {
+        final WeightedGraph<Node> Isa = SparseWeightedGraph.from(ImmutableList.of(
+                weighted(DirectedEdge.from(new Node("0")).to(new Node("1")), -0.69),
+                weighted(DirectedEdge.from(new Node("1")).to(new Node("2")), 0),
+                weighted(DirectedEdge.from(new Node("2")).to(new Node("1")), -4.62),
+                weighted(DirectedEdge.from(new Node("1")).to(new Node("0")), 0)
+        ));
+        Weighted<Arborescence<Node>> weightedSpanningTree = ChuLiuEdmonds.getMaxArborescence(Isa, new Node("2"));
+        assertEquals(-4.62, weightedSpanningTree.weight, DELTA);
+        ImmutableMap<Node, Node> edges = weightedSpanningTree.val.parents;
+        assertEquals(2, edges.size());
+        assertEquals("2", edges.get(new Node("1")).getName());
+        assertEquals("1", edges.get(new Node("0")).getName());
+    }
+
+    @Test
     public void testGetMaxSpanningTree() {
         /*
         root    10
@@ -57,14 +75,14 @@ public class ChuLiuEdmondsTest {
         double[][] weights = {
                 {NINF, 10, 30, 10, NINF},
                 {NINF, NINF, 10, NINF, 10},
-                {NINF, 20, NINF, 7, 20},
+                {NINF, 20, NINF, 15, 20},
                 {NINF, NINF, 40, NINF, NINF},
                 {NINF, NINF, NINF, NINF, NINF},
         };
         final DenseWeightedGraph<Integer> graph = DenseWeightedGraph.from(weights);
         final Weighted<Arborescence<Integer>> weightedSpanningTree = ChuLiuEdmonds.getMaxArborescence(graph, 0);
-		/*
-		root
+        /*
+        root
 		(0)           (1)
 		 |             ^
 		 |             |

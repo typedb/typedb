@@ -25,6 +25,12 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.gremlin.spanningtree.Arborescence;
+import ai.grakn.graql.internal.gremlin.spanningtree.ChuLiuEdmonds;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
+import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -106,21 +112,32 @@ public class GreedyTraversalPlan {
     private static List<Fragment> semiOptimalConjunction(ConjunctionQuery query, long maxTraversalAttempts) {
         Plan initialPlan = Plan.base();
 
-        Collection<Set<Fragment>> connectedFragmentSets = getDisconnectedQuerySet(query);
+        Collection<Set<Fragment>> connectedFragmentSets = getConnectedFragmentSets(query);
         System.out.println("connectedFragmentSets = " + connectedFragmentSets.size());
         connectedFragmentSets.forEach(set -> System.out.println("     SetEntry : " + set));
 
         connectedFragmentSets.forEach(fragmentSet -> {
             final Set<Fragment> startingFragmentSet = new HashSet<>();
+            final Set<Node> startingNodeSet = new HashSet<>();
             Plan plan = Plan.base();
-            fragmentSet.stream()
+            Set<Weighted<DirectedEdge<Node>>> weightedGraph = fragmentSet.stream()
                     .filter(fragment -> {
                         if (fragment.hasFixedFragmentCost() && plan.tryPush(fragment)) {
                             startingFragmentSet.add(fragment);
+                            startingNodeSet.add(new Node(fragment.getStart()));
                             return false;
                         }
                         return true;
-                    });
+                    })
+                    .flatMap(fragment -> fragment.getDirectedEdges().stream())
+                    .collect(Collectors.toSet());
+            SparseWeightedGraph<Node> sparseWeightedGraph = SparseWeightedGraph.from(weightedGraph);
+            if (!startingNodeSet.isEmpty()) {
+                Arborescence<Node> arborescence = startingNodeSet.stream()
+                        .map(node -> ChuLiuEdmonds.getMaxArborescence(sparseWeightedGraph, node))
+                        .max(Weighted::compareTo).get().val;
+                System.out.println("arborescence = " + arborescence);
+            }
         });
 
         // Should always start with fragments with fixed cost
@@ -170,7 +187,7 @@ public class GreedyTraversalPlan {
         return plan.fragments();
     }
 
-    private static Collection<Set<Fragment>> getDisconnectedQuerySet(ConjunctionQuery query) {
+    private static Collection<Set<Fragment>> getConnectedFragmentSets(ConjunctionQuery query) {
         Map<Integer, Set<String>> varNameSetMap = new HashMap<>();
         Map<Integer, Set<Fragment>> fragmentSetMap = new HashMap<>();
         final int[] index = {0};
@@ -215,7 +232,8 @@ public class GreedyTraversalPlan {
      * @param fragmentSets a set of equivalent fragment sets that must all be covered by the plan
      * @param depth        the maximum depth the plan is allowed to descend in the tree
      */
-    private static void extendPlan(Plan plan, List<Plan> allPlans, Set<EquivalentFragmentSet> fragmentSets, long depth) {
+    private static void extendPlan(Plan plan, List<Plan> allPlans,
+                                   Set<EquivalentFragmentSet> fragmentSets, long depth) {
 
         // Base case
         if (depth == 0) {

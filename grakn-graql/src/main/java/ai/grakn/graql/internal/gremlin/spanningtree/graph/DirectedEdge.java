@@ -72,15 +72,12 @@ public class DirectedEdge<V> {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final DirectedEdge other = (DirectedEdge) obj;
-        return this.source == other.source && this.destination == other.destination;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        final DirectedEdge other = (DirectedEdge) o;
+        return this.source.equals(other.source) && this.destination.equals(other.destination);
     }
 
     //// Edge Predicates
