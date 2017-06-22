@@ -73,17 +73,17 @@ public class DegreeTest {
     @Test
     public void testDegrees() throws Exception {
         // create instances
-        EntityType thing = graph.putEntityType("thing");
+        EntityType thingy = graph.putEntityType("thingy");
         EntityType anotherThing = graph.putEntityType("another");
 
-        ConceptId entity1 = thing.addEntity().getId();
-        ConceptId entity2 = thing.addEntity().getId();
-        ConceptId entity3 = thing.addEntity().getId();
+        ConceptId entity1 = thingy.addEntity().getId();
+        ConceptId entity2 = thingy.addEntity().getId();
+        ConceptId entity3 = thingy.addEntity().getId();
         ConceptId entity4 = anotherThing.addEntity().getId();
 
         RoleType role1 = graph.putRoleType("role1");
         RoleType role2 = graph.putRoleType("role2");
-        thing.plays(role1).plays(role2);
+        thingy.plays(role1).plays(role2);
         anotherThing.plays(role1).plays(role2);
         RelationType related = graph.putRelationType("related").relates(role1).relates(role2);
 
@@ -140,7 +140,7 @@ public class DegreeTest {
         });
 
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thing").execute();
+            Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thingy").execute();
 
             assertEquals(2, degrees2.size());
             assertEquals(2, degrees2.get(1L).size());
@@ -152,7 +152,7 @@ public class DegreeTest {
                     }
             ));
 
-            degrees2 = graph.graql().compute().degree().of("thing", "related").execute();
+            degrees2 = graph.graql().compute().degree().of("thingy", "related").execute();
             assertEquals(3, degrees2.size());
             assertEquals(2, degrees2.get(1L).size());
             assertEquals(3, degrees2.get(2L).size());
@@ -178,7 +178,7 @@ public class DegreeTest {
             ));
 
             // compute degrees on subgraph
-            Map<Long, Set<String>> degrees3 = graph.graql().compute().degree().in("thing", "related").execute();
+            Map<Long, Set<String>> degrees3 = graph.graql().compute().degree().in("thingy", "related").execute();
             correctDegrees.put(id3, 1L);
             assertTrue(!degrees3.isEmpty());
             degrees3.forEach((key, value) -> value.forEach(
@@ -188,7 +188,7 @@ public class DegreeTest {
                     }
             ));
 
-            degrees3 = graph.graql().compute().degree().of("thing").in("related").execute();
+            degrees3 = graph.graql().compute().degree().of("thingy").in("related").execute();
             assertEquals(2, degrees3.size());
             assertEquals(2, degrees3.get(1L).size());
             assertEquals(1, degrees3.get(3L).size());

@@ -53,7 +53,7 @@ public class AnalyticsTest {
     public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
     private GraknSession factory;
 
-    private static final String thing = "thingy";
+    private static final String thingy = "thingy";
     private static final String anotherThing = "anotherThing";
     private static final String related = "related";
 
@@ -77,10 +77,10 @@ public class AnalyticsTest {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             TypeLabel resourceTypeLabel = TypeLabel.of("degree");
             ResourceType<Long> degree = graph.putResourceType(resourceTypeLabel, ResourceType.DataType.LONG);
-            EntityType thing = graph.putEntityType("thing");
-            thing.resource(degree);
+            EntityType thingy = graph.putEntityType("thingy");
+            thingy.resource(degree);
 
-            Entity thisThing = thing.addEntity();
+            Entity thisThing = thingy.addEntity();
             Resource thisResource = degree.putResource(1L);
             thisThing.resource(thisResource);
             graph.commit();
@@ -88,11 +88,11 @@ public class AnalyticsTest {
 
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees;
-            degrees = graph.graql().compute().degree().of("thing").in("thing", "degree").execute();
+            degrees = graph.graql().compute().degree().of("thingy").in("thingy", "degree").execute();
             assertEquals(1, degrees.size());
             assertEquals(1, degrees.get(1L).size());
 
-            degrees = graph.graql().compute().degree().in("thing", "degree").execute();
+            degrees = graph.graql().compute().degree().in("thingy", "degree").execute();
             assertEquals(1, degrees.size());
             assertEquals(2, degrees.get(1L).size());
         }
@@ -103,7 +103,7 @@ public class AnalyticsTest {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // make slightly odd graph
             TypeLabel resourceTypeId = TypeLabel.of("degree");
-            EntityType thing = graph.putEntityType("thing");
+            EntityType thingy = graph.putEntityType("thingy");
 
             graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
             RoleType degreeOwner = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
@@ -111,9 +111,9 @@ public class AnalyticsTest {
             RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
                     .relates(degreeOwner)
                     .relates(degreeValue);
-            thing.plays(degreeOwner);
+            thingy.plays(degreeOwner);
 
-            Entity thisThing = thing.addEntity();
+            Entity thisThing = thingy.addEntity();
             relationType.addRelation().addRolePlayer(degreeOwner, thisThing);
 
             graph.commit();
@@ -151,7 +151,7 @@ public class AnalyticsTest {
 
     private void addOntologyAndEntities() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            EntityType entityType1 = graph.putEntityType(thing);
+            EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
             Entity entity1 = entityType1.addEntity();
