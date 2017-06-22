@@ -355,14 +355,6 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     @Override
     protected Object aggregateResult(Object aggregate, Object nextResult) {
-        if (aggregate == null) {
-            return nextResult;
-        }
-
-        if (nextResult == null) {
-            return aggregate;
-        }
-
         return concat(aggregate, nextResult);
     }
 }
