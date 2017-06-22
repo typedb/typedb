@@ -4,6 +4,9 @@ language: java
 jdk:
   - oraclejdk8
 
+node_js:
+  - "6"
+
 cache:
    directories:
    - $HOME/.m2
