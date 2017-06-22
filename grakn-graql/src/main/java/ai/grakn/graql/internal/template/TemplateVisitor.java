@@ -97,7 +97,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         Object returnValue = null;
         for (Object object:list) {
             scope.assign(var, object);
-            returnValue = concat(returnValue, this.visit(block));
+            returnValue = aggregateResult(returnValue, this.visit(block));
             scope.unassign(var);
         }
 
@@ -270,7 +270,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     public String visitVarResolved(GraqlTemplateParser.VarResolvedContext ctx) {
         Object value = null;
         for(GraqlTemplateParser.ResolveOrMacroContext c:ctx.resolveOrMacro()){
-            value = concat(value, this.visitResolveOrMacro(c, Object.class));
+            value = aggregateResult(value, this.visitResolveOrMacro(c, Object.class));
         }
 
         if(value == null) throw GraqlSyntaxException.parsingTemplateMissingKey(ctx.getText(), originalContext);
@@ -340,25 +340,16 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         return (T) object;
     }
 
-    private Object concat(Object... values){
-        if(values.length == 1){
-            return values[0];
-        }
-
-        if(values.length == 2 && values[0] == null){
-            return values[1];
-        }
-
-        StringBuilder builder = new StringBuilder();
-        for(Object value:values) {
-            builder.append(value);
-        }
-
-        return builder.toString();
-    }
-
     @Override
     protected Object aggregateResult(Object aggregate, Object nextResult) {
-        return concat(aggregate, nextResult);
+        if(nextResult == null){
+            return aggregate;
+        }
+
+        if(aggregate == null){
+            return nextResult;
+        }
+
+        return aggregate.toString() + nextResult.toString();
     }
 }
