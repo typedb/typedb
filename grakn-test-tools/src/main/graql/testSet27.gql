@@ -1,0 +1,42 @@
+insert
+
+#Roles
+
+related-state sub role;
+
+#Entities
+
+state sub entity
+    plays related-state
+    has name;
+
+#Relations
+
+achieved sub relation
+    relates related-state;
+
+prior sub relation
+    relates related-state;
+
+holds sub relation
+    relates related-state;
+
+name sub resource datatype string;
+
+isa inference-rule
+    lhs {
+        $st isa state;
+        (related-state: $st) isa achieved;
+        (related-state: $st2) isa prior;
+	    $st != $st2;
+    }
+    rhs{
+        (related-state: $st) isa holds;
+    };
+
+$s1 isa state, has name 's1';
+$s2 isa state, has name 's2';
+
+(related-state: $s1) isa prior;
+(related-state: $s1) isa achieved;
+(related-state: $s2) isa achieved;
