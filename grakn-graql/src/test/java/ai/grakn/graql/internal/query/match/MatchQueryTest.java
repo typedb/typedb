@@ -232,7 +232,7 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var().rel(x, var().has("name", "Michael Corleone"))).distinct();
 
         assertThat(query, variable("x", containsInAnyOrder(
-                type("concept"), type("role"), type("character-being-played")
+                type(Schema.MetaSchema.THING.getLabel().getValue()), type("role"), type("character-being-played")
         )));
     }
 
@@ -858,13 +858,13 @@ public class MatchQueryTest {
 
     @Test
     public void testHideImplicitTypes() {
-        MatchQuery query = qb.match(x.sub("concept"));
+        MatchQuery query = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
         assertThat(query, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
     }
 
     @Test
     public void testDontHideImplicitTypesIfExplicitlyMentioned() {
-        MatchQuery query = qb.match(x.sub("concept").label(HAS.getLabel("title")));
+        MatchQuery query = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()).label(HAS.getLabel("title")));
         assertThat(query, variable("x", (Matcher) hasItem(hasTitle)));
     }
 
@@ -883,20 +883,20 @@ public class MatchQueryTest {
     @Test
     public void testDontHideImplicitTypesIfImplicitTypesOn() {
         movieGraph.graph().showImplicitConcepts(true);
-        MatchQuery query = qb.match(x.sub("concept"));
+        MatchQuery query = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
         assertThat(query, variable("x", hasItems(movie, hasTitle)));
     }
 
     @Test
     public void testHideImplicitTypesTwice() {
-        MatchQuery query1 = qb.match(x.sub("concept"));
+        MatchQuery query1 = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
         assertThat(query1, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
         List<Answer> results1 = query1.execute();
 
         movieGraph.graph().close();
         GraknGraph graph2 = movieGraph.graph();
 
-        MatchQuery query2 = graph2.graql().match(x.sub("concept"));
+        MatchQuery query2 = graph2.graql().match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
         assertEquals(results1, query2.execute());
     }
 
