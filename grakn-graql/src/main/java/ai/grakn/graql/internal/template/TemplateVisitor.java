@@ -82,22 +82,26 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     }
 
     @Override
-    public String visitForStatement(GraqlTemplateParser.ForStatementContext ctx) {
+    public Object visitForInStatement(GraqlTemplateParser.ForInStatementContext ctx) {
+        return runForLoop(ctx.ID().getText(), ctx.list(), ctx.block());
+    }
 
-        // resolved variable
-        String item = ctx.ID() != null ? ctx.ID().getText() : "";
-        List collection = this.visitList(ctx.list());
+    @Override
+    public Object visitForEachStatement(GraqlTemplateParser.ForEachStatementContext ctx) {
+        return runForLoop("", ctx.list(), ctx.block());
+    }
+
+    private Object runForLoop(String var, GraqlTemplateParser.ListContext listCtx, GraqlTemplateParser.BlockContext block) {
+        List list = this.visitList(listCtx);
 
         Object returnValue = null;
-        for (Object object : collection) {
-            scope.assign(item, object);
-
-            returnValue = concat(returnValue, this.visit(ctx.block()));
-
-            scope.unassign(item);
+        for (Object object:list) {
+            scope.assign(var, object);
+            returnValue = concat(returnValue, this.visit(block));
+            scope.unassign(var);
         }
 
-        return returnValue == null ? "" : returnValue.toString();
+        return returnValue;
     }
 
     @Override

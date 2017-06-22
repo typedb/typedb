@@ -18,11 +18,13 @@ blockContents
  ;
 
 statement
- : forStatement
+ : forInStatement
+ | forEachStatement
  | ifStatement
  ;
 
-forStatement : FOR LPAREN (ID IN list | list) RPAREN DO block ;
+forInStatement   : FOR LPAREN ID IN list RPAREN DO block ;
+forEachStatement : FOR LPAREN list RPAREN DO block ;
 
 ifStatement   : ifPartial elseIfPartial* elsePartial? ;
 ifPartial     : IF LPAREN bool RPAREN DO block ;
