@@ -22,10 +22,9 @@ import ai.grakn.client.Client;
 import ai.grakn.engine.GraknEngineConfig;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
-import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
-import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.GraknVersion;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -105,6 +104,7 @@ public class DistributionContext extends ExternalResource {
 
         unzipDistribution();
         GraknTestSetup.startCassandraIfNeeded();
+        GraknTestSetup.startRedisIfNeeded(6379);
         engineProcess = newEngineProcess(port);
         waitForEngine(port);
     }
@@ -176,12 +176,12 @@ public class DistributionContext extends ExternalResource {
             if (Client.serverIsRunning("localhost:" + port)) {
                 return;
             }
-
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+        throw new RuntimeException("Could not start engine within expected time");
     }
 }

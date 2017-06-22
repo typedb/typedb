@@ -19,10 +19,12 @@
 package ai.grakn.test.engine.tasks.manager;
 
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.tasks.TaskCheckpoint;
-import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.TaskSchedule;
-import ai.grakn.engine.tasks.TaskState;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import ai.grakn.engine.tasks.manager.TaskCheckpoint;
+import ai.grakn.engine.tasks.manager.TaskManager;
+import static ai.grakn.engine.tasks.manager.TaskSchedule.now;
+import static ai.grakn.engine.tasks.manager.TaskSchedule.recurring;
+import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
@@ -264,7 +266,7 @@ public class TaskManagerTest {
         );
 
         // Make task recurring
-        task.schedule(TaskSchedule.recurring(Instant.now(), Duration.ofMillis(100)));
+        task.schedule(recurring(Instant.now(), Duration.ofMillis(100)));
 
         // Execute task and wait for it to complete
         manager.addTask(task, configuration(task));
@@ -300,7 +302,7 @@ public class TaskManagerTest {
         });
 
         // Make task recurring
-        task.schedule(TaskSchedule.recurring(interval));
+        task.schedule(recurring(interval));
 
         // Execute task and wait for it to complete
         manager.addTask(task, configuration(task));
@@ -324,7 +326,7 @@ public class TaskManagerTest {
         });
 
         // Make task recurring
-        task.schedule(TaskSchedule.recurring(Instant.now(), Duration.ofSeconds(10)));
+        task.schedule(recurring(Instant.now(), Duration.ofSeconds(10)));
 
         // Execute task and wait for it to complete
         manager.addTask(task, configuration(task));
@@ -364,7 +366,7 @@ public class TaskManagerTest {
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 
         // Assert that status is not FAILED
-        assertStatus(manager, task, TaskStatus.COMPLETED);
+        assertStatus(manager, task, COMPLETED);
     }
 
     @Property(trials=10)

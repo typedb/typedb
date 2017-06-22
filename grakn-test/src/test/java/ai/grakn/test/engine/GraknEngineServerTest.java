@@ -19,24 +19,28 @@
 package ai.grakn.test.engine;
 
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.test.EngineContext;
-import ai.grakn.test.GraknTestSetup;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
+import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.assertNotNull;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class GraknEngineServerTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
+
+    @Rule
+    public final EngineContext kafka = EngineContext.startNoQueue();
+
 
     @Test
     public void whenEnginePropertiesIndicatesStandaloneTM_StandaloneTmIsStarted() {

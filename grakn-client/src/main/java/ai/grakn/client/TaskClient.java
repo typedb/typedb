@@ -35,6 +35,7 @@ import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import static java.lang.String.format;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -93,34 +94,45 @@ public class TaskClient extends Client {
     }
 
     TaskId sendTask(String taskClass, String creator, Instant runAt, Duration interval, Json configuration, long limit){
+        URIBuilder uri = null;
+        HttpPost httpPost;
         try {
-            URIBuilder uri = new URIBuilder(TASKS)
+            uri = new URIBuilder(TASKS)
                     .setScheme(DEFAULT_SCHEME_NAME)
                     .setHost(host)
                     .setPort(port);
-            Builder<String, String> taskBuilder = ImmutableMap.builder();
-            taskBuilder.put(TASK_CLASS_NAME_PARAMETER, taskClass);
-            taskBuilder.put(TASK_CREATOR_PARAMETER, creator);
-            taskBuilder.put(TASK_RUN_AT_PARAMETER, Long.toString(runAt.toEpochMilli()));
+            httpPost = new HttpPost(uri.build());
+        } catch (URISyntaxException e){
+            throw new RuntimeException(String.format("Bad URL from %s and port %d", host, port), e);
+        }
 
-            if (limit > -1) {
-                taskBuilder.put(LIMIT_PARAM, Long.toString(limit));
-            }
+        Builder<String, String> taskBuilder = ImmutableMap.builder();
+        taskBuilder.put(TASK_CLASS_NAME_PARAMETER, taskClass);
+        taskBuilder.put(TASK_CREATOR_PARAMETER, creator);
+        taskBuilder.put(TASK_RUN_AT_PARAMETER, Long.toString(runAt.toEpochMilli()));
 
-            if (interval != null){
-                taskBuilder.put(TASK_RUN_INTERVAL_PARAMETER, Long.toString(interval.toMillis()));
-            }
+        if (limit > -1) {
+            taskBuilder.put(LIMIT_PARAM, Long.toString(limit));
+        }
 
-            Json jsonTask = Json.make(taskBuilder.build());
-            jsonTask.set(CONFIGURATION_PARAM, configuration);
+        if (interval != null){
+            taskBuilder.put(TASK_RUN_INTERVAL_PARAMETER, Long.toString(interval.toMillis()));
+        }
+
+        Json jsonTask = Json.make(taskBuilder.build());
+        jsonTask.set(CONFIGURATION_PARAM, configuration);
 
 
-            HttpPost httpPost = new HttpPost(uri.build());
-            httpPost.setHeader(CONTENT_TYPE, APPLICATION_JSON.getMimeType());
+        httpPost.setHeader(CONTENT_TYPE, APPLICATION_JSON.getMimeType());
             // This is a special case of sending a list of task
             // TODO update the client to support a list
+        try {
             httpPost.setEntity(new StringEntity(Json.object().set(TASKS_PARAM, Json.array().add(jsonTask)).toString()));
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
 
+        try {
             HttpResponse response = httpClient.execute(httpPost);
 
             assertOk(response);
@@ -130,8 +142,6 @@ public class TaskClient extends Client {
             return TaskId.of(jsonResponse.at(0).at("id").asString());
         } catch (IOException e){
             throw GraknBackendException.engineUnavailable(host, port, e);
-        } catch (URISyntaxException e){
-            throw new RuntimeException(e);
         }
     }
 

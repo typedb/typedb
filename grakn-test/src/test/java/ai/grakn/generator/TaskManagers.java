@@ -72,7 +72,7 @@ public class TaskManagers extends Generator<TaskManager> {
         if(!taskManagers.containsKey(taskManagerToReturn)){
             try {
                 Constructor<? extends TaskManager> constructor =
-                        taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class, RedisCountStorage.class, MetricRegistry.class);
+                        taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class, RedisCountStorage.class, EngineGraknGraphFactory.class, MetricRegistry.class);
                 // TODO this doesn't take a Redis connection. Make sure this is what we expect
                 taskManagers.put(taskManagerToReturn, constructor.newInstance(EngineID.me(), config, redisCountStorage, null, new MetricRegistry()));
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {

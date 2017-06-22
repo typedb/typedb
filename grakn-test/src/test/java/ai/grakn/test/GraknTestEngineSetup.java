@@ -26,7 +26,6 @@ import ai.grakn.engine.GraknEngineServer;
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.util.EmbeddedKafka;
 import ai.grakn.util.EmbeddedRedis;
 import com.jayway.restassured.RestAssured;
 import java.io.IOException;

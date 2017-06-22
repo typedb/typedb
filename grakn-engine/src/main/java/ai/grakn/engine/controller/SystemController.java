@@ -41,6 +41,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
 import static ai.grakn.util.REST.WebPath.System.DELETE_KEYSPACE;
+import static ai.grakn.util.REST.WebPath.System.INITIALISE;
 import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
 import static ai.grakn.util.REST.WebPath.System.METRICS;
 import com.codahale.metrics.MetricFilter;
@@ -112,6 +113,7 @@ public class SystemController {
         spark.get(KEYSPACES,     this::getKeyspaces);
         spark.get(CONFIGURATION, this::getConfiguration);
         spark.get(METRICS, this::getMetrics);
+        spark.get(INITIALISE, this::initialiseSession);
         spark.delete(DELETE_KEYSPACE, this::deleteKeyspace);
 
         final TimeUnit rateUnit = TimeUnit.SECONDS;

@@ -19,16 +19,14 @@
 package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import com.codahale.metrics.MetricRegistry;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import com.google.common.base.Preconditions;
-
-import javax.annotation.Nullable;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
@@ -61,7 +59,7 @@ public abstract class BackgroundTask {
     public final void initialize(
             Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration,
             TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig, RedisCountStorage redis,
-            MetricRegistry metricRegistry, EngineGraknGraphFactory factory) {) {
+            EngineGraknGraphFactory factory, MetricRegistry metricRegistry)  {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
         this.saveCheckpoint = saveCheckpoint;

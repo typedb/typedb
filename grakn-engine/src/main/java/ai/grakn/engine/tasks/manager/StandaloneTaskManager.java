@@ -76,19 +76,20 @@ public class StandaloneTaskManager implements TaskManager {
     private final EngineID engineID;
     private final GraknEngineConfig config;
     private final RedisCountStorage redis;
-    private final MetricRegistry metricRegistry;
     private final Timer addTaskTimer;
     private final Timer executeTaskTimer;
     private final Meter failedMeter;
     private final Meter stoppedMeter;
     private final Meter completedMeter;
     private final EngineGraknGraphFactory factory;
+    private final MetricRegistry metricRegistry;
 
     public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config, RedisCountStorage redis, EngineGraknGraphFactory factory, MetricRegistry metricRegistry) {
         this.engineID = engineId;
         this.config = config;
         this.redis = redis;
         this.factory = factory;
+        this.metricRegistry = metricRegistry;
 
         stoppedTasks = new HashSet<>();
         runningTasks = new ConcurrentHashMap<>();
@@ -203,8 +204,7 @@ public class StandaloneTaskManager implements TaskManager {
             Context context = executeTaskTimer.time();
             try {
                 BackgroundTask runningTask = task.taskClass().newInstance();
-                runningTask.initialize(saveCheckpoint(task), configuration, this, config, redis);
-
+                runningTask.initialize(saveCheckpoint(task), configuration, this, config, redis, factory, metricRegistry);
                 runningTasks.put(task.getId(), runningTask);
 
                 boolean completed;

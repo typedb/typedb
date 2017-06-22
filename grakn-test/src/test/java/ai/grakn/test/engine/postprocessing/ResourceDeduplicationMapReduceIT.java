@@ -11,9 +11,12 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.engine.postprocessing.ResourceDeduplicationTask;
-import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraknTestSetup;
+import ai.grakn.test.GraknTestSetup;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.checkUnique;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.indexOf;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
 import java.util.function.Consumer;
@@ -21,19 +24,12 @@ import java.util.function.Function;
 import mjson.Json;
 import org.junit.After;
 import org.junit.Assert;
+import static org.junit.Assume.assumeTrue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.function.Consumer;
-import java.util.function.Function;
-
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.checkUnique;
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.indexOf;
-import static org.junit.Assume.assumeTrue;
 
 public class ResourceDeduplicationMapReduceIT {
 
@@ -84,7 +80,7 @@ public class ResourceDeduplicationMapReduceIT {
     }
 
     private void initTask(ResourceDeduplicationTask task) {
-        task.initialize(checkpoint -> { throw new RuntimeException("No checkpoint expected.");}, configuration(), (x, y) -> {}, engine.config(), null);
+        task.initialize(checkpoint -> { throw new RuntimeException("No checkpoint expected.");}, configuration(), (x, y) -> {}, engine.config(), null, null, new MetricRegistry());
     }
 
     private void miniOntology(GraknGraph graph) {

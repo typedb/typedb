@@ -22,6 +22,7 @@ import ai.grakn.engine.GraknEngineConfig;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
@@ -59,6 +60,7 @@ public class RedisTaskQueueConsumer implements Runnable {
     private RedisCountStorage redisCountStorage;
     private MetricRegistry metricRegistry;
     private Task task;
+    private EngineGraknGraphFactory factory;
 
     @SuppressWarnings("unused")
     public RedisTaskQueueConsumer(String taskId, TaskState taskState, TaskConfiguration taskConfiguration) {
@@ -105,7 +107,7 @@ public class RedisTaskQueueConsumer implements Runnable {
                 runningTask.initialize(saveCheckpoint(taskState, redisTaskManager.storage()),
                         taskConfiguration, redisTaskManager,
                                 config,
-                                redisCountStorage, metricRegistry);
+                                redisCountStorage, factory, metricRegistry);
                 boolean completed;
                 if (taskShouldResume(task)) {
                     // Not implemented
@@ -165,12 +167,13 @@ public class RedisTaskQueueConsumer implements Runnable {
 
 
     public void setRunningState(RedisTaskManager redisTaskManager, EngineID engineId,
-            GraknEngineConfig config, Pool<Jedis> redisCountStorage,
+            GraknEngineConfig config, Pool<Jedis> redisCountStorage, EngineGraknGraphFactory factory,
             MetricRegistry metricRegistry) {
         this.redisTaskManager = redisTaskManager;
         this.engineId = engineId;
         this.config = config;
         this.redisCountStorage = RedisCountStorage.create(redisCountStorage);
         this.metricRegistry = metricRegistry;
+        this.factory = factory;
     }
 }
