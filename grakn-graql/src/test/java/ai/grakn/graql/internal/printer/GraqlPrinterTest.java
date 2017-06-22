@@ -27,6 +27,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.util.Schema;
 import org.apache.commons.lang.StringUtils;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -157,7 +158,7 @@ public class GraqlPrinterTest {
         assertThat(entityString, containsString("label"));
         assertThat(entityString, containsString("entity"));
         assertThat(entityString, containsString("sub"));
-        assertThat(entityString, containsString("concept"));
+        assertThat(entityString, containsString(Schema.MetaSchema.THING.getLabel().getValue()));
         assertThat(entityString, not(containsString("isa")));
     }
 
@@ -170,7 +171,7 @@ public class GraqlPrinterTest {
         String conceptString = printer.graqlString(concept);
 
         assertThat(conceptString, containsString("label"));
-        assertThat(conceptString, containsString("concept"));
+        assertThat(conceptString, containsString(Schema.MetaSchema.THING.getLabel().getValue()));
         assertThat(conceptString, not(containsString("sub")));
         assertThat(conceptString, not(containsString("isa")));
     }

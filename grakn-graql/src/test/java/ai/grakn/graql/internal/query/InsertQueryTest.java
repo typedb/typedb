@@ -743,7 +743,7 @@ public class InsertQueryTest {
     public void testInsertNonRuleWithRHS() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("rhs", RULE.getLabel()));
-        qb.insert(label("thing").sub("movie").rhs(var("x"))).execute();
+        qb.insert(label("thingy").sub("movie").rhs(var("x"))).execute();
     }
 
     @Test
@@ -756,8 +756,8 @@ public class InsertQueryTest {
     @Test
     public void whenInsertingMetaType_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(ErrorMessage.INSERT_METATYPE.getMessage("my-metatype", "concept"));
-        qb.insert(label("my-metatype").sub("concept")).execute();
+        exception.expectMessage(ErrorMessage.INSERT_METATYPE.getMessage("my-metatype", Schema.MetaSchema.THING.getLabel().getValue()));
+        qb.insert(label("my-metatype").sub(Schema.MetaSchema.THING.getLabel().getValue())).execute();
     }
 
     @Test
