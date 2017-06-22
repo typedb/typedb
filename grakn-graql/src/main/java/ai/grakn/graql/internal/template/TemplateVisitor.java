@@ -31,7 +31,6 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -166,10 +165,8 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     public String visitString(GraqlTemplateParser.StringContext ctx){
         if(ctx.STRING() != null) {
             return String.valueOf(ctx.getText().replaceAll("\"", ""));
-        } else if(ctx.macro() != null){
-            return this.visitMacro(ctx.macro(), String.class);
         } else {
-            return this.visitResolve(ctx.resolve(), String.class);
+            return this.visitResolveOrMacro(ctx.resolveOrMacro(), String.class);
         }
     }
 
@@ -179,10 +176,8 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
             return Integer.parseInt(ctx.getText());
         } else if(ctx.DOUBLE() != null){
             return Double.parseDouble(ctx.getText());
-        } else if(ctx.macro() != null){
-            return this.visitMacro(ctx.macro(), Number.class);
         } else {
-            return this.visitResolve(ctx.resolve(), Number.class);
+            return this.visitResolveOrMacro(ctx.resolveOrMacro(), Number.class);
         }
     }
 
@@ -193,19 +188,13 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     @Override
     public List visitList(GraqlTemplateParser.ListContext ctx){
-        if(ctx.macro() != null){
-            return this.visitMacro(ctx.macro(), List.class);
-        } else {
-            return this.visitResolve(ctx.resolve(), List.class);
-        }
+        return this.visitResolveOrMacro(ctx.resolveOrMacro(), List.class);
     }
 
     @Override
     public Object visitLiteral(GraqlTemplateParser.LiteralContext ctx){
-        if(ctx.macro() != null){
-            return this.visitMacro(ctx.macro(), Object.class);
-        } else if(ctx.resolve() != null){
-            return this.visitResolve(ctx.resolve(), Object.class);
+        if(ctx.resolveOrMacro() != null){
+            return this.visitResolveOrMacro(ctx.resolveOrMacro(), Object.class);
         } else if(ctx.BOOLEAN() != null) {
             return Boolean.parseBoolean(ctx.getText());
         } else {
@@ -274,28 +263,20 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     }
 
     @Override
-    public String visitReplaceStatement(GraqlTemplateParser.ReplaceStatementContext ctx) {
+    public String visitVarResolved(GraqlTemplateParser.VarResolvedContext ctx) {
         Object value = null;
-        for(int i = 0; i < ctx.getChildCount(); i++){
-            if(ctx.macro(i) != null){
-                value = concat(value, this.visitMacro(ctx.macro(i), Object.class));
-            }
-
-            if(ctx.resolve(i) != null){
-                value = concat(value, this.visitResolve(ctx.resolve(i), Object.class));
-            }
+        for(GraqlTemplateParser.ResolveOrMacroContext c:ctx.resolveOrMacro()){
+            value = concat(value, this.visitResolveOrMacro(c, Object.class));
         }
 
         if(value == null) throw GraqlSyntaxException.parsingTemplateMissingKey(ctx.getText(), originalContext);
 
-        Function<Object, String> formatToApply = ctx.DOLLAR() != null ? this::formatVar : this::format;
-        String prepend = ctx.DOLLAR() != null ? ctx.DOLLAR().getText() : "";
-
-        return prepend + formatToApply.apply(value);
+        String valueAsVar = value.toString().replaceAll("[^a-zA-Z0-9]", "-");
+        return ctx.DOLLAR() + valueAsVar;
     }
 
     @Override
-    public String visitGraqlVariable(GraqlTemplateParser.GraqlVariableContext ctx){
+    public String visitVarLiteral(GraqlTemplateParser.VarLiteralContext ctx){
         String var = ctx.getText();
 
         if(!scope.hasSeen(var)){
@@ -312,6 +293,23 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         String lws = tokens.getHiddenTokensToLeft(index) != null ? tokens.getHiddenTokensToLeft(index).stream().map(Token::getText).collect(joining()) : "";
         String rws = tokens.getHiddenTokensToRight(index) != null ? tokens.getHiddenTokensToRight(index).stream().map(Token::getText).collect(joining()) : "";
         return lws + node.getText() + rws;
+    }
+
+    @Override
+    public String visitResolveOrMacro(GraqlTemplateParser.ResolveOrMacroContext ctx) {
+        Object resolved = visitResolveOrMacro(ctx, Object.class);
+
+        if(resolved == null) throw GraqlSyntaxException.parsingTemplateMissingKey(ctx.getText(), originalContext);
+
+        return StringUtil.valueToString(resolved);
+    }
+
+    private <T> T visitResolveOrMacro(GraqlTemplateParser.ResolveOrMacroContext ctx, Class<T> clazz) {
+        if(ctx.macro() != null){
+            return this.visitMacro(ctx.macro(), clazz);
+        } else {
+            return this.visitResolve(ctx.resolve(), clazz);
+        }
     }
 
     private <T> T visitMacro(GraqlTemplateParser.MacroContext ctx, Class<T> typeMacroReturns){
@@ -353,14 +351,6 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         }
 
         return builder.toString();
-    }
-
-    public String format(Object val){
-        return StringUtil.valueToString(val);
-    }
-
-    private String formatVar(Object variable){
-        return variable.toString().replaceAll("[^a-zA-Z0-9]", "-");
     }
 
     @Override

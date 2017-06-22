@@ -14,13 +14,12 @@ block
  ;
 
 blockContents
- : (statement | graqlVariable | keyword | ID)*
+ : (statement | resolveOrMacro | var | keyword | ID)*
  ;
 
 statement
  : forStatement
  | ifStatement
- | replaceStatement
  ;
 
 forStatement : FOR LPAREN (ID IN list | list) RPAREN DO block ;
@@ -34,10 +33,10 @@ macro
  : ID_MACRO LPAREN literal? (',' literal)* RPAREN
  ;
 
-literal       : resolve | macro | nil | string | number | BOOLEAN;
-number        : resolve | macro | INT | DOUBLE;
-string        : resolve | macro | STRING;
-list          : resolve | macro;
+literal       : resolveOrMacro | nil | string | number | BOOLEAN;
+number        : resolveOrMacro | INT | DOUBLE;
+string        : resolveOrMacro | STRING;
+list          : resolveOrMacro ;
 nil           : NULL;
 bool
  : LPAREN bool RPAREN         #groupExpression
@@ -59,13 +58,13 @@ resolve
  : '<' (ID | STRING) '>'
  ;
 
-replaceStatement
- : DOLLAR? (resolve | macro)+
+resolveOrMacro
+ : resolve | macro
  ;
 
-graqlVariable
- : ID_GRAQL
- ;
+var         : varLiteral | varResolved;
+varResolved : DOLLAR (resolveOrMacro)+;
+varLiteral  : ID_GRAQL;
 
 keyword
 : ','
