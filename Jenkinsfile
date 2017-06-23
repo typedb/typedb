@@ -12,7 +12,7 @@ node('slave2-dev-jenkins') {
             sh 'mkdir grakn-package'
             sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
             sh 'sed -i "s#taskmanager.implementation=.*#taskmanager.implementation=ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager#" grakn-package/conf/main/grakn.properties'
-            sh 'grakn-package/bin/grakn.sh start'
+            sh 'grakn-package/bin/grakn.sh start > start.log'
             sh 'grakn-package/bin/graql.sh -e "match $x;"'
         }
     }
@@ -55,7 +55,7 @@ node('slave2-dev-jenkins') {
     } finally {
     dir ('grakn') {
         stage('Tear Down Grakn') {
-            sh 'grakn-package/bin/grakn.sh stop'
+            sh 'grakn-package/bin/grakn.sh stop > stop.log'
             sh 'rm -rf grakn-package'
         }
     }
