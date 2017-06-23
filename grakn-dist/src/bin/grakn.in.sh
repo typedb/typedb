@@ -7,7 +7,7 @@ fi
 # Check grakn-engine.properties
 # Set USE_KAFKA if taskmanager.distributed is true 
 GRAKN_TASKMANAGER_IMPL=$(grep ^taskmanager.implementation= "${GRAKN_CONFIG}"| cut -d '=' -f 2)
-if [[ "$GRAKN_TASKMANAGER_IMPL" != "ai.grakn.engine.tasks.manager.StandaloneTaskManager" ]]; then
+if [[ "$GRAKN_TASKMANAGER_IMPL" == "ai.grakn.engine.tasks.manager.SingleQueueTaskManager" ]]; then
     USE_KAFKA=true
 fi
 
