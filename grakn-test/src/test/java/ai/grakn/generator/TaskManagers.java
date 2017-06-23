@@ -19,6 +19,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
@@ -36,7 +37,7 @@ import java.util.Map;
 /**
  * TaskManagers
  * 
- * @author alex
+ * @author alexandraorth
  */
 public class TaskManagers extends Generator<TaskManager> {
 
@@ -65,8 +66,8 @@ public class TaskManagers extends Generator<TaskManager> {
         if(!taskManagers.containsKey(taskManagerToReturn)){
             try {
                 Constructor<? extends TaskManager> constructor =
-                        taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class, RedisConnection.class);
-                taskManagers.put(taskManagerToReturn, constructor.newInstance(EngineID.me(), config, null));
+                        taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class, RedisConnection.class, EngineGraknGraphFactory.class);
+                taskManagers.put(taskManagerToReturn, constructor.newInstance(EngineID.me(), config, null, null));
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
                 throw new RuntimeException(e);
             }

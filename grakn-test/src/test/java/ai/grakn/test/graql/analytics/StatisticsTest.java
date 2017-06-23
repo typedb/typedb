@@ -159,9 +159,6 @@ public class StatisticsTest {
 
     @Test
     public void testMinAndMax() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         Optional<Number> result;
 
         // resource-type has no instance
@@ -254,9 +251,6 @@ public class StatisticsTest {
 
     @Test
     public void testSum() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         Optional<Number> result;
 
         // resource-type has no instance
@@ -314,9 +308,6 @@ public class StatisticsTest {
 
     @Test
     public void testMean() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         Optional<Double> result;
 
         // resource-type has no instance
@@ -373,9 +364,6 @@ public class StatisticsTest {
 
     @Test
     public void testStd() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         Optional<Double> result;
 
         // resource-type has no instance
@@ -431,7 +419,9 @@ public class StatisticsTest {
         }
 
         List<Long> list = new ArrayList<>();
-        for (long i = 0L; i < 3L; i++) {
+        long workerNumber = 3L;
+        if (GraknTestSetup.usingTinker()) workerNumber = 1;
+        for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
         GraknSparkComputer.clear();
@@ -446,9 +436,6 @@ public class StatisticsTest {
 
     @Test
     public void testMedian() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(GraknTestSetup.usingTinker());
-
         Optional<Number> result;
 
         // resource-type has no instance
@@ -508,7 +495,9 @@ public class StatisticsTest {
         }
 
         List<Long> list = new ArrayList<>();
-        for (long i = 0L; i < 3L; i++) {
+        long workerNumber = 3L;
+        if (GraknTestSetup.usingTinker()) workerNumber = 1;
+        for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
         GraknSparkComputer.clear();

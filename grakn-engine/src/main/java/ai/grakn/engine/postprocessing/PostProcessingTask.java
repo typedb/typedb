@@ -21,7 +21,6 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
@@ -63,7 +62,6 @@ public class PostProcessingTask extends BackgroundTask {
      */
     @Override
     public boolean start() {
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
         Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.RESOURCE, configuration());
 
         allToPostProcess.entrySet().forEach(e -> {
@@ -73,7 +71,7 @@ public class PostProcessingTask extends BackgroundTask {
             String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
             int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
-            GraphMutators.runGraphMutationWithRetry(factory, keyspace, maxRetry,
+            GraphMutators.runGraphMutationWithRetry(factory(), keyspace, maxRetry,
                     (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
         });
 

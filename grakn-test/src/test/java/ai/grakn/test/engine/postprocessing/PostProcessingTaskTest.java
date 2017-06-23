@@ -26,7 +26,7 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -78,7 +78,7 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null);
+        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory());
         task.start();
 
         verify(mockConfiguration, times(2)).json();
@@ -88,7 +88,7 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null);
+        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory());
         task.start();
 
         verify(mockConfiguration, times(2)).json();
@@ -99,8 +99,8 @@ public class PostProcessingTaskTest {
         // Add a bunch of jobs to the cache
         PostProcessingTask task1 = new PostProcessingTask();
         PostProcessingTask task2 = new PostProcessingTask();
-        task1.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null);
-        task2.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null);
+        task1.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory());
+        task2.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory());
 
         Thread pp1 = new Thread(task1::start);
         Thread pp2 = new Thread(task2::start);

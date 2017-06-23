@@ -28,15 +28,12 @@ import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
-import static java.util.stream.Collectors.toList;
 
 /**
  * <p>
@@ -103,7 +100,7 @@ public class Migrator {
      * @param converter
      */
     public void print(String template, Stream<Map<String, Object>> converter){
-        converter.flatMap(d -> template(template, d).stream())
+        converter.flatMap(d -> template(template, d))
                  .forEach(System.out::println);
     }
 
@@ -129,7 +126,7 @@ public class Migrator {
         loader.setRetryPolicy(retry);
 
         converter
-                .flatMap(d -> template(template, d).stream())
+                .flatMap(d -> template(template, d))
                 .forEach(q -> {
                     numberQueriesSubmitted.incrementAndGet();
                     loader.add(q);
@@ -142,9 +139,9 @@ public class Migrator {
      * @param data data used in the template
      * @return an insert query
      */
-    protected List<Query> template(String template, Map<String, Object> data){
+    protected Stream<Query> template(String template, Map<String, Object> data){
         try {
-            return queryBuilder.parseTemplate(template, data).collect(toList());
+            return queryBuilder.parseTemplate(template, data);
 
             //TODO Graql should throw a GraqlParsingException so we do not need to catch IllegalArgumentException
         } catch (GraqlSyntaxException | IllegalArgumentException e){
@@ -152,7 +149,7 @@ public class Migrator {
             LOG.warn("See the Grakn engine logs for more detail about loading status and any resulting stacktraces");
         }
 
-        return Collections.emptyList();
+        return Stream.empty();
     }
 
     /**

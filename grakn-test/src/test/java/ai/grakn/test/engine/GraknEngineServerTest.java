@@ -23,12 +23,14 @@ import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.engine.GraknEngineConfig.ZK_CONNECTION_TIMEOUT;
+import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -64,6 +66,22 @@ public class GraknEngineServerTest {
         // Start Engine
         try (GraknEngineServer server = GraknEngineServer.start(conf)) {
             assertThat(server.getTaskManager(), instanceOf(SingleQueueTaskManager.class));
+        }
+    }
+
+    @Test
+    public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded(){
+        GraknTestSetup.startCassandraIfNeeded();
+
+        GraknEngineConfig conf = GraknEngineConfig.create();
+        try (GraknEngineServer server = GraknEngineServer.start(conf)) {
+            assertNotNull(server.factory().systemKeyspace());
+
+            // init a random keyspace
+            String keyspaceName = "thisisarandomwhalekeyspace";
+            server.factory().systemKeyspace().ensureKeyspaceInitialised(keyspaceName);
+
+            assertTrue(server.factory().systemKeyspace().containsKeyspace(keyspaceName));
         }
     }
 }

@@ -79,6 +79,7 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         return new ReasonerQueryImplCumulativeIterator(new QueryAnswer(), queries, subGoals, cache);
     }
 
+
     @Override
     public boolean hasNext() {
         return queryIterator.hasNext();

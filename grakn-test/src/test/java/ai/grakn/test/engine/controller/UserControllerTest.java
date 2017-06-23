@@ -25,7 +25,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.test.SparkContext;
 import com.jayway.restassured.response.Response;
 import mjson.Json;

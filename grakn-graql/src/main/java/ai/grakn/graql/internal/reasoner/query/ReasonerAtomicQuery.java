@@ -282,7 +282,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                           Cache<ReasonerAtomicQuery, ?> dCache,
                                           boolean differentialJoin){
 
-        LOG.trace("Applying rule: " + rule.getRuleId());
+        LOG.trace("Applying rule " + rule.getRuleId());
 
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();

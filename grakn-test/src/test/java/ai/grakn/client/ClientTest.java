@@ -21,7 +21,7 @@ package ai.grakn.client;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.test.EngineContext;
 import org.junit.Test;
 

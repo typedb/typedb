@@ -118,8 +118,8 @@ public class GraknEngineServer implements AutoCloseable {
         try {
             Class<TaskManager> taskManagerClass = (Class<TaskManager>) Class.forName(taskManagerClassName);
             Constructor<TaskManager> constructor =
-                    taskManagerClass.getConstructor(EngineID.class, GraknEngineConfig.class, RedisConnection.class);
-            return constructor.newInstance(engineId, prop, redis);
+                    taskManagerClass.getConstructor(EngineID.class, GraknEngineConfig.class, RedisConnection.class, EngineGraknGraphFactory.class);
+            return constructor.newInstance(engineId, prop, redis, factory);
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException e) {
             throw new IllegalArgumentException("Invalid or unavailable TaskManager class", e);
         } catch (InvocationTargetException e) {
@@ -165,7 +165,7 @@ public class GraknEngineServer implements AutoCloseable {
         spark.ipAddress(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME));
 
         // Set port
-        spark.port(prop.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER));
+        spark.port(Integer.parseInt(prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER)));
 
         // Set the external static files folder
         spark.staticFiles.externalLocation(prop.getPath(GraknEngineConfig.STATIC_FILES_PATH));

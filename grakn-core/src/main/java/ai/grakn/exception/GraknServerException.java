@@ -19,6 +19,7 @@
 package ai.grakn.exception;
 
 import static ai.grakn.util.ErrorMessage.AUTHENTICATION_FAILURE;
+import static ai.grakn.util.ErrorMessage.CANNOT_DELETE_KEYSPACE;
 import static ai.grakn.util.ErrorMessage.ENGINE_ERROR;
 import static ai.grakn.util.ErrorMessage.EXPLAIN_ONLY_MATCH;
 import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
@@ -131,6 +132,13 @@ public class GraknServerException extends GraknBackendException {
      */
     public static GraknServerException authenticationFailure(){
         return new GraknServerException(AUTHENTICATION_FAILURE.getMessage(), 401);
+    }
+
+    /**
+     * Thrown when engine cannot delete a keyspace as expected
+     */
+    public static GraknServerException couldNotDelete(String keyspace){
+        return new GraknServerException(CANNOT_DELETE_KEYSPACE.getMessage(keyspace), 500);
     }
 
     /**

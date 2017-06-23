@@ -20,10 +20,8 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,15 +70,10 @@ public abstract class GraphMutators {
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
     private static void runGraphMutationWithRetry(
-            EngineGraknGraphFactory factory, String keyspace, GraknTxType txType, int maxRetry,
+            EngineGraknGraphFactory factory , String keyspace, GraknTxType txType, int maxRetry,
             Consumer<GraknGraph> mutatingFunction
     ){
-        //TODO Really hideous hack that will be removed when we move SystemKeyspace to engine
-        SystemKeyspace.initialise(
-                factory.properties().getProperty(GraknEngineConfig.SERVER_HOST_NAME) + ":" + factory.properties().getProperty(GraknEngineConfig.SERVER_PORT_NUMBER),
-                factory.properties());
-
-        if(!SystemKeyspace.containsKeyspace(keyspace)){ //This may be slow.
+        if(!factory.systemKeyspace().containsKeyspace(keyspace)){ //This may be slow.
             LOG.warn("Attempting to execute mutation on graph [" + keyspace + "] which no longer exists");
             return;
         }
