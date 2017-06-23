@@ -94,7 +94,7 @@ public class TaskClient extends Client {
     }
 
     TaskId sendTask(String taskClass, String creator, Instant runAt, Duration interval, Json configuration, long limit){
-        URIBuilder uri = null;
+        URIBuilder uri;
         HttpPost httpPost;
         try {
             uri = new URIBuilder(TASKS)
@@ -103,7 +103,7 @@ public class TaskClient extends Client {
                     .setPort(port);
             httpPost = new HttpPost(uri.build());
         } catch (URISyntaxException e){
-            throw new RuntimeException(String.format("Bad URL from %s and port %d", host, port), e);
+            throw new RuntimeException(format("Bad URL from %s and port %d", host, port), e);
         }
 
         Builder<String, String> taskBuilder = ImmutableMap.builder();

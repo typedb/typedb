@@ -30,6 +30,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.lang.SerializationUtils;
+import static org.apache.commons.lang.SerializationUtils.deserialize;
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 
@@ -74,7 +75,7 @@ public class RedisTaskStorage implements TaskStateStorage {
         try(Jedis jedis = redis.getResource()){
             String value = jedis.get(id.getValue());
             if (value != null) {
-                return (TaskState) org.apache.commons.lang.SerializationUtils.deserialize(Base64.getDecoder().decode(value));
+                return (TaskState) deserialize(Base64.getDecoder().decode(value));
             } else {
                 return null;
             }

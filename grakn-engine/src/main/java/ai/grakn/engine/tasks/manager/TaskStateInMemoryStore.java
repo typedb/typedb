@@ -20,8 +20,6 @@ package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.GraknBackendException;
 

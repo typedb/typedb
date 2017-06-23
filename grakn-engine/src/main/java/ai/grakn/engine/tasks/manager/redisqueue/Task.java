@@ -33,6 +33,8 @@ import java.io.Serializable;
 @AutoValue
 @JsonDeserialize(builder = AutoValue_Task.Builder.class)
 abstract class Task implements Serializable {
+    protected static final long serialVersionUID = 42L;
+
     @JsonProperty("taskId")
     public abstract String getId();
     @JsonProperty("taskState")

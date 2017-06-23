@@ -125,7 +125,7 @@ public class RedisTaskQueueConsumer implements Runnable {
                     taskState.markStopped();
                 }
                 if(taskShouldRecur(taskState)){
-                    resubmitTask(taskState, taskConfiguration);
+                    resubmitTask(taskState);
                 }
                 // TODO check if we can simplify the storage using just the queue or a different data structure
                 redisTaskManager.storage().updateState(taskState);
@@ -139,7 +139,7 @@ public class RedisTaskQueueConsumer implements Runnable {
         }
     }
 
-    private void resubmitTask(TaskState taskState, TaskConfiguration taskConfiguration) {
+    private void resubmitTask(TaskState taskState) {
         taskState.schedule(taskState.schedule().incrementByInterval());
     }
 
