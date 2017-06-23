@@ -21,6 +21,8 @@ package ai.grakn.graql.internal.template.macro;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import com.google.common.collect.ImmutableList;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -30,6 +32,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.Locale;
 
 import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
 import static org.junit.Assert.assertEquals;
@@ -38,8 +41,21 @@ public class DateMacroTest {
 
     private final DateMacro dateMacro = new DateMacro();
 
+    private static Locale defaultLocale;
+
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    @BeforeClass
+    public static void setLocale() {
+        defaultLocale = Locale.getDefault();
+        Locale.setDefault(Locale.UK);
+    }
+
+    @AfterClass
+    public static void resetLocale() {
+        Locale.setDefault(defaultLocale);
+    }
 
     @Test
     public void applyDateMacroToNoArguments_ExceptionIsThrown(){
