@@ -23,16 +23,19 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Subable;
+import ai.grakn.concept.OntologyElement;
 import ai.grakn.util.Schema;
 
 /**
  * <p>
- *     Represents a concept in the graph which can have a hierarchy
+ *     Ontology or Schema Specific Element
  * </p>
  *
  * <p>
- *     This is used to create concept hierarchies by specifying the super and sub of the object
+ *     Allows you to create schema or ontological elements.
+ *     These differ from normal graph constructs in two ways:
+ *     1. They have a unique {@link Label} which identifies them
+ *     2. You can link them together into a hierarchical structure
  * </p>
  *
  * @author fppt
@@ -40,11 +43,11 @@ import ai.grakn.util.Schema;
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType} or {@link RelationType} or {@link RoleType}
  */
-public abstract class SubableImpl<T extends Subable> extends ConceptImpl implements Subable<T> {
+public abstract class OntologyElementImpl<T extends OntologyElement> extends ConceptImpl implements OntologyElement<T> {
     private final Label cachedLabel;
     private final LabelId cachedLabelId;
 
-    SubableImpl(VertexElement vertexElement) {
+    OntologyElementImpl(VertexElement vertexElement) {
         super(vertexElement);
         cachedLabel = Label.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
         cachedLabelId = LabelId.of(vertex().property(Schema.VertexProperty.TYPE_ID));

@@ -23,18 +23,21 @@ import java.util.Collection;
 
 /**
  * <p>
- *     Facilitates construction of hierarchies
+ *     Facilitates construction of ontological elements.
  * </p>
  *
  * <p>
- *     Allows you to create a hierarchy of concepts by specifying what the super and sub types of the concept are.
+ *     Allows you to create schema or ontological elements.
+ *     These differ from normal graph constructs in two ways:
+ *     1. They have a unique {@link Label} which identifies them
+ *     2. You can link them together into a hierarchical structure
  * </p>
  *
- * @param <T> the super and sub of the concept
+ * @param <T> the super and sub of the element
  *
  * @author fppt
  */
-public interface Subable<T extends Subable> {
+public interface OntologyElement<T extends OntologyElement> {
 
     /**
      * Returns the unique id of this Type.
