@@ -37,7 +37,7 @@ import ai.grakn.concept.RoleType;
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType} or {@link RelationType} or {@link RoleType}
  */
-public abstract class SubableImpl<T extends Concept> extends ConceptImpl<T> {
+public abstract class SubableImpl<T extends Concept> extends ConceptImpl {
     SubableImpl(VertexElement vertexElement) {
         super(vertexElement);
     }

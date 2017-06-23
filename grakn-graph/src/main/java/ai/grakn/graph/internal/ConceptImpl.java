@@ -56,12 +56,12 @@ import java.util.stream.Stream;
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
-abstract class ConceptImpl<T extends Concept> implements Concept {
+abstract class ConceptImpl implements Concept {
     private final VertexElement vertexElement;
 
     @SuppressWarnings("unchecked")
-    T getThis(){
-        return (T) this;
+    <X extends  Concept> X getThis(){
+        return (X) this;
     }
 
     ConceptImpl(VertexElement vertexElement){

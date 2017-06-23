@@ -357,7 +357,7 @@ class TypeImpl<T extends Type, V extends Thing> extends SubableImpl<T> implement
                 .in(Schema.EdgeLabel.ISA.getLabel());
 
         traversal.forEachRemaining(vertex -> {
-            ConceptImpl<Concept> concept = vertex().graph().factory().buildConcept(vertex);
+            ConceptImpl concept = vertex().graph().factory().buildConcept(vertex);
             if (concept != null) instances.add((V) concept);
         });
 

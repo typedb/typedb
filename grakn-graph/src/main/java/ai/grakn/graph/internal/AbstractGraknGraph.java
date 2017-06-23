@@ -168,7 +168,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param concept A concept in the graph
      * @return True if the concept has been modified in the transaction
      */
-    public abstract boolean isConceptModified(ConceptImpl<?> concept);
+    public abstract boolean isConceptModified(ConceptImpl concept);
 
     /**
      *
@@ -368,7 +368,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private VertexElement putVertex(Label label, Schema.BaseType baseType){
         VertexElement vertex;
-        ConceptImpl<?> concept = getType(convertToId(label));
+        ConceptImpl concept = getType(convertToId(label));
         if(concept == null) {
             vertex = addTypeVertex(getNextId(), label, baseType);
         } else {

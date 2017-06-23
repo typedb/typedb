@@ -61,7 +61,7 @@ import java.util.stream.Stream;
  * @param <V> The type of the concept which extends {@link Type} of the concept.
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
-abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl<T> implements Thing {
+abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
     private Cache<Label> cachedInternalType = new Cache<>(() -> {
         int typeId = vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID);
         Type type = vertex().graph().getConcept(Schema.VertexProperty.TYPE_ID, typeId);
