@@ -96,13 +96,6 @@
         </dependency>
 
         <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>test-tools</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        
-        <dependency>
             <groupId>com.github.stefanbirkner</groupId>
             <artifactId>system-rules</artifactId>
             <version>${systen-rules.version}</version>
