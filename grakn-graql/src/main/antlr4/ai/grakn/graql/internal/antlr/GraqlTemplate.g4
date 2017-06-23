@@ -14,7 +14,7 @@ block
  ;
 
 blockContents
- : (statement | resolveOrMacro | var | keyword | ID)*
+ : (statement | escapedExpression | var | keyword | ID)*
  ;
 
 statement
@@ -31,14 +31,12 @@ ifPartial     : IF LPAREN bool RPAREN DO block ;
 elseIfPartial : ELSEIF LPAREN bool RPAREN DO block ;
 elsePartial   : ELSE block ;
 
-macro
- : ID_MACRO LPAREN literal? (',' literal)* RPAREN
- ;
-
-literal       : resolveOrMacro | nil | string | number | BOOLEAN;
-number        : resolveOrMacro | INT | DOUBLE;
-string        : resolveOrMacro | STRING;
-list          : resolveOrMacro ;
+literal       : expression | nil | string | number | BOOLEAN;
+number        : expression | inT | doublE;
+inT           : expression | INT;
+doublE        : expression | DOUBLE;
+string        : expression | STRING;
+list          : expression ;
 nil           : NULL;
 bool
  : LPAREN bool RPAREN         #groupExpression
@@ -51,28 +49,34 @@ bool
  | number GREATEREQ number    #greaterEqExpression
  | number LESS number         #lessExpression
  | number LESSEQ number       #lessEqExpression
- | resolve                    #booleanResolve
- | macro                      #booleanMacro
+ | expression                 #booleanExpression
  | BOOLEAN                    #booleanConstant
  ;
 
-resolve
- : '<' (ID | STRING) '>'
+escapedExpression : expression;
+expression
+ : '<' ID accessor* '>'                             #idExpression
+ | '<' STRING '>'                                   #stringExpression
+ | ID_MACRO LPAREN literal? (',' literal)* RPAREN   #macroExpression
  ;
 
-resolveOrMacro
- : resolve | macro
+accessor
+ : '.' ID         #mapAccessor
+ | '[' inT ']'    #listAccessor
  ;
 
-var         : varLiteral | varResolved;
-varResolved : DOLLAR (resolveOrMacro)+;
-varLiteral  : ID_GRAQL;
+var
+ : DOLLAR (expression)+  #varResolved
+ | ID_GRAQL              #varLiteral
+ ;
 
 keyword
 : ','
 | ';'
 | RPAREN
 | LPAREN
+| LBR
+| RBR
 | ':'
 | FOR
 | IF
@@ -115,6 +119,8 @@ LESSEQ      : '<=';
 
 LPAREN      : '(';
 RPAREN      : ')';
+LBR         : '[';
+RBR         : ']';
 DOLLAR      : '$';
 AT          : '@';
 QUOTE       : '"';
@@ -124,7 +130,7 @@ NULL        : 'null';
 INT         : [0-9]+;
 DOUBLE      : [0-9.]+;
 BOOLEAN     : 'true' | 'false' ;
-ID          : [a-zA-Z0-9_-]+ ('.' [a-zA-Z0-9_-]+ )*;
+ID          : [a-zA-Z0-9_-]+;
 STRING      : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';
 
 ID_GRAQL    : DOLLAR ID;

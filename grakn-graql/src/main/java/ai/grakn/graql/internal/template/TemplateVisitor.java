@@ -24,6 +24,8 @@ import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
 import ai.grakn.graql.macro.Macro;
 import ai.grakn.util.StringUtil;
 
+import com.google.common.collect.ImmutableMap;
+import java.util.function.Function;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -68,37 +70,31 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     @Override
     public String visitBlockContents(GraqlTemplateParser.BlockContentsContext ctx) {
-
-        // create the scope of this block
-        scope = new Scope(scope);
-
-        // traverse the parse tree
-        String returnValue = (String) visitChildren(ctx);
-
-        // exit the scope of this block
-        scope = scope.up();
-
-        return returnValue;
+        return (String) visitChildren(ctx);
     }
 
     @Override
     public Object visitForInStatement(GraqlTemplateParser.ForInStatementContext ctx) {
-        return runForLoop(ctx.ID().getText(), ctx.list(), ctx.block());
+        String var = ctx.ID().getText();
+        return runForLoop((object) -> ImmutableMap.of(var, object), ctx.list(), ctx.block());
     }
 
     @Override
     public Object visitForEachStatement(GraqlTemplateParser.ForEachStatementContext ctx) {
-        return runForLoop("", ctx.list(), ctx.block());
+        return runForLoop((object) -> {
+            if(!(object instanceof Map)) throw GraqlSyntaxException.parsingTemplateError("Cannot use non-maps in enhanced for loop");
+            return (Map) object;
+        }, ctx.list(), ctx.block());
     }
 
-    private Object runForLoop(String var, GraqlTemplateParser.ListContext listCtx, GraqlTemplateParser.BlockContext block) {
+    private Object runForLoop(Function<Object, Map> mapSupplier, GraqlTemplateParser.ListContext listCtx, GraqlTemplateParser.BlockContext block) {
         List list = this.visitList(listCtx);
 
         Object returnValue = null;
         for (Object object:list) {
-            scope.assign(var, object);
+            scope = new Scope(scope, mapSupplier.apply(object));
             returnValue = aggregateResult(returnValue, this.visit(block));
-            scope.unassign(var);
+            scope = scope.up();
         }
 
         return returnValue;
@@ -151,13 +147,8 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     }
 
     @Override
-    public Boolean visitBooleanMacro(GraqlTemplateParser.BooleanMacroContext ctx) {
-        return this.visitMacro(ctx.macro(), Boolean.class);
-    }
-
-    @Override
-    public Boolean visitBooleanResolve(GraqlTemplateParser.BooleanResolveContext ctx) {
-        return this.visitResolve(ctx.resolve(), Boolean.class);
+    public Boolean visitBooleanExpression(GraqlTemplateParser.BooleanExpressionContext ctx) {
+        return this.visitExpression(ctx.expression(), Boolean.class);
     }
 
     @Override
@@ -170,18 +161,36 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         if(ctx.STRING() != null) {
             return String.valueOf(ctx.getText().replaceAll("\"", ""));
         } else {
-            return this.visitResolveOrMacro(ctx.resolveOrMacro(), String.class);
+            return this.visitExpression(ctx.expression(), String.class);
         }
     }
 
     @Override
     public Number visitNumber(GraqlTemplateParser.NumberContext ctx){
+        if(ctx.inT() != null){
+            return this.visitInT(ctx.inT());
+        } else if(ctx.doublE() != null) {
+            return this.visitDoublE(ctx.doublE());
+        } else {
+            return this.visitExpression(ctx.expression(), Number.class);
+        }
+    }
+
+    @Override
+    public Integer visitInT(GraqlTemplateParser.InTContext ctx) {
         if(ctx.INT() != null){
             return Integer.parseInt(ctx.getText());
-        } else if(ctx.DOUBLE() != null){
+        } else {
+            return this.visitExpression(ctx.expression(), Integer.class);
+        }
+    }
+
+    @Override
+    public Double visitDoublE(GraqlTemplateParser.DoublEContext ctx) {
+        if(ctx.DOUBLE() != null){
             return Double.parseDouble(ctx.getText());
         } else {
-            return this.visitResolveOrMacro(ctx.resolveOrMacro(), Number.class);
+            return this.visitExpression(ctx.expression(), Double.class);
         }
     }
 
@@ -192,13 +201,13 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     @Override
     public List visitList(GraqlTemplateParser.ListContext ctx){
-        return this.visitResolveOrMacro(ctx.resolveOrMacro(), List.class);
+        return this.visitExpression(ctx.expression(), List.class);
     }
 
     @Override
     public Object visitLiteral(GraqlTemplateParser.LiteralContext ctx){
-        if(ctx.resolveOrMacro() != null){
-            return this.visitResolveOrMacro(ctx.resolveOrMacro(), Object.class);
+        if(ctx.expression() != null){
+            return this.visitExpression(ctx.expression(), Object.class);
         } else if(ctx.BOOLEAN() != null) {
             return Boolean.parseBoolean(ctx.getText());
         } else {
@@ -269,8 +278,8 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     @Override
     public String visitVarResolved(GraqlTemplateParser.VarResolvedContext ctx) {
         Object value = null;
-        for(GraqlTemplateParser.ResolveOrMacroContext c:ctx.resolveOrMacro()){
-            value = aggregateResult(value, this.visitResolveOrMacro(c, Object.class));
+        for(GraqlTemplateParser.ExpressionContext c:ctx.expression()){
+            value = aggregateResult(value, this.visitExpression(c, Object.class));
         }
 
         if(value == null) throw GraqlSyntaxException.parsingTemplateMissingKey(ctx.getText(), originalContext);
@@ -300,44 +309,62 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     }
 
     @Override
-    public String visitResolveOrMacro(GraqlTemplateParser.ResolveOrMacroContext ctx) {
-        Object resolved = visitResolveOrMacro(ctx, Object.class);
+    public String visitEscapedExpression(GraqlTemplateParser.EscapedExpressionContext ctx) {
+        Object resolved = visitExpression(ctx.expression(), Object.class);
 
         if(resolved == null) throw GraqlSyntaxException.parsingTemplateMissingKey(ctx.getText(), originalContext);
 
         return StringUtil.valueToString(resolved);
     }
 
-    private <T> T visitResolveOrMacro(GraqlTemplateParser.ResolveOrMacroContext ctx, Class<T> clazz) {
-        if(ctx.macro() != null){
-            return this.visitMacro(ctx.macro(), clazz);
-        } else {
-            return this.visitResolve(ctx.resolve(), clazz);
-        }
-    }
-
-    private <T> T visitMacro(GraqlTemplateParser.MacroContext ctx, Class<T> typeMacroReturns){
+    @Override
+    public Object visitMacroExpression(GraqlTemplateParser.MacroExpressionContext ctx){
         String macro = ctx.ID_MACRO().getText().replace("@", "").toLowerCase();
         List<Object> values = ctx.literal().stream().map(this::visit).collect(toList());
 
-        Object resolved = macros.get(macro).apply(values);
-        return checkCorrectType(resolved, typeMacroReturns);
+        return macros.get(macro).apply(values);
     }
 
-    private <T> T visitResolve(GraqlTemplateParser.ResolveContext ctx, Class<T> typeOfResolved){
-        String key = ctx.ID() != null ? ctx.ID().getText() : ctx.STRING().getText().replaceAll("^\"|\"$", "");
-
-        return checkCorrectType(scope.resolve(key), typeOfResolved);
+    @Override
+    public Object visitStringExpression(GraqlTemplateParser.StringExpressionContext ctx){
+        String key = ctx.STRING().getText().replaceAll("^\"|\"$", "");
+        return scope.resolve(key);
     }
 
-    private <T> T checkCorrectType(Object object, Class<T> type){
+    @Override
+    public Object visitIdExpression(GraqlTemplateParser.IdExpressionContext ctx) {
+        Object object = scope.resolve(ctx.ID().getText());
+
+        for(GraqlTemplateParser.AccessorContext accessor:ctx.accessor()){
+            if(accessor instanceof GraqlTemplateParser.MapAccessorContext){
+                object = visitMapAccessor((GraqlTemplateParser.MapAccessorContext) accessor, (Map) object);
+            } else if (accessor instanceof GraqlTemplateParser.ListAccessorContext){
+                object = visitListAccessor((GraqlTemplateParser.ListAccessorContext) accessor, (List) object);
+            }
+        }
+
+        return object;
+    }
+
+    private <T> T visitExpression(GraqlTemplateParser.ExpressionContext ctx, Class<T> clazz) {
+        Object object = this.visit(ctx);
+
         if(object == null){
             return null;
-        } else if(!type.isInstance(object)){
-            throw GraqlSyntaxException.parsingTemplateError("Object not of type " + type);
+        } else if(!clazz.isInstance(object)){
+            throw GraqlSyntaxException.parsingTemplateError("Object not of type " + clazz);
         }
 
         return (T) object;
+    }
+
+    private Object visitMapAccessor(GraqlTemplateParser.MapAccessorContext ctx, Map map) {
+        return map.get(ctx.ID().getText());
+    }
+
+    private Object visitListAccessor(GraqlTemplateParser.ListAccessorContext ctx, List list) {
+        int index = this.visitInT(ctx.inT());
+        return list.get(index);
     }
 
     @Override
