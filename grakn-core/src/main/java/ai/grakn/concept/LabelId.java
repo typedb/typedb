@@ -22,22 +22,22 @@ import java.io.Serializable;
 
 /**
  * <p>
- *     A Type Id
+ *     A Id
  * </p>
  *
  * <p>
- *     A class which represents an id of any {@link Type} in the {@link ai.grakn.GraknGraph}.
- *     Also contains a static method for producing Type IDs from Integers.
+ *     A class which represents an id of any {@link Type} or {@link RuleType} in the {@link ai.grakn.GraknGraph}.
+ *     Also contains a static method for producing IDs from Integers.
  * </p>
  *
  * @author fppt
  */
-public class TypeId implements Comparable<TypeId>, Serializable {
+public class LabelId implements Comparable<LabelId>, Serializable {
     private static final long serialVersionUID = 3181633335040468179L;
 
     private Integer typeId;
 
-    private TypeId(Integer typeId){
+    private LabelId(Integer typeId){
         this.typeId = typeId;
     }
 
@@ -53,7 +53,7 @@ public class TypeId implements Comparable<TypeId>, Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        TypeId cast = (TypeId) o;
+        LabelId cast = (LabelId) o;
         return typeId.equals(cast.getValue());
     }
 
@@ -63,7 +63,7 @@ public class TypeId implements Comparable<TypeId>, Serializable {
     }
 
     @Override
-    public int compareTo(TypeId o) {
+    public int compareTo(LabelId o) {
         return getValue().compareTo(o.getValue());
     }
 
@@ -81,14 +81,14 @@ public class TypeId implements Comparable<TypeId>, Serializable {
      * @param value The integer which potentially represents a Type
      * @return The matching type ID
      */
-    public static TypeId of(Integer value){
-        return new TypeId(value);
+    public static LabelId of(Integer value){
+        return new LabelId(value);
     }
 
     /**
      * @return a type id which does not match any type
      */
-    public static TypeId invalid(){
-        return new TypeId(-1);
+    public static LabelId invalid(){
+        return new LabelId(-1);
     }
 }

@@ -20,10 +20,10 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Subable;
-import ai.grakn.concept.TypeId;
 import ai.grakn.util.Schema;
 
 /**
@@ -42,12 +42,12 @@ import ai.grakn.util.Schema;
  */
 public abstract class SubableImpl<T extends Subable> extends ConceptImpl implements Subable<T> {
     private final Label cachedLabel;
-    private final TypeId cachedTypeId;
+    private final LabelId cachedLabelId;
 
     SubableImpl(VertexElement vertexElement) {
         super(vertexElement);
         cachedLabel = Label.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
-        cachedTypeId = TypeId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
+        cachedLabelId = LabelId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
     }
 
     /**
@@ -55,8 +55,8 @@ public abstract class SubableImpl<T extends Subable> extends ConceptImpl impleme
      * @return The internal id which is used for fast lookups
      */
     @Override
-    public TypeId getTypeId(){
-        return cachedTypeId;
+    public LabelId getTypeId(){
+        return cachedLabelId;
     }
 
     /**

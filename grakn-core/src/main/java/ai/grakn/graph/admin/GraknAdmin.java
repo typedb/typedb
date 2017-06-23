@@ -27,7 +27,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
@@ -146,7 +146,7 @@ public interface GraknAdmin {
      * @return The matching type id
      */
     @CheckReturnValue
-    TypeId convertToId(Label label);
+    LabelId convertToId(Label label);
 
     /**
      * Commits to the graph without submitting any commit logs.

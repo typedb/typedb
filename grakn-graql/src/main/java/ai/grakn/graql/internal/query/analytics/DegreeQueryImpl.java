@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
+import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -71,13 +71,13 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
         Set<Label> withResourceRelationTypes = getHasResourceRelationTypes();
         withResourceRelationTypes.addAll(subLabels);
 
-        Set<TypeId> withResourceRelationTypeIds = convertLabelsToIds(withResourceRelationTypes);
-        Set<TypeId> ofTypeIds = convertLabelsToIds(ofLabels);
+        Set<LabelId> withResourceRelationLabelIds = convertLabelsToIds(withResourceRelationTypes);
+        Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
 
         String randomId = getRandomJobId();
 
-        result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationTypeIds, ofTypeIds, randomId),
-                new DegreeDistributionMapReduce(ofTypeIds, DegreeVertexProgram.DEGREE + randomId));
+        result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationLabelIds, ofLabelIds, randomId),
+                new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE + randomId));
 
         LOGGER.info("DegreeVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(DegreeDistributionMapReduce.class.getName());

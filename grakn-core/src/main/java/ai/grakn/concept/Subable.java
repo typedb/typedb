@@ -43,7 +43,7 @@ public interface Subable<T extends Subable> {
      */
     //TODO: rename this ugly thing.
     @CheckReturnValue
-    TypeId getTypeId();
+    LabelId getTypeId();
 
     /**
      * Returns the unique label of this Type.

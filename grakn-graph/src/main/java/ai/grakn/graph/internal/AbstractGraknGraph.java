@@ -24,6 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -31,7 +32,6 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
@@ -131,11 +131,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public TypeId convertToId(Label label){
+    public LabelId convertToId(Label label){
         if(txCache().isLabelCached(label)){
             return txCache().convertLabelToId(label);
         }
-        return TypeId.invalid();
+        return LabelId.invalid();
     }
 
     /**
@@ -143,7 +143,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      *
      * @return the current available Grakn id which can be used for types
      */
-    private TypeId getNextId(){
+    private LabelId getNextId(){
         TypeImpl<?, ?> metaConcept = (TypeImpl<?, ?>) getMetaConcept();
         Integer currentValue = metaConcept.vertex().property(Schema.VertexProperty.CURRENT_TYPE_ID);
         if(currentValue == null){
@@ -153,7 +153,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
         //Vertex is used directly here to bypass meta type mutation check
         metaConcept.property(Schema.VertexProperty.CURRENT_TYPE_ID, currentValue);
-        return TypeId.of(currentValue);
+        return LabelId.of(currentValue);
     }
 
     /**
@@ -388,7 +388,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param baseType The base type of the new type
      * @return The new type vertex
      */
-    private VertexElement addTypeVertex(TypeId id, Label label, Schema.BaseType baseType){
+    private VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType){
         VertexElement vertexElement = addVertex(baseType);
         vertexElement.property(Schema.VertexProperty.TYPE_LABEL, label.getValue());
         vertexElement.property(Schema.VertexProperty.TYPE_ID, id.getValue());
@@ -540,7 +540,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Type type = buildType(label, ()-> getType(convertToId(label)));
         return validateConceptType(type, baseType, () -> null);
     }
-    <T extends Type> T getType(TypeId id){
+    <T extends Type> T getType(LabelId id){
         if(!id.isValid()) return null;
         return getConcept(Schema.VertexProperty.TYPE_ID, id.getValue());
     }
