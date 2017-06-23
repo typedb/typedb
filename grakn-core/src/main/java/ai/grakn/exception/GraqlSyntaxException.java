@@ -50,8 +50,8 @@ public class GraqlSyntaxException extends GraknException {
     /**
      * Thrown when there is a syntactic error in a Graql template
      */
-    public static GraqlSyntaxException parsingTemplateError(String statementType){
-        return new GraqlSyntaxException(INVALID_STATMENT.getMessage(statementType));
+    public static GraqlSyntaxException parsingIncorrectValueType(Object object, Class clazz, Map data){
+        return new GraqlSyntaxException(INVALID_STATMENT.getMessage(object, clazz.getName(), data.toString()));
     }
 
     /**

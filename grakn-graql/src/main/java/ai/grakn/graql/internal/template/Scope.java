@@ -40,7 +40,7 @@ public class Scope {
     private final Set<String> variablesEncountered;
 
     public Scope(Map<String, Object> data){
-        parent = null;
+        this.parent = null;
         this.values = data;
         this.variablesEncountered = new HashSet<>();
     }
@@ -66,6 +66,14 @@ public class Scope {
      */
     public Object resolve(String var) {
         return values.get(var);
+    }
+
+    /**
+     * Retrieve the data in the current scope
+     * @return data in this scope
+     */
+    public Map data(){
+        return this.values;
     }
 
     /**

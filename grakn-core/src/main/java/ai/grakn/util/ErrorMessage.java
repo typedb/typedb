@@ -158,8 +158,7 @@ public enum ErrorMessage {
     FAILED_TO_BUILD_TRAVERSAL("failed to build a traversal from the graql query"),
 
     NO_ANALYTICS_METHOD("No compute method exists with the name [%s]"),
-
-    INVALID_STATMENT("Invalid %s type in query."),
+    INVALID_STATMENT("Value [%s] not of type [%s] in data [%s]"),
 
     //Templating
     TEMPLATE_MISSING_KEY("Key [%s] not present in data: [%s]"),

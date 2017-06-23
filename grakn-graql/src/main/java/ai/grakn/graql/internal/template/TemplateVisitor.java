@@ -82,7 +82,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     @Override
     public Object visitForEachStatement(GraqlTemplateParser.ForEachStatementContext ctx) {
         return runForLoop((object) -> {
-            if(!(object instanceof Map)) throw GraqlSyntaxException.parsingTemplateError("Cannot use non-maps in enhanced for loop");
+            if(!(object instanceof Map)) throw GraqlSyntaxException.parsingIncorrectValueType(object, Map.class, scope.data());
             return (Map) object;
         }, ctx.list(), ctx.block());
     }
@@ -352,7 +352,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         if(object == null){
             return null;
         } else if(!clazz.isInstance(object)){
-            throw GraqlSyntaxException.parsingTemplateError("Object not of type " + clazz);
+            throw GraqlSyntaxException.parsingIncorrectValueType(object, clazz, scope.data());
         }
 
         return (T) object;
@@ -364,6 +364,11 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     private Object visitListAccessor(GraqlTemplateParser.ListAccessorContext ctx, List list) {
         int index = this.visitInT(ctx.inT());
+
+        if(index >= list.size() || index < 0){
+            throw GraqlSyntaxException.parsingError("Index [" + index + "] out of bounds for list "  + list);
+        }
+
         return list.get(index);
     }
 
