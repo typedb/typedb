@@ -344,12 +344,13 @@ public class BatchMutatorClient {
                     // Means the task has not yet been stored: we want to log the error, but continue looping
                     LOG.warn(format("Task [%s] not found on server. Attempting to get status again.", id));
                 } catch (HttpRetryException e){
-                    LOG.warn(format("Could not communicate with host %s for task [%s] ", uri, id));
+                    LOG.warn(format("Could not communicate with host %s for task [%s]. Response code: %d, Reason: %s.", uri, id, e.responseCode(), e.getReason()));
                     if(retry){
                         LOG.warn(format("Attempting communication again with host %s for task [%s]", uri, id));
                     } else {
                         throw new RuntimeException(e);
                     }
+
                 } catch (Throwable t) {
                     throw new RuntimeException(t);
                 }
