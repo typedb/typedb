@@ -11,7 +11,7 @@ node('slave2-dev-jenkins') {
         stage ('Init Grakn') {
             sh 'mkdir grakn-package'
             sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
-            sh 'sed -i "s#taskmanager.implementation=.*#taskmanager.implementation=ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager#" grakn-package/conf/main/grakn.properties'
+            sh 'sed -i "s#taskmanager.implementation=.*#taskmanager.implementation=ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager#" grakn-package/conf/main/grakn.properties'
             sh 'grakn-package/bin/grakn.sh start'
             sh 'grakn-package/bin/graql.sh -e "match $x;"'
         }
