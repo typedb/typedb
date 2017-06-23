@@ -16,14 +16,13 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.controller;
+package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
-import ai.grakn.test.SparkContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
@@ -32,8 +31,9 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
-import static ai.grakn.test.engine.controller.GraqlControllerGETTest.originalQuery;
+import static ai.grakn.engine.controller.Utilities.exception;
+import static ai.grakn.engine.controller.Utilities.jsonResponse;
+import static ai.grakn.engine.controller.Utilities.originalQuery;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class GraqlControllerDELETETest {
+public class GraqlControllerPOSTTest {
 
     private static GraknGraph mockGraph;
     private static QueryBuilder mockQueryBuilder;
@@ -84,159 +84,165 @@ public class GraqlControllerDELETETest {
     }
 
     @Test
-    public void DELETEGraqlDelete_GraphCommitCalled(){
-        String query = "match $x isa person; limit 1; delete $x;";
+    public void POSTGraqlInsert_InsertWasExecutedOnGraph(){
+        doAnswer(answer -> {
+            graphContext.graph().commit();
+            return null;
+        }).when(mockGraph).commit();
 
-        verify(mockGraph, times(0)).commit();
+        String query = "insert $x isa movie;";
 
-        sendDELETE(query);
+        int genreCountBefore = graphContext.graph().getEntityType("movie").instances().size();
 
-        verify(mockGraph, times(1)).commit();
+        sendPOST(query);
+
+        // refresh graph
+        graphContext.graph().close();
+
+        int genreCountAfter = graphContext.graph().getEntityType("movie").instances().size();
+
+        assertEquals(genreCountBefore + 1, genreCountAfter);
     }
 
     @Test
-    public void DELETEMalformedGraqlQuery_ResponseStatusIs400(){
-        String query = "match $x isa ; delete;";
-        Response response = sendDELETE(query);
+    public void POSTMalformedGraqlQuery_ResponseStatusIs400(){
+        String query = "insert $x isa ;";
+        Response response = sendPOST(query);
 
         assertThat(response.statusCode(), equalTo(400));
     }
 
     @Test
-    public void DELETEMalformedGraqlQuery_ResponseExceptionContainsSyntaxError(){
-        String query = "match $x isa ; delete;";
-        Response response = sendDELETE(query);
+    public void POSTMalformedGraqlQuery_ResponseExceptionContainsSyntaxError(){
+        String query = "insert $x isa ;";
+        Response response = sendPOST(query);
 
         assertThat(exception(response), containsString("syntax error"));
     }
 
     @Test
-    public void DELETEWithNoKeyspace_ResponseStatusIs400(){
-        String query = "match $x isa person; limit 1; delete;";
+    public void POSTWithNoKeyspace_ResponseStatusIs400(){
+        String query = "insert $x isa person;";
 
         Response response = RestAssured.with()
                 .body(query)
-                .delete(REST.WebPath.Graph.GRAQL);
+                .post(REST.WebPath.Graph.GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
     }
 
     @Test
-    public void DELETEWithNoQueryInBody_ResponseIs400(){
+    public void POSTWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .delete(REST.WebPath.Graph.GRAQL);
+                .post(REST.WebPath.Graph.GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
     }
 
     @Test
-    public void DELETEGraqlMatch_ResponseStatusCodeIs405NotSupported(){
-        Response response = sendDELETE("match $x isa title;");
+    public void POSTGraqlMatch_ResponseStatusCodeIs405NotSupported(){
+        Response response = sendPOST("match $x isa person;");
 
         assertThat(response.statusCode(), equalTo(405));
     }
 
     @Test
-    public void DELETEGraqlMatch_ResponseExceptionContainsDELETEOnlyAllowedMessage(){
-        Response response = sendDELETE("match $x isa title;");
+    public void POSTGraqlMatch_ResponseExceptionContainsInsertOnlyAllowedMessage(){
+        Response response = sendPOST("match $x isa person;");
 
-        assertThat(exception(response), containsString("Only DELETE queries are allowed."));
+        assertThat(exception(response), containsString("Only INSERT queries are allowed."));
     }
 
     @Test
-    public void DELETEGraqlInsert_ResponseStatusCodeIs405NotSupported(){
-        Response response = sendDELETE("insert $x isa person;");
+    public void POSTGraqlDelete_ResponseStatusCodeIs405NotSupported(){
+        Response response = sendPOST("match $x isa person; delete $x;");
 
         assertThat(response.statusCode(), equalTo(405));
     }
 
     @Test
-    public void DELETEGraqlInsert_ResponseExceptionContainsDELETEOnlyAllowedMessage(){
-        Response response = sendDELETE("insert $x isa person;");
+    public void POSTGraqlDelete_ResponseExceptionContainsInsertOnlyAllowedMessage(){
+        Response response = sendPOST("match $x isa person; delete $x;");
 
-        assertThat(exception(response), containsString("Only DELETE queries are allowed."));
+        assertThat(exception(response), containsString("Only INSERT queries are allowed."));
     }
 
     @Test
-    public void DELETEGraqlCompute_ResponseStatusCodeIs405NotSupported(){
-        Response response = sendDELETE("compute count in person;");
+    public void POSTGraqlCompute_ResponseStatusCodeIs405NotSupported(){
+        Response response = sendPOST("compute count in person;");
 
         assertThat(response.statusCode(), equalTo(405));
     }
 
     @Test
-    public void DELETEGraqlCompute_ResponseExceptionContainsDELETEOnlyAllowedMessage(){
-        Response response = sendDELETE("compute count in person;");
+    public void POSTGraqlCompute_ResponseExceptionContainsInsertOnlyAllowedMessage(){
+        Response response = sendPOST("compute count in person;");
 
-        assertThat(exception(response), containsString("Only DELETE queries are allowed."));
+        assertThat(exception(response), containsString("Only INSERT queries are allowed."));
     }
 
     @Test
-    public void DELETEGraqlDelete_ResponseStatusIs200(){
-        String query = "match $x has name \"Robert De Niro\"; limit 1; delete $x;";
-        Response response = sendDELETE(query);
+    public void POSTGraqlInsert_ResponseStatusIs200(){
+        String query = "insert $x isa person;";
+        Response response = sendPOST(query);
 
         assertThat(response.statusCode(), equalTo(200));
     }
 
     @Test
-    public void DELETEGraqlDelete_DeleteWasExecutedOnGraph(){
-        doAnswer(answer -> {
-            graphContext.graph().commit();
-            return null;
-        }).when(mockGraph).commit();
-
-        String query = "match $x has title \"Godfather\"; delete $x;";
-
-        int movieCountBefore = graphContext.graph().getEntityType("movie").instances().size();
-
-        sendDELETE(query);
-
-        // refresh graph
-        graphContext.graph().close();
-
-        int movieCountAfter = graphContext.graph().getEntityType("movie").instances().size();
-
-        assertEquals(movieCountBefore - 1, movieCountAfter);
-    }
-
-    @Test
-    public void DELETEGraqlDeleteNotValid_ResponseStatusCodeIs422(){
-        // Not allowed to delete roles with incoming edges
-        Response response = sendDELETE("match $x label \"production-being-directed\"; delete $x;");
+    public void POSTGraqlInsertNotValid_ResponseStatusCodeIs422(){
+        Response response = sendPOST("insert person plays movie;");
 
         assertThat(response.statusCode(), equalTo(422));
     }
 
     @Test
-    public void DELETEGraqlDeleteNotValid_ResponseExceptionContainsValidationErrorMessage(){
-        // Not allowed to delete roles with incoming edges
-        Response response = sendDELETE("match $x label \"production-being-directed\"; delete $x;");
+    public void POSTGraqlInsertNotValid_ResponseExceptionContainsValidationErrorMessage(){
+        Response response = sendPOST("insert person plays movie;");
 
-        assertThat(exception(response), containsString("cannot be deleted"));
+        assertThat(exception(response), containsString("is not of type"));
     }
 
     @Test
-    public void DELETEGraqlDelete_ResponseContentTypeIsJson(){
-        Response response = sendDELETE("match $x has name \"Harry\"; limit 1; delete $x;");
+    public void POSTGraqlInsert_ResponseContentTypeIsJson(){
+        Response response = sendPOST("insert $x isa person;");
 
         assertThat(response.contentType(), equalTo(APPLICATION_JSON));
     }
 
     @Test
-    public void DELETEGraqlDelete_ResponseContainsOriginalQuery(){
-        String query = "match $x has name \"Miranda Heart\"; limit 1; delete $x;";
-        Response response = sendDELETE(query);
+    public void POSTGraqlInsert_ResponseContainsOriginalQuery(){
+        String query = "insert $x isa person;";
+        Response response = sendPOST(query);
 
         assertThat(originalQuery(response), equalTo(query));
     }
 
-    private Response sendDELETE(String query){
+    @Test
+    public void POSTGraqlInsert_ResponseContainsCorrectNumberOfIds(){
+        String query = "insert $x isa person;";
+        Response response = sendPOST(query);
+
+        assertThat(1, equalTo(jsonResponse(response).asJsonList().size()));
+    }
+
+    @Test
+    public void POSTGraqlInsertWithOntology_GraphCommitIsCalled(){
+        String query = "insert thing sub entity;";
+
+        verify(mockGraph, times(0)).commit();
+
+        sendPOST(query);
+
+        verify(mockGraph, times(1)).commit();
+    }
+
+    private Response sendPOST(String query){
         return RestAssured.with()
                 .queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .body(query)
-                .delete(REST.WebPath.Graph.GRAQL);
+                .post(REST.WebPath.Graph.GRAQL);
     }
 }

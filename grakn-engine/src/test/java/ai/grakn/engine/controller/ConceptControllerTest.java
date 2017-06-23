@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.controller;
+package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
@@ -25,7 +25,6 @@ import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.test.GraphContext;
-import ai.grakn.test.SparkContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
 import com.jayway.restassured.response.Response;
@@ -35,8 +34,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
-import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
-import static ai.grakn.test.engine.controller.GraqlControllerGETTest.stringResponse;
+import static ai.grakn.engine.controller.Utilities.exception;
+import static ai.grakn.engine.controller.Utilities.stringResponse;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.KEYSPACE;

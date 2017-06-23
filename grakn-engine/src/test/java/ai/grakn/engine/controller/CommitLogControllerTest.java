@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.controller;
+package ai.grakn.engine.controller;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
@@ -36,7 +36,6 @@ import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.test.SparkContext;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;

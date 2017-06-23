@@ -20,16 +20,15 @@ package ai.grakn.test.engine.user;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.engine.EngineTestHelper;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.user.Password;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.test.EngineContext;
 import mjson.Json;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Map;
@@ -39,20 +38,19 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-@Ignore
 public class UserHandlerTest {
 
     private static UsersHandler users;
     private static String userName = "geralt";
     private static String password = "witcher";
 
-    // This is necessary because `UsersHandler` communicates with the system keyspace
-    @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
-
+    static { EngineTestHelper.engine(); }
+    
+    static EngineGraknGraphFactory graknFactory = EngineGraknGraphFactory.create(EngineTestHelper.config().getProperties());
+            
     @BeforeClass
     public static void createUsersHandler() {
-        users = UsersHandler.create("top secret", engine.server().factory());
+        users = UsersHandler.create("top secret", graknFactory);
     }
 
     @Before
@@ -85,7 +83,7 @@ public class UserHandlerTest {
 
     @Test
     public void testUserInGraph(){
-        GraknGraph graph = engine.server().factory().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE);
+        GraknGraph graph = graknFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE);
         assertNotNull(graph.getResourceType(UsersHandler.USER_NAME).getResource(userName));
         graph.close();
     }
@@ -97,8 +95,8 @@ public class UserHandlerTest {
         assertTrue(users.validateUser(userName, password));
     }
 
-    @Ignore // Not Supported Yet
-    @Test
+    // Not Supported Yet
+    //@Test
     public void testUpdateUser(){
         assertFalse(users.getUser(userName).has(UsersHandler.USER_IS_ADMIN));
 

@@ -64,5 +64,3 @@ public class EngineGraknGraphFactory {
         return properties;
     }
 }
-
-

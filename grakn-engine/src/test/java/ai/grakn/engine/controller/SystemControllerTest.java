@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.controller;
+package ai.grakn.engine.controller;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
@@ -24,7 +24,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST.GraphConfig;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -41,16 +40,17 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-@Ignore
 public class SystemControllerTest {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
-
+    public static ControllerFixture fixture = ControllerFixture.INSTANCE;
+    
+    String factoryUri = ControllerFixture.baseURI().substring("http://".length());
+    
 	@Test
 	public void testKeyspaceList() throws InvalidGraphException {
-		Grakn.session(Grakn.DEFAULT_URI, "grakntest1").open(GraknTxType.WRITE).close();
-        Grakn.session(Grakn.DEFAULT_URI, "grakntest2").open(GraknTxType.WRITE).close();
+		Grakn.session(factoryUri, "grakntest1").open(GraknTxType.WRITE).close();
+        Grakn.session(factoryUri, "grakntest2").open(GraknTxType.WRITE).close();
         Response response = get(KEYSPACES).then().statusCode(200).extract().response();
         Json result = Json.read(response.body().asString());
         Assert.assertTrue(result.asJsonList().contains(Json.make("grakntest")));
@@ -78,23 +78,22 @@ public class SystemControllerTest {
         assertNotEquals(responseDefault, responseComputer);
     }
 
-
     @Test
     public void testGraknClientBatch() {
-        GraknGraph batch = Grakn.session(Grakn.DEFAULT_URI, "grakntestagain").open(GraknTxType.BATCH);
+        GraknGraph batch = Grakn.session(factoryUri, "grakntestagain").open(GraknTxType.BATCH);
         assertTrue(((AbstractGraknGraph) batch).isBatchGraph());
     }
 
     @Test
-    public void testGrakn() throws InvalidGraphException {
-        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.session(Grakn.DEFAULT_URI, "grakntest").open(GraknTxType.WRITE);
-        AbstractGraknGraph graph2 = (AbstractGraknGraph) Grakn.session(Grakn.DEFAULT_URI, "grakntest2").open(GraknTxType.WRITE);
+    public void testGrakn() throws InvalidGraphException {        
+        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.session(factoryUri, "grakntest").open(GraknTxType.WRITE);
+        AbstractGraknGraph graph2 = (AbstractGraknGraph) Grakn.session(factoryUri, "grakntest2").open(GraknTxType.WRITE);
         assertNotEquals(0, graph.getTinkerPopGraph().traversal().V().toList().size());
         assertFalse(graph.isBatchGraph());
         assertNotEquals(graph, graph2);
         graph.close();
 
-        AbstractGraknGraph batch = (AbstractGraknGraph) Grakn.session(Grakn.DEFAULT_URI, "grakntest").open(GraknTxType.BATCH);
+        AbstractGraknGraph batch = (AbstractGraknGraph) Grakn.session(factoryUri, "grakntest").open(GraknTxType.BATCH);
         assertTrue(batch.isBatchGraph());
         assertNotEquals(graph, batch);
 
