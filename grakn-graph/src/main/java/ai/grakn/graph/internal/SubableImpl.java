@@ -23,6 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Subable;
+import ai.grakn.concept.TypeId;
 import ai.grakn.util.Schema;
 
 /**
@@ -31,7 +32,7 @@ import ai.grakn.util.Schema;
  * </p>
  *
  * <p>
- *     Thie is used to create concept hierarchies by specifying the super and sub of the object
+ *     This is used to create concept hierarchies by specifying the super and sub of the object
  * </p>
  *
  * @author fppt
@@ -41,15 +42,26 @@ import ai.grakn.util.Schema;
  */
 public abstract class SubableImpl<T extends Subable> extends ConceptImpl implements Subable<T> {
     private final Label cachedLabel;
+    private final TypeId cachedTypeId;
 
     SubableImpl(VertexElement vertexElement) {
         super(vertexElement);
         cachedLabel = Label.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
+        cachedTypeId = TypeId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
     }
 
     /**
      *
-     * @return The name of this type
+     * @return The internal id which is used for fast lookups
+     */
+    @Override
+    public TypeId getTypeId(){
+        return cachedTypeId;
+    }
+
+    /**
+     *
+     * @return The label of this ontological element
      */
     @Override
     public Label getLabel() {

@@ -101,13 +101,6 @@ public interface Type extends Concept, Subable<Type> {
     Type deleteScope(Thing scope);
 
     //------------------------------------- Accessors ---------------------------------
-    /**
-     * Returns the unique id of this Type.
-     *
-     * @return The unique id of this type
-     */
-    @CheckReturnValue
-    TypeId getTypeId();
 
     /**
      *

@@ -37,6 +37,15 @@ import java.util.Collection;
 public interface Subable<T extends Subable> {
 
     /**
+     * Returns the unique id of this Type.
+     *
+     * @return The unique id of this type
+     */
+    //TODO: rename this ugly thing.
+    @CheckReturnValue
+    TypeId getTypeId();
+
+    /**
      * Returns the unique label of this Type.
      *
      * @return The unique label of this type

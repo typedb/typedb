@@ -19,14 +19,13 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
@@ -68,7 +67,6 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
 class TypeImpl<T extends Type, V extends Thing> extends SubableImpl<Type> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
-    private final TypeId cachedTypeId;
     private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
     private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
     private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
@@ -90,7 +88,6 @@ class TypeImpl<T extends Type, V extends Thing> extends SubableImpl<Type> implem
 
     TypeImpl(VertexElement vertexElement) {
         super(vertexElement);
-        cachedTypeId = TypeId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
     }
 
     TypeImpl(VertexElement vertexElement, T superType) {
@@ -173,15 +170,6 @@ class TypeImpl<T extends Type, V extends Thing> extends SubableImpl<Type> implem
         superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlays().keySet()));
 
         return Collections.unmodifiableCollection(filterImplicitStructures(allRoleTypes));
-    }
-
-    /**
-     *
-     * @return The internal type id which is used for fast lookups
-     */
-    @Override
-    public TypeId getTypeId(){
-        return cachedTypeId;
     }
 
     @Override
