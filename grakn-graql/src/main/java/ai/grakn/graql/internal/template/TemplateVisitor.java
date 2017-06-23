@@ -218,7 +218,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     }
 
     private Boolean visitBool(GraqlTemplateParser.BoolContext ctx){
-        return (boolean) this.visit(ctx);
+        return (Boolean) this.visit(ctx);
     }
 
     @Override
