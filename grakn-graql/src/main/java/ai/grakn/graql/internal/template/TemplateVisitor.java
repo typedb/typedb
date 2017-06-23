@@ -117,7 +117,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
             return this.visitBlock(ctx.elsePartial().block());
         }
 
-        return null;
+        return "";
     }
 
     @Override
@@ -336,10 +336,12 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         Object object = scope.resolve(ctx.ID().getText());
 
         for(GraqlTemplateParser.AccessorContext accessor:ctx.accessor()){
-            if(accessor instanceof GraqlTemplateParser.MapAccessorContext){
+            if(accessor instanceof GraqlTemplateParser.MapAccessorContext && object instanceof Map){
                 object = visitMapAccessor((GraqlTemplateParser.MapAccessorContext) accessor, (Map) object);
-            } else if (accessor instanceof GraqlTemplateParser.ListAccessorContext){
+            } else if (accessor instanceof GraqlTemplateParser.ListAccessorContext && object instanceof List){
                 object = visitListAccessor((GraqlTemplateParser.ListAccessorContext) accessor, (List) object);
+            } else {
+                object = null;
             }
         }
 
