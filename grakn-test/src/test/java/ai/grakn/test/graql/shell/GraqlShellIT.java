@@ -386,11 +386,11 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void testErrorWhenEngineNotRunning() throws Exception {
+    public void whenEngineIsNotRunning_ShowAnError() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell("", err, "-r", "localhost:7654");
 
-        assertFalse(err.toString().isEmpty());
+        assertThat(err.toString(), containsString(ErrorMessage.COULD_NOT_CONNECT.getMessage()));
     }
 
     @Test

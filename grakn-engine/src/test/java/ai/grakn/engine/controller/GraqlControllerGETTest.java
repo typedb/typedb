@@ -20,6 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
@@ -75,7 +76,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-
 //TODO Run in name order until TP Bug #13730 Fixed
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GraqlControllerGETTest {
@@ -83,6 +83,7 @@ public class GraqlControllerGETTest {
     private static GraknGraph mockGraph;
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
+    private static SystemKeyspace mockSystemKeyspace = mock(SystemKeyspace.class);
 
     @ClassRule
     public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
@@ -107,8 +108,10 @@ public class GraqlControllerGETTest {
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
         when(mockGraph.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
+        when(mockSystemKeyspace.ensureKeyspaceInitialised(any())).thenReturn(true);
 
+        when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
+        when(mockFactory.systemKeyspace()).thenReturn(mockSystemKeyspace);
         when(mockFactory.properties()).thenReturn(GraknEngineConfig.create().getProperties());
     }
 

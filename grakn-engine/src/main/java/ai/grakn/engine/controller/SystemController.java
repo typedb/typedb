@@ -28,10 +28,11 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiOperation;
+import javax.ws.rs.DELETE;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,11 @@ import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
 import static ai.grakn.util.REST.GraphConfig.COMPUTER;
 import static ai.grakn.util.REST.GraphConfig.DEFAULT;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
+import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
+import static ai.grakn.util.REST.WebPath.System.DELETE_KEYSPACE;
+import static ai.grakn.util.REST.WebPath.System.INITIALISE;
 import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
 
 
@@ -71,10 +76,45 @@ public class SystemController {
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
     private final EngineGraknGraphFactory factory;
 
-    public SystemController(EngineGraknGraphFactory factory, Service spark) {
+    public SystemController(EngineGraknGraphFactory factory , Service spark) {
         this.factory = factory;
-        spark.get(KEYSPACES,     this::getKeyspaces);
-        spark.get(CONFIGURATION, this::getConfiguration);
+
+        spark.get(INITIALISE,         this::initialiseSession);
+        spark.get(KEYSPACES,          this::getKeyspaces);
+        spark.get(CONFIGURATION,      this::getConfiguration);
+        spark.delete(DELETE_KEYSPACE, this::deleteKeyspace);
+    }
+
+    @GET
+    @Path("/initialise")
+    @ApiOperation(value = "Initialise a grakn session - add the keyspace to the system graph and return configured properties.")
+    @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
+    private String initialiseSession(Request request, Response response){
+        String keyspace = request.queryParams(KEYSPACE_PARAM);
+        boolean keyspaceInitialised = factory.systemKeyspace().ensureKeyspaceInitialised(keyspace);
+
+        if(keyspaceInitialised) {
+            return getConfiguration(request, response);
+        }
+
+        throw GraknServerException.internalError("Unable to instantiate system keyspace " + keyspace);
+    }
+
+    @DELETE
+    @Path("/deleteKeyspace")
+    @ApiOperation(value = "Delete a keyspace from the system graph.")
+    @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
+    private boolean deleteKeyspace(Request request, Response response){
+        String keyspace = request.queryParams(KEYSPACE_PARAM);
+
+        boolean deletionComplete = factory.systemKeyspace().deleteKeyspace(keyspace);
+        if(deletionComplete){
+            response.status(200);
+        } else {
+            throw GraknServerException.couldNotDelete(keyspace);
+        }
+
+        return deletionComplete;
     }
 
     @GET
@@ -115,12 +155,10 @@ public class SystemController {
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeyspaces(Request request, Response response) {
         try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+
             ResourceType<String> keyspaceName = graph.getType(SystemKeyspace.KEYSPACE_RESOURCE);
             Json result = Json.array();
-            if (graph.getType(SystemKeyspace.KEYSPACE_ENTITY) == null) {
-                LOG.warn("No system ontology in system keyspace, possibly a bug!");
-                return result.toString();
-            }
+
             for (Entity keyspace : graph.<EntityType>getType(SystemKeyspace.KEYSPACE_ENTITY).instances()) {
                 Collection<Resource<?>> names = keyspace.resources(keyspaceName);
                 if (names.size() != 1) {
