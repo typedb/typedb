@@ -1,0 +1,44 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
+package ai.grakn.graph.internal;
+
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
+
+/**
+ * <p>
+ *     Represents a concept in the graph which can have a hierarchy
+ * </p>
+ *
+ * <p>
+ *     Thie is used to create concept hierarchies by specifying the super and sub of the object
+ * </p>
+ *
+ * @author fppt
+ *
+ * @param <T> The leaf interface of the object concept.
+ *           For example an {@link EntityType} or {@link RelationType} or {@link RoleType}
+ */
+public abstract class SubableImpl<T extends Concept> extends ConceptImpl<T> {
+    SubableImpl(VertexElement vertexElement) {
+        super(vertexElement);
+    }
+}
