@@ -20,17 +20,19 @@ package ai.grakn.client;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.util.REST;
+import mjson.Json;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ResponseHandler;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import mjson.Json;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ResponseHandler;
+import java.util.Properties;
 
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static java.util.stream.Collectors.joining;
@@ -55,7 +57,20 @@ public class Client {
             return reader.lines().collect(joining("\n"));
         }
     };
-    
+
+    public static void main(String[] args) throws IOException {
+        String confPath = System.getProperty("grakn.conf");
+        Properties properties = new Properties();
+        try (FileInputStream stream = new FileInputStream(confPath)) {
+            properties.load(stream);
+        }
+
+        if (serverIsRunning(properties.getProperty("server.host") + ":" + properties.getProperty("server.port"))) {
+            System.exit(0);
+        } else {
+            System.exit(1);
+        }
+    }
 
     /**
      * Check if Grakn Engine has been started
