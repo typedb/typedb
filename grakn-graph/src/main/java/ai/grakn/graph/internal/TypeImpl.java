@@ -65,11 +65,10 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
  * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
  */
-class TypeImpl<T extends Type, V extends Thing> extends SubableImpl<T> implements Type{
+class TypeImpl<T extends Type, V extends Thing> extends SubableImpl<Type> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
     private final TypeId cachedTypeId;
-    private final Label cachedLabel;
     private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
     private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
     private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
@@ -91,8 +90,6 @@ class TypeImpl<T extends Type, V extends Thing> extends SubableImpl<T> implement
 
     TypeImpl(VertexElement vertexElement) {
         super(vertexElement);
-        String typeLabel = vertex().property(Schema.VertexProperty.TYPE_LABEL);
-        cachedLabel = Label.of(typeLabel);
         cachedTypeId = TypeId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
     }
 
@@ -646,15 +643,6 @@ class TypeImpl<T extends Type, V extends Thing> extends SubableImpl<T> implement
         ((ResourceTypeImpl) resourceType).plays(valueRole, false);
 
         return getThis();
-    }
-
-    /**
-     *
-     * @return The name of this type
-     */
-    @Override
-    public Label getLabel() {
-        return cachedLabel;
     }
 
     /**

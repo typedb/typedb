@@ -18,10 +18,12 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Subable;
+import ai.grakn.util.Schema;
 
 /**
  * <p>
@@ -37,8 +39,20 @@ import ai.grakn.concept.RoleType;
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType} or {@link RelationType} or {@link RoleType}
  */
-public abstract class SubableImpl<T extends Concept> extends ConceptImpl {
+public abstract class SubableImpl<T extends Subable> extends ConceptImpl implements Subable<T> {
+    private final Label cachedLabel;
+
     SubableImpl(VertexElement vertexElement) {
         super(vertexElement);
+        cachedLabel = Label.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
+    }
+
+    /**
+     *
+     * @return The name of this type
+     */
+    @Override
+    public Label getLabel() {
+        return cachedLabel;
     }
 }
