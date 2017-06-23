@@ -342,7 +342,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         Object object = scope.resolve(this.visitId(ctx.id()));
 
         for(GraqlTemplateParser.AccessorContext accessor:ctx.accessor()) {
-            if (object instanceof Map) {
+            if (object instanceof Map || object instanceof List) {
                 object = ((Function<Object, Object>) this.visit(accessor)).apply(object);
             } else {
                 object = null;
