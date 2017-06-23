@@ -24,11 +24,11 @@ import java.util.function.Function;
 
 /**
  * <p>
- *     A Type Label
+ *     A Label
  * </p>
  *
  * <p>
- *     A class which represents the unique label of any {@link Type} in the {@link ai.grakn.GraknGraph}.
+ *     A class which represents the unique label of any {@link Type} or {@link RuleType} in the {@link ai.grakn.GraknGraph}.
  *     Also contains a static method for producing {@link Label}s from Strings.
  * </p>
  *
