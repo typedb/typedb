@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.template;
 
 import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.antlr.GraqlTemplateBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
 import ai.grakn.graql.macro.Macro;
@@ -34,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -48,7 +50,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     private final Map<String, Object> originalContext;
     private final Map<String, Macro<?>> macros;
 
-    private final Map<String, Integer> iteration = new HashMap<>();
+    private final Map<Var, Integer> iteration = new HashMap<>();
     private Scope scope;
 
     public TemplateVisitor(CommonTokenStream tokens, Map<String, Object> context, Map<String, Macro<?>> macros){
@@ -87,12 +89,12 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         }, ctx.list(), ctx.block());
     }
 
-    private Object runForLoop(Function<Object, Map> mapSupplier, GraqlTemplateParser.ListContext listCtx, GraqlTemplateParser.BlockContext block) {
+    private Object runForLoop(Function<Object, Map> contextSupplier, GraqlTemplateParser.ListContext listCtx, GraqlTemplateParser.BlockContext block) {
         List list = this.visitList(listCtx);
 
         Object returnValue = null;
         for (Object object:list) {
-            scope = new Scope(scope, mapSupplier.apply(object));
+            scope = new Scope(scope, contextSupplier.apply(object));
             returnValue = aggregateResult(returnValue, this.visit(block));
             scope = scope.up();
         }
@@ -148,7 +150,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     @Override
     public Boolean visitBooleanExpression(GraqlTemplateParser.BooleanExpressionContext ctx) {
-        return this.visitExpression(ctx.expression(), Boolean.class);
+        return this.visitUntypedExpression(ctx.untypedExpression(), Boolean.class);
     }
 
     @Override
@@ -161,36 +163,36 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         if(ctx.STRING() != null) {
             return String.valueOf(ctx.getText().replaceAll("\"", ""));
         } else {
-            return this.visitExpression(ctx.expression(), String.class);
+            return this.visitUntypedExpression(ctx.untypedExpression(), String.class);
         }
     }
 
     @Override
     public Number visitNumber(GraqlTemplateParser.NumberContext ctx){
-        if(ctx.inT() != null){
-            return this.visitInT(ctx.inT());
-        } else if(ctx.doublE() != null) {
-            return this.visitDoublE(ctx.doublE());
+        if(ctx.int_() != null){
+            return this.visitInt_(ctx.int_());
+        } else if(ctx.double_() != null) {
+            return this.visitDouble_(ctx.double_());
         } else {
-            return this.visitExpression(ctx.expression(), Number.class);
+            return this.visitUntypedExpression(ctx.untypedExpression(), Number.class);
         }
     }
 
     @Override
-    public Integer visitInT(GraqlTemplateParser.InTContext ctx) {
+    public Integer visitInt_(GraqlTemplateParser.Int_Context ctx) {
         if(ctx.INT() != null){
             return Integer.parseInt(ctx.getText());
         } else {
-            return this.visitExpression(ctx.expression(), Integer.class);
+            return this.visitUntypedExpression(ctx.untypedExpression(), Integer.class);
         }
     }
 
     @Override
-    public Double visitDoublE(GraqlTemplateParser.DoublEContext ctx) {
+    public Double visitDouble_(GraqlTemplateParser.Double_Context ctx) {
         if(ctx.DOUBLE() != null){
             return Double.parseDouble(ctx.getText());
         } else {
-            return this.visitExpression(ctx.expression(), Double.class);
+            return this.visitUntypedExpression(ctx.untypedExpression(), Double.class);
         }
     }
 
@@ -201,13 +203,13 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     @Override
     public List visitList(GraqlTemplateParser.ListContext ctx){
-        return this.visitExpression(ctx.expression(), List.class);
+        return this.visitUntypedExpression(ctx.untypedExpression(), List.class);
     }
 
     @Override
-    public Object visitLiteral(GraqlTemplateParser.LiteralContext ctx){
-        if(ctx.expression() != null){
-            return this.visitExpression(ctx.expression(), Object.class);
+    public Object visitExpression(GraqlTemplateParser.ExpressionContext ctx){
+        if(ctx.untypedExpression() != null){
+            return this.visitUntypedExpression(ctx.untypedExpression(), Object.class);
         } else if(ctx.BOOLEAN() != null) {
             return Boolean.parseBoolean(ctx.getText());
         } else {
@@ -221,8 +223,8 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     @Override
     public Boolean visitEqExpression(GraqlTemplateParser.EqExpressionContext ctx) {
-        Object lValue = this.visit(ctx.literal(0));
-        Object rValue = this.visit(ctx.literal(1));
+        Object lValue = this.visit(ctx.expression(0));
+        Object rValue = this.visit(ctx.expression(1));
 
         if(lValue == null || rValue == null){
             return lValue == rValue;
@@ -233,8 +235,8 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     @Override
     public Boolean visitNotEqExpression(GraqlTemplateParser.NotEqExpressionContext ctx) {
-        Object lValue = this.visit(ctx.literal(0));
-        Object rValue = this.visit(ctx.literal(1));
+        Object lValue = this.visit(ctx.expression(0));
+        Object rValue = this.visit(ctx.expression(1));
 
         if(lValue == null || rValue == null){
             return lValue != rValue;
@@ -276,21 +278,21 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     }
 
     @Override
-    public String visitVarResolved(GraqlTemplateParser.VarResolvedContext ctx) {
+    public Var visitVarResolved(GraqlTemplateParser.VarResolvedContext ctx) {
         Object value = null;
-        for(GraqlTemplateParser.ExpressionContext c:ctx.expression()){
-            value = aggregateResult(value, this.visitExpression(c, Object.class));
+        for(GraqlTemplateParser.UntypedExpressionContext c:ctx.untypedExpression()){
+            value = aggregateResult(value, this.visitUntypedExpression(c, Object.class));
         }
 
         if(value == null) throw GraqlSyntaxException.parsingTemplateMissingKey(ctx.getText(), originalContext);
 
-        String valueAsVar = value.toString().replaceAll("[^a-zA-Z0-9]", "-");
-        return ctx.DOLLAR() + valueAsVar;
+        String valueAsVar = value.toString().replaceAll("[^a-zA-Z0-9_]", "-");
+        return var(valueAsVar);
     }
 
     @Override
     public String visitVarLiteral(GraqlTemplateParser.VarLiteralContext ctx){
-        String var = ctx.getText();
+        Var var = var(ctx.getText());
 
         if(!scope.hasSeen(var)){
             scope.markAsSeen(var);
@@ -310,7 +312,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     @Override
     public String visitEscapedExpression(GraqlTemplateParser.EscapedExpressionContext ctx) {
-        Object resolved = visitExpression(ctx.expression(), Object.class);
+        Object resolved = visitUntypedExpression(ctx.untypedExpression(), Object.class);
 
         if(resolved == null) throw GraqlSyntaxException.parsingTemplateMissingKey(ctx.getText(), originalContext);
 
@@ -320,35 +322,51 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     @Override
     public Object visitMacroExpression(GraqlTemplateParser.MacroExpressionContext ctx){
         String macro = ctx.ID_MACRO().getText().replace("@", "").toLowerCase();
-        List<Object> values = ctx.literal().stream().map(this::visit).collect(toList());
+        List<Object> values = ctx.expression().stream().map(this::visit).collect(toList());
 
         return macros.get(macro).apply(values);
     }
 
     @Override
-    public Object visitStringExpression(GraqlTemplateParser.StringExpressionContext ctx){
-        String key = ctx.STRING().getText().replaceAll("^\"|\"$", "");
-        return scope.resolve(key);
+    public String visitId(GraqlTemplateParser.IdContext ctx) {
+        if (ctx.ID() != null){
+            return ctx.ID().getText();
+        } else {
+            String string = ctx.STRING().getText();
+            return string.substring(1, string.length() - 1);
+        }
     }
 
     @Override
     public Object visitIdExpression(GraqlTemplateParser.IdExpressionContext ctx) {
-        Object object = scope.resolve(ctx.ID().getText());
+        Object object = scope.resolve(this.visitId(ctx.id()));
 
         for(GraqlTemplateParser.AccessorContext accessor:ctx.accessor()){
-            if(accessor instanceof GraqlTemplateParser.MapAccessorContext && object instanceof Map){
-                object = visitMapAccessor((GraqlTemplateParser.MapAccessorContext) accessor, (Map) object);
-            } else if (accessor instanceof GraqlTemplateParser.ListAccessorContext && object instanceof List){
-                object = visitListAccessor((GraqlTemplateParser.ListAccessorContext) accessor, (List) object);
-            } else {
-                object = null;
-            }
+            object = ((Function<Object, Object>) this.visit(accessor)).apply(object);
         }
 
         return object;
     }
 
-    private <T> T visitExpression(GraqlTemplateParser.ExpressionContext ctx, Class<T> clazz) {
+    @Override
+    public Function<Map, Object> visitMapAccessor(GraqlTemplateParser.MapAccessorContext ctx) {
+        return (map) -> map.get(this.visitId(ctx.id()));
+    }
+
+    @Override
+    public Function<List, Object> visitListAccessor(GraqlTemplateParser.ListAccessorContext ctx) {
+        return (list) -> {
+            int index = this.visitInt_(ctx.int_());
+
+            if (index >= list.size() || index < 0) {
+                throw GraqlSyntaxException.parsingError("Index [" + index + "] out of bounds for list " + list);
+            }
+
+            return list.get(index);
+        };
+    }
+
+    private <T> T visitUntypedExpression(GraqlTemplateParser.UntypedExpressionContext ctx, Class<T> clazz) {
         Object object = this.visit(ctx);
 
         if(object == null){
@@ -357,21 +375,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
             throw GraqlSyntaxException.parsingIncorrectValueType(object, clazz, scope.data());
         }
 
-        return (T) object;
-    }
-
-    private Object visitMapAccessor(GraqlTemplateParser.MapAccessorContext ctx, Map map) {
-        return map.get(ctx.ID().getText());
-    }
-
-    private Object visitListAccessor(GraqlTemplateParser.ListAccessorContext ctx, List list) {
-        int index = this.visitInT(ctx.inT());
-
-        if(index >= list.size() || index < 0){
-            throw GraqlSyntaxException.parsingError("Index [" + index + "] out of bounds for list "  + list);
-        }
-
-        return list.get(index);
+        return clazz.cast(object);
     }
 
     @Override

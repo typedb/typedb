@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.template;
 
+import ai.grakn.graql.Var;
 import com.google.common.collect.Sets;
 
 import java.util.HashSet;
@@ -37,7 +38,7 @@ public class Scope {
 
     private final Scope parent;
     private final Map<String, Object> values;
-    private final Set<String> variablesEncountered;
+    private final Set<Var> variablesEncountered;
 
     public Scope(Map<String, Object> data){
         this.parent = null;
@@ -81,7 +82,7 @@ public class Scope {
      * @param variable variable to check the presence of
      * @return true if the variable has been seen, false otherwise
      */
-    boolean hasSeen(String variable){
+    boolean hasSeen(Var variable){
         return variablesEncountered.contains(variable);
     }
 
@@ -89,7 +90,7 @@ public class Scope {
      * Mark a variable as seen within this scope
      * @param variable variable to mark as seen
      */
-    void markAsSeen(String variable){
+    void markAsSeen(Var variable){
         variablesEncountered.add(variable);
     }
 }

@@ -371,6 +371,17 @@ public class TemplateParserTest {
     }
 
     @Test
+    public void doubleDotInStringTest(){
+        String template = "insert $x isa person has name <\"person\".\"name\".\"firstName\">;";
+        String expected = "insert $x0 isa person has name \"Phil\";";
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("person", singletonMap("name", singletonMap("firstName", "Phil")));
+
+        assertParseEquals(template, data, expected);
+    }
+
+    @Test
     public void comboVarDotTest(){
         String template = "insert $<person.name> isa person;";
         String expected = "insert $Phil-Collins isa person;";

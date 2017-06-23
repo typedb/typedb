@@ -1,10 +1,5 @@
 grammar GraqlTemplate;
 
-@lexer::members {
-    public static final int WHITESPACE = 1;
-    public static final int COMMENTS = 2;
-}
-
 template
  : blockContents EOF
  ;
@@ -13,6 +8,7 @@ block
  : '{' blockContents '}'
  ;
 
+//TODO remove escaped expression and handle escaping here
 blockContents
  : (statement | escapedExpression | var | keyword | ID)*
  ;
@@ -31,43 +27,44 @@ ifPartial     : IF LPAREN bool RPAREN DO block ;
 elseIfPartial : ELSEIF LPAREN bool RPAREN DO block ;
 elsePartial   : ELSE block ;
 
-literal       : expression | nil | string | number | BOOLEAN;
-number        : expression | inT | doublE;
-inT           : expression | INT;
-doublE        : expression | DOUBLE;
-string        : expression | STRING;
-list          : expression ;
+expression    : untypedExpression | nil | string | number | BOOLEAN;
+number        : untypedExpression | int_ | double_;
+int_          : untypedExpression | INT;
+double_       : untypedExpression | DOUBLE;
+string        : untypedExpression | STRING;
+list          : untypedExpression ;
 nil           : NULL;
 bool
  : LPAREN bool RPAREN         #groupExpression
  | NOT bool                   #notExpression
- | literal EQ literal         #eqExpression
- | literal NEQ literal        #notEqExpression
+ | expression EQ expression   #eqExpression
+ | expression NEQ expression  #notEqExpression
  | bool OR bool               #orExpression
  | bool AND bool              #andExpression
  | number GREATER number      #greaterExpression
  | number GREATEREQ number    #greaterEqExpression
  | number LESS number         #lessExpression
  | number LESSEQ number       #lessEqExpression
- | expression                 #booleanExpression
+ | untypedExpression          #booleanExpression
  | BOOLEAN                    #booleanConstant
  ;
 
-escapedExpression : expression;
-expression
- : '<' ID accessor* '>'                             #idExpression
- | '<' STRING '>'                                   #stringExpression
- | ID_MACRO LPAREN literal? (',' literal)* RPAREN   #macroExpression
+escapedExpression : untypedExpression;
+untypedExpression
+ : '<' id accessor* '>'                                   #idExpression
+ | ID_MACRO LPAREN expression? (',' expression)* RPAREN   #macroExpression
  ;
 
 accessor
- : '.' ID         #mapAccessor
- | '[' inT ']'    #listAccessor
+ : '.' id            #mapAccessor
+ | '[' int_ ']'      #listAccessor
  ;
 
+id: ID | STRING;
+
 var
- : DOLLAR (expression)+  #varResolved
- | ID_GRAQL              #varLiteral
+ : DOLLAR (untypedExpression)+   #varResolved
+ | VAR_GRAQL                     #varLiteral
  ;
 
 keyword
@@ -133,11 +130,11 @@ BOOLEAN     : 'true' | 'false' ;
 ID          : [a-zA-Z0-9_-]+;
 STRING      : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';
 
-ID_GRAQL    : DOLLAR ID;
+VAR_GRAQL   : DOLLAR ID;
 ID_MACRO    : AT ID;
 
 // hidden channels
-WS          : [ \t\r\n]                  -> channel(1);
-COMMENT     : '#' .*? '\r'? ('\n' | EOF) -> channel(2);
+WS          : [ \t\r\n]                  -> channel(HIDDEN);
+COMMENT     : '#' .*? '\r'? ('\n' | EOF) -> channel(HIDDEN);
 
 fragment ESCAPE_SEQ : '\\' . ;
