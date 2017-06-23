@@ -42,7 +42,7 @@ import java.util.Collection;
  * @author fppt
  *
  */
-public interface Type extends Concept {
+public interface Type extends Concept, Subable<Type> {
     //------------------------------------- Modifiers ----------------------------------
     // TODO: Describe behaviour when setting a type with direct instances as abstract
     /**
@@ -108,14 +108,6 @@ public interface Type extends Concept {
      */
     @CheckReturnValue
     TypeId getTypeId();
-
-    /**
-     * Returns the unique label of this Type.
-     *
-     * @return The unique label of this type
-     */
-    @CheckReturnValue
-    TypeLabel getLabel();
 
     /**
      *
