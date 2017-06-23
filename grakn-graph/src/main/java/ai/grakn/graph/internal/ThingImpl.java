@@ -27,7 +27,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -62,7 +62,7 @@ import java.util.stream.Stream;
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
 abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl<T> implements Thing {
-    private Cache<TypeLabel> cachedInternalType = new Cache<>(() -> {
+    private Cache<Label> cachedInternalType = new Cache<>(() -> {
         int typeId = vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID);
         Type type = vertex().graph().getConcept(Schema.VertexProperty.TYPE_ID, typeId);
         return type.getLabel();
@@ -211,7 +211,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl<T>
         }
 
 
-        TypeLabel label = resource.type().getLabel();
+        Label label = resource.type().getLabel();
         RelationType hasResource = vertex().graph().getType(has.getLabel(label));
         RoleType hasResourceTarget = vertex().graph().getType(hasOwner.getLabel(label));
         RoleType hasResourceValue = vertex().graph().getType(hasValue.getLabel(label));
@@ -263,7 +263,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl<T>
      *
      * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
      */
-    public TypeLabel getInternalType(){
+    public Label getInternalType(){
         return cachedInternalType.get();
     }
 }

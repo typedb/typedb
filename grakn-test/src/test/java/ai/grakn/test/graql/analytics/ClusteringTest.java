@@ -24,11 +24,11 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
@@ -198,8 +198,8 @@ public class ClusteringTest {
             assertEquals(1, populationCount1.get(27).intValue());
 
             // test on subtypes. This will change existing cluster labels.
-            Set<TypeLabel> subTypes = Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
-                    resourceType3, resourceType4, resourceType5, resourceType6).stream().map(TypeLabel::of).collect(Collectors.toSet());
+            Set<Label> subTypes = Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
+                    resourceType3, resourceType4, resourceType5, resourceType6).stream().map(Label::of).collect(Collectors.toSet());
             sizeMap = graph.graql().compute().cluster().in(subTypes).execute();
             assertEquals(7, sizeMap.size());
             memberMap = graph.graql().compute().cluster().members().in(subTypes).execute();
@@ -283,35 +283,35 @@ public class ClusteringTest {
             resourceTypeList.add(graph.putResourceType(resourceType6, ResourceType.DataType.DOUBLE));
             resourceTypeList.add(graph.putResourceType(resourceType7, ResourceType.DataType.DOUBLE));
 
-            RoleType resourceOwner1 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType1)).getValue());
-            RoleType resourceOwner2 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType2)).getValue());
-            RoleType resourceOwner3 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType3)).getValue());
-            RoleType resourceOwner4 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType4)).getValue());
-            RoleType resourceOwner5 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType5)).getValue());
-            RoleType resourceOwner6 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType6)).getValue());
-            RoleType resourceOwner7 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType7)).getValue());
+            RoleType resourceOwner1 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType1)).getValue());
+            RoleType resourceOwner2 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType2)).getValue());
+            RoleType resourceOwner3 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType3)).getValue());
+            RoleType resourceOwner4 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType4)).getValue());
+            RoleType resourceOwner5 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType5)).getValue());
+            RoleType resourceOwner6 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType6)).getValue());
+            RoleType resourceOwner7 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType7)).getValue());
 
-            RoleType resourceValue1 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType1)).getValue());
-            RoleType resourceValue2 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType2)).getValue());
-            RoleType resourceValue3 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType3)).getValue());
-            RoleType resourceValue4 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType4)).getValue());
-            RoleType resourceValue5 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType5)).getValue());
-            RoleType resourceValue6 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType6)).getValue());
-            RoleType resourceValue7 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType7)).getValue());
+            RoleType resourceValue1 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType1)).getValue());
+            RoleType resourceValue2 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType2)).getValue());
+            RoleType resourceValue3 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType3)).getValue());
+            RoleType resourceValue4 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType4)).getValue());
+            RoleType resourceValue5 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType5)).getValue());
+            RoleType resourceValue6 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)).getValue());
+            RoleType resourceValue7 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType7)).getValue());
 
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType1)).getValue())
+            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)).getValue())
                     .relates(resourceOwner1).relates(resourceValue1);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType2)).getValue())
+            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)).getValue())
                     .relates(resourceOwner2).relates(resourceValue2);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType3)).getValue())
+            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType3)).getValue())
                     .relates(resourceOwner3).relates(resourceValue3);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType4)).getValue())
+            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType4)).getValue())
                     .relates(resourceOwner4).relates(resourceValue4);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType5)).getValue())
+            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)).getValue())
                     .relates(resourceOwner5).relates(resourceValue5);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType6)).getValue())
+            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)).getValue())
                     .relates(resourceOwner6).relates(resourceValue6);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType7)).getValue())
+            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType7)).getValue())
                     .relates(resourceOwner7).relates(resourceValue7);
 
             entityType1.plays(resourceOwner1)
@@ -350,21 +350,21 @@ public class ClusteringTest {
             Entity entity3 = graph.getConcept(entityId3);
             Entity entity4 = graph.getConcept(entityId4);
 
-            RoleType resourceOwner1 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType1)));
-            RoleType resourceOwner2 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType2)));
-            RoleType resourceOwner3 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType3)));
-            RoleType resourceOwner4 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType4)));
-            RoleType resourceOwner5 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType5)));
-            RoleType resourceOwner6 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType6)));
+            RoleType resourceOwner1 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType1)));
+            RoleType resourceOwner2 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType2)));
+            RoleType resourceOwner3 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType3)));
+            RoleType resourceOwner4 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType4)));
+            RoleType resourceOwner5 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType5)));
+            RoleType resourceOwner6 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType6)));
 
-            RoleType resourceValue1 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType1)));
-            RoleType resourceValue2 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType2)));
-            RoleType resourceValue3 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType3)));
-            RoleType resourceValue4 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType4)));
-            RoleType resourceValue5 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType5)));
-            RoleType resourceValue6 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType6)));
+            RoleType resourceValue1 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType1)));
+            RoleType resourceValue2 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType2)));
+            RoleType resourceValue3 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType3)));
+            RoleType resourceValue4 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType4)));
+            RoleType resourceValue5 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType5)));
+            RoleType resourceValue6 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)));
 
-            RelationType relationType1 = graph.getType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType1)));
+            RelationType relationType1 = graph.getType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)));
             relationType1.addRelation()
                     .addRolePlayer(resourceOwner1, entity1)
                     .addRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.2));
@@ -375,7 +375,7 @@ public class ClusteringTest {
                     .addRolePlayer(resourceOwner1, entity3)
                     .addRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.8));
 
-            RelationType relationType2 = graph.getType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType2)));
+            RelationType relationType2 = graph.getType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)));
             relationType2.addRelation()
                     .addRolePlayer(resourceOwner2, entity1)
                     .addRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(4L));
@@ -386,7 +386,7 @@ public class ClusteringTest {
                     .addRolePlayer(resourceOwner2, entity4)
                     .addRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(0L));
 
-            RelationType relationType5 = graph.getType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType5)));
+            RelationType relationType5 = graph.getType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)));
             relationType5.addRelation()
                     .addRolePlayer(resourceOwner5, entity1)
                     .addRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
@@ -397,7 +397,7 @@ public class ClusteringTest {
                     .addRolePlayer(resourceOwner5, entity4)
                     .addRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
 
-            RelationType relationType6 = graph.getType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType6)));
+            RelationType relationType6 = graph.getType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)));
             relationType6.addRelation()
                     .addRolePlayer(resourceOwner6, entity1)
                     .addRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));

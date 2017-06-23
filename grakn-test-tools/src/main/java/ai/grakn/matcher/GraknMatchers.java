@@ -20,7 +20,7 @@ package ai.grakn.matcher;
 
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import com.google.common.collect.Maps;
@@ -211,14 +211,14 @@ public class GraknMatchers {
      * Create a matcher to test that the concept has the given type name.
      */
     public static Matcher<MatchableConcept> type(String type) {
-        return type(TypeLabel.of(type));
+        return type(Label.of(type));
     }
 
     /**
      * Create a matcher to test that the concept has the given type name.
      */
-    static Matcher<MatchableConcept> type(TypeLabel expectedLabel) {
-        return new PropertyEqualsMatcher<MatchableConcept, TypeLabel>(expectedLabel) {
+    static Matcher<MatchableConcept> type(Label expectedLabel) {
+        return new PropertyEqualsMatcher<MatchableConcept, Label>(expectedLabel) {
 
             @Override
             public String getName() {
@@ -226,7 +226,7 @@ public class GraknMatchers {
             }
 
             @Override
-            TypeLabel transform(MatchableConcept item) {
+            Label transform(MatchableConcept item) {
                 return item.get().asType().getLabel();
             }
         };

@@ -27,7 +27,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
@@ -108,9 +108,9 @@ public class EntityTest extends GraphTestBase{
 
     @Test
     public void whenAddingResourceToAnEntity_EnsureTheImplicitStructureIsCreated(){
-        TypeLabel resourceTypeLabel = TypeLabel.of("A Resource Thing");
+        Label resourceLabel = Label.of("A Resource Thing");
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeLabel, ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType(resourceLabel, ResourceType.DataType.STRING);
         entityType.resource(resourceType);
 
         Entity entity = entityType.addEntity();
@@ -160,9 +160,9 @@ public class EntityTest extends GraphTestBase{
 
     @Test
     public void checkKeyCreatesCorrectResourceStructure(){
-        TypeLabel resourceTypeLabel = TypeLabel.of("A Resource Thing");
+        Label resourceLabel = Label.of("A Resource Thing");
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeLabel, ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType(resourceLabel, ResourceType.DataType.STRING);
         entityType.key(resourceType);
 
         Entity entity = entityType.addEntity();

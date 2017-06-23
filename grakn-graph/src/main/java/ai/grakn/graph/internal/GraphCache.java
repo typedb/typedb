@@ -18,9 +18,9 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
@@ -51,8 +51,8 @@ import java.util.concurrent.TimeUnit;
  */
 class GraphCache {
     //Caches
-    private final Cache<TypeLabel, Type> cachedTypes;
-    private final Map<TypeLabel, TypeId> cachedLabels;
+    private final Cache<Label, Type> cachedTypes;
+    private final Map<Label, TypeId> cachedLabels;
 
     GraphCache(Properties properties){
         cachedLabels = new ConcurrentHashMap<>();
@@ -70,7 +70,7 @@ class GraphCache {
      * @param label The label of the type to cache
      * @param type The type to cache
      */
-    void cacheType(TypeLabel label, Type type){
+    void cacheType(Label label, Type type){
         cachedTypes.put(label, type);
     }
 
@@ -80,7 +80,7 @@ class GraphCache {
      * @param label The label of the type to cache
      * @param id The id of the type to cache
      */
-    void cacheLabel(TypeLabel label, TypeId id){
+    void cacheLabel(Label label, TypeId id){
         cachedLabels.put(label, id);
     }
 
@@ -105,7 +105,7 @@ class GraphCache {
      *
      * @return an immutable copy of the cached labels.
      */
-    Map<TypeLabel, TypeId> getCachedLabels(){
+    Map<Label, TypeId> getCachedLabels(){
         return ImmutableMap.copyOf(cachedLabels);
     }
 
@@ -114,7 +114,7 @@ class GraphCache {
      *
      * @return an immutable copy of the cached ontology.
      */
-    Map<TypeLabel, Type> getCachedTypes(){
+    Map<Label, Type> getCachedTypes(){
         return ImmutableMap.copyOf(cachedTypes.asMap());
     }
 }

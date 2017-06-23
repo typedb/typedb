@@ -28,7 +28,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidGraphException;
@@ -135,7 +135,7 @@ public class GraqlTest {
     @Test
     public void testStatisticsMethods() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            TypeLabel resourceTypeId = TypeLabel.of("my-resource");
+            Label resourceTypeId = Label.of("my-resource");
 
             RoleType resourceOwner = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
             RoleType resourceValue = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));

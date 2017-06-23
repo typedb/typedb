@@ -26,7 +26,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
@@ -69,7 +69,7 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
     private final TypeId cachedTypeId;
-    private final TypeLabel cachedTypeLabel;
+    private final Label cachedLabel;
     private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
     private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
     private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
@@ -92,7 +92,7 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
     TypeImpl(VertexElement vertexElement) {
         super(vertexElement);
         String typeLabel = vertex().property(Schema.VertexProperty.TYPE_LABEL);
-        cachedTypeLabel = TypeLabel.of(typeLabel);
+        cachedLabel = Label.of(typeLabel);
         cachedTypeId = TypeId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
     }
 
@@ -616,16 +616,16 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
             throw GraphOperationException.metaTypeImmutable(resourceType.getLabel());
         }
 
-        TypeLabel resourceTypeLabel = resourceType.getLabel();
-        RoleType ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(resourceTypeLabel));
-        RoleType valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(resourceTypeLabel));
-        RelationType relationType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceTypeLabel)).
+        Label resourceLabel = resourceType.getLabel();
+        RoleType ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(resourceLabel));
+        RoleType valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(resourceLabel));
+        RelationType relationType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceLabel)).
                 relates(ownerRole).
                 relates(valueRole);
 
         //Linking with ako structure if present
         ResourceType resourceTypeSuper = resourceType.superType();
-        TypeLabel superLabel = resourceTypeSuper.getLabel();
+        Label superLabel = resourceTypeSuper.getLabel();
         if(!Schema.MetaSchema.RESOURCE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
             RoleType ownerRoleSuper = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
             RoleType valueRoleSuper = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
@@ -653,8 +653,8 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
      * @return The name of this type
      */
     @Override
-    public TypeLabel getLabel() {
-        return cachedTypeLabel;
+    public Label getLabel() {
+        return cachedLabel;
     }
 
     /**

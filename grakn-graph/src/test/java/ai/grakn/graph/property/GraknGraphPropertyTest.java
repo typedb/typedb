@@ -25,13 +25,13 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.generator.AbstractTypeGenerator.Abstract;
@@ -133,28 +133,28 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingGetTypeWithAnExistingTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph Type type) {
-        TypeLabel typeLabel = type.getLabel();
-        assertEquals(type, graph.getType(typeLabel));
+        Label label = type.getLabel();
+        assertEquals(type, graph.getType(label));
     }
 
     @Property
-    public void whenCallingGetTypeWithANonExistingTypeLabel_ItReturnsNull(@Open GraknGraph graph, TypeLabel typeLabel) {
-        Set<TypeLabel> allTypes = allTypesFrom(graph).stream().map(Type::getLabel).collect(toSet());
-        assumeThat(allTypes, not(hasItem(typeLabel)));
+    public void whenCallingGetTypeWithANonExistingTypeLabel_ItReturnsNull(@Open GraknGraph graph, Label label) {
+        Set<Label> allTypes = allTypesFrom(graph).stream().map(Type::getLabel).collect(toSet());
+        assumeThat(allTypes, not(hasItem(label)));
 
-        assertNull(graph.getType(typeLabel));
+        assertNull(graph.getType(label));
     }
 
     @Property
     public void whenCallingGetTypeWithAnIncorrectGeneric_ItThrows(@Open GraknGraph graph, @FromGraph Type type) {
         assumeFalse(type.isRoleType());
-        TypeLabel typeLabel = type.getLabel();
+        Label label = type.getLabel();
 
         exception.expect(ClassCastException.class);
 
         // We have to assign the result for the cast to happen
         //noinspection unused
-        RoleType roleType = graph.getType(typeLabel);
+        RoleType roleType = graph.getType(label);
     }
 
     @Property
@@ -208,32 +208,32 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingGetEntityType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph EntityType type) {
-        TypeLabel typeLabel = type.getLabel();
-        assertSameResult(() -> graph.getType(typeLabel), () -> graph.getEntityType(typeLabel.getValue()));
+        Label label = type.getLabel();
+        assertSameResult(() -> graph.getType(label), () -> graph.getEntityType(label.getValue()));
     }
 
     @Property
     public void whenCallingGetRelationType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph RelationType type) {
-        TypeLabel typeLabel = type.getLabel();
-        assertSameResult(() -> graph.getType(typeLabel), () -> graph.getRelationType(typeLabel.getValue()));
+        Label label = type.getLabel();
+        assertSameResult(() -> graph.getType(label), () -> graph.getRelationType(label.getValue()));
     }
 
     @Property
     public void whenCallingGetResourceType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph ResourceType type) {
-        TypeLabel typeLabel = type.getLabel();
-        assertSameResult(() -> graph.getType(typeLabel), () -> graph.getResourceType(typeLabel.getValue()));
+        Label label = type.getLabel();
+        assertSameResult(() -> graph.getType(label), () -> graph.getResourceType(label.getValue()));
     }
 
     @Property
     public void whenCallingGetRoleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph RoleType type) {
-        TypeLabel typeLabel = type.getLabel();
-        assertSameResult(() -> graph.getType(typeLabel), () -> graph.getRoleType(typeLabel.getValue()));
+        Label label = type.getLabel();
+        assertSameResult(() -> graph.getType(label), () -> graph.getRoleType(label.getValue()));
     }
 
     @Property
     public void whenCallingGetRuleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph RuleType type) {
-        TypeLabel typeLabel = type.getLabel();
-        assertSameResult(() -> graph.getType(typeLabel), () -> graph.getRuleType(typeLabel.getValue()));
+        Label label = type.getLabel();
+        assertSameResult(() -> graph.getType(label), () -> graph.getRuleType(label.getValue()));
     }
 
     @Property
@@ -267,10 +267,10 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeLabels.class) TypeLabel typeLabel) {
+    public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeLabels.class) Label label) {
         graph.admin().delete();
         graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
-        assertNotNull(graph.getType(typeLabel));
+        assertNotNull(graph.getType(label));
         graph.close();
     }
 

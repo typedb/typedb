@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.internal.analytics.CountMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
@@ -50,7 +50,7 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
         }
 
         ComputerResult result = getGraphComputer().compute(new CountMapReduce(
-                subTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet())));
+                subLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet())));
         Map<Serializable, Long> count = result.memory().get(CountMapReduce.class.getName());
 
         LOGGER.debug("Count = " + count.get(MapReduce.NullObject.instance()));
@@ -69,8 +69,8 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
     }
 
     @Override
-    public CountQuery in(Collection<TypeLabel> subTypeLabels) {
-        return (CountQuery) super.in(subTypeLabels);
+    public CountQuery in(Collection<Label> subLabels) {
+        return (CountQuery) super.in(subLabels);
     }
 
     @Override

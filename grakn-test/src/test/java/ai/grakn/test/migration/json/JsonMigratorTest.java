@@ -24,8 +24,8 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
@@ -103,21 +103,21 @@ public class JsonMigratorTest {
 
         Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
 
-        Resource number = getResource(graph, streetAddress, TypeLabel.of("number")).asResource();
+        Resource number = getResource(graph, streetAddress, Label.of("number")).asResource();
         assertEquals(21L, number.getValue());
 
-        Resource street = getResource(graph, streetAddress, TypeLabel.of("street")).asResource();
+        Resource street = getResource(graph, streetAddress, Label.of("street")).asResource();
         assertEquals("2nd Street", street.getValue());
 
-        Resource city = getResource(graph, address, TypeLabel.of("city")).asResource();
+        Resource city = getResource(graph, address, Label.of("city")).asResource();
         assertEquals("New York", city.getValue());
 
         Collection<Thing> phoneNumbers = getProperties(graph, person, "has-phone");
         assertEquals(2, phoneNumbers.size());
 
         boolean phoneNumbersCorrect = phoneNumbers.stream().allMatch(phoneNumber -> {
-            Object location = getResource(graph, phoneNumber, TypeLabel.of("location")).getValue();
-            Object code = getResource(graph, phoneNumber, TypeLabel.of("code")).getValue();
+            Object location = getResource(graph, phoneNumber, Label.of("location")).getValue();
+            Object code = getResource(graph, phoneNumber, Label.of("code")).getValue();
             return ((location.equals("home") && code.equals(44L)) || (location.equals("work") && code.equals(45L)));
         });
 
@@ -147,16 +147,16 @@ public class JsonMigratorTest {
 
         Entity thing = things.iterator().next();
 
-        Collection<Object> integers = getResources(graph, thing, TypeLabel.of("a-int")).map(r -> r.asResource().getValue()).collect(toSet());
+        Collection<Object> integers = getResources(graph, thing, Label.of("a-int")).map(r -> r.asResource().getValue()).collect(toSet());
         assertEquals(Sets.newHashSet(1L, 2L, 3L), integers);
 
-        Resource aBoolean = getResource(graph, thing, TypeLabel.of("a-boolean"));
+        Resource aBoolean = getResource(graph, thing, Label.of("a-boolean"));
         assertEquals(true, aBoolean.getValue());
 
-        Resource aNumber = getResource(graph, thing, TypeLabel.of("a-number"));
+        Resource aNumber = getResource(graph, thing, Label.of("a-number"));
         assertEquals(42.1, aNumber.getValue());
 
-        Resource aString = getResource(graph, thing, TypeLabel.of("a-string"));
+        Resource aString = getResource(graph, thing, Label.of("a-string"));
         assertEquals("hi", aString.getValue());
 
         assertEquals(0, graph.getResourceType("a-null").instances().size());
@@ -179,7 +179,7 @@ public class JsonMigratorTest {
 
         Collection<Entity> things = theThing.instances();
         boolean thingsCorrect = things.stream().allMatch(thing -> {
-            Object string = getResource(graph, thing, TypeLabel.of("a-string")).getValue();
+            Object string = getResource(graph, thing, Label.of("a-string")).getValue();
             return string.equals("hello") || string.equals("goodbye");
         });
 

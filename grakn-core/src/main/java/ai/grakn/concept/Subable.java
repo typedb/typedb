@@ -42,7 +42,7 @@ public interface Subable<T extends Subable> {
      * @return The unique label of this type
      */
     @CheckReturnValue
-    TypeLabel getLabel();
+    Label getLabel();
 
     /**
      *

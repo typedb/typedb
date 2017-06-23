@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.internal.analytics.MedianVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
@@ -42,10 +42,10 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceTypeLabels);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
+        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
         Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
+        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceLabels);
 
         String randomId = getRandomJobId();
 
@@ -65,8 +65,8 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
     }
 
     @Override
-    public MedianQuery of(Collection<TypeLabel> resourceTypeLabels) {
-        return (MedianQuery) setStatisticsResourceType(resourceTypeLabels);
+    public MedianQuery of(Collection<Label> resourceLabels) {
+        return (MedianQuery) setStatisticsResourceType(resourceLabels);
     }
 
     @Override
@@ -75,8 +75,8 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
     }
 
     @Override
-    public MedianQuery in(Collection<TypeLabel> subTypeLabels) {
-        return (MedianQuery) super.in(subTypeLabels);
+    public MedianQuery in(Collection<Label> subLabels) {
+        return (MedianQuery) super.in(subLabels);
     }
 
     @Override

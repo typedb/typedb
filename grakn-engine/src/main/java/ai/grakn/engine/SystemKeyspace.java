@@ -22,9 +22,9 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
@@ -69,8 +69,8 @@ public class SystemKeyspace {
     // If there is a more natural home for this constant, feel free to put it there! (Boris)
     public static final String SYSTEM_GRAPH_NAME = "graknSystem";
     private static final String SYSTEM_VERSION = "system-version";
-    public static final TypeLabel KEYSPACE_ENTITY = TypeLabel.of("keyspace");
-    public static final TypeLabel KEYSPACE_RESOURCE = TypeLabel.of("keyspace-name");
+    public static final Label KEYSPACE_ENTITY = Label.of("keyspace");
+    public static final Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
 
     private static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
     private final ConcurrentHashMap<String, Boolean> openSpaces;
