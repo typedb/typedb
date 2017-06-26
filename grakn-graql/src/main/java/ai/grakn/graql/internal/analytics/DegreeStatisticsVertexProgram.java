@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.LabelId;
+import ai.grakn.concept.TypeId;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -42,21 +42,21 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     public DegreeStatisticsVertexProgram() {
     }
 
-    public DegreeStatisticsVertexProgram(Set<LabelId> types, Set<LabelId> ofLabelIDs, String randomId) {
-        super(types, ofLabelIDs, randomId);
+    public DegreeStatisticsVertexProgram(Set<TypeId> types, Set<TypeId> ofTypeIDs, String randomId) {
+        super(types, ofTypeIDs, randomId);
     }
 
     @Override
     public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                degreeStatisticsStepResourceOwner(vertex, messenger, selectedTypes, ofLabelIds);
+                degreeStatisticsStepResourceOwner(vertex, messenger, selectedTypes, ofTypeIds);
                 break;
             case 1:
                 degreeStatisticsStepResourceRelation(vertex, messenger);
                 break;
             case 2:
-                degreeStatisticsStepResource(vertex, messenger, ofLabelIds, degreePropertyKey);
+                degreeStatisticsStepResource(vertex, messenger, ofTypeIds, degreePropertyKey);
                 break;
             default:
                 throw CommonUtil.unreachableStatement("Exceeded expected maximum number of iterations");
@@ -82,9 +82,9 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     }
 
     static void degreeStatisticsStepResourceOwner(Vertex vertex, Messenger<Long> messenger,
-                                                  Set<LabelId> selectedLabelIds, Set<LabelId> ofLabelIds) {
-        LabelId labelId = Utility.getVertexTypeId(vertex);
-        if (selectedLabelIds.contains(labelId) && !ofLabelIds.contains(labelId)) {
+                                                  Set<TypeId> selectedTypeIds, Set<TypeId> ofTypeIds) {
+        TypeId typeId = Utility.getVertexTypeId(vertex);
+        if (selectedTypeIds.contains(typeId) && !ofTypeIds.contains(typeId)) {
             messenger.sendMessage(messageScopeShortcutIn, 1L);
         }
     }
@@ -96,8 +96,8 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     }
 
     static void degreeStatisticsStepResource(Vertex vertex, Messenger<Long> messenger,
-                                             Set<LabelId> ofLabelIds, String degree) {
-        if (ofLabelIds.contains(Utility.getVertexTypeId(vertex))) {
+                                             Set<TypeId> ofTypeIds, String degree) {
+        if (ofTypeIds.contains(Utility.getVertexTypeId(vertex))) {
             vertex.property(degree, getMessageCount(messenger));
         }
     }

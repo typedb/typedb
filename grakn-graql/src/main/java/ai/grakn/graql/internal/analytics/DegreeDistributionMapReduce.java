@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.LabelId;
+import ai.grakn.concept.TypeId;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -47,8 +47,8 @@ public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
     public DegreeDistributionMapReduce() {
     }
 
-    public DegreeDistributionMapReduce(Set<LabelId> selectedLabelIds, String degreePropertyKey) {
-        super(selectedLabelIds);
+    public DegreeDistributionMapReduce(Set<TypeId> selectedTypeIds, String degreePropertyKey) {
+        super(selectedTypeIds);
         this.persistentProperties.put(DegreeVertexProgram.DEGREE, degreePropertyKey);
     }
 

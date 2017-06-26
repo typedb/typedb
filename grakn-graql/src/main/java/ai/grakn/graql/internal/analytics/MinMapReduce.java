@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.LabelId;
+import ai.grakn.concept.TypeId;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -41,8 +41,8 @@ public class MinMapReduce extends StatisticsMapReduce<Number> {
     public MinMapReduce() {
     }
 
-    public MinMapReduce(Set<LabelId> selectedLabelIds, ResourceType.DataType resourceDataType, String degreePropertyKey) {
-        super(selectedLabelIds, resourceDataType, degreePropertyKey);
+    public MinMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreePropertyKey) {
+        super(selectedTypeIds, resourceDataType, degreePropertyKey);
     }
 
     @Override

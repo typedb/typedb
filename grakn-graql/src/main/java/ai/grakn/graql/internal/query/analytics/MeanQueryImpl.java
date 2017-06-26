@@ -20,8 +20,8 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeId;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -49,14 +49,14 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
         initSubGraph();
         ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
+        Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
+        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceLabels);
 
         String randomId = getRandomJobId();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubLabelIds, statisticsResourceLabelIds, randomId),
-                new MeanMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE + randomId));
+                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds, randomId),
+                new MeanMapReduce(statisticsResourceTypeIds, dataType, DegreeVertexProgram.DEGREE + randomId));
         Map<Serializable, Map<String, Double>> mean = result.memory().get(MeanMapReduce.class.getName());
         Map<String, Double> meanPair = mean.get(MapReduce.NullObject.instance());
 

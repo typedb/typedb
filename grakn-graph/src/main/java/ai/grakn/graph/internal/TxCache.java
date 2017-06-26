@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.LabelId;
+import ai.grakn.concept.TypeId;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -59,7 +59,7 @@ class TxCache {
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
     private final Map<Label, TypeImpl> typeCache = new HashMap<>();
-    private final Map<Label, LabelId> labelCache = new HashMap<>();
+    private final Map<Label, TypeId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
     private final Set<EntityImpl> modifiedEntities = new HashSet<>();
@@ -119,7 +119,7 @@ class TxCache {
      */
     void refreshOntologyCache(){
         Map<Label, Type> cachedOntologySnapshot = graphCache.getCachedTypes();
-        Map<Label, LabelId> cachedLabelsSnapshot = graphCache.getCachedLabels();
+        Map<Label, TypeId> cachedLabelsSnapshot = graphCache.getCachedLabels();
 
         //Read central cache into txCache cloning only base concepts. Sets clones later
         for (Type type : cachedOntologySnapshot.values()) {
@@ -184,7 +184,7 @@ class TxCache {
      *
      * @return All the types labels currently cached in the transaction.
      */
-    Map<Label, LabelId> getLabelCache(){
+    Map<Label, TypeId> getLabelCache(){
         return labelCache;
     }
 
@@ -247,7 +247,7 @@ class TxCache {
      * @param label The type label to cache
      * @param id Its equivalent id which can be looked up quickly in the graph
      */
-    private void cacheLabel(Label label, LabelId id){
+    private void cacheLabel(Label label, TypeId id){
         labelCache.put(label, id);
     }
 
@@ -303,7 +303,7 @@ class TxCache {
         return (X) typeCache.get(label);
     }
 
-    LabelId convertLabelToId(Label label){
+    TypeId convertLabelToId(Label label){
         return labelCache.get(label);
     }
 

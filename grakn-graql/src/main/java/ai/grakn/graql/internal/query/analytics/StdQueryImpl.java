@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.LabelId;
+import ai.grakn.concept.TypeId;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
@@ -50,14 +50,14 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
         ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
 
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
+        Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
+        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceLabels);
 
         String randomId = getRandomJobId();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubLabelIds, statisticsResourceLabelIds, randomId),
-                new StdMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE + randomId));
+                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds, randomId),
+                new StdMapReduce(statisticsResourceTypeIds, dataType, DegreeVertexProgram.DEGREE + randomId));
         Map<Serializable, Map<String, Double>> std = result.memory().get(StdMapReduce.class.getName());
         Map<String, Double> stdTuple = std.get(MapReduce.NullObject.instance());
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);

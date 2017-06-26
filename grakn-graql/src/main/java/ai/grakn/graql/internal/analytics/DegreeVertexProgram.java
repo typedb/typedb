@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.LabelId;
+import ai.grakn.concept.TypeId;
 import ai.grakn.util.CommonUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -43,9 +43,9 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     // element key
     public static final String DEGREE = "degreeVertexProgram.degree";
-    private static final String OF_TYPE_LABELS = "degreeVertexProgram.ofLabelIds";
+    private static final String OF_TYPE_LABELS = "degreeVertexProgram.ofTypeIds";
 
-    Set<LabelId> ofLabelIds = new HashSet<>();
+    Set<TypeId> ofTypeIds = new HashSet<>();
 
     String degreePropertyKey;
 
@@ -53,24 +53,24 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     public DegreeVertexProgram() {
     }
 
-    public DegreeVertexProgram(Set<LabelId> types, Set<LabelId> ofLabelIds, String randomId) {
+    public DegreeVertexProgram(Set<TypeId> types, Set<TypeId> ofTypeIds, String randomId) {
         selectedTypes = types;
         degreePropertyKey = DEGREE + randomId;
-        this.ofLabelIds = ofLabelIds;
+        this.ofTypeIds = ofTypeIds;
         this.persistentProperties.put(DEGREE, degreePropertyKey);
     }
 
     @Override
     public void storeState(final Configuration configuration) {
         super.storeState(configuration);
-        ofLabelIds.forEach(type -> configuration.addProperty(OF_TYPE_LABELS + "." + type, type));
+        ofTypeIds.forEach(type -> configuration.addProperty(OF_TYPE_LABELS + "." + type, type));
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(OF_TYPE_LABELS).getKeys().forEachRemaining(key ->
-                ofLabelIds.add(LabelId.of(configuration.getInt(OF_TYPE_LABELS + "." + key))));
+                ofTypeIds.add(TypeId.of(configuration.getInt(OF_TYPE_LABELS + "." + key))));
         degreePropertyKey = (String) this.persistentProperties.get(DEGREE);
     }
 
@@ -112,8 +112,8 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     }
 
     void degreeMessageCounting(Vertex vertex, Messenger<Long> messenger) {
-        LabelId labelId = Utility.getVertexTypeId(vertex);
-        if (selectedTypes.contains(labelId) && ofLabelIds.contains(labelId)) {
+        TypeId typeId = Utility.getVertexTypeId(vertex);
+        if (selectedTypes.contains(typeId) && ofTypeIds.contains(typeId)) {
             vertex.property(degreePropertyKey, getMessageCount(messenger));
         }
     }

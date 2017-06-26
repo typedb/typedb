@@ -29,7 +29,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.LabelId;
+import ai.grakn.concept.TypeId;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
@@ -85,11 +85,11 @@ public final class Schema {
 
 
         private final Label label;
-        private final LabelId id;
+        private final TypeId id;
 
         MetaSchema(String s, int i) {
             label = Label.of(s);
-            id = LabelId.of(i);
+            id = TypeId.of(i);
         }
 
         @CheckReturnValue
@@ -98,7 +98,7 @@ public final class Schema {
         }
 
         @CheckReturnValue
-        public LabelId getId(){
+        public TypeId getId(){
             return id;
         }
 
