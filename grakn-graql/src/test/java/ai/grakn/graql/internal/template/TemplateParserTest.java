@@ -55,18 +55,6 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void concatenateValuesTest(){
-        String template = "insert $x isa @noescp(<first>)-@noescp(<last>);";
-        String expected = "insert $x0 isa one-two;";
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("first", "one");
-        data.put("last", "two");
-
-        assertParseEquals(template, data, expected);
-    }
-
-    @Test
     public void multiValueOneLineTest(){
         String template = "insert $x isa person has name <name> , has feet <numFeet>;";
         String expected = "insert $x0 has name \"Phil Collins\" isa person has feet 3;";

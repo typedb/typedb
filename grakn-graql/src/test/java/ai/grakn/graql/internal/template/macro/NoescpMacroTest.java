@@ -75,6 +75,18 @@ public class NoescpMacroTest {
     }
 
     @Test
+    public void whenUsingNoescpMacroToConcatenateValues_ResultingStringIsConcatenated(){
+        String template = "insert $x isa @noescp(<first>)-@noescp(<last>);";
+        String expected = "insert $x0 isa one-two;";
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", "one");
+        data.put("last", "two");
+
+        assertParseEquals(template, data, expected);
+    }
+
+    @Test
     public void whenUsingNoescpMacroInTemplateMultiple_ResultIsAsExpected(){
         String template = "insert $x has fn @noescp(<firstname>) has ln @noescp(<lastname>);";
         String expected = "insert $x0 has fn 4 has ln 5;";
