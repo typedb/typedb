@@ -20,7 +20,7 @@ package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
@@ -54,23 +54,23 @@ public abstract class TestGraph {
         };
     }
 
-    public static Instance putEntity(GraknGraph graph, String id, EntityType type, TypeLabel key) {
-        Instance inst = type.addEntity();
+    public static Thing putEntity(GraknGraph graph, String id, EntityType type, TypeLabel key) {
+        Thing inst = type.addEntity();
         putResource(inst, graph.getType(key), id);
         return inst;
     }
 
-    public static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource) {
+    public static <T> void putResource(Thing thing, ResourceType<T> resourceType, T resource) {
         Resource resourceInstance = resourceType.putResource(resource);
-        instance.resource(resourceInstance);
+        thing.resource(resourceInstance);
     }
 
-    public static Instance getInstance(GraknGraph graph, String id){
-        Set<Instance> instances = graph.getResourcesByValue(id)
+    public static Thing getInstance(GraknGraph graph, String id){
+        Set<Thing> things = graph.getResourcesByValue(id)
                 .stream().flatMap(res -> res.ownerInstances().stream()).collect(toSet());
-        if (instances.size() != 1) {
-            throw new IllegalStateException("Multiple instances with given resource value");
+        if (things.size() != 1) {
+            throw new IllegalStateException("Multiple things with given resource value");
         }
-        return instances.iterator().next();
+        return things.iterator().next();
     }
 }

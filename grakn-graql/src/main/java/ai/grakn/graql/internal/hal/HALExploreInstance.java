@@ -36,7 +36,7 @@ class HALExploreInstance extends HALExploreConcept {
     }
 
     void populateEmbedded(Representation halResource, Concept concept) {
-        // Instance resources
+        // Thing resources
         concept.asInstance().resources().forEach(currentResource -> {
             Representation embeddedResource = factory.newRepresentation(resourceLinkPrefix + currentResource.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);

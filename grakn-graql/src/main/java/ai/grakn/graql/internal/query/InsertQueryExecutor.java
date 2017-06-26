@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
@@ -235,7 +235,7 @@ public class InsertQueryExecutor {
      * @param isa the type property of the var
      * @return a concept with the given ID and the specified type
      */
-    private Instance putInstance(Optional<ConceptId> id, VarPatternAdmin var, IsaProperty isa) {
+    private Thing putInstance(Optional<ConceptId> id, VarPatternAdmin var, IsaProperty isa) {
         Type type = getConcept(isa.getType()).asType();
 
         if (type.isEntityType()) {
@@ -254,7 +254,7 @@ public class InsertQueryExecutor {
                         .orElseThrow(() -> GraqlQueryException.insertRuleWithoutRhs(var));
                 return type.asRuleType().putRule(lhs.getPattern(), rhs.getPattern());
             });
-        } else if (type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
+        } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
         } else {
             throw CommonUtil.unreachableStatement("Can't recognize type " + type);
@@ -293,7 +293,7 @@ public class InsertQueryExecutor {
      * @param <S> the class of the instance, e.g. Entity
      * @return an instance of the specified type, with the given ID if one was specified
      */
-    private <T extends Type, S extends Instance> S addOrGetInstance(Optional<ConceptId> id, Supplier<S> addInstance) {
+    private <T extends Type, S extends Thing> S addOrGetInstance(Optional<ConceptId> id, Supplier<S> addInstance) {
         return id.map(graph::<S>getConcept).orElseGet(addInstance);
     }
 

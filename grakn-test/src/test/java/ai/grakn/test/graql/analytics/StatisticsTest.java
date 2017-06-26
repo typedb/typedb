@@ -57,7 +57,7 @@ import static org.junit.Assume.assumeFalse;
 // TODO We can extend AbstractGraphTest instead when we remove persisting in analytics
 public class StatisticsTest {
 
-    private static final String thing = "thing";
+    private static final String thing = "thingy";
     private static final String anotherThing = "anotherThing";
 
     private static final String resourceType1 = "resourceType1";

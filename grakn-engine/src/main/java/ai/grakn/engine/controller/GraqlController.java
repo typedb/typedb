@@ -94,6 +94,7 @@ public class GraqlController {
     public GraqlController(EngineGraknGraphFactory factory, Service spark) {
         this.factory = factory;
 
+        spark.post(REST.WebPath.Graph.ANY_GRAQL, this::executeGraql);
         spark.get(REST.WebPath.Graph.GRAQL,    this::executeGraqlGET);
         spark.post(REST.WebPath.Graph.GRAQL,   this::executeGraqlPOST);
         spark.delete(REST.WebPath.Graph.GRAQL, this::executeGraqlDELETE);
@@ -108,6 +109,36 @@ public class GraqlController {
         spark.exception(InvalidGraphException.class, (e, req, res) -> handleError(422, e, res));
     }
 
+    @POST
+    @Path("/execute")
+    @ApiOperation(value = "Execute an arbitrary Gralql queryEndpoints used to query the graph by ID or Graql match query and build HAL objects.")
+    private Json executeGraql(Request request, Response response) {
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        String queryString = mandatoryQueryParameter(request, QUERY);
+        boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
+        boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
+        String acceptType = getAcceptType(request);
+        try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
+            Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
+            if(!validContentType(acceptType, query)) {
+                throw GraknServerException.contentTypeQueryMismatch(acceptType, query);
+            }            
+            if (query instanceof DeleteQuery) {
+                query.execute();
+                graph.commit();
+                return respond(response, query, APPLICATION_JSON, Json.object());
+            }
+            else if (query instanceof InsertQuery) {
+                Json resp = respond(response, query, APPLICATION_JSON, executeInsertQuery((InsertQuery) query));
+                graph.commit();
+                return resp;
+            }
+            else {
+                return respond(response, query, acceptType, executeReadQuery(request, query, acceptType));
+            }
+        }
+    }
+    
     @GET
     @Path("/")
     @ApiOperation(

@@ -23,7 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
@@ -52,12 +52,12 @@ public class ValidatorTest extends GraphTestBase{
         RoleType actor = graknGraph.putRoleType("Actor");
         EntityType movie = graknGraph.putEntityType("Movie");
         EntityType person = graknGraph.putEntityType("Person");
-        Instance pacino = person.addEntity();
-        Instance godfather = movie.addEntity();
+        Thing pacino = person.addEntity();
+        Thing godfather = movie.addEntity();
         EntityType genre = graknGraph.putEntityType("Genre");
         RoleType movieOfGenre = graknGraph.putRoleType("Movie of Genre");
         RoleType movieGenre = graknGraph.putRoleType("Movie Genre");
-        Instance crime = genre.addEntity();
+        Thing crime = genre.addEntity();
         RelationType movieHasGenre = graknGraph.putRelationType("Movie Has Genre");
 
         //Construction
@@ -87,8 +87,8 @@ public class ValidatorTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("kicks");
         RoleType kicker = graknGraph.putRoleType("kicker");
         RoleType kickee = graknGraph.putRoleType("kickee");
-        Instance kyle = fakeType.addEntity();
-        Instance icke = fakeType.addEntity();
+        Thing kyle = fakeType.addEntity();
+        Thing icke = fakeType.addEntity();
 
         relationType.addRelation().addRolePlayer(kicker, kyle).addRolePlayer(kickee, icke);
 
@@ -134,12 +134,12 @@ public class ValidatorTest extends GraphTestBase{
         movie.plays(feature);
 
         // add a single movie
-        Instance godfather = movie.addEntity();
+        Thing godfather = movie.addEntity();
 
         // add many random actors
         int n = 100;
         for (int i=0; i < n; i++) {
-            Instance newPerson = person.addEntity();
+            Thing newPerson = person.addEntity();
             cast.addRelation().
                     addRolePlayer(actor, newPerson).addRolePlayer(feature, godfather);
         }
@@ -457,9 +457,9 @@ public class ValidatorTest extends GraphTestBase{
         RoleType role2 = graknGraph.putRoleType("role-2");
         RelationType relationType = graknGraph.putRelationType("my-relation").relates(role1).relates(role2);
 
-        Instance instance = graknGraph.putEntityType("my-entity").plays(role1).addEntity();
+        Thing thing = graknGraph.putEntityType("my-entity").plays(role1).addEntity();
 
-        relationType.addRelation().addRolePlayer(role1, instance);
+        relationType.addRelation().addRolePlayer(role1, thing);
 
         graknGraph.commit();
     }
@@ -471,14 +471,14 @@ public class ValidatorTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("my-relation").relates(role1).relates(role2);
 
         EntityType entityType = graknGraph.putEntityType("my-entity").plays(role1);
-        Instance instance1 = entityType.addEntity();
-        Instance instance2 = entityType.addEntity();
+        Thing thing1 = entityType.addEntity();
+        Thing thing2 = entityType.addEntity();
 
         Relation relation = relationType.addRelation();
-        relation.addRolePlayer(role1, instance1);
-        relation.addRolePlayer(role1, instance2);
+        relation.addRolePlayer(role1, thing1);
+        relation.addRolePlayer(role1, thing2);
 
-        assertThat(relation.rolePlayers(role1), hasItems(instance1, instance2));
+        assertThat(relation.rolePlayers(role1), hasItems(thing1, thing2));
 
         graknGraph.commit();
     }
@@ -493,16 +493,16 @@ public class ValidatorTest extends GraphTestBase{
 
         Relation relation = relationType.addRelation();
 
-        Set<Instance> instances = new HashSet<>();
+        Set<Thing> things = new HashSet<>();
 
         int oneZillion = 100;
         for (int i = 0 ; i < oneZillion; i ++) {
-            Instance instance = entityType.addEntity();
-            instances.add(instance);
-            relation.addRolePlayer(role1, instance);
+            Thing thing = entityType.addEntity();
+            things.add(thing);
+            relation.addRolePlayer(role1, thing);
         }
 
-        assertEquals(instances, relation.rolePlayers(role1));
+        assertEquals(things, relation.rolePlayers(role1));
 
         graknGraph.commit();
     }

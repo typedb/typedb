@@ -21,6 +21,7 @@ package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskCheckpoint;
@@ -62,6 +63,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final EngineID engineID;
     private final GraknEngineConfig engineConfig;
     private final RedisConnection redis;
+    private final EngineGraknGraphFactory factory;
 
     private TaskId runningTaskId = null;
     private BackgroundTask runningTask = null;
@@ -76,13 +78,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      */
     public SingleQueueTaskRunner(
             SingleQueueTaskManager manager, EngineID engineID, GraknEngineConfig config, RedisConnection redis,
-            ExternalOffsetStorage offsetStorage, Consumer<TaskState, TaskConfiguration> consumer){
+            EngineGraknGraphFactory factory, ExternalOffsetStorage offsetStorage, Consumer<TaskState, TaskConfiguration> consumer){
         this.manager = manager;
         this.storage = manager.storage();
         this.consumer = consumer;
         this.engineID = engineID;
         this.engineConfig = config;
         this.redis = redis;
+        this.factory = factory;
         this.offsetStorage = offsetStorage;
     }
 
@@ -195,7 +198,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             runningTaskId = task.getId();
             runningTask = task.taskClass().newInstance();
 
-            runningTask.initialize(saveCheckpoint(task), configuration, manager, engineConfig, redis);
+            runningTask.initialize(saveCheckpoint(task), configuration, manager, engineConfig, redis, factory);
 
             boolean completed;
 

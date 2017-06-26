@@ -19,8 +19,8 @@
 package ai.grakn.exception;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
@@ -303,7 +303,7 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(INSERT_NO_DATATYPE.getMessage(var.getPrintableName()));
     }
 
-    public static GraqlQueryException insertNewType(Instance instance, Type type) {
-        return new GraqlQueryException(INSERT_NEW_TYPE.getMessage(instance, type));
+    public static GraqlQueryException insertNewType(Thing thing, Type type) {
+        return new GraqlQueryException(INSERT_NEW_TYPE.getMessage(thing, type));
     }
 }

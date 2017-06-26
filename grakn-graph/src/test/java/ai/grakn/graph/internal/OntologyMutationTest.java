@@ -21,20 +21,20 @@ package ai.grakn.graph.internal;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import org.junit.Before;
 import org.junit.Test;
 
+import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static ai.grakn.util.ErrorMessage.SCHEMA_LOCKED;
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
-import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 
-//TODO Ignored because we disabled ontology modification check with batch graph in AbstractGraknGraph
 public class OntologyMutationTest extends GraphTestBase{
     private RoleType husband;
     private RoleType wife;
@@ -43,8 +43,8 @@ public class OntologyMutationTest extends GraphTestBase{
     private EntityType woman;
     private EntityType man;
     private EntityType car;
-    private Instance alice;
-    private Instance bob;
+    private Thing alice;
+    private Thing bob;
 
     @Before
     public void buildMarriageGraph() throws InvalidGraphException {
@@ -236,5 +236,21 @@ public class OntologyMutationTest extends GraphTestBase{
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
         relationType.deleteRelates(roleType);
+    }
+
+    @Test
+    public void whenAddingResourceToSubTypeOfEntityType_EnsureNoValidationErrorsOccur(){
+        //Create initial Ontology
+        ResourceType<String> name = graknGraph.putResourceType("name", ResourceType.DataType.STRING);
+        EntityType person = graknGraph.putEntityType("perspn").resource(name);
+        EntityType animal = graknGraph.putEntityType("animal").superType(person);
+        Resource bob = name.putResource("Bob");
+        person.addEntity().resource(bob);
+        graknGraph.commit();
+
+        //Now make animal have the same resource type
+        graknGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        animal.resource(name);
+        graknGraph.commit();
     }
 }

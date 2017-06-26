@@ -117,7 +117,7 @@ public interface ResourceType<D> extends Type {
      * @return The Type itself.
      */
     @Override
-    ResourceType<D> scope(Instance scope);
+    ResourceType<D> scope(Thing scope);
 
     /**
      * Delete the scope specified.
@@ -126,7 +126,7 @@ public interface ResourceType<D> extends Type {
      * @return The Type itself
      */
     @Override
-    ResourceType<D> deleteScope(Instance scope);
+    ResourceType<D> deleteScope(Thing scope);
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.

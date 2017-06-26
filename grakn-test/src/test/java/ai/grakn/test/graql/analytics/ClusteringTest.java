@@ -52,7 +52,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 public class ClusteringTest {
-    private static final String thing = "thing";
+    private static final String thing = "thingy";
     private static final String anotherThing = "anotherThing";
     private static final String related = "related";
 

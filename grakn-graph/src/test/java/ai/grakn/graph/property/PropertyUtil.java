@@ -20,7 +20,7 @@
 package ai.grakn.graph.property;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.Lists;
@@ -60,8 +60,8 @@ public class PropertyUtil {
         return superTypes;
     }
 
-    public static Collection<Instance> directInstances(Type type) {
-        Collection<? extends Instance> indirectInstances = type.instances();
+    public static Collection<Thing> directInstances(Type type) {
+        Collection<? extends Thing> indirectInstances = type.instances();
         return indirectInstances.stream().filter(instance -> type.equals(instance.type())).collect(toList());
     }
 

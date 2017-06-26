@@ -22,7 +22,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.migration.owl.OWLMigrator;
@@ -89,7 +89,7 @@ public class TestOwlGraknBase {
 
     <T> Entity getEntity(T id, ResourceType<T> rtype){
         Resource<T> iri = rtype.getResource(id);
-        Instance inst = iri != null? iri.ownerInstances().stream().findFirst().orElse(null) : null;
+        Thing inst = iri != null? iri.ownerInstances().stream().findFirst().orElse(null) : null;
         return inst != null? inst.asEntity() : null;
     }
 

@@ -28,7 +28,6 @@ import ai.grakn.util.StringUtil;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import org.apache.commons.lang.ObjectUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -104,7 +103,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
             return null;
         }
 
-        Object returnValue = ObjectUtils.NULL;
+        Object returnValue = null;
         for (Object object : (List) collection) {
             scope.assign(item, object);
 
@@ -113,7 +112,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
             scope.unassign(item);
         }
 
-        return returnValue == ObjectUtils.NULL ? "" : returnValue.toString();
+        return returnValue == null ? "" : returnValue.toString();
     }
 
 
@@ -136,17 +135,17 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     public String visitIfStatement(GraqlTemplateParser.IfStatementContext ctx){
 
         if((Boolean) this.visit(ctx.ifPartial().expr())){
-            return (String) this.visit(ctx.ifPartial().block());
+            return this.visitBlock(ctx.ifPartial().block());
         }
 
         for(GraqlTemplateParser.ElseIfPartialContext elseIf:ctx.elseIfPartial()){
             if((Boolean) this.visit(elseIf.expr())){
-                return (String) this.visit(elseIf.block());
+                return this.visitBlock(elseIf.block());
             }
         }
 
         if(ctx.elsePartial() != null){
-            return (String) this.visit(ctx.elsePartial().block());
+            return this.visitBlock(ctx.elsePartial().block());
         }
 
         return "";
@@ -245,6 +244,10 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         Object lValue = this.visit(ctx.expr(0));
         Object rValue = this.visit(ctx.expr(1));
 
+        if(lValue == null || rValue == null){
+            return lValue != rValue;
+        }
+
         return !lValue.equals(rValue);
     }
 
@@ -315,7 +318,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     //  | NULL                   #nullExpression
     @Override
     public Object visitNullExpression(GraqlTemplateParser.NullExpressionContext ctx) {
-        return ObjectUtils.NULL;
+        return null;
     }
 
     @Override
@@ -333,7 +336,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     // ;
     @Override
     public String visitReplaceStatement(GraqlTemplateParser.ReplaceStatementContext ctx) {
-        Object value = ObjectUtils.NULL;
+        Object value = null;
         for(int i = 0; i < ctx.getChildCount(); i++){
             if(ctx.macro(i) != null){
                 value = concat(value, this.visit(ctx.macro(i)));
@@ -344,7 +347,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
             }
         }
 
-        if(value == ObjectUtils.NULL) throw GraqlSyntaxException.parsingTemplateMissingKey(ctx.getText(), originalContext);
+        if(value == null) throw GraqlSyntaxException.parsingTemplateMissingKey(ctx.getText(), originalContext);
 
         Function<Object, String> formatToApply = ctx.DOLLAR() != null ? this::formatVar : this::format;
         String prepend = ctx.DOLLAR() != null ? ctx.DOLLAR().getText() : "";
@@ -386,7 +389,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
             return values[0];
         }
 
-        if(values.length == 2 && values[0] == ObjectUtils.NULL){
+        if(values.length == 2 && values[0] == null){
             return values[1];
         }
 

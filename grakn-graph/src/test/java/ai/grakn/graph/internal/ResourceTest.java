@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -51,10 +51,10 @@ public class ResourceTest extends GraphTestBase{
         RelationType hasResource = graknGraph.putRelationType("Has Resource");
         RoleType resourceRole = graknGraph.putRoleType("Resource Role");
         RoleType actorRole = graknGraph.putRoleType("Actor");
-        Instance pacino = randomThing.addEntity();
-        Instance jennifer = randomThing.addEntity();
-        Instance bob = randomThing.addEntity();
-        Instance alice = randomThing.addEntity();
+        Thing pacino = randomThing.addEntity();
+        Thing jennifer = randomThing.addEntity();
+        Thing bob = randomThing.addEntity();
+        Thing alice = randomThing.addEntity();
         Resource<String> birthDate = resourceType.putResource("10/10/10");
         hasResource.relates(resourceRole).relates(actorRole);
 

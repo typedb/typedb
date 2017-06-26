@@ -28,7 +28,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 
-public class UpdatingInstanceCountTaskTest {
+public class UpdatingThingCountTaskTest {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();

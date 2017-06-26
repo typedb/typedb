@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -79,9 +79,9 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             if (concept.isRelation()) {
                 String relationString = concept.asRelation().allRolePlayers().entrySet().stream().flatMap(entry -> {
                     RoleType roleType = entry.getKey();
-                    Set<Instance> instances = entry.getValue();
+                    Set<Thing> things = entry.getValue();
 
-                    return instances.stream().map(instance ->
+                    return things.stream().map(instance ->
                         Optional.of(colorType(roleType) + ": id " + idToString(instance.getId()))
                     );
                 }).flatMap(CommonUtil::optionalToStream).collect(Collectors.joining(", "));

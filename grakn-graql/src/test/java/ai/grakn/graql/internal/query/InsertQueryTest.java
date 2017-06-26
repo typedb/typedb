@@ -22,7 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -629,9 +629,9 @@ public class InsertQueryTest {
     public void testErrorWhenAddingInstanceOfConcept() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(
-                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.CONCEPT.getLabel().getValue()))
+                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.THING.getLabel().getValue()))
         );
-        qb.insert(var("my-thing").isa(Schema.MetaSchema.CONCEPT.getLabel().getValue())).execute();
+        qb.insert(var("my-thing").isa(Schema.MetaSchema.THING.getLabel().getValue())).execute();
     }
 
     @Test
@@ -743,7 +743,7 @@ public class InsertQueryTest {
     public void testInsertNonRuleWithRHS() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("rhs", RULE.getLabel()));
-        qb.insert(label("thing").sub("movie").rhs(var("x"))).execute();
+        qb.insert(label("thingy").sub("movie").rhs(var("x"))).execute();
     }
 
     @Test
@@ -756,8 +756,8 @@ public class InsertQueryTest {
     @Test
     public void whenInsertingMetaType_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(ErrorMessage.INSERT_METATYPE.getMessage("my-metatype", "concept"));
-        qb.insert(label("my-metatype").sub("concept")).execute();
+        exception.expectMessage(ErrorMessage.INSERT_METATYPE.getMessage("my-metatype", Schema.MetaSchema.THING.getLabel().getValue()));
+        qb.insert(label("my-metatype").sub(Schema.MetaSchema.THING.getLabel().getValue())).execute();
     }
 
     @Test
@@ -770,9 +770,9 @@ public class InsertQueryTest {
                 var("r").rel("cluster-of-production", "c").rel("production-with-cluster", "g").rel("production-with-cluster", "m").isa("has-cluster")
         ).execute();
 
-        Instance cluster = results.get(0).get("c").asInstance();
-        Instance godfather = results.get(0).get("g").asInstance();
-        Instance muppets = results.get(0).get("m").asInstance();
+        Thing cluster = results.get(0).get("c").asInstance();
+        Thing godfather = results.get(0).get("g").asInstance();
+        Thing muppets = results.get(0).get("m").asInstance();
         Relation relation = results.get(0).get("r").asRelation();
 
         RoleType clusterOfProduction = movieGraph.graph().getRoleType("cluster-of-production");

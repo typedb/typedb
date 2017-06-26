@@ -25,6 +25,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.graql.Printer;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -96,7 +97,7 @@ public class JsonPrinterTest {
     @Test
     public void testJsonMetaType() {
         ConceptId id = movieContext.graph().admin().getMetaEntityType().getId();
-        assertJsonEquals(Json.object("id", id.getValue(), "name", "entity", "sub", "concept"), movieContext.graph().admin().getMetaEntityType());
+        assertJsonEquals(Json.object("id", id.getValue(), "name", "entity", "sub", Schema.MetaSchema.THING.getLabel().getValue()), movieContext.graph().admin().getMetaEntityType());
     }
 
     @Test

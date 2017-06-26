@@ -21,7 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -67,7 +67,7 @@ public class ConceptTest extends GraphTestBase{
     @Test
     public void checkToStringHasMinimalInformation() {
         EntityType concept = graknGraph.putEntityType("a");
-        Instance entity = concept.addEntity();
+        Thing entity = concept.addEntity();
 
         assertTrue(entity.toString().contains(Schema.BaseType.ENTITY.name()));
         assertTrue(entity.toString().contains(entity.getId().getValue()));

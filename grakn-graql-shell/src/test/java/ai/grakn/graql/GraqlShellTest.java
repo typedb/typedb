@@ -63,6 +63,8 @@ public class GraqlShellTest {
             return session;
         });
 
+        when(client.serverIsRunning(any())).thenReturn(true);
+
         batchMutatorClient = mock(BatchMutatorClient.class);
 
         when(client.loaderClient(anyString(), anyString())).thenReturn(batchMutatorClient);

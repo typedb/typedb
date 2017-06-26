@@ -20,7 +20,7 @@ package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.test.GraphContext;
 
@@ -89,12 +89,12 @@ public class AdmissionsGraph extends TestGraph {
 
     @Override
     protected void buildInstances(GraknGraph graph) {
-        Instance Alice = putEntity(graph, "Alice", applicant, key.getLabel());
-        Instance Bob = putEntity(graph, "Bob", applicant, key.getLabel());
-        Instance Charlie = putEntity(graph, "Charlie", applicant, key.getLabel());
-        Instance Denis = putEntity(graph, "Denis", applicant, key.getLabel());
-        Instance Eva = putEntity(graph, "Eva", applicant, key.getLabel());
-        Instance Frank = putEntity(graph, "Frank", applicant, key.getLabel());
+        Thing Alice = putEntity(graph, "Alice", applicant, key.getLabel());
+        Thing Bob = putEntity(graph, "Bob", applicant, key.getLabel());
+        Thing Charlie = putEntity(graph, "Charlie", applicant, key.getLabel());
+        Thing Denis = putEntity(graph, "Denis", applicant, key.getLabel());
+        Thing Eva = putEntity(graph, "Eva", applicant, key.getLabel());
+        Thing Frank = putEntity(graph, "Frank", applicant, key.getLabel());
 
         putResource(Alice, TOEFL, 470L);
         putResource(Alice, degreeOrigin, "nonUS");

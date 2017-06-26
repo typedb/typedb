@@ -22,6 +22,7 @@ package ai.grakn.engine.tasks.manager;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -78,11 +79,13 @@ public class StandaloneTaskManager implements TaskManager {
     private final EngineID engineID;
     private final GraknEngineConfig config;
     private final RedisConnection redis;
+    private final EngineGraknGraphFactory factory;
 
-    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis) {
+    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis, EngineGraknGraphFactory factory) {
         this.engineID = engineId;
         this.config = config;
         this.redis = redis;
+        this.factory = factory;
 
         stoppedTasks = new HashSet<>();
         runningTasks = new ConcurrentHashMap<>();
@@ -181,7 +184,7 @@ public class StandaloneTaskManager implements TaskManager {
         return () -> {
             try {
                 BackgroundTask runningTask = task.taskClass().newInstance();
-                runningTask.initialize(saveCheckpoint(task), configuration, this, config, redis);
+                runningTask.initialize(saveCheckpoint(task), configuration, this, config, redis, factory);
 
                 runningTasks.put(task.getId(), runningTask);
 

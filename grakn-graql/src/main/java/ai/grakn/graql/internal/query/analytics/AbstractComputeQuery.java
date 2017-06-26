@@ -23,7 +23,7 @@ import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
@@ -161,8 +161,8 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     boolean verticesExistInSubgraph(ConceptId... ids) {
         for (ConceptId id : ids) {
-            Instance instance = this.graph.get().getConcept(id);
-            if (instance == null || !subTypeLabels.contains(instance.type().getLabel())) return false;
+            Thing thing = this.graph.get().getConcept(id);
+            if (thing == null || !subTypeLabels.contains(thing.type().getLabel())) return false;
         }
         return true;
     }

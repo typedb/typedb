@@ -20,7 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -56,12 +56,12 @@ import java.util.stream.Stream;
  *
  * @author fppt
  *
- * @param <T> The leaf interface of the object concept which extends {@link Instance}.
+ * @param <T> The leaf interface of the object concept which extends {@link Thing}.
  *           For example {@link ai.grakn.concept.Entity} or {@link Relation}.
  * @param <V> The type of the concept which extends {@link Type} of the concept.
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
-abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
+abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl<T> implements Thing {
     private Cache<TypeLabel> cachedInternalType = new Cache<>(() -> {
         int typeId = vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID);
         Type type = vertex().graph().getConcept(Schema.VertexProperty.TYPE_ID, typeId);
@@ -79,17 +79,17 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         return vertex().graph().factory().buildConcept(typeEdge.get().target());
     });
 
-    InstanceImpl(VertexElement vertexElement) {
+    ThingImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    InstanceImpl(VertexElement vertexElement, V type) {
+    ThingImpl(VertexElement vertexElement, V type) {
         this(vertexElement);
         type((TypeImpl) type);
     }
 
     /**
-     * Deletes the concept as an Instance
+     * Deletes the concept as an Thing
      */
     @Override
     public void delete() {
@@ -119,7 +119,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
 
     /**
      *
-     * @return All the {@link Resource} that this Instance is linked with
+     * @return All the {@link Resource} that this Thing is linked with
      */
     public Collection<Resource<?>> resources(ResourceType... resourceTypes) {
         Set<ConceptId> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
@@ -138,7 +138,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     }
 
     /**
-     * Castings are retrieved from the perspective of the {@link Instance} which is a role player in a {@link Relation}
+     * Castings are retrieved from the perspective of the {@link Thing} which is a role player in a {@link Relation}
      *
      * @return All the {@link Casting} which this instance is cast into the role
      */
@@ -147,7 +147,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
                 map(edge -> vertex().graph().factory().buildRolePlayer(edge));
     }
 
-    <X extends Instance> Set<X> getShortcutNeighbours(){
+    <X extends Thing> Set<X> getShortcutNeighbours(){
         Set<X> foundNeighbours = new HashSet<X>();
         vertex().graph().getTinkerTraversal().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).

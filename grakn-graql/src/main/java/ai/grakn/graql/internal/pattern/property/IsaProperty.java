@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
@@ -42,11 +42,11 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
- * Represents the {@code isa} property on a {@link Instance}.
+ * Represents the {@code isa} property on a {@link Thing}.
  *
  * This property can be queried and inserted.
  *
- * THe property is defined as a relationship between an {@link Instance} and a {@link Type}.
+ * THe property is defined as a relationship between an {@link Thing} and a {@link Type}.
  *
  * When matching, any subtyping is respected. For example, if we have {@code $bob isa man}, {@code man sub person},
  * {@code person sub entity} then it follows that {@code $bob isa person} and {@code bob isa entity}.
@@ -93,9 +93,9 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Type type = insertQueryExecutor.getConcept(this.type).asType();
-        Instance instance = concept.asInstance();
-        if (!instance.type().equals(type)) {
-            throw GraqlQueryException.insertNewType(instance, type);
+        Thing thing = concept.asInstance();
+        if (!thing.type().equals(type)) {
+            throw GraqlQueryException.insertNewType(thing, type);
         }
     }
 

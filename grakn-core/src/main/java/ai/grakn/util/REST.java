@@ -39,6 +39,7 @@ public class REST {
          */
         public static class Graph {
             public static final String GRAQL = "/graph/graql";
+            public static final String ANY_GRAQL = "/graph/graql/execute";
         }
 
         /**
@@ -54,6 +55,8 @@ public class REST {
          * URIs to System Controller endpoints
          */
         public static class System {
+            public static final String DELETE_KEYSPACE = "/deleteKeyspace";
+            public static final String INITIALISE = "/initialise";
             public static final String CONFIGURATION = "/configuration";
             public static final String KEYSPACES = "/keyspaces";
         }

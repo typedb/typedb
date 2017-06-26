@@ -19,6 +19,7 @@
 package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import com.google.common.base.Preconditions;
 
@@ -37,6 +38,7 @@ public abstract class BackgroundTask {
     private @Nullable Consumer<TaskCheckpoint> saveCheckpoint = null;
     private @Nullable GraknEngineConfig engineConfig = null;
     private @Nullable RedisConnection redis = null;
+    private @Nullable EngineGraknGraphFactory factory = null;
 
     /**
      * Initialize the {@link BackgroundTask}. This must be called prior to any other call to {@link BackgroundTask}.
@@ -48,12 +50,13 @@ public abstract class BackgroundTask {
      */
     public final void initialize(
             Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter,
-            GraknEngineConfig engineConfig, RedisConnection redis) {
+            GraknEngineConfig engineConfig, RedisConnection redis, EngineGraknGraphFactory factory) {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
         this.saveCheckpoint = saveCheckpoint;
         this.engineConfig = engineConfig;
         this.redis = redis;
+        this.factory = factory;
     }
 
     /**
@@ -136,4 +139,8 @@ public abstract class BackgroundTask {
         return redis;
     }
 
+    public final EngineGraknGraphFactory factory(){
+        Preconditions.checkNotNull(factory, "BackgroundTask#initialise must be called before retrieving the engine factory");
+        return factory;
+    }
 }

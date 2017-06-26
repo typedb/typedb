@@ -54,7 +54,6 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
     public boolean start() {
         long shardingThreshold = engineConfiguration().getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
         int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
 
         Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
         String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
@@ -70,7 +69,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
         });
 
         //Shard anything which requires sharding
-        conceptToShard.forEach(type -> shardConcept(redis(), factory, keyspace, type, maxRetry, shardingThreshold));
+        conceptToShard.forEach(type -> shardConcept(redis(), factory(), keyspace, type, maxRetry, shardingThreshold));
 
         return true;
     }

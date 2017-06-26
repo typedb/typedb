@@ -36,7 +36,6 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.QueryBuilder;
@@ -250,7 +249,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private boolean initialiseMetaConcepts(){
         boolean ontologyInitialised = false;
         if(isMetaOntologyNotInitialised()){
-            VertexElement type = addTypeVertex(Schema.MetaSchema.CONCEPT.getId(), Schema.MetaSchema.CONCEPT.getLabel(), Schema.BaseType.TYPE);
+            VertexElement type = addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
             VertexElement entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
             VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
             VertexElement resourceType = addTypeVertex(Schema.MetaSchema.RESOURCE.getId(), Schema.MetaSchema.RESOURCE.getLabel(), Schema.BaseType.RESOURCE_TYPE);
@@ -601,7 +600,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public Type getMetaConcept() {
-        return getType(Schema.MetaSchema.CONCEPT.getId());
+        return getType(Schema.MetaSchema.THING.getId());
     }
 
     @Override
@@ -639,7 +638,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return getType(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
-    void putShortcutEdge(InstanceImpl toInstance, RelationImpl fromRelation, RoleTypeImpl roleType){
+    void putShortcutEdge(ThingImpl toInstance, RelationImpl fromRelation, RoleTypeImpl roleType){
         boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getTypeId().getValue()).
@@ -661,8 +660,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         clearGraph();
         txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
 
+        //TODO We should not hit the REST endpoint when deleting keyspaces through a graph
+        // retrieved from and EngineGraknGraphFactory
         //Remove the graph from the system keyspace
-        SystemKeyspace.deleteKeyspace(getKeyspace());
+        EngineCommunicator.contactEngine(getDeleteKeyspaceEndpoint(), REST.HttpConn.DELETE_METHOD);
     }
 
     //This is overridden by vendors for more efficient clearing approaches
@@ -756,8 +757,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         LOG.trace("Graph committed.");
 
-        //No post processing should ever be done for the system keyspace
-        if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && submissionNeeded) {
+        if(submissionNeeded) {
             return Optional.of(conceptLog.toString());
         }
         return Optional.empty();
@@ -784,6 +784,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             return Grakn.IN_MEMORY;
         }
         return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
+    }
+
+    private String getDeleteKeyspaceEndpoint(){
+        if(Grakn.IN_MEMORY.equals(engine)) {
+            return Grakn.IN_MEMORY;
+        }
+        return engine + REST.WebPath.System.DELETE_KEYSPACE + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
     public void validVertex(Vertex vertex){

@@ -18,7 +18,6 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.util.CommonUtil;
 
 import java.util.ArrayList;
@@ -38,7 +37,7 @@ import java.util.List;
  *
  */
 class Validator {
-    private final AbstractGraknGraph graknGraph;
+    private final AbstractGraknGraph<?> graknGraph;
     private final List<String> errorsFound = new ArrayList<>();
 
     public Validator(AbstractGraknGraph graknGraph){
@@ -72,7 +71,7 @@ class Validator {
             //Validate Relation Types
             graknGraph.txCache().getModifiedRelationTypes().forEach(this::validateRelationType);
             //Validate Relations
-            graknGraph.txCache().getModifiedRelations().forEach(this::validateRelation);
+            graknGraph.txCache().getModifiedRelations().forEach(relation -> validateRelation(graknGraph, relation));
 
             //Validate Rule Types
             //Not Needed
@@ -94,7 +93,7 @@ class Validator {
      * @param graph the graph to query against
      * @param rule the rule which needs to be validated
      */
-    private void validateRule(GraknGraph graph, RuleImpl rule){
+    private void validateRule(AbstractGraknGraph<?> graph, RuleImpl rule){
         errorsFound.addAll(ValidateGlobalRules.validateRuleOntologyElementsExist(graph, rule));
     }
 
@@ -102,10 +101,10 @@ class Validator {
      * Validation rules exclusive to relations
      * @param relation The relation to validate
      */
-    private void validateRelation(RelationImpl relation){
+    private void validateRelation(AbstractGraknGraph<?> graph, RelationImpl relation){
         validateInstance(relation);
         ValidateGlobalRules.validateRelationshipStructure(relation).ifPresent(errorsFound::add);
-        ValidateGlobalRules.validateRelationIsUnique(relation).ifPresent(errorsFound::add);
+        ValidateGlobalRules.validateRelationIsUnique(graph, relation).ifPresent(errorsFound::add);
     }
 
     /**
@@ -137,7 +136,7 @@ class Validator {
      * Validation rules exclusive to instances
      * @param instance The instance to validate
      */
-    private void validateInstance(InstanceImpl instance) {
+    private void validateInstance(ThingImpl instance) {
         ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(instance).ifPresent(errorsFound::add);
     }
 }

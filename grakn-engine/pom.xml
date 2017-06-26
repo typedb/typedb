@@ -45,6 +45,12 @@
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-graph</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+            	<exclusion>
+            		<artifactId>javax.servlet</artifactId>
+            		<groupId>org.eclipse.jetty.orbit</groupId>
+            	</exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.sparkjava</groupId>

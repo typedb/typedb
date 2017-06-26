@@ -55,6 +55,8 @@ public abstract class Predicate<T> extends AtomicBase {
      * */
     public boolean isValuePredicate(){ return false;}
 
+    public boolean isNeqPredicate(){ return false;}
+
     @Override
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
