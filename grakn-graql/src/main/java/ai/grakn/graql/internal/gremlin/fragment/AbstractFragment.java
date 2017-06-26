@@ -29,6 +29,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -160,31 +162,41 @@ abstract class AbstractFragment implements Fragment {
         return result;
     }
 
-    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesOut(String edge) {
+    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesOut(String edge, Map<Node, Map<Node, Fragment>> edgeToFragment) {
 
         Node start = new Node(getStart());
         Node end = new Node(getEnd().get());
         Node middle = new Node(start + edge + end);
+        addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
                 weighted(DirectedEdge.from(middle).to(end), 0));
     }
 
-    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesIn(String edge) {
+    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesIn(String edge, Map<Node, Map<Node, Fragment>> edgeToFragment) {
         Node start = new Node(getStart());
         Node end = new Node(getEnd().get());
         Node middle = new Node(end + edge + start);
+        addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
                 weighted(DirectedEdge.from(middle).to(end), 0));
     }
 
-    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesBoth(Var edge) {
+    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesBoth(Var edge, Map<Node, Map<Node, Fragment>> edgeToFragment) {
         Node start = new Node(getStart());
         Node end = new Node(getEnd().get());
         Node middle = new Node(edge);
+        addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
                 weighted(DirectedEdge.from(middle).to(end), 0));
+    }
+
+    private void addEdgeToFragmentMapping(Node child, Node parent, Map<Node, Map<Node, Fragment>> edgeToFragment) {
+        if (!edgeToFragment.containsKey(child)) {
+            edgeToFragment.put(child, new HashMap<>());
+        }
+        edgeToFragment.get(child).put(parent, this);
     }
 }

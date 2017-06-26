@@ -27,6 +27,7 @@ import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Map;
 import java.util.Set;
 
 class InSubFragment extends AbstractFragment {
@@ -51,7 +52,7 @@ class InSubFragment extends AbstractFragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges() {
-        return getDirectedEdgesIn("(sub)");
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<Node, Map<Node, Fragment>> edgeToFragment) {
+        return getDirectedEdgesIn("(sub)", edgeToFragment);
     }
 }

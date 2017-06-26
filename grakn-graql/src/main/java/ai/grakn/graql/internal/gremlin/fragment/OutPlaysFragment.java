@@ -28,6 +28,7 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
@@ -67,7 +68,7 @@ class OutPlaysFragment extends AbstractFragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges() {
-        return getDirectedEdgesOut("(plays)");
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<Node, Map<Node, Fragment>> edgeToFragment) {
+        return getDirectedEdgesOut("(plays)", edgeToFragment);
     }
 }

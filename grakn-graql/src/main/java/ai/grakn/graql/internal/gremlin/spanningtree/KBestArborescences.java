@@ -138,7 +138,7 @@ public class KBestArborescences {
             final Optional<ExclusiveEdge<V>> oMaxInEdge = partialSolution.popBestEdge(component, bestArborescence);
             if (!oMaxInEdge.isPresent()) continue; // No in-edges left to consider for this component. Done with it!
             final ExclusiveEdge<V> maxInEdge = oMaxInEdge.get();
-            if (bestArborescence.parents.get(maxInEdge.edge.destination).equals(maxInEdge.edge.source)) {
+            if (bestArborescence.getParents().get(maxInEdge.edge.destination).equals(maxInEdge.edge.source)) {
                 final Optional<ExclusiveEdge<V>> oAlternativeEdge =
                         seek(maxInEdge, bestArborescence, partialSolution.unseenIncomingEdges.queueByDestination.get(component));
                 if (oAlternativeEdge.isPresent()) {
@@ -169,8 +169,8 @@ public class KBestArborescences {
      */
     private static <V> boolean isAncestor(V node, V potentialAncestor, Arborescence<V> bestArborescence) {
         V currentNode = node;
-        while (bestArborescence.parents.containsKey(currentNode)) {
-            currentNode = bestArborescence.parents.get(currentNode);
+        while (bestArborescence.getParents().containsKey(currentNode)) {
+            currentNode = bestArborescence.getParents().get(currentNode);
             if (currentNode.equals(potentialAncestor)) {
                 return true;
             }

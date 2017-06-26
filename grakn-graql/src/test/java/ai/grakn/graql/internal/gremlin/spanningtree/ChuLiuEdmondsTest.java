@@ -33,7 +33,7 @@ public class ChuLiuEdmondsTest {
     ));
 
     static <V> void assertEdgesSumToScore(WeightedGraph<V> originalEdgeWeights, Weighted<Arborescence<V>> bestTree) {
-        final Map<V, V> parentsMap = bestTree.val.parents;
+        final Map<V, V> parentsMap = bestTree.val.getParents();
         double sumOfWeights = 0.0;
         for (V dest : parentsMap.keySet()) {
             final V source = parentsMap.get(dest);
@@ -52,7 +52,7 @@ public class ChuLiuEdmondsTest {
         ));
         Weighted<Arborescence<Node>> weightedSpanningTree = ChuLiuEdmonds.getMaxArborescence(Isa, new Node("2"));
         assertEquals(-4.62, weightedSpanningTree.weight, DELTA);
-        ImmutableMap<Node, Node> edges = weightedSpanningTree.val.parents;
+        ImmutableMap<Node, Node> edges = weightedSpanningTree.val.getParents();
         assertEquals(2, edges.size());
         assertEquals("2", edges.get(new Node("1")).getName());
         assertEquals("1", edges.get(new Node("0")).getName());
@@ -92,7 +92,7 @@ public class ChuLiuEdmondsTest {
 		(3)       (2) ------> (4)
 		  \-------^
 		 */
-        final Map<Integer, Integer> maxBranching = weightedSpanningTree.val.parents;
+        final Map<Integer, Integer> maxBranching = weightedSpanningTree.val.getParents();
         assertEquals(2, maxBranching.get(1).intValue());
         assertEquals(3, maxBranching.get(2).intValue());
         assertEquals(0, maxBranching.get(3).intValue());
@@ -107,7 +107,7 @@ public class ChuLiuEdmondsTest {
                 graph,
                 ImmutableSet.of(DirectedEdge.from(0).to(1)),
                 ImmutableSet.of(DirectedEdge.from(2).to(3)));
-        final Map<Integer, Integer> maxBranching = weightedSpanningTree.val.parents;
+        final Map<Integer, Integer> maxBranching = weightedSpanningTree.val.getParents();
         assertEquals(0, maxBranching.get(1).intValue());
         assertEquals(1, maxBranching.get(2).intValue());
         assertEquals(1, maxBranching.get(3).intValue());
@@ -123,7 +123,7 @@ public class ChuLiuEdmondsTest {
                 ImmutableSet.of(DirectedEdge.from(0).to(3), DirectedEdge.from(3).to(1)),
                 ImmutableSet.of(DirectedEdge.from(1).to(2))
         );
-        final Map<Integer, Integer> maxBranching = weightedSpanningTree.val.parents;
+        final Map<Integer, Integer> maxBranching = weightedSpanningTree.val.getParents();
         assertEquals(3, maxBranching.get(1).intValue());
         assertEquals(3, maxBranching.get(2).intValue());
         assertEquals(0, maxBranching.get(3).intValue());
@@ -154,7 +154,7 @@ public class ChuLiuEdmondsTest {
         ));
         final Weighted<Arborescence<Integer>> weightedSpanningTree = ChuLiuEdmonds.getMaxArborescence(graph, 0);
 
-        final Map<Integer, Integer> maxBranching = weightedSpanningTree.val.parents;
+        final Map<Integer, Integer> maxBranching = weightedSpanningTree.val.getParents();
         assertEdgesSumToScore(graph, weightedSpanningTree);
         assertEquals(3, maxBranching.get(1).intValue());
         assertEquals(8, maxBranching.get(2).intValue());

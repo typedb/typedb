@@ -64,6 +64,10 @@ class Plan implements Comparable<Plan> {
     }
 
     boolean tryPush(Fragment newFragment) {
+        if (newFragment == null) {
+            return false;
+        }
+
         if (!hasNames(newFragment.getDependencies())) {
             return false;
         }

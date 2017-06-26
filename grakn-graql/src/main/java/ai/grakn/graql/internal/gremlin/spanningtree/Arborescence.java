@@ -19,18 +19,17 @@
 package ai.grakn.graql.internal.gremlin.spanningtree;
 
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
-import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * @param <V> the type of the nodes
- * @author sthomson@cs.cmu.edu
+ * @author Jason Liu
  */
 
 public class Arborescence<V> {
@@ -38,14 +37,24 @@ public class Arborescence<V> {
      * In an arborescence, each node (other than the root) has exactly one parent. This is the map
      * from each node to its parent.
      */
-    public final ImmutableMap<V, V> parents;
+    private final ImmutableMap<V, V> parents;
+
+    private V root = null;
 
     private Arborescence(ImmutableMap<V, V> parents) {
         this.parents = parents;
     }
 
     public static <T> Arborescence<T> of(ImmutableMap<T, T> parents) {
-        return new Arborescence<T>(parents);
+        Arborescence<T> arborescence = new Arborescence<>(parents);
+        if (parents != null && !parents.isEmpty()) {
+            HashSet<T> allParents = Sets.newHashSet(parents.values());
+            allParents.removeAll(parents.keySet());
+            if (!allParents.isEmpty()) {
+                arborescence.root = allParents.iterator().next();
+            }
+        }
+        return arborescence;
     }
 
     public static <T> Arborescence<T> empty() {
@@ -57,15 +66,23 @@ public class Arborescence<V> {
         return parents.containsKey(dest) && parents.get(dest).equals(e.source);
     }
 
+    public V getRoot() {
+        return root;
+    }
+
+    public int size() {
+        return parents.size();
+    }
+
+    public ImmutableMap<V, V> getParents() {
+        return parents;
+    }
+
     @Override
     public String toString() {
-        final List<String> lines = Lists.newArrayList();
-        for (Map.Entry<V, V> entry : parents.entrySet()) {
-            lines.add(entry.getValue() + " -> " + entry.getKey());
-        }
-        return Objects.toStringHelper(this)
-                .addValue(Joiner.on(", ").join(lines))
-                .toString();
+        StringBuilder stringBuilder = new StringBuilder();
+        parents.forEach((key, value) -> stringBuilder.append(value).append(" -> ").append(key).append("; "));
+        return stringBuilder.toString();
     }
 
     @Override
