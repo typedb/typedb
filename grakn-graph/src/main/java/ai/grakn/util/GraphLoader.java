@@ -134,7 +134,7 @@ public class GraphLoader {
     //TODO Use this method in GraknEngineConfig (It's a duplicate)
     private static Properties properties(){
         if(propertiesLoaded.compareAndSet(false, true)){
-            String configFilePath = GraknSystemProperty.GRAPH_CONFIG_PROPERTY.value();
+            String configFilePath = GraknSystemProperty.CONFIGURATION_FILE.value();
 
             if (!Paths.get(configFilePath).isAbsolute()) {
                 configFilePath = getProjectPath() + configFilePath;
