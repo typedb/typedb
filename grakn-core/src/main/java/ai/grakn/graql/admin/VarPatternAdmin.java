@@ -19,7 +19,7 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 
@@ -109,7 +109,7 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
      * @return the name this variable represents, if it represents something with a specific name
      */
     @CheckReturnValue
-    Optional<Label> getTypeLabel();
+    Optional<TypeLabel> getTypeLabel();
 
     /**
      * @return all variables that this variable references
@@ -127,7 +127,7 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
      * @return all type names that this variable refers to
      */
     @CheckReturnValue
-    Set<Label> getTypeLabels();
+    Set<TypeLabel> getTypeLabels();
 
     /**
      * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')

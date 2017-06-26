@@ -6,13 +6,13 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
@@ -135,7 +135,7 @@ public class GraknGraphTest extends GraphTestBase {
         }
     }
     private void assertCacheOnlyContainsMetaTypes(){
-        Set<Label> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(Collectors.toSet());
+        Set<TypeLabel> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(Collectors.toSet());
         graknGraph.getGraphCache().getCachedTypes().keySet().forEach(cachedLabel -> {
             assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel));
         });

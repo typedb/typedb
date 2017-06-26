@@ -53,7 +53,7 @@ public interface OntologyElement extends Concept {
      * @return The unique label of this type
      */
     @CheckReturnValue
-    Label getLabel();
+    TypeLabel getLabel();
 
     /**
      *

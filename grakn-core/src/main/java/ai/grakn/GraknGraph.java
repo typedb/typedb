@@ -21,13 +21,13 @@ package ai.grakn;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
@@ -78,7 +78,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
      */
-    EntityType putEntityType(Label label);
+    EntityType putEntityType(TypeLabel label);
 
     /**
      * Create a new non-unique {@link ResourceType} with super-type {@code resource}, or return a pre-existing
@@ -114,7 +114,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the {@param label} is already in use by an existing {@link ResourceType} which is
      *                          unique or has a different datatype.
      */
-    <V> ResourceType<V> putResourceType(Label label, ResourceType.DataType<V> dataType);
+    <V> ResourceType<V> putResourceType(TypeLabel label, ResourceType.DataType<V> dataType);
 
     /**
      * Create a {@link RuleType} with super-type {@code rule}, or return a pre-existing {@link RuleType}, with the
@@ -138,7 +138,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RuleType}.
      */
-    RuleType putRuleType(Label label);
+    RuleType putRuleType(TypeLabel label);
 
     /**
      * Create a {@link RelationType} with super-type {@code relation}, or return a pre-existing {@link RelationType},
@@ -162,7 +162,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
      */
-    RelationType putRelationType(Label label);
+    RelationType putRelationType(TypeLabel label);
 
     /**
      * Create a {@link RoleType} with super-type {@code role}, or return a pre-existing {@link RoleType}, with the
@@ -186,7 +186,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RoleType}.
      */
-    RoleType putRoleType(Label label);
+    RoleType putRoleType(TypeLabel label);
 
     //------------------------------------- Concept Lookup ----------------------------------
     /**
@@ -211,7 +211,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws ClassCastException if the type is not an instance of {@link T}
      */
     @CheckReturnValue
-    <T extends Type> T getType(Label label);
+    <T extends Type> T getType(TypeLabel label);
 
     /**
      * Get all Resources holding the value provided, if they exist.

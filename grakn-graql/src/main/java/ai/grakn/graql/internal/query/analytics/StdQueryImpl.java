@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeId;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -47,11 +47,11 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
+        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceTypeLabels);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
 
         Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceLabels);
+        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
 
         String randomId = getRandomJobId();
 
@@ -77,8 +77,8 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
     }
 
     @Override
-    public StdQuery of(Collection<Label> resourceLabels) {
-        return (StdQuery) setStatisticsResourceType(resourceLabels);
+    public StdQuery of(Collection<TypeLabel> resourceTypeLabels) {
+        return (StdQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
@@ -87,8 +87,8 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
     }
 
     @Override
-    public StdQuery in(Collection<Label> subLabels) {
-        return (StdQuery) super.in(subLabels);
+    public StdQuery in(Collection<TypeLabel> subTypeLabels) {
+        return (StdQuery) super.in(subTypeLabels);
     }
 
     @Override

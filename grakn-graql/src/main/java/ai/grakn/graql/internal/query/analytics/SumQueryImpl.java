@@ -19,9 +19,9 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeId;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -47,10 +47,10 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
+        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceTypeLabels);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
         Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceLabels);
+        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
 
         String randomId = getRandomJobId();
 
@@ -72,8 +72,8 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public SumQuery of(Collection<Label> resourceLabels) {
-        return (SumQuery) setStatisticsResourceType(resourceLabels);
+    public SumQuery of(Collection<TypeLabel> resourceTypeLabels) {
+        return (SumQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
@@ -82,8 +82,8 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public SumQuery in(Collection<Label> subLabels) {
-        return (SumQuery) super.in(subLabels);
+    public SumQuery in(Collection<TypeLabel> subTypeLabels) {
+        return (SumQuery) super.in(subTypeLabels);
     }
 
     @Override

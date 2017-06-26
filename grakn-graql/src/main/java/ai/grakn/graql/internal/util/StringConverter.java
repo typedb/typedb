@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.util;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.util.StringUtil;
 
@@ -57,14 +57,14 @@ public class StringConverter {
     }
 
     /**
-     * @param label a label of a type
+     * @param typeLabel a label of a type
      * @return
      * The label of the type correctly escaped in graql.
      * If the label doesn't begin with a number and is only comprised of alphanumeric characters, underscores and dashes,
      * then it will be returned as-is, otherwise it will be quoted and escaped.
      */
-    public static String typeLabelToString(Label label) {
-        return escapeLabelOrId(label.getValue());
+    public static String typeLabelToString(TypeLabel typeLabel) {
+        return escapeLabelOrId(typeLabel.getValue());
     }
 
     private static String escapeLabelOrId(String value) {

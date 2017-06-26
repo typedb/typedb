@@ -19,11 +19,11 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyElement;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeId;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  * <p>
  *     Allows you to create schema or ontological elements.
  *     These differ from normal graph constructs in two ways:
- *     1. They have a unique {@link Label} which identifies them
+ *     1. They have a unique {@link TypeLabel} which identifies them
  *     2. You can link them together into a hierarchical structure
  * </p>
  *
@@ -52,16 +52,16 @@ import java.util.stream.Collectors;
  *           For example an {@link EntityType} or {@link RelationType} or {@link RoleType}
  */
 public abstract class OntologyElementImpl<T extends OntologyElement> extends ConceptImpl implements OntologyElement {
-    private final Label cachedLabel;
-    private final LabelId cachedLabelId;
+    private final TypeLabel cachedLabel;
+    private final TypeId cachedLabelId;
 
     private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
     private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
 
     OntologyElementImpl(VertexElement vertexElement) {
         super(vertexElement);
-        cachedLabel = Label.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
-        cachedLabelId = LabelId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
+        cachedLabel = TypeLabel.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
+        cachedLabelId = TypeId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
     }
 
     /**
@@ -69,7 +69,7 @@ public abstract class OntologyElementImpl<T extends OntologyElement> extends Con
      * @return The internal id which is used for fast lookups
      */
     @Override
-    public LabelId getTypeId(){
+    public TypeId getTypeId(){
         return cachedLabelId;
     }
 
@@ -78,7 +78,7 @@ public abstract class OntologyElementImpl<T extends OntologyElement> extends Con
      * @return The label of this ontological element
      */
     @Override
-    public Label getLabel() {
+    public TypeLabel getLabel() {
         return cachedLabel;
     }
 

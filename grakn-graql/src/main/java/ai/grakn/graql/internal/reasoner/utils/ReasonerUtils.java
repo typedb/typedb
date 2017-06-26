@@ -19,11 +19,11 @@
 package ai.grakn.graql.internal.reasoner.utils;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
@@ -90,7 +90,7 @@ public class ReasonerUtils {
      * @return true if at least one inference rule is present in the graph
      */
     public static boolean hasRules(GraknGraph graph) {
-        Label inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getLabel();
+        TypeLabel inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getLabel();
         return graph.graql().infer(false).match(var("x").isa(Graql.label(inferenceRule))).ask().execute();
     }
 
@@ -358,7 +358,7 @@ public class ReasonerUtils {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createTransitiveRule(RelationType relType, Label fromRoleLabel, Label toRoleLabel, GraknGraph graph){
+    public static Rule createTransitiveRule(RelationType relType, TypeLabel fromRoleLabel, TypeLabel toRoleLabel, GraknGraph graph){
         final int arity = relType.relates().size();
         if (arity != 2) throw GraqlQueryException.ruleCreationArityMismatch();
 
@@ -377,7 +377,7 @@ public class ReasonerUtils {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createReflexiveRule(RelationType relType, Label fromRoleLabel, Label toRoleLabel, GraknGraph graph){
+    public static Rule createReflexiveRule(RelationType relType, TypeLabel fromRoleLabel, TypeLabel toRoleLabel, GraknGraph graph){
         final int arity = relType.relates().size();
         if (arity != 2) throw GraqlQueryException.ruleCreationArityMismatch();
 
@@ -394,7 +394,7 @@ public class ReasonerUtils {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<Label, Label> roleMappings,
+    public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<TypeLabel, TypeLabel> roleMappings,
                                              GraknGraph graph){
         final int parentArity = parent.relates().size();
         final int childArity = child.relates().size();
@@ -404,7 +404,7 @@ public class ReasonerUtils {
         VarPattern parentVar = var().isa(Graql.label(parent.getLabel()));
         VarPattern childVar = var().isa(Graql.label(child.getLabel()));
 
-        for (Map.Entry<Label, Label> entry : roleMappings.entrySet()) {
+        for (Map.Entry<TypeLabel, TypeLabel> entry : roleMappings.entrySet()) {
             Var varName = var().asUserDefined();
             parentVar = parentVar.rel(Graql.label(entry.getKey()), varName);
             childVar = childVar.rel(Graql.label(entry.getValue()), varName);
@@ -421,8 +421,8 @@ public class ReasonerUtils {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createPropertyChainRule(RelationType relation, Label fromRoleLabel, Label toRoleLabel,
-                                               LinkedHashMap<RelationType, Pair<Label, Label>> chain, GraknGraph graph){
+    public static Rule createPropertyChainRule(RelationType relation, TypeLabel fromRoleLabel, TypeLabel toRoleLabel,
+                                               LinkedHashMap<RelationType, Pair<TypeLabel, TypeLabel>> chain, GraknGraph graph){
         Stack<Var> varNames = new Stack<>();
         varNames.push(var("x"));
         Set<VarPatternAdmin> bodyVars = new HashSet<>();

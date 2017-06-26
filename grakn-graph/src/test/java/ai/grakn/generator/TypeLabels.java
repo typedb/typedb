@@ -20,7 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.CommonUtil;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
@@ -37,20 +37,20 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 /**
  * Generator that generates totally random type names
  */
-public class TypeLabels extends FromGraphGenerator<Label> {
+public class TypeLabels extends FromGraphGenerator<TypeLabel> {
 
     private boolean mustBeUnused = false;
 
     public TypeLabels() {
-        super(Label.class);
+        super(TypeLabel.class);
         this.fromLastGeneratedGraph();
     }
 
     @Override
-    public Label generateFromGraph() {
+    public TypeLabel generateFromGraph() {
         if (mustBeUnused) {
-            Function<GraknGraph,Label> function = graph -> {
-                Label label;
+            Function<GraknGraph,TypeLabel> function = graph -> {
+                TypeLabel label;
 
                 int attempts = 0;
                 do {
@@ -80,12 +80,12 @@ public class TypeLabels extends FromGraphGenerator<Label> {
         return this;
     }
 
-    private Label metaSyntacticLabel() {
-        return Label.of(gen().make(MetasyntacticStrings.class).generate(random, status));
+    private TypeLabel metaSyntacticLabel() {
+        return TypeLabel.of(gen().make(MetasyntacticStrings.class).generate(random, status));
     }
 
-    private Label trueRandomLabel() {
-        return Label.of(gen(String.class));
+    private TypeLabel trueRandomLabel() {
+        return TypeLabel.of(gen(String.class));
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})

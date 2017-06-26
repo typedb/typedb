@@ -21,9 +21,9 @@ package ai.grakn.engine.session;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.ComputeQuery;
@@ -339,7 +339,7 @@ class GraqlSession {
     private void sendTypes() {
         sendJson(Json.object(
                 ACTION, ACTION_TYPES,
-                TYPES, getTypes(graph).map(Label::getValue).collect(toList())
+                TYPES, getTypes(graph).map(TypeLabel::getValue).collect(toList())
         ));
     }
 
@@ -361,7 +361,7 @@ class GraqlSession {
      * @param graph the graph to find types in
      * @return all type IDs in the ontology
      */
-    private static Stream<Label> getTypes(GraknGraph graph) {
+    private static Stream<TypeLabel> getTypes(GraknGraph graph) {
         return graph.admin().getMetaConcept().subTypes().stream().map(Type::getLabel);
     }
 

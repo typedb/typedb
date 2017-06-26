@@ -24,11 +24,11 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
@@ -639,12 +639,12 @@ public class MatchQueryTest {
         GraknGraph graph = GraphContext.empty().graph(); // TODO: Try and remove this call if possible
         QueryBuilder qb = graph.graql();
 
-        Label a = Label.of("a");
-        Label b = Label.of("b");
-        Label c = Label.of("c");
-        Label d = Label.of("d");
-        Label e = Label.of("e");
-        Label f = Label.of("f");
+        TypeLabel a = TypeLabel.of("a");
+        TypeLabel b = TypeLabel.of("b");
+        TypeLabel c = TypeLabel.of("c");
+        TypeLabel d = TypeLabel.of("d");
+        TypeLabel e = TypeLabel.of("e");
+        TypeLabel f = TypeLabel.of("f");
 
         qb.insert(
                 Graql.label(c).sub(Graql.label(b).sub(Graql.label(a).sub("entity"))),

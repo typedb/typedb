@@ -17,7 +17,7 @@
  */
 package ai.grakn.migration.owl;
 
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import org.semanticweb.owlapi.model.IRI;
 
@@ -80,7 +80,7 @@ public interface Namer {
      *  
      * @param relationLabel The label of the Grakn <code>RelationType</code>.
      */
-    default Label objectRole(Label relationLabel) {
+    default TypeLabel objectRole(TypeLabel relationLabel) {
         return relationLabel.map(relation -> OwlModel.OBJECT.owlname() + "-" + relation);
     }
     /**
@@ -89,25 +89,25 @@ public interface Namer {
      *  
      * @param relationLabel The label of the Grakn <code>RelationType</code>.
      */
-    default Label subjectRole(Label relationLabel) {
+    default TypeLabel subjectRole(TypeLabel relationLabel) {
         return relationLabel.map(relation -> OwlModel.SUBJECT.owlname() + "-" + relation);
     }
     /**
      * The name of the entity role type in an entity-role relation representing an OWL data property
      */
-    default Label entityRole(Label resourceLabel) {
-        return Schema.ImplicitType.HAS_OWNER.getLabel(resourceLabel);
+    default TypeLabel entityRole(TypeLabel resourceTypeLabel) {
+        return Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeLabel);
     }
     /**
      * Make a name for a resource relation type representing the value of an OWL data property.
      */
-    default Label resourceRelation(Label resourceLabel) {
-        return Schema.ImplicitType.HAS.getLabel(resourceLabel);
+    default TypeLabel resourceRelation(TypeLabel resourceTypeLabel) {
+        return Schema.ImplicitType.HAS.getLabel(resourceTypeLabel);
     }
     /**
      * Make a name for a resource role player representing the value of an OWL data property.
      */
-    default Label resourceRole(Label resourceLabel) {
-        return Schema.ImplicitType.HAS_VALUE.getLabel(resourceLabel);
+    default TypeLabel resourceRole(TypeLabel resourceTypeLabel) {
+        return Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeLabel);
     }
 }

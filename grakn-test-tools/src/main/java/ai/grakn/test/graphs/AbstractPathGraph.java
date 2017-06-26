@@ -20,9 +20,9 @@ package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.test.GraphContext;
 import com.google.common.math.IntMath;
 
@@ -34,7 +34,7 @@ import java.util.function.Consumer;
  *
  */
 public abstract class AbstractPathGraph extends TestGraph {
-    private final static Label key = Label.of("index");
+    private final static TypeLabel key = TypeLabel.of("index");
     private final String gqlFile;
     private final int n;
     private final int m;

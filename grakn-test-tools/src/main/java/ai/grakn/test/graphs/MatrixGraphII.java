@@ -24,7 +24,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.test.GraphContext;
 
 import java.util.function.Consumer;
@@ -36,7 +36,7 @@ import java.util.function.Consumer;
  */
 public class MatrixGraphII extends TestGraph {
 
-    private final static Label key = Label.of("index");
+    private final static TypeLabel key = TypeLabel.of("index");
     private final static String gqlFile = "matrix-testII.gql";
 
     private final int n;

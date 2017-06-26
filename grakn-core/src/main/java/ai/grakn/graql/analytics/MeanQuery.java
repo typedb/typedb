@@ -19,7 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -39,10 +39,10 @@ public interface MeanQuery extends ComputeQuery<Optional<Double>> {
     MeanQuery of(String... resourceTypeLabels);
 
     /**
-     * @param resourceLabels a collection of types of resources to execute the query on
+     * @param resourceTypeLabels a collection of types of resources to execute the query on
      * @return a MeanQuery with the subTypeLabels set
      */
-    MeanQuery of(Collection<Label> resourceLabels);
+    MeanQuery of(Collection<TypeLabel> resourceTypeLabels);
 
     /**
      * @param subTypeLabels an array of types to include in the subgraph
@@ -52,11 +52,11 @@ public interface MeanQuery extends ComputeQuery<Optional<Double>> {
     MeanQuery in(String... subTypeLabels);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph
+     * @param subTypeLabels a collection of types to include in the subgraph
      * @return a MeanQuery with the subTypeLabels set
      */
     @Override
-    MeanQuery in(Collection<Label> subLabels);
+    MeanQuery in(Collection<TypeLabel> subTypeLabels);
 
     /**
      * Execute the query.

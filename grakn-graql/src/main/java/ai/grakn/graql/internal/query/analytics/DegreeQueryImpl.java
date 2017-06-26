@@ -19,9 +19,9 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -43,7 +43,7 @@ import static java.util.stream.Collectors.joining;
 class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> implements DegreeQuery {
 
     private boolean ofTypeLabelsSet = false;
-    private Set<Label> ofLabels = new HashSet<>();
+    private Set<TypeLabel> ofTypeLabels = new HashSet<>();
 
     DegreeQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
@@ -58,21 +58,21 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
 
         ComputerResult result;
 
-        if (ofLabels.isEmpty()) {
-            ofLabels.addAll(subLabels);
+        if (ofTypeLabels.isEmpty()) {
+            ofTypeLabels.addAll(subTypeLabels);
         } else {
-            ofLabels = ofLabels.stream()
+            ofTypeLabels = ofTypeLabels.stream()
                     .flatMap(typeLabel -> graph.get().getType(typeLabel).subTypes().stream())
                     .map(Type::getLabel)
                     .collect(Collectors.toSet());
-            subLabels.addAll(ofLabels);
+            subTypeLabels.addAll(ofTypeLabels);
         }
 
-        Set<Label> withResourceRelationTypes = getHasResourceRelationTypes();
-        withResourceRelationTypes.addAll(subLabels);
+        Set<TypeLabel> withResourceRelationTypes = getHasResourceRelationTypes();
+        withResourceRelationTypes.addAll(subTypeLabels);
 
         Set<TypeId> withResourceRelationTypeIds = convertLabelsToIds(withResourceRelationTypes);
-        Set<TypeId> ofTypeIds = convertLabelsToIds(ofLabels);
+        Set<TypeId> ofTypeIds = convertLabelsToIds(ofTypeLabels);
 
         String randomId = getRandomJobId();
 
@@ -94,24 +94,24 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     }
 
     @Override
-    public DegreeQuery in(Collection<Label> subLabels) {
-        return (DegreeQuery) super.in(subLabels);
+    public DegreeQuery in(Collection<TypeLabel> subTypeLabels) {
+        return (DegreeQuery) super.in(subTypeLabels);
     }
 
     @Override
     public DegreeQuery of(String... ofTypeLabels) {
         if (ofTypeLabels.length > 0) {
             ofTypeLabelsSet = true;
-            this.ofLabels = Arrays.stream(ofTypeLabels).map(Label::of).collect(Collectors.toSet());
+            this.ofTypeLabels = Arrays.stream(ofTypeLabels).map(TypeLabel::of).collect(Collectors.toSet());
         }
         return this;
     }
 
     @Override
-    public DegreeQuery of(Collection<Label> ofLabels) {
-        if (!ofLabels.isEmpty()) {
+    public DegreeQuery of(Collection<TypeLabel> ofTypeLabels) {
+        if (!ofTypeLabels.isEmpty()) {
             ofTypeLabelsSet = true;
-            this.ofLabels = Sets.newHashSet(ofLabels);
+            this.ofTypeLabels = Sets.newHashSet(ofTypeLabels);
         }
         return this;
     }
@@ -120,7 +120,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     String graqlString() {
         String string = "degrees";
         if (ofTypeLabelsSet) {
-            string += " of " + ofLabels.stream()
+            string += " of " + ofTypeLabels.stream()
                     .map(StringConverter::typeLabelToString)
                     .collect(joining(", "));
         }
@@ -141,14 +141,14 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
 
         DegreeQueryImpl that = (DegreeQueryImpl) o;
 
-        return ofTypeLabelsSet == that.ofTypeLabelsSet && ofLabels.equals(that.ofLabels);
+        return ofTypeLabelsSet == that.ofTypeLabelsSet && ofTypeLabels.equals(that.ofTypeLabels);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + (ofTypeLabelsSet ? 1 : 0);
-        result = 31 * result + ofLabels.hashCode();
+        result = 31 * result + ofTypeLabels.hashCode();
         return result;
     }
 }

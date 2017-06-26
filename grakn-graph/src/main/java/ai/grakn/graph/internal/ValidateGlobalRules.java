@@ -24,7 +24,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -193,12 +193,12 @@ class ValidateGlobalRules {
 
         Collection<RoleType> superRelates = superRelationType.relates();
         Collection<RoleType> relates = relationType.relates();
-        Set<Label> relatesLabels = relates.stream().map(Type::getLabel).collect(Collectors.toSet());
+        Set<TypeLabel> relatesLabels = relates.stream().map(Type::getLabel).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationTypes is the sub of a role which is in the relates of it's supers
         if(!superRelationType.isAbstract()) {
-            Set<Label> allSuperRolesPlayed = new HashSet<>();
+            Set<TypeLabel> allSuperRolesPlayed = new HashSet<>();
             superRelationType.superSet().forEach(rel -> rel.relates().forEach(roleType -> allSuperRolesPlayed.add(roleType.getLabel())));
 
             for (RoleType relate : relates) {

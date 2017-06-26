@@ -21,11 +21,11 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -69,20 +69,20 @@ import static java.util.stream.Collectors.joining;
  */
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final Label resourceType;
+    private final TypeLabel resourceType;
     private final VarPatternAdmin resource;
 
-    private HasResourceProperty(Label resourceType, VarPatternAdmin resource) {
+    private HasResourceProperty(TypeLabel resourceType, VarPatternAdmin resource) {
         this.resourceType = resourceType;
         this.resource = resource;
     }
 
-    public static HasResourceProperty of(Label resourceType, VarPatternAdmin resource) {
+    public static HasResourceProperty of(TypeLabel resourceType, VarPatternAdmin resource) {
         resource = resource.isa(label(resourceType)).admin();
         return new HasResourceProperty(resourceType, resource);
     }
 
-    public Label getType() {
+    public TypeLabel getType() {
         return resourceType;
     }
 
@@ -196,7 +196,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         Var varName = var.getVarName().asUserDefined();
-        Label type = this.getType();
+        TypeLabel type = this.getType();
         VarPatternAdmin valueVar = this.getResource();
         Var valueVariable = valueVar.getVarName().asUserDefined();
         Set<ValuePredicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);

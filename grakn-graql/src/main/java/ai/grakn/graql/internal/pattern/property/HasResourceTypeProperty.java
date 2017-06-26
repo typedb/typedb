@@ -19,11 +19,11 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -76,7 +76,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         this.resourceType = resourceType;
         this.required = required;
 
-        Label resourceLabel = resourceType.getTypeLabel().orElseThrow(GraqlQueryException::noLabelSpecifiedForHas);
+        TypeLabel resourceTypeLabel = resourceType.getTypeLabel().orElseThrow(GraqlQueryException::noLabelSpecifiedForHas);
 
         VarPattern role = Graql.label(Schema.MetaSchema.ROLE.getLabel());
 
@@ -86,9 +86,9 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
         // If a key, limit only to the implicit key type
         if(required){
-            ownerRole = ownerRole.label(KEY_OWNER.getLabel(resourceLabel));
-            valueRole = valueRole.label(KEY_VALUE.getLabel(resourceLabel));
-            relationType = relationType.label(KEY.getLabel(resourceLabel));
+            ownerRole = ownerRole.label(KEY_OWNER.getLabel(resourceTypeLabel));
+            valueRole = valueRole.label(KEY_VALUE.getLabel(resourceTypeLabel));
+            relationType = relationType.label(KEY.getLabel(resourceTypeLabel));
         }
 
         this.ownerRole = ownerRole.admin();
@@ -171,9 +171,9 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
         Var varName = var.getVarName().asUserDefined();
-        Label label = this.getResourceType().getTypeLabel().orElse(null);
+        TypeLabel typeLabel = this.getResourceType().getTypeLabel().orElse(null);
         //isa part
-        VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();
+        VarPatternAdmin resVar = varName.has(Graql.label(typeLabel)).admin();
         return new TypeAtom(resVar, parent);
     }
 }

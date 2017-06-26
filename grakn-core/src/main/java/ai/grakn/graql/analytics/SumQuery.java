@@ -19,7 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -39,10 +39,10 @@ public interface SumQuery extends ComputeQuery<Optional<Number>> {
     SumQuery of(String... resourceTypeLabels);
 
     /**
-     * @param resourceLabels a collection of types of resources to execute the query on
+     * @param resourceTypeLabels a collection of types of resources to execute the query on
      * @return a SumQuery with the subTypeLabels set
      */
-    SumQuery of(Collection<Label> resourceLabels);
+    SumQuery of(Collection<TypeLabel> resourceTypeLabels);
 
     /**
      * @param subTypeLabels an array of types to include in the subgraph
@@ -52,11 +52,11 @@ public interface SumQuery extends ComputeQuery<Optional<Number>> {
     SumQuery in(String... subTypeLabels);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph
+     * @param subTypeLabels a collection of types to include in the subgraph
      * @return a SumQuery with the subTypeLabels set
      */
     @Override
-    SumQuery in(Collection<Label> subLabels);
+    SumQuery in(Collection<TypeLabel> subTypeLabels);
 
     /**
      * Execute the query.

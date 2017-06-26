@@ -20,10 +20,10 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
 import ai.grakn.graql.Graql;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -95,7 +95,7 @@ public class GraqlTraversalTest {
 
         // We have to mock out the `subTypes` call because the shortcut edge optimisation checks it
 
-        Label wifeLabel = Label.of("wife");
+        TypeLabel wifeLabel = TypeLabel.of("wife");
         RoleType wife = mock(RoleType.class);
 
         when(graph.getType(wifeLabel)).thenAnswer(invocation -> {
@@ -105,7 +105,7 @@ public class GraqlTraversalTest {
             return wife;
         });
 
-        Label marriageLabel = Label.of("marriage");
+        TypeLabel marriageLabel = TypeLabel.of("marriage");
         RelationType marriage = mock(RelationType.class);
 
         when(graph.getType(marriageLabel)).thenAnswer(invocation -> {

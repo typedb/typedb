@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.hal;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -181,7 +181,7 @@ public class HALUtils {
                 );
                 String relationType = null;
                 if (var.getProperty(IsaProperty.class).isPresent()) {
-                    Optional<Label> relOptional = var.getProperty(IsaProperty.class).get().getType().getTypeLabel();
+                    Optional<TypeLabel> relOptional = var.getProperty(IsaProperty.class).get().getType().getTypeLabel();
                     relationType = (relOptional.isPresent()) ? relOptional.get().getValue() : "";
                 } else {
                     relationType = "";

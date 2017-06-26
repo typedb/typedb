@@ -42,8 +42,8 @@ import static java.util.stream.Collectors.toList;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
 import io.swagger.annotations.ApiImplicitParam;
@@ -148,7 +148,7 @@ public class ConceptController {
     }
 
     private List<String> instances(Type type) {
-        return type.subTypes().stream().map(Type::getLabel).map(Label::getValue).collect(toList());
+        return type.subTypes().stream().map(Type::getLabel).map(TypeLabel::getValue).collect(toList());
     }
 
     /**

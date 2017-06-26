@@ -20,7 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 
 public class RelationTypes extends AbstractTypeGenerator<RelationType> {
 
@@ -29,7 +29,7 @@ public class RelationTypes extends AbstractTypeGenerator<RelationType> {
     }
 
     @Override
-    protected RelationType newType(Label label) {
+    protected RelationType newType(TypeLabel label) {
         return graph().putRelationType(label);
     }
 

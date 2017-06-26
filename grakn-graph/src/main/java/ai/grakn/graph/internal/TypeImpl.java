@@ -19,13 +19,14 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeId;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
@@ -471,16 +472,16 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
             throw GraphOperationException.metaTypeImmutable(resourceType.getLabel());
         }
 
-        Label resourceLabel = resourceType.getLabel();
-        RoleType ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(resourceLabel));
-        RoleType valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(resourceLabel));
-        RelationType relationType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceLabel)).
+        TypeLabel resourceTypeLabel = resourceType.getLabel();
+        RoleType ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(resourceTypeLabel));
+        RoleType valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(resourceTypeLabel));
+        RelationType relationType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceTypeLabel)).
                 relates(ownerRole).
                 relates(valueRole);
 
         //Linking with ako structure if present
         ResourceType resourceTypeSuper = resourceType.superType();
-        Label superLabel = resourceTypeSuper.getLabel();
+        TypeLabel superLabel = resourceTypeSuper.getLabel();
         if(!Schema.MetaSchema.RESOURCE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
             RoleType ownerRoleSuper = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
             RoleType valueRoleSuper = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(superLabel));

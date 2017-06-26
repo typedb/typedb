@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
@@ -50,8 +50,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ConjunctionQueryTest {
-    private Label resourceTypeWithoutSubTypesLabel = Label.of("name");
-    private Label resourceTypeWithSubTypesLabel = Label.of("resource");
+    private TypeLabel resourceTypeWithoutSubTypesLabel = TypeLabel.of("name");
+    private TypeLabel resourceTypeWithSubTypesLabel = TypeLabel.of("resource");
     private VarPattern resourceTypeWithoutSubTypes = Graql.label(resourceTypeWithoutSubTypesLabel);
     private VarPattern resourceTypeWithSubTypes = Graql.label(resourceTypeWithSubTypesLabel);
     private String literalValue = "Bob";

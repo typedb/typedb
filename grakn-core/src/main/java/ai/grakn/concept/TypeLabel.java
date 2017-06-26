@@ -28,17 +28,17 @@ import java.util.function.Function;
  * </p>
  *
  * <p>
- *     A class which represents the unique label of any {@link Type} or {@link RuleType} in the {@link ai.grakn.GraknGraph}.
- *     Also contains a static method for producing {@link Label}s from Strings.
+ *     A class which represents the unique label of any {@link Type} in the {@link ai.grakn.GraknGraph}.
+ *     Also contains a static method for producing {@link TypeLabel}s from Strings.
  * </p>
  *
  * @author fppt
  */
-public class Label implements Comparable<Label>, Serializable {
+public class TypeLabel implements Comparable<TypeLabel>, Serializable {
     private static final long serialVersionUID = 2051578406740868932L;
 
     private String label;
-    private Label(String label){
+    private TypeLabel(String label){
         this.label = label;
     }
 
@@ -48,13 +48,13 @@ public class Label implements Comparable<Label>, Serializable {
     }
 
     /**
-     * Rename a {@link Label} (does not modify the original {@link Label})
+     * Rename a {@link TypeLabel} (does not modify the original {@link TypeLabel})
      * @param mapper a function to apply to the underlying type label
      * @return the new type label
      */
     @CheckReturnValue
-    public Label map(Function<String, String> mapper) {
-        return Label.of(mapper.apply(label));
+    public TypeLabel map(Function<String, String> mapper) {
+        return TypeLabel.of(mapper.apply(label));
     }
 
     @Override
@@ -62,9 +62,9 @@ public class Label implements Comparable<Label>, Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Label label = (Label) o;
+        TypeLabel typeLabel = (TypeLabel) o;
 
-        return this.label.equals(label.label);
+        return label.equals(typeLabel.label);
     }
 
     @Override
@@ -73,7 +73,7 @@ public class Label implements Comparable<Label>, Serializable {
     }
 
     @Override
-    public int compareTo(Label o) {
+    public int compareTo(TypeLabel o) {
         return getValue().compareTo(o.getValue());
     }
 
@@ -88,7 +88,7 @@ public class Label implements Comparable<Label>, Serializable {
      * @return The matching Type Label
      */
     @CheckReturnValue
-    public static Label of(String value){
-        return new Label(value);
+    public static TypeLabel of(String value){
+        return new TypeLabel(value);
     }
 }

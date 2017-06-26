@@ -19,10 +19,10 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -522,8 +522,8 @@ public class Relation extends TypeAtom {
             if (role != null) {
                 rolePlayerMappings.add(new Pair<>(varName, role));
                 //try directly
-                Label label = role.getTypeLabel().orElse(null);
-                RoleType roleType = label != null ? graph.getType(label) : null;
+                TypeLabel typeLabel = role.getTypeLabel().orElse(null);
+                RoleType roleType = typeLabel != null ? graph.getType(typeLabel) : null;
                 //try indirectly
                 if (roleType == null && role.getVarName().isUserDefinedName()) {
                     IdPredicate rolePredicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(role.getVarName());
@@ -600,12 +600,12 @@ public class Relation extends TypeAtom {
         roleVarTypeMap.asMap().entrySet()
                 .forEach(e -> {
                     RoleType role = e.getKey();
-                    Label roleLabel = role.getLabel();
+                    TypeLabel roleLabel = role.getLabel();
                     relationPlayers.stream()
                             .filter(rp -> rp.getRoleType().isPresent())
                             .forEach(rp -> {
                                 VarPatternAdmin roleTypeVar = rp.getRoleType().orElse(null);
-                                Label rl = roleTypeVar != null ? roleTypeVar.getTypeLabel().orElse(null) : null;
+                                TypeLabel rl = roleTypeVar != null ? roleTypeVar.getTypeLabel().orElse(null) : null;
                                 if (roleLabel != null && roleLabel.equals(rl)) {
                                     roleRelationPlayerMap.put(role, rp);
                                 }
@@ -631,10 +631,10 @@ public class Relation extends TypeAtom {
                 .filter(prp -> prp.getRoleType().isPresent())
                 .forEach(prp -> {
                     VarPatternAdmin parentRoleTypeVar = prp.getRoleType().orElse(null);
-                    Label parentRoleLabel = parentRoleTypeVar.getTypeLabel().orElse(null);
+                    TypeLabel parentRoleTypeLabel = parentRoleTypeVar.getTypeLabel().orElse(null);
 
                     //TODO take into account indirect roles
-                    RoleType parentRole = parentRoleLabel != null ? graph().getType(parentRoleLabel) : null;
+                    RoleType parentRole = parentRoleTypeLabel != null ? graph().getType(parentRoleTypeLabel) : null;
 
                     if (parentRole != null) {
                         boolean isMetaRole = Schema.MetaSchema.isMetaLabel(parentRole.getLabel());

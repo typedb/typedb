@@ -28,7 +28,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -146,7 +146,7 @@ public interface GraknAdmin {
      * @return The matching type id
      */
     @CheckReturnValue
-    TypeId convertToId(Label label);
+    TypeId convertToId(TypeLabel label);
 
     /**
      * Commits to the graph without submitting any commit logs.

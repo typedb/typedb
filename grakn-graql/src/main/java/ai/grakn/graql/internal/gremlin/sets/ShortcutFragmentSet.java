@@ -20,10 +20,10 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
@@ -50,12 +50,12 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
     private final Var edge;
     private final Var rolePlayer;
     private final Optional<Var> roleType;
-    private final Optional<Set<Label>> roleTypeLabels;
-    private final Optional<Set<Label>> relationTypeLabels;
+    private final Optional<Set<TypeLabel>> roleTypeLabels;
+    private final Optional<Set<TypeLabel>> relationTypeLabels;
 
     ShortcutFragmentSet(
             Var relation, Var edge, Var rolePlayer, Optional<Var> roleType,
-            Optional<Set<Label>> roleTypeLabels, Optional<Set<Label>> relationTypeLabels) {
+            Optional<Set<TypeLabel>> roleTypeLabels, Optional<Set<TypeLabel>> relationTypeLabels) {
         super(
                 Fragments.inShortcut(rolePlayer, edge, relation, roleType, roleTypeLabels, relationTypeLabels),
                 Fragments.outShortcut(relation, edge, rolePlayer, roleType, roleTypeLabels, relationTypeLabels)
@@ -166,10 +166,10 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         Collection<RoleType> subTypes = withImplicitConceptsVisible(graph, roleType::subTypes);
 
-        Set<Label> newRoleLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
+        Set<TypeLabel> newRoleTypeLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(
-                relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleLabels), relationTypeLabels
+                relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleTypeLabels), relationTypeLabels
         );
     }
 
@@ -183,10 +183,10 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         Collection<RelationType> subTypes = withImplicitConceptsVisible(graph, relationType::subTypes);
 
-        Set<Label> newRelationLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
+        Set<TypeLabel> newRelationTypeLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(
-                relation, edge, rolePlayer, roleType, roleTypeLabels, Optional.of(newRelationLabels)
+                relation, edge, rolePlayer, roleType, roleTypeLabels, Optional.of(newRelationTypeLabels)
         );
     }
 }

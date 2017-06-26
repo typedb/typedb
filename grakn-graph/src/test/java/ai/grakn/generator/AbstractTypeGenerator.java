@@ -20,7 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.Type;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -70,7 +70,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
         }
 
         if (types.isEmpty() && includeNonMeta()) {
-            Label label = genFromGraph(TypeLabels.class).mustBeUnused().generate(random, status);
+            TypeLabel label = genFromGraph(TypeLabels.class).mustBeUnused().generate(random, status);
             assert graph().getType(label) == null;
             return newType(label);
         } else {
@@ -78,7 +78,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
         }
     }
 
-    protected abstract T newType(Label label);
+    protected abstract T newType(TypeLabel label);
 
     protected abstract T metaType();
 

@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.parser;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
@@ -322,17 +322,17 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Set<Label> visitInList(GraqlParser.InListContext ctx) {
+    public Set<TypeLabel> visitInList(GraqlParser.InListContext ctx) {
         return visitLabelList(ctx.labelList());
     }
 
     @Override
-    public Set<Label> visitOfList(GraqlParser.OfListContext ctx) {
+    public Set<TypeLabel> visitOfList(GraqlParser.OfListContext ctx) {
         return visitLabelList(ctx.labelList());
     }
 
     @Override
-    public Set<Label> visitLabelList(GraqlParser.LabelListContext ctx) {
+    public Set<TypeLabel> visitLabelList(GraqlParser.LabelListContext ctx) {
         return ctx.label().stream().map(this::visitLabel).collect(toSet());
     }
 
@@ -440,7 +440,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<VarPattern> visitPropHas(GraqlParser.PropHasContext ctx) {
-        Label type = visitLabel(ctx.label());
+        TypeLabel type = visitLabel(ctx.label());
 
         VarPattern resource = ctx.VARIABLE() != null ? getVariable(ctx.VARIABLE()) : var();
 
@@ -523,8 +523,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Label visitLabel(GraqlParser.LabelContext ctx) {
-        return Label.of(visitIdentifier(ctx.identifier()));
+    public TypeLabel visitLabel(GraqlParser.LabelContext ctx) {
+        return TypeLabel.of(visitIdentifier(ctx.identifier()));
     }
 
     @Override

@@ -19,7 +19,7 @@
 package ai.grakn.exception;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -34,7 +34,7 @@ import static ai.grakn.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
  * <p>
  *     This occurs when attempting to add a globally unique property to a concept.
  *     For example when creating a {@link ai.grakn.concept.EntityType} and {@link ai.grakn.concept.RelationType} using
- *     the same {@link Label}
+ *     the same {@link ai.grakn.concept.TypeLabel}
  * </p>
  *
  * @author fppt
@@ -54,7 +54,7 @@ public class PropertyNotUniqueException extends GraphOperationException{
 
     /**
      * Thrown when trying to create a concept using a unique property which is already taken.
-     * For example this happens when using an already taken {@link Label}
+     * For example this happens when using an already taken {@link TypeLabel}
      */
     public static PropertyNotUniqueException cannotCreateProperty(Concept conceptWithValue, Schema.VertexProperty property, Object value){
         return new PropertyNotUniqueException(UNIQUE_PROPERTY_TAKEN.getMessage(property.name(), value, conceptWithValue));

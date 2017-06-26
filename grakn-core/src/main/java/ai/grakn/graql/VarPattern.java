@@ -19,8 +19,8 @@
 package ai.grakn.graql;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.admin.VarPatternAdmin;
 
 import javax.annotation.CheckReturnValue;
@@ -66,7 +66,7 @@ public interface VarPattern extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    VarPattern label(Label label);
+    VarPattern label(TypeLabel label);
 
     /**
      * @param value a value that this variable's value must exactly match
@@ -120,7 +120,7 @@ public interface VarPattern extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    VarPattern has(Label type, VarPattern varPattern);
+    VarPattern has(TypeLabel type, VarPattern varPattern);
 
     /**
      * @param type a concept type id that the variable must be of this type

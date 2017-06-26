@@ -19,7 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -41,11 +41,11 @@ public interface DegreeQuery extends ComputeQuery<Map<Long, Set<String>>> {
     DegreeQuery in(String... subTypeLabels);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph
+     * @param subTypeLabels a collection of types to include in the subgraph
      * @return a DegreeQuery with the subTypeLabels set
      */
     @Override
-    DegreeQuery in(Collection<Label> subLabels);
+    DegreeQuery in(Collection<TypeLabel> subTypeLabels);
 
     /**
      * @param ofTypeLabels an array of types in the subgraph to compute degree of. By default the degrees of all the
@@ -55,11 +55,11 @@ public interface DegreeQuery extends ComputeQuery<Map<Long, Set<String>>> {
     DegreeQuery of(String... ofTypeLabels);
 
     /**
-     * @param ofLabels a collection of types in the subgraph to compute degree of. By default the degrees of all the
+     * @param ofTypeLabels a collection of types in the subgraph to compute degree of. By default the degrees of all the
      *                    types in the graph will be computed
      * @return a DegreeQuery with the subTypeLabels set
      */
-    DegreeQuery of(Collection<Label> ofLabels);
+    DegreeQuery of(Collection<TypeLabel> ofTypeLabels);
 
     /**
      * @param graph the graph to execute the query on

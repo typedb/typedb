@@ -24,12 +24,12 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.test.EngineContext;
@@ -215,8 +215,8 @@ public class DegreeTest {
 
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             // set subgraph
-            HashSet<Label> ct = Sets.newHashSet(Label.of("person"), Label.of("animal"),
-                    Label.of("mans-best-friend"));
+            HashSet<TypeLabel> ct = Sets.newHashSet(TypeLabel.of("person"), TypeLabel.of("animal"),
+                    TypeLabel.of("mans-best-friend"));
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
 
             // check that dog has a degree to confirm sub has been inferred
@@ -277,8 +277,8 @@ public class DegreeTest {
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
 
             // create a subgraph excluding resources and the relationship
-            HashSet<Label> subGraphTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
-                    Label.of("mans-best-friend"));
+            HashSet<TypeLabel> subGraphTypes = Sets.newHashSet(TypeLabel.of("animal"), TypeLabel.of("person"),
+                    TypeLabel.of("mans-best-friend"));
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(subGraphTypes).execute();
             assertFalse(degrees.isEmpty());
             degrees.forEach((key, value1) -> value1.forEach(
@@ -289,8 +289,8 @@ public class DegreeTest {
             ));
 
             // create a subgraph excluding resource type only
-            HashSet<Label> almostFullTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
-                    Label.of("mans-best-friend"), Label.of("has-name"), Label.of("name"));
+            HashSet<TypeLabel> almostFullTypes = Sets.newHashSet(TypeLabel.of("animal"), TypeLabel.of("person"),
+                    TypeLabel.of("mans-best-friend"), TypeLabel.of("has-name"), TypeLabel.of("name"));
             degrees = graph.graql().compute().degree().in(almostFullTypes).execute();
             assertFalse(degrees.isEmpty());
             degrees.forEach((key, value1) -> value1.forEach(
@@ -402,12 +402,12 @@ public class DegreeTest {
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
 
             // create a subgraph with assertion on assertion
-            HashSet<Label> ct =
-                    Sets.newHashSet(Label.of("animal"),
-                            Label.of("person"),
-                            Label.of("mans-best-friend"),
-                            Label.of("start-date"),
-                            Label.of("has-ownership-resource"));
+            HashSet<TypeLabel> ct =
+                    Sets.newHashSet(TypeLabel.of("animal"),
+                            TypeLabel.of("person"),
+                            TypeLabel.of("mans-best-friend"),
+                            TypeLabel.of("start-date"),
+                            TypeLabel.of("has-ownership-resource"));
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
             assertTrue(!degrees.isEmpty());
             degrees.forEach((key1, value2) -> value2.forEach(
@@ -419,9 +419,9 @@ public class DegreeTest {
 
             // create subgraph without assertion on assertion
             ct.clear();
-            ct.add(Label.of("animal"));
-            ct.add(Label.of("person"));
-            ct.add(Label.of("mans-best-friend"));
+            ct.add(TypeLabel.of("animal"));
+            ct.add(TypeLabel.of("person"));
+            ct.add(TypeLabel.of("mans-best-friend"));
             degrees = graph.graql().compute().degree().in(ct).execute();
             assertFalse(degrees.isEmpty());
             degrees.forEach((key, value1) -> value1.forEach(
@@ -545,8 +545,8 @@ public class DegreeTest {
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             // check degree for dave owning cats
             //TODO: should we count the relationship even if there is no cat attached?
-            HashSet<Label> ct = Sets.newHashSet(Label.of("mans-best-friend"), Label.of("cat"),
-                    Label.of("person"));
+            HashSet<TypeLabel> ct = Sets.newHashSet(TypeLabel.of("mans-best-friend"), TypeLabel.of("cat"),
+                    TypeLabel.of("person"));
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
             assertFalse(degrees.isEmpty());
             degrees.forEach((key, value) -> value.forEach(

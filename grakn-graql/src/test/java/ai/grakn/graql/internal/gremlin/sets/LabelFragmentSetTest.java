@@ -20,8 +20,8 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -45,8 +45,8 @@ public class LabelFragmentSetTest {
     private static final Var generatedVar = Graql.var();
     private static final Var otherGeneratedVar = Graql.var();
     private static final Var userDefinedVar = Graql.var("x");
-    private static final Label existingTypeLabel = Label.of("something");
-    private static final Label nonExistentTypeLabel = Label.of("doesn't exist");
+    private static final TypeLabel existingTypeLabel = TypeLabel.of("something");
+    private static final TypeLabel nonExistentTypeLabel = TypeLabel.of("doesn't exist");
 
     private GraknGraph graph;
 

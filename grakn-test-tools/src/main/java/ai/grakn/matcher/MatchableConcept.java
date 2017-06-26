@@ -19,8 +19,8 @@
 package ai.grakn.matcher;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableSet;
 
@@ -35,7 +35,7 @@ import java.util.Optional;
  */
 public class MatchableConcept {
 
-    static final ImmutableSet<Label> NAME_TYPES = ImmutableSet.of(Label.of("name"), Label.of("title"));
+    static final ImmutableSet<TypeLabel> NAME_TYPES = ImmutableSet.of(TypeLabel.of("name"), TypeLabel.of("title"));
 
     private final Concept concept;
 

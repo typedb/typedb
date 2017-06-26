@@ -20,9 +20,9 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
@@ -600,8 +600,8 @@ public class AtomicTest {
         Relation atom2 = (Relation) query2.getAtom();
 
         List<RelationType> possibleTypes = Lists.newArrayList(
-                graph.getType(Label.of("relation1")),
-                graph.getType(Label.of("relation3"))
+                graph.getType(TypeLabel.of("relation1")),
+                graph.getType(TypeLabel.of("relation3"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
@@ -624,15 +624,15 @@ public class AtomicTest {
         Relation atom2 = (Relation) query2.getAtom();
 
         List<RelationType> possibleTypes = Collections.singletonList(
-                graph.getType(Label.of("relation1"))
+                graph.getType(TypeLabel.of("relation1"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationTypes, possibleTypes);
         assertEquals(relationTypes2, possibleTypes);
-        assertEquals(atom.getType(), graph.getType(Label.of("relation1")));
-        assertEquals(atom2.getType(), graph.getType(Label.of("relation1")));
+        assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation1")));
+        assertEquals(atom2.getType(), graph.getType(TypeLabel.of("relation1")));
     }
 
     @Test
@@ -643,9 +643,9 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
 
         List<RelationType> possibleTypes = Lists.newArrayList(
-                graph.getType(Label.of("relation1")),
-                graph.getType(Label.of("relation2")),
-                graph.getType(Label.of("relation3"))
+                graph.getType(TypeLabel.of("relation1")),
+                graph.getType(TypeLabel.of("relation2")),
+                graph.getType(TypeLabel.of("relation3"))
         );
 
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
@@ -661,12 +661,12 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
 
         List<RelationType> possibleTypes = Collections.singletonList(
-                graph.getType(Label.of("relation3"))
+                graph.getType(TypeLabel.of("relation3"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationTypes, possibleTypes);
-        assertEquals(atom.getType(), graph.getType(Label.of("relation3")));
+        assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation3")));
     }
 
     @Test
@@ -680,8 +680,8 @@ public class AtomicTest {
         Relation atom2 = (Relation) query2.getAtom();
 
         List<RelationType> possibleTypes = Lists.newArrayList(
-                graph.getType(Label.of("relation1")),
-                graph.getType(Label.of("relation3"))
+                graph.getType(TypeLabel.of("relation1")),
+                graph.getType(TypeLabel.of("relation3"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
@@ -701,12 +701,12 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
 
         List<RelationType> possibleTypes = Collections.singletonList(
-                graph.getType(Label.of("relation3"))
+                graph.getType(TypeLabel.of("relation3"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationTypes, possibleTypes);
-        assertEquals(atom.getType(), graph.getType(Label.of("relation3")));
+        assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation3")));
     }
 
     @Test
@@ -743,11 +743,11 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
 
         List<RelationType> possibleTypes = Collections.singletonList(
-                graph.getType(Label.of("relation1"))
+                graph.getType(TypeLabel.of("relation1"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         assertEquals(relationTypes, possibleTypes);
-        assertEquals(atom.getType(), graph.getType(Label.of("relation1")));
+        assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation1")));
     }
 
     @Test
@@ -758,12 +758,12 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
 
         List<RelationType> possibleTypes = Collections.singletonList(
-                graph.getType(Label.of("relation1"))
+                graph.getType(TypeLabel.of("relation1"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationTypes, possibleTypes);
-        assertEquals(atom.getType(), graph.getType(Label.of("relation1")));
+        assertEquals(atom.getType(), graph.getType(TypeLabel.of("relation1")));
     }
 
     @Test
@@ -774,8 +774,8 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
 
         List<RelationType> possibleTypes = Lists.newArrayList(
-                graph.getType(Label.of("relation3")),
-                graph.getType(Label.of("relation2"))
+                graph.getType(TypeLabel.of("relation3")),
+                graph.getType(TypeLabel.of("relation2"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         assertEquals(relationTypes, possibleTypes);

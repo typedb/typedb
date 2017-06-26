@@ -19,7 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -168,7 +168,7 @@ public class Graql {
      * @return a variable pattern that identifies a concept by label
      */
     @CheckReturnValue
-    public static VarPattern label(Label label) {
+    public static VarPattern label(TypeLabel label) {
         return var().label(label);
     }
 
