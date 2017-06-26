@@ -31,6 +31,8 @@ import javax.annotation.Nullable;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.lang.SerializationUtils;
 import static org.apache.commons.lang.SerializationUtils.deserialize;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 
@@ -41,6 +43,8 @@ import redis.clients.util.Pool;
  * @author Domenico Corapi
  */
 public class RedisTaskStorage implements TaskStateStorage {
+
+    private static final Logger LOG = LoggerFactory.getLogger(RedisTaskStorage.class);
 
     private Pool<Jedis> redis;
 
@@ -77,7 +81,9 @@ public class RedisTaskStorage implements TaskStateStorage {
             if (value != null) {
                 return (TaskState) deserialize(Base64.getDecoder().decode(value));
             } else {
-                return null;
+                LOG.info("Requested state {} was not found", id.getValue());
+                // TODO Don't use exceptions for an expected return like this
+                throw GraknBackendException.stateStorageMissingId(id);
             }
         }
     }

@@ -56,6 +56,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import static java.util.stream.Collectors.toList;
+import javax.annotation.Nonnull;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -165,7 +166,6 @@ public class TasksController {
     @ApiImplicitParam(name = REST.Request.UUID_PARAMETER, value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private Json getTask(Request request, Response response) {
         String id = request.params("id");
-
         Context context = getTaskTimer.time();
         try {
             response.status(200);
@@ -412,7 +412,7 @@ public class TasksController {
     }
 
     // TODO: Return 'schedule' object as its own object
-    private Json serialiseStateSubset(TaskState state) {
+    private Json serialiseStateSubset(@Nonnull TaskState state) {
         return Json.object()
                 .set("id", state.getId().getValue())
                 .set("status", state.status().name())
@@ -422,7 +422,7 @@ public class TasksController {
                 .set("recurring", state.schedule().isRecurring());
     }
 
-    private Json serialiseStateFull(TaskState state) {
+    private Json serialiseStateFull(@Nonnull TaskState state) {
         return serialiseStateSubset(state)
                 .set("interval", state.schedule().interval().map(Duration::toMillis).orElse(null))
                 .set("recurring", state.schedule().isRecurring())
