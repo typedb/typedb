@@ -19,6 +19,7 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -28,6 +29,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.Unifier;
@@ -337,16 +339,21 @@ public class Relation extends TypeAtom {
     }
 
     public Relation addType(Type type) {
-        typeId = type.getId();
-        Var typeVariable = getValueVariable().getValue().isEmpty() ?
-                Graql.var("rel-" + UUID.randomUUID().toString()) : getValueVariable();
+        //typeId = type.getId();
+        ConceptId typeId = type.getId();
+        Var typeVariable = getValueVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getValueVariable();
         setPredicate(new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery()));
+
+        VarPatternAdmin newPattern = getPattern().asVar().isa(typeVariable).admin();
+        IdPredicate newPredicate = new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery());
+        /*
         atomPattern = atomPattern.asVar().isa(typeVariable).admin();
         setValueVariable(typeVariable);
 
         //reset applicable rules
         applicableRules = null;
-        return this;
+        */
+        return new Relation(newPattern, newPredicate, this.getParentQuery());
     }
 
     /**
@@ -411,14 +418,18 @@ public class Relation extends TypeAtom {
 
     private Relation inferRelationType(Answer sub){
         List<RelationType> relationTypes = inferPossibleRelationTypes(sub);
-        if (relationTypes.size() == 1) addType(relationTypes.iterator().next());
-        return this;
+        if (relationTypes.size() == 1){
+            return addType(relationTypes.iterator().next());
+        } else {
+            return this;
+        }
     }
 
     @Override
-    public void inferTypes() {
-        if (getPredicate() == null) inferRelationType(new QueryAnswer());
-        if (getExplicitRoleTypes().size() < getRelationPlayers().size() && getType() != null) computeRoleVarTypeMap();
+    public Atom inferTypes() {
+        Relation inferred = getPredicate() == null? inferRelationType(new QueryAnswer()) : this;
+        if (getExplicitRoleTypes().size() < getRelationPlayers().size() && getType() != null) inferred.computeRoleVarTypeMap();
+        return inferred;
     }
 
     @Override
@@ -506,7 +517,10 @@ public class Relation extends TypeAtom {
      */
     private Multimap<RoleType, Var> computeRoleVarTypeMap() {
         this.roleVarMap = ArrayListMultimap.create();
-        if (getParentQuery() == null || getType() == null) return roleVarMap;
+        if (getParentQuery() == null || getType() == null){
+            System.out.println();
+            return roleVarMap;
+        }
 
         GraknGraph graph = getParentQuery().graph();
         RelationType relType = (RelationType) getType();

@@ -94,7 +94,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     ReasonerQueryImpl(ReasonerQueryImpl q) {
         this.graph = q.graph;
         q.getAtoms().forEach(at -> addAtomic(AtomicFactory.create(at, this)));
-        inferTypes();
     }
 
     ReasonerQueryImpl(Set<Atom> atoms, GraknGraph graph){
@@ -160,9 +159,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     private void inferTypes() {
-        atomSet.stream()
+        Set<Atom> inferrableAtoms = atomSet.stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .forEach(Atom::inferTypes);
+                .collect(Collectors.toSet());
+        //atomSet.removeAll(inferrableAtoms);
+        Set<Atom> inferredAtoms = inferrableAtoms.stream().map(Atom::inferTypes).collect(Collectors.toSet());
+        inferrableAtoms.forEach(this::removeAtomic);
+        inferredAtoms.forEach(this::addAtomic);
     }
 
     public GraknGraph graph() {

@@ -275,7 +275,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * infers types (type, role types) fo the atom if applicable/possible
      */
-    public void inferTypes(){}
+    public Atom inferTypes(){ return this; }
 
     /**
      * rewrites the atom to one with user defined name
