@@ -142,10 +142,10 @@ public class EntityTypeTest extends GraphTestBase{
         EntityType c3 = graknGraph.putEntityType("c3").superType(c2);
         EntityType c4 = graknGraph.putEntityType("c4").superType(c1);
 
-        Set<EntityType> c1SuperTypes = ((TypeImpl) c1).superTypeSet();
-        Set<EntityType> c2SuperTypes = ((TypeImpl) c2).superTypeSet();
-        Set<EntityType> c3SuperTypes = ((TypeImpl) c3).superTypeSet();
-        Set<EntityType> c4SuperTypes = ((TypeImpl) c4).superTypeSet();
+        Set<EntityType> c1SuperTypes = ((TypeImpl) c1).superSet();
+        Set<EntityType> c2SuperTypes = ((TypeImpl) c2).superSet();
+        Set<EntityType> c3SuperTypes = ((TypeImpl) c3).superSet();
+        Set<EntityType> c4SuperTypes = ((TypeImpl) c4).superSet();
 
         assertThat(c1SuperTypes, containsInAnyOrder(entityType, c1));
         assertThat(c2SuperTypes, containsInAnyOrder(entityType, c2, c1));

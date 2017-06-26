@@ -97,7 +97,7 @@ class GraphCache {
         cachedTypes.putAll(txCache.getTypeCache());
 
         //Flush All The Internal Transaction Caches
-        txCache.getTypeCache().values().forEach(TypeImpl::flushTxCache);
+        txCache.getTypeCache().values().forEach(TypeImpl::txCacheFlush);
     }
 
     /**

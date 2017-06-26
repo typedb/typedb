@@ -66,8 +66,8 @@ class RoleTypeImpl extends TypeImpl<RoleType, Thing> implements RoleType{
     }
 
     @Override
-    public void flushTxCache(){
-        super.flushTxCache();
+    public void txCacheFlush(){
+        super.txCacheFlush();
         cachedDirectPlayedByTypes.flush();
         cachedRelationTypes.flush();
     }

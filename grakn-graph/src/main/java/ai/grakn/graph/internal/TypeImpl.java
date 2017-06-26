@@ -103,8 +103,8 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
      * Flushes the internal transaction caches so they can refresh with persisted graph
      */
     @Override
-    public void flushTxCache(){
-        super.flushTxCache();
+    public void txCacheFlush(){
+        super.txCacheFlush();
         cachedIsImplicit.flush();
         cachedIsAbstract.flush();
         cachedShards.flush();
@@ -115,8 +115,8 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
      * Clears the internal transaction caches
      */
     @Override
-    public void clearsTxCache(){
-        super.clearsTxCache();
+    public void txCacheClear(){
+        super.txCacheClear();
         cachedIsImplicit.clear();
         cachedIsAbstract.clear();
         cachedShards.clear();
@@ -174,7 +174,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
         allRoleTypes.addAll(cachedDirectPlays.get().keySet());
 
         //Now get the super type plays (Which may also be cached locally within their own context
-        Set<T> superSet = superTypeSet();
+        Set<T> superSet = superSet();
         superSet.remove(this); //We already have the plays from ourselves
         superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlays().keySet()));
 
@@ -252,7 +252,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
             cachedDirectPlays.get().keySet().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
 
             //Clear internal caching
-            clearsTxCache();
+            txCacheClear();
 
             //Clear Global Cache
             vertex().graph().txCache().remove(this);
@@ -266,24 +266,6 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
     @Override
     public Collection<T> subTypes(){
         return Collections.unmodifiableCollection(filterImplicitStructures(super.subTypes()));
-    }
-
-    /**
-     *
-     * @return All outgoing sub parents including itself
-     */
-    Set<T> superTypeSet() {
-        Set<T> superSet= new HashSet<>();
-        superSet.add(getThis());
-        T superParent = superType();
-
-        while(superParent != null && !Schema.MetaSchema.THING.getLabel().equals(superParent.getLabel())){
-            superSet.add(superParent);
-            //noinspection unchecked
-            superParent = (T) superParent.superType();
-        }
-
-        return superSet;
     }
 
     /**
@@ -390,18 +372,6 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
                         rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
             }
         });
-    }
-
-    /**
-     * Adds another subtype to this type
-     *
-     * @param type The sub type of this type
-     * @return The Type itself
-     */
-    public T subType(T type){
-        //noinspection unchecked
-        ((TypeImpl) type).superType(this);
-        return getThis();
     }
 
     T plays(RoleType roleType, boolean required) {

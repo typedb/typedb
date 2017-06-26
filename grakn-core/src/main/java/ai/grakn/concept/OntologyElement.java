@@ -18,8 +18,6 @@
 
 package ai.grakn.concept;
 
-import org.apache.tinkerpop.gremlin.structure.T;
-
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
@@ -39,7 +37,7 @@ import java.util.Collection;
  * @author fppt
  */
 public interface OntologyElement extends Concept {
-
+    //------------------------------------- Accessors ---------------------------------
     /**
      * Returns the unique id of this Ontology Element.
      *

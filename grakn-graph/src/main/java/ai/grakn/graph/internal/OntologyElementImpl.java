@@ -85,7 +85,7 @@ public abstract class OntologyElementImpl<T extends OntologyElement> extends Con
     /**
      * Flushes the internal transaction caches so they can refresh with persisted graph
      */
-    public void flushTxCache(){
+    public void txCacheFlush(){
         cachedSuperType.flush();
         cachedDirectSubTypes.flush();
     }
@@ -93,7 +93,7 @@ public abstract class OntologyElementImpl<T extends OntologyElement> extends Con
     /**
      * Clears the internal transaction caches
      */
-    void clearsTxCache(){
+    void txCacheClear(){
         cachedSuperType.clear();
         cachedDirectSubTypes.clear();
     }
@@ -104,6 +104,24 @@ public abstract class OntologyElementImpl<T extends OntologyElement> extends Con
      */
     public T superType() {
         return cachedSuperType.get();
+    }
+
+    /**
+     *
+     * @return All outgoing sub parents including itself
+     */
+    Set<T> superSet() {
+        Set<T> superSet= new HashSet<>();
+        superSet.add(getThis());
+        T superParent = superType();
+
+        while(superParent != null && !Schema.MetaSchema.THING.getLabel().equals(superParent.getLabel())){
+            superSet.add(superParent);
+            //noinspection unchecked
+            superParent = (T) superParent.superType();
+        }
+
+        return superSet;
     }
 
     /**
@@ -161,6 +179,18 @@ public abstract class OntologyElementImpl<T extends OntologyElement> extends Con
      */
     void deleteCachedDirectedSubType(T oldSubType){
         cachedDirectSubTypes.ifPresent(set -> set.remove(oldSubType));
+    }
+
+    /**
+     * Adds another subtype to this type
+     *
+     * @param type The sub type of this type
+     * @return The Type itself
+     */
+    public T subType(T type){
+        //noinspection unchecked
+        ((TypeImpl) type).superType(this);
+        return getThis();
     }
 
     /**

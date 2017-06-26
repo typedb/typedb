@@ -61,8 +61,8 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     }
 
     @Override
-    public void flushTxCache(){
-        super.flushTxCache();
+    public void txCacheFlush(){
+        super.txCacheFlush();
         cachedRelates.flush();
     }
 

@@ -199,11 +199,11 @@ class ValidateGlobalRules {
         //Check 1) Every role of relationTypes is the sub of a role which is in the relates of it's supers
         if(!superRelationType.isAbstract()) {
             Set<Label> allSuperRolesPlayed = new HashSet<>();
-            superRelationType.superTypeSet().forEach(rel -> rel.relates().forEach(roleType -> allSuperRolesPlayed.add(roleType.getLabel())));
+            superRelationType.superSet().forEach(rel -> rel.relates().forEach(roleType -> allSuperRolesPlayed.add(roleType.getLabel())));
 
             for (RoleType relate : relates) {
                 boolean validRoleTypeFound = false;
-                Set<RoleType> superRoleTypes = ((RoleTypeImpl) relate).superTypeSet();
+                Set<RoleType> superRoleTypes = ((RoleTypeImpl) relate).superSet();
                 for (RoleType superRoleType : superRoleTypes) {
                     if(allSuperRolesPlayed.contains(superRoleType.getLabel())){
                         validRoleTypeFound = true;
