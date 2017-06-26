@@ -20,6 +20,7 @@ package ai.grakn.util;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
@@ -27,6 +28,7 @@ import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.factory.InternalFactory;
 import ai.grakn.graph.internal.GraknTinkerGraph;
 import ai.grakn.graql.Query;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.io.Files;
 
 import java.io.File;
@@ -55,8 +57,6 @@ import java.util.stream.Collectors;
  * @author fppt
  */
 public class GraphLoader {
-    private static final String PROJECT_PROPERTY = "grakn.dir";
-    private static final String GRAPH_CONFIG_PROPERTY = "grakn.conf";
     private static final AtomicBoolean propertiesLoaded = new AtomicBoolean(false);
     private static Properties graphConfig;
 
@@ -134,7 +134,7 @@ public class GraphLoader {
     //TODO Use this method in GraknEngineConfig (It's a duplicate)
     private static Properties properties(){
         if(propertiesLoaded.compareAndSet(false, true)){
-            String configFilePath = System.getProperty(GRAPH_CONFIG_PROPERTY);
+            String configFilePath = GraknSystemProperty.GRAPH_CONFIG_PROPERTY.value();
 
             if (!Paths.get(configFilePath).isAbsolute()) {
                 configFilePath = getProjectPath() + configFilePath;
@@ -158,11 +158,11 @@ public class GraphLoader {
      */
     //TODO Use this method in GraknEngineConfig (It's a duplicate)
     private static String getProjectPath() {
-        if (System.getProperty(PROJECT_PROPERTY) == null) {
-            System.setProperty(PROJECT_PROPERTY, System.getProperty("user.dir"));
+        if (GraknSystemProperty.CURRENT_DIRECTORY.value() == null) {
+            GraknSystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
         }
 
-        return System.getProperty(PROJECT_PROPERTY) + "/";
+        return GraknSystemProperty.CURRENT_DIRECTORY.value() + "/";
     }
 
     public static String randomKeyspace(){
