@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import org.apache.tinkerpop.gremlin.structure.T;
+
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
@@ -33,11 +35,10 @@ import java.util.Collection;
  *     2. You can link them together into a hierarchical structure
  * </p>
  *
- * @param <T> the super and sub of the element
  *
  * @author fppt
  */
-public interface OntologyElement<T extends OntologyElement> {
+public interface OntologyElement extends Concept {
 
     /**
      * Returns the unique id of this Ontology Element.
@@ -60,7 +61,7 @@ public interface OntologyElement<T extends OntologyElement> {
      * @return The direct super of this Ontology Element
      */
     @CheckReturnValue
-    T superType();
+    OntologyElement superType();
 
     /**
      * Get all indirect subs of this Ontology Element.
@@ -70,5 +71,5 @@ public interface OntologyElement<T extends OntologyElement> {
      * @return All the indirect sub-types of this Ontology Element
      */
     @CheckReturnValue
-    Collection<? extends T> subTypes();
+    Collection<? extends OntologyElement> subTypes();
 }

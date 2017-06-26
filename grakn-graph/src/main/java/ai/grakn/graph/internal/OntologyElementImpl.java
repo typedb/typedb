@@ -43,7 +43,7 @@ import ai.grakn.util.Schema;
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType} or {@link RelationType} or {@link RoleType}
  */
-public abstract class OntologyElementImpl<T extends OntologyElement> extends ConceptImpl implements OntologyElement<T> {
+public abstract class OntologyElementImpl<T extends OntologyElement> extends ConceptImpl implements OntologyElement {
     private final Label cachedLabel;
     private final LabelId cachedLabelId;
 
