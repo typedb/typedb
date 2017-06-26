@@ -22,6 +22,8 @@ package ai.grakn;
 import javax.annotation.Nullable;
 
 /**
+ * Enum representing system properties used by Grakn
+ *
  * @author Felix Chapman
  */
 public enum GraknSystemProperty {
@@ -36,11 +38,19 @@ public enum GraknSystemProperty {
         this.key = key;
     }
 
+    /**
+     * Retrieve the value of the system property
+     * @return the value of the system property, or null if the system property is not set
+     */
     @Nullable
     public String value() {
         return System.getProperty(key);
     }
 
+    /**
+     * Set the value of the system property
+     * @param value the value to set on the system property
+     */
     public void set(String value) {
         System.setProperty(key, value);
     }
