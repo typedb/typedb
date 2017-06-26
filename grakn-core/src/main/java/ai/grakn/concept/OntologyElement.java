@@ -29,7 +29,7 @@ import java.util.Collection;
  * <p>
  *     Allows you to create schema or ontological elements.
  *     These differ from normal graph constructs in two ways:
- *     1. They have a unique {@link Label} which identifies them
+ *     1. They have a unique {@link TypeLabel} which identifies them
  *     2. You can link them together into a hierarchical structure
  * </p>
  *
@@ -71,4 +71,14 @@ public interface OntologyElement extends Concept {
      */
     @CheckReturnValue
     Collection<? extends OntologyElement> subTypes();
+
+    /**
+     * Return whether the Ontology Element was created implicitly.
+     *
+     * By default, Ontology Elements are not implicit.
+     *
+     * @return returns true if the type was created implicitly through the resource syntax
+     */
+    @CheckReturnValue
+    Boolean isImplicit();
 }

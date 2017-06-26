@@ -43,7 +43,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -67,7 +66,6 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
 class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
-    private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
     private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
     private Cache<Set<T>> cachedShards = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
 
@@ -89,14 +87,11 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
     }
 
     TypeImpl(VertexElement vertexElement, T superType) {
-        this(vertexElement);
-        if(superType() == null) superType(superType);
+        super(vertexElement, superType);
     }
 
     TypeImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
-        this(vertexElement, superType);
-        vertex().propertyImmutable(Schema.VertexProperty.IS_IMPLICIT, isImplicit, vertex().property(Schema.VertexProperty.IS_IMPLICIT), Function.identity());
-        cachedIsImplicit.set(isImplicit);
+        super(vertexElement, superType, isImplicit);
     }
 
     /**
@@ -105,7 +100,6 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
     @Override
     public void txCacheFlush(){
         super.txCacheFlush();
-        cachedIsImplicit.flush();
         cachedIsAbstract.flush();
         cachedShards.flush();
         cachedDirectPlays.flush();
@@ -117,7 +111,6 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
     @Override
     public void txCacheClear(){
         super.txCacheClear();
-        cachedIsImplicit.clear();
         cachedIsAbstract.clear();
         cachedShards.clear();
         cachedDirectPlays.clear();
@@ -282,15 +275,6 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
     @Override
     public Boolean isAbstract() {
         return cachedIsAbstract.get();
-    }
-
-    /**
-     *
-     * @return returns true if the type was created implicitly through {@link #has}
-     */
-    @Override
-    public Boolean isImplicit(){
-        return cachedIsImplicit.get();
     }
 
     /**

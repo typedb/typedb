@@ -160,16 +160,6 @@ public interface Type extends OntologyElement {
     Boolean isAbstract();
 
     /**
-     * Return whether the Type was created implicitly.
-     *
-     * By default, types are not implicit.
-     *
-     * @return returns true if the type was created implicitly through {@link #resource}
-     */
-    @CheckReturnValue
-    Boolean isImplicit();
-
-    /**
      * Return the collection of Rules for which this Type serves as a hypothesis.
      * @see Rule
      *

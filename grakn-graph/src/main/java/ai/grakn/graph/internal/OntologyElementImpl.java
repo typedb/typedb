@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -51,17 +52,29 @@ import java.util.stream.Collectors;
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType} or {@link RelationType} or {@link RoleType}
  */
-public abstract class OntologyElementImpl<T extends OntologyElement> extends ConceptImpl implements OntologyElement {
+abstract class OntologyElementImpl<T extends OntologyElement> extends ConceptImpl implements OntologyElement {
     private final TypeLabel cachedLabel;
     private final TypeId cachedLabelId;
 
     private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
     private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
     OntologyElementImpl(VertexElement vertexElement) {
         super(vertexElement);
         cachedLabel = TypeLabel.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
         cachedLabelId = TypeId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
+    }
+
+    OntologyElementImpl(VertexElement vertexElement, T superType) {
+        this(vertexElement);
+        if(superType() == null) superType(superType);
+    }
+
+    OntologyElementImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
+        this(vertexElement, superType);
+        vertex().propertyImmutable(Schema.VertexProperty.IS_IMPLICIT, isImplicit, vertex().property(Schema.VertexProperty.IS_IMPLICIT), Function.identity());
+        cachedIsImplicit.set(isImplicit);
     }
 
     /**
@@ -88,6 +101,7 @@ public abstract class OntologyElementImpl<T extends OntologyElement> extends Con
     public void txCacheFlush(){
         cachedSuperType.flush();
         cachedDirectSubTypes.flush();
+        cachedIsImplicit.flush();
     }
 
     /**
@@ -96,6 +110,7 @@ public abstract class OntologyElementImpl<T extends OntologyElement> extends Con
     void txCacheClear(){
         cachedSuperType.clear();
         cachedDirectSubTypes.clear();
+        cachedIsImplicit.clear();
     }
 
     /**
@@ -122,6 +137,15 @@ public abstract class OntologyElementImpl<T extends OntologyElement> extends Con
         }
 
         return superSet;
+    }
+
+    /**
+     *
+     * @return returns true if the type was created implicitly through the resource syntax
+     */
+    @Override
+    public Boolean isImplicit(){
+        return cachedIsImplicit.get();
     }
 
     /**
