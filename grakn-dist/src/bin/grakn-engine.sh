@@ -44,7 +44,6 @@ CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf/main/
 wait_for_engine() {
     local now_s=`date '+%s'`
     local stop_s=$(( $now_s + $ENGINE_STARTUP_TIMEOUT_S ))
-    local status_thrift=
 
     while [ $now_s -le $stop_s ]; do
         echo -n .
