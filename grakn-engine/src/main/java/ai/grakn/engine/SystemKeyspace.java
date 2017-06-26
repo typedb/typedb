@@ -77,9 +77,15 @@ public class SystemKeyspace {
     private final EngineGraknGraphFactory factory;
 
     public SystemKeyspace(EngineGraknGraphFactory factory){
+        this(factory, true);
+    }
+
+    public SystemKeyspace(EngineGraknGraphFactory factory, boolean load){
         this.factory = factory;
         this.openSpaces = new ConcurrentHashMap<>();
-        loadSystemOntology();
+        if (load) {
+            loadSystemOntology();
+        }
     }
 
     /**

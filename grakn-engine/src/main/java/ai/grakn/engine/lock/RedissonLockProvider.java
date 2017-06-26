@@ -15,27 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
+package ai.grakn.engine.lock;
 
-package ai.grakn.engine.tasks.mock;
+import java.util.concurrent.locks.Lock;
+import org.redisson.api.RedissonClient;
 
-import ai.grakn.engine.TaskId;
+public class RedissonLockProvider implements DistributedLockProvider{
 
-import ai.grakn.engine.tasks.manager.TaskCheckpoint;
-import java.util.concurrent.atomic.AtomicInteger;
+    private RedissonClient redissonClient;
 
-/**
- * Mocked task that will finish nearly instantaneously
- *
- * @author alexandraorth, Felix Chapman
- */
-public class ShortExecutionMockTask extends MockBackgroundTask {
-    public static final AtomicInteger  resumedCounter = new AtomicInteger(0);
+    public RedissonLockProvider(RedissonClient redissonClient) {
+        this.redissonClient = redissonClient;
+    }
 
     @Override
-    protected void executeStartInner(TaskId id) {}
-
-    @Override
-    protected void executeResumeInner(TaskCheckpoint checkpoint) {
-        resumedCounter.incrementAndGet();
+    public Lock getLock(String lockName) {
+        return redissonClient.getLock(lockName);
     }
 }

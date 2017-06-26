@@ -20,11 +20,10 @@
 package ai.grakn.engine.tasks.manager.redisqueue;
 
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_URL;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.lock.RedissonLockProvider;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
@@ -36,9 +35,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
-import org.redisson.Redisson;
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -56,40 +52,31 @@ public class RedisTaskManager implements TaskManager {
     private final EngineID engineId;
     private final GraknEngineConfig config;
     private final RedisTaskStorage redisTaskStorage;
-    private final Pool<Jedis> jedisPool;
     private final int threads;
     private final EngineGraknGraphFactory factory;
     private final RedisTaskQueue redisTaskQueue;
     private final ExecutorService consumerExecutor;
-    private final RedissonClient distributedLockClient;
+    private final RedissonLockProvider distributedLockClient;
 
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig graknEngineConfig,
-            RedisCountStorage redisCountStorage,
-            EngineGraknGraphFactory factory, MetricRegistry metricsRegistry) {
+            RedisCountStorage redisCountStorage, EngineGraknGraphFactory factory,
+            RedissonLockProvider distributedLockClient, MetricRegistry metricsRegistry) {
         // TODO hacky way, the pool should be created in the main server class and passed here
-        this(engineId, graknEngineConfig, redisCountStorage.getJedisPool(), 2, factory, metricsRegistry);
+        this(engineId, graknEngineConfig, redisCountStorage.getJedisPool(), 10, factory, distributedLockClient, metricsRegistry);
     }
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
-            int threads, EngineGraknGraphFactory factory, MetricRegistry metricRegistry) {
+            int threads, EngineGraknGraphFactory factory,
+            RedissonLockProvider distributedLockClient, MetricRegistry metricRegistry) {
         this.engineId = engineId;
         this.config = config;
-        this.redisTaskStorage = RedisTaskStorage.create(jedisPool);
-        this.jedisPool = jedisPool;
         this.threads = threads;
         this.factory = factory;
+        this.redisTaskStorage = RedisTaskStorage.create(jedisPool);
         this.redisTaskQueue = new RedisTaskQueue(jedisPool, metricRegistry);
         this.consumerExecutor = Executors.newFixedThreadPool(threads);
-        Config rConfig = new Config();
-        // TODO generalise this to clusters
-        String port = config.tryProperty(REDIS_SERVER_PORT).orElse("6379");
-        String url = config.getProperty(REDIS_SERVER_URL);
-        LOG.info("Connecting redis client to {}:{}", url, port);
-        rConfig.useSingleServer()
-                .setConnectionPoolSize(5)
-                .setAddress(String.format("%s:%s", url, port));
-        this.distributedLockClient = Redisson.create(rConfig);
+        this.distributedLockClient = distributedLockClient;
     }
 
     @Override
@@ -108,10 +95,6 @@ public class RedisTaskManager implements TaskManager {
 
     @Override
     public void start() {
-        IntStream.rangeClosed(1, threads).forEach(
-                (int ignored) ->
-                        // TODO refactor the interfaces so that we don't have to pass the manager around
-                        redisTaskQueue.subscribe(this, consumerExecutor, engineId, config, factory, jedisPool));
         // TODO: get rid of this singleton
         LockProvider.instantiate((lockName, existingLock) -> {
             if(existingLock != null){
@@ -120,6 +103,10 @@ public class RedisTaskManager implements TaskManager {
             // TODO: this version is reentrant, might not be what we want
             return distributedLockClient.getLock(lockName);
         });
+        IntStream.rangeClosed(1, threads).forEach(
+                (int ignored) ->
+                        // TODO refactor the interfaces so that we don't have to pass the manager around
+                        redisTaskQueue.subscribe(this, consumerExecutor, engineId, config, factory));
         LOG.debug("Redis task manager started");
     }
 
@@ -149,7 +136,6 @@ public class RedisTaskManager implements TaskManager {
     @Override
     public void addTask(TaskState taskState, TaskConfiguration configuration){
         Task task = Task.builder()
-                .setId(taskState.getId().getValue())
                 .setTaskConfiguration(configuration)
                 .setTaskState(taskState).build();
         redisTaskQueue.putJob(task);

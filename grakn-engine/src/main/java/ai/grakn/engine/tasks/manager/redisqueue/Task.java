@@ -34,9 +34,6 @@ import java.io.Serializable;
 @JsonDeserialize(builder = AutoValue_Task.Builder.class)
 abstract class Task implements Serializable {
     protected static final long serialVersionUID = 42L;
-
-    @JsonProperty("taskId")
-    public abstract String getId();
     @JsonProperty("taskState")
     public abstract TaskState getTaskState();
     @JsonProperty("taskConfiguration")
@@ -48,8 +45,6 @@ abstract class Task implements Serializable {
 
     @AutoValue.Builder
     public abstract static class Builder {
-        @JsonProperty("taskId")
-        public abstract Builder setId(String newId);
         @JsonProperty("taskState")
         public abstract Builder setTaskState(TaskState newTaskState);
         @JsonProperty("taskConfiguration")

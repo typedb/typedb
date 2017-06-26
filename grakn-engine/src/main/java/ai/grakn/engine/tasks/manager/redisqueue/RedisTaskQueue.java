@@ -24,7 +24,7 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.ConfigBuilder;
@@ -37,7 +37,7 @@ import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.RecoveryStrategy;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerEvent;
-import net.greghaines.jesque.worker.WorkerImpl;
+import net.greghaines.jesque.worker.WorkerPoolImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -50,16 +50,20 @@ import redis.clients.util.Pool;
  * @author Domenico Corapi
  */
 class RedisTaskQueue {
+
     private final static Logger LOG = LoggerFactory.getLogger(RedisTaskQueue.class);
 
     private static final String QUEUE_NAME = "grakn_engine_queue";
+    public static final String SUBSCRIPTION_CLASS_NAME = Task.class.getName();
 
     private final Client redisClient;
     private final Config config;
+    private Pool<Jedis> jedisPool;
     private final MetricRegistry metricRegistry;
 
     RedisTaskQueue(Pool<Jedis> jedisPool,
             MetricRegistry metricRegistry) {
+        this.jedisPool = jedisPool;
         this.metricRegistry = metricRegistry;
         this.config = new ConfigBuilder().build();
         this.redisClient = new ClientPoolImpl(config, jedisPool);
@@ -70,16 +74,16 @@ class RedisTaskQueue {
     }
 
     void putJob(Task job) {
-        final Job queueJob = new Job(Task.class.getName(), job);
+        final Job queueJob = new Job(SUBSCRIPTION_CLASS_NAME, job);
         redisClient.enqueue(QUEUE_NAME, queueJob);
     }
 
     void subscribe(
             RedisTaskManager redisTaskManager,
             ExecutorService consumerExecutor,
-            EngineID engineId, GraknEngineConfig config,
-            EngineGraknGraphFactory factory,
-            Pool<Jedis> jedisPool) {
+            EngineID engineId,
+            GraknEngineConfig config,
+            EngineGraknGraphFactory factory) {
         Worker worker = getJobSubscriber();
 
         // We need this since the job can only be instantiated with the
@@ -94,19 +98,18 @@ class RedisTaskQueue {
         worker.setExceptionHandler((jobExecutor, exception, curQueue) -> {
             // TODO review this strategy
             LOG.error("Exception while trying to run task", exception);
-            return RecoveryStrategy.TERMINATE;
+            return RecoveryStrategy.PROCEED;
         });
-
         consumerExecutor.execute(worker);
     }
 
     private Worker getJobSubscriber() {
-        return new WorkerImpl(config, Collections.singletonList(QUEUE_NAME),
+        return new WorkerPoolImpl(config, Arrays.asList(QUEUE_NAME),
                 new MapBasedJobFactory(
                         map(entry(
                                 // Assign elements with this class
-                                Task.class.getName(),
+                                SUBSCRIPTION_CLASS_NAME,
                                 // To be run by this class
-                                RedisTaskQueueConsumer.class))));
+                                RedisTaskQueueConsumer.class))), jedisPool);
     }
 }

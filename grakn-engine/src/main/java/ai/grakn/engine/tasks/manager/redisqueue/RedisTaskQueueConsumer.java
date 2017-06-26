@@ -64,7 +64,7 @@ public class RedisTaskQueueConsumer implements Runnable {
 
     @SuppressWarnings("unused")
     public RedisTaskQueueConsumer(String taskId, TaskState taskState, TaskConfiguration taskConfiguration) {
-        this.task = Task.builder().setId(taskId).setTaskConfiguration(taskConfiguration).setTaskState(taskState).build();
+        this.task = Task.builder().setTaskConfiguration(taskConfiguration).setTaskState(taskState).build();
     }
 
     @SuppressWarnings("unused")
@@ -131,7 +131,7 @@ public class RedisTaskQueueConsumer implements Runnable {
                 redisTaskManager.storage().updateState(taskState);
             } catch (Throwable throwable) {
                 taskState.markFailed(throwable);
-                LOG.error("{}\tfailed with {}", task.getId(), throwable.getMessage());
+                LOG.error("{}\tfailed", task.getTaskState().getId(), throwable);
             } finally {
                 redisTaskManager.storage().updateState(taskState);
                 context.stop();

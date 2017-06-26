@@ -15,27 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
+package ai.grakn.engine.lock;
 
-package ai.grakn.engine.tasks.mock;
+import java.util.concurrent.locks.Lock;
 
-import ai.grakn.engine.TaskId;
-
-import ai.grakn.engine.tasks.manager.TaskCheckpoint;
-import java.util.concurrent.atomic.AtomicInteger;
-
-/**
- * Mocked task that will finish nearly instantaneously
- *
- * @author alexandraorth, Felix Chapman
- */
-public class ShortExecutionMockTask extends MockBackgroundTask {
-    public static final AtomicInteger  resumedCounter = new AtomicInteger(0);
-
-    @Override
-    protected void executeStartInner(TaskId id) {}
-
-    @Override
-    protected void executeResumeInner(TaskCheckpoint checkpoint) {
-        resumedCounter.incrementAndGet();
-    }
+public interface DistributedLockProvider {
+    Lock getLock(String lockName);
 }

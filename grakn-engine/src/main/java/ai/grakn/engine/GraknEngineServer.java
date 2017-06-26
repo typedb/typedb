@@ -17,6 +17,8 @@
  */
 package ai.grakn.engine;
 
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_URL;
 import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
@@ -27,10 +29,11 @@ import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.lock.RedissonLockProvider;
 import ai.grakn.engine.session.RemoteSession;
-import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.EngineID;
@@ -48,6 +51,8 @@ import javax.annotation.Nullable;
 import mjson.Json;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import org.apache.http.entity.ContentType;
+import org.redisson.Redisson;
+import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -118,8 +123,20 @@ public class GraknEngineServer implements AutoCloseable {
     private TaskManager startTaskManager() {
         String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
         TaskManager taskManager;
+        Config rConfig = new Config();
+        // TODO generalise this to clusters
+        String port = prop.tryProperty(REDIS_SERVER_PORT).orElse("6379");
+        String url = prop.getProperty(REDIS_SERVER_URL);
+        LOG.info("Connecting redis client to {}:{}", url, port);
+        rConfig.useSingleServer()
+                .setConnectionPoolSize(5)
+                .setAddress(String.format("%s:%s", url, port));
+        if (redis == null) {
+            // TODO use a builder
+            throw new IllegalStateException("Redis storage not initialized before task manager");
+        }
         if (taskManagerClassName.contains("RedisTaskManager")) {
-            taskManager = new RedisTaskManager(engineId, prop, redis, factory, metricRegistry);
+            taskManager = new RedisTaskManager(engineId, prop, redis, factory, new RedissonLockProvider(Redisson.create(rConfig)), metricRegistry);
         } else if (taskManagerClassName.contains("StandaloneTaskManager")) {
             taskManager = new StandaloneTaskManager(engineId, prop, redis, factory, metricRegistry);
         } else {

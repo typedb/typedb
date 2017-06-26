@@ -66,9 +66,10 @@ public class RedisTaskStorage implements TaskStateStorage {
     public Boolean updateState(TaskState state) {
         try(Jedis jedis = redis.getResource()){
             // TODO find a better way to represent the state
-            String status = jedis.set(state.getId().getValue(), new String(Base64.getEncoder().encode(SerializationUtils.serialize(state)),
+            String value = state.getId().getValue();
+            LOG.debug("Updating state {}", value);
+            String status = jedis.set(value, new String(Base64.getEncoder().encode(SerializationUtils.serialize(state)),
                     Charsets.UTF_8));
-            // TODO not sure
             return status.equalsIgnoreCase("OK");
         }
     }
@@ -103,7 +104,11 @@ public class RedisTaskStorage implements TaskStateStorage {
     }
 
     public boolean isTaskMarkedStopped(TaskId id) {
-        TaskState state = getState(id);
-        return state != null && state.getStatus().equals(TaskStatus.STOPPED);
+        try {
+            TaskState state = getState(id);
+            return state != null && state.getStatus().equals(TaskStatus.STOPPED);
+        } catch (GraknBackendException e) {
+            return false;
+        }
     }
 }

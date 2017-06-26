@@ -224,6 +224,11 @@
             <artifactId>jedis</artifactId>
             <version>${redis.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.rholder</groupId>
+            <artifactId>guava-retrying</artifactId>
+            <version>RELEASE</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
