@@ -26,6 +26,7 @@ import org.apache.http.client.ResponseHandler;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -59,16 +60,30 @@ public class Client {
     };
 
     public static void main(String[] args) throws IOException {
+        int result = checkServerRunning();
+        System.exit(result);
+    }
+
+    private static int checkServerRunning() throws IOException {
         String confPath = System.getProperty("grakn.conf");
+
+        if (confPath == null) {
+            System.err.println("System property `grakn.conf` has not been set");
+            return 2;
+        }
+
         Properties properties = new Properties();
         try (FileInputStream stream = new FileInputStream(confPath)) {
             properties.load(stream);
+        } catch (FileNotFoundException e) {
+            System.err.println("Could not find config file at `" + confPath + "`");
+            return 2;
         }
 
         if (serverIsRunning(properties.getProperty("server.host") + ":" + properties.getProperty("server.port"))) {
-            System.exit(0);
+            return 0;
         } else {
-            System.exit(1);
+            return 1;
         }
     }
 
