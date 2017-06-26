@@ -57,23 +57,26 @@ public class CSVMigrator implements AutoCloseable {
     private final Reader reader;
 
     public static void main(String[] args) {
-        MigrationCLI.init(args, CSVMigrationOptions::new).stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(CSVMigrator::runCSV);
+        try {
+            MigrationCLI.init(args, CSVMigrationOptions::new).stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach(CSVMigrator::runCSV);
+        } catch (Throwable e){
+            System.err.println(e.getMessage());
+        }
     }
 
     private static void runCSV(CSVMigrationOptions options){
-        // get files
         File csvDataFile = new File(options.getInput());
         File csvTemplate = new File(options.getTemplate());
 
         if (!csvTemplate.exists()) {
-            MigrationCLI.die("Cannot find file: " + options.getTemplate());
+            throw new IllegalArgumentException("Cannot find file: " + options.getTemplate());
         }
 
         if (!csvDataFile.exists()) {
-            MigrationCLI.die("Cannot find file: " + options.getInput());
+            throw new IllegalArgumentException("Cannot find file: " + options.getInput());
         }
 
         try (
@@ -85,7 +88,7 @@ public class CSVMigrator implements AutoCloseable {
         ) {
             MigrationCLI.loadOrPrint(csvTemplate, csvMigrator.convert(), options);
         } catch (Throwable throwable) {
-            MigrationCLI.die(throwable);
+            System.err.println(throwable.getMessage());
         }
     }
 
