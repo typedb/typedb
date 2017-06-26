@@ -39,34 +39,35 @@ import java.util.Collection;
 public interface OntologyElement extends Concept {
     //------------------------------------- Accessors ---------------------------------
     /**
-     * Returns the unique id of this Ontology Element.
+     * Returns the unique id of this Type.
      *
-     * @return The unique id of this Ontology Element
+     * @return The unique id of this type
      */
+    //TODO: rename this ugly thing.
     @CheckReturnValue
-    LabelId getLabelId();
+    LabelId getTypeId();
 
     /**
-     * Returns the unique label of this Ontology Element.
+     * Returns the unique label of this Type.
      *
-     * @return The unique label of this Ontology Element
+     * @return The unique label of this type
      */
     @CheckReturnValue
     Label getLabel();
 
     /**
      *
-     * @return The direct super of this Ontology Element
+     * @return The direct super of this concept
      */
     @CheckReturnValue
     OntologyElement superType();
 
     /**
-     * Get all indirect subs of this Ontology Element.
+     * Get all indirect subs of this concept.
      *
-     * The indirect subs are the Ontology Element itself and all indirect subs of direct subs.
+     * The indirect subs are the concept itself and all indirect subs of direct subs.
      *
-     * @return All the indirect sub-types of this Ontology Element
+     * @return All the indirect sub-types of this Type
      */
     @CheckReturnValue
     Collection<? extends OntologyElement> subTypes();
