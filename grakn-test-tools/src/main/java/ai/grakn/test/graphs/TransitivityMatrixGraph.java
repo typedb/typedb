@@ -21,7 +21,7 @@ package ai.grakn.test.graphs;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
@@ -65,7 +65,7 @@ public class TransitivityMatrixGraph extends TestGraph {
 
         EntityType aEntity = graph.getEntityType("a-entity");
         RelationType q = graph.getRelationType("Q");
-        Instance aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
+        Thing aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
         ConceptId[][] aInstanceIds = new ConceptId[n][m];
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {

@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
@@ -97,7 +97,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
 
         LOGGER.debug("The path found is: " + path);
         LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(path.stream().map(graph.get()::<Instance>getConcept).collect(Collectors.toList()));
+        return Optional.of(path.stream().map(graph.get()::<Thing>getConcept).collect(Collectors.toList()));
     }
 
     @Override

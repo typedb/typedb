@@ -18,7 +18,7 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     Encapsulates relationships between {@link Instance}
+ *     Encapsulates relationships between {@link Thing}
  * </p>
  *
  * <p>
@@ -51,7 +51,7 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relation {
+class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation {
     RelationImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
@@ -71,7 +71,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * Castings are retrieved from the perspective of the {@link Relation}
      *
      * @param roleTypes The role which the instances are playing
-     * @return The {@link Casting} which unify a {@link RoleType} and {@link Instance} with this {@link Relation}
+     * @return The {@link Casting} which unify a {@link RoleType} and {@link Thing} with this {@link Relation}
      */
     Stream<Casting> castingsRelation(RoleType... roleTypes){
         if(roleTypes.length == 0){
@@ -95,7 +95,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @param roleMap The roles and their corresponding role players
      * @return A unique hash identifying this relation
      */
-    static String generateNewHash(RelationType relationType, Map<RoleType, Set<Instance>> roleMap){
+    static String generateNewHash(RelationType relationType, Map<RoleType, Set<Thing>> roleMap){
         SortedSet<RoleType> sortedRoleIds = new TreeSet<>(roleMap.keySet());
         StringBuilder hash = new StringBuilder();
         hash.append("RelationType_").append(relationType.getId().getValue().replace("_", "\\_")).append("_Relation");
@@ -119,8 +119,8 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @return A list of all the role types and the instances playing them in this relation.
      */
     @Override
-    public Map<RoleType, Set<Instance>> allRolePlayers(){
-        HashMap<RoleType, Set<Instance>> roleMap = new HashMap<>();
+    public Map<RoleType, Set<Thing>> allRolePlayers(){
+        HashMap<RoleType, Set<Thing>> roleMap = new HashMap<>();
 
         //We add the role types explicitly so we can return them when there are no roleplayers
         type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
@@ -130,7 +130,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     }
 
     @Override
-    public Collection<Instance> rolePlayers(RoleType... roleTypes) {
+    public Collection<Thing> rolePlayers(RoleType... roleTypes) {
         return castingsRelation(roleTypes).map(Casting::getInstance).collect(Collectors.toSet());
     }
 
@@ -138,28 +138,28 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     /**
      * Expands this Relation to include a new role player which is playing a specific role.
      * @param roleType The role of the new role player.
-     * @param instance The new role player.
+     * @param thing The new role player.
      * @return The Relation itself
      */
     @Override
-    public Relation addRolePlayer(RoleType roleType, Instance instance) {
+    public Relation addRolePlayer(RoleType roleType, Thing thing) {
         Objects.requireNonNull(roleType);
-        Objects.requireNonNull(instance);
+        Objects.requireNonNull(thing);
 
         if(Schema.MetaSchema.isMetaLabel(roleType.getLabel())) throw GraphOperationException.metaTypeImmutable(roleType.getLabel());
 
         //Do the actual put of the role and role player
-        return addNewRolePlayer(roleType, instance);
+        return addNewRolePlayer(roleType, thing);
     }
 
     /**
      * Adds a new role player to this relation
      * @param roleType The role of the new role player.
-     * @param instance The new role player.
+     * @param thing The new role player.
      * @return The Relation itself
      */
-    private Relation addNewRolePlayer(RoleType roleType, Instance instance){
-        vertex().graph().putShortcutEdge((InstanceImpl) instance, this, (RoleTypeImpl) roleType);
+    private Relation addNewRolePlayer(RoleType roleType, Thing thing){
+        vertex().graph().putShortcutEdge((ThingImpl) thing, this, (RoleTypeImpl) roleType);
         return this;
     }
 
@@ -168,10 +168,10 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     void cleanUp() {
         boolean performDeletion = true;
-        Collection<Instance> rolePlayers = rolePlayers();
+        Collection<Thing> rolePlayers = rolePlayers();
 
-        for(Instance instance : rolePlayers){
-            if(instance != null && (instance.getId() != null )){
+        for(Thing thing : rolePlayers){
+            if(thing != null && (thing.getId() != null )){
                 performDeletion = false;
             }
         }
@@ -185,13 +185,13 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     public String innerToString(){
         StringBuilder description = new StringBuilder();
         description.append("ID [").append(getId()).append("] Type [").append(type().getLabel()).append("] Roles and Role Players: \n");
-        for (Map.Entry<RoleType, Set<Instance>> entry : allRolePlayers().entrySet()) {
+        for (Map.Entry<RoleType, Set<Thing>> entry : allRolePlayers().entrySet()) {
             if(entry.getValue().isEmpty()){
                 description.append("    Role [").append(entry.getKey().getLabel()).append("] not played by any instance \n");
             } else {
                 StringBuilder instancesString = new StringBuilder();
-                for (Instance instance : entry.getValue()) {
-                    instancesString.append(instance.getId()).append(",");
+                for (Thing thing : entry.getValue()) {
+                    instancesString.append(thing.getId()).append(",");
                 }
                 description.append("    Role [").append(entry.getKey().getLabel()).append("] played by [").
                         append(instancesString.toString()).append("] \n");

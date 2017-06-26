@@ -26,7 +26,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -265,23 +265,23 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summaryAssign(rule, ruleType, "putRule", "var(\"x\")", "var(\"y\")");
             },*/
             () -> {
-                Instance instance = instance();
+                Thing thing = instance();
                 Resource resource = resource();
-                instance.resource(resource);
-                summary(instance, "resource", resource);
+                thing.resource(resource);
+                summary(thing, "resource", resource);
             },
             () -> {
                 Type type = type();
-                Instance instance = instance();
-                type.scope(instance);
-                summary(type, "scope", instance);
+                Thing thing = instance();
+                type.scope(thing);
+                summary(type, "scope", thing);
             },
             () -> {
                 Relation relation = relation();
                 RoleType roleType = roleType();
-                Instance instance = instance();
-                relation.addRolePlayer(roleType, instance);
-                summary(relation, "addRolePlayer", roleType, instance);
+                Thing thing = instance();
+                relation.addRolePlayer(roleType, thing);
+                summary(relation, "addRolePlayer", roleType, thing);
             }
     );
 
@@ -298,9 +298,9 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     private String summaryFormat(Object object) {
         if (object instanceof Type) {
             return ((Type) object).getLabel().getValue().replaceAll("-", "_");
-        } else if (object instanceof Instance) {
-            Instance instance = (Instance) object;
-            return summaryFormat(instance.type()) + instance.getId().getValue();
+        } else if (object instanceof Thing) {
+            Thing thing = (Thing) object;
+            return summaryFormat(thing.type()) + thing.getId().getValue();
         } else if (object instanceof TypeLabel) {
             return valueToString(((TypeLabel) object).getValue());
         } else {
@@ -336,7 +336,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return random.choose(graph.admin().getMetaRuleType().subTypes());
     }
 
-    private Instance instance() {
+    private Thing instance() {
         return chooseOrThrow(graph.admin().getMetaConcept().instances());
     }
 
@@ -371,8 +371,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return CommonUtil.withImplicitConceptsVisible(graph, function);
     }
 
-    public static Collection<? extends Instance> allInstancesFrom(GraknGraph graph) {
-        Function<GraknGraph, ? extends Collection<? extends Instance>> function = g -> g.admin().getMetaConcept().instances();
+    public static Collection<? extends Thing> allInstancesFrom(GraknGraph graph) {
+        Function<GraknGraph, ? extends Collection<? extends Thing>> function = g -> g.admin().getMetaConcept().instances();
         return CommonUtil.withImplicitConceptsVisible(graph, function);
     }
 

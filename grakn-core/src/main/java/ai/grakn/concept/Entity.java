@@ -31,7 +31,7 @@ package ai.grakn.concept;
  *
  * @author fppt
  */
-public interface Entity extends Instance{
+public interface Entity extends Thing {
     //------------------------------------- Accessors ----------------------------------
 
     /**

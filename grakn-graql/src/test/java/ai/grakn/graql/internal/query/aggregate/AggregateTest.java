@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Graql;
@@ -102,7 +102,7 @@ public class AggregateTest {
 
         Map<Concept, Long> groupCount = groupCountQuery.execute();
 
-        Instance godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
 
         assertEquals(new Long(9), groupCount.get(godfather));
     }

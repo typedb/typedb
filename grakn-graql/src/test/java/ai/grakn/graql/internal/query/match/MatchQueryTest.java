@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -232,7 +232,7 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var().rel(x, var().has("name", "Michael Corleone"))).distinct();
 
         assertThat(query, variable("x", containsInAnyOrder(
-                type("concept"), type("role"), type("character-being-played")
+                type(Schema.MetaSchema.THING.getLabel().getValue()), type("role"), type("character-being-played")
         )));
     }
 
@@ -711,7 +711,7 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchAllInstances() {
-        MatchQuery query = qb.match(x.isa(Schema.MetaSchema.CONCEPT.getLabel().getValue()));
+        MatchQuery query = qb.match(x.isa(Schema.MetaSchema.THING.getLabel().getValue()));
 
         // Make sure there a reasonable number of results
         assertThat(query.execute(), hasSize(greaterThan(10)));
@@ -787,7 +787,7 @@ public class MatchQueryTest {
     public void testMatchAllResourcesUsingResourceName() {
         MatchQuery query = qb.match(var().has("title", "Godfather").has("resource", x));
 
-        Instance godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
         Set<Resource<?>> expected = Sets.newHashSet(godfather.resources());
 
         Set<Resource<?>> results = query.get("x").map(Concept::asResource).collect(toSet());
@@ -815,7 +815,7 @@ public class MatchQueryTest {
 
     @Test
     public void testLookupResourcesOnId() {
-        Instance godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
         ConceptId id = godfather.getId();
         MatchQuery query = qb.match(var().id(id).has("title", x));
 
@@ -858,13 +858,13 @@ public class MatchQueryTest {
 
     @Test
     public void testHideImplicitTypes() {
-        MatchQuery query = qb.match(x.sub("concept"));
+        MatchQuery query = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
         assertThat(query, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
     }
 
     @Test
     public void testDontHideImplicitTypesIfExplicitlyMentioned() {
-        MatchQuery query = qb.match(x.sub("concept").label(HAS.getLabel("title")));
+        MatchQuery query = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()).label(HAS.getLabel("title")));
         assertThat(query, variable("x", (Matcher) hasItem(hasTitle)));
     }
 
@@ -883,20 +883,20 @@ public class MatchQueryTest {
     @Test
     public void testDontHideImplicitTypesIfImplicitTypesOn() {
         movieGraph.graph().showImplicitConcepts(true);
-        MatchQuery query = qb.match(x.sub("concept"));
+        MatchQuery query = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
         assertThat(query, variable("x", hasItems(movie, hasTitle)));
     }
 
     @Test
     public void testHideImplicitTypesTwice() {
-        MatchQuery query1 = qb.match(x.sub("concept"));
+        MatchQuery query1 = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
         assertThat(query1, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
         List<Answer> results1 = query1.execute();
 
         movieGraph.graph().close();
         GraknGraph graph2 = movieGraph.graph();
 
-        MatchQuery query2 = graph2.graql().match(x.sub("concept"));
+        MatchQuery query2 = graph2.graql().match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
         assertEquals(results1, query2.execute());
     }
 

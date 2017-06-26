@@ -20,7 +20,7 @@
 package ai.grakn.graph.property;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -300,10 +300,10 @@ public class TypePropertyTest {
     public void whenGettingIndirectInstances_ReturnDirectInstancesAndIndirectInstancesOfDirectSubTypes(
             @Open GraknGraph graph, @FromGraph Type type) {
         Collection<Type> directSubTypes = directSubTypes(graph, type);
-        Instance[] expected = Stream.concat(
+        Thing[] expected = Stream.concat(
             directInstances(type).stream(),
             directSubTypes.stream().flatMap(subType -> subType.instances().stream())
-        ).toArray(Instance[]::new);
+        ).toArray(Thing[]::new);
 
         assertThat(type.instances(), containsInAnyOrder(expected));
     }

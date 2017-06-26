@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.printer;
 
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
@@ -27,6 +27,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.util.Schema;
 import org.apache.commons.lang.StringUtils;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -93,7 +94,7 @@ public class GraqlPrinterTest {
     public void testResourceOutputNoResources() {
         Printer printer = Printers.graql(true);
 
-        Instance godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
 
         String repr = printer.graqlString(godfather);
 
@@ -111,7 +112,7 @@ public class GraqlPrinterTest {
                 true, rule.graph().getResourceType("title"), rule.graph().getResourceType("tmdb-vote-count"), rule.graph().getResourceType("name")
         );
 
-        Instance godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
 
         String repr = printer.graqlString(godfather);
 
@@ -157,7 +158,7 @@ public class GraqlPrinterTest {
         assertThat(entityString, containsString("label"));
         assertThat(entityString, containsString("entity"));
         assertThat(entityString, containsString("sub"));
-        assertThat(entityString, containsString("concept"));
+        assertThat(entityString, containsString(Schema.MetaSchema.THING.getLabel().getValue()));
         assertThat(entityString, not(containsString("isa")));
     }
 
@@ -170,7 +171,7 @@ public class GraqlPrinterTest {
         String conceptString = printer.graqlString(concept);
 
         assertThat(conceptString, containsString("label"));
-        assertThat(conceptString, containsString("concept"));
+        assertThat(conceptString, containsString(Schema.MetaSchema.THING.getLabel().getValue()));
         assertThat(conceptString, not(containsString("sub")));
         assertThat(conceptString, not(containsString("isa")));
     }

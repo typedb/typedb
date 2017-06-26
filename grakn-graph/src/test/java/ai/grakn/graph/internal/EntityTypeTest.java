@@ -20,7 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -79,9 +79,9 @@ public class EntityTypeTest extends GraphTestBase{
     @Test
     public void creatingAccessingDeletingScopes_Works() throws GraphOperationException {
         EntityType entityType = graknGraph.putEntityType("entity type");
-        Instance scope1 = entityType.addEntity();
-        Instance scope2 = entityType.addEntity();
-        Instance scope3 = entityType.addEntity();
+        Thing scope1 = entityType.addEntity();
+        Thing scope2 = entityType.addEntity();
+        Thing scope3 = entityType.addEntity();
         assertThat(entityType.scopes(), is(empty()));
 
         entityType.scope(scope1);

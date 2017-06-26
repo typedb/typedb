@@ -23,7 +23,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.migration.json.JsonMigrator;
@@ -132,7 +132,7 @@ public class JsonMigratorMainTest {
         Resource number = getResource(graph, streetAddress, TypeLabel.of("number")).asResource();
         assertEquals(21L, number.getValue());
 
-        Collection<Instance> phoneNumbers = getProperties(graph, person, "has-phone");
+        Collection<Thing> phoneNumbers = getProperties(graph, person, "has-phone");
         assertEquals(2, phoneNumbers.size());
     }
 }

@@ -34,7 +34,7 @@ import javax.annotation.CheckReturnValue;
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
  *     ({@link EntityType}, {@link RoleType}, {@link RelationType}, {@link RuleType} or {@link ResourceType})
- *     or an {@link Instance} ({@link Entity}, {@link Relation} , {@link Resource}, {@link Rule}).
+ *     or an {@link Thing} ({@link Entity}, {@link Relation} , {@link Resource}, {@link Rule}).
  * </p>
  *
  * @author fppt
@@ -61,12 +61,12 @@ public interface Concept extends Comparable<Concept>{
     Type asType();
 
     /**
-     * Return as an Instance if the Concept is an Instance.
+     * Return as an Thing if the Concept is an Thing.
      *
-     * @return An Instance if the concept is an Instance
+     * @return An Thing if the concept is an Thing
      */
     @CheckReturnValue
-    Instance asInstance();
+    Thing asInstance();
 
     /**
      * Return as an EntityType if the Concept is an Entity Type.
@@ -109,14 +109,14 @@ public interface Concept extends Comparable<Concept>{
     RuleType asRuleType();
 
     /**
-     * Return as an Entity, if the Concept is an Entity Instance.
-     * @return An Entity if the concept is an Instance
+     * Return as an Entity, if the Concept is an Entity Thing.
+     * @return An Entity if the concept is an Thing
      */
     @CheckReturnValue
     Entity asEntity();
 
     /**
-     * Return as a Relation if the Concept is a Relation Instance.
+     * Return as a Relation if the Concept is a Relation Thing.
      *
      * @return A Relation if the concept is a Relation
      */
@@ -124,7 +124,7 @@ public interface Concept extends Comparable<Concept>{
     Relation asRelation();
 
     /**
-     * Return as a Resource if the Concept is a Resource Instance.
+     * Return as a Resource if the Concept is a Resource Thing.
      *
      * @return A Resource if the concept is a Resource
      */
@@ -132,7 +132,7 @@ public interface Concept extends Comparable<Concept>{
     <D> Resource<D> asResource();
 
     /**
-     * Return as a Rule if the Concept is a Rule Instance.
+     * Return as a Rule if the Concept is a Rule Thing.
      *
      * @return A Rule if the concept is a Rule
      */
@@ -148,9 +148,9 @@ public interface Concept extends Comparable<Concept>{
     boolean isType();
 
     /**
-     * Determine if the Concept is an Instance.
+     * Determine if the Concept is an Thing.
      *
-     * @return true if the concept is an Instance
+     * @return true if the concept is an Thing
      */
     @CheckReturnValue
     boolean isInstance();

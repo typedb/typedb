@@ -1,19 +1,5 @@
 package ai.grakn.test.engine.controller;
 
-import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.REST.Request.Graql.INFER;
-import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
-import static ai.grakn.util.REST.Request.Graql.QUERY;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
-
-import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Test;
-
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.response.Response;
-
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
@@ -21,17 +7,29 @@ import ai.grakn.test.GraphContext;
 import ai.grakn.test.SparkContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.response.Response;
+import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Test;
+
+import static ai.grakn.util.REST.Request.Graql.INFER;
+import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
+import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
+import static ai.grakn.util.REST.Request.Graql.QUERY;
+import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 
 public class GraknExecuteQueryControllerTest {
     
     private Response sendQuery(String query) {
         return sendQuery(query, APPLICATION_JSON_GRAQL, true, false, -1);
     }
-    
-    private Response sendQuery(String query, 
-                               String acceptType, 
+
+    private Response sendQuery(String query,
+                               String acceptType,
                                boolean reasonser,
-                               boolean materialise, 
+                               boolean materialise,
                                int limitEmbedded) {
         return RestAssured.with()
             .queryParam(KEYSPACE, graphContext.graph().getKeyspace())
@@ -42,18 +40,21 @@ public class GraknExecuteQueryControllerTest {
             .accept(acceptType)
             .post(REST.WebPath.Graph.ANY_GRAQL);
     }
-    
-    private static EngineGraknGraphFactory engineGraknGraphFactory = 
+
+    //TODO: Cleanup this hack. The problem is that <code>EngineGraknGraphFactory</code> is called before the graph context. This means that cassandra has not yet started when we try to create the engine graph.
+    private static GraphContext graphContextTemp = GraphContext.preLoad(MovieGraph.get());
+
+    private static EngineGraknGraphFactory engineGraknGraphFactory =
             EngineGraknGraphFactory.create(GraknEngineConfig.create().getProperties());
-    
+
     @ClassRule
-    public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
+    public static GraphContext graphContext = graphContextTemp;
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         new GraqlController(engineGraknGraphFactory, spark);
     });
-        
+
     @Test
     public void testMatchQuery() {
         Response resp = sendQuery("match $x isa movie;");
