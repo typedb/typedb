@@ -281,7 +281,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //Copy entire ontology to the graph cache. This may be a bad idea as it will slow down graph initialisation
         getMetaConcept().subTypes().forEach(type -> {
-            getGraphCache().cacheLabel(type.getLabel(), type.getTypeId());
+            getGraphCache().cacheLabel(type.getLabel(), type.getLabelId());
             getGraphCache().cacheType(type.getLabel(), type);
         });
 
@@ -641,14 +641,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     void putShortcutEdge(ThingImpl toInstance, RelationImpl fromRelation, RoleTypeImpl roleType){
         boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getTypeId().getValue()).
-                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), roleType.getTypeId().getValue()).inV().
+                has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getLabelId().getValue()).
+                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), roleType.getLabelId().getValue()).inV().
                 hasId(toInstance.getId().getRawValue()).hasNext();
 
         if(!exists){
             EdgeElement edge = fromRelation.addEdge(toInstance, Schema.EdgeLabel.SHORTCUT);
-            edge.property(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getTypeId().getValue());
-            edge.property(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getTypeId().getValue());
+            edge.property(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getLabelId().getValue());
+            edge.property(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getLabelId().getValue());
             txCache().trackForValidation(factory().buildRolePlayer(edge));
             txCache().trackForValidation(fromRelation); //This is so we can reassign the hash if needed
         }

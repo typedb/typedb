@@ -58,7 +58,7 @@ public abstract class OntologyElementImpl<T extends OntologyElement> extends Con
      * @return The internal id which is used for fast lookups
      */
     @Override
-    public LabelId getTypeId(){
+    public LabelId getLabelId(){
         return cachedLabelId;
     }
 

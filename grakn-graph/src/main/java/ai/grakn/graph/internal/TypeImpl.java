@@ -334,7 +334,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<Type
         final Set<V> instances = new HashSet<>();
 
         GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerPopGraph().traversal().V()
-                .has(Schema.VertexProperty.TYPE_ID.name(), getTypeId().getValue())
+                .has(Schema.VertexProperty.TYPE_ID.name(), getLabelId().getValue())
                 .union(__.identity(),
                         __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
                 ).unfold()
