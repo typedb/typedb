@@ -44,7 +44,7 @@ public class TemplateParserTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void oneValueOneLineTest(){
+    public void templateReplacesOneValuedOnOneLine_ValuesReplacedCorrectly(){
         String template = "insert $x isa person has name <name>;    ";
         String expected = "insert $x0 has name \"Phil Collins\" isa person;";
 
@@ -55,7 +55,7 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void multiValueOneLineTest(){
+    public void templateReplacesMultipleValuedOnOneLine_ValuesReplacedCorrectly(){
         String template = "insert $x isa person has name <name> , has feet <numFeet>;";
         String expected = "insert $x0 has name \"Phil Collins\" isa person has feet 3;";
 
