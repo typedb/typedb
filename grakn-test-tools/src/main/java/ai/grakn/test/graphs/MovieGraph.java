@@ -20,7 +20,7 @@ package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
@@ -50,13 +50,13 @@ public class MovieGraph extends TestGraph {
     private static RoleType work, author;
     private static RuleType aRuleType;
 
-    private static Instance godfather, theMuppets, heat, apocalypseNow, hocusPocus, spy, chineseCoffee;
-    private static Instance marlonBrando, alPacino, missPiggy, kermitTheFrog, martinSheen, robertDeNiro, judeLaw;
-    private static Instance mirandaHeart, betteMidler, sarahJessicaParker;
-    private static Instance crime, drama, war, action, comedy, family, musical, fantasy;
-    private static Instance donVitoCorleone, michaelCorleone, colonelWalterEKurtz, benjaminLWillard, ltVincentHanna;
-    private static Instance neilMcCauley, bradleyFine, nancyBArtingstall, winifred, sarah, harry;
-    private static Instance cluster0, cluster1;
+    private static Thing godfather, theMuppets, heat, apocalypseNow, hocusPocus, spy, chineseCoffee;
+    private static Thing marlonBrando, alPacino, missPiggy, kermitTheFrog, martinSheen, robertDeNiro, judeLaw;
+    private static Thing mirandaHeart, betteMidler, sarahJessicaParker;
+    private static Thing crime, drama, war, action, comedy, family, musical, fantasy;
+    private static Thing donVitoCorleone, michaelCorleone, colonelWalterEKurtz, benjaminLWillard, ltVincentHanna;
+    private static Thing neilMcCauley, bradleyFine, nancyBArtingstall, winifred, sarah, harry;
+    private static Thing cluster0, cluster1;
 
     public static Consumer<GraknGraph> get(){
         return new MovieGraph().build();
@@ -301,22 +301,22 @@ public class MovieGraph extends TestGraph {
         putResource(materialize, name, "materialize-rule");
     }
 
-    private static void hasCast(Instance movie, Instance person, Instance character) {
+    private static void hasCast(Thing movie, Thing person, Thing character) {
         hasCast.addRelation()
                 .addRolePlayer(productionWithCast, movie)
                 .addRolePlayer(actor, person)
                 .addRolePlayer(characterBeingPlayed, character);
     }
 
-    private static void hasGenre(Instance movie, Instance genre) {
+    private static void hasGenre(Thing movie, Thing genre) {
         hasGenre.addRelation()
                 .addRolePlayer(productionWithGenre, movie)
                 .addRolePlayer(genreOfProduction, genre);
     }
 
-    private static void hasCluster(Instance cluster, Instance... movies) {
+    private static void hasCluster(Thing cluster, Thing... movies) {
         Relation relation = hasCluster.addRelation().addRolePlayer(clusterOfProduction, cluster);
-        for (Instance movie : movies) {
+        for (Thing movie : movies) {
             relation.addRolePlayer(productionWithCluster, movie);
         }
     }

@@ -20,7 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import org.junit.Before;
@@ -75,17 +75,17 @@ public class CastingTest extends GraphTestBase {
         RelationImpl relation = (RelationImpl) relationType.addRelation().
                 addRolePlayer(role1, e1);
 
-        Set<Instance> instances = relation.castingsRelation().map(Casting::getInstance).collect(Collectors.toSet());
+        Set<Thing> things = relation.castingsRelation().map(Casting::getInstance).collect(Collectors.toSet());
         Set<RoleType> roles = relation.castingsRelation().map(Casting::getRoleType).collect(Collectors.toSet());
-        assertThat(instances, containsInAnyOrder(e1));
+        assertThat(things, containsInAnyOrder(e1));
         assertThat(roles, containsInAnyOrder(role1));
 
         //Now Update
         relation.addRolePlayer(role2, e1).addRolePlayer(role3, e3);
 
-        instances = relation.castingsRelation().map(Casting::getInstance).collect(Collectors.toSet());
+        things = relation.castingsRelation().map(Casting::getInstance).collect(Collectors.toSet());
         roles = relation.castingsRelation().map(Casting::getRoleType).collect(Collectors.toSet());
-        assertThat(instances, containsInAnyOrder(e1, e3));
+        assertThat(things, containsInAnyOrder(e1, e3));
         assertThat(roles, containsInAnyOrder(role1, role2, role3));
     }
 }

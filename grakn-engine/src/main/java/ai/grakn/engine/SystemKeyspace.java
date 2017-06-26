@@ -21,7 +21,7 @@ package ai.grakn.engine;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
@@ -133,8 +133,8 @@ public class SystemKeyspace {
             Resource<String> resource = keyspaceName.getResource(keyspace);
 
             if(resource == null) return false;
-            Instance instance = resource.owner();
-            if(instance != null) instance.delete();
+            Thing thing = resource.owner();
+            if(thing != null) thing.delete();
             resource.delete();
 
             openSpaces.remove(keyspace);

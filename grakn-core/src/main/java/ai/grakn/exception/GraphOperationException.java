@@ -20,7 +20,7 @@ package ai.grakn.exception;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -77,11 +77,11 @@ public class GraphOperationException extends GraknException{
     }
 
     /**
-     * Thrown when an {@code instance} is not allowed to have {@code resource} of the type {@code hasType}.
+     * Thrown when an {@code thing} is not allowed to have {@code resource} of the type {@code hasType}.
      * {@code hasType} can be resources or keys.
      */
-    public static GraphOperationException hasNotAllowed(Instance instance, Resource resource, String hasType){
-        return new GraphOperationException(HAS_INVALID.getMessage(instance.type().getLabel(), hasType, resource.type().getLabel()));
+    public static GraphOperationException hasNotAllowed(Thing thing, Resource resource, String hasType){
+        return new GraphOperationException(HAS_INVALID.getMessage(thing.type().getLabel(), hasType, resource.type().getLabel()));
     }
 
     /**
@@ -217,10 +217,10 @@ public class GraphOperationException extends GraknException{
     }
 
     /**
-     * Thrown when an instance does not have a type
+     * Thrown when an thing does not have a type
      */
-    public static GraphOperationException noType(Instance instance){
-        return new GraphOperationException(NO_TYPE.getMessage(instance));
+    public static GraphOperationException noType(Thing thing){
+        return new GraphOperationException(NO_TYPE.getMessage(thing));
     }
 
     /**

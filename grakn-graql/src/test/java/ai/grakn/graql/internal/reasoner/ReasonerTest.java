@@ -24,7 +24,6 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.test.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
@@ -38,9 +37,11 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.SNBGraph;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.graphs.GeoGraph;
+import ai.grakn.test.graphs.SNBGraph;
+import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
@@ -417,19 +418,20 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingTypeVar2(){
+        String thing = Schema.MetaSchema.THING.getLabel().getValue();
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $x isa $type;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';";
         String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has resource $name;" +
                 "{" +
                 "{$name val 'Warsaw-Polytechnics' or $name val 'University-of-Warsaw';};" +
-                "{$type label 'university' or $type label 'entity' or $type label 'concept';};" +
+                "{$type label 'university' or $type label 'entity' or $type label '" + thing + "';};" +
                 "} or {" +
                 "{$name val 'Warsaw' or $name val 'Wroclaw';};" +
-                "{$type label 'city' or $type label 'geoObject' or $type label 'entity' or $type label 'concept';};" +
+                "{$type label 'city' or $type label 'geoObject' or $type label 'entity' or $type label '" + thing + "';};" +
                 "} or {" +
                 "{$name val 'Masovia' or $name val 'Silesia';};" +
-                "{$type label 'region' or $type label 'geoObject' or $type label 'entity' or $type label 'concept';};" +
+                "{$type label 'region' or $type label 'geoObject' or $type label 'entity' or $type label '" + thing + "';};" +
                 "}; select $x, $y, $type;";
         MatchQuery query = graph.graql().infer(true).parse(queryString);
         MatchQuery query2 = graph.graql().infer(false).parse(explicitQuery);

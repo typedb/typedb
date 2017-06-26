@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -61,7 +61,7 @@ import static java.util.stream.Collectors.toSet;
  * This property can be queried and inserted.
  *
  * This propert is comprised of instances of {@link RelationPlayer}, which represents associations between a
- * role-player {@link Instance} and an optional {@link RoleType}.
+ * role-player {@link Thing} and an optional {@link RoleType}.
  *
  * @author Felix Chapman
  */
@@ -195,7 +195,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         VarPatternAdmin roleVar = relationPlayer.getRoleType().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
 
         RoleType roleType = insertQueryExecutor.getConcept(roleVar).asRoleType();
-        Instance roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asInstance();
+        Thing roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asInstance();
         relation.addRolePlayer(roleType, roleplayer);
     }
 

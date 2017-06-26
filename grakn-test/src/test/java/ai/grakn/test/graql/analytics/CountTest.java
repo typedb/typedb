@@ -56,7 +56,7 @@ public class CountTest {
 
     @Test
     public void testCountAfterCommit() throws Exception {
-        String nameThing = "thing";
+        String nameThing = "thingy";
         String nameAnotherThing = "another";
 
         // assert the graph is empty
@@ -67,9 +67,9 @@ public class CountTest {
 
         // add 2 instances
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            EntityType thing = graph.putEntityType(nameThing);
-            thing.addEntity().getId();
-            thing.addEntity().getId();
+            EntityType thingy = graph.putEntityType(nameThing);
+            thingy.addEntity().getId();
+            thingy.addEntity().getId();
             graph.commit();
         }
 

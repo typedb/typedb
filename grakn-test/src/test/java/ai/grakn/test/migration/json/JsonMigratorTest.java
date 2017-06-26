@@ -23,7 +23,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.migration.base.Migrator;
@@ -112,7 +112,7 @@ public class JsonMigratorTest {
         Resource city = getResource(graph, address, TypeLabel.of("city")).asResource();
         assertEquals("New York", city.getValue());
 
-        Collection<Instance> phoneNumbers = getProperties(graph, person, "has-phone");
+        Collection<Thing> phoneNumbers = getProperties(graph, person, "has-phone");
         assertEquals(2, phoneNumbers.size());
 
         boolean phoneNumbersCorrect = phoneNumbers.stream().allMatch(phoneNumber -> {
@@ -129,7 +129,7 @@ public class JsonMigratorTest {
         load(factory, getFile("json", "all-types/schema.gql"));
 
         String template = "" +
-                "insert $x isa thing\n" +
+                "insert $x isa thingy\n" +
                 "  has a-boolean <a-boolean>\n" +
                 "  has a-number  <a-number>\n" +
                 "  for (int in <array-of-ints> ) do {\n" +
@@ -141,7 +141,7 @@ public class JsonMigratorTest {
         declareAndLoad(template, "all-types/data.json");
 
         GraknGraph graph = factory.open(GraknTxType.WRITE);
-        EntityType rootType = graph.getEntityType("thing");
+        EntityType rootType = graph.getEntityType("thingy");
         Collection<Entity> things = rootType.instances();
         assertEquals(1, things.size());
 

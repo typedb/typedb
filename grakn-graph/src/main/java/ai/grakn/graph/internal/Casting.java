@@ -18,7 +18,7 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
@@ -28,11 +28,11 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 
 /**
  * <p>
- *     Represents An Instance Playing a Role
+ *     Represents An Thing Playing a Role
  * </p>
  *
  * <p>
- *    Wraps the shortcut {@link Edge} which contains the information unifying an {@link Instance},
+ *    Wraps the shortcut {@link Edge} which contains the information unifying an {@link Thing},
  *    {@link Relation} and {@link RoleType}.
  * </p>
  *
@@ -42,7 +42,7 @@ class Casting {
     private final EdgeElement edgeElement;
     private final Cache<RoleType> cachedRoleType = new Cache<>(() -> (RoleType) edge().graph().getType(TypeId.of(edge().property(Schema.EdgeProperty.ROLE_TYPE_ID))));
     private final Cache<RelationType> cachedRelationType = new Cache<>(() -> (RelationType) edge().graph().getType(TypeId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_ID))));
-    private final Cache<Instance> cachedInstance = new Cache<>(() -> edge().graph().factory().buildConcept(edge().target()));
+    private final Cache<Thing> cachedInstance = new Cache<>(() -> edge().graph().factory().buildConcept(edge().target()));
     private final Cache<Relation> cachedRelation = new Cache<>(() -> edge().graph().factory().buildConcept(edge().source()));
 
     Casting(EdgeElement edgeElement){
@@ -81,7 +81,7 @@ class Casting {
      *
      * @return The instance playing the role
      */
-    public Instance getInstance(){
+    public Thing getInstance(){
         return cachedInstance.get();
     }
 

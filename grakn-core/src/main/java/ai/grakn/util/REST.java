@@ -39,6 +39,7 @@ public class REST {
          */
         public static class Graph {
             public static final String GRAQL = "/graph/graql";
+            public static final String ANY_GRAQL = "/graph/graql/execute";
         }
 
         /**

@@ -19,7 +19,7 @@
 
 package ai.grakn.graph.property;
 
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RoleType;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
@@ -49,7 +49,7 @@ public class RelationPropertyTest {
 
     @Property
     public void whenAddingARolePlayer_ItIsAddedToTheCollectionOfRolePlayers(
-        Relation relation, @FromGraph @Meta(false) RoleType roleType, @FromGraph Instance rolePlayer) {
+        Relation relation, @FromGraph @Meta(false) RoleType roleType, @FromGraph Thing rolePlayer) {
 
         relation.addRolePlayer(roleType, rolePlayer);
 
@@ -58,7 +58,7 @@ public class RelationPropertyTest {
 
     @Property
     public void whenAddingARolePlayerPlayingARole_TheRolePlayerIsAddedToTheCollectionOfRolePlayersForThatRole(
-            Relation relation, @FromGraph @Meta(false) RoleType roleType, @FromGraph Instance rolePlayer) {
+            Relation relation, @FromGraph @Meta(false) RoleType roleType, @FromGraph Thing rolePlayer) {
 
         relation.addRolePlayer(roleType, rolePlayer);
 
@@ -67,9 +67,9 @@ public class RelationPropertyTest {
 
     @Property
     public void whenAddingARolePlayer_NoRolePlayersAreRemoved(
-        Relation relation, @FromGraph @Meta(false) RoleType roleType, @FromGraph Instance rolePlayer) {
+        Relation relation, @FromGraph @Meta(false) RoleType roleType, @FromGraph Thing rolePlayer) {
 
-        Instance[] rolePlayers = relation.rolePlayers(roleType).toArray(new Instance[0]);
+        Thing[] rolePlayers = relation.rolePlayers(roleType).toArray(new Thing[0]);
 
         relation.addRolePlayer(roleType, rolePlayer);
 
@@ -78,8 +78,8 @@ public class RelationPropertyTest {
 
     @Property
     public void whenCallingRolePlayers_TheResultIsASet(Relation relation, @FromGraph RoleType[] roles) {
-        Collection<Instance> rolePlayers = relation.rolePlayers(roles);
-        Set<Instance> rolePlayersSet = newHashSet(rolePlayers);
+        Collection<Thing> rolePlayers = relation.rolePlayers(roles);
+        Set<Thing> rolePlayersSet = newHashSet(rolePlayers);
         assertEquals(rolePlayers.size(), rolePlayersSet.size());
     }
 
@@ -97,7 +97,7 @@ public class RelationPropertyTest {
 
         RoleType[] rolesXY = (RoleType[]) addAll(rolesX, rolesY);
 
-        Set<Instance> expected =
+        Set<Thing> expected =
                 union(newHashSet(relation.rolePlayers(rolesX)), newHashSet(relation.rolePlayers(rolesY)));
 
         assertEquals(expected, newHashSet(relation.rolePlayers(rolesXY)));

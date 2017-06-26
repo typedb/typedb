@@ -23,7 +23,7 @@ import java.util.Collection;
 
 /**
  * <p>
- *     An ontological element which categorises how {@link Instance}s may relate to each other.
+ *     An ontological element which categorises how {@link Thing}s may relate to each other.
  * </p>
  *
  * <p>
@@ -69,7 +69,7 @@ public interface RelationType extends Type {
      * @return The Type itself.
      */
     @Override
-    RelationType scope(Instance scope);
+    RelationType scope(Thing scope);
 
     /**
      * Delete the scope specified.
@@ -78,7 +78,7 @@ public interface RelationType extends Type {
      * @return The Type itself
      */
     @Override
-    RelationType deleteScope(Instance scope);
+    RelationType deleteScope(Thing scope);
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
