@@ -7,6 +7,7 @@ import ai.grakn.test.GraphContext;
 import ai.grakn.test.SparkContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
+import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import org.junit.Assert;
@@ -52,7 +53,7 @@ public class GraknExecuteQueryControllerTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(engineGraknGraphFactory, spark);
+        new GraqlController(engineGraknGraphFactory, spark, new MetricRegistry());
     });
 
     @Test

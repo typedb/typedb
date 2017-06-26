@@ -90,7 +90,7 @@
         <mockito.version>2.6.4</mockito.version>
         <hamcrest.version>1.3</hamcrest.version>
         <quickcheck.version>0.7</quickcheck.version>
-        <httpclient.version>4.2.4</httpclient.version>
+        <httpclient.version>4.5.3</httpclient.version>
         <findbugs.version>3.0.1</findbugs.version>
         <redis.version>2.9.0</redis.version>
         <metrics.version>3.2.2</metrics.version>

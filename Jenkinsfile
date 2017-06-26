@@ -26,7 +26,7 @@ node('slave2-dev-jenkins') {
 
         dir ('impls-SNB') {
             stage('Build LDBC Connector') {
-                sh 'mvn -U clean install assembly:single'
+
             }
         }
 

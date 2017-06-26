@@ -52,6 +52,7 @@ import static java.time.Duration.between;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import static java.util.stream.Collectors.toList;
@@ -104,6 +105,10 @@ public class TaskManagerTest {
         tasks.forEach((taskState) -> manager.addTask(taskState, configuration(taskState)));
 
         waitForDoneStatus(manager.storage(), tasks);
+
+        assertTrue(tasks.stream().map((taskState) -> manager.storage().getState(taskState.getId()))
+                .peek(a -> System.out.println("ID: " + a.getId()))
+                .allMatch(Objects::nonNull));
 
         completableTasks(tasks).forEach(task ->
                 assertThat("Task " + task + " should have completed.", manager.storage().getState(task).status(), is(COMPLETED))
