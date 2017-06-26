@@ -220,7 +220,7 @@ public class EntityTypeTest extends GraphTestBase{
     public void settingTheSuperTypeToItself_Throw(){
         EntityType entityType = graknGraph.putEntityType("Entity");
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(ErrorMessage.SUPER_TYPE_LOOP_DETECTED.getMessage(entityType.getLabel(), entityType.getLabel()));
+        expectedException.expectMessage(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(entityType.getLabel(), entityType.getLabel()));
         entityType.superType(entityType);
     }
 
@@ -233,7 +233,7 @@ public class EntityTypeTest extends GraphTestBase{
         entityType2.superType(entityType3);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(ErrorMessage.SUPER_TYPE_LOOP_DETECTED.getMessage(entityType3.getLabel(), entityType1.getLabel()));
+        expectedException.expectMessage(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(entityType3.getLabel(), entityType1.getLabel()));
 
         entityType3.superType(entityType1);
     }

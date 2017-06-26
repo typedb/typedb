@@ -31,7 +31,7 @@ import javax.annotation.CheckReturnValue;
 public enum ErrorMessage {
     //--------------------------------------------- Core Errors -----------------------------------------------
     CANNOT_DELETE("Type [%s] cannot be deleted as it still has incoming edges"),
-    SUPER_TYPE_LOOP_DETECTED("By setting the super type of concept [%s] to [%s]. You will be creating a loop. This is prohibited"),
+    SUPER_LOOP_DETECTED("By setting the super of concept [%s] to [%s]. You will be creating a loop. This is prohibited"),
     INVALID_UNIQUE_PROPERTY_MUTATION("Property [%s] of Concept [%s] cannot be changed to [%s] as it is already taken by Concept [%s]"),
     UNIQUE_PROPERTY_TAKEN("Property [%s] with value [%s] is already taken by concept [%s]"),
     TOO_MANY_CONCEPTS("Too many concepts found for key [%s] and value [%s]"),

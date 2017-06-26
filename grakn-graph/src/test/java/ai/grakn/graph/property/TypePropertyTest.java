@@ -48,7 +48,7 @@ import static ai.grakn.graph.property.PropertyUtil.directSubTypes;
 import static ai.grakn.graph.property.PropertyUtil.indirectSuperTypes;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
-import static ai.grakn.util.ErrorMessage.SUPER_TYPE_LOOP_DETECTED;
+import static ai.grakn.util.ErrorMessage.SUPER_LOOP_DETECTED;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -250,7 +250,7 @@ public class TypePropertyTest {
         Type newSuperType = choose(type.subTypes(), seed);
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(type.getLabel(), newSuperType.getLabel()));
+        exception.expectMessage(SUPER_LOOP_DETECTED.getMessage(type.getLabel(), newSuperType.getLabel()));
         setDirectSuperType(type, newSuperType);
     }
 
@@ -281,7 +281,7 @@ public class TypePropertyTest {
         Type type = choose(newSubType.subTypes(), seed);
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(newSubType.getLabel(), type.getLabel()));
+        exception.expectMessage(SUPER_LOOP_DETECTED.getMessage(newSubType.getLabel(), type.getLabel()));
         addDirectSubType(type, newSubType);
     }
 

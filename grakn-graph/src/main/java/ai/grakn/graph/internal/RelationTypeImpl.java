@@ -82,7 +82,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public RelationType relates(RoleType roleType) {
-        checkTypeMutationAllowed();
+        checkOntologyMutationAllowed();
         putEdge(roleType, Schema.EdgeLabel.RELATES);
 
         //TODO: the following lines below this comment should only be executed if the edge is added
@@ -106,7 +106,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public RelationType deleteRelates(RoleType roleType) {
-        checkTypeMutationAllowed();
+        checkOntologyMutationAllowed();
         deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, (Concept) roleType);
 
         RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
