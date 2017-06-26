@@ -27,6 +27,7 @@ import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 import static ai.grakn.graql.internal.hal.HALUtils.EXPLORE_CONCEPT_LINK;
 import static ai.grakn.graql.internal.hal.HALUtils.generateConceptState;
 import static ai.grakn.util.REST.WebPath.Concept.CONCEPT;
+import static ai.grakn.util.REST.WebPath.Dashboard.EXPLORE;
 
 /**
  * Class used to build the HAL representation of a given concept.
@@ -65,7 +66,7 @@ abstract class HALExploreConcept {
     }
 
     void generateStateAndLinks(Representation resource, Concept concept) {
-        resource.withLink(EXPLORE_CONCEPT_LINK, CONCEPT + concept.getId() + getURIParams());
+        resource.withLink(EXPLORE_CONCEPT_LINK, EXPLORE + concept.getId() + getURIParams());
         generateConceptState(resource, concept);
     }
 

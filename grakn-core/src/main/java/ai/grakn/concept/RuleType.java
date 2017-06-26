@@ -55,7 +55,7 @@ public interface RuleType extends Type {
      * @return The Type itself.
      */
     @Override
-    RuleType scope(Instance scope);
+    RuleType scope(Thing scope);
 
     /**
      * Delete the scope specified.
@@ -64,7 +64,7 @@ public interface RuleType extends Type {
      * @return The Type itself
      */
     @Override
-    RuleType deleteScope(Instance scope);
+    RuleType deleteScope(Thing scope);
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.

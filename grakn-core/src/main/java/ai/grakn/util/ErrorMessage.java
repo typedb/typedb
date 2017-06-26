@@ -35,7 +35,7 @@ public enum ErrorMessage {
     INVALID_UNIQUE_PROPERTY_MUTATION("Property [%s] of Concept [%s] cannot be changed to [%s] as it is already taken by Concept [%s]"),
     UNIQUE_PROPERTY_TAKEN("Property [%s] with value [%s] is already taken by concept [%s]"),
     TOO_MANY_CONCEPTS("Too many concepts found for key [%s] and value [%s]"),
-    TOO_MANY_CASTINGS("More than one casting found between Role [%s] and Instance [%s]"),
+    TOO_MANY_CASTINGS("More than one casting found between Role [%s] and Thing [%s]"),
     INVALID_DATATYPE("The value [%s] must be of datatype [%s]"),
     INVALID_RESOURCE_CAST("The value of [%s] cannot be cast to [%s]"),
     INVALID_OBJECT_TYPE("The concept [%s] is not of type [%s]"),
@@ -77,7 +77,7 @@ public enum ErrorMessage {
     VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play RoleType [%s] \n"),
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("RoleType [%s] does not have a relates connection to any Relation Type. \n"),
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
-    VALIDATION_INSTANCE("Instance [%s] of type [%s] does not play the required role [%s] \n"),
+    VALIDATION_INSTANCE("Thing [%s] of type [%s] does not play the required role [%s] \n"),
 
     VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role Type [%s] which is connected to Relation Type [%s] " +
             "does not have a %s Role Type which is connected to the %s Relation Type [%s] \n"),
@@ -232,7 +232,7 @@ public enum ErrorMessage {
     NO_SOURCE("No valid source id provided"),
     NO_DESTINATION("No valid destination id provided"),
     RESOURCE_TYPE_NOT_SPECIFIED("no resource type provided for compute query."),
-    INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
+    INSTANCE_DOES_NOT_EXIST("Thing does not exist in the subgraph."),
     NO_PATH_EXIST("There is no path between the two instances."),
     ONTOLOGY_MUTATION("The mutations to the ontology have not been successfully committed. Validation Errors: [%s]"),
     BULK_PERSIST("The bulk persist operation on instances of concept type [%s] has failed with validation error: [%s]"),

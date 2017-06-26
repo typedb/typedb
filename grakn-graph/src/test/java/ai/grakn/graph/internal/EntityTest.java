@@ -21,7 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -61,9 +61,9 @@ public class EntityTest extends GraphTestBase{
         RoleType role3 = graknGraph.putRoleType("role3");
 
         //Data
-        InstanceImpl<?, ?> rolePlayer1 = (InstanceImpl) type.addEntity();
-        InstanceImpl<?, ?> rolePlayer2 = (InstanceImpl) type.addEntity();
-        InstanceImpl<?, ?> rolePlayer3 = (InstanceImpl) type.addEntity();
+        ThingImpl<?, ?> rolePlayer1 = (ThingImpl) type.addEntity();
+        ThingImpl<?, ?> rolePlayer2 = (ThingImpl) type.addEntity();
+        ThingImpl<?, ?> rolePlayer3 = (ThingImpl) type.addEntity();
 
         relationType.relates(role1);
         relationType.relates(role2);
@@ -94,7 +94,7 @@ public class EntityTest extends GraphTestBase{
         EntityType type = graknGraph.putEntityType("Concept Type");
         RelationType relationType = graknGraph.putRelationType("relationTypes");
         RoleType role1 = graknGraph.putRoleType("role1");
-        Instance rolePlayer1 = type.addEntity();
+        Thing rolePlayer1 = type.addEntity();
 
         Relation relation = relationType.addRelation().
                 addRolePlayer(role1, rolePlayer1);

@@ -34,7 +34,7 @@ import ai.grakn.concept.EntityType;
  *
  * @author fppt
  */
-class EntityImpl extends InstanceImpl<Entity, EntityType> implements Entity {
+class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity {
     EntityImpl(VertexElement vertexElement) {
         super(vertexElement);
     }

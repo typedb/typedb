@@ -38,7 +38,7 @@ public class GraphTest {
     public void whencCommitting_EnsureGraphTransactionIsClosed() throws Exception {
         GraknGraph graph = engine.factoryWithNewKeyspace().open(GraknTxType.WRITE);
         String keyspace = graph.getKeyspace();
-        graph.putEntityType("thing");
+        graph.putEntityType("thingy");
         graph.commit();
         assertTrue(graph.isClosed());
 
@@ -54,7 +54,7 @@ public class GraphTest {
 
     private void addThingToBatch(String keyspace){
         try(GraknGraph graphBatchLoading = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)) {
-            graphBatchLoading.getEntityType("thing").addEntity();
+            graphBatchLoading.getEntityType("thingy").addEntity();
             graphBatchLoading.commit();
         } catch (Exception e){
             throw new RuntimeException(e);
@@ -128,14 +128,14 @@ public class GraphTest {
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(graph.getKeyspace()));
 
-        graph.putEntityType("A Thing");
+        graph.putEntityType("A thingy");
     }
 
     @Test
     public void whenAddingEntitiesToAbstractTypeCreatedInDifferentTransaction_Throw(){
         assumeFalse(GraknTestSetup.usingTinker());
 
-        String label = "An Abstract Thing";
+        String label = "An Abstract thingy";
 
         try(GraknSession session = Grakn.session(engine.uri(), "abstractTest")){
             try(GraknGraph graph = session.open(GraknTxType.WRITE)){

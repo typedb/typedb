@@ -22,7 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -252,11 +252,11 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     /**
      *
-     * @return An Instance if the element is an Instance
+     * @return An Thing if the element is an Thing
      */
     @Override
-    public Instance asInstance() {
-        return castConcept(Instance.class);
+    public Thing asInstance() {
+        return castConcept(Thing.class);
     }
 
     /**
@@ -307,7 +307,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     /**
      *
-     * @return An Entity if the element is an Instance
+     * @return An Entity if the element is an Thing
      */
     @Override
     public Entity asEntity() {
@@ -353,11 +353,11 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     /**
      *
-     * @return true if the element is an Instance
+     * @return true if the element is an Thing
      */
     @Override
     public boolean isInstance() {
-        return this instanceof Instance;
+        return this instanceof Thing;
     }
 
     /**

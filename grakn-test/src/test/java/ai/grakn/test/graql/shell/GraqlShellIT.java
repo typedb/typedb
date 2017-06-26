@@ -198,10 +198,10 @@ public class GraqlShellIT {
 
     @Test
     public void testMatchQuery() throws Exception {
-        String[] result = testShell("match $x sub concept;\nexit").split("\r\n?|\n");
+        String[] result = testShell("match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";\nexit").split("\r\n?|\n");
 
         // Make sure we find a few results (don't be too fussy about the output here)
-        assertEquals(">>> match $x sub concept;", result[4]);
+        assertEquals(">>> match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", result[4]);
         assertTrue(result.length > 5);
     }
 
@@ -238,7 +238,7 @@ public class GraqlShellIT {
     @Test
     public void testAggregateQuery() throws Exception {
         assertShellMatches(
-                "match $x sub concept; aggregate count;",
+                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate count;",
                 is("8") // Expect to see the whole meta-ontology
         );
     }
@@ -251,7 +251,7 @@ public class GraqlShellIT {
         assertThat(
                 result,
                 allOf(
-                        containsString("concept"), containsString("match"),
+                        containsString(Schema.MetaSchema.THING.getLabel().getValue()), containsString("match"),
                         not(containsString("exit")), containsString("$x")
                 )
         );
@@ -267,7 +267,7 @@ public class GraqlShellIT {
 
     @Test
     public void testAutocompleteFill() throws Exception {
-        String result = testShell("match $x sub concep\t;\n");
+        String result = testShell("match $x sub thin\t;\n");
         assertThat(result, containsString(Schema.MetaSchema.RELATION.getLabel().getValue()));
     }
 
@@ -341,20 +341,20 @@ public class GraqlShellIT {
     @Test
     public void testLimit() throws Exception {
         assertShellMatches(
-                "match $x sub concept; limit 1;",
+                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; limit 1;",
                 anything() // Only one result
         );
     }
 
     @Test
     public void testGraqlOutput() throws Exception {
-        String result = testShell("", "-e", "match $x sub concept;", "-o", "graql");
+        String result = testShell("", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", "-o", "graql");
         assertThat(result, allOf(containsString("$x"), containsString(Schema.MetaSchema.ENTITY.getLabel().getValue())));
     }
 
     @Test
     public void testJsonOutput() throws Exception {
-        String[] result = testShell("", "-e", "match $x sub concept;", "-o", "json").split("\n");
+        String[] result = testShell("", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", "-o", "json").split("\n");
         assertTrue("expected more than 5 results: " + Arrays.toString(result), result.length > 5);
         Json json = Json.read(result[0]);
         Json x = json.at("x");
@@ -364,7 +364,7 @@ public class GraqlShellIT {
 
     @Test
     public void testHALOutput() throws Exception {
-        String[] result = testShell("", "-e", "match $x sub concept;", "-o", "hal").split("\n");
+        String[] result = testShell("", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", "-o", "hal").split("\n");
         assertTrue("expected more than 5 results: " + Arrays.toString(result), result.length > 5);
         Json json = Json.read(result[0]);
         Json x = json.at("x");
@@ -559,7 +559,7 @@ public class GraqlShellIT {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         String out = testShell(
                 "match $x sub concet; aggregate count;\n" +
-                "match $x sub concept; ask;\n",
+                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; ask;\n",
                 err);
 
         assertThat(err.toString(), not(containsString("error")));

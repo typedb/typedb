@@ -13,11 +13,12 @@ import ai.grakn.migration.xml.XmlMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
 import ai.grakn.util.GraphLoader;
-import java.io.File;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.io.File;
 
 import static org.junit.Assert.assertEquals;
 
@@ -46,7 +47,7 @@ public class XMLMigratorTest {
             ResourceType<String> nameType = graph.getResourceType("name");
             nameType.instances().forEach(Concept::delete);
 
-            EntityType thingType = graph.getEntityType("thing");
+            EntityType thingType = graph.getEntityType("thingy");
             thingType.instances().forEach(Concept::delete);
 
             graph.commit();
@@ -55,32 +56,32 @@ public class XMLMigratorTest {
 
     @Test
     public void whenMigratingXML_CanMigrateXMLAttributes(){
-        String template = "insert $thing isa thing has name <\"~NAME\">;";
-        migrateXMLWithElement("THING", template);
+        String template = "insert $thing isa thingy has name <\"~NAME\">;";
+        migrateXMLWithElement("THINGY", template);
 
         assertThingHasName("Bob");
     }
 
     @Test
     public void whenMigratingXML_CanMigrateTextInPrimaryNode(){
-        String template = "insert $thing isa thing has name <textContent>;";
-        migrateXMLWithElement("THING", template);
+        String template = "insert $thing isa thingy has name <textContent>;";
+        migrateXMLWithElement("THINGY", template);
 
         assertThingHasName("innerText");
     }
 
     @Test
     public void whenMigratingXML_CanMigrateXMLAttributesInChildNodes(){
-        String template = "insert $thing isa thing has name for(name in <NAME>) do { if(<\"name.~NAME\"> != null ) do { <\"name.~NAME\">; }}";
-        migrateXMLWithElement("THING", template);
+        String template = "insert $thing isa thingy has name for(name in <NAME>) do { if(<\"name.~NAME\"> != null ) do { <\"name.~NAME\">; }}";
+        migrateXMLWithElement("THINGY", template);
 
         assertThingHasName("Alice");
     }
 
     @Test
     public void whenMigratingXML_CanMigrateXMLTextInChildNodes(){
-        String template = "insert $thing isa thing has name for(name in <NAME>) do { if(<name.textContent> != null ) do { <name.textContent>; }}";
-        migrateXMLWithElement("THING", template);
+        String template = "insert $thing isa thingy has name for(name in <NAME>) do { if(<name.textContent> != null ) do { <name.textContent>; }}";
+        migrateXMLWithElement("THINGY", template);
 
         assertThingHasName("Charlie");
     }
@@ -88,7 +89,7 @@ public class XMLMigratorTest {
     private static void assertThingHasName(String name){
         try(GraknGraph graph = session.open(GraknTxType.READ)){
 
-            EntityType thingType = graph.getEntityType("thing");
+            EntityType thingType = graph.getEntityType("thingy");
             ResourceType nameType = graph.getResourceType("name");
 
             assertEquals(1, thingType.instances().size());

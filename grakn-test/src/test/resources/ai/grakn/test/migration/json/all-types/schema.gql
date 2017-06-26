@@ -1,5 +1,5 @@
 insert
-  thing sub entity
+  thingy sub entity
     has a-int
     has a-boolean
     has a-number
