@@ -19,13 +19,12 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.CommonUtil;
@@ -233,31 +232,13 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
      */
     @Override
     public void delete(){
-        checkOntologyMutationAllowed();
-        boolean hasSubs = neighbours(Direction.IN, Schema.EdgeLabel.SUB).findAny().isPresent();
-        boolean hasInstances = currentShard().links().findAny().isPresent();
+        //If the deletion is successful we will need to update the cache of linked concepts. To do this caches must be loaded
+        cachedDirectPlays.get();
 
-        if(hasSubs || hasInstances){
-            throw GraphOperationException.typeCannotBeDeleted(getLabel());
-        } else {
-            //Force load of linked concepts whose caches need to be updated
-            //noinspection unchecked
-            TypeImpl<T, V> type = (TypeImpl<T, V>) superType();
-            cachedDirectPlays.get();
+        super.delete();
 
-            deleteNode();
-
-            //Update neighbouring caches
-            //noinspection unchecked
-            type.deleteCachedDirectedSubType(getThis());
-            cachedDirectPlays.get().keySet().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
-
-            //Clear internal caching
-            txCacheClear();
-
-            //Clear Global Cache
-            vertex().graph().txCache().remove(this);
-        }
+        //Updated caches of linked types
+        cachedDirectPlays.get().keySet().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
     }
 
     /**

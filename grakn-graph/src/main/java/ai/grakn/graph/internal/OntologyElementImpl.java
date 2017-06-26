@@ -125,6 +125,36 @@ public abstract class OntologyElementImpl<T extends OntologyElement> extends Con
     }
 
     /**
+     * Deletes the concept as an Ontology Element
+     */
+    @Override
+    public void delete(){
+        checkOntologyMutationAllowed();
+        boolean hasSubs = neighbours(Direction.IN, Schema.EdgeLabel.SUB).findAny().isPresent();
+        boolean hasInstances = currentShard().links().findAny().isPresent();
+
+        if(hasSubs || hasInstances){
+            throw GraphOperationException.typeCannotBeDeleted(getLabel());
+        } else {
+            //Force load of linked concepts whose caches need to be updated
+            //noinspection unchecked
+            cachedSuperType.get();
+
+            deleteNode();
+
+            //Update neighbouring caches
+            //noinspection unchecked
+            ((OntologyElementImpl<OntologyElement>) cachedSuperType.get()).deleteCachedDirectedSubType(getThis());
+
+            //Clear internal caching
+            txCacheClear();
+
+            //Clear Global Cache
+            vertex().graph().txCache().remove(this);
+        }
+    }
+
+    /**
      *
      * @return All the subs of this concept including itself
      */
