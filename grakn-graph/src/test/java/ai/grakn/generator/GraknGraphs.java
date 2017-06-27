@@ -377,16 +377,13 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     public static List<Concept> allConceptsFrom(GraknGraph graph) {
-        List<Concept> concepts = Lists.newArrayList(GraknGraphs.allTypesFrom(graph));
+        List<Concept> concepts = Lists.newArrayList(GraknGraphs.allOntologyElementsFrom(graph));
         concepts.addAll(allInstancesFrom(graph));
         return concepts;
     }
 
-    public static Collection<? extends Type> allTypesFrom(GraknGraph graph) {
-        Function<GraknGraph, ? extends Collection<? extends Type>> function = g -> g.admin().getMetaConcept().
-                subTypes().stream().
-                filter(t -> !t.isRoleType()).map(t -> (Type) t).
-                collect(Collectors.toSet());
+    public static Collection<? extends OntologyElement> allOntologyElementsFrom(GraknGraph graph) {
+        Function<GraknGraph, ? extends Collection<? extends OntologyElement>> function = g -> g.admin().getMetaConcept().subTypes();
         return CommonUtil.withImplicitConceptsVisible(graph, function);
     }
 

@@ -25,6 +25,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.OntologyElement;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -60,7 +61,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
-import static ai.grakn.generator.GraknGraphs.allTypesFrom;
+import static ai.grakn.generator.GraknGraphs.allOntologyElementsFrom;
 import static ai.grakn.generator.Methods.mockParamsOf;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static java.util.stream.Collectors.toSet;
@@ -140,7 +141,7 @@ public class GraknGraphPropertyTest {
     @Ignore // TODO: Reactivate this test when we figure out what to do about getType now returning {@link OntologyElement}
     @Property
     public void whenCallingGetTypeWithANonExistingTypeLabel_ItReturnsNull(@Open GraknGraph graph, TypeLabel typeLabel) {
-        Set<TypeLabel> allTypes = allTypesFrom(graph).stream().map(Type::getLabel).collect(toSet());
+        Set<TypeLabel> allTypes = allOntologyElementsFrom(graph).stream().map(OntologyElement::getLabel).collect(toSet());
         assumeThat(allTypes, not(hasItem(typeLabel)));
 
         assertNull(graph.getType(typeLabel));
@@ -261,8 +262,8 @@ public class GraknGraphPropertyTest {
         graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
-            assertTrue(concept.isType());
-            assertTrue(isMetaLabel(concept.asType().getLabel()));
+            assertTrue(concept.isOntologyElement());
+            assertTrue(isMetaLabel(concept.asOntologyElement().getLabel()));
             });
         graph.close();
     }
