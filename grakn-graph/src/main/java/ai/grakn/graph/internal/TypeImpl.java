@@ -213,13 +213,6 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
         return cachedDirectPlays.get();
     }
 
-    private <X extends Concept> Collection<X> filterImplicitStructures(Collection<X> types){
-        if (!vertex().graph().implicitConceptsVisible() && !types.isEmpty() && types.iterator().next().isOntologyElement()) {
-            return types.stream().filter(t -> !t.asOntologyElement().isImplicit()).collect(Collectors.toSet());
-        }
-        return types;
-    }
-
     /**
      * Deletes the concept as type
      */
