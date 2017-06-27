@@ -41,7 +41,7 @@ import java.util.Set;
 public abstract class AtomicBase implements Atomic {
 
     private final Var varName;
-    protected PatternAdmin atomPattern;
+    private PatternAdmin atomPattern;
     private ReasonerQuery parent = null;
 
     protected AtomicBase(VarPatternAdmin pattern, ReasonerQuery par) {

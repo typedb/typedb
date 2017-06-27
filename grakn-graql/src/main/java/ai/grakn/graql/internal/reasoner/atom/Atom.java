@@ -283,6 +283,7 @@ public abstract class Atom extends AtomicBase {
 
     /**
      * infers types (type, role types) fo the atom if applicable/possible
+     * @return either this atom if nothing could be inferred or a fresh atom with inferred types
      */
     public Atom inferTypes(){ return this; }
 

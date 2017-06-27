@@ -158,14 +158,18 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return priority;
     }
 
+    /**
+     * replace all atoms with inferrable types with their new instances with added types
+     */
     private void inferTypes() {
         Set<Atom> inferrableAtoms = atomSet.stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .collect(Collectors.toSet());
-        //atomSet.removeAll(inferrableAtoms);
         Set<Atom> inferredAtoms = inferrableAtoms.stream().map(Atom::inferTypes).collect(Collectors.toSet());
         inferrableAtoms.forEach(this::removeAtomic);
         inferredAtoms.forEach(this::addAtomic);
+        //Sets.difference(inferrableAtoms, inferredAtoms).forEach(this::removeAtomic);
+        //Sets.difference(inferredAtoms, inferrableAtoms).forEach(this::addAtomic);
     }
 
     public GraknGraph graph() {
