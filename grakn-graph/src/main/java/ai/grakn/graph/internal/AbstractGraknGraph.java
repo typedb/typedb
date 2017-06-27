@@ -31,6 +31,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
@@ -368,7 +369,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private VertexElement putVertex(TypeLabel label, Schema.BaseType baseType){
         VertexElement vertex;
-        ConceptImpl concept = getOntologyElement(convertToId(label));
+        ConceptImpl concept = getOntologyConcept(convertToId(label));
         if(concept == null) {
             vertex = addTypeVertex(getNextId(), label, baseType);
         } else {
@@ -534,13 +535,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             return getConcept(Schema.VertexProperty.ID, id.getValue());
         }
     }
-    private <T extends OntologyConcept> T getOntologyElement(TypeLabel label, Schema.BaseType baseType){
+    private <T extends OntologyConcept> T getOntologyConcept(TypeLabel label, Schema.BaseType baseType){
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
-        OntologyConcept ontologyConcept = buildOntologyElement(label, ()-> getOntologyElement(convertToId(label)));
+        OntologyConcept ontologyConcept = buildOntologyElement(label, ()-> getOntologyConcept(convertToId(label)));
         return validateOntologyElement(ontologyConcept, baseType, () -> null);
     }
-    <T extends OntologyConcept> T getOntologyElement(TypeId id){
+    <T extends OntologyConcept> T getOntologyConcept(TypeId id){
         if(!id.isValid()) return null;
         return getConcept(Schema.VertexProperty.TYPE_ID, id.getValue());
     }
@@ -570,72 +571,77 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends OntologyConcept> T getOntologyConcept(TypeLabel label) {
-        return getOntologyElement(label, Schema.BaseType.ONTOLOGY_ELEMENT);
+        return getOntologyConcept(label, Schema.BaseType.ONTOLOGY_ELEMENT);
+    }
+
+    @Override
+    public <T extends Type> T getType(TypeLabel label) {
+        return getOntologyConcept(label, Schema.BaseType.TYPE);
     }
 
     @Override
     public EntityType getEntityType(String label) {
-        return getOntologyElement(TypeLabel.of(label), Schema.BaseType.ENTITY_TYPE);
+        return getOntologyConcept(TypeLabel.of(label), Schema.BaseType.ENTITY_TYPE);
     }
 
     @Override
     public RelationType getRelationType(String label) {
-        return getOntologyElement(TypeLabel.of(label), Schema.BaseType.RELATION_TYPE);
+        return getOntologyConcept(TypeLabel.of(label), Schema.BaseType.RELATION_TYPE);
     }
 
     @Override
     public <V> ResourceType<V> getResourceType(String label) {
-        return getOntologyElement(TypeLabel.of(label), Schema.BaseType.RESOURCE_TYPE);
+        return getOntologyConcept(TypeLabel.of(label), Schema.BaseType.RESOURCE_TYPE);
     }
 
     @Override
     public RoleType getRoleType(String label) {
-        return getOntologyElement(TypeLabel.of(label), Schema.BaseType.ROLE_TYPE);
+        return getOntologyConcept(TypeLabel.of(label), Schema.BaseType.ROLE_TYPE);
     }
 
     @Override
     public RuleType getRuleType(String label) {
-        return getOntologyElement(TypeLabel.of(label), Schema.BaseType.RULE_TYPE);
+        return getOntologyConcept(TypeLabel.of(label), Schema.BaseType.RULE_TYPE);
     }
 
     @Override
     public OntologyConcept getMetaConcept() {
-        return getOntologyElement(Schema.MetaSchema.THING.getId());
+        return getOntologyConcept(Schema.MetaSchema.THING.getId());
     }
 
     @Override
     public RelationType getMetaRelationType() {
-        return getOntologyElement(Schema.MetaSchema.RELATION.getId());
+        return getOntologyConcept(Schema.MetaSchema.RELATION.getId());
     }
 
     @Override
     public RoleType getMetaRoleType() {
-        return getOntologyElement(Schema.MetaSchema.ROLE.getId());
+        return getOntologyConcept(Schema.MetaSchema.ROLE.getId());
     }
 
     @Override
     public ResourceType getMetaResourceType() {
-        return getOntologyElement(Schema.MetaSchema.RESOURCE.getId());
+        return getOntologyConcept(Schema.MetaSchema.RESOURCE.getId());
     }
 
     @Override
     public EntityType getMetaEntityType() {
-        return getOntologyElement(Schema.MetaSchema.ENTITY.getId());
+        return getOntologyConcept(Schema.MetaSchema.ENTITY.getId());
     }
 
     @Override
     public RuleType getMetaRuleType(){
-        return getOntologyElement(Schema.MetaSchema.RULE.getId());
+        return getOntologyConcept(Schema.MetaSchema.RULE.getId());
     }
 
     @Override
     public RuleType getMetaRuleInference() {
-        return getOntologyElement(Schema.MetaSchema.INFERENCE_RULE.getId());
+        return getOntologyConcept(Schema.MetaSchema.INFERENCE_RULE.getId());
     }
 
     @Override
     public RuleType getMetaRuleConstraint() {
-        return getOntologyElement(Schema.MetaSchema.CONSTRAINT_RULE.getId());
+        return getOntologyConcept(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
     void putShortcutEdge(ThingImpl toInstance, RelationImpl fromRelation, RoleTypeImpl roleType){

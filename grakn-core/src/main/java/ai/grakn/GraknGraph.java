@@ -27,6 +27,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
@@ -212,6 +213,18 @@ public interface GraknGraph extends AutoCloseable{
      */
     @CheckReturnValue
     <T extends OntologyConcept> T getOntologyConcept(TypeLabel label);
+
+    /**
+     * Get the {@link Type} with the label provided, if it exists.
+     *
+     * @param label A unique label which identifies the {@link Type} in the graph.
+     * @return The {@link Type} with the provided label or null if no such {@link Type} exists.
+     *
+     * @throws GraphOperationException if the graph is closed
+     * @throws ClassCastException if the type is not an instance of {@link T}
+     */
+    @CheckReturnValue
+    <T extends Type> T getType(TypeLabel label);
 
     /**
      * Get all Resources holding the value provided, if they exist.
