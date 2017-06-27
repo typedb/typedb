@@ -92,6 +92,7 @@ public class MigrationCLI {
         // Check that engine is running
         if(!Client.serverIsRunning(options.getUri())){
             System.err.println(COULD_NOT_CONNECT);
+            return Optional.empty();
         }
 
         return Optional.of(options);

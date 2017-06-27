@@ -138,8 +138,7 @@ public class SQLMigratorMainTest {
                 "-pass", PASS, "-user", USER, "-k", keyspace,
                 "-c", configurationFile);
 
-        graph = factory.open(GraknTxType.WRITE); //Reopen transaction
-        assertPokemonGraphCorrect(graph);
+        assertPokemonGraphCorrect(factory);
     }
 
     private void run(String... args){
@@ -148,8 +147,7 @@ public class SQLMigratorMainTest {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
-        graph = factory.open(GraknTxType.WRITE); //Reopen transaction
-        assertPetGraphCorrect(graph);
+        assertPetGraphCorrect(factory);
     }
 
 }

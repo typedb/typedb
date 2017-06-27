@@ -69,8 +69,7 @@ public class SQLMigratorTest {
         try(Connection connection = setupExample(factory, "pets")){
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.open(GraknTxType.WRITE);
-            assertPetGraphCorrect(graph);
+            assertPetGraphCorrect(factory);
         }
     }
 
@@ -104,8 +103,7 @@ public class SQLMigratorTest {
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.open(GraknTxType.WRITE);
-            assertPokemonGraphCorrect(graph);
+            assertPokemonGraphCorrect(factory);
         }
     }
 
@@ -142,8 +140,7 @@ public class SQLMigratorTest {
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.open(GraknTxType.WRITE);
-            assertPokemonGraphCorrect(graph);
+            assertPokemonGraphCorrect(factory);
         }
     }
 
