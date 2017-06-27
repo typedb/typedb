@@ -116,13 +116,6 @@ public class EntityTypeTest extends GraphTestBase{
     }
 
     @Test
-    public void whenGettingARoleTypeAsType_TheTypeIsReturned(){
-        RoleType test1 = graknGraph.putRoleType("test");
-        Type test2 = graknGraph.getType(TypeLabel.of("test"));
-        assertEquals(test1, test2);
-    }
-
-    @Test
     public void whenGettingTheRolesPlayedByType_ReturnTheRoles() throws Exception{
         RoleType monster = graknGraph.putRoleType("monster");
         RoleType animal = graknGraph.putRoleType("animal");
