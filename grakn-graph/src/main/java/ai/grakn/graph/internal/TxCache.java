@@ -210,8 +210,8 @@ class TxCache {
         modifiedResources.remove(concept);
 
         conceptCache.remove(concept.getId());
-        if (concept.isType()) {
-            TypeLabel label = ((TypeImpl) concept).getLabel();
+        if (concept.isOntologyElement()) {
+            TypeLabel label = ((OntologyElementImpl) concept).getLabel();
             typeCache.remove(label);
             labelCache.remove(label);
         }

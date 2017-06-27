@@ -63,8 +63,9 @@ public class RoleTypeTest extends GraphTestBase {
 
     @Test
     public void whenDeletingRoleTypeWithTypesWhichCanPlayIt_Throw(){
-        assertNotNull(graknGraph.getRoleType("RoleType"));
-        graknGraph.getRoleType("RoleType").delete();
+        RoleType foundType = graknGraph.getRoleType("RoleType");
+        assertNotNull(foundType);
+        foundType.delete();
         assertNull(graknGraph.getRoleType("RoleType"));
 
         RoleType roleType = graknGraph.putRoleType("New Role Type");
