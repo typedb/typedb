@@ -32,6 +32,7 @@ import ai.grakn.exception.GraknBackendException;
 import ai.grakn.test.DistributionContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
@@ -68,7 +69,7 @@ public class GraknEngineFailoverIT {
     @BeforeClass
     public static void getStorage() {
         jedisPool = new JedisPool();
-        storage = RedisTaskStorage.create(jedisPool);
+        storage = RedisTaskStorage.create(jedisPool, new MetricRegistry());
     }
 
     @AfterClass

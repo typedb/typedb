@@ -53,6 +53,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import static java.util.stream.Collectors.toList;
@@ -100,7 +101,7 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    public void afterRunning_AllNonFailingTasksAreRecordedAsCompleted(List<TaskState> tasks, TaskManager manager) {
+    public void afterRunning_AllNonFailingTasksAreRecordedAsCompleted(Set<TaskState> tasks, TaskManager manager) {
         // Schedule tasks
         tasks.forEach((taskState) -> manager.addTask(taskState, configuration(taskState)));
 
@@ -116,7 +117,7 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    public void afterRunning_AllFailingTasksAreRecordedAsFailed(List<TaskState> tasks, TaskManager manager) {
+    public void afterRunning_AllFailingTasksAreRecordedAsFailed(Set<TaskState> tasks, TaskManager manager) {
         // Schedule tasks
         tasks.forEach((taskState) -> manager.addTask(taskState, configuration(taskState)));
 

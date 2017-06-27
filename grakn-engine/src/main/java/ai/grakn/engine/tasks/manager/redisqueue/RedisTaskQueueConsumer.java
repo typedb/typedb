@@ -99,9 +99,7 @@ public class RedisTaskQueueConsumer implements Runnable {
             try {
                 runningTask = taskState.taskClass().newInstance();
                 runningTask.initialize(saveCheckpoint(taskState, redisTaskManager.storage()),
-                        taskConfiguration, redisTaskManager,
-                                config,
-                                redisCountStorage, factory, lockProvider, metricRegistry);
+                        taskConfiguration, redisTaskManager, config, redisCountStorage, factory, lockProvider, metricRegistry);
                 metricRegistry.meter(name(RedisTaskQueueConsumer.class, "initialized")).mark();
                 boolean completed;
                 if (taskShouldResume(task)) {
@@ -111,7 +109,7 @@ public class RedisTaskQueueConsumer implements Runnable {
                     //Mark as running
                     taskState.markRunning(engineId);
                     redisTaskManager.storage().newState(taskState);
-                    LOG.debug("{}\tmarked as running", task);
+                    LOG.debug("{} marked as running", task);
                     completed = runningTask.start();
                     metricRegistry.meter(name(RedisTaskQueueConsumer.class, "run")).mark();
                 }
@@ -127,7 +125,7 @@ public class RedisTaskQueueConsumer implements Runnable {
                 redisTaskManager.storage().updateState(taskState);
             } catch (Throwable throwable) {
                 taskState.markFailed(throwable);
-                LOG.error("{}\tfailed", task.getTaskState().getId(), throwable);
+                LOG.error("{} could not be completed successfully", task.getTaskState().getId(), throwable);
             } finally {
                 redisTaskManager.storage().updateState(taskState);
                 context.stop();

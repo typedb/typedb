@@ -74,7 +74,7 @@ public class RedisTaskManager implements TaskManager {
         this.engineId = engineId;
         this.config = config;
         this.factory = factory;
-        this.redisTaskStorage = RedisTaskStorage.create(jedisPool);
+        this.redisTaskStorage = RedisTaskStorage.create(jedisPool, metricRegistry);
         this.redisTaskQueue = new RedisTaskQueue(jedisPool, distributedLockClient, metricRegistry);
         this.threads = threads;
         this.consumerExecutor = Executors.newFixedThreadPool(threads);

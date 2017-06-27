@@ -36,10 +36,11 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -85,7 +86,8 @@ public class GraknEngineServerIT {
     public void whenSendingTasksToTwoEngines_TheyAllComplete(
             List<TaskState> tasks1, List<TaskState> tasks2) {
 
-        List<TaskState> allTasks = Lists.newArrayList(tasks1);
+        Set<TaskState> allTasks = new HashSet<>();
+        allTasks.addAll(tasks1);
         allTasks.addAll(tasks2);
 
         tasks1.forEach((taskState) -> engine1.getTaskManager().addTask(taskState, configuration(taskState)));

@@ -25,6 +25,10 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.GraknBackendException;
+import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import java.util.Base64;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -45,15 +49,19 @@ import redis.clients.util.Pool;
 public class RedisTaskStorage implements TaskStateStorage {
 
     private static final Logger LOG = LoggerFactory.getLogger(RedisTaskStorage.class);
+    private final Timer updateTimer;
+    private final Timer getTimer;
 
     private Pool<Jedis> redis;
 
-    private RedisTaskStorage(Pool<Jedis> redis) {
+    private RedisTaskStorage(Pool<Jedis> redis, MetricRegistry metricRegistry) {
         this.redis = redis;
+        this.updateTimer = metricRegistry.timer(name(RedisTaskStorage.class, "update"));
+        this.getTimer = metricRegistry.timer(name(RedisTaskStorage.class, "get"));
     }
 
-    public static RedisTaskStorage create(Pool<Jedis> jedisPool) {
-        return new RedisTaskStorage(jedisPool);
+    public static RedisTaskStorage create(Pool<Jedis> jedisPool, MetricRegistry metricRegistry) {
+        return new RedisTaskStorage(jedisPool, metricRegistry);
     }
 
     @Override
@@ -64,7 +72,7 @@ public class RedisTaskStorage implements TaskStateStorage {
 
     @Override
     public Boolean updateState(TaskState state) {
-        try(Jedis jedis = redis.getResource()){
+        try(Jedis jedis = redis.getResource(); Context ignore = updateTimer.time()){
             // TODO find a better way to represent the state
             String value = state.getId().getValue();
             LOG.debug("Updating state {}", value);
@@ -77,7 +85,7 @@ public class RedisTaskStorage implements TaskStateStorage {
     @Override
     @Nullable
     public TaskState getState(TaskId id) throws GraknBackendException {
-        try(Jedis jedis = redis.getResource()){
+        try(Jedis jedis = redis.getResource(); Context ignore = getTimer.time()){
             String value = jedis.get(id.getValue());
             if (value != null) {
                 return (TaskState) deserialize(Base64.getDecoder().decode(value));
