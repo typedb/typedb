@@ -52,8 +52,6 @@ import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -66,8 +64,6 @@ import java.util.stream.StreamSupport;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilterWithInverse;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getListPermutations;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getUnifiersFromPermutations;
 
 /**
  *
@@ -233,24 +229,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .map(ans -> ans.setExplanation(answer.getExplanation()));
     }
 
-    private Set<Unifier> getPermutationUnifiers(Atom headAtom) {
-        if (!(atom.isRelation() && headAtom.isRelation())) return Collections.singleton(new UnifierImpl());
-
-        //if atom is match all atom, add type from rule head and find unmapped roles
-        Relation relAtom = atom.getType() == null ?
-                ((Relation) AtomicFactory.create(atom, atom.getParentQuery())).addType(headAtom.getType()) :
-                (Relation) atom;
-        List<Var> permuteVars = new ArrayList<>(relAtom.getUnmappedRolePlayers());
-        if (!(atom.isRelation() && headAtom.isRelation()) || permuteVars.isEmpty()) return Collections.singleton(new UnifierImpl());
-
-        List<List<Var>> varPermutations = getListPermutations(
-                new ArrayList<>(permuteVars)).stream()
-                .filter(l -> !l.isEmpty())
-                .collect(Collectors.toList()
-                );
-        return getUnifiersFromPermutations(permuteVars, varPermutations);
-    }
-
     private Stream<Answer> getIdPredicateAnswerStream(Stream<Answer> stream){
         Answer idPredicateAnswer = getSubstitution();
         return stream.map(answer -> {
@@ -261,7 +239,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private Stream<Answer> getFilteredAnswerStream(Stream<Answer> answers){
         Set<Var> vars = getVarNames();
-        Set<TypeAtom> mappedTypeConstraints = atom.getMappedTypeConstraints();
+        Set<TypeAtom> mappedTypeConstraints = atom.getSpecificTypeConstraints();
         return getIdPredicateAnswerStream(answers)
                 .filter(a -> entityTypeFilter(a, mappedTypeConstraints))
                 .map(a -> a. filterVars(vars));
@@ -391,7 +369,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     /**
-     * @return iterator of all rules applicable to this atomic query including permuted cases when the role types are blank
+     * @return iterator of all rules applicable to this atomic query including permuted cases when the role types are meta roles
      */
     Iterator<RuleTuple> getRuleIterator(){
         return getAtom().getApplicableRules().stream()
@@ -399,7 +377,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                     r.rewriteToUserDefined(getAtom());
                     Unifier ruleUnifier = r.getUnifier(getAtom());
                     Unifier ruleUnifierInv = ruleUnifier.inverse();
-                    return getPermutationUnifiers(r.getHead().getAtom()).stream()
+                    return getAtom().getPermutationUnifiers(r.getHead().getAtom()).stream()
                             .map(permutationUnifier ->
                                     new RuleTuple(new InferenceRule(r)
                                             .propagateConstraints(getAtom(), permutationUnifier.combine(ruleUnifierInv)),

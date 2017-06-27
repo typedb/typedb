@@ -29,7 +29,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.Unifier;
@@ -39,7 +38,6 @@ import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -66,7 +64,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesDisjoint;
@@ -294,8 +291,7 @@ public class Relation extends TypeAtom {
         Relation headAtom = (Relation) ruleAtom;
         Type type = getType();
 
-        Relation atomWithType = type == null?
-                ((Relation) AtomicFactory.create(this, this.getParentQuery())).addType(headAtom.getType()) : this;
+        Relation atomWithType = type == null? this.addType(headAtom.getType()) : this;
         return atomWithType.isRuleApplicableViaAtom(headAtom);
     }
 
@@ -338,21 +334,17 @@ public class Relation extends TypeAtom {
         return roleTypes;
     }
 
+    /**
+     * @param type to be added to this relation
+     * @return new relation with specified type
+     */
     public Relation addType(Type type) {
-        //typeId = type.getId();
         ConceptId typeId = type.getId();
         Var typeVariable = getValueVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getValueVariable();
-        setPredicate(new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery()));
 
         VarPatternAdmin newPattern = getPattern().asVar().isa(typeVariable).admin();
         IdPredicate newPredicate = new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery());
-        /*
-        atomPattern = atomPattern.asVar().isa(typeVariable).admin();
-        setValueVariable(typeVariable);
 
-        //reset applicable rules
-        applicableRules = null;
-        */
         return new Relation(newPattern, newPredicate, this.getParentQuery());
     }
 
@@ -454,7 +446,7 @@ public class Relation extends TypeAtom {
         return vars;
     }
 
-    private Set<Var> getMappedRolePlayers() {
+    private Set<Var> getSpecificRolePlayers() {
         return getRoleVarMap().entries().stream()
                 .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().getLabel()))
                 .map(Map.Entry::getValue)
@@ -464,24 +456,15 @@ public class Relation extends TypeAtom {
     /**
      * @return set constituting the role player var names that do not have a specified role type
      */
-    public Set<Var> getUnmappedRolePlayers() {
+    private Set<Var> getNonSpecificRolePlayers() {
         Set<Var> unmappedVars = getRolePlayers();
-        unmappedVars.removeAll(getMappedRolePlayers());
+        unmappedVars.removeAll(getSpecificRolePlayers());
         return unmappedVars;
     }
 
     @Override
-    public Set<IdPredicate> getUnmappedIdPredicates() {
-        Set<Var> unmappedVars = getUnmappedRolePlayers();
-        //filter by checking substitutions
-        return getIdPredicates().stream()
-                .filter(pred -> unmappedVars.contains(pred.getVarName()))
-                .collect(toSet());
-    }
-
-    @Override
-    public Set<TypeAtom> getMappedTypeConstraints() {
-        Set<Var> mappedVars = getMappedRolePlayers();
+    public Set<TypeAtom> getSpecificTypeConstraints() {
+        Set<Var> mappedVars = getSpecificRolePlayers();
         return getTypeConstraints().stream()
                 .filter(t -> mappedVars.contains(t.getVarName()))
                 .filter(t -> Objects.nonNull(t.getType()))
@@ -489,24 +472,19 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public Set<TypeAtom> getUnmappedTypeConstraints() {
-        Set<Var> unmappedVars = getUnmappedRolePlayers();
-        return getTypeConstraints().stream()
-                .filter(t -> unmappedVars.contains(t.getVarName()))
-                .filter(t -> Objects.nonNull(t.getType()))
-                .collect(toSet());
-    }
-
-    @Override
     public Set<Unifier> getPermutationUnifiers(Atom headAtom) {
-        if (!headAtom.isRelation()) return new HashSet<>();
-        List<Var> permuteVars = new ArrayList<>();
-        //if atom is match all atom, add type from rule head and find unmapped roles
-        Relation relAtom = getValueVariable().getValue().isEmpty() ?
-                ((Relation) AtomicFactory.create(this, getParentQuery())).addType(headAtom.getType()) : this;
-        relAtom.getUnmappedRolePlayers().forEach(permuteVars::add);
+        if (!headAtom.isRelation()) return Collections.singleton(new UnifierImpl());
 
-        List<List<Var>> varPermutations = getListPermutations(new ArrayList<>(permuteVars));
+        //if this atom is a match all atom, add type from rule head and find unmapped roles
+        Relation relAtom = getValueVariable().getValue().isEmpty() ? this.addType(headAtom.getType()) : this;
+        List<Var> permuteVars = new ArrayList<>(relAtom.getNonSpecificRolePlayers());
+        if (permuteVars.isEmpty()) return Collections.singleton(new UnifierImpl());
+
+        List<List<Var>> varPermutations = getListPermutations(
+                new ArrayList<>(permuteVars)).stream()
+                .filter(l -> !l.isEmpty())
+                .collect(Collectors.toList()
+                );
         return getUnifiersFromPermutations(permuteVars, varPermutations);
     }
 
