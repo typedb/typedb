@@ -97,4 +97,16 @@ public class NoescpMacroTest {
 
         assertParseEquals(template, data, expected);
     }
+
+    @Test
+    public void whenUsingNoescpMacroInVariableConcatenatedWithString_ResultIsAsExpected(){
+        String template = "insert $@noescp(<pokemon_id>)-pokemon isa pokemon;\n$@noescp(<type_id>)-type isa pokemon-type;";
+        String expected = "insert $124-pokemon isa pokemon;\n$124-type isa pokemon-type;";
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("pokemon_id", 124);
+        data.put("type_id", 124);
+
+        assertParseEquals(template, data, expected);
+    }
 }
