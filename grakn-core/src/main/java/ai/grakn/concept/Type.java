@@ -42,7 +42,7 @@ import java.util.Collection;
  * @author fppt
  *
  */
-public interface Type extends OntologyElement {
+public interface Type extends OntologyConcept {
     //------------------------------------- Modifiers ----------------------------------
     // TODO: Describe behaviour when setting a type with direct instances as abstract
     /**

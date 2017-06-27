@@ -48,7 +48,7 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-class RoleTypeImpl extends OntologyElementImpl<RoleType> implements RoleType{
+class RoleTypeImpl extends OntologyConceptImpl<RoleType> implements RoleType{
     private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
     private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 

@@ -21,7 +21,7 @@ package ai.grakn;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.OntologyElement;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -213,7 +213,7 @@ public interface GraknGraph extends AutoCloseable{
      */
     @CheckReturnValue
     //TODO: Refactor this to getOntologyElement maybe?
-    <T extends OntologyElement> T getType(TypeLabel label);
+    <T extends OntologyConcept> T getType(TypeLabel label);
 
     /**
      * Get all Resources holding the value provided, if they exist.

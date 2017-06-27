@@ -19,7 +19,7 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.OntologyElement;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
@@ -39,7 +39,7 @@ import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.stream.Collectors.toSet;
 
-public abstract class AbstractTypeGenerator<T extends OntologyElement> extends FromGraphGenerator<T> {
+public abstract class AbstractTypeGenerator<T extends OntologyConcept> extends FromGraphGenerator<T> {
 
     private Optional<Boolean> meta = Optional.empty();
     private Optional<Boolean> includeAbstract = Optional.empty();

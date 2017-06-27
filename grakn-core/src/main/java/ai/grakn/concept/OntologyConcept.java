@@ -36,7 +36,7 @@ import java.util.Collection;
  *
  * @author fppt
  */
-public interface OntologyElement extends Concept {
+public interface OntologyConcept extends Concept {
     //------------------------------------- Accessors ---------------------------------
     /**
      * Returns the unique id of this Type.
@@ -60,7 +60,7 @@ public interface OntologyElement extends Concept {
      * @return The direct super of this concept
      */
     @CheckReturnValue
-    OntologyElement superType();
+    OntologyConcept superType();
 
     /**
      * Get all indirect subs of this concept.
@@ -70,7 +70,7 @@ public interface OntologyElement extends Concept {
      * @return All the indirect sub-types of this Type
      */
     @CheckReturnValue
-    Collection<? extends OntologyElement> subTypes();
+    Collection<? extends OntologyConcept> subTypes();
 
     /**
      * Return whether the Ontology Element was created implicitly.

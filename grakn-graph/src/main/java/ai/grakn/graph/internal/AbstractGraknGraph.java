@@ -24,7 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.OntologyElement;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -418,9 +418,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
-    private <T extends OntologyElementImpl> T putOntologyElement(TypeLabel label, Schema.BaseType baseType, Function<VertexElement, T> factory){
+    private <T extends OntologyConceptImpl> T putOntologyElement(TypeLabel label, Schema.BaseType baseType, Function<VertexElement, T> factory){
         checkOntologyMutationAllowed();
-        OntologyElementImpl type = buildOntologyElement(label, () -> factory.apply(putVertex(label, baseType)));
+        OntologyConceptImpl type = buildOntologyElement(label, () -> factory.apply(putVertex(label, baseType)));
 
         T finalType = validateOntologyElement(type, baseType, () -> {
             throw PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.TYPE_LABEL, label);
@@ -452,7 +452,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      *
      * @return The type which was either cached or built via a DB read or write
      */
-    private OntologyElementImpl buildOntologyElement(TypeLabel label, Supplier<OntologyElementImpl> dbBuilder){
+    private OntologyConceptImpl buildOntologyElement(TypeLabel label, Supplier<OntologyConceptImpl> dbBuilder){
         if(txCache().isTypeCached(label)){
             return txCache().getCachedOntologyElement(label);
         } else {
@@ -534,13 +534,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             return getConcept(Schema.VertexProperty.ID, id.getValue());
         }
     }
-    private <T extends OntologyElement> T getOntologyElement(TypeLabel label, Schema.BaseType baseType){
+    private <T extends OntologyConcept> T getOntologyElement(TypeLabel label, Schema.BaseType baseType){
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
-        OntologyElement ontologyElement = buildOntologyElement(label, ()-> getOntologyElement(convertToId(label)));
-        return validateOntologyElement(ontologyElement, baseType, () -> null);
+        OntologyConcept ontologyConcept = buildOntologyElement(label, ()-> getOntologyElement(convertToId(label)));
+        return validateOntologyElement(ontologyConcept, baseType, () -> null);
     }
-    <T extends OntologyElement> T getOntologyElement(TypeId id){
+    <T extends OntologyConcept> T getOntologyElement(TypeId id){
         if(!id.isValid()) return null;
         return getConcept(Schema.VertexProperty.TYPE_ID, id.getValue());
     }
@@ -569,7 +569,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public <T extends OntologyElement> T getType(TypeLabel label) {
+    public <T extends OntologyConcept> T getType(TypeLabel label) {
         return getOntologyElement(label, Schema.BaseType.ONTOLOGY_ELEMENT);
     }
 
@@ -599,7 +599,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public OntologyElement getMetaConcept() {
+    public OntologyConcept getMetaConcept() {
         return getOntologyElement(Schema.MetaSchema.THING.getId());
     }
 

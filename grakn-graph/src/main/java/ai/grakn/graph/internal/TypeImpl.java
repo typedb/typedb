@@ -63,7 +63,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
  * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
  */
-class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> implements Type{
+class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
     private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));

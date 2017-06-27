@@ -53,12 +53,12 @@ public interface Concept extends Comparable<Concept>{
     //------------------------------------- Other ---------------------------------
 
     /**
-     * Return as a {@link OntologyElement} if the {@link Concept} is a {@link OntologyElement}.
+     * Return as a {@link OntologyConcept} if the {@link Concept} is a {@link OntologyConcept}.
      *
-     * @return A {@link OntologyElement} if the {@link Concept} is a {@link OntologyElement}
+     * @return A {@link OntologyConcept} if the {@link Concept} is a {@link OntologyConcept}
      */
     @CheckReturnValue
-    OntologyElement asOntologyElement();
+    OntologyConcept asOntologyElement();
 
     /**
      * Return as a {@link Type} if the {@link Concept} is a {@link Type}.
@@ -148,9 +148,9 @@ public interface Concept extends Comparable<Concept>{
     Rule asRule();
 
     /**
-     * Determine if the {@link Concept} is a {@link OntologyElement}
+     * Determine if the {@link Concept} is a {@link OntologyConcept}
      *
-     * @return true if the{@link Concept} concept is a {@link OntologyElement}
+     * @return true if the{@link Concept} concept is a {@link OntologyConcept}
      */
     @CheckReturnValue
     boolean isOntologyElement();

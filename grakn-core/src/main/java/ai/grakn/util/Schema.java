@@ -20,7 +20,7 @@ package ai.grakn.util;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.OntologyElement;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -117,7 +117,7 @@ public final class Schema {
      */
     public enum BaseType {
         //Ontology Elements
-        ONTOLOGY_ELEMENT(OntologyElement.class),
+        ONTOLOGY_ELEMENT(OntologyConcept.class),
         TYPE(Type.class),
         ROLE_TYPE(RoleType.class),
         RELATION_TYPE(RelationType.class),

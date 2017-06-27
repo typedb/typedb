@@ -20,7 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.OntologyElement;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeId;
@@ -55,7 +55,7 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType} or {@link RelationType} or {@link RoleType}
  */
-abstract class OntologyElementImpl<T extends OntologyElement> extends ConceptImpl implements OntologyElement {
+abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImpl implements OntologyConcept {
     private final TypeLabel cachedLabel;
     private final TypeId cachedLabelId;
 
@@ -63,18 +63,18 @@ abstract class OntologyElementImpl<T extends OntologyElement> extends ConceptImp
     private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
     private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
-    OntologyElementImpl(VertexElement vertexElement) {
+    OntologyConceptImpl(VertexElement vertexElement) {
         super(vertexElement);
         cachedLabel = TypeLabel.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
         cachedLabelId = TypeId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
     }
 
-    OntologyElementImpl(VertexElement vertexElement, T superType) {
+    OntologyConceptImpl(VertexElement vertexElement, T superType) {
         this(vertexElement);
         if(superType() == null) superType(superType);
     }
 
-    OntologyElementImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
+    OntologyConceptImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
         this(vertexElement, superType);
         vertex().propertyImmutable(Schema.VertexProperty.IS_IMPLICIT, isImplicit, vertex().property(Schema.VertexProperty.IS_IMPLICIT), Function.identity());
         cachedIsImplicit.set(isImplicit);
@@ -171,7 +171,7 @@ abstract class OntologyElementImpl<T extends OntologyElement> extends ConceptImp
 
             //Update neighbouring caches
             //noinspection unchecked
-            ((OntologyElementImpl<OntologyElement>) cachedSuperType.get()).deleteCachedDirectedSubType(getThis());
+            ((OntologyConceptImpl<OntologyConcept>) cachedSuperType.get()).deleteCachedDirectedSubType(getThis());
 
             //Clear internal caching
             txCacheClear();
@@ -209,16 +209,16 @@ abstract class OntologyElementImpl<T extends OntologyElement> extends ConceptImp
     /**
      *
      * @param root The current Ontology Element
-     * @return All the sub children of the root. Effectively calls  the cache {@link OntologyElementImpl#cachedDirectSubTypes} recursively
+     * @return All the sub children of the root. Effectively calls  the cache {@link OntologyConceptImpl#cachedDirectSubTypes} recursively
      */
     @SuppressWarnings("unchecked")
-    private Set<T> nextSubLevel(OntologyElementImpl<T> root){
+    private Set<T> nextSubLevel(OntologyConceptImpl<T> root){
         Set<T> results = new HashSet<>();
         results.add((T) root);
 
         Set<T> children = root.cachedDirectSubTypes.get();
         for(T child: children){
-            results.addAll(nextSubLevel((OntologyElementImpl<T>) child));
+            results.addAll(nextSubLevel((OntologyConceptImpl<T>) child));
         }
 
         return results;
@@ -283,12 +283,12 @@ abstract class OntologyElementImpl<T extends OntologyElement> extends ConceptImp
             //Update the sub types of the old super type
             if(oldSuperType != null) {
                 //noinspection unchecked - Casting is needed to access {deleteCachedDirectedSubTypes} method
-                ((OntologyElementImpl<T>) oldSuperType).deleteCachedDirectedSubType(getThis());
+                ((OntologyConceptImpl<T>) oldSuperType).deleteCachedDirectedSubType(getThis());
             }
 
             //Add this as the subtype to the supertype
             //noinspection unchecked - Casting is needed to access {addCachedDirectSubTypes} method
-            ((OntologyElementImpl<T>) newSuperType).addCachedDirectSubType(getThis());
+            ((OntologyConceptImpl<T>) newSuperType).addCachedDirectSubType(getThis());
 
             //Track any existing data if there is some
             trackSuperChange();
@@ -304,8 +304,8 @@ abstract class OntologyElementImpl<T extends OntologyElement> extends ConceptImp
 
     private boolean superLoops(){
         //Check For Loop
-        HashSet<OntologyElement> foundTypes = new HashSet<>();
-        OntologyElement currentSuperType = superType();
+        HashSet<OntologyConcept> foundTypes = new HashSet<>();
+        OntologyConcept currentSuperType = superType();
         while (currentSuperType != null){
             foundTypes.add(currentSuperType);
             currentSuperType = currentSuperType.superType();

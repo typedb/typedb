@@ -25,7 +25,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.OntologyElement;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -138,10 +138,10 @@ public class GraknGraphPropertyTest {
         assertEquals(type, graph.getType(typeLabel));
     }
 
-    @Ignore // TODO: Reactivate this test when we figure out what to do about getType now returning {@link OntologyElement}
+    @Ignore // TODO: Reactivate this test when we figure out what to do about getType now returning {@link OntologyConcept}
     @Property
     public void whenCallingGetTypeWithANonExistingTypeLabel_ItReturnsNull(@Open GraknGraph graph, TypeLabel typeLabel) {
-        Set<TypeLabel> allTypes = allOntologyElementsFrom(graph).stream().map(OntologyElement::getLabel).collect(toSet());
+        Set<TypeLabel> allTypes = allOntologyElementsFrom(graph).stream().map(OntologyConcept::getLabel).collect(toSet());
         assumeThat(allTypes, not(hasItem(typeLabel)));
 
         assertNull(graph.getType(typeLabel));

@@ -37,7 +37,7 @@ import java.util.Collection;
  * @author fppt
  *
  */
-public interface RoleType extends OntologyElement {
+public interface RoleType extends OntologyConcept {
     //------------------------------------- Modifiers ----------------------------------
 
     /**

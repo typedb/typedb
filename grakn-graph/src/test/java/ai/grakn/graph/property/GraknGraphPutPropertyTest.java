@@ -21,7 +21,7 @@ package ai.grakn.graph.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.OntologyElement;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -66,20 +66,20 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingAnyPutMethod_CreateAnOntologyElementWithTheGivenName(
             @Open GraknGraph graph,
-            @Unused TypeLabel typeLabel, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeLabel, OntologyElement> putOntologyElement) {
-        OntologyElement type = putOntologyElement.apply(graph, typeLabel);
+            @Unused TypeLabel typeLabel, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeLabel, OntologyConcept> putOntologyElement) {
+        OntologyConcept type = putOntologyElement.apply(graph, typeLabel);
         assertEquals(typeLabel, type.getLabel());
     }
 
     @Property
     public void whenCallingAnyPutTypeMethod_CreateATypeWithDefaultProperties(
             @Open GraknGraph graph,
-            @Unused TypeLabel typeLabel, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeLabel, OntologyElement> putOntologyElement) {
-        OntologyElement ontologyElement = putOntologyElement.apply(graph, typeLabel);
+            @Unused TypeLabel typeLabel, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeLabel, OntologyConcept> putOntologyElement) {
+        OntologyConcept ontologyConcept = putOntologyElement.apply(graph, typeLabel);
 
-        assertThat("Type should only have one sub-type: itself", ontologyElement.subTypes(), contains(ontologyElement));
-        if(ontologyElement.isType()) {
-            Type type = ontologyElement.asType();
+        assertThat("Type should only have one sub-type: itself", ontologyConcept.subTypes(), contains(ontologyConcept));
+        if(ontologyConcept.isType()) {
+            Type type = ontologyConcept.asType();
             assertThat("Type should not play any roles", type.plays(), empty());
             assertThat("Type should not have any scopes", type.scopes(), empty());
             assertFalse("Type should not be abstract", type.isAbstract());

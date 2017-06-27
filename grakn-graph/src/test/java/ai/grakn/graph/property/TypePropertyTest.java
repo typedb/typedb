@@ -20,7 +20,7 @@
 package ai.grakn.graph.property;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.OntologyElement;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -187,9 +187,9 @@ public class TypePropertyTest {
 
     @Property
     public void whenAnOntologyElementHasADirectSuper_ItIsADirectSubOfThatSuper(
-            @Open GraknGraph graph, @FromGraph OntologyElement ontologyElement) {
-        OntologyElement superType = ontologyElement.superType();
-        assertThat(directSubs(graph, superType), hasItem(ontologyElement));
+            @Open GraknGraph graph, @FromGraph OntologyConcept ontologyConcept) {
+        OntologyConcept superType = ontologyConcept.superType();
+        assertThat(directSubs(graph, superType), hasItem(ontologyConcept));
     }
 
     @Property

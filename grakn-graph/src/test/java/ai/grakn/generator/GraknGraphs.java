@@ -26,7 +26,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.OntologyElement;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -274,7 +274,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary(thing, "resource", resource);
             },
             () -> {
-                OntologyElement type = ontologyElement();
+                OntologyConcept type = ontologyElement();
                 Thing thing = instance();
                 //TODO: Clean this up
                 if(type instanceof Type) {
@@ -318,7 +318,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return gen().make(TypeLabels.class, gen().make(MetasyntacticStrings.class)).generate(random, status);
     }
 
-    private OntologyElement ontologyElement() {
+    private OntologyConcept ontologyElement() {
         return random.choose(graph.admin().getMetaConcept().subTypes());
     }
 
@@ -382,8 +382,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return concepts;
     }
 
-    public static Collection<? extends OntologyElement> allOntologyElementsFrom(GraknGraph graph) {
-        Function<GraknGraph, ? extends Collection<? extends OntologyElement>> function = g -> g.admin().getMetaConcept().subTypes();
+    public static Collection<? extends OntologyConcept> allOntologyElementsFrom(GraknGraph graph) {
+        Function<GraknGraph, ? extends Collection<? extends OntologyConcept>> function = g -> g.admin().getMetaConcept().subTypes();
         return CommonUtil.withImplicitConceptsVisible(graph, function);
     }
 

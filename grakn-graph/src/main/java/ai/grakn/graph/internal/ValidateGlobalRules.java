@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.OntologyElement;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
@@ -191,7 +191,7 @@ class ValidateGlobalRules {
 
         Collection<RoleType> superRelates = superRelationType.relates();
         Collection<RoleType> relates = relationType.relates();
-        Set<TypeLabel> relatesLabels = relates.stream().map(OntologyElement::getLabel).collect(Collectors.toSet());
+        Set<TypeLabel> relatesLabels = relates.stream().map(OntologyConcept::getLabel).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationTypes is the sub of a role which is in the relates of it's supers

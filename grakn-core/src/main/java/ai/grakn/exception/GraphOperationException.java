@@ -20,7 +20,7 @@ package ai.grakn.exception;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.OntologyElement;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -109,7 +109,7 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when setting {@code superType} as the super type of {@code type} and a loop is created
      */
-    public static GraphOperationException loopCreated(OntologyElement type, OntologyElement superElement){
+    public static GraphOperationException loopCreated(OntologyConcept type, OntologyConcept superElement){
         throw new GraphOperationException(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(type.getLabel(), superElement.getLabel()));
     }
 

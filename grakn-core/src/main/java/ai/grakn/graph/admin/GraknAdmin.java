@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.OntologyElement;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -78,7 +78,7 @@ public interface GraknAdmin {
      * @return The meta type -> type.
      */
     @CheckReturnValue
-    OntologyElement getMetaConcept();
+    OntologyConcept getMetaConcept();
 
     /**
      * Get the root of all Relation Types.

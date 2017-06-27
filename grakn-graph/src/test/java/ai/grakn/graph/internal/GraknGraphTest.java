@@ -6,7 +6,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.OntologyElement;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -128,10 +128,10 @@ public class GraknGraphTest extends GraphTestBase {
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.READ);
-        Collection<? extends OntologyElement> types = graknGraph.getMetaConcept().subTypes();
+        Collection<? extends OntologyConcept> types = graknGraph.getMetaConcept().subTypes();
         graknGraph.abort();
 
-        for (OntologyElement type : graknGraph.getGraphCache().getCachedTypes().values()) {
+        for (OntologyConcept type : graknGraph.getGraphCache().getCachedTypes().values()) {
             assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", types.contains(type));
         }
     }
@@ -240,7 +240,7 @@ public class GraknGraphTest extends GraphTestBase {
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         //Check cache is in good order
-        Collection<OntologyElement> cachedValues = graknGraph.getGraphCache().getCachedTypes().values();
+        Collection<OntologyConcept> cachedValues = graknGraph.getGraphCache().getCachedTypes().values();
         assertTrue("Type [" + r1 + "] was not cached", cachedValues.contains(r1));
         assertTrue("Type [" + r2 + "] was not cached", cachedValues.contains(r2));
         assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
@@ -258,7 +258,7 @@ public class GraknGraphTest extends GraphTestBase {
         }).get();
 
         //Check the above mutation did not affect central repo
-        OntologyElement foundE1 = graknGraph.getGraphCache().getCachedTypes().get(e1.getLabel());
+        OntologyConcept foundE1 = graknGraph.getGraphCache().getCachedTypes().get(e1.getLabel());
         assertTrue("Main cache was affected by transaction", ((Type) foundE1).plays().contains(r1));
     }
 
