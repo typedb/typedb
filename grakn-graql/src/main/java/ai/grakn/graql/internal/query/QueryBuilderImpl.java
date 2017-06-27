@@ -188,6 +188,6 @@ public class QueryBuilderImpl implements QueryBuilder {
 
     @Override
     public void registerMacro(Macro macro){
-        templateParser.registerMacro(macro.name(), macro);
+        templateParser.registerMacro(macro);
     }
 }
