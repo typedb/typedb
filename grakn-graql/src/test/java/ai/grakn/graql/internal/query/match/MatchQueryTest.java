@@ -89,6 +89,7 @@ import static ai.grakn.matcher.GraknMatchers.isInstance;
 import static ai.grakn.matcher.GraknMatchers.isShard;
 import static ai.grakn.matcher.GraknMatchers.resource;
 import static ai.grakn.matcher.GraknMatchers.results;
+import static ai.grakn.matcher.GraknMatchers.role;
 import static ai.grakn.matcher.GraknMatchers.rule;
 import static ai.grakn.matcher.GraknMatchers.type;
 import static ai.grakn.matcher.GraknMatchers.variable;
@@ -117,6 +118,7 @@ import static ai.grakn.matcher.MovieMatchers.heat;
 import static ai.grakn.matcher.MovieMatchers.hocusPocus;
 import static ai.grakn.matcher.MovieMatchers.judeLaw;
 import static ai.grakn.matcher.MovieMatchers.kermitTheFrog;
+import static ai.grakn.matcher.MovieMatchers.keyNameOwner;
 import static ai.grakn.matcher.MovieMatchers.language;
 import static ai.grakn.matcher.MovieMatchers.marlonBrando;
 import static ai.grakn.matcher.MovieMatchers.martinSheen;
@@ -233,7 +235,8 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var().rel(x, var().has("name", "Michael Corleone"))).distinct();
 
         assertThat(query, variable("x", containsInAnyOrder(
-                type(Schema.MetaSchema.THING.getLabel().getValue()), type("role"), type("character-being-played")
+                type(Schema.MetaSchema.THING.getLabel()), role("role"), role("character-being-played"),
+                role("has-name-owner")
         )));
     }
 
@@ -443,7 +446,7 @@ public class MatchQueryTest {
     @Test
     public void testTypeAsVariable() {
         MatchQuery query = qb.match(label("genre").plays(x));
-        assertThat(query, variable("x", contains(genreOfProduction)));
+        assertThat(query, variable("x", containsInAnyOrder(genreOfProduction, keyNameOwner)));
     }
 
     @Test
