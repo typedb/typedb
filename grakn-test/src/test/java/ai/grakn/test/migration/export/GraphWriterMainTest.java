@@ -53,6 +53,7 @@ public class GraphWriterMainTest {
         keyspace = GraphLoader.randomKeyspace();
         try(GraknGraph graph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
             MovieGraph.get().accept(graph);
+            graph.commit();
         }
     }
 
