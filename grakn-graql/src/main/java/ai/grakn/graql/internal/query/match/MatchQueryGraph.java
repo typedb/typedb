@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Answer;
 
