@@ -47,9 +47,11 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertDataEqual(GraknGraph one, GraknGraph two){
-        one.admin().getMetaConcept().instances().stream()
-                .map(Concept::asInstance)
-                .forEach(i -> assertInstanceCopied(i, two));
+        one.admin().getMetaConcept().subTypes().stream().
+                filter(Concept::isType).
+                map(Concept::asType).
+                flatMap(t -> t.instances().stream()).
+                forEach(i -> assertInstanceCopied(i, two));
     }
 
     public static void assertInstanceCopied(Thing thing, GraknGraph two){
