@@ -185,25 +185,25 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary("graph", "showImplicitConcepts", flag);
             },
             () -> {
-                Type type = entityType();
+                Type type = type();
                 RoleType roleType = roleType();
                 type.plays(roleType);
                 summary(type, "plays", roleType);
             },
             () -> {
-                Type type = entityType();
+                Type type = type();
                 ResourceType resourceType = resourceType();
                 type.resource(resourceType);
                 summary(type, "resource", resourceType);
             },
             () -> {
-                Type type = entityType();
+                Type type = type();
                 ResourceType resourceType = resourceType();
                 type.key(resourceType);
                 summary(type, "key", resourceType);
             },
             () -> {
-                Type type = entityType();
+                Type type = type();
                 boolean isAbstract = random.nextBoolean();
                 type.setAbstract(isAbstract);
                 summary(type, "setAbstract", isAbstract);
@@ -320,6 +320,12 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
     private OntologyElement ontologyElement() {
         return random.choose(graph.admin().getMetaConcept().subTypes());
+    }
+
+    private Type type() {
+        Collection<? extends Type> candidates = graph.admin().getMetaConcept().subTypes().stream().
+                filter(o -> !o.isRoleType()).map(o -> (Type) o).collect(Collectors.toSet());
+        return random.choose(candidates);
     }
 
     private EntityType entityType() {
