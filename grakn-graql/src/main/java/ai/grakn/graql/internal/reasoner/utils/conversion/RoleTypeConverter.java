@@ -26,12 +26,12 @@ import java.util.Collection;
 
 /**
  * <p>
- * Implementation of {@link TypeConverter} allowing for conversion of role types to compatible types.
+ * Implementation of {@link OntologyConceptConverter} allowing for conversion of role types to compatible types.
  * </p>
  *
  * @author Kasper Piskorski
  */
-public class RoleTypeConverter implements TypeConverter<RoleType> {
+public class RoleTypeConverter implements OntologyConceptConverter<RoleType> {
     @Override
     public Multimap<RelationType, RoleType> toRelationMultimap(RoleType role) {
         Multimap<RelationType, RoleType> relationMap = HashMultimap.create();

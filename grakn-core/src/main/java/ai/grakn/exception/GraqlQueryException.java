@@ -19,6 +19,7 @@
 package ai.grakn.exception;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -158,8 +159,8 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(var + " cannot be an instance of meta-type " + type.getLabel());
     }
 
-    public static GraqlQueryException insertMetaType(TypeLabel label, Type superType) {
-        return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, superType.getLabel()));
+    public static GraqlQueryException insertMetaType(TypeLabel label, OntologyConcept ontologyConcept) {
+        return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, ontologyConcept.getLabel()));
     }
 
     public static GraqlQueryException insertMultipleValues(ValuePredicateAdmin predicate, Object value) {

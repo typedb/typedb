@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -63,7 +63,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
         } else {
             ofTypeLabels = ofTypeLabels.stream()
                     .flatMap(typeLabel -> graph.get().getType(typeLabel).subTypes().stream())
-                    .map(Type::getLabel)
+                    .map(OntologyConcept::getLabel)
                     .collect(Collectors.toSet());
             subTypeLabels.addAll(ofTypeLabels);
         }

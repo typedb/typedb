@@ -45,7 +45,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleTypeConverter;
-import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverterImpl;
+import ai.grakn.graql.internal.reasoner.utils.conversion.OntologyConceptConverterImpl;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
@@ -70,7 +70,7 @@ import java.util.stream.Collectors;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesDisjoint;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getCompatibleRelationTypesWithRoles;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getListPermutations;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getSuperTypes;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getSupers;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
 import static java.util.stream.Collectors.toSet;
@@ -390,7 +390,7 @@ public class Relation extends TypeAtom {
         //types deduced from substitution
         inferEntityTypes(sub).forEach(types::add);
 
-        Multimap<RelationType, RoleType> compatibleTypesFromTypes = getCompatibleRelationTypesWithRoles(types, new TypeConverterImpl());
+        Multimap<RelationType, RoleType> compatibleTypesFromTypes = getCompatibleRelationTypesWithRoles(types, new OntologyConceptConverterImpl());
 
         Multimap<RelationType, RoleType> compatibleTypes;
         //intersect relation types from roles and types
@@ -405,7 +405,7 @@ public class Relation extends TypeAtom {
         return compatibleTypes.asMap().entrySet().stream()
                 .sorted(Comparator.comparing(e -> -e.getValue().size()))
                 .map(Map.Entry::getKey)
-                .filter(t -> Sets.intersection(getSuperTypes(t), compatibleTypes.keySet()).isEmpty())
+                .filter(t -> Sets.intersection(getSupers(t), compatibleTypes.keySet()).isEmpty())
                 .collect(Collectors.toList());
     }
 
@@ -548,7 +548,7 @@ public class Relation extends TypeAtom {
                     if (type != null && !Schema.MetaSchema.isMetaLabel(type.getLabel())) {
                         mappings.put(casting, ReasonerUtils.getCompatibleRoleTypes(type, possibleRoles));
                     } else {
-                        mappings.put(casting, ReasonerUtils.getTopTypes(possibleRoles));
+                        mappings.put(casting, ReasonerUtils.getOntologyConcepts(possibleRoles));
                     }
                 });
 

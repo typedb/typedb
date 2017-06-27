@@ -192,7 +192,7 @@ public class InferenceRule {
                     Type subType = allTypes.stream()
                             .map(Atom::getType)
                             .filter(Objects::nonNull)
-                            .filter(t -> ReasonerUtils.getSuperTypes(t).contains(type))
+                            .filter(t -> ReasonerUtils.getSupers(t).contains(type))
                             .findFirst().orElse(null);
                     return type == null || subType == null;
                 }).collect(toSet());
