@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.OntologyElement;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
@@ -243,6 +244,14 @@ abstract class ConceptImpl implements Concept {
 
     /**
      *
+     * @return An Ontology Element if the element is an Ontology Element
+     */
+    public OntologyElement asOntologyElement() {
+        return castConcept(OntologyElement.class);
+    }
+
+    /**
+     *
      * @return A Type if the element is a Type
      */
     @Override
@@ -340,6 +349,14 @@ abstract class ConceptImpl implements Concept {
     @Override
     public Rule asRule() {
         return castConcept(Rule.class);
+    }
+
+    /**
+     *
+     * @return true if the element is an Ontology Element
+     */
+    public boolean isOntologyElement() {
+        return this instanceof OntologyElement;
     }
 
     /**

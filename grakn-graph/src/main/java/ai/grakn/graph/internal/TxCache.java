@@ -22,7 +22,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyElement;
-import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.REST;
@@ -59,7 +58,7 @@ class TxCache {
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
-    private final Map<TypeLabel, TypeImpl> typeCache = new HashMap<>();
+    private final Map<TypeLabel, OntologyElementImpl> typeCache = new HashMap<>();
     private final Map<TypeLabel, TypeId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
@@ -177,7 +176,7 @@ class TxCache {
      *
      * @return All the types currently cached in the transaction. Used for
      */
-    Map<TypeLabel, TypeImpl> getTypeCache(){
+    Map<TypeLabel, OntologyElementImpl> getTypeCache(){
         return typeCache;
     }
 
@@ -234,10 +233,10 @@ class TxCache {
      */
     void cacheConcept(ConceptImpl concept){
         conceptCache.put(concept.getId(), concept);
-        if(concept.isType()){
-            TypeImpl type = (TypeImpl) concept;
-            typeCache.put(type.getLabel(), type);
-            labelCache.put(type.getLabel(), type.getTypeId());
+        if(concept.isOntologyElement()){
+            OntologyElementImpl ontologyElement = (OntologyElementImpl) concept;
+            typeCache.put(ontologyElement.getLabel(), ontologyElement);
+            labelCache.put(ontologyElement.getLabel(), ontologyElement.getTypeId());
         }
     }
 
@@ -299,7 +298,7 @@ class TxCache {
      * @param <X> The type of the type
      * @return The cached type
      */
-    <X extends Type> X getCachedType(TypeLabel label){
+    <X extends OntologyElement> X getCachedOntologyElement(TypeLabel label){
         //noinspection unchecked
         return (X) typeCache.get(label);
     }

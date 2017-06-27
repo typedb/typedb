@@ -455,7 +455,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private OntologyElementImpl buildOntologyElement(TypeLabel label, Supplier<OntologyElementImpl> dbBuilder){
         if(txCache().isTypeCached(label)){
-            return txCache().getCachedType(label);
+            return txCache().getCachedOntologyElement(label);
         } else {
             return dbBuilder.get();
         }
@@ -571,7 +571,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends Type> T getType(TypeLabel label) {
-        return getOntologyElement(label, Schema.BaseType.TYPE);
+        return getOntologyElement(label, Schema.BaseType.ONTOLOGY_ELEMENT);
     }
 
     @Override
