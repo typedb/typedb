@@ -330,6 +330,9 @@ public class ValidatorTest extends GraphTestBase{
         RoleType fChild = graknGraph.putRoleType("fChild").superType(pChild);
         RoleType mChild = graknGraph.putRoleType("mChild").superType(pChild);
 
+        //This is to bypass a specific validation rule
+        graknGraph.putRelationType("filler").relates(relative);
+
         graknGraph.putEntityType("animal").
                 plays(relative).
                 plays(parent).
@@ -354,6 +357,9 @@ public class ValidatorTest extends GraphTestBase{
         RoleType mother = graknGraph.putRoleType("mother").superType(parent);
         RoleType pChild = graknGraph.putRoleType("pChild").superType(relative);
         RoleType fmChild = graknGraph.putRoleType("fChild").superType(pChild);
+
+        //This is to bypass a specific validation rule
+        graknGraph.putRelationType("filler").relates(relative);
 
         graknGraph.putEntityType("animal").
                 plays(relative).

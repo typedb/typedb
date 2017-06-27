@@ -20,6 +20,7 @@
 package ai.grakn.graph.property;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.OntologyElement;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.util.CommonUtil;
@@ -42,11 +43,11 @@ import static org.junit.Assume.assumeThat;
 public class PropertyUtil {
 
     @SuppressWarnings("unchecked")
-    public static Collection<Type> directSubTypes(GraknGraph graph, Type type) {
-        Function<GraknGraph,? extends List<? extends Type>> function = g ->
-            type.subTypes().stream().filter(subType -> type.equals(subType.superType())).collect(toList());
+    public static <T extends OntologyElement> Collection<T> directSubs(GraknGraph graph, T ontologyElement) {
+        Function<GraknGraph,? extends List<? extends T>> function = g ->
+            ontologyElement.subTypes().stream().filter(subType -> ontologyElement.equals(subType.superType())).map(o -> (T) o).collect(toList());
         Object ret = CommonUtil.withImplicitConceptsVisible(graph, function);
-        return (Collection<Type>)ret;
+        return (Collection<T>)ret;
     }
 
     public static Collection<Type> indirectSuperTypes(Type type) {
