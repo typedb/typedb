@@ -162,7 +162,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     @Override
     public String visitString(GraqlTemplateParser.StringContext ctx){
         if(ctx.STRING() != null) {
-            return String.valueOf(ctx.getText().replaceAll("\"", ""));
+            return ctx.getText().substring(1, ctx.getText().length() - 1);
         } else {
             return this.visitUntypedExpression(ctx.untypedExpression(), String.class);
         }
@@ -314,7 +314,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     @Override
     public Object visitMacroExpression(GraqlTemplateParser.MacroExpressionContext ctx){
-        String macro = ctx.ID_MACRO().getText().replace("@", "").toLowerCase();
+        String macro = ctx.ID_MACRO().getText().substring(1).toLowerCase();
         List<Object> values = ctx.expression().stream().map(this::visit).collect(toList());
 
         return macros.get(macro).apply(values);
