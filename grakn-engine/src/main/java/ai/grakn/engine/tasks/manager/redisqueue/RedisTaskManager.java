@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -52,18 +51,18 @@ public class RedisTaskManager implements TaskManager {
     private final EngineID engineId;
     private final GraknEngineConfig config;
     private final RedisTaskStorage redisTaskStorage;
-    private final int threads;
     private final EngineGraknGraphFactory factory;
     private final RedisTaskQueue redisTaskQueue;
     private final ExecutorService consumerExecutor;
     private final RedissonLockProvider distributedLockClient;
+    private final int threads;
 
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig graknEngineConfig,
             RedisCountStorage redisCountStorage, EngineGraknGraphFactory factory,
             RedissonLockProvider distributedLockClient, MetricRegistry metricsRegistry) {
         // TODO hacky way, the pool should be created in the main server class and passed here
-        this(engineId, graknEngineConfig, redisCountStorage.getJedisPool(), 10, factory, distributedLockClient, metricsRegistry);
+        this(engineId, graknEngineConfig, redisCountStorage.getJedisPool(), factory, distributedLockClient, metricsRegistry);
     }
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
@@ -71,26 +70,31 @@ public class RedisTaskManager implements TaskManager {
             RedissonLockProvider distributedLockClient, MetricRegistry metricRegistry) {
         this.engineId = engineId;
         this.config = config;
-        this.threads = threads;
         this.factory = factory;
         this.redisTaskStorage = RedisTaskStorage.create(jedisPool);
         this.redisTaskQueue = new RedisTaskQueue(jedisPool, metricRegistry);
+        this.threads = threads;
         this.consumerExecutor = Executors.newFixedThreadPool(threads);
         this.distributedLockClient = distributedLockClient;
     }
 
+    public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
+            EngineGraknGraphFactory factory, RedissonLockProvider distributedLockClient, MetricRegistry metricRegistry) {
+        this(engineId, config, jedisPool, Runtime.getRuntime().availableProcessors(), factory, distributedLockClient, metricRegistry);
+    }
+
     @Override
     public void close() {
-        this.consumerExecutor.shutdown();
+        LOG.info("Closing task manager");
         try {
             this.redisTaskQueue.close();
+            this.consumerExecutor.shutdown();
             this.consumerExecutor.awaitTermination(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            LOG.error("Termination not interrupted", e);
+            LOG.error("Task manager termination interrupted", e);
         } catch (IOException e) {
-            LOG.error("Termination not completed", e);
+            LOG.error("Task manager termination not completed", e);
         }
-        LOG.debug("TaskManager closed");
     }
 
     @Override
@@ -100,13 +104,12 @@ public class RedisTaskManager implements TaskManager {
             if(existingLock != null){
                 return existingLock;
             }
-            // TODO: this version is reentrant, might not be what we want
             return distributedLockClient.getLock(lockName);
         });
-        IntStream.rangeClosed(1, threads).forEach(
-                (int ignored) ->
-                        // TODO refactor the interfaces so that we don't have to pass the manager around
-                        redisTaskQueue.subscribe(this, consumerExecutor, engineId, config, factory));
+        for (int i = 1; i <= threads; i++) {
+            // TODO refactor the interfaces so that we don't have to pass the manager around
+            redisTaskQueue.subscribe(this, consumerExecutor, engineId, config, factory);
+        }
         LOG.debug("Redis task manager started");
     }
 

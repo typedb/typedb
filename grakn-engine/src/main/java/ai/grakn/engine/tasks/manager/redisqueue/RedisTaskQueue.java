@@ -22,7 +22,9 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.util.EngineID;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
@@ -61,12 +63,15 @@ class RedisTaskQueue {
     private Pool<Jedis> jedisPool;
     private final MetricRegistry metricRegistry;
 
+    private final Meter putJobMeter;
+
     RedisTaskQueue(Pool<Jedis> jedisPool,
             MetricRegistry metricRegistry) {
         this.jedisPool = jedisPool;
         this.metricRegistry = metricRegistry;
         this.config = new ConfigBuilder().build();
         this.redisClient = new ClientPoolImpl(config, jedisPool);
+        this.putJobMeter = metricRegistry.meter(name(RedisTaskQueue.class, "put-job"));
     }
 
     void close() throws IOException {
@@ -74,6 +79,7 @@ class RedisTaskQueue {
     }
 
     void putJob(Task job) {
+        putJobMeter.mark();
         final Job queueJob = new Job(SUBSCRIPTION_CLASS_NAME, job);
         redisClient.enqueue(QUEUE_NAME, queueJob);
     }
@@ -84,8 +90,8 @@ class RedisTaskQueue {
             EngineID engineId,
             GraknEngineConfig config,
             EngineGraknGraphFactory factory) {
+        LOG.info("Subscribing worker to jobs in queue {}", QUEUE_NAME);
         Worker worker = getJobSubscriber();
-
         // We need this since the job can only be instantiated with the
         // task coming from the queue
         worker.getWorkerEventEmitter().addListener(
@@ -94,7 +100,6 @@ class RedisTaskQueue {
                         ((RedisTaskQueueConsumer) runner).setRunningState(redisTaskManager, engineId, config, jedisPool, factory, metricRegistry);
                     }
                 }, WorkerEvent.JOB_EXECUTE);
-
         worker.setExceptionHandler((jobExecutor, exception, curQueue) -> {
             // TODO review this strategy
             LOG.error("Exception while trying to run task", exception);
