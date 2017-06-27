@@ -81,4 +81,22 @@ public interface OntologyConcept extends Concept {
      */
     @CheckReturnValue
     Boolean isImplicit();
+
+    /**
+     * Return the collection of {@link Rule} for which this {@link OntologyConcept} serves as a hypothesis.
+     * @see Rule
+     *
+     * @return A collection of {@link Rule} for which this {@link OntologyConcept} serves as a hypothesis
+     */
+    @CheckReturnValue
+    Collection<Rule> getRulesOfHypothesis();
+
+    /**
+     * Return the collection of {@link Rule} for which this {@link OntologyConcept} serves as a conclusion.
+     * @see Rule
+     *
+     * @return A collection of {@link Rule} for which this {@link OntologyConcept} serves as a conclusion
+     */
+    @CheckReturnValue
+    Collection<Rule> getRulesOfConclusion();
 }

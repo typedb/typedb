@@ -445,9 +445,9 @@ public class ReasonerUtils {
      * @param child type
      * @return true if child is a subtype of parent
      */
-    public static boolean checkTypesCompatible(Type parent, Type child) {
+    public static boolean checkCompatible(OntologyConcept parent, OntologyConcept child) {
         if(Schema.MetaSchema.isMetaLabel(parent.getLabel())) return true;
-        Type superType = child;
+        OntologyConcept superType = child;
         while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())){
             if (superType.equals(parent)) return true;
             superType = superType.superType();
@@ -460,7 +460,7 @@ public class ReasonerUtils {
      * @param child type
      * @return true if types do not belong to the same type hierarchy
      */
-    public static boolean checkTypesDisjoint(Type parent, Type child) {
-        return !checkTypesCompatible(parent, child) && !checkTypesCompatible(child, parent);
+    public static boolean checkDisjoint(OntologyConcept parent, OntologyConcept child) {
+        return !checkCompatible(parent, child) && !checkCompatible(child, parent);
     }
 }

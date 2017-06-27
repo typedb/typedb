@@ -18,11 +18,13 @@
 
 package ai.grakn.graql.internal.reasoner.utils.conversion;
 
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Type;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+
 import java.util.Collection;
 
 /**
@@ -32,14 +34,15 @@ import java.util.Collection;
  *
  * @author Kasper Piskorski
  */
-public class OntologyConceptConverterImpl implements OntologyConceptConverter<Type> {
+public class OntologyConceptConverterImpl implements OntologyConceptConverter<OntologyConcept> {
 
     @Override
-    public Multimap<RelationType, RoleType> toRelationMultimap(Type ontologyConcept) {
+    public Multimap<RelationType, RoleType> toRelationMultimap(OntologyConcept ontologyConcept) {
         Multimap<RelationType, RoleType> relationMap = HashMultimap.create();
-        Collection<? extends Type> types = ontologyConcept.subTypes();
+        Collection<? extends OntologyConcept> types = ontologyConcept.subTypes();
         types.stream()
-                .flatMap(t -> t.plays().stream())
+                .filter(Concept::isType)
+                .flatMap(t -> t.asType().plays().stream())
                 .forEach(roleType -> {
                     roleType.relationTypes().stream()
                             .filter(rel -> !rel.isImplicit())

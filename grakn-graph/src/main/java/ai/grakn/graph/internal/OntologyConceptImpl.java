@@ -23,6 +23,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
@@ -314,6 +315,28 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
             }
         }
         return false;
+    }
+
+    /**
+     *
+     * @return A collection of {@link Rule} for which this {@link OntologyConcept} serves as a hypothesis
+     */
+    @Override
+    public Collection<Rule> getRulesOfHypothesis() {
+        Set<Rule> rules = new HashSet<>();
+        neighbours(Direction.IN, Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> rules.add(concept.asRule()));
+        return Collections.unmodifiableCollection(rules);
+    }
+
+    /**
+     *
+     * @return A collection of {@link Rule} for which this {@link OntologyConcept} serves as a conclusion
+     */
+    @Override
+    public Collection<Rule> getRulesOfConclusion() {
+        Set<Rule> rules = new HashSet<>();
+        neighbours(Direction.IN, Schema.EdgeLabel.CONCLUSION).forEach(concept -> rules.add(concept.asRule()));
+        return Collections.unmodifiableCollection(rules);
     }
 
     @Override

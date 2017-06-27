@@ -160,24 +160,6 @@ public interface Type extends OntologyConcept {
     Boolean isAbstract();
 
     /**
-     * Return the collection of Rules for which this Type serves as a hypothesis.
-     * @see Rule
-     *
-     * @return A collection of Rules for which this Type serves as a hypothesis
-     */
-    @CheckReturnValue
-    Collection<Rule> getRulesOfHypothesis();
-
-    /**
-     * Return the collection of Rules for which this Type serves as a conclusion.
-     * @see Rule
-     *
-     * @return A collection of Rules for which this Type serves as a conclusion
-     */
-    @CheckReturnValue
-    Collection<Rule> getRulesOfConclusion();
-
-    /**
      * Retrieve a list of the Instances that scope this Type.
      *
      * @return A list of the Instances that scope this Type.

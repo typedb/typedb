@@ -272,28 +272,6 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
 
     /**
      *
-     * @return A collection of Rules for which this Type serves as a hypothesis
-     */
-    @Override
-    public Collection<Rule> getRulesOfHypothesis() {
-        Set<Rule> rules = new HashSet<>();
-        neighbours(Direction.IN, Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> rules.add(concept.asRule()));
-        return Collections.unmodifiableCollection(rules);
-    }
-
-    /**
-     *
-     * @return A collection of Rules for which this Type serves as a conclusion
-     */
-    @Override
-    public Collection<Rule> getRulesOfConclusion() {
-        Set<Rule> rules = new HashSet<>();
-        neighbours(Direction.IN, Schema.EdgeLabel.CONCLUSION).forEach(concept -> rules.add(concept.asRule()));
-        return Collections.unmodifiableCollection(rules);
-    }
-
-    /**
-     *
      * @return A list of the Instances which scope this Relation
      */
     @Override
