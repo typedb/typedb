@@ -390,13 +390,6 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
         return getThis();
     }
 
-    @Override
-    public String innerToString(){
-        String message = super.innerToString();
-        message = message + " - Label [" + getLabel() + "] - Abstract [" + isAbstract() + "] ";
-        return message;
-    }
-
     /**
      *
      * @param isAbstract  Specifies if the concept is abstract (true) or not (false).

@@ -35,6 +35,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
+
 /**
  * <p>
  *     Ontology or Schema Specific Element
@@ -304,5 +306,12 @@ abstract class OntologyElementImpl<T extends OntologyElement> extends ConceptImp
             }
         }
         return false;
+    }
+
+    @Override
+    public String innerToString(){
+        String message = super.innerToString();
+        message = message + " - Label [" + getLabel() + "] - Abstract [" + isAbstract() + "] ";
+        return message;
     }
 }
