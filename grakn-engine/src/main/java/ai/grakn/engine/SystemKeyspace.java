@@ -95,7 +95,7 @@ public class SystemKeyspace {
          if(openSpaces.containsKey(keyspace)){
              return true;
          }
-
+        LOG.info("Initialising keyspace {}", keyspace);
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
             Resource<String> resource = keyspaceName.putResource(keyspace);
@@ -106,7 +106,7 @@ public class SystemKeyspace {
         } catch (InvalidGraphException e) {
             throw new RuntimeException("Could not add keyspace [" + keyspace + "] to system graph", e);
         }
-
+        LOG.info("Keyspace {} is ready", keyspace);
         return true;
     }
 

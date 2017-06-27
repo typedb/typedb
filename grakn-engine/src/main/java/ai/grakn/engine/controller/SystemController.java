@@ -149,15 +149,14 @@ public class SystemController {
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
     private boolean deleteKeyspace(Request request, Response response){
         String keyspace = request.queryParams(KEYSPACE_PARAM);
-
         boolean deletionComplete = factory.systemKeyspace().deleteKeyspace(keyspace);
         if(deletionComplete){
+            LOG.info("Keyspace {} deleted", keyspace);
             response.status(200);
+            return true;
         } else {
             throw GraknServerException.couldNotDelete(keyspace);
         }
-
-        return deletionComplete;
     }
 
     @GET
