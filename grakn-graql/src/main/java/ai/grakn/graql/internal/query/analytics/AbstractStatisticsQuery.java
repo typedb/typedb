@@ -86,7 +86,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         }
 
         Set<Type> statisticsResourceTypes = statisticsResourceTypeLabels.stream().map((label) -> {
-            Type type = graph.getType(label);
+            Type type = graph.getOntologyConcept(label);
             if (type == null) throw GraqlQueryException.labelNotFound(label);
             return type;
         }).collect(Collectors.toSet());

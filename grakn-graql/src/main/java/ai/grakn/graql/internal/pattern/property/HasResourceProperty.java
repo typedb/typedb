@@ -135,7 +135,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     void checkValidProperty(GraknGraph graph, VarPatternAdmin var) {
-        Type type = graph.getType(resourceType);
+        Type type = graph.getOntologyConcept(resourceType);
         if(type == null || !type.isResourceType()) {
             throw GraqlQueryException.mustBeResourceType(resourceType);
         }
@@ -153,8 +153,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Optional<ValuePredicateAdmin> predicate =
                 resource.getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
 
-        RoleType owner = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
-        RoleType value = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
+        RoleType owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
+        RoleType value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
 
         concept.asInstance().relations(owner).stream()
                 .filter(relation -> testPredicate(predicate, relation, value))

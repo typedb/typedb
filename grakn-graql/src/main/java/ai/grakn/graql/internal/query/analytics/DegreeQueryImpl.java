@@ -62,7 +62,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
             ofTypeLabels.addAll(subTypeLabels);
         } else {
             ofTypeLabels = ofTypeLabels.stream()
-                    .flatMap(typeLabel -> graph.get().getType(typeLabel).subTypes().stream())
+                    .flatMap(typeLabel -> graph.get().getOntologyConcept(typeLabel).subTypes().stream())
                     .map(OntologyConcept::getLabel)
                     .collect(Collectors.toSet());
             subTypeLabels.addAll(ofTypeLabels);

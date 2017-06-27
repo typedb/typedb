@@ -80,7 +80,7 @@ public class IdPredicate extends Predicate<ConceptId>{
     }
 
     private static VarPatternAdmin createIdVar(Var varName, LabelProperty prop, GraknGraph graph){
-        Type type = graph.getType(prop.getLabelValue());
+        Type type = graph.getOntologyConcept(prop.getLabelValue());
         if (type == null) throw GraqlQueryException.labelNotFound(prop.getLabelValue());
         return varName.id(type.getId()).admin();
     }

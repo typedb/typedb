@@ -132,7 +132,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     protected ConceptId extractTypeId(VarPatternAdmin var) {
         HasResourceProperty resProp = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         TypeLabel typeLabel = resProp != null? resProp.getType() : null;
-        return typeLabel != null ? getParentQuery().graph().getType(typeLabel).getId() : null;
+        return typeLabel != null ? getParentQuery().graph().getOntologyConcept(typeLabel).getId() : null;
     }
 
     @Override

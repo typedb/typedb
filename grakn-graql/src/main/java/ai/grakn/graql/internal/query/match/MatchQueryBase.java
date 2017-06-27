@@ -113,7 +113,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
         return pattern.getVars().stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
-                .map(graph::<Type>getType)
+                .map(graph::<Type>getOntologyConcept)
                 .filter(Objects::nonNull)
                 .collect(toSet());
     }

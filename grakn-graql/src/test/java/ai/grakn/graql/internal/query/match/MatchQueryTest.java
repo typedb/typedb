@@ -654,14 +654,14 @@ public class MatchQueryTest {
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
             Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(x)).get("x").collect(Collectors.toSet());
-            Collection<RoleType> graphAPIPlays = new HashSet<>(graph.getType(type).plays());
+            Collection<RoleType> graphAPIPlays = new HashSet<>(graph.getOntologyConcept(type).plays());
 
             assertEquals(graqlPlays, graphAPIPlays);
         });
 
         Stream.of(d, e, f).forEach(type -> {
             Set<Concept> graqlPlayedBy = qb.match(x.plays(Graql.label(type))).get("x").collect(toSet());
-            Collection<Type> graphAPIPlayedBy = new HashSet<>(graph.<RoleType>getType(type).playedByTypes());
+            Collection<Type> graphAPIPlayedBy = new HashSet<>(graph.<RoleType>getOntologyConcept(type).playedByTypes());
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });

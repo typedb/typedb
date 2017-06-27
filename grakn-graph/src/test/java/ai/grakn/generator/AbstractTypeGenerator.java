@@ -72,7 +72,7 @@ public abstract class AbstractTypeGenerator<T extends OntologyConcept> extends F
 
         if (types.isEmpty() && includeNonMeta()) {
             TypeLabel label = genFromGraph(TypeLabels.class).mustBeUnused().generate(random, status);
-            assert graph().getType(label) == null;
+            assert graph().getOntologyConcept(label) == null;
             return newType(label);
         } else {
             return random.choose(types);

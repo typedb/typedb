@@ -163,7 +163,7 @@ public class TypePropertyTest {
     public void whenCallingGetLabel_TheResultCanBeUsedToRetrieveTheSameType(
             @Open GraknGraph graph, @FromGraph Type type) {
         TypeLabel label = type.getLabel();
-        assertEquals(type, graph.getType(label));
+        assertEquals(type, graph.getOntologyConcept(label));
     }
 
     @Ignore // TODO: Make this pass!

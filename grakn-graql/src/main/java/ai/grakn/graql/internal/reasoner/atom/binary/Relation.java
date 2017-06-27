@@ -321,7 +321,7 @@ public class Relation extends TypeAtom {
         roleVars.stream()
                 .map(VarPatternAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(graph::<RoleType>getType)
+                .map(graph::<RoleType>getOntologyConcept)
                 .forEach(roleTypes::add);
 
         //try indirectly
@@ -523,7 +523,7 @@ public class Relation extends TypeAtom {
                 rolePlayerMappings.add(new Pair<>(varName, role));
                 //try directly
                 TypeLabel typeLabel = role.getTypeLabel().orElse(null);
-                RoleType roleType = typeLabel != null ? graph.getType(typeLabel) : null;
+                RoleType roleType = typeLabel != null ? graph.getOntologyConcept(typeLabel) : null;
                 //try indirectly
                 if (roleType == null && role.getVarName().isUserDefinedName()) {
                     IdPredicate rolePredicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(role.getVarName());
@@ -634,7 +634,7 @@ public class Relation extends TypeAtom {
                     TypeLabel parentRoleTypeLabel = parentRoleTypeVar.getTypeLabel().orElse(null);
 
                     //TODO take into account indirect roles
-                    RoleType parentRole = parentRoleTypeLabel != null ? graph().getType(parentRoleTypeLabel) : null;
+                    RoleType parentRole = parentRoleTypeLabel != null ? graph().getOntologyConcept(parentRoleTypeLabel) : null;
 
                     if (parentRole != null) {
                         boolean isMetaRole = Schema.MetaSchema.isMetaLabel(parentRole.getLabel());

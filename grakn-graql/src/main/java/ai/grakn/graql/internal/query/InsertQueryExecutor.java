@@ -188,7 +188,7 @@ public class InsertQueryExecutor {
             if (concept == null) throw GraqlQueryException.insertWithoutType(id.get());
             return concept;
         } else if (typeLabel.isPresent()) {
-            Concept concept = graph.getType(typeLabel.get());
+            Concept concept = graph.getOntologyConcept(typeLabel.get());
             if (concept == null) throw GraqlQueryException.labelNotFound(typeLabel.get());
             return concept;
         } else {

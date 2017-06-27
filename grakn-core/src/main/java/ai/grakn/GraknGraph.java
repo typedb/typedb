@@ -27,10 +27,9 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
-import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
@@ -203,17 +202,16 @@ public interface GraknGraph extends AutoCloseable{
     <T extends Concept> T getConcept(ConceptId id);
 
     /**
-     * Get the {@link Type} with the label provided, if it exists.
+     * Get the {@link OntologyConcept} with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the {@link Type} in the graph.
-     * @return The {@link Type} with the provided label or null if no such {@link Type} exists.
+     * @param label A unique label which identifies the {@link OntologyConcept} in the graph.
+     * @return The {@link OntologyConcept} with the provided label or null if no such {@link OntologyConcept} exists.
      *
      * @throws GraphOperationException if the graph is closed
      * @throws ClassCastException if the type is not an instance of {@link T}
      */
     @CheckReturnValue
-    //TODO: Refactor this to getOntologyElement maybe?
-    <T extends OntologyConcept> T getType(TypeLabel label);
+    <T extends OntologyConcept> T getOntologyConcept(TypeLabel label);
 
     /**
      * Get all Resources holding the value provided, if they exist.

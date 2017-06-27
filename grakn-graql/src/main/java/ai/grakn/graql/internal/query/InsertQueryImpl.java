@@ -134,7 +134,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
                 .flatMap(v -> v.getInnerVars().stream())
                 .map(VarPatternAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(theGraph::<Type>getType)
+                .map(theGraph::<Type>getOntologyConcept)
                 .collect(Collectors.toSet());
 
         matchQuery.ifPresent(mq -> types.addAll(mq.getTypes()));

@@ -212,9 +212,9 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
 
 
         TypeLabel label = resource.type().getLabel();
-        RelationType hasResource = vertex().graph().getType(has.getLabel(label));
-        RoleType hasResourceTarget = vertex().graph().getType(hasOwner.getLabel(label));
-        RoleType hasResourceValue = vertex().graph().getType(hasValue.getLabel(label));
+        RelationType hasResource = vertex().graph().getOntologyConcept(has.getLabel(label));
+        RoleType hasResourceTarget = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
+        RoleType hasResourceValue = vertex().graph().getOntologyConcept(hasValue.getLabel(label));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
             throw GraphOperationException.hasNotAllowed(this, resource, type);

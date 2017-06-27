@@ -96,7 +96,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
             @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.typeLabelOf(roleVar.get(), fragmentSets);
 
             if (roleLabel != null) {
-                RoleType roleType = graph.getType(roleLabel.label());
+                RoleType roleType = graph.getOntologyConcept(roleLabel.label());
 
                 fragmentSets.remove(shortcut);
                 fragmentSets.add(shortcut.substituteRoleTypeLabel(graph, roleType));
@@ -144,7 +144,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
             @Nullable LabelFragmentSet relationLabel = EquivalentFragmentSets.typeLabelOf(isa.type(), fragmentSets);
 
             if (relationLabel != null) {
-                RelationType relationType = graph.getType(relationLabel.label());
+                RelationType relationType = graph.getOntologyConcept(relationLabel.label());
 
                 fragmentSets.remove(shortcut);
                 fragmentSets.add(shortcut.addRelationTypeLabel(graph, relationType));

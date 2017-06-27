@@ -68,7 +68,7 @@ public class AdminTest {
 
         Set<Type> types = Stream.of(
                 "movie", "production", "tmdb-vote-count", "character", "production-with-cast", "has-cast"
-        ).map(t -> rule.graph().<Type>getType(TypeLabel.of(t))).collect(toSet());
+        ).map(t -> rule.graph().<Type>getOntologyConcept(TypeLabel.of(t))).collect(toSet());
 
         assertEquals(types, query.admin().getTypes());
     }
@@ -142,7 +142,7 @@ public class AdminTest {
     @Test
     public void testInsertQueryGetTypes() {
         InsertQuery query = qb.insert(var("x").isa("person").has("name", var("y")), var().rel("actor", "x").isa("has-cast"));
-        Set<Type> types = Stream.of("person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getType(TypeLabel.of(t))).collect(toSet());
+        Set<Type> types = Stream.of("person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getOntologyConcept(TypeLabel.of(t))).collect(toSet());
         assertEquals(types, query.admin().getTypes());
     }
 
@@ -152,7 +152,7 @@ public class AdminTest {
                         .insert(var("x").isa("person").has("name", var("z")), var().rel("actor", "x").isa("has-cast"));
 
         Set<Type> types =
-                Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getType(TypeLabel.of(t))).collect(toSet());
+                Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getOntologyConcept(TypeLabel.of(t))).collect(toSet());
 
         assertEquals(types, query.admin().getTypes());
     }
