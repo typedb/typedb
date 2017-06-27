@@ -27,7 +27,6 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.GraknTestSetup;
 import com.google.common.collect.Sets;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -181,18 +180,19 @@ public class ReasoningTests {
         String query2String = "match $x isa entity2;";
         QueryAnswers answers1 = queryAnswers(qb.parse(query1String));
         QueryAnswers answers2 = queryAnswers(qb.parse(query2String));
-        Assert.assertEquals(answers1.size(), answers2.size());
+        assertEquals(answers1.size(), answers2.size());
         assertNotEquals(answers1, answers2);
     }
 
     @Test //Expected result: The queries should return the same two matches.
     public void generatingIsaEdge() {
-        QueryBuilder qb = testSet4.graph().graql().infer(true).materialise(true);
+        QueryBuilder qb = testSet4.graph().graql().infer(true);
         String query1String = "match $x isa entity1;";
         String query2String = "match $x isa entity2;";
         QueryAnswers answers1 = queryAnswers(qb.parse(query1String));
         QueryAnswers answers2 = queryAnswers(qb.parse(query2String));
-        Assert.assertEquals(answers1, answers2);
+        assertEquals(answers1.size(), 2);
+        assertEquals(answers1, answers2);
     }
 
     @Test //Expected result: The query should return a unique match (or possibly nothing if we enforce range-restriction).

@@ -1,10 +1,5 @@
 grammar GraqlTemplate;
 
-@lexer::members {
-    public static final int WHITESPACE = 1;
-    public static final int COMMENTS = 2;
-}
-
 template
  : blockContents EOF
  ;
@@ -13,58 +8,63 @@ block
  : '{' blockContents '}'
  ;
 
+//TODO remove escaped expression and handle escaping here
 blockContents
- : (statement | graqlVariable | keyword | ID)*
+ : (statement | escapedExpression | var | keyword | ID)*
  ;
 
 statement
- : forStatement
+ : forInStatement
+ | forEachStatement
  | ifStatement
- | replaceStatement
  ;
 
-forStatement : FOR LPAREN (ID IN expr | expr) RPAREN DO block ;
+forInStatement   : FOR LPAREN ID IN list RPAREN DO block ;
+forEachStatement : FOR LPAREN list RPAREN DO block ;
 
 ifStatement   : ifPartial elseIfPartial* elsePartial? ;
-ifPartial     : IF LPAREN expr RPAREN DO block ;
-elseIfPartial : ELSEIF LPAREN expr RPAREN DO block ;
+ifPartial     : IF LPAREN bool RPAREN DO block ;
+elseIfPartial : ELSEIF LPAREN bool RPAREN DO block ;
 elsePartial   : ELSE block ;
 
-macro
- : ID_MACRO LPAREN expr? (',' expr)* RPAREN
+expression    : untypedExpression | nil | string | number | BOOLEAN;
+number        : untypedExpression | int_ | double_;
+int_          : untypedExpression | INT;
+double_       : untypedExpression | DOUBLE;
+string        : untypedExpression | STRING;
+list          : untypedExpression ;
+nil           : NULL;
+bool
+ : LPAREN bool RPAREN         #groupExpression
+ | NOT bool                   #notExpression
+ | expression EQ expression   #eqExpression
+ | expression NEQ expression  #notEqExpression
+ | bool OR bool               #orExpression
+ | bool AND bool              #andExpression
+ | number GREATER number      #greaterExpression
+ | number GREATEREQ number    #greaterEqExpression
+ | number LESS number         #lessExpression
+ | number LESSEQ number       #lessEqExpression
+ | untypedExpression          #booleanExpression
+ | BOOLEAN                    #booleanConstant
  ;
 
-// evaluate and return value
-expr
- : LPAREN expr RPAREN     #groupExpression
- | NOT expr               #notExpression
- | expr EQ expr           #eqExpression
- | expr NEQ expr          #notEqExpression
- | expr OR expr           #orExpression
- | expr AND expr          #andExpression
- | expr GREATER expr      #greaterExpression
- | expr GREATEREQ expr    #greaterEqExpression
- | expr LESS expr         #lessExpression
- | expr LESSEQ expr       #lessEqExpression
- | STRING                 #stringExpression
- | INT                    #intExpression
- | DOUBLE                 #doubleExpression
- | BOOLEAN                #booleanExpression
- | NULL                   #nullExpression
- | resolve                #resolveExpression
- | macro                  #macroExpression
+escapedExpression : untypedExpression;
+untypedExpression
+ : '<' id accessor* '>'                                   #idExpression
+ | ID_MACRO LPAREN expression? (',' expression)* RPAREN   #macroExpression
  ;
 
-resolve
- : '<' (ID | STRING) '>'
+accessor
+ : '.' id            #mapAccessor
+ | '[' int_ ']'      #listAccessor
  ;
 
-replaceStatement
- : DOLLAR? (resolve | macro)+
- ;
+id: ID | STRING;
 
-graqlVariable
- : ID_GRAQL
+var
+ : DOLLAR (untypedExpression)+   #varResolved
+ | VAR_GRAQL                     #varLiteral
  ;
 
 keyword
@@ -72,6 +72,8 @@ keyword
 | ';'
 | RPAREN
 | LPAREN
+| LBR
+| RBR
 | ':'
 | FOR
 | IF
@@ -114,7 +116,10 @@ LESSEQ      : '<=';
 
 LPAREN      : '(';
 RPAREN      : ')';
+LBR         : '[';
+RBR         : ']';
 DOLLAR      : '$';
+AT          : '@';
 QUOTE       : '"';
 SQOUTE      : '\'';
 
@@ -122,14 +127,14 @@ NULL        : 'null';
 INT         : [0-9]+;
 DOUBLE      : [0-9.]+;
 BOOLEAN     : 'true' | 'false' ;
-ID          : [a-zA-Z0-9_-]+ ('.' [a-zA-Z0-9_-]+ )*;
+ID          : [a-zA-Z0-9_-]+;
 STRING      : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';
 
-ID_GRAQL    : '$' ID;
-ID_MACRO    : '@' ID;
+VAR_GRAQL   : DOLLAR ID;
+ID_MACRO    : AT ID;
 
 // hidden channels
-WS          : [ \t\r\n]                  -> channel(1);
-COMMENT     : '#' .*? '\r'? ('\n' | EOF) -> channel(2);
+WS          : [ \t\r\n]                  -> channel(HIDDEN);
+COMMENT     : '#' .*? '\r'? ('\n' | EOF) -> channel(HIDDEN);
 
 fragment ESCAPE_SEQ : '\\' . ;

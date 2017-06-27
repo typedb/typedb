@@ -25,6 +25,7 @@ import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.Splitter;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -136,11 +137,11 @@ public class GraqlShell {
     );
 
     private static final String TEMP_FILENAME = "/graql-tmp.gql";
-    private static final String HISTORY_FILENAME = System.getProperty("user.home") + "/.graql-history";
+    private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
 
     private static final String DEFAULT_EDITOR = "vim";
 
-    private final File tempFile = new File(System.getProperty("java.io.tmpdir") + TEMP_FILENAME);
+    private final File tempFile = new File(StandardSystemProperty.JAVA_IO_TMPDIR.value() + TEMP_FILENAME);
     private ConsoleReader console;
 
     private final String historyFilename;
