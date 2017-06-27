@@ -21,6 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.OntologyElement;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
@@ -118,12 +119,12 @@ class TxCache {
      *
      */
     void refreshOntologyCache(){
-        Map<TypeLabel, Type> cachedOntologySnapshot = graphCache.getCachedTypes();
+        Map<TypeLabel, OntologyElement> cachedOntologySnapshot = graphCache.getCachedTypes();
         Map<TypeLabel, TypeId> cachedLabelsSnapshot = graphCache.getCachedLabels();
 
         //Read central cache into txCache cloning only base concepts. Sets clones later
-        for (Type type : cachedOntologySnapshot.values()) {
-            cacheConcept((TypeImpl) type);
+        for (OntologyElement type : cachedOntologySnapshot.values()) {
+            cacheConcept((ConceptImpl) type);
         }
 
         //Load Labels Separately. We do this because the TypeCache may have expired.

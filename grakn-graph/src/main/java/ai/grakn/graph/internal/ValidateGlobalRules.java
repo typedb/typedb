@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.OntologyElement;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
@@ -122,9 +123,6 @@ class ValidateGlobalRules {
      * @return An error message if the relates does not have a single incoming RELATES edge
      */
     static Optional<String> validateHasSingleIncomingRelatesEdge(RoleType roleType){
-        if(roleType.isAbstract()) {
-            return Optional.empty();
-        }
         if(roleType.relationTypes().isEmpty()) {
             return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(roleType.getLabel()));
         }
@@ -193,7 +191,7 @@ class ValidateGlobalRules {
 
         Collection<RoleType> superRelates = superRelationType.relates();
         Collection<RoleType> relates = relationType.relates();
-        Set<TypeLabel> relatesLabels = relates.stream().map(Type::getLabel).collect(Collectors.toSet());
+        Set<TypeLabel> relatesLabels = relates.stream().map(OntologyElement::getLabel).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationTypes is the sub of a role which is in the relates of it's supers

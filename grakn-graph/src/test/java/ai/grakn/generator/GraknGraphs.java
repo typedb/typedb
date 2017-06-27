@@ -26,7 +26,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.OntologyElement;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -34,6 +34,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
@@ -47,7 +48,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.StringUtil.valueToString;
@@ -182,25 +185,25 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary("graph", "showImplicitConcepts", flag);
             },
             () -> {
-                Type type = type();
+                Type type = entityType();
                 RoleType roleType = roleType();
                 type.plays(roleType);
                 summary(type, "plays", roleType);
             },
             () -> {
-                Type type = type();
+                Type type = entityType();
                 ResourceType resourceType = resourceType();
                 type.resource(resourceType);
                 summary(type, "resource", resourceType);
             },
             () -> {
-                Type type = type();
+                Type type = entityType();
                 ResourceType resourceType = resourceType();
                 type.key(resourceType);
                 summary(type, "key", resourceType);
             },
             () -> {
-                Type type = type();
+                Type type = entityType();
                 boolean isAbstract = random.nextBoolean();
                 type.setAbstract(isAbstract);
                 summary(type, "setAbstract", isAbstract);
@@ -271,9 +274,12 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary(thing, "resource", resource);
             },
             () -> {
-                Type type = type();
+                OntologyElement type = ontologyElement();
                 Thing thing = instance();
-                type.scope(thing);
+                //TODO: Clean this up
+                if(type instanceof Type) {
+                    ((Type)type).scope(thing);
+                }
                 summary(type, "scope", thing);
             },
             () -> {
@@ -312,7 +318,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return gen().make(TypeLabels.class, gen().make(MetasyntacticStrings.class)).generate(random, status);
     }
 
-    private Type type() {
+    private OntologyElement ontologyElement() {
         return random.choose(graph.admin().getMetaConcept().subTypes());
     }
 
@@ -337,7 +343,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private Thing instance() {
-        return chooseOrThrow(graph.admin().getMetaConcept().instances());
+        Set<? extends Thing> candidates = graph.admin().getMetaConcept().subTypes().stream().
+                filter(element -> !element.isRoleType()).
+                flatMap(element -> ((Type) element).instances().stream()).
+                collect(Collectors.toSet());
+        return chooseOrThrow(candidates);
     }
 
     private Relation relation() {
@@ -367,12 +377,18 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     public static Collection<? extends Type> allTypesFrom(GraknGraph graph) {
-        Function<GraknGraph, ? extends Collection<? extends Type>> function = g -> g.admin().getMetaConcept().subTypes();
+        Function<GraknGraph, ? extends Collection<? extends Type>> function = g -> g.admin().getMetaConcept().
+                subTypes().stream().
+                filter(t -> !t.isRoleType()).map(t -> (Type) t).
+                collect(Collectors.toSet());
         return CommonUtil.withImplicitConceptsVisible(graph, function);
     }
 
     public static Collection<? extends Thing> allInstancesFrom(GraknGraph graph) {
-        Function<GraknGraph, ? extends Collection<? extends Thing>> function = g -> g.admin().getMetaConcept().instances();
+        Function<GraknGraph, ? extends Collection<? extends Thing>> function = g -> g.admin().getMetaConcept().subTypes().stream().
+                filter(element -> !element.isRoleType()).
+                flatMap(element -> ((Type) element).instances().stream()).
+                collect(Collectors.toSet());
         return CommonUtil.withImplicitConceptsVisible(graph, function);
     }
 

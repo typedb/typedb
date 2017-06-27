@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.OntologyElement;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -276,7 +277,7 @@ public class EntityTypeTest extends GraphTestBase{
         RelationType relationType = graknGraph.getRelationType(hasResourceLabel.getValue());
         assertEquals(hasResourceLabel, relationType.getLabel());
 
-        Set<TypeLabel> roleLabels = relationType.relates().stream().map(Type::getLabel).collect(toSet());
+        Set<TypeLabel> roleLabels = relationType.relates().stream().map(OntologyElement::getLabel).collect(toSet());
         assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
 
         assertThat(entityType.plays(), containsInAnyOrder(graknGraph.getRoleType(hasResourceOwnerLabel.getValue())));

@@ -24,6 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.OntologyElement;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -414,15 +415,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public EntityType putEntityType(TypeLabel label) {
-        return putType(label, Schema.BaseType.ENTITY_TYPE,
+        return putOntologyElement(label, Schema.BaseType.ENTITY_TYPE,
                 v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
-    private <T extends TypeImpl> T putType(TypeLabel label, Schema.BaseType baseType, Function<VertexElement, T> factory){
+    private <T extends OntologyElementImpl> T putOntologyElement(TypeLabel label, Schema.BaseType baseType, Function<VertexElement, T> factory){
         checkOntologyMutationAllowed();
-        TypeImpl type = buildType(label, () -> factory.apply(putVertex(label, baseType)));
+        OntologyElementImpl type = buildOntologyElement(label, () -> factory.apply(putVertex(label, baseType)));
 
-        T finalType = validateConceptType(type, baseType, () -> {
+        T finalType = validateOntologyElement(type, baseType, () -> {
             throw PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.TYPE_LABEL, label);
         });
 
@@ -435,7 +436,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return finalType;
     }
 
-    private <T extends Concept> T validateConceptType(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler){
+    private <T extends Concept> T validateOntologyElement(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler){
         if(concept != null && baseType.getClassType().isInstance(concept)){
             //noinspection unchecked
             return (T) concept;
@@ -452,7 +453,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      *
      * @return The type which was either cached or built via a DB read or write
      */
-    private TypeImpl buildType(TypeLabel label, Supplier<TypeImpl> dbBuilder){
+    private OntologyElementImpl buildOntologyElement(TypeLabel label, Supplier<OntologyElementImpl> dbBuilder){
         if(txCache().isTypeCached(label)){
             return txCache().getCachedType(label);
         } else {
@@ -467,12 +468,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public RelationType putRelationType(TypeLabel label) {
-        return putType(label, Schema.BaseType.RELATION_TYPE,
+        return putOntologyElement(label, Schema.BaseType.RELATION_TYPE,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE)).asRelationType();
     }
 
     RelationType putRelationTypeImplicit(TypeLabel label) {
-        return putType(label, Schema.BaseType.RELATION_TYPE,
+        return putOntologyElement(label, Schema.BaseType.RELATION_TYPE,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE)).asRelationType();
     }
 
@@ -483,12 +484,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public RoleType putRoleType(TypeLabel label) {
-        return putType(label, Schema.BaseType.ROLE_TYPE,
+        return putOntologyElement(label, Schema.BaseType.ROLE_TYPE,
                 v -> factory().buildRoleType(v, getMetaRoleType(), Boolean.FALSE)).asRoleType();
     }
 
     RoleType putRoleTypeImplicit(TypeLabel label) {
-        return putType(label, Schema.BaseType.ROLE_TYPE,
+        return putOntologyElement(label, Schema.BaseType.ROLE_TYPE,
                 v -> factory().buildRoleType(v, getMetaRoleType(), Boolean.TRUE)).asRoleType();
     }
 
@@ -501,7 +502,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public <V> ResourceType<V> putResourceType(TypeLabel label, ResourceType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
-        ResourceType<V> resourceType = putType(label, Schema.BaseType.RESOURCE_TYPE,
+        ResourceType<V> resourceType = putOntologyElement(label, Schema.BaseType.RESOURCE_TYPE,
                 v -> factory().buildResourceType(v, getMetaResourceType(), dataType)).asResourceType();
 
         //These checks is needed here because caching will return a type by label without checking the datatype
@@ -521,7 +522,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public RuleType putRuleType(TypeLabel label) {
-        return putType(label, Schema.BaseType.RULE_TYPE,
+        return putOntologyElement(label, Schema.BaseType.RULE_TYPE,
                 v ->  factory().buildRuleType(v, getMetaRuleType()));
     }
 
@@ -537,8 +538,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private <T extends Type> T getType(TypeLabel label, Schema.BaseType baseType){
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
-        Type type = buildType(label, ()-> getType(convertToId(label)));
-        return validateConceptType(type, baseType, () -> null);
+        OntologyElement ontologyElement = buildOntologyElement(label, ()-> getType(convertToId(label)));
+        return validateOntologyElement(ontologyElement, baseType, () -> null);
     }
     <T extends Type> T getType(TypeId id){
         if(!id.isValid()) return null;
@@ -599,7 +600,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public Type getMetaConcept() {
+    public OntologyElement getMetaConcept() {
         return getType(Schema.MetaSchema.THING.getId());
     }
 

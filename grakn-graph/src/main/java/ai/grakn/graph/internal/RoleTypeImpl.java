@@ -18,7 +18,6 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -49,7 +48,7 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-class RoleTypeImpl extends TypeImpl<RoleType, Thing> implements RoleType{
+class RoleTypeImpl extends OntologyElementImpl<RoleType> implements RoleType{
     private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
     private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
@@ -122,34 +121,12 @@ class RoleTypeImpl extends TypeImpl<RoleType, Thing> implements RoleType{
 
     /**
      *
-     * @return All the instances of this type.
-     */
-    @Override
-    public Collection<Thing> instances(){
-        return Collections.emptyList();
-    }
-
-    /**
-     *
      * @return Get all the roleplayers of this role type
      */
     public Stream<Casting> rolePlayers(){
         return relationTypes().stream().
                 flatMap(relationType -> relationType.instances().stream()).
                 flatMap(relation -> ((RelationImpl)relation).castingsRelation(this));
-    }
-
-    /**
-     *
-     * @param roleType The Role Type which the instances of this Type are allowed to play.
-     * @return The Type itself.
-     */
-    @Override
-    public RoleType plays(RoleType roleType) {
-        if(equals(roleType)){
-            throw GraphOperationException.invalidPlays(roleType);
-        }
-        return super.plays(roleType, false);
     }
 
     @Override
@@ -171,6 +148,11 @@ class RoleTypeImpl extends TypeImpl<RoleType, Thing> implements RoleType{
             cachedRelationTypes.clear();
             cachedDirectPlayedByTypes.clear();
         }
+    }
+
+    @Override
+    void trackSuperChange() {
+
     }
 
 }
