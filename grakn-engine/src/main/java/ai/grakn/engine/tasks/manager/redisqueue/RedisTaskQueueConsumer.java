@@ -23,6 +23,7 @@ import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
@@ -61,6 +62,7 @@ public class RedisTaskQueueConsumer implements Runnable {
     private MetricRegistry metricRegistry;
     private Task task;
     private EngineGraknGraphFactory factory;
+    private LockProvider lockProvider;
 
     @SuppressWarnings("unused")
     public RedisTaskQueueConsumer(String taskId, TaskState taskState, TaskConfiguration taskConfiguration) {
@@ -85,6 +87,7 @@ public class RedisTaskQueueConsumer implements Runnable {
             Preconditions.checkNotNull(config);
             Preconditions.checkNotNull(redisCountStorage);
             Preconditions.checkNotNull(redisTaskManager);
+            Preconditions.checkNotNull(lockProvider);
         } catch (NullPointerException e){
             throw new IllegalStateException(String.format("%s was started but the state wasn't set explicitly", this.getClass().getName()));
         }
@@ -107,7 +110,7 @@ public class RedisTaskQueueConsumer implements Runnable {
                 runningTask.initialize(saveCheckpoint(taskState, redisTaskManager.storage()),
                         taskConfiguration, redisTaskManager,
                                 config,
-                                redisCountStorage, factory, metricRegistry);
+                                redisCountStorage, factory, lockProvider, metricRegistry);
                 boolean completed;
                 if (taskShouldResume(task)) {
                     // Not implemented
@@ -168,11 +171,12 @@ public class RedisTaskQueueConsumer implements Runnable {
 
     public void setRunningState(RedisTaskManager redisTaskManager, EngineID engineId,
             GraknEngineConfig config, Pool<Jedis> redisCountStorage, EngineGraknGraphFactory factory,
-            MetricRegistry metricRegistry) {
+            LockProvider lockProvider, MetricRegistry metricRegistry) {
         this.redisTaskManager = redisTaskManager;
         this.engineId = engineId;
         this.config = config;
         this.redisCountStorage = RedisCountStorage.create(redisCountStorage);
+        this.lockProvider = lockProvider;
         this.metricRegistry = metricRegistry;
         this.factory = factory;
     }

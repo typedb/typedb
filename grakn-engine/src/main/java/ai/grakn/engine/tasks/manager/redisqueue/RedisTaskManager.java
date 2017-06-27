@@ -22,7 +22,6 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.RedissonLockProvider;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
@@ -54,7 +53,6 @@ public class RedisTaskManager implements TaskManager {
     private final EngineGraknGraphFactory factory;
     private final RedisTaskQueue redisTaskQueue;
     private final ExecutorService consumerExecutor;
-    private final RedissonLockProvider distributedLockClient;
     private final int threads;
 
 
@@ -66,21 +64,20 @@ public class RedisTaskManager implements TaskManager {
     }
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
+            EngineGraknGraphFactory factory, RedissonLockProvider distributedLockClient, MetricRegistry metricRegistry) {
+        this(engineId, config, jedisPool, Runtime.getRuntime().availableProcessors(), factory, distributedLockClient, metricRegistry);
+    }
+
+    public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
             int threads, EngineGraknGraphFactory factory,
             RedissonLockProvider distributedLockClient, MetricRegistry metricRegistry) {
         this.engineId = engineId;
         this.config = config;
         this.factory = factory;
         this.redisTaskStorage = RedisTaskStorage.create(jedisPool);
-        this.redisTaskQueue = new RedisTaskQueue(jedisPool, metricRegistry);
+        this.redisTaskQueue = new RedisTaskQueue(jedisPool, distributedLockClient, metricRegistry);
         this.threads = threads;
         this.consumerExecutor = Executors.newFixedThreadPool(threads);
-        this.distributedLockClient = distributedLockClient;
-    }
-
-    public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
-            EngineGraknGraphFactory factory, RedissonLockProvider distributedLockClient, MetricRegistry metricRegistry) {
-        this(engineId, config, jedisPool, Runtime.getRuntime().availableProcessors(), factory, distributedLockClient, metricRegistry);
     }
 
     @Override
@@ -99,13 +96,6 @@ public class RedisTaskManager implements TaskManager {
 
     @Override
     public void start() {
-        // TODO: get rid of this singleton
-        LockProvider.instantiate((lockName, existingLock) -> {
-            if(existingLock != null){
-                return existingLock;
-            }
-            return distributedLockClient.getLock(lockName);
-        });
         for (int i = 1; i <= threads; i++) {
             // TODO refactor the interfaces so that we don't have to pass the manager around
             redisTaskQueue.subscribe(this, consumerExecutor, engineId, config, factory);

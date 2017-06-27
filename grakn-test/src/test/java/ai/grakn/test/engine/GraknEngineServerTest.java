@@ -49,7 +49,8 @@ public class GraknEngineServerTest {
         conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, StandaloneTaskManager.class.getName());
 
         // Start Engine
-        try (GraknEngineServer server = GraknEngineServer.start(conf)) {
+        try (GraknEngineServer server = new GraknEngineServer(conf)) {
+            server.start();
             assertTrue(server.getTaskManager() instanceof StandaloneTaskManager);
         }
     }
@@ -62,7 +63,8 @@ public class GraknEngineServerTest {
         conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
 
         // Start Engine
-        try (GraknEngineServer server = GraknEngineServer.start(conf)) {
+        try (GraknEngineServer server = new GraknEngineServer(conf)) {
+            server.start();
             assertThat(server.getTaskManager(), instanceOf(RedisTaskManager.class));
         }
     }
@@ -72,7 +74,8 @@ public class GraknEngineServerTest {
         GraknTestSetup.startCassandraIfNeeded();
 
         GraknEngineConfig conf = GraknEngineConfig.create();
-        try (GraknEngineServer server = GraknEngineServer.start(conf)) {
+        try (GraknEngineServer server = new GraknEngineServer(conf)) {
+            server.start();
             assertNotNull(server.factory().systemKeyspace());
 
             // init a random keyspace

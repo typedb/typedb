@@ -82,13 +82,15 @@ public class StandaloneTaskManager implements TaskManager {
     private final Meter stoppedMeter;
     private final Meter completedMeter;
     private final EngineGraknGraphFactory factory;
+    private LockProvider lockProvider;
     private final MetricRegistry metricRegistry;
 
-    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config, RedisCountStorage redis, EngineGraknGraphFactory factory, MetricRegistry metricRegistry) {
+    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config, RedisCountStorage redis, EngineGraknGraphFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry) {
         this.engineID = engineId;
         this.config = config;
         this.redis = redis;
         this.factory = factory;
+        this.lockProvider = lockProvider;
         this.metricRegistry = metricRegistry;
 
         stoppedTasks = new HashSet<>();
@@ -118,8 +120,6 @@ public class StandaloneTaskManager implements TaskManager {
 
         scheduledTasks.values().forEach(t -> t.cancel(true));
         scheduledTasks.clear();
-
-        LockProvider.clear();
     }
 
     @Override
@@ -137,7 +137,7 @@ public class StandaloneTaskManager implements TaskManager {
             Runnable taskExecution = submitTaskForExecution(taskState, configuration);
 
             ScheduledFuture future;
-            if(schedule.isRecurring()){
+            if(schedule.isRecurring() && schedule.interval().isPresent()){
                 future = schedulingService.scheduleAtFixedRate(taskExecution, delay, schedule.interval().get().toMillis(), TimeUnit.MILLISECONDS);
             } else {
                 future = schedulingService.schedule(taskExecution, delay, TimeUnit.MILLISECONDS);
@@ -153,13 +153,7 @@ public class StandaloneTaskManager implements TaskManager {
 
     @Override
     public void start() {
-        LockProvider.instantiate((lockName, existingLock) -> {
-            if(existingLock != null){
-                return existingLock;
-            }
-            // TODO: why non reentrant?
-            return new NonReentrantLock();
-        });
+
     }
 
     public void stopTask(TaskId id) {
@@ -204,7 +198,7 @@ public class StandaloneTaskManager implements TaskManager {
             Context context = executeTaskTimer.time();
             try {
                 BackgroundTask runningTask = task.taskClass().newInstance();
-                runningTask.initialize(saveCheckpoint(task), configuration, this, config, redis, factory, metricRegistry);
+                runningTask.initialize(saveCheckpoint(task), configuration, this, config, redis, factory, lockProvider, metricRegistry);
                 runningTasks.put(task.getId(), runningTask);
 
                 boolean completed;

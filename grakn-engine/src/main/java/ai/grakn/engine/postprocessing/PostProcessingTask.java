@@ -21,13 +21,13 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import com.google.common.base.Preconditions;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -101,12 +101,12 @@ public class PostProcessingTask extends BackgroundTask {
      * @param conceptIds
      */
     private void runPostProcessingMethod(GraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds){
-
+        Preconditions.checkNotNull(this.getLockProvider(), "Lock provider was null, possible race condition in initialisation");
         if(graph.admin().duplicateResourcesExist(conceptIndex, conceptIds)){
 
             // Acquire a lock when you post process on an index to prevent race conditions
             // Lock is acquired after checking for duplicates to reduce runtime
-            Lock indexLock = LockProvider.getLock(PostProcessingTask.LOCK_KEY + "/" + conceptIndex);
+            Lock indexLock = this.getLockProvider().getLock(PostProcessingTask.LOCK_KEY + "/" + conceptIndex);
             indexLock.lock();
 
             try {

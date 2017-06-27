@@ -18,19 +18,14 @@
 
 package ai.grakn.test.engine.lock;
 
-import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.lock.GenericLockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
-import ai.grakn.util.ErrorMessage;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Function;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
-import org.junit.After;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
@@ -41,7 +36,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class LockProviderTest {
+public class GenericLockProviderTest {
 
     private final String LOCK_NAME = "lock";
 
@@ -51,45 +46,20 @@ public class LockProviderTest {
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    @After
-    public void clearLock(){
-        LockProvider.clear();
-    }
-
     @Test
     public void whenGivenLock_ReturnsLockWithSameClass(){
-        LockProvider.instantiate((string, existingLock) -> new NonReentrantLock());
-
-        assertThat(LockProvider.getLock(LOCK_NAME).getClass(), equalTo(NonReentrantLock.class));
-    }
-
-    @Test
-    @Ignore("Not reading from log properly")
-    public void whenInstantiatedTwice_ThrowsRuntimeException(){
-        LockProvider.instantiate((string, existingLock) -> new NonReentrantLock());
-        LockProvider.instantiate((string, existingLock) -> new NonReentrantLock());
-        assertThat(systemOut.getLog(), containsString(ErrorMessage.LOCK_ALREADY_INSTANTIATED.getMessage()));
-    }
-
-    @Test
-    public void whenInstantiatedTwiceWithClear_ReturnsLock(){
-        LockProvider.instantiate((string, existingLock) -> new NonReentrantLock());
-
-        LockProvider.clear();
-
-        LockProvider.instantiate((string, existingLock) -> new NonReentrantLock());
-
-        assertNotNull(LockProvider.getLock(LOCK_NAME));
+        assertThat(new GenericLockProvider().getLock(LOCK_NAME).getClass(), equalTo(NonReentrantLock.class));
     }
 
     @Test
     public void whenGettingLockWithDifferentKeys_LockProviderFunctionCalledTwice(){
         Function<String, Lock> lockProviderFunction = mock(Function.class);
-        LockProvider.instantiate((string, existingLock) -> lockProviderFunction.apply(string));
+        GenericLockProvider l = new GenericLockProvider(
+                (string, existingLock) -> lockProviderFunction.apply(string));
         when(lockProviderFunction.apply(any())).thenReturn(new NonReentrantLock());
 
-        LockProvider.getLock(LOCK_NAME + "1");
-        LockProvider.getLock(LOCK_NAME + "2");
+        l.getLock(LOCK_NAME + "1");
+        l.getLock(LOCK_NAME + "2");
 
         verify(lockProviderFunction, times(2)).apply(any());
     }
@@ -99,35 +69,36 @@ public class LockProviderTest {
         Function<String, Lock> lockProviderFunction = mock(Function.class);
         when(lockProviderFunction.apply(any())).thenReturn(new NonReentrantLock());
 
-        LockProvider.instantiate((string, existingLock) -> lockProviderFunction.apply(string));
+        GenericLockProvider l = new GenericLockProvider(
+                (string, existingLock) -> lockProviderFunction.apply(string));
 
-        LockProvider.getLock(LOCK_NAME + "1");
-        LockProvider.getLock(LOCK_NAME + "1");
+        l.getLock(LOCK_NAME + "1");
+        l.getLock(LOCK_NAME + "1");
 
         verify(lockProviderFunction, times(2)).apply(any());
     }
 
     @Test
     public void whenGivenFunctionToReturnDifferentLocks_LocksAreDifferent(){
-        LockProvider.instantiate((string, existingLock) -> new NonReentrantLock());
+        GenericLockProvider l = new GenericLockProvider((string, existingLock) -> new NonReentrantLock());
 
-        Lock lock1 = LockProvider.getLock(LOCK_NAME);
-        Lock lock2 = LockProvider.getLock(LOCK_NAME);
+        Lock lock1 = l.getLock(LOCK_NAME);
+        Lock lock2 = l.getLock(LOCK_NAME);
 
         assertNotEquals(lock1, lock2);
     }
 
     @Test
     public void whenGivenFunctionToReturnSameLocks_LocksAreTheSame(){
-        LockProvider.instantiate((string, existingLock) -> {
+        GenericLockProvider l = new GenericLockProvider((string, existingLock) -> {
             if(existingLock != null){
                 return existingLock;
             }
             return new NonReentrantLock();
         });
 
-        Lock lock1 = LockProvider.getLock(LOCK_NAME);
-        Lock lock2 = LockProvider.getLock(LOCK_NAME);
+        Lock lock1 = l.getLock(LOCK_NAME);
+        Lock lock2 = l.getLock(LOCK_NAME);
 
         assertEquals(lock1, lock2);
     }

@@ -85,7 +85,8 @@ public abstract class GraknTestEngineSetup {
 
         // start engine
         setRestAssuredUri(config);
-        GraknEngineServer server = GraknEngineServer.start(config);
+        GraknEngineServer server = new GraknEngineServer(config);
+        server.start();
 
         LOG.info("engine started.");
 

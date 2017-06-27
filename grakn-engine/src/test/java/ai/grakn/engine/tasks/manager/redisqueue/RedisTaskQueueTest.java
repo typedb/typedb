@@ -4,6 +4,7 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.lock.GenericLockProvider;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -100,7 +101,8 @@ public class RedisTaskQueueTest {
 
     @Test
     public void testBasicBehaviour() throws ExecutionException, RetryException {
-        RedisTaskQueue taskQueue = new RedisTaskQueue(jedisPool, metricRegistry);
+        RedisTaskQueue taskQueue = new RedisTaskQueue(jedisPool, new GenericLockProvider(
+                GenericLockProvider.LOCAL_LOCK_FUNCTION), metricRegistry);
         taskQueue.subscribe(taskManager, executor, engineID, CONFIG, engineGraknGraphFactory);
         TaskId generate = TaskId.generate();
         TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskQueueTest.class.getName(), TaskSchedule.now(), Priority.LOW);

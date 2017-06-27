@@ -20,6 +20,8 @@ package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.lock.GenericLockProvider;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
@@ -46,6 +48,7 @@ public abstract class BackgroundTask {
     private @Nullable EngineGraknGraphFactory factory = null;
     private @Nullable RedisCountStorage redis = null;
     private @Nullable MetricRegistry metricRegistry = null;
+    private @Nullable LockProvider lockProvider = null;
 
     /**
      * Initialize the {@link BackgroundTask}. This must be called prior to any other call to {@link BackgroundTask}.
@@ -59,12 +62,28 @@ public abstract class BackgroundTask {
     public final void initialize(
             Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration,
             TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig, RedisCountStorage redis,
+            EngineGraknGraphFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry)  {
+        this.configuration = configuration;
+        this.taskSubmitter = taskSubmitter;
+        this.saveCheckpoint = saveCheckpoint;
+        this.engineConfig = engineConfig;
+        this.redis = redis;
+        this.lockProvider = lockProvider;
+        this.metricRegistry = metricRegistry;
+        this.factory = factory;
+    }
+
+    // TODO Get rid of this constructor and fix the tests
+    public final void initialize(
+            Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration,
+            TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig, RedisCountStorage redis,
             EngineGraknGraphFactory factory, MetricRegistry metricRegistry)  {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
         this.saveCheckpoint = saveCheckpoint;
         this.engineConfig = engineConfig;
         this.redis = redis;
+        this.lockProvider = new GenericLockProvider();
         this.metricRegistry = metricRegistry;
         this.factory = factory;
     }
@@ -158,4 +177,8 @@ public abstract class BackgroundTask {
         return metricRegistry;
     }
 
+    @Nullable
+    public LockProvider getLockProvider() {
+        return lockProvider;
+    }
 }

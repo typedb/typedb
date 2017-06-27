@@ -48,7 +48,8 @@ public class EngineTestHelper {
         if (server != null) {
             return;
         }
-        server = GraknEngineServer.start(config());        
+        server = new GraknEngineServer(config());
+        server.start();
     }
     
     /**

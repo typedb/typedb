@@ -25,7 +25,7 @@ import org.redisson.api.RedissonClient;
  *
  * @author Domenico Corapi
  */
-public class RedissonLockProvider implements DistributedLockProvider{
+public class RedissonLockProvider implements LockProvider {
 
     private RedissonClient redissonClient;
 

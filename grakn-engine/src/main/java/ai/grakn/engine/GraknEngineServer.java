@@ -30,6 +30,8 @@ import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.lock.GenericLockProvider;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.RedissonLockProvider;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
@@ -61,6 +63,7 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.util.Pool;
+import spark.HaltException;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -72,6 +75,7 @@ import spark.Service;
  */
 
 public class GraknEngineServer implements AutoCloseable {
+
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
             REST.WebPath.NEW_SESSION_URI,
@@ -84,32 +88,42 @@ public class GraknEngineServer implements AutoCloseable {
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
     private final EngineGraknGraphFactory factory;
-    private final RedisCountStorage redis;
+    private final RedisCountStorage redisCountStorage;
     private final MetricRegistry metricRegistry;
+    private final Pool<Jedis> jedisPool;
+    private final boolean inMemoryQueue;
+    private final LockProvider lockProvider;
 
-    private GraknEngineServer(GraknEngineConfig prop) {
+    public GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
-        Pool<Jedis> jedisPool = instantiateRedis(prop);
-        redis = RedisCountStorage.create(jedisPool);
-        factory = EngineGraknGraphFactory.create(prop.getProperties());
-        metricRegistry = new MetricRegistry();
-        taskManager = startTaskManager();
-        startHTTP();
-        printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
-                prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
+        int redisPort = Integer.parseInt(prop.tryProperty(REDIS_SERVER_PORT).orElse("6379"));
+        String redisUrl = prop.tryProperty(REDIS_SERVER_URL).orElse("localhost");
+        this.jedisPool = instantiateRedis(prop, redisUrl, redisPort);
+        this.redisCountStorage = RedisCountStorage.create(jedisPool);
+        this.factory = EngineGraknGraphFactory.create(prop.getProperties());
+        this.metricRegistry = new MetricRegistry();
+        this.taskManager = startTaskManager(redisCountStorage);
+        String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
+        this.inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
+        this.lockProvider = this.inMemoryQueue ? new GenericLockProvider()
+                : instantiateRedissonLockProvider(redisPort, redisUrl);
     }
+
 
     public static void main(String[] args) {
         GraknEngineConfig prop = GraknEngineConfig.create();
         // Start Engine
-        GraknEngineServer server = start(prop);
+        GraknEngineServer graknEngineServer = new GraknEngineServer(prop);
+        graknEngineServer.start();
         // close GraknEngineServer on SIGTERM
-        Thread closeThread = new Thread(server::close, "GraknEngineServer-shutdown");
+        Thread closeThread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
         Runtime.getRuntime().addShutdownHook(closeThread);
     }
 
-    public static GraknEngineServer start(GraknEngineConfig prop){
-        return new GraknEngineServer(prop);
+    public void start() {
+        startHTTP();
+        printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
+                prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
     }
 
     @Override
@@ -120,26 +134,27 @@ public class GraknEngineServer implements AutoCloseable {
 
     /**
      * Check in with the properties file to decide which type of task manager should be started
+     * @param redisCountStorage
      */
-    private TaskManager startTaskManager() {
+    private TaskManager startTaskManager(
+            RedisCountStorage redisCountStorage) {
         String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
-        TaskManager taskManager;
-        Config rConfig = new Config();
+        Config redissonConfig = new Config();
         // TODO generalise this to clusters
         String port = prop.tryProperty(REDIS_SERVER_PORT).orElse("6379");
         String url = prop.getProperty(REDIS_SERVER_URL);
-        LOG.info("Connecting redis client to {}:{}", url, port);
-        rConfig.useSingleServer()
+        LOG.info("Connecting redisCountStorage client to {}:{}", url, port);
+        redissonConfig.useSingleServer()
                 .setConnectionPoolSize(5)
                 .setAddress(String.format("%s:%s", url, port));
-        if (redis == null) {
-            // TODO use a builder
-            throw new IllegalStateException("Redis storage not initialized before task manager");
-        }
+        TaskManager taskManager;
         if (taskManagerClassName.contains("RedisTaskManager")) {
-            taskManager = new RedisTaskManager(engineId, prop, redis, factory, new RedissonLockProvider(Redisson.create(rConfig)), metricRegistry);
+            RedissonLockProvider distributedLockClient = new RedissonLockProvider(
+                    Redisson.create(redissonConfig));
+            taskManager = new RedisTaskManager(engineId, prop, redisCountStorage, factory,
+                    distributedLockClient, metricRegistry);
         } else if (taskManagerClassName.contains("StandaloneTaskManager")) {
-            taskManager = new StandaloneTaskManager(engineId, prop, redis, factory, metricRegistry);
+            taskManager = new StandaloneTaskManager(engineId, prop, redisCountStorage, factory, lockProvider, metricRegistry);
         } else {
             throw new IllegalStateException("Unexpected task manager requested: " + taskManagerClassName);
         }
@@ -241,8 +256,7 @@ public class GraknEngineServer implements AutoCloseable {
      * access to specific endpoints.
      * @param request request information from the client
      */
-    private static void checkAuthorization(Service spark, Request request, JWTHandler jwtHandler) {
-
+    private static void checkAuthorization(Service spark, Request request, JWTHandler jwtHandler) throws HaltException {
         //we dont check authorization token if the path requested is one of the unauthenticated ones
         if (!unauthenticatedEndPoints.contains(request.pathInfo())) {
             //add check to see if string contains substring "Bearer ", for now a lot of optimism here
@@ -255,7 +269,7 @@ public class GraknEngineServer implements AutoCloseable {
                 String token = request.headers("Authorization").substring(7);
                 authenticated = jwtHandler.verifyJWT(token);
                 request.attribute(REST.Request.USER_ATTR, jwtHandler.extractUserFromJWT(token));
-            } 
+            }
             catch (GraknBackendException e) {
                 throw e;
             }
@@ -295,9 +309,7 @@ public class GraknEngineServer implements AutoCloseable {
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
 
-    private Pool<Jedis> instantiateRedis(GraknEngineConfig prop) {
-        String redisUrl = prop.getProperty(REDIS_SERVER_URL);
-        int redisPort = prop.getPropertyAsInt(REDIS_SERVER_PORT);
+    private Pool<Jedis> instantiateRedis(GraknEngineConfig prop, String redisUrl, int redisPort) {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         // TODO Make this configurable
         poolConfig.setMaxTotal(32);
@@ -307,12 +319,15 @@ public class GraknEngineServer implements AutoCloseable {
                 .orElseGet(() -> new JedisPool(poolConfig, redisUrl, redisPort));
     }
 
-    /**
-     * Method that prints a welcome message, listening address and path to the LOG that will be used.
-     *
-     * @param host        Host address to which Grakn Engine is bound to
-     * @param port        Web server port number
-     */
+    private RedissonLockProvider instantiateRedissonLockProvider(int redisPort, String redisUrl) {
+        LOG.info("Connecting redisCountStorage client to {}:{}", redisUrl, redisPort);
+        Config redissonConfig = new Config();
+        redissonConfig.useSingleServer()
+                .setConnectionPoolSize(5)
+                .setAddress(String.format("%s:%s", redisUrl, redisPort));
+        return new RedissonLockProvider(Redisson.create(redissonConfig));
+    }
+
     private static void printStartMessage(String host, String port) {
         String address = "http://" + host + ":" + port;
         LOG.info("\n==================================================");

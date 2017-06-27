@@ -21,6 +21,7 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
@@ -61,13 +62,17 @@ class RedisTaskQueue {
     private final Client redisClient;
     private final Config config;
     private Pool<Jedis> jedisPool;
+    private LockProvider lockProvider;
     private final MetricRegistry metricRegistry;
 
     private final Meter putJobMeter;
 
-    RedisTaskQueue(Pool<Jedis> jedisPool,
+    RedisTaskQueue(
+            Pool<Jedis> jedisPool,
+            LockProvider lockProvider,
             MetricRegistry metricRegistry) {
         this.jedisPool = jedisPool;
+        this.lockProvider = lockProvider;
         this.metricRegistry = metricRegistry;
         this.config = new ConfigBuilder().build();
         this.redisClient = new ClientPoolImpl(config, jedisPool);
@@ -97,7 +102,7 @@ class RedisTaskQueue {
         worker.getWorkerEventEmitter().addListener(
                 (event, worker1, queue, job, runner, result, t) -> {
                     if (runner instanceof RedisTaskQueueConsumer) {
-                        ((RedisTaskQueueConsumer) runner).setRunningState(redisTaskManager, engineId, config, jedisPool, factory, metricRegistry);
+                        ((RedisTaskQueueConsumer) runner).setRunningState(redisTaskManager, engineId, config, jedisPool, factory, lockProvider, metricRegistry);
                     }
                 }, WorkerEvent.JOB_EXECUTE);
         worker.setExceptionHandler((jobExecutor, exception, curQueue) -> {
