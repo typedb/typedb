@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -102,8 +103,8 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     @Override
     public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
         type.getTypeLabel().ifPresent(typeLabel -> {
-            Type theType = graph.getOntologyConcept(typeLabel);
-            if (theType != null && theType.isRoleType()) {
+            OntologyConcept theOntologyConcept = graph.getOntologyConcept(typeLabel);
+            if (theOntologyConcept != null && theOntologyConcept.isRoleType()) {
                 throw GraqlQueryException.queryInstanceOfRoleType(typeLabel);
             }
         });

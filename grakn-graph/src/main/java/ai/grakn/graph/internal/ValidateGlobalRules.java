@@ -300,14 +300,14 @@ class ValidateGlobalRules {
         pattern.admin().getVars().stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
-                    Type type = graph.getOntologyConcept(typeLabel);
-                    if(type == null){
+                    OntologyConcept ontologyConcept = graph.getOntologyConcept(typeLabel);
+                    if(ontologyConcept == null){
                         errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getLabel(), typeLabel));
                     } else {
                         if(side.equalsIgnoreCase("LHS")){
-                            rule.addHypothesis(type);
+                            rule.addHypothesis(ontologyConcept);
                         } else {
-                            rule.addConclusion(type);
+                            rule.addConclusion(ontologyConcept);
                         }
                     }
                 });
