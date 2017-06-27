@@ -20,7 +20,7 @@ insert
 "city" sub place;
 
 
-"location" sub role, is-abstract;
+"location" sub role;
 
 "member-location" sub location;
 "container-location" sub location;
@@ -54,7 +54,7 @@ person
 
 person plays located-subject;
 
-"acquaintance" sub role, is-abstract;
+"acquaintance" sub role;
 "acquaintance1" sub acquaintance;
 "acquaintance2" sub acquaintance;
 "knows" sub relation,
@@ -166,7 +166,7 @@ message plays tagged-subject;
 person plays tagged-subject;
 
 # tag class
-"group" sub role, is-abstract;
+"group" sub role;
 "subgroup" sub group;
 "supergroup" sub group;
 "subgrouping" sub relation, relates subgroup, relates supergroup;
@@ -177,3 +177,10 @@ category plays subgroup, plays supergroup;
 "grouping" sub relation, relates grouped-tag, relates tag-group;
 tag plays grouped-tag;
 category plays tag-group;
+
+#This should really be looked at and removed later on
+#Filler relation type to bypass validation rule
+"fake-relation" sub relation
+    relates group
+    relates acquaintance
+    relates location;
