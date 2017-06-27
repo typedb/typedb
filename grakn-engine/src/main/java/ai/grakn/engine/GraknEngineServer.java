@@ -17,6 +17,7 @@
  */
 package ai.grakn.engine;
 
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_URL;
 import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
@@ -295,16 +296,15 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     private Pool<Jedis> instantiateRedis(GraknEngineConfig prop) {
-        String redisUrl = prop.getProperty(GraknEngineConfig.REDIS_SERVER_URL);
-        int redisPort = prop.getPropertyAsInt(GraknEngineConfig.REDIS_SERVER_PORT);
+        String redisUrl = prop.getProperty(REDIS_SERVER_URL);
+        int redisPort = prop.getPropertyAsInt(REDIS_SERVER_PORT);
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         // TODO Make this configurable
         poolConfig.setMaxTotal(32);
-        Optional<String> sentinelMaster = prop.tryProperty(GraknEngineConfig.REDIS_SENTINEL_MASTER);
-        return sentinelMaster.isPresent() ?
-                new JedisSentinelPool(sentinelMaster.get(), ImmutableSet
-                        .of(String.format("%s:%s", redisUrl, redisPort)), poolConfig) :
-                new JedisPool(poolConfig, redisUrl, redisPort);
+        Optional<String> sentinelMaster = prop.tryProperty(REDIS_SENTINEL_MASTER);
+        return sentinelMaster.<Pool<Jedis>>map(s -> new JedisSentinelPool(s, ImmutableSet
+                .of(String.format("%s:%s", redisUrl, redisPort)), poolConfig))
+                .orElseGet(() -> new JedisPool(poolConfig, redisUrl, redisPort));
     }
 
     /**

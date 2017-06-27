@@ -20,6 +20,11 @@ package ai.grakn.engine.lock;
 import java.util.concurrent.locks.Lock;
 import org.redisson.api.RedissonClient;
 
+/**
+ * Proxy for Redisson lock
+ *
+ * @author Domenico Corapi
+ */
 public class RedissonLockProvider implements DistributedLockProvider{
 
     private RedissonClient redissonClient;

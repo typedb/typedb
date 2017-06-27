@@ -19,6 +19,11 @@ package ai.grakn.engine.lock;
 
 import java.util.concurrent.locks.Lock;
 
+/**
+ * Distributed lock interface
+ *
+ * @author Domenico Corapi
+ */
 public interface DistributedLockProvider {
     Lock getLock(String lockName);
 }
