@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.OntologyElement;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -215,7 +216,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyElementImpl<T> i
 
     private <X extends Concept> Collection<X> filterImplicitStructures(Collection<X> types){
         if (!vertex().graph().implicitConceptsVisible() && !types.isEmpty() && types.iterator().next().isType()) {
-            return types.stream().filter(t -> !t.asType().isImplicit()).collect(Collectors.toSet());
+            return types.stream().filter(t -> !((OntologyElement) t).isImplicit()).collect(Collectors.toSet());
         }
         return types;
     }
