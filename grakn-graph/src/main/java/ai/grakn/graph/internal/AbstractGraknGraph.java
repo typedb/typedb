@@ -31,7 +31,6 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
-import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
@@ -535,7 +534,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             return getConcept(Schema.VertexProperty.ID, id.getValue());
         }
     }
-    private <T extends Type> T getOntologyElement(TypeLabel label, Schema.BaseType baseType){
+    private <T extends OntologyElement> T getOntologyElement(TypeLabel label, Schema.BaseType baseType){
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
         OntologyElement ontologyElement = buildOntologyElement(label, ()-> getOntologyElement(convertToId(label)));
@@ -570,7 +569,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public <T extends Type> T getType(TypeLabel label) {
+    public <T extends OntologyElement> T getType(TypeLabel label) {
         return getOntologyElement(label, Schema.BaseType.ONTOLOGY_ELEMENT);
     }
 
