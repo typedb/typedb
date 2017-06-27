@@ -654,7 +654,7 @@ public class MatchQueryTest {
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
             Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(x)).get("x").collect(Collectors.toSet());
-            Collection<RoleType> graphAPIPlays = new HashSet<>(graph.getOntologyConcept(type).plays());
+            Collection<RoleType> graphAPIPlays = new HashSet<>(graph.getOntologyConcept(type).asType().plays());
 
             assertEquals(graqlPlays, graphAPIPlays);
         });
