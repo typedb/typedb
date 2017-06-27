@@ -22,7 +22,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
