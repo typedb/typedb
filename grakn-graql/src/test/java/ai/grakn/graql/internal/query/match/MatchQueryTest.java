@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -654,7 +655,14 @@ public class MatchQueryTest {
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
             Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(x)).get("x").collect(Collectors.toSet());
-            Collection<RoleType> graphAPIPlays = new HashSet<>(graph.getOntologyConcept(type).asType().plays());
+            Collection<RoleType> graphAPIPlays;
+
+            OntologyConcept ontologyConcept = graph.getOntologyConcept(type);
+            if(ontologyConcept.isType()){
+                graphAPIPlays = new HashSet<>(ontologyConcept.asType().plays());
+            } else {
+                graphAPIPlays = Collections.EMPTY_SET;
+            }
 
             assertEquals(graqlPlays, graphAPIPlays);
         });

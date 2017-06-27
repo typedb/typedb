@@ -38,6 +38,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Set;
 
+import static ai.grakn.util.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_INSTANCE_WITH_NAME;
 import static ai.grakn.util.ErrorMessage.INSERT_ISA_AND_SUB;
 import static ai.grakn.util.ErrorMessage.INSERT_MULTIPLE_VALUES;
@@ -298,6 +299,10 @@ public class GraqlQueryException extends GraknException{
 
     public static GraqlQueryException insertTypeWithoutLabel() {
         return new GraqlQueryException(INSERT_TYPE_WITHOUT_LABEL.getMessage());
+    }
+
+    public static GraqlQueryException insertAbstractOnNonType(OntologyConcept concept){
+        return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.getLabel()));
     }
 
     public static GraqlQueryException insertResourceTypeWithoutDataType(VarPatternAdmin var) {

@@ -227,7 +227,7 @@ public class GraknMatchers {
 
             @Override
             TypeLabel transform(MatchableConcept item) {
-                return item.get().asType().getLabel();
+                return item.get().asOntologyElement().getLabel();
             }
         };
     }

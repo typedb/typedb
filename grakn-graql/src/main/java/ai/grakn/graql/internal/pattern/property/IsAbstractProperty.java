@@ -58,7 +58,11 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
 
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        concept.asType().setAbstract(true);
+        if(concept.isType()){
+            concept.asType().setAbstract(true);
+        } else {
+            throw GraqlQueryException.insertAbstractOnNonType(concept.asOntologyElement());
+        }
     }
 
     @Override

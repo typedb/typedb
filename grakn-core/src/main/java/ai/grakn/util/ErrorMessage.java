@@ -146,6 +146,7 @@ public enum ErrorMessage {
     INSERT_METATYPE("'%s' cannot be a subtype of '%s'"),
     INSERT_RECURSIVE("%s should not refer to itself"),
     INSERT_TYPE_WITHOUT_LABEL("attempted to insert a type without a label"),
+    INSERT_ABSTRACT_NOT_TYPE("the concept [%s] is not a type and cannot be set to abstract"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
     INSERT_RESOURCE_WITHOUT_VALUE("cannot insert a resource without specifying a value"),
     INSERT_INSTANCE_WITH_NAME("cannot insert an instance with a name: %s"),
