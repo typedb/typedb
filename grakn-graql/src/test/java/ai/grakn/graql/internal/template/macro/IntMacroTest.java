@@ -30,6 +30,7 @@ import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertPa
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 public class IntMacroTest {
 
