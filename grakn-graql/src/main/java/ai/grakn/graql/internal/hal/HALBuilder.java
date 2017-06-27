@@ -79,7 +79,7 @@ public class HALBuilder {
             roleTypes = computeRoleTypesFromQuery(matchQuery, results.iterator().next());
         }
         //Collect all the types explicitly asked in the match query
-        Set<TypeLabel> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x -> x.asType().getLabel()).collect(toSet());
+        Set<TypeLabel> typesAskedInQuery = matchQuery.admin().getOntologyConcepts().stream().map(x -> x.asType().getLabel()).collect(toSet());
 
         return buildHALRepresentations(results, typesAskedInQuery, roleTypes, keyspace, offset, limit, filterInstances);
     }
