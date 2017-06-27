@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.GraqlQueryException;
@@ -206,7 +206,7 @@ public class QueryErrorTest {
 
     @Test
     public void whenTryingToSetExistingInstanceType_Throw() {
-        Instance movie = rule.graph().getEntityType("movie").instances().iterator().next();
+        Thing movie = rule.graph().getEntityType("movie").instances().iterator().next();
         Type person = rule.graph().getEntityType("person");
 
         exception.expect(GraqlQueryException.class);
