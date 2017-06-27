@@ -283,9 +283,7 @@ public class Relation extends TypeAtom {
         if (!(ruleAtom.isRelation())) return false;
 
         Relation headAtom = (Relation) ruleAtom;
-        Type type = getType();
-
-        Relation atomWithType = type == null? this.addType(headAtom.getType()) : this;
+        Relation atomWithType = this.addType(headAtom.getType()).inferRoleTypes();
         return atomWithType.isRuleApplicableViaAtom(headAtom);
     }
 
@@ -493,7 +491,7 @@ public class Relation extends TypeAtom {
      * @return either this if nothing/no roles can be inferred or fresh relation with inferred role types
      */
     private Relation inferRoleTypes(){
-        if (getExplicitRoleTypes().size() == getRelationPlayers().size() /*|| getType() == null */) return this;
+        if (getExplicitRoleTypes().size() == getRelationPlayers().size() || getType() == null) return this;
 
         GraknGraph graph = getParentQuery().graph();
         RoleType metaRole = graph.admin().getMetaRoleType();
@@ -524,7 +522,7 @@ public class Relation extends TypeAtom {
         //remaining roles
         //role types can repeat so no matter what has been allocated still the full spectrum of possibilities is present
         //TODO make restrictions based on cardinality constraints
-        Set<RoleType> possibleRoles = relType != null? Sets.newHashSet(relType.relates()) : Collections.singleton(metaRole);
+        Set<RoleType> possibleRoles = Sets.newHashSet(relType.relates());
 
         //possible role types for each casting based on its type
         Map<RelationPlayer, Set<RoleType>> mappings = new HashMap<>();
