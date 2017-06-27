@@ -18,6 +18,7 @@
 
 package ai.grakn.client;
 
+import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.TaskId;
 import ai.grakn.util.REST;
 import mjson.Json;
@@ -65,10 +66,11 @@ public class Client {
     }
 
     private static int checkServerRunning() throws IOException {
-        String confPath = System.getProperty("grakn.conf");
+        String confPath = GraknSystemProperty.CONFIGURATION_FILE.value();
 
         if (confPath == null) {
-            System.err.println("System property `grakn.conf` has not been set");
+            String msg = "System property `" + GraknSystemProperty.CONFIGURATION_FILE.key() + "` has not been set";
+            System.err.println(msg);
             return 2;
         }
 
