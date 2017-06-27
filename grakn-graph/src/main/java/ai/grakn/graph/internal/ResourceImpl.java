@@ -18,7 +18,7 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
@@ -37,7 +37,7 @@ import static ai.grakn.util.Schema.generateResourceIndex;
  * </p>
  *
  * <p>
- *     Acts as an {@link Instance} when relating to other instances except it has the added functionality of:
+ *     Acts as an {@link Thing} when relating to other instances except it has the added functionality of:
  *     1. It is unique to its {@link ResourceType} based on it's value.
  *     2. It has a {@link ai.grakn.concept.ResourceType.DataType} associated with it which constrains the allowed values.
  * </p>
@@ -47,7 +47,7 @@ import static ai.grakn.util.Schema.generateResourceIndex;
  * @param <D> The data type of this resource type.
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
-class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
+class ResourceImpl<D> extends ThingImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
     ResourceImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
@@ -70,15 +70,15 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
      * @return The list of all Instances which posses this resource
      */
     @Override
-    public Collection<Instance> ownerInstances() {
+    public Collection<Thing> ownerInstances() {
         return getShortcutNeighbours().stream().
                 filter(concept -> !concept.isResource()).
                 collect(Collectors.toSet());
     }
 
     @Override
-    public Instance owner() {
-        Collection<Instance> owners = ownerInstances();
+    public Thing owner() {
+        Collection<Thing> owners = ownerInstances();
         if(owners.isEmpty()) {
             return null;
         } else {

@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
@@ -106,11 +106,11 @@ public class HALConceptData {
         generateStateAndLinks(halResource, concept);
 
         if (embedType && concept.isInstance()) {
-            Instance instance = concept.asInstance();
-            if (typesInQuery.contains(instance.type().getLabel())
-                    || (instance.type().superType() != null &&
-                    typesInQuery.contains(instance.type().superType().getLabel()))) {
-                embedType(halResource, instance);
+            Thing thing = concept.asInstance();
+            if (typesInQuery.contains(thing.type().getLabel())
+                    || (thing.type().superType() != null &&
+                    typesInQuery.contains(thing.type().superType().getLabel()))) {
+                embedType(halResource, thing);
             }
         }
 
@@ -173,7 +173,7 @@ public class HALConceptData {
 
     private void generateOwnerInstances(Representation halResource, Resource<?> conceptResource, int separationDegree) {
         final TypeLabel roleType = conceptResource.type().getLabel();
-        Stream<Instance> ownersStream = conceptResource.ownerInstances().stream().skip(offset);
+        Stream<Thing> ownersStream = conceptResource.ownerInstances().stream().skip(offset);
         if (limit >= 0) ownersStream = ownersStream.limit(limit);
         ownersStream.forEach(instance -> {
             Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
@@ -190,12 +190,12 @@ public class HALConceptData {
         halResource.withRepresentation(SUB_EDGE, HALType);
     }
 
-    private void embedType(Representation halResource, Instance instance) {
+    private void embedType(Representation halResource, Thing thing) {
 
-        Representation HALType = factory.newRepresentation(resourceLinkPrefix + instance.type().getId() + getURIParams(0))
+        Representation HALType = factory.newRepresentation(resourceLinkPrefix + thing.type().getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
 
-        generateStateAndLinks(HALType, instance.type());
+        generateStateAndLinks(HALType, thing.type());
         halResource.withRepresentation(ISA_EDGE, HALType);
     }
 
@@ -250,13 +250,13 @@ public class HALConceptData {
     private void embedRelationsNotConnectedToResources(Representation halResource, Concept concept, Relation relation, int separationDegree) {
         TypeLabel rolePlayedByCurrentConcept = null;
         boolean isResource = false;
-        for (Map.Entry<RoleType, Set<Instance>> entry : relation.allRolePlayers().entrySet()) {
-            for (Instance instance : entry.getValue()) {
+        for (Map.Entry<RoleType, Set<Thing>> entry : relation.allRolePlayers().entrySet()) {
+            for (Thing thing : entry.getValue()) {
                 //Some role players can be null
-                if (instance != null) {
-                    if (instance.isResource()) {
+                if (thing != null) {
+                    if (thing.isResource()) {
                         isResource = true;
-                    } else if (instance.getId().equals(concept.getId())) {
+                    } else if (thing.getId().equals(concept.getId())) {
                         rolePlayedByCurrentConcept = entry.getKey().getLabel();
                     }
                 }
@@ -276,8 +276,8 @@ public class HALConceptData {
     }
 
     private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
-        if (!type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
-            Stream<? extends Instance> instancesStream = type.instances().stream().filter(instance -> (!instance.isType() || !instance.asType().isImplicit())).skip(offset);
+        if (!type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
+            Stream<? extends Thing> instancesStream = type.instances().stream().filter(instance -> (!instance.isType() || !instance.asType().isImplicit())).skip(offset);
             if (limit >= 0) instancesStream = instancesStream.limit(limit);
             instancesStream.forEach(instance -> {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))

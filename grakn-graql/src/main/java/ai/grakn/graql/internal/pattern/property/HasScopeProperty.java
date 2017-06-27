@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
@@ -46,7 +46,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  *
  * This property can be queried, inserted or deleted.
  *
- * This property relates a {@link Relation} and an {@link Instance}, where the instance behaves as the "scope".
+ * This property relates a {@link Relation} and an {@link Thing}, where the instance behaves as the "scope".
  *
  * @author Felix Chapman
  */
@@ -84,8 +84,8 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Instance scopeInstance = insertQueryExecutor.getConcept(scope).asInstance();
-        concept.asType().scope(scopeInstance);
+        Thing scopeThing = insertQueryExecutor.getConcept(scope).asInstance();
+        concept.asType().scope(scopeThing);
     }
 
     @Override

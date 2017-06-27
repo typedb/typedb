@@ -24,6 +24,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.util.GraknVersion;
+import com.google.common.base.StandardSystemProperty;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 import org.junit.Assert;
@@ -55,7 +56,7 @@ public class DistributionContext extends ExternalResource {
 
     private static final FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
     private static final String ZIP = "grakn-dist-" + GraknVersion.VERSION + ".zip";
-    private static final String CURRENT_DIRECTORY = System.getProperty("user.dir");
+    private static final String CURRENT_DIRECTORY = StandardSystemProperty.USER_DIR.value();
     private static final String TARGET_DIRECTORY = CURRENT_DIRECTORY + "/../grakn-dist/target/";
     private static final String DIST_DIRECTORY = TARGET_DIRECTORY + "grakn-dist-" + GraknVersion.VERSION;
     private final Class<? extends TaskManager> taskManagerClass;

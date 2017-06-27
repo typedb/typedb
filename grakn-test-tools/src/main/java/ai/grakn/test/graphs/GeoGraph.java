@@ -20,7 +20,7 @@ package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -43,14 +43,14 @@ public class GeoGraph extends TestGraph {
 
     private static RoleType geoEntity, entityLocation;
 
-    private static Instance Europe;
-    private static Instance Warsaw, Wroclaw, London, Munich, Paris, Milan;
-    private static Instance Masovia, Silesia, GreaterLondon, Bavaria, IleDeFrance, Lombardy;
-    private static Instance Poland, England, Germany, France, Italy;
-    private static Instance UW;
-    private static Instance PW;
-    private static Instance Imperial;
-    private static Instance UCL;
+    private static Thing Europe;
+    private static Thing Warsaw, Wroclaw, London, Munich, Paris, Milan;
+    private static Thing Masovia, Silesia, GreaterLondon, Bavaria, IleDeFrance, Lombardy;
+    private static Thing Poland, England, Germany, France, Italy;
+    private static Thing UW;
+    private static Thing PW;
+    private static Thing Imperial;
+    private static Thing UCL;
 
     public static Consumer<GraknGraph> get(){
         return new GeoGraph().build();

@@ -91,7 +91,7 @@ public interface RoleType extends Type {
      * @return The Type itself.
      */
     @Override
-    RoleType scope(Instance scope);
+    RoleType scope(Thing scope);
 
     /**
      * Delete the scope specified.
@@ -100,7 +100,7 @@ public interface RoleType extends Type {
      * @return The Type itself
      */
     @Override
-    RoleType deleteScope(Instance scope);
+    RoleType deleteScope(Thing scope);
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.

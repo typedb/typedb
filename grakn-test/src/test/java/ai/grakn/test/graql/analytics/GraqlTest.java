@@ -67,7 +67,7 @@ public class GraqlTest {
 
     public GraknSession factory;
 
-    private static final String thing = "thing";
+    private static final String thingy = "thingy";
     private static final String anotherThing = "anotherThing";
     private static final String related = "related";
 
@@ -97,7 +97,7 @@ public class GraqlTest {
             assertEquals(6L,
                     ((Long) graph.graql().parse("compute count;").execute()).longValue());
             assertEquals(3L,
-                    ((Long) graph.graql().parse("compute count in thing, thing;").execute()).longValue());
+                    ((Long) graph.graql().parse("compute count in thingy, thingy;").execute()).longValue());
         }
     }
 
@@ -128,7 +128,7 @@ public class GraqlTest {
     @Test(expected = GraqlQueryException.class)
     public void testInvalidIdWithAnalytics() {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            graph.graql().parse("compute sum of thing;").execute();
+            graph.graql().parse("compute sum of thingy;").execute();
         }
     }
 
@@ -145,8 +145,8 @@ public class GraqlTest {
 
             ResourceType<Long> resource = graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG)
                     .plays(resourceValue);
-            EntityType thing = graph.putEntityType("thing").plays(resourceOwner);
-            Entity theResourceOwner = thing.addEntity();
+            EntityType thingy = graph.putEntityType("thingy").plays(resourceOwner);
+            Entity theResourceOwner = thingy.addEntity();
 
             relationType.addRelation()
                     .addRolePlayer(resourceOwner, theResourceOwner)
@@ -212,12 +212,12 @@ public class GraqlTest {
     @Test(expected = GraqlQueryException.class)
     public void testNonResourceTypeAsSubgraphForAnalytics() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            graph.putEntityType(thing);
+            graph.putEntityType(thingy);
             graph.commit();
         }
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            graph.graql().parse("compute sum of thing;").execute();
+            graph.graql().parse("compute sum of thingy;").execute();
         }
     }
 
@@ -247,21 +247,21 @@ public class GraqlTest {
         analyticsCommands.forEach(command -> {
             try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
                 // insert a node but do not commit it
-                graph.graql().parse("insert thing sub entity;").execute();
+                graph.graql().parse("insert thingy sub entity;").execute();
                 // use analytics
                 graph.graql().parse(command).execute();
             }
 
             try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
                 // see if the node was commited
-                assertNull(graph.getEntityType("thing"));
+                assertNull(graph.getEntityType("thingy"));
             }
         });
     }
 
     private void addOntologyAndEntities() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            EntityType entityType1 = graph.putEntityType(thing);
+            EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
             Entity entity1 = entityType1.addEntity();

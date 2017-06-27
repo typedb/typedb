@@ -19,13 +19,13 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 
 import java.util.Collection;
 
-public abstract class AbstractInstanceGenerator<T extends Instance, S extends Type> extends FromGraphGenerator<T> {
+public abstract class AbstractInstanceGenerator<T extends Thing, S extends Type> extends FromGraphGenerator<T> {
 
     private final Class<? extends AbstractTypeGenerator<S>> generatorClass;
 

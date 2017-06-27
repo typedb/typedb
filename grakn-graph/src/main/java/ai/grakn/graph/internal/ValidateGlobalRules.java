@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
@@ -54,7 +54,7 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_T
  *
  * <p>
  *     This class contains the implementation for the following validation rules:
- *     1. Plays Validation which ensures that a {@link Instance} is allowed to play the {@link RoleType}
+ *     1. Plays Validation which ensures that a {@link Thing} is allowed to play the {@link RoleType}
  *        it has been assigned to.
  *     2. Relates Validation which ensures that every {@link RoleType} which is not abstract is
  *        assigned to a {@link RelationType} via {@link RelationType#relates(RoleType)}.
@@ -62,10 +62,10 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_T
  *        assigned to it via {@link RelationType#relates(RoleType)}.
  *     4. Relation Structure Validation which ensures that each {@link ai.grakn.concept.Relation} has the
  *        correct structure.
- *     5. Abstract Type Validation which ensures that each abstract {@link Type} has no {@link Instance}.
+ *     5. Abstract Type Validation which ensures that each abstract {@link Type} has no {@link Thing}.
  *     6. Relation Type Hierarchy Validation which ensures that {@link RelationType} with a hierarchical structure
  *        have a valid matching {@link RoleType} hierarchical structure.
- *     7. Required Resources validation which ensures that each {@link Instance} with required
+ *     7. Required Resources validation which ensures that each {@link Thing} with required
  *        {@link ai.grakn.concept.Resource} has a valid {@link ai.grakn.concept.Relation} to that Resource.
  *     8. Unique Relation Validation which ensures that no duplicate {@link ai.grakn.concept.Relation} are created.
  * </p>
@@ -85,8 +85,8 @@ class ValidateGlobalRules {
      * @return A specific error if one is found.
      */
     static Optional<String> validatePlaysStructure(Casting casting) {
-        Instance instance = casting.getInstance();
-        TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) instance.type();
+        Thing thing = casting.getInstance();
+        TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) thing.type();
         RoleType roleType = casting.getRoleType();
 
         boolean satisfiesPlays = false;
@@ -101,8 +101,8 @@ class ValidateGlobalRules {
                     satisfiesPlays = true;
 
                     // Assert unique relation for this role type
-                    if (required && instance.relations(roleType).size() != 1) {
-                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(instance.getId(), instance.type().getLabel(), roleType.getLabel(), instance.relations(roleType).size()));
+                    if (required && thing.relations(roleType).size() != 1) {
+                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(thing.getId(), thing.type().getLabel(), roleType.getLabel(), thing.relations(roleType).size()));
                     }
                 }
             }
@@ -112,7 +112,7 @@ class ValidateGlobalRules {
         if(satisfiesPlays) {
             return Optional.empty();
         } else {
-            return Optional.of(VALIDATION_CASTING.getMessage(instance.type().getLabel(), instance.getId(), casting.getRoleType().getLabel()));
+            return Optional.of(VALIDATION_CASTING.getMessage(thing.type().getLabel(), thing.getId(), casting.getRoleType().getLabel()));
         }
     }
 
@@ -238,11 +238,11 @@ class ValidateGlobalRules {
 
     /**
      *
-     * @param instance The instance to be validated
-     * @return An error message if the instance does not have all the required resources
+     * @param thing The thing to be validated
+     * @return An error message if the thing does not have all the required resources
      */
-    static Optional<String> validateInstancePlaysAllRequiredRoles(Instance instance) {
-        TypeImpl<?, ?> currentConcept = (TypeImpl) instance.type();
+    static Optional<String> validateInstancePlaysAllRequiredRoles(Thing thing) {
+        TypeImpl<?, ?> currentConcept = (TypeImpl) thing.type();
 
         while(currentConcept != null){
 
@@ -251,8 +251,8 @@ class ValidateGlobalRules {
                 if(playsEntry.getValue()){
                     RoleType roleType = playsEntry.getKey();
                     // Assert there is a relation for this type
-                    if (instance.relations(roleType).isEmpty()) {
-                        return Optional.of(VALIDATION_INSTANCE.getMessage(instance.getId(), instance.type().getLabel(), roleType.getLabel()));
+                    if (thing.relations(roleType).isEmpty()) {
+                        return Optional.of(VALIDATION_INSTANCE.getMessage(thing.getId(), thing.type().getLabel(), roleType.getLabel()));
                     }
                 }
             }

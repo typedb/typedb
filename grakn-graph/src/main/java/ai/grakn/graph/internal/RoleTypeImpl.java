@@ -18,7 +18,7 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -49,7 +49,7 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
+class RoleTypeImpl extends TypeImpl<RoleType, Thing> implements RoleType{
     private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
     private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
@@ -125,7 +125,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      * @return All the instances of this type.
      */
     @Override
-    public Collection<Instance> instances(){
+    public Collection<Thing> instances(){
         return Collections.emptyList();
     }
 

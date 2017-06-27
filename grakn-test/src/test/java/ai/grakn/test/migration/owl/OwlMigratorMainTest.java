@@ -27,11 +27,15 @@ import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.migration.owl.Main;
 import ai.grakn.migration.owl.OwlModel;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.SystemErrRule;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertRelationBetweenInstancesExists;
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -40,6 +44,9 @@ import static org.junit.Assert.assertTrue;
 public class OwlMigratorMainTest extends TestOwlGraknBase {
 
     private String keyspace;
+
+    @Rule
+    public final SystemErrRule sysErr = new SystemErrRule().enableLog();
 
     @Before
     public void setup(){
@@ -55,16 +62,14 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
 
     @Test
     public void owlMainNoFileSpecifiedTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Data file missing (-i)");
         run("owl", "-keyspace", keyspace);
+        assertThat(sysErr.getLog(), containsString("Data file missing (-i)"));
     }
 
     @Test
     public void owlMainCannotOpenFileTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Cannot find file:");
         run("owl", "-input", "grah/?*", "-keyspace", keyspace);
+        assertThat(sysErr.getLog(), containsString("Cannot find file:"));
     }
 
     public void run(String... args){

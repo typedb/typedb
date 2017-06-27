@@ -74,7 +74,7 @@ public final class Schema {
      * The concepts which represent our internal schema
      */
     public enum MetaSchema {
-        CONCEPT("concept", 1),
+        THING("thing", 1),
         ENTITY("entity", 2),
         ROLE("role", 3),
         RESOURCE("resource", 4),
