@@ -102,11 +102,11 @@ public class GraknEngineServer implements AutoCloseable {
         this.redisCountStorage = RedisCountStorage.create(jedisPool);
         this.factory = EngineGraknGraphFactory.create(prop.getProperties());
         this.metricRegistry = new MetricRegistry();
-        this.taskManager = startTaskManager(redisCountStorage);
         String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
         this.inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
         this.lockProvider = this.inMemoryQueue ? new GenericLockProvider()
                 : instantiateRedissonLockProvider(redisPort, redisUrl);
+        this.taskManager = startTaskManager(inMemoryQueue, redisCountStorage, lockProvider);
     }
 
 
@@ -134,29 +134,18 @@ public class GraknEngineServer implements AutoCloseable {
 
     /**
      * Check in with the properties file to decide which type of task manager should be started
+     * @param inMemoryQueue
      * @param redisCountStorage
      */
     private TaskManager startTaskManager(
-            RedisCountStorage redisCountStorage) {
-        String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
-        Config redissonConfig = new Config();
-        // TODO generalise this to clusters
-        String port = prop.tryProperty(REDIS_SERVER_PORT).orElse("6379");
-        String url = prop.getProperty(REDIS_SERVER_URL);
-        LOG.info("Connecting redisCountStorage client to {}:{}", url, port);
-        redissonConfig.useSingleServer()
-                .setConnectionPoolSize(5)
-                .setAddress(String.format("%s:%s", url, port));
+            boolean inMemoryQueue,
+            RedisCountStorage redisCountStorage,
+            LockProvider lockProvider) {
         TaskManager taskManager;
-        if (taskManagerClassName.contains("RedisTaskManager")) {
-            RedissonLockProvider distributedLockClient = new RedissonLockProvider(
-                    Redisson.create(redissonConfig));
-            taskManager = new RedisTaskManager(engineId, prop, redisCountStorage, factory,
-                    distributedLockClient, metricRegistry);
-        } else if (taskManagerClassName.contains("StandaloneTaskManager")) {
+        if (!inMemoryQueue) {
+            taskManager = new RedisTaskManager(engineId, prop, redisCountStorage, factory, lockProvider, metricRegistry);
+        } else  {
             taskManager = new StandaloneTaskManager(engineId, prop, redisCountStorage, factory, lockProvider, metricRegistry);
-        } else {
-            throw new IllegalStateException("Unexpected task manager requested: " + taskManagerClassName);
         }
         taskManager.start();
         return taskManager;
@@ -311,8 +300,15 @@ public class GraknEngineServer implements AutoCloseable {
 
     private Pool<Jedis> instantiateRedis(GraknEngineConfig prop, String redisUrl, int redisPort) {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
-        // TODO Make this configurable
-        poolConfig.setMaxTotal(32);
+        // TODO Make this configurable in property file
+        poolConfig.setMaxTotal(128);
+        poolConfig.setTestOnBorrow(true);
+        poolConfig.setTestOnReturn(true);
+        poolConfig.setMaxIdle(5);
+        poolConfig.setMinIdle(5);
+        poolConfig.setTestWhileIdle(true);
+        poolConfig.setNumTestsPerEvictionRun(10);
+        poolConfig.setTimeBetweenEvictionRunsMillis(10000);
         Optional<String> sentinelMaster = prop.tryProperty(REDIS_SENTINEL_MASTER);
         return sentinelMaster.<Pool<Jedis>>map(s -> new JedisSentinelPool(s, ImmutableSet
                 .of(String.format("%s:%s", redisUrl, redisPort)), poolConfig))

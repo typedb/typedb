@@ -74,9 +74,9 @@ import static org.hamcrest.Matchers.notNullValue;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
 import org.mockito.Mockito;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;

@@ -85,6 +85,7 @@ class RedisTaskQueue {
 
     void putJob(Task job) {
         putJobMeter.mark();
+        LOG.debug("Enqueuing job {}", job.getTaskState().getId());
         final Job queueJob = new Job(SUBSCRIPTION_CLASS_NAME, job);
         redisClient.enqueue(QUEUE_NAME, queueJob);
     }

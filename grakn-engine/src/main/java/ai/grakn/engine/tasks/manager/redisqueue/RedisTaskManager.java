@@ -22,7 +22,7 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.lock.RedissonLockProvider;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
@@ -58,19 +58,19 @@ public class RedisTaskManager implements TaskManager {
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig graknEngineConfig,
             RedisCountStorage redisCountStorage, EngineGraknGraphFactory factory,
-            RedissonLockProvider distributedLockClient, MetricRegistry metricsRegistry) {
+            LockProvider distributedLockClient, MetricRegistry metricsRegistry) {
         // TODO hacky way, the pool should be created in the main server class and passed here
         this(engineId, graknEngineConfig, redisCountStorage.getJedisPool(), factory, distributedLockClient, metricsRegistry);
     }
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
-            EngineGraknGraphFactory factory, RedissonLockProvider distributedLockClient, MetricRegistry metricRegistry) {
+            EngineGraknGraphFactory factory, LockProvider distributedLockClient, MetricRegistry metricRegistry) {
         this(engineId, config, jedisPool, Runtime.getRuntime().availableProcessors(), factory, distributedLockClient, metricRegistry);
     }
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
             int threads, EngineGraknGraphFactory factory,
-            RedissonLockProvider distributedLockClient, MetricRegistry metricRegistry) {
+            LockProvider distributedLockClient, MetricRegistry metricRegistry) {
         this.engineId = engineId;
         this.config = config;
         this.factory = factory;
@@ -96,11 +96,11 @@ public class RedisTaskManager implements TaskManager {
 
     @Override
     public void start() {
-        for (int i = 1; i <= threads; i++) {
+        for (int i = 0; i < threads; i++) {
             // TODO refactor the interfaces so that we don't have to pass the manager around
             redisTaskQueue.subscribe(this, consumerExecutor, engineId, config, factory);
         }
-        LOG.debug("Redis task manager started");
+        LOG.info("Redis task manager started with {} subscriptions", threads);
     }
 
     @Override

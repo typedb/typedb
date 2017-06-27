@@ -81,16 +81,7 @@ public class RedisTaskQueueConsumer implements Runnable {
 
     @Override
     public void run() {
-        try {
-            Preconditions.checkNotNull(metricRegistry);
-            Preconditions.checkNotNull(engineId);
-            Preconditions.checkNotNull(config);
-            Preconditions.checkNotNull(redisCountStorage);
-            Preconditions.checkNotNull(redisTaskManager);
-            Preconditions.checkNotNull(lockProvider);
-        } catch (NullPointerException e){
-            throw new IllegalStateException(String.format("%s was started but the state wasn't set explicitly", this.getClass().getName()));
-        }
+        checkPreconditions();
         Timer executeTimer = metricRegistry
                 .timer(name(RedisTaskQueueConsumer.class, "execute"));
         Context context = executeTimer.time();
@@ -111,6 +102,7 @@ public class RedisTaskQueueConsumer implements Runnable {
                         taskConfiguration, redisTaskManager,
                                 config,
                                 redisCountStorage, factory, lockProvider, metricRegistry);
+                metricRegistry.meter(name(RedisTaskQueueConsumer.class, "initialized")).mark();
                 boolean completed;
                 if (taskShouldResume(task)) {
                     // Not implemented
@@ -121,6 +113,7 @@ public class RedisTaskQueueConsumer implements Runnable {
                     redisTaskManager.storage().newState(taskState);
                     LOG.debug("{}\tmarked as running", task);
                     completed = runningTask.start();
+                    metricRegistry.meter(name(RedisTaskQueueConsumer.class, "run")).mark();
                 }
                 if (completed) {
                     taskState.markCompleted();
@@ -139,6 +132,19 @@ public class RedisTaskQueueConsumer implements Runnable {
                 redisTaskManager.storage().updateState(taskState);
                 context.stop();
             }
+        }
+    }
+
+    private void checkPreconditions() {
+        try {
+            Preconditions.checkNotNull(metricRegistry);
+            Preconditions.checkNotNull(engineId);
+            Preconditions.checkNotNull(config);
+            Preconditions.checkNotNull(redisCountStorage);
+            Preconditions.checkNotNull(redisTaskManager);
+            Preconditions.checkNotNull(lockProvider);
+        } catch (NullPointerException e){
+            throw new IllegalStateException(String.format("%s was started but the state wasn't set explicitly", this.getClass().getName()));
         }
     }
 
