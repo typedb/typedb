@@ -19,9 +19,7 @@
 package ai.grakn.test.migration.csv;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTxType;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.GraphLoader;
@@ -94,7 +92,7 @@ public class CSVMigratorMainTest {
 
     @Test
     public void specifyingIncorrectURIInCSVMigratorScript_ErrorIsPrintedToSystemErr(){
-        run("csv", "-input", dataFile, "-template", templateFile, "-uri", "localhost:" + engine.uri() + 1, "-keyspace", keyspace);
+        run("csv", "-input", dataFile, "-template", templateFile, "-uri", "localhost:" + engine.uri().substring(1), "-keyspace", keyspace);
 
         assertThat(sysErr.getLog(), containsString("Could not connect to Grakn Engine. Have you run 'grakn.sh start'?"));
     }
