@@ -18,6 +18,7 @@
 
 package ai.grakn.matcher;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
@@ -217,7 +218,7 @@ public class GraknMatchers {
     /**
      * Create a matcher to test that the concept has the given type name.
      */
-    static Matcher<MatchableConcept> type(TypeLabel expectedLabel) {
+    public static Matcher<MatchableConcept> type(TypeLabel expectedLabel) {
         return new PropertyEqualsMatcher<MatchableConcept, TypeLabel>(expectedLabel) {
 
             @Override
@@ -227,7 +228,34 @@ public class GraknMatchers {
 
             @Override
             TypeLabel transform(MatchableConcept item) {
-                return item.get().asOntologyElement().getLabel();
+                Concept concept = item.get();
+                return concept.isType() ? concept.asType().getLabel() : null;
+            }
+        };
+    }
+
+    /**
+     * Create a matcher to test that the concept has the given type name.
+     */
+    public static Matcher<MatchableConcept> role(String type) {
+        return role(TypeLabel.of(type));
+    }
+
+    /**
+     * Create a matcher to test that the concept has the given type name.
+     */
+    public static Matcher<MatchableConcept> role(TypeLabel expectedLabel) {
+        return new PropertyEqualsMatcher<MatchableConcept, TypeLabel>(expectedLabel) {
+
+            @Override
+            public String getName() {
+                return "role";
+            }
+
+            @Override
+            TypeLabel transform(MatchableConcept item) {
+                Concept concept = item.get();
+                return concept.isRoleType() ? concept.asRoleType().getLabel() : null;
             }
         };
     }
