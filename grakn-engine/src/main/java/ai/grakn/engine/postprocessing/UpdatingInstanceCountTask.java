@@ -37,6 +37,8 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -50,6 +52,7 @@ import mjson.Json;
  * @author fppt
  */
 public class UpdatingInstanceCountTask extends BackgroundTask {
+    private final static Logger LOG = LoggerFactory.getLogger(UpdatingInstanceCountTask.class);
 
     @Override
     public boolean start() {
@@ -93,8 +96,11 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
                     contextSharding.stop();
                 }
             });
-
+            LOG.debug("Updating instance count successful for {} tasks", jobs.size());
             return true;
+        } catch(Exception e) {
+            LOG.error("Could not terminate task", e);
+            throw e;
         } finally {
             context.stop();
         }

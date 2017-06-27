@@ -86,12 +86,13 @@ public class BackgroundTaskTestUtils {
         waitForStatus(storage, task.getId(), status);
     }
 
-    public static void waitForStatus(TaskStateStorage storage, TaskId task, Set<TaskStatus> status) {
+    // Added the synchronized because for some reason some variable update wasn't shared between threads
+    public static synchronized void waitForStatus(TaskStateStorage storage, TaskId task, Set<TaskStatus> status) {
         Instant initial = Instant.now();
         long duration = Duration.between(initial, Instant.now()).toMillis();
-        while(duration < 5000) {
+        while(duration < 30000) {
             if (storage.containsTask(task)) {
-                TaskStatus currentStatus = storage.getState(task).status();
+                               TaskStatus currentStatus = storage.getState(task).status();
                 if (status.contains(currentStatus)) {
                     return;
                 }

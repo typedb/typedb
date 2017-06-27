@@ -30,6 +30,7 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -98,7 +99,12 @@ public class RedisTaskManager implements TaskManager {
     public void start() {
         for (int i = 0; i < threads; i++) {
             // TODO refactor the interfaces so that we don't have to pass the manager around
-            redisTaskQueue.subscribe(this, consumerExecutor, engineId, config, factory);
+            CompletableFuture
+                    .runAsync(() -> redisTaskQueue.subscribe(this, consumerExecutor, engineId, config, factory))
+                    .exceptionally(e -> {
+                        close();
+                        throw new RuntimeException("Failed to intitialize subscription");
+                    });
         }
         LOG.info("Redis task manager started with {} subscriptions", threads);
     }

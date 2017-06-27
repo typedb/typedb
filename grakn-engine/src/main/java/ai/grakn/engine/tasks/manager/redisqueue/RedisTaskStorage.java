@@ -31,6 +31,8 @@ import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import java.util.Base64;
 import java.util.Set;
+import static java.util.stream.Collectors.toSet;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.lang.SerializationUtils;
@@ -108,10 +110,33 @@ public class RedisTaskStorage implements TaskStateStorage {
     @Override
     public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy,
             EngineID runningOnEngine, int limit, int offset) {
-        return null;
+        try (Jedis jedis = redis.getResource()) {
+            // TODO change structure of task keys with a prefix. Can we do better than filtering?
+            Stream<TaskState> stream = jedis.keys("*-*-*-*").stream().map(value -> (TaskState) deserialize(Base64.getDecoder().decode(value)));
+            if (taskStatus != null) {
+                stream = stream.filter(t -> t.status().equals(taskStatus));
+            }
+            if (taskClassName != null) {
+                stream = stream.filter(t -> t.taskClass().getName().equals(taskClassName));
+            }
+            if (createdBy != null) {
+                stream = stream.filter(t -> t.creator().equals(createdBy));
+            }
+            if (runningOnEngine != null) {
+                stream = stream
+                        .filter(t -> t.engineID() != null && t.engineID().equals(runningOnEngine));
+            }
+            stream = stream.skip(offset);
+            if (limit > 0) {
+                stream = stream.limit(limit);
+            }
+            return stream.collect(toSet());
+        } catch (Exception e) {
+            throw GraknBackendException.stateStorageTaskRetrievalFailure(e);
+        }
     }
 
-    public boolean isTaskMarkedStopped(TaskId id) {
+    boolean isTaskMarkedStopped(TaskId id) {
         try {
             TaskState state = getState(id);
             return state != null && state.getStatus().equals(TaskStatus.STOPPED);
