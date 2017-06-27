@@ -114,7 +114,7 @@ public class CSVMigratorMainTest {
     }
 
     @Test
-    public void csvMigratorCalledWithNoTemplateName_ErrorIsPrintedToSystemErr(){
+    public void csvMigratorCalledWithNoTemplate_ErrorIsPrintedToSystemErr(){
         run("-input", dataFile, "-u", engine.uri());
         assertThat(sysErr.getLog(), containsString("Template file missing (-t)"));
     }
