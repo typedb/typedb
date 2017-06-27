@@ -155,7 +155,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
 
         relationType.setAbstract(true);
 
-        assertFalse(ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(roleType).isPresent());
+        assertTrue(ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(roleType).isPresent());
         assertFalse(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());
     }
 }
