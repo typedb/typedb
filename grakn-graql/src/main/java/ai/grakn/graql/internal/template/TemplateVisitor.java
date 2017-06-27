@@ -26,6 +26,7 @@ import ai.grakn.graql.macro.Macro;
 import ai.grakn.util.StringUtil;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.Objects;
 import java.util.function.Function;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
@@ -226,11 +227,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         Object lValue = this.visit(ctx.expression(0));
         Object rValue = this.visit(ctx.expression(1));
 
-        if(lValue == null || rValue == null){
-            return lValue == rValue;
-        }
-
-        return lValue.equals(rValue);
+        return Objects.equals(lValue, rValue);
     }
 
     @Override
@@ -238,11 +235,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         Object lValue = this.visit(ctx.expression(0));
         Object rValue = this.visit(ctx.expression(1));
 
-        if(lValue == null || rValue == null){
-            return lValue != rValue;
-        }
-
-        return !lValue.equals(rValue);
+        return !Objects.equals(lValue, rValue);
     }
 
     @Override
