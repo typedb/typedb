@@ -26,6 +26,7 @@ import ai.grakn.engine.util.JWTHandler;
 import org.junit.rules.ExternalResource;
 
 import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.builder.RequestSpecBuilder;
 
 import spark.Service;
 
@@ -43,7 +44,7 @@ import java.util.function.Consumer;
 public class SparkContext extends ExternalResource {
 
     private final BiConsumer<Service, GraknEngineConfig> createControllers;
-    private final GraknEngineConfig config = EngineTestHelper.config();
+    private final GraknEngineConfig config = GraknEngineConfig.create();
 
     private Service spark;
     
@@ -54,12 +55,18 @@ public class SparkContext extends ExternalResource {
     static Service startSparkCopyOnNewPort(GraknEngineConfig config) {
         Service spark = Service.ignite();
         String hostName = config.getProperty(GraknEngineConfig.SERVER_HOST_NAME);
+        if ("0.0.0.0".equals(hostName)) {
+            hostName = "localhost";
+            config.setConfigProperty(GraknEngineConfig.SERVER_HOST_NAME, hostName);
+        }
         int port = EngineTestHelper.findAvailablePort();
+        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, Integer.toString(port));
         Optional<String> jwtProperty = config.tryProperty(JWT_SECRET_PROPERTY); 
         configureSpark(spark, hostName, port, config.getPath(GraknEngineConfig.STATIC_FILES_PATH),
                         config.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false),
                         jwtProperty.isPresent() ? JWTHandler.create(jwtProperty.get()) : null);
         RestAssured.baseURI = "http://" + hostName + ":" + port;
+        RestAssured.requestSpecification = new RequestSpecBuilder().build();
         return spark;
     }
     

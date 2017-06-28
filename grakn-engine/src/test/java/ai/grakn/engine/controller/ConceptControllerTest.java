@@ -27,8 +27,12 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
+
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.builder.RequestSpecBuilder;
 import com.jayway.restassured.response.Response;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -76,23 +80,25 @@ public class ConceptControllerTest {
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
     }
 
+
     @Test
     public void gettingConceptById_ResponseStatusIs200(){
         Response response = sendRequest(graphContext.graph().getEntityType("movie"), 0);
 
         assertThat(response.statusCode(), equalTo(200));
     }
-
+    
     @Test
     public void gettingConceptByIdWithNoAcceptType_ResponseStatusIs406(){
         Concept concept = graphContext.graph().getEntityType("movie");
-
+        
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
                 .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
         assertThat(response.statusCode(), equalTo(406));
-        assertThat(exception(response), containsString(UNSUPPORTED_CONTENT_TYPE.getMessage("*/*")));}
+        assertThat(exception(response), containsString(UNSUPPORTED_CONTENT_TYPE.getMessage("*/*")));
+    }
 
     @Test
     public void gettingConceptByIdWithHAlAcceptType_ResponseContentTypeIsHAL(){

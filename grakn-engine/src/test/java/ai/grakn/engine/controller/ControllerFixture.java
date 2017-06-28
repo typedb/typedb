@@ -52,6 +52,7 @@ public class ControllerFixture implements TestRule {
     public Statement apply(Statement base, Description description) {
         return new Statement() {
             public void evaluate() throws Throwable {
+                final String currentURI = RestAssured.baseURI;
                 restAssuredSetup();
                 EngineTestHelper.engine();
                 try {
@@ -59,6 +60,8 @@ public class ControllerFixture implements TestRule {
                 }
                 finally {
                     doCleanup();
+                    RestAssured.baseURI = currentURI;
+                    RestAssured.requestSpecification = new RequestSpecBuilder().build(); 
                 }
             }            
         };
