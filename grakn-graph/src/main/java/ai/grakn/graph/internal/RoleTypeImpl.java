@@ -70,6 +70,13 @@ class RoleTypeImpl extends OntologyConceptImpl<RoleType> implements RoleType{
         cachedRelationTypes.flush();
     }
 
+    @Override
+    public void txCacheClear(){
+        super.txCacheClear();
+        cachedDirectPlayedByTypes.clear();
+        cachedRelationTypes.clear();
+    }
+
     /**
      *
      * @return The Relation Type which this role takes part in.
@@ -128,14 +135,6 @@ class RoleTypeImpl extends OntologyConceptImpl<RoleType> implements RoleType{
                 flatMap(relation -> ((RelationImpl)relation).castingsRelation(this));
     }
 
-    @Override
-    public void delete(){
-        super.delete();
-
-        //Clear all internal caching
-        cachedRelationTypes.clear();
-        cachedDirectPlayedByTypes.clear();
-    }
     @Override
     boolean deletionAllowed(){
         return super.deletionAllowed() &&

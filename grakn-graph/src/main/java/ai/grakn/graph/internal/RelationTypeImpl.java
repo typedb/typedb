@@ -66,6 +66,12 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         cachedRelates.flush();
     }
 
+    @Override
+    public void txCacheClear(){
+        super.txCacheFlush();
+        cachedRelates.clear();
+    }
+
     /**
      *
      * @return A list of the Role Types which make up this Relation Type.
@@ -141,8 +147,5 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
 
         //Update the cache of the connected role types
         cachedRelates.get().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedRelationType(this));
-
-        //Clear internal Cache
-        cachedRelates.clear();
     }
 }
