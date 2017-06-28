@@ -424,6 +424,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         OntologyConceptImpl type = buildOntologyElement(label, () -> factory.apply(putVertex(label, baseType)));
 
         T finalType = validateOntologyElement(type, baseType, () -> {
+            if(Schema.MetaSchema.isMetaLabel(label)) throw GraphOperationException.reservedLabel(label);
             throw PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.TYPE_LABEL, label);
         });
 
