@@ -68,7 +68,7 @@ Version v0.8.0
 - Re-add unintentionally deleted test (#772)
 - Fixing quotes in migration.sh (#771)
 - Admin API for Grakn Graphs (#770)
-- roles map bug fixed (#769)
+- roleTypes map bug fixed (#769)
 - fix migration.sh script, remove extra quote
 - HAL builder and Dashboard bugs fixing (#763)
 - Correct plays role bug (#764)

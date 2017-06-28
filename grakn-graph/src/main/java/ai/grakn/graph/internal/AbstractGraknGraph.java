@@ -254,7 +254,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             VertexElement entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
             VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
             VertexElement resourceType = addTypeVertex(Schema.MetaSchema.RESOURCE.getId(), Schema.MetaSchema.RESOURCE.getLabel(), Schema.BaseType.RESOURCE_TYPE);
-            VertexElement roleType = addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE_TYPE);
+            VertexElement roleType = addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
             VertexElement ruleType = addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
             VertexElement inferenceRuleType = addTypeVertex(Schema.MetaSchema.INFERENCE_RULE.getId(), Schema.MetaSchema.INFERENCE_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
             VertexElement constraintRuleType = addTypeVertex(Schema.MetaSchema.CONSTRAINT_RULE.getId(), Schema.MetaSchema.CONSTRAINT_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
@@ -484,12 +484,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public Role putRole(Label label) {
-        return putOntologyElement(label, Schema.BaseType.ROLE_TYPE,
+        return putOntologyElement(label, Schema.BaseType.ROLE,
                 v -> factory().buildRole(v, getMetaRoleType(), Boolean.FALSE)).asRoleType();
     }
 
     Role putRoleTypeImplicit(Label label) {
-        return putOntologyElement(label, Schema.BaseType.ROLE_TYPE,
+        return putOntologyElement(label, Schema.BaseType.ROLE,
                 v -> factory().buildRole(v, getMetaRoleType(), Boolean.TRUE)).asRoleType();
     }
 
@@ -596,7 +596,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public Role getRole(String label) {
-        return getOntologyConcept(Label.of(label), Schema.BaseType.ROLE_TYPE);
+        return getOntologyConcept(Label.of(label), Schema.BaseType.ROLE);
     }
 
     @Override

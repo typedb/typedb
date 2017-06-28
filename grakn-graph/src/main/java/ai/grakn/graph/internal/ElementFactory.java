@@ -157,7 +157,7 @@ final class ElementFactory {
                 case TYPE:
                     concept = new TypeImpl<>(vertexElement);
                     break;
-                case ROLE_TYPE:
+                case ROLE:
                     concept = new RoleImpl(vertexElement);
                     break;
                 case RELATION_TYPE:

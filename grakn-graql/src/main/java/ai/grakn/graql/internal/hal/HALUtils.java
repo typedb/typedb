@@ -99,7 +99,7 @@ public class HALUtils {
         } else if (ontologyConcept.isRuleType()) {
             return Schema.BaseType.RULE_TYPE;
         } else if (ontologyConcept.isRoleType()) {
-            return Schema.BaseType.ROLE_TYPE;
+            return Schema.BaseType.ROLE;
         } else if (ontologyConcept.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             return Schema.BaseType.TYPE;
         } else {

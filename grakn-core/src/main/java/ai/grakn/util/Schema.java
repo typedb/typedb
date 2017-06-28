@@ -119,7 +119,7 @@ public final class Schema {
         //Ontology Elements
         ONTOLOGY_ELEMENT(OntologyConcept.class),
         TYPE(Type.class),
-        ROLE_TYPE(Role.class),
+        ROLE(Role.class),
         RELATION_TYPE(RelationType.class),
         RESOURCE_TYPE(ResourceType.class),
         ENTITY_TYPE(EntityType.class),
