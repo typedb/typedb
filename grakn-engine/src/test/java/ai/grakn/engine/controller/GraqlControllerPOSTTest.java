@@ -230,7 +230,7 @@ public class GraqlControllerPOSTTest {
 
     @Test
     public void POSTGraqlInsertWithOntology_GraphCommitIsCalled(){
-        String query = "insert thing sub entity;";
+        String query = "insert thingy sub entity;";
 
         verify(mockGraph, times(0)).commit();
 

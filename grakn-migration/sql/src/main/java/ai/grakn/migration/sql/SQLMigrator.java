@@ -49,13 +49,14 @@ public class SQLMigrator {
     }
 
     private static void runSQL(SQLMigrationOptions options) {
-        File sqlTemplate = new File(options.getTemplate());
-
-        if(!sqlTemplate.exists()){
-            MigrationCLI.die("Cannot find file: " + options.getTemplate());
-        }
-
         try {
+            File sqlTemplate = new File(options.getTemplate());
+
+            if(!sqlTemplate.exists()){
+                System.err.println("Cannot find file: " + options.getTemplate());
+                return;
+            }
+
             if(options.hasDriver()) {
                 DriverManager.registerDriver(options.getDriver());
             }
@@ -67,9 +68,8 @@ public class SQLMigrator {
 
                 MigrationCLI.loadOrPrint(sqlTemplate, sqlMigrator.convert(), options);
             }
-
         } catch (Throwable throwable){
-            MigrationCLI.die(throwable);
+            System.err.println(throwable.getMessage());
         }
     }
 

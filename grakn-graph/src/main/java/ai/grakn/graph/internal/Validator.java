@@ -136,7 +136,7 @@ class Validator {
      * Validation rules exclusive to instances
      * @param instance The instance to validate
      */
-    private void validateInstance(InstanceImpl instance) {
+    private void validateInstance(ThingImpl instance) {
         ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(instance).ifPresent(errorsFound::add);
     }
 }

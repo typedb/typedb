@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
@@ -53,11 +53,11 @@ import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Represents the {@code has} property on an {@link Instance}.
+ * Represents the {@code has} property on an {@link Thing}.
  *
  * This property can be queried, inserted or deleted.
  *
- * The property is defined as a relationship between an {@link Instance} and a {@link Resource}, where the
+ * The property is defined as a relationship between an {@link Thing} and a {@link Resource}, where the
  * {@link Resource} is of a particular type.
  *
  * When matching, shortcut edges are used to speed up the traversal. The type of the relationship does not matter.
@@ -144,8 +144,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Resource resourceConcept = insertQueryExecutor.getConcept(resource).asResource();
-        Instance instance = concept.asInstance();
-        instance.resource(resourceConcept);
+        Thing thing = concept.asInstance();
+        thing.resource(resourceConcept);
     }
 
     @Override

@@ -18,8 +18,10 @@
 
 package ai.grakn.engine;
 
+import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
+import com.google.common.base.StandardSystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,9 +62,6 @@ public class GraknEngineConfig {
     public static final String REDIS_SERVER_PORT = "redis.port";
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
-
-    private static final String SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY = "grakn.dir";
-    private static final String SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE = "grakn.conf";
 
     // Engine Config
     public static final String TASK_MANAGER_IMPLEMENTATION = "taskmanager.implementation";
@@ -121,7 +120,7 @@ public class GraknEngineConfig {
      * If it is not set, it sets it to the default one.
      */
     private static void setConfigFilePath() {
-        configFilePath = (System.getProperty(SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE) != null) ? System.getProperty(SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE) : GraknEngineConfig.DEFAULT_CONFIG_FILE;
+        configFilePath = (GraknSystemProperty.CONFIGURATION_FILE.value() != null) ? GraknSystemProperty.CONFIGURATION_FILE.value() : GraknEngineConfig.DEFAULT_CONFIG_FILE;
         if (!Paths.get(configFilePath).isAbsolute()) {
             configFilePath = getProjectPath() + configFilePath;
         }
@@ -179,11 +178,11 @@ public class GraknEngineConfig {
      * user.dir folder.
      */
     private static String getProjectPath() {
-        if (System.getProperty(SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY) == null) {
-            System.setProperty(SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY, System.getProperty("user.dir"));
+        if (GraknSystemProperty.CURRENT_DIRECTORY.value() == null) {
+            GraknSystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
         }
 
-        return System.getProperty(SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY) + "/";
+        return GraknSystemProperty.CURRENT_DIRECTORY.value() + "/";
     }
 
     /**

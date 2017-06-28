@@ -18,7 +18,7 @@
 package ai.grakn.migration.export;
 
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -42,21 +42,21 @@ import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
 public class InstanceMapper {
 
     /**
-     * Map an Instance to the equivalent Graql representation
-     * @param instance instance to be mapped
-     * @return Graql representation of given instance
+     * Map an Thing to the equivalent Graql representation
+     * @param thing thing to be mapped
+     * @return Graql representation of given thing
      */
-    public static VarPattern map(Instance instance){
-        if(instance.isEntity()){
-            return map(instance.asEntity());
-        } else if(instance.isResource()){
-            return map(instance.asResource());
-        } else if(instance.isRelation()){
-            return map(instance.asRelation());
-        } else if(instance.isRule()){
-            return map(instance.asRule());
+    public static VarPattern map(Thing thing){
+        if(thing.isEntity()){
+            return map(thing.asEntity());
+        } else if(thing.isResource()){
+            return map(thing.asResource());
+        } else if(thing.isRelation()){
+            return map(thing.asRelation());
+        } else if(thing.isRule()){
+            return map(thing.asRule());
         } else {
-            throw CommonUtil.unreachableStatement("Unrecognised instance " + instance);
+            throw CommonUtil.unreachableStatement("Unrecognised thing " + thing);
         }
     }
 
@@ -118,11 +118,11 @@ public class InstanceMapper {
     /**
      * Add the resources of an entity
      * @param var var representing the entity
-     * @param instance instance containing resource information
+     * @param thing thing containing resource information
      * @return var pattern with resources
      */
-    private static VarPattern hasResources(VarPattern var, Instance instance){
-        for(Resource resource:instance.resources()){
+    private static VarPattern hasResources(VarPattern var, Thing thing){
+        for(Resource resource: thing.resources()){
            var = var.has(resource.type().getLabel(), var().val(resource.getValue()));
         }
         return var;
@@ -135,23 +135,23 @@ public class InstanceMapper {
      * @return var pattern with roleplayers
      */
     private static VarPattern roleplayers(VarPattern var, Relation relation){
-        for(Map.Entry<RoleType, Set<Instance>> entry:relation.allRolePlayers().entrySet()){
+        for(Map.Entry<RoleType, Set<Thing>> entry:relation.allRolePlayers().entrySet()){
             RoleType role = entry.getKey();
-            for (Instance instance : entry.getValue()) {
-                var = var.rel(Graql.label(role.getLabel()), instance.getId().getValue());
+            for (Thing thing : entry.getValue()) {
+                var = var.rel(Graql.label(role.getLabel()), thing.getId().getValue());
             }
         }
         return var;
     }
 
     /**
-     * Given an instance, return a var with the type.
-     * @param instance instance to map
-     * @return var patterns representing given instance
+     * Given an thing, return a var with the type.
+     * @param thing thing to map
+     * @return var patterns representing given thing
      */
-    private static VarPattern base(Instance instance){
-        VarPattern var = var(instance.getId().getValue()).isa(Graql.label(instance.type().getLabel()));
-        return hasResources(var, instance);
+    private static VarPattern base(Thing thing){
+        VarPattern var = var(thing.getId().getValue()).isa(Graql.label(thing.type().getLabel()));
+        return hasResources(var, thing);
     }
 
     /**

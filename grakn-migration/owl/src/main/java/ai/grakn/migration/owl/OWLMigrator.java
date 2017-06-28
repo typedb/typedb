@@ -21,7 +21,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -131,7 +131,7 @@ public class OWLMigrator {
 
     public <T> Entity getEntity(T id, ResourceType<T> rtype){
         Resource<T> iri = rtype.getResource(id);
-        Instance inst = iri != null? iri.ownerInstances().stream().findFirst().orElse(null) : null;
+        Thing inst = iri != null? iri.ownerInstances().stream().findFirst().orElse(null) : null;
         return inst != null? inst.asEntity() : null;
     }
 

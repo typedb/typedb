@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
@@ -75,17 +75,17 @@ public class HALUtils {
     public final static String NAME_PROPERTY = "_name";
 
 
-    static Schema.BaseType getBaseType(Instance instance) {
-        if (instance.isEntity()) {
+    static Schema.BaseType getBaseType(Thing thing) {
+        if (thing.isEntity()) {
             return Schema.BaseType.ENTITY;
-        } else if (instance.isRelation()) {
+        } else if (thing.isRelation()) {
             return Schema.BaseType.RELATION;
-        } else if (instance.isResource()) {
+        } else if (thing.isResource()) {
             return Schema.BaseType.RESOURCE;
-        } else if (instance.isRule()) {
+        } else if (thing.isRule()) {
             return Schema.BaseType.RULE;
         } else {
-            throw CommonUtil.unreachableStatement("Unrecognised base type of " + instance);
+            throw CommonUtil.unreachableStatement("Unrecognised base type of " + thing);
         }
     }
 
@@ -100,7 +100,7 @@ public class HALUtils {
             return Schema.BaseType.RULE_TYPE;
         } else if (type.isRoleType()) {
             return Schema.BaseType.ROLE_TYPE;
-        } else if (type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
+        } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             return Schema.BaseType.TYPE;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised base type of " + type);
@@ -112,9 +112,9 @@ public class HALUtils {
         resource.withProperty(ID_PROPERTY, concept.getId().getValue());
 
         if (concept.isInstance()) {
-            Instance instance = concept.asInstance();
-            resource.withProperty(TYPE_PROPERTY, instance.type().getLabel().getValue())
-                    .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
+            Thing thing = concept.asInstance();
+            resource.withProperty(TYPE_PROPERTY, thing.type().getLabel().getValue())
+                    .withProperty(BASETYPE_PROPERTY, getBaseType(thing).name());
         } else {
             resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asType()).name());
         }

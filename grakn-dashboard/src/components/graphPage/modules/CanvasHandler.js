@@ -122,8 +122,8 @@ function loadInstancesResources(start:number, instances:Object[]) {
 }
 
 function flushPromises(promises:Object[]) {
-  return Promise.all(promises).then((responses) => {
-    responses.forEach((resp) => {
+  return Promise.all(promises.map(softFail)).then((responses) => {
+    responses.filter(x => x.success).map(x => x.result).forEach((resp) => {
       const respObj = JSON.parse(resp).response;
       // Check if some of the resources attached to this node are already drawn in the graph:
       // if a resource is already in the graph (because explicitly asked for (e.g. all relations with weight > 0.5 ))
@@ -133,6 +133,14 @@ function flushPromises(promises:Object[]) {
     });
     visualiser.flushUpdates();
   });
+}
+
+// Function used to avoid the fail-fast behaviour of Promise.all:
+// map all the promises results to objects wheter they fail or not.
+function softFail(promise) {
+  return promise
+    .then(result => ({ success: true, result }))
+    .catch(error => ({ success: false, error }));
 }
 
 function linkResourceOwners(instances) {

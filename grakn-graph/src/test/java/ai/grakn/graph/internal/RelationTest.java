@@ -25,7 +25,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -54,9 +54,9 @@ import static org.junit.Assert.assertTrue;
 public class RelationTest extends GraphTestBase{
     private RelationImpl relation;
     private RoleTypeImpl role1;
-    private InstanceImpl rolePlayer1;
+    private ThingImpl rolePlayer1;
     private RoleTypeImpl role2;
-    private InstanceImpl rolePlayer2;
+    private ThingImpl rolePlayer2;
     private RoleTypeImpl role3;
     private EntityType type;
     private RelationType relationType;
@@ -70,8 +70,8 @@ public class RelationTest extends GraphTestBase{
         type = graknGraph.putEntityType("Main concept Type").plays(role1).plays(role2).plays(role3);
         relationType = graknGraph.putRelationType("Main relation type").relates(role1).relates(role2).relates(role3);
 
-        rolePlayer1 = (InstanceImpl) type.addEntity();
-        rolePlayer2 = (InstanceImpl) type.addEntity();
+        rolePlayer1 = (ThingImpl) type.addEntity();
+        rolePlayer2 = (ThingImpl) type.addEntity();
 
         relation = (RelationImpl) relationType.addRelation();
 
@@ -133,8 +133,8 @@ public class RelationTest extends GraphTestBase{
         assertThat(followShortcutsToNeighbours(graknGraph, entity6r1r2r3),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
-    private Set<Concept> followShortcutsToNeighbours(GraknGraph graph, Instance instance) {
-        List<Vertex> vertices = graph.admin().getTinkerTraversal().hasId(instance.getId().getRawValue()).
+    private Set<Concept> followShortcutsToNeighbours(GraknGraph graph, Thing thing) {
+        List<Vertex> vertices = graph.admin().getTinkerTraversal().hasId(thing.getId().getRawValue()).
                 in(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 out(Schema.EdgeLabel.SHORTCUT.getLabel()).toList();
 
@@ -162,13 +162,13 @@ public class RelationTest extends GraphTestBase{
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
 
         roleType1 = graknGraph.putRoleType("role type 1");
-        Instance instance1 = type.addEntity();
+        Thing thing1 = type.addEntity();
 
-        TreeMap<RoleType, Instance> roleMap = new TreeMap<>();
-        roleMap.put(roleType1, instance1);
+        TreeMap<RoleType, Thing> roleMap = new TreeMap<>();
+        roleMap.put(roleType1, thing1);
         roleMap.put(roleType2, null);
 
-        relation.addRolePlayer(roleType1, instance1);
+        relation.addRolePlayer(roleType1, thing1);
 
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
@@ -176,9 +176,9 @@ public class RelationTest extends GraphTestBase{
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
         assertEquals(getFakeId(relation.type(), roleMap), relation.getIndex());
     }
-    private String getFakeId(RelationType relationType, TreeMap<RoleType, Instance> roleMap){
+    private String getFakeId(RelationType relationType, TreeMap<RoleType, Thing> roleMap){
         String itemIdentifier = "RelationType_" + relationType.getId() + "_Relation";
-        for(Map.Entry<RoleType, Instance> entry: roleMap.entrySet()){
+        for(Map.Entry<RoleType, Thing> entry: roleMap.entrySet()){
             itemIdentifier = itemIdentifier + "_" + entry.getKey().getId();
             if(entry.getValue() != null) itemIdentifier += "_" + entry.getValue().getId();
         }
@@ -191,11 +191,11 @@ public class RelationTest extends GraphTestBase{
         RoleType roleType2 = graknGraph.putRoleType("role type 2");
         EntityType type = graknGraph.putEntityType("concept type").plays(roleType1).plays(roleType2);
         RelationType relationType = graknGraph.putRelationType("My relation type").relates(roleType1).relates(roleType2);
-        Instance instance1 = type.addEntity();
-        Instance instance2 = type.addEntity();
+        Thing thing1 = type.addEntity();
+        Thing thing2 = type.addEntity();
 
-        Relation rel1 = relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
-        Relation rel2 = relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
+        Relation rel1 = relationType.addRelation().addRolePlayer(roleType1, thing1).addRolePlayer(roleType2, thing2);
+        Relation rel2 = relationType.addRelation().addRolePlayer(roleType1, thing1).addRolePlayer(roleType2, thing2);
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(containsString("You have created one or more relations"));
@@ -209,14 +209,14 @@ public class RelationTest extends GraphTestBase{
         RoleType roleType2 = graknGraph.putRoleType("role type 2");
         RelationType relationType = graknGraph.putRelationType("A relation Type").relates(roleType1).relates(roleType2);
         EntityType type = graknGraph.putEntityType("concept type").plays(roleType1).plays(roleType2);
-        Instance instance1 = type.addEntity();
-        Instance instance2 = type.addEntity();
+        Thing thing1 = type.addEntity();
+        Thing thing2 = type.addEntity();
 
-        Relation relation = relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
+        Relation relation = relationType.addRelation().addRolePlayer(roleType1, thing1).addRolePlayer(roleType2, thing2);
 
         String mainDescription = "ID [" + relation.getId() +  "] Type [" + relation.type().getLabel() + "] Roles and Role Players:";
-        String rolerp1 = "    Role [" + roleType1.getLabel() + "] played by [" + instance1.getId() + ",]";
-        String rolerp2 = "    Role [" + roleType2.getLabel() + "] played by [" + instance2.getId() + ",]";
+        String rolerp1 = "    Role [" + roleType1.getLabel() + "] played by [" + thing1.getId() + ",]";
+        String rolerp2 = "    Role [" + roleType2.getLabel() + "] played by [" + thing2.getId() + ",]";
 
         assertTrue("Relation toString missing main description", relation.toString().contains(mainDescription));
         assertTrue("Relation toString missing role and role player definition", relation.toString().contains(rolerp1));

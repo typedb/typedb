@@ -45,7 +45,7 @@ public class ResourceDeduplicationMapReduceIT {
     static ResourceType<Boolean> booleanResource = null;
     static ResourceType<Float> floatResource = null;
     
-    static EntityType thing, idea;
+    static EntityType thingy, idea;
     static RelationType nearby, related;
     static RoleType near1, near2, near3;
     static RoleType related1, related2, related3, related4, related5;
@@ -92,7 +92,7 @@ public class ResourceDeduplicationMapReduceIT {
         booleanResource = graph.putResourceType("BooleanResource", ResourceType.DataType.BOOLEAN);
         floatResource = graph.putResourceType("FloatResource", ResourceType.DataType.FLOAT);
         
-        thing = graph.putEntityType("thing");
+        thingy = graph.putEntityType("thingy");
         idea = graph.putEntityType("idea");
         nearby = graph.putRelationType("nearby");
         near1 = graph.putRoleType("near1");
@@ -108,12 +108,12 @@ public class ResourceDeduplicationMapReduceIT {
         related4 = graph.putRoleType("related4");
         related5 = graph.putRoleType("related5");
         related.relates(related1).relates(related2).relates(related3).relates(related4).relates(related5);
-        thing.resource(stringResource);
-        thing.resource(longResource);
-        thing.resource(integerResource);
-        thing.resource(booleanResource);
-        thing.resource(floatResource);
-        thing.resource(doubleResource);
+        thingy.resource(stringResource);
+        thingy.resource(longResource);
+        thingy.resource(integerResource);
+        thingy.resource(booleanResource);
+        thingy.resource(floatResource);
+        thingy.resource(doubleResource);
         idea.resource(stringResource);
         idea.resource(longResource);
         idea.resource(integerResource);
@@ -126,7 +126,7 @@ public class ResourceDeduplicationMapReduceIT {
         related.resource(booleanResource);
         related.resource(floatResource);
         related.resource(doubleResource);
-        thing.plays(near1).plays(near2).plays(near3).plays(related1)
+        thingy.plays(near1).plays(near2).plays(near3).plays(related1)
             .plays(related2).plays(related3).plays(related4).plays(related5);
         idea.plays(related1).plays(related2).plays(related3).plays(related4).plays(related5);
         stringResource.plays(related1).plays(related2).plays(related3)
@@ -170,8 +170,8 @@ public class ResourceDeduplicationMapReduceIT {
     @Test
     public void testNoDuplicates() {
         transact(graph ->  {
-            Entity e1 = thing.addEntity();
-            Entity e2 = thing.addEntity();
+            Entity e1 = thingy.addEntity();
+            Entity e2 = thingy.addEntity();
             Relation r1 = related.addRelation().addRolePlayer(related1, e1).addRolePlayer(related2, e2);
             e1.resource(stringResource.putResource("value_1"));            
             e1.resource(longResource.putResource(24234l));
@@ -236,7 +236,7 @@ public class ResourceDeduplicationMapReduceIT {
     @Test
     public void testDuplicatesOnSameEntity() {
         String resourceIndex = transact(graph -> {
-           Entity something = thing.addEntity();
+           Entity something = thingy.addEntity();
            Resource<String> res = stringResource.putResource("This is something!");
            something.resource(res);
            something.resource(createDuplicateResource(graph, res));
@@ -257,9 +257,9 @@ public class ResourceDeduplicationMapReduceIT {
     @Test
     public void testDuplicatesOnDifferentEntity() {
         String resourceIndex = transact(graph -> {
-           Entity something = thing.addEntity();
-           Entity anotherthing = thing.addEntity();
-           Entity onemorething = thing.addEntity();
+           Entity something = thingy.addEntity();
+           Entity anotherthing = thingy.addEntity();
+           Entity onemorething = thingy.addEntity();
            Resource<String> res = stringResource.putResource("This is something!");
            something.resource(res);
            something.resource(createDuplicateResource(graph, res));
@@ -318,9 +318,9 @@ public class ResourceDeduplicationMapReduceIT {
     @Ignore
     public void testDuplicatesAcrossTheBoard() {
         String [] resourceKeys = transact(graph -> {
-           Entity t1 = thing.addEntity(), 
-                  t2 = thing.addEntity(),
-                  t3 = thing.addEntity();
+           Entity t1 = thingy.addEntity(), 
+                  t2 = thingy.addEntity(),
+                  t3 = thingy.addEntity();
            Relation r1 = related.addRelation(),
                     r2 = related.addRelation();
            
@@ -369,7 +369,7 @@ public class ResourceDeduplicationMapReduceIT {
     @Ignore
     public void testDeleteUnattached() {
         final Entity [] entities = transact(graph -> {
-            return new Entity[] { thing.addEntity(), thing.addEntity(), thing.addEntity() };            
+            return new Entity[] { thingy.addEntity(), thingy.addEntity(), thingy.addEntity() };            
         });
         
         String [] resourceKeys = transact(graph -> {

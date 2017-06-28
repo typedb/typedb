@@ -20,7 +20,7 @@ package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -54,7 +54,7 @@ public class CWGraph extends TestGraph {
     private static RoleType payee, payer;
     private static RoleType seller, buyer, transactionItem;
 
-    private static Instance colonelWest, Nono, America, Tomahawk;
+    private static Thing colonelWest, Nono, America, Tomahawk;
 
     public static Consumer<GraknGraph> get() {
         return new CWGraph().build();

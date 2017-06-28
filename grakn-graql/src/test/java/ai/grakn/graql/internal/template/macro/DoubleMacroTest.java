@@ -87,11 +87,18 @@ public class DoubleMacroTest {
 
     @Test
     public void whenParsingDoubleInFrenchLocale_DontUseComma(){
-        Locale.setDefault(Locale.FRANCE);
-        String template = "insert $x val @double(<value>);";
-        String expected = "insert $x0 val 4.0;";
+        Locale defaultLocale = Locale.getDefault();
 
-        assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
-        assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
+        try {
+            Locale.setDefault(Locale.FRANCE);
+
+            String template = "insert $x val @double(<value>);";
+            String expected = "insert $x0 val 4.0;";
+
+            assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
+            assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
+        } finally {
+            Locale.setDefault(defaultLocale);
+        }
     }
 }

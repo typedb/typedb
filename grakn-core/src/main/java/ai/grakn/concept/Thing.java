@@ -40,7 +40,7 @@ import java.util.Collection;
  * @author fppt
  *
  */
-public interface Instance extends Concept{
+public interface Thing extends Concept{
     //------------------------------------- Accessors ----------------------------------
     /**
      * Return the Type of the Concept.
@@ -51,7 +51,7 @@ public interface Instance extends Concept{
     Type type();
 
     /**
-     * Retrieves a Relations which the Instance takes part in, which may optionally be narrowed to a particular set
+     * Retrieves a Relations which the Thing takes part in, which may optionally be narrowed to a particular set
      * according to the RoleType you are interested in.
      * @see RoleType
      * @see Relation
@@ -63,7 +63,7 @@ public interface Instance extends Concept{
     Collection<Relation> relations(RoleType... roleTypes);
 
     /**
-     * Determine the Role Types that this Instance may play.
+     * Determine the Role Types that this Thing may play.
      * @see RoleType
      *
      * @return A set of all the Role Types which this instance plays.
@@ -77,14 +77,14 @@ public interface Instance extends Concept{
      * @param resource The resource to which a relationship is created
      * @return The instance itself
      */
-    Instance resource(Resource resource);
+    Thing resource(Resource resource);
 
     /**
      * Retrieves a collection of Resources attached to this Instances
      * @see Resource
      *
      * @param resourceTypes Resource Types of the resources attached to this entity
-     * @return A collection of resources attached to this Instance.
+     * @return A collection of resources attached to this Thing.
      */
     @CheckReturnValue
     Collection<Resource<?>> resources(ResourceType ... resourceTypes);

@@ -1,7 +1,7 @@
 <THINGS>
-    <THING NAME="Bob">
+    <THINGY NAME="Bob">
         innerText
         <NAME>Charlie</NAME>
         <NAME NAME="Alice"/>
-    </THING>
+    </THINGY>
 </THINGS>

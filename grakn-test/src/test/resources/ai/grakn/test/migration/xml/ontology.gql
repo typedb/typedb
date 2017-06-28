@@ -1,6 +1,6 @@
 insert
 
-thing sub entity
+thingy sub entity
     has name
     has price;
 

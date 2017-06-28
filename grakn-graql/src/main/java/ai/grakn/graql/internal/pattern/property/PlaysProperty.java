@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
@@ -44,7 +45,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  * Reperesents the {@code plays} property on a {@link ai.grakn.concept.Type}.
  *
  * This property relates a {@link ai.grakn.concept.Type} and a {@link RoleType}. It indicates that an
- * {@link ai.grakn.concept.Instance} whose type is this {@link ai.grakn.concept.Type} is permitted to be a role-player
+ * {@link Thing} whose type is this {@link ai.grakn.concept.Type} is permitted to be a role-player
  * playing the role of the given {@link RoleType}.
  *
  * @author Felix Chapman
