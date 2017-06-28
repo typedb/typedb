@@ -274,14 +274,6 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchWithHALType_ResponseContainsOriginalQuery() {
-        String query = "match $x isa movie;";
-        Response response = sendGET(query, APPLICATION_HAL);
-
-        assertThat(originalQuery(response), equalTo(query));
-    }
-
-    @Test
     public void GETGraqlMatchWithTextType_ResponseContentTypeIsGraql() {
         Response response = sendGET(APPLICATION_TEXT);
 
@@ -294,21 +286,6 @@ public class GraqlControllerGETTest {
 
         assertThat(stringResponse(response).length(), greaterThan(0));
         assertThat(stringResponse(response), stringContainsInOrder(Collections.nCopies(10, "isa movie")));
-    }
-
-    @Test
-    public void GETGraqlMatchWithTextType_ResponseContainsOriginalQuery() {
-        String query = "match $x isa movie;";
-        Response response = sendGET(APPLICATION_TEXT);
-
-        assertThat(originalQuery(response), equalTo(query));
-    }
-
-    @Test
-    public void GETGraqlMatchWithTextTypeAndEmptyResponse_ResponseIsEmptyString() {
-        Response response = sendGET("match $x isa \"runtime\";", APPLICATION_TEXT);
-
-        assertThat(stringResponse(response), isEmptyString());
     }
 
     @Test
@@ -326,14 +303,6 @@ public class GraqlControllerGETTest {
         Json expectedResponse = Json.read(
                 Printers.json().graqlString(graphContext.graph().graql().parse(query).execute()));
         assertThat(jsonResponse(response), equalTo(expectedResponse));
-    }
-
-    @Test
-    public void GETGraqlMatchWithGraqlJsonType_ResponseContainsOriginalQuery() {
-        String query = "match $x isa movie;";
-        Response response = sendGET(APPLICATION_JSON_GRAQL);
-
-        assertThat(originalQuery(response), equalTo(query));
     }
 
     @Test
@@ -393,14 +362,6 @@ public class GraqlControllerGETTest {
         Response response = sendGET(query, APPLICATION_TEXT);
 
         assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
-    }
-
-    @Test
-    public void GETGraqlCompute_ResponseContainsOriginalQuery() {
-        String query = "compute count in movie;";
-        Response response = sendGET(query, APPLICATION_TEXT);
-
-        assertThat(originalQuery(response), equalTo(query));
     }
 
     @Test
@@ -550,14 +511,10 @@ public class GraqlControllerGETTest {
     }
 
     protected static String stringResponse(Response response) {
-        return response.getBody().as(Json.class, jsonMapper).at(RESPONSE).asString();
+        return response.getBody().asString();
     }
 
     protected static Json jsonResponse(Response response) {
-        return response.getBody().as(Json.class, jsonMapper).at(RESPONSE);
-    }
-
-    protected static String originalQuery(Response response) {
-        return response.getBody().as(Json.class, jsonMapper).at(ORIGINAL_QUERY).asString();
+        return response.getBody().as(Json.class, jsonMapper);
     }
 }

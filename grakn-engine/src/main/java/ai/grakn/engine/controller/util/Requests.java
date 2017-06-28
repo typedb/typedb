@@ -19,6 +19,8 @@
 package ai.grakn.engine.controller.util;
 
 import ai.grakn.exception.GraknServerException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.Optional;
 import java.util.function.Function;
 import spark.Request;

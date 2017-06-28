@@ -21,6 +21,7 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.SparkContext;
@@ -34,15 +35,19 @@ import org.junit.Test;
 
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.jsonResponse;
-import static ai.grakn.test.engine.controller.GraqlControllerGETTest.originalQuery;
+import static ai.grakn.test.engine.controller.GraqlControllerGETTest.stringResponse;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -207,26 +212,38 @@ public class GraqlControllerPOSTTest {
     }
 
     @Test
-    public void POSTGraqlInsert_ResponseContentTypeIsJson(){
-        Response response = sendPOST("insert $x isa person;");
+    public void POSTGraqlInsertWithJsonType_ResponseContentTypeIsJson(){
+        Response response = sendPOST("insert $x isa person;", APPLICATION_JSON_GRAQL);
 
-        assertThat(response.contentType(), equalTo(APPLICATION_JSON));
+        assertThat(response.contentType(), equalTo(APPLICATION_JSON_GRAQL));
     }
 
     @Test
-    public void POSTGraqlInsert_ResponseContainsOriginalQuery(){
-        String query = "insert $x isa person;";
-        Response response = sendPOST(query);
+    public void POSTGraqlInsertWithJsonType_ResponseIsCorrectJson(){
+        Response response = sendPOST("insert $x isa person;", APPLICATION_JSON_GRAQL);
 
-        assertThat(originalQuery(response), equalTo(query));
+        assertThat(jsonResponse(response).asJsonList().size(), equalTo(1));
     }
 
     @Test
-    public void POSTGraqlInsert_ResponseContainsCorrectNumberOfIds(){
-        String query = "insert $x isa person;";
-        Response response = sendPOST(query);
+    public void POSTGraqlInsertWithTextType_ResponseIsTextType(){
+        Response response = sendPOST("insert $x isa person;", APPLICATION_TEXT);
 
-        assertThat(1, equalTo(jsonResponse(response).asJsonList().size()));
+        assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
+    }
+
+    @Test
+    public void POSTGraqlInsertWithTextType_ResponseIsCorrectText(){
+        Response response = sendPOST("insert $x isa person;", APPLICATION_TEXT);
+
+        assertThat(stringResponse(response), containsString("isa person"));
+    }
+
+    @Test
+    public void POSTGraqlInsertWithHALType_ErrorIsThrown(){
+        Response response = sendPOST("insert $x isa person;", APPLICATION_HAL);
+
+        assertThat(exception(response), containsString("Unsupported query type in HAL formatter"));
     }
 
     @Test
@@ -241,7 +258,12 @@ public class GraqlControllerPOSTTest {
     }
 
     private Response sendPOST(String query){
+        return sendPOST(query, APPLICATION_TEXT);
+    }
+
+    private Response sendPOST(String query, String acceptType){
         return RestAssured.with()
+                .accept(acceptType)
                 .queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .body(query)
                 .post(REST.WebPath.Graph.GRAQL);
