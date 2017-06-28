@@ -246,7 +246,7 @@ abstract class ConceptImpl implements Concept {
      *
      * @return An Ontology Element if the element is an Ontology Element
      */
-    public OntologyConcept asOntologyElement() {
+    public OntologyConcept asOntologyConcept() {
         return castConcept(OntologyConcept.class);
     }
 
@@ -355,7 +355,7 @@ abstract class ConceptImpl implements Concept {
      *
      * @return true if the element is an Ontology Element
      */
-    public boolean isOntologyElement() {
+    public boolean isOntologyConcept() {
         return this instanceof OntologyConcept;
     }
 

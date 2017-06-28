@@ -192,8 +192,8 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
     }
 
     <X extends Concept> Collection<X> filterImplicitStructures(Collection<X> types){
-        if (!vertex().graph().implicitConceptsVisible() && !types.isEmpty() && types.iterator().next().isOntologyElement()) {
-            return types.stream().filter(t -> !t.asOntologyElement().isImplicit()).collect(Collectors.toSet());
+        if (!vertex().graph().implicitConceptsVisible() && !types.isEmpty() && types.iterator().next().isOntologyConcept()) {
+            return types.stream().filter(t -> !t.asOntologyConcept().isImplicit()).collect(Collectors.toSet());
         }
         return types;
     }

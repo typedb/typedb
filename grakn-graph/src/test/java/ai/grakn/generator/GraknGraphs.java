@@ -274,7 +274,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary(thing, "resource", resource);
             },
             () -> {
-                OntologyConcept type = ontologyElement();
+                OntologyConcept type = ontologyConcept();
                 Thing thing = instance();
                 //TODO: Clean this up
                 if(type instanceof Type) {
@@ -318,7 +318,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return gen().make(TypeLabels.class, gen().make(MetasyntacticStrings.class)).generate(random, status);
     }
 
-    private OntologyConcept ontologyElement() {
+    private OntologyConcept ontologyConcept() {
         return random.choose(graph.admin().getMetaConcept().subTypes());
     }
 

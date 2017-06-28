@@ -210,7 +210,7 @@ class TxCache {
         modifiedResources.remove(concept);
 
         conceptCache.remove(concept.getId());
-        if (concept.isOntologyElement()) {
+        if (concept.isOntologyConcept()) {
             TypeLabel label = ((OntologyConceptImpl) concept).getLabel();
             typeCache.remove(label);
             labelCache.remove(label);
@@ -233,7 +233,7 @@ class TxCache {
      */
     void cacheConcept(ConceptImpl concept){
         conceptCache.put(concept.getId(), concept);
-        if(concept.isOntologyElement()){
+        if(concept.isOntologyConcept()){
             OntologyConceptImpl ontologyElement = (OntologyConceptImpl) concept;
             typeCache.put(ontologyElement.getLabel(), ontologyElement);
             labelCache.put(ontologyElement.getLabel(), ontologyElement.getTypeId());

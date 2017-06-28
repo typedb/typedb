@@ -248,8 +248,8 @@ public class VertexPropertyTest {
         // Confirm this concept is allowed to be deleted
         // TODO: A better way to handle these assumptions?
         Function<GraknGraph,Object> function = g -> {
-            if (concept.isOntologyElement()) {
-                OntologyConcept ontologyConcept = concept.asOntologyElement();
+            if (concept.isOntologyConcept()) {
+                OntologyConcept ontologyConcept = concept.asOntologyConcept();
                 assumeThat(ontologyConcept.subTypes(), contains(ontologyConcept));
                 if(ontologyConcept.isType()) {
                     Type type = ontologyConcept.asType();

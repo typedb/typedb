@@ -217,6 +217,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
      */
     @Override
     public void delete(){
+
         //If the deletion is successful we will need to update the cache of linked concepts. To do this caches must be loaded
         cachedDirectPlays.get();
 

@@ -58,7 +58,7 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link OntologyConcept} if the {@link Concept} is a {@link OntologyConcept}
      */
     @CheckReturnValue
-    OntologyConcept asOntologyElement();
+    OntologyConcept asOntologyConcept();
 
     /**
      * Return as a {@link Type} if the {@link Concept} is a {@link Type}.
@@ -153,7 +153,7 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the{@link Concept} concept is a {@link OntologyConcept}
      */
     @CheckReturnValue
-    boolean isOntologyElement();
+    boolean isOntologyConcept();
 
     /**
      * Determine if the {@link Concept} is a {@link Type}.

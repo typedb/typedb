@@ -61,7 +61,7 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
         if(concept.isType()){
             concept.asType().setAbstract(true);
         } else {
-            throw GraqlQueryException.insertAbstractOnNonType(concept.asOntologyElement());
+            throw GraqlQueryException.insertAbstractOnNonType(concept.asOntologyConcept());
         }
     }
 
