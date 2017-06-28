@@ -31,7 +31,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
@@ -167,10 +167,10 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 TypeLabel typeLabel = typeLabel();
-                RoleType superType = roleType();
-                RoleType roleType = graph.putRoleType(typeLabel).superType(superType);
-                summaryAssign(roleType, "graph", "putRoleType", typeLabel);
-                summary(roleType, "superType", superType);
+                Role superType = roleType();
+                Role role = graph.putRoleType(typeLabel).superType(superType);
+                summaryAssign(role, "graph", "putRoleType", typeLabel);
+                summary(role, "superType", superType);
             },
             () -> {
                 TypeLabel typeLabel = typeLabel();
@@ -186,9 +186,9 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 Type type = type();
-                RoleType roleType = roleType();
-                type.plays(roleType);
-                summary(type, "plays", roleType);
+                Role role = roleType();
+                type.plays(role);
+                summary(type, "plays", role);
             },
             () -> {
                 Type type = type();
@@ -220,10 +220,10 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summaryAssign(entity, entityType, "addEntity");
             },
             () -> {
-                RoleType roleType1 = roleType();
-                RoleType roleType2 = roleType();
-                roleType1.superType(roleType2);
-                summary(roleType1, "superType", roleType2);
+                Role role1 = roleType();
+                Role role2 = roleType();
+                role1.superType(role2);
+                summary(role1, "superType", role2);
             },
             () -> {
                 RelationType relationType1 = relationType();
@@ -238,9 +238,9 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 RelationType relationType = relationType();
-                RoleType roleType = roleType();
-                relationType.relates(roleType);
-                summary(relationType, "relates", roleType);
+                Role role = roleType();
+                relationType.relates(role);
+                summary(relationType, "relates", role);
             },
             () -> {
                 ResourceType resourceType1 = resourceType();
@@ -284,10 +284,10 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 Relation relation = relation();
-                RoleType roleType = roleType();
+                Role role = roleType();
                 Thing thing = instance();
-                relation.addRolePlayer(roleType, thing);
-                summary(relation, "addRolePlayer", roleType, thing);
+                relation.addRolePlayer(role, thing);
+                summary(relation, "addRolePlayer", role, thing);
             }
     );
 
@@ -332,7 +332,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return random.choose(graph.admin().getMetaEntityType().subTypes());
     }
 
-    private RoleType roleType() {
+    private Role roleType() {
         return random.choose(graph.admin().getMetaRoleType().subTypes());
     }
 

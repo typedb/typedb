@@ -20,10 +20,10 @@ package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
 
@@ -49,10 +49,10 @@ public class CWGraph extends TestGraph {
     private static RelationType isPaidBy;
     private static RelationType owns;
 
-    private static RoleType enemySource, enemyTarget;
-    private static RoleType owner, ownedItem;
-    private static RoleType payee, payer;
-    private static RoleType seller, buyer, transactionItem;
+    private static Role enemySource, enemyTarget;
+    private static Role owner, ownedItem;
+    private static Role payee, payer;
+    private static Role seller, buyer, transactionItem;
 
     private static Thing colonelWest, Nono, America, Tomahawk;
 

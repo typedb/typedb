@@ -9,7 +9,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.engine.postprocessing.ResourceDeduplicationTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.test.EngineContext;
@@ -47,8 +47,8 @@ public class ResourceDeduplicationMapReduceIT {
     
     static EntityType thingy, idea;
     static RelationType nearby, related;
-    static RoleType near1, near2, near3;
-    static RoleType related1, related2, related3, related4, related5;
+    static Role near1, near2, near3;
+    static Role related1, related2, related3, related4, related5;
     
     static void transact(Consumer<GraknGraph> action) {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {

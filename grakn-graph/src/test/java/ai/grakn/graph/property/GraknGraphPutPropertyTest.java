@@ -24,7 +24,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
@@ -230,24 +230,24 @@ public class GraknGraphPutPropertyTest {
 
     @Property
     public void whenCallingPutRoleType_CreateATypeWithSuperTypeRole(@Open GraknGraph graph, @Unused TypeLabel typeLabel) {
-        RoleType roleType = graph.putRoleType(typeLabel);
-        assertEquals(graph.admin().getMetaRoleType(), roleType.superType());
+        Role role = graph.putRoleType(typeLabel);
+        assertEquals(graph.admin().getMetaRoleType(), role.superType());
     }
 
     @Property
     public void whenCallingPutRoleType_CreateATypeWithDefaultProperties(
             @Open GraknGraph graph, @Unused TypeLabel typeLabel) {
-        RoleType roleType = graph.putRoleType(typeLabel);
+        Role role = graph.putRoleType(typeLabel);
 
-        assertThat("The role type should be played by no types", roleType.playedByTypes(), empty());
-        assertThat("The role type should be owned by no relation types", roleType.relationTypes(), empty());
+        assertThat("The role type should be played by no types", role.playedByTypes(), empty());
+        assertThat("The role type should be owned by no relation types", role.relationTypes(), empty());
     }
 
     @Property
     public void whenCallingPutRoleTypeWithAnExistingRoleTypeLabel_ItReturnsThatType(
-            @Open GraknGraph graph, @FromGraph RoleType roleType) {
-        RoleType newType = graph.putRoleType(roleType.getLabel());
-        assertEquals(roleType, newType);
+            @Open GraknGraph graph, @FromGraph Role role) {
+        Role newType = graph.putRoleType(role.getLabel());
+        assertEquals(role, newType);
     }
 
     @Property

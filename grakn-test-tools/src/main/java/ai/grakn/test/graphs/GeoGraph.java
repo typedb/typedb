@@ -23,7 +23,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
 
@@ -41,7 +41,7 @@ public class GeoGraph extends TestGraph {
     private static EntityType university, city, region, country, continent, geographicalObject;
     private static RelationType isLocatedIn;
 
-    private static RoleType geoEntity, entityLocation;
+    private static Role geoEntity, entityLocation;
 
     private static Thing Europe;
     private static Thing Warsaw, Wroclaw, London, Munich, Paris, Milan;

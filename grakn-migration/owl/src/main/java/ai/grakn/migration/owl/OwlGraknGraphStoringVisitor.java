@@ -23,7 +23,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
@@ -159,7 +159,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         RelationType objectRelation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
         if (axiom.getDomain().isOWLClass()) {           
             EntityType entityType = migrator.entityType(axiom.getDomain().asOWLClass());
-            RoleType domain = migrator.subjectRole(objectRelation);
+            Role domain = migrator.subjectRole(objectRelation);
             migrator.owlThingEntityType().deletePlays(domain);
             entityType.plays(domain);
             objectRelation.relates(domain);
@@ -176,7 +176,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         RelationType objectRelation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
         if (axiom.getRange().isOWLClass()) {
             EntityType entityType = migrator.entityType(axiom.getRange().asOWLClass());
-            RoleType range = migrator.objectRole(objectRelation);
+            Role range = migrator.objectRole(objectRelation);
             objectRelation.relates(range);
             migrator.owlThingEntityType().deletePlays(range);
             entityType.plays(range);
@@ -349,8 +349,8 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         }
         Resource resource = resourceType.putResource(value);
         RelationType propertyRelation = migrator.relation(axiom.getProperty().asOWLDataProperty());
-        RoleType entityRole = migrator.entityRole(entity.type(), resource.type());
-        RoleType resourceRole = migrator.resourceRole(resource.type());
+        Role entityRole = migrator.entityRole(entity.type(), resource.type());
+        Role resourceRole = migrator.resourceRole(resource.type());
         try {       
             return propertyRelation.addRelation()
                      .addRolePlayer(entityRole, entity)

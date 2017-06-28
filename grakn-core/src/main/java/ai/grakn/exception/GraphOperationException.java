@@ -21,10 +21,10 @@ package ai.grakn.exception;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.ErrorMessage;
@@ -95,8 +95,8 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when a {@link Type} cannot play a specific role type.
      */
-    public static GraphOperationException invalidPlays(RoleType roleType){
-        return new GraphOperationException(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getLabel()));
+    public static GraphOperationException invalidPlays(Role role){
+        return new GraphOperationException(ErrorMessage.ROLE_TYPE_ERROR.getMessage(role.getLabel()));
     }
 
     /**

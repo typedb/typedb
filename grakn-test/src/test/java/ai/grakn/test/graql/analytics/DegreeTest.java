@@ -28,7 +28,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
@@ -81,8 +81,8 @@ public class DegreeTest {
         ConceptId entity3 = thingy.addEntity().getId();
         ConceptId entity4 = anotherThing.addEntity().getId();
 
-        RoleType role1 = graph.putRoleType("role1");
-        RoleType role2 = graph.putRoleType("role2");
+        Role role1 = graph.putRoleType("role1");
+        Role role2 = graph.putRoleType("role2");
         thingy.plays(role1).plays(role2);
         anotherThing.plays(role1).plays(role2);
         RelationType related = graph.putRelationType("related").relates(role1).relates(role2);
@@ -204,8 +204,8 @@ public class DegreeTest {
     @Test
     public void testSubIsAccountedForInSubgraph() throws Exception {
         // create a simple graph
-        RoleType pet = graph.putRoleType("pet");
-        RoleType owner = graph.putRoleType("owner");
+        Role pet = graph.putRoleType("pet");
+        Role owner = graph.putRoleType("owner");
         graph.putRelationType("mans-best-friend").relates(pet).relates(owner);
         graph.putEntityType("person").plays(owner);
         EntityType animal = graph.putEntityType("animal").plays(pet);
@@ -227,11 +227,11 @@ public class DegreeTest {
     @Test
     public void testDegreeIsCorrect() throws InvalidGraphException, ExecutionException, InterruptedException {
         // create a simple graph
-        RoleType pet = graph.putRoleType("pet");
-        RoleType owner = graph.putRoleType("owner");
+        Role pet = graph.putRoleType("pet");
+        Role owner = graph.putRoleType("owner");
         RelationType mansBestFriend = graph.putRelationType("mans-best-friend").relates(pet).relates(owner);
-        RoleType target = graph.putRoleType("target");
-        RoleType value = graph.putRoleType("value");
+        Role target = graph.putRoleType("target");
+        Role value = graph.putRoleType("value");
         RelationType hasName = graph.putRelationType("has-name").relates(value).relates(target);
         EntityType person = graph.putEntityType("person").plays(owner);
         EntityType animal = graph.putEntityType("animal").plays(pet).plays(target);
@@ -315,9 +315,9 @@ public class DegreeTest {
     @Test
     public void testDegreeMissingRolePlayer() throws Exception {
         // create a simple graph
-        RoleType pet = graph.putRoleType("pet");
-        RoleType owner = graph.putRoleType("owner");
-        RoleType breeder = graph.putRoleType("breeder");
+        Role pet = graph.putRoleType("pet");
+        Role owner = graph.putRoleType("owner");
+        Role breeder = graph.putRoleType("breeder");
         RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
                 .relates(pet).relates(owner).relates(breeder);
         EntityType person = graph.putEntityType("person").plays(owner).plays(breeder);
@@ -352,19 +352,19 @@ public class DegreeTest {
     public void testDegreeAssertionAboutAssertion()
             throws InvalidGraphException, ExecutionException, InterruptedException {
         // create a simple graph
-        RoleType pet = graph.putRoleType("pet");
-        RoleType owner = graph.putRoleType("owner");
+        Role pet = graph.putRoleType("pet");
+        Role owner = graph.putRoleType("owner");
         RelationType mansBestFriend = graph.putRelationType("mans-best-friend").relates(pet).relates(owner);
-        RoleType target = graph.putRoleType("target");
-        RoleType value = graph.putRoleType("value");
+        Role target = graph.putRoleType("target");
+        Role value = graph.putRoleType("value");
         RelationType hasName = graph.putRelationType("has-name").relates(value).relates(target);
         EntityType person = graph.putEntityType("person").plays(owner);
         EntityType animal = graph.putEntityType("animal").plays(pet).plays(target);
         ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING).plays(value);
         ResourceType<String> altName =
                 graph.putResourceType("alternate-name", ResourceType.DataType.STRING).plays(value);
-        RoleType ownership = graph.putRoleType("ownership");
-        RoleType ownershipResource = graph.putRoleType("ownership-resource");
+        Role ownership = graph.putRoleType("ownership");
+        Role ownershipResource = graph.putRoleType("ownership-resource");
         RelationType hasOwnershipResource =
                 graph.putRelationType("has-ownership-resource").relates(ownership).relates(ownershipResource);
         ResourceType<String> startDate =
@@ -437,9 +437,9 @@ public class DegreeTest {
     public void testDegreeTernaryRelationships()
             throws InvalidGraphException, ExecutionException, InterruptedException {
         // make relation
-        RoleType productionWithCast = graph.putRoleType("production-with-cast");
-        RoleType actor = graph.putRoleType("actor");
-        RoleType characterBeingPlayed = graph.putRoleType("character-being-played");
+        Role productionWithCast = graph.putRoleType("production-with-cast");
+        Role actor = graph.putRoleType("actor");
+        Role characterBeingPlayed = graph.putRoleType("character-being-played");
         RelationType hasCast = graph.putRelationType("has-cast")
                 .relates(productionWithCast)
                 .relates(actor)
@@ -473,9 +473,9 @@ public class DegreeTest {
     public void testDegreeOneRolePlayerMultipleRoles()
             throws InvalidGraphException, ExecutionException, InterruptedException {
         // create a simple graph
-        RoleType pet = graph.putRoleType("pet");
-        RoleType owner = graph.putRoleType("owner");
-        RoleType breeder = graph.putRoleType("breeder");
+        Role pet = graph.putRoleType("pet");
+        Role owner = graph.putRoleType("owner");
+        Role breeder = graph.putRoleType("breeder");
         RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
                 .relates(pet).relates(owner).relates(breeder);
         EntityType person = graph.putEntityType("person").plays(owner).plays(breeder);
@@ -514,9 +514,9 @@ public class DegreeTest {
     public void testDegreeRolePlayerWrongType()
             throws InvalidGraphException, ExecutionException, InterruptedException {
         // create a simple graph
-        RoleType pet = graph.putRoleType("pet");
-        RoleType owner = graph.putRoleType("owner");
-        RoleType breeder = graph.putRoleType("breeder");
+        Role pet = graph.putRoleType("pet");
+        Role owner = graph.putRoleType("owner");
+        Role breeder = graph.putRoleType("breeder");
         RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
                 .relates(pet).relates(owner).relates(breeder);
         EntityType person = graph.putEntityType("person").plays(owner).plays(breeder);

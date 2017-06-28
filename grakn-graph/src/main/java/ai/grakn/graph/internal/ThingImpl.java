@@ -20,12 +20,12 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
@@ -159,19 +159,19 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
 
     /**
      *
-     * @param roleTypes An optional parameter which allows you to specify the role of the relations you wish to retrieve.
+     * @param roles An optional parameter which allows you to specify the role of the relations you wish to retrieve.
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
      */
     @Override
-    public Collection<Relation> relations(RoleType... roleTypes) {
+    public Collection<Relation> relations(Role... roles) {
         Set<Relation> relations = new HashSet<>();
         GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerTraversal().
                 has(Schema.VertexProperty.ID.name(), getId().getValue());
 
-        if(roleTypes.length == 0){
+        if(roles.length == 0){
             traversal.in(Schema.EdgeLabel.SHORTCUT.getLabel());
         } else {
-            Set<Integer> roleTypesIds = Arrays.stream(roleTypes).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
+            Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
             traversal.inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                     has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).outV();
         }
@@ -185,7 +185,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
      * @return A set of all the Role Types which this instance plays.
      */
     @Override
-    public Collection<RoleType> plays() {
+    public Collection<Role> plays() {
         return castingsInstance().map(Casting::getRoleType).collect(Collectors.toSet());
     }
 
@@ -213,8 +213,8 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
 
         TypeLabel label = resource.type().getLabel();
         RelationType hasResource = vertex().graph().getOntologyConcept(has.getLabel(label));
-        RoleType hasResourceTarget = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
-        RoleType hasResourceValue = vertex().graph().getOntologyConcept(hasValue.getLabel(label));
+        Role hasResourceTarget = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
+        Role hasResourceValue = vertex().graph().getOntologyConcept(hasValue.getLabel(label));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
             throw GraphOperationException.hasNotAllowed(this, resource, type);

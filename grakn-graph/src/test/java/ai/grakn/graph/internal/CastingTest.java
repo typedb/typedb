@@ -20,9 +20,9 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,9 +37,9 @@ public class CastingTest extends GraphTestBase {
 
     private RelationType relationType;
     private EntityType entityType;
-    private RoleType role3;
-    private RoleType role2;
-    private RoleType role1;
+    private Role role3;
+    private Role role2;
+    private Role role1;
 
     @Before
     public void createOntology(){
@@ -76,7 +76,7 @@ public class CastingTest extends GraphTestBase {
                 addRolePlayer(role1, e1);
 
         Set<Thing> things = relation.castingsRelation().map(Casting::getInstance).collect(Collectors.toSet());
-        Set<RoleType> roles = relation.castingsRelation().map(Casting::getRoleType).collect(Collectors.toSet());
+        Set<Role> roles = relation.castingsRelation().map(Casting::getRoleType).collect(Collectors.toSet());
         assertThat(things, containsInAnyOrder(e1));
         assertThat(roles, containsInAnyOrder(role1));
 

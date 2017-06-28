@@ -22,7 +22,7 @@ package ai.grakn.graql.internal.gremlin.sets;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
@@ -96,10 +96,10 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
             @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.typeLabelOf(roleVar.get(), fragmentSets);
 
             if (roleLabel != null) {
-                RoleType roleType = graph.getOntologyConcept(roleLabel.label());
+                Role role = graph.getOntologyConcept(roleLabel.label());
 
                 fragmentSets.remove(shortcut);
-                fragmentSets.add(shortcut.substituteRoleTypeLabel(graph, roleType));
+                fragmentSets.add(shortcut.substituteRoleTypeLabel(graph, role));
 
                 return true;
             }
@@ -158,14 +158,14 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
     /**
      * Apply an optimisation where we check the role-type property instead of navigating to the role-type directly.
-     * @param roleType the role-type that this shortcut fragment must link to
+     * @param role the role-type that this shortcut fragment must link to
      * @return a new {@link ShortcutFragmentSet} with the same properties excepting role-types
      */
-    private ShortcutFragmentSet substituteRoleTypeLabel(GraknGraph graph, RoleType roleType) {
+    private ShortcutFragmentSet substituteRoleTypeLabel(GraknGraph graph, Role role) {
         Preconditions.checkState(this.roleType.isPresent());
         Preconditions.checkState(!roleTypeLabels.isPresent());
 
-        Collection<RoleType> subTypes = withImplicitConceptsVisible(graph, roleType::subTypes);
+        Collection<Role> subTypes = withImplicitConceptsVisible(graph, role::subTypes);
 
         Set<TypeLabel> newRoleTypeLabels = subTypes.stream().map(OntologyConcept::getLabel).collect(toSet());
 

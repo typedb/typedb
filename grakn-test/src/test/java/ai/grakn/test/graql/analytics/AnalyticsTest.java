@@ -26,7 +26,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
@@ -106,8 +106,8 @@ public class AnalyticsTest {
             EntityType thingy = graph.putEntityType("thingy");
 
             graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
-            RoleType degreeOwner = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
-            RoleType degreeValue = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
+            Role degreeOwner = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
+            Role degreeValue = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
             RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
                     .relates(degreeOwner)
                     .relates(degreeValue);
@@ -164,8 +164,8 @@ public class AnalyticsTest {
             entityId3 = entity3.getId().getValue();
             entityId4 = entity4.getId().getValue();
 
-            RoleType role1 = graph.putRoleType("role1");
-            RoleType role2 = graph.putRoleType("role2");
+            Role role1 = graph.putRoleType("role1");
+            Role role2 = graph.putRoleType("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
             RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);

@@ -29,7 +29,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeId;
@@ -478,17 +478,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public RoleType putRoleType(String label) {
+    public Role putRoleType(String label) {
         return putRoleType(TypeLabel.of(label));
     }
 
     @Override
-    public RoleType putRoleType(TypeLabel label) {
+    public Role putRoleType(TypeLabel label) {
         return putOntologyElement(label, Schema.BaseType.ROLE_TYPE,
                 v -> factory().buildRoleType(v, getMetaRoleType(), Boolean.FALSE)).asRoleType();
     }
 
-    RoleType putRoleTypeImplicit(TypeLabel label) {
+    Role putRoleTypeImplicit(TypeLabel label) {
         return putOntologyElement(label, Schema.BaseType.ROLE_TYPE,
                 v -> factory().buildRoleType(v, getMetaRoleType(), Boolean.TRUE)).asRoleType();
     }
@@ -595,7 +595,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public RoleType getRoleType(String label) {
+    public Role getRoleType(String label) {
         return getOntologyConcept(TypeLabel.of(label), Schema.BaseType.ROLE_TYPE);
     }
 
@@ -615,7 +615,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public RoleType getMetaRoleType() {
+    public Role getMetaRoleType() {
         return getOntologyConcept(Schema.MetaSchema.ROLE.getId());
     }
 
@@ -644,7 +644,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return getOntologyConcept(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
-    void putShortcutEdge(ThingImpl toInstance, RelationImpl fromRelation, RoleTypeImpl roleType){
+    void putShortcutEdge(ThingImpl toInstance, RelationImpl fromRelation, RoleImpl roleType){
         boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getTypeId().getValue()).
@@ -904,7 +904,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             foundRelation = otherRelation;
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
             otherRelation.allRolePlayers().forEach((roleType, instances) -> {
-                if(instances.contains(other)) putShortcutEdge(main, otherRelation, (RoleTypeImpl) roleType);
+                if(instances.contains(other)) putShortcutEdge(main, otherRelation, (RoleImpl) roleType);
             });
         }
 

@@ -25,7 +25,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
@@ -141,8 +141,8 @@ public class OWLMigrator {
 
         TypeLabel hasIriResourceId = TypeLabel.of(OwlModel.IRI.owlname());
         ResourceType<String> iriResource = owlIriResource();
-        RoleType hasIriOwner = entityRole(type, iriResource);
-        RoleType hasIriValue = resourceRole(iriResource);
+        Role hasIriOwner = entityRole(type, iriResource);
+        Role hasIriValue = resourceRole(iriResource);
         RelationType hasIriRelation = graph.putRelationType(namer.resourceRelation(hasIriResourceId))
                 .relates(hasIriOwner).relates(hasIriValue);
 
@@ -181,8 +181,8 @@ public class OWLMigrator {
 
     public RelationType relation(OWLObjectProperty property) {
         RelationType relType = graph.putRelationType(namer.objectPropertyName(property.getIRI()));
-        RoleType subjectRole = subjectRole(relType);
-        RoleType objectRole = objectRole(relType);
+        Role subjectRole = subjectRole(relType);
+        Role objectRole = objectRole(relType);
         relType.relates(subjectRole);
         relType.relates(objectRole);
         EntityType top = this.owlThingEntityType();
@@ -207,24 +207,24 @@ public class OWLMigrator {
         return relType;
     }
     
-    public RoleType subjectRole(RelationType relType) {
+    public Role subjectRole(RelationType relType) {
         return graph.putRoleType(namer.subjectRole(relType.getLabel()));
     }
 
-    public RoleType objectRole(RelationType relType) {
+    public Role objectRole(RelationType relType) {
         return graph.putRoleType(namer.objectRole(relType.getLabel()));
     }
 
-    public RoleType entityRole(EntityType entityType, ResourceType<?> resourceType) {
-        RoleType roleType = graph.putRoleType(namer.entityRole(resourceType.getLabel()));
-        entityType.plays(roleType);
-        return roleType;
+    public Role entityRole(EntityType entityType, ResourceType<?> resourceType) {
+        Role role = graph.putRoleType(namer.entityRole(resourceType.getLabel()));
+        entityType.plays(role);
+        return role;
     }
     
-    public RoleType resourceRole(ResourceType<?> resourceType) {
-        RoleType roleType = graph.putRoleType(namer.resourceRole(resourceType.getLabel()));
-        resourceType.plays(roleType);
-        return roleType;
+    public Role resourceRole(ResourceType<?> resourceType) {
+        Role role = graph.putRoleType(namer.resourceRole(resourceType.getLabel()));
+        resourceType.plays(role);
+        return role;
     }
     
     public ResourceType<?> resourceType(OWLDataProperty property) {

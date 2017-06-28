@@ -64,7 +64,7 @@ class TxCache {
     //Elements Tracked For Validation
     private final Set<EntityImpl> modifiedEntities = new HashSet<>();
 
-    private final Set<RoleTypeImpl> modifiedRoleTypes = new HashSet<>();
+    private final Set<RoleImpl> modifiedRoleTypes = new HashSet<>();
     private final Set<Casting> modifiedCastings = new HashSet<>();
 
     private final Set<RelationTypeImpl> modifiedRelationTypes = new HashSet<>();
@@ -138,7 +138,7 @@ class TxCache {
         if (element.isEntity()) {
             modifiedEntities.add((EntityImpl) element);
         } else if (element.isRoleType()) {
-            modifiedRoleTypes.add((RoleTypeImpl) element);
+            modifiedRoleTypes.add((RoleImpl) element);
         } else if (element.isRelationType()) {
             modifiedRelationTypes.add((RelationTypeImpl) element);
         } else if (element.isRelation()){
@@ -353,7 +353,7 @@ class TxCache {
         return modifiedEntities;
     }
 
-    Set<RoleTypeImpl> getModifiedRoleTypes() {
+    Set<RoleImpl> getModifiedRoleTypes() {
         return modifiedRoleTypes;
     }
 

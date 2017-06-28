@@ -29,7 +29,7 @@ import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
@@ -128,7 +128,7 @@ public class GraknGraphPropertyTest {
 
         // We have to assign the result for the cast to happen
         //noinspection unused
-        RoleType roleType = graph.getConcept(id);
+        Role role = graph.getConcept(id);
     }
 
     @Property
@@ -156,7 +156,7 @@ public class GraknGraphPropertyTest {
 
         // We have to assign the result for the cast to happen
         //noinspection unused
-        RoleType roleType = graph.getOntologyConcept(typeLabel);
+        Role role = graph.getOntologyConcept(typeLabel);
     }
 
     @Property
@@ -227,7 +227,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingGetRoleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph RoleType type) {
+    public void whenCallingGetRoleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph Role type) {
         TypeLabel typeLabel = type.getLabel();
         assertSameResult(() -> graph.getOntologyConcept(typeLabel), () -> graph.getRoleType(typeLabel.getValue()));
     }

@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -30,9 +30,9 @@ public class RelationTypeTest extends GraphTestBase{
     @Test
     public void whenGettingTheRolesOfRelationTypes_AllTheRolesAreReturned() throws Exception {
         RelationType relationType = graknGraph.putRelationType("relationTypes");
-        RoleType role1 = graknGraph.putRoleType("role1");
-        RoleType role2 = graknGraph.putRoleType("role2");
-        RoleType role3 = graknGraph.putRoleType("role3");
+        Role role1 = graknGraph.putRoleType("role1");
+        Role role2 = graknGraph.putRoleType("role2");
+        Role role3 = graknGraph.putRoleType("role3");
         relationType.relates(role1).relates(role2).relates(role3);
         assertThat(relationType.relates(), containsInAnyOrder(role1, role2, role3));
     }
@@ -40,8 +40,8 @@ public class RelationTypeTest extends GraphTestBase{
     @Test
     public void whenMutatingRolesOfRelationType_EnsureRelationTypeRolesAreAlwaysUpdated(){
         RelationType relationType = graknGraph.putRelationType("c1");
-        RoleType role1 = graknGraph.putRoleType("c2");
-        RoleType role2 = graknGraph.putRoleType("c3");
+        Role role1 = graknGraph.putRoleType("c2");
+        Role role2 = graknGraph.putRoleType("c3");
         assertThat(relationType.relates(), empty());
 
         relationType.relates(role1).relates(role2);

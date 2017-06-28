@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
@@ -138,9 +138,9 @@ public class AtomicTest {
         String patternString = "{($z, $y) isa owns; $z isa country; $y isa rocket;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
-        Multimap<RoleType, Var> roleMap = roleSetMap(atom.getRoleVarMap());
+        Multimap<Role, Var> roleMap = roleSetMap(atom.getRoleVarMap());
 
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
                 graph.getRoleType("item-owner"), var("z"),
                 graph.getRoleType("owned-item"), var("y"));
         assertEquals(correctRoleMap, roleMap);
@@ -153,8 +153,8 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
         Relation atom = (Relation) query.getAtom();
 
-        Multimap<RoleType, Var> roleMap = roleSetMap(atom.getRoleVarMap());
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
+        Multimap<Role, Var> roleMap = roleSetMap(atom.getRoleVarMap());
+        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
                 graph.getRoleType("item-owner"), var("z"),
                 graph.getRoleType("role"), var("y"));
         assertEquals(correctRoleMap, roleMap);
@@ -166,9 +166,9 @@ public class AtomicTest {
         String patternString = "{($z, $y, seller: $x) isa transaction;$z isa country;$y isa rocket;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom2 = (Relation) query.getAtom();
-        Multimap<RoleType, Var> roleMap = roleSetMap(atom2.getRoleVarMap());
+        Multimap<Role, Var> roleMap = roleSetMap(atom2.getRoleVarMap());
 
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
                 graph.getRoleType("seller"), var("x"),
                 graph.getRoleType("transaction-item"), var("y"),
                 graph.getRoleType("buyer"), var("z"));
@@ -181,9 +181,9 @@ public class AtomicTest {
         String patternString = "{($z, $y, $x) isa transaction;$z isa country;$x isa person;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
-        Multimap<RoleType, Var> roleMap = roleSetMap(atom.getRoleVarMap());
+        Multimap<Role, Var> roleMap = roleSetMap(atom.getRoleVarMap());
 
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
                 graph.getRoleType("seller"), var("x"),
                 graph.getRoleType("role"), var("y"),
                 graph.getRoleType("buyer"), var("z"));
@@ -196,9 +196,9 @@ public class AtomicTest {
         String patternString = "{(buyer: $y, seller: $y, $x), isa transaction;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
-        Multimap<RoleType, Var> roleMap = roleSetMap(atom.getRoleVarMap());
+        Multimap<Role, Var> roleMap = roleSetMap(atom.getRoleVarMap());
 
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
                 graph.getRoleType("role"), var("x"),
                 graph.getRoleType("seller"), var("y"),
                 graph.getRoleType("buyer"), var("y"));
@@ -211,9 +211,9 @@ public class AtomicTest {
         String patternString = "{(buyer: $y, $y, transaction-item: $x), isa transaction;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
-        Multimap<RoleType, Var> roleMap = roleSetMap(atom.getRoleVarMap());
+        Multimap<Role, Var> roleMap = roleSetMap(atom.getRoleVarMap());
 
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
                 graph.getRoleType("transaction-item"), var("x"),
                 graph.getRoleType("role"), var("y"),
                 graph.getRoleType("buyer"), var("y"));
@@ -227,13 +227,13 @@ public class AtomicTest {
         String relationString2 = "{(superRole1: $gp, $p) isa relation1;}";
         Relation relation = (Relation) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         Relation relation2 = (Relation) ReasonerQueries.atomic(conjunction(relationString2, graph), graph).getAtom();
-        Multimap<RoleType, Var> roleMap = roleSetMap(relation.getRoleVarMap());
-        Multimap<RoleType, Var> roleMap2 = roleSetMap(relation2.getRoleVarMap());
+        Multimap<Role, Var> roleMap = roleSetMap(relation.getRoleVarMap());
+        Multimap<Role, Var> roleMap2 = roleSetMap(relation2.getRoleVarMap());
 
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
                 graph.getRoleType("role"), var("p"),
                 graph.getRoleType("superRole2"), var("gc"));
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap2 = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Var> correctRoleMap2 = ImmutableSetMultimap.of(
                 graph.getRoleType("role"), var("p"),
                 graph.getRoleType("superRole1"), var("gp"));
         assertEquals(correctRoleMap, roleMap);
@@ -245,7 +245,7 @@ public class AtomicTest {
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity;}";
         Relation relation = (Relation) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        ImmutableSetMultimap<RoleType, Var> roleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
                 graph.getRoleType("role1"), var("x"),
                 graph.getRoleType("role"), var("y"),
                 graph.getRoleType("role"), var("z"));
@@ -257,7 +257,7 @@ public class AtomicTest {
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity3;}";
         Relation relation = (Relation) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        ImmutableSetMultimap<RoleType, Var> roleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
                 graph.getRoleType("role1"), var("x"),
                 graph.getRoleType("role"), var("y"),
                 graph.getRoleType("role"), var("z"));
@@ -285,7 +285,7 @@ public class AtomicTest {
         GraknGraph graph = ruleApplicabilitySingleRoleSet.graph();
         String relationString = "{($x, $y) isa knows;}";
         Relation relation = (Relation) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        ImmutableSetMultimap<RoleType, Var> roleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
                 graph.getRoleType("friend"), var("x"),
                 graph.getRoleType("friend"), var("y"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
@@ -954,7 +954,7 @@ public class AtomicTest {
 
         assertTrue(unifier.containsAll(correctUnifier));
 
-        Multimap<RoleType, Var> roleMap = roleSetMap(headAtom.getRoleVarMap());
+        Multimap<Role, Var> roleMap = roleSetMap(headAtom.getRoleVarMap());
         Collection<Var> wifeEntry = roleMap.get(graph.getRoleType("superRole1"));
         assertEquals(wifeEntry.size(), 1);
         assertEquals(wifeEntry.iterator().next(), var("x"));
@@ -1041,8 +1041,8 @@ public class AtomicTest {
         return graph.graql().match(var("x").has(typeName, val).admin()).execute().iterator().next().get("x");
     }
 
-    private Multimap<RoleType, Var> roleSetMap(Multimap<RoleType, Var> roleVarMap) {
-        Multimap<RoleType, Var> roleMap = HashMultimap.create();
+    private Multimap<Role, Var> roleSetMap(Multimap<Role, Var> roleVarMap) {
+        Multimap<Role, Var> roleMap = HashMultimap.create();
         roleVarMap.entries().forEach(e -> roleMap.put(e.getKey(), e.getValue()));
         return roleMap;
     }

@@ -20,7 +20,7 @@ package ai.grakn.migration.export;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarPattern;
@@ -107,7 +107,7 @@ public class OntologyConceptMapper {
      * @return var with appropriate plays edges
      */
     private static VarPattern plays(VarPattern var, Type type) {
-        for(RoleType role:type.plays()){
+        for(Role role:type.plays()){
             var = var.plays(Graql.label(role.getLabel()));
         }
         return var;
@@ -120,7 +120,7 @@ public class OntologyConceptMapper {
      * @return var with appropriate relates edges
      */
     private static VarPattern relates(VarPattern var, RelationType type){
-        for(RoleType role:type.relates()){
+        for(Role role:type.relates()){
             var = var.relates(Graql.label(role.getLabel()));
         }
         return var;

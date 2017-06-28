@@ -101,34 +101,34 @@ public interface RelationType extends Type {
     //------------------------------------- Accessors ----------------------------------
     /**
      * Retrieves a list of the RoleTypes that make up this RelationType.
-     * @see RoleType
+     * @see Role
      *
      * @return A list of the RoleTypes which make up this RelationType.
      */
     @CheckReturnValue
-    Collection<RoleType> relates();
+    Collection<Role> relates();
 
     //------------------------------------- Edge Handling ----------------------------------
 
     /**
-     * Sets a new RoleType for this RelationType.
-     * @see RoleType
+     * Sets a new Role for this RelationType.
+     * @see Role
      *
-     * @param roleType A new role which is part of this relationship.
+     * @param role A new role which is part of this relationship.
      * @return The RelationType itself.
      */
-    RelationType relates(RoleType roleType);
+    RelationType relates(Role role);
 
     //------------------------------------- Other ----------------------------------
 
     /**
-     * Delete a RoleType from this RelationType
-     * @see RoleType
+     * Delete a Role from this RelationType
+     * @see Role
      *
-     * @param roleType The RoleType to delete from the RelationType.
+     * @param role The Role to delete from the RelationType.
      * @return The RelationType itself.
      */
-    RelationType deleteRelates(RoleType roleType);
+    RelationType deleteRelates(Role role);
 
     //---- Inherited Methods
     /**
@@ -156,22 +156,22 @@ public interface RelationType extends Type {
     Collection<RelationType> subTypes();
 
     /**
-     * Sets the RoleType which instances of this RelationType may play.
+     * Sets the Role which instances of this RelationType may play.
      *
-     * @param roleType The RoleType which the instances of this Type are allowed to play.
+     * @param role The Role which the instances of this Type are allowed to play.
      * @return  The RelationType itself.
      */
     @Override
-    RelationType plays(RoleType roleType);
+    RelationType plays(Role role);
 
     /**
-     * Removes the RoleType to prevent instances of this RelationType from playing it.
+     * Removes the Role to prevent instances of this RelationType from playing it.
      *
-     * @param roleType The RoleType which the instances of this Type should no longer be allowed to play.
+     * @param role The Role which the instances of this Type should no longer be allowed to play.
      * @return The RelationType itself.
      */
     @Override
-    RelationType deletePlays(RoleType roleType);
+    RelationType deletePlays(Role role);
 
     /**
      * Retrieve all the Relation instances of this RelationType

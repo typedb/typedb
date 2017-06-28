@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.utils;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
@@ -265,7 +265,7 @@ public class ReasonerUtils {
 
     /**
      * @param ontologyConcepts entry set
-     * @return top non-meta {@link OntologyConcept} from within the provided set of {@link RoleType}
+     * @return top non-meta {@link OntologyConcept} from within the provided set of {@link Role}
      */
     public static <T extends OntologyConcept> Set<T> getOntologyConcepts(Set<T> ontologyConcepts) {
         return ontologyConcepts.stream()
@@ -280,8 +280,8 @@ public class ReasonerUtils {
      * @param relRoles relation type of interest
      * @return set of role types the type can play in relType
      */
-    public static Set<RoleType> getCompatibleRoleTypes(Type type, Set<RoleType> relRoles) {
-        Collection<RoleType> typeRoles = type.plays();
+    public static Set<Role> getCompatibleRoleTypes(Type type, Set<Role> relRoles) {
+        Collection<Role> typeRoles = type.plays();
         return relRoles.stream().filter(typeRoles::contains).collect(toSet());
     }
 
@@ -310,8 +310,8 @@ public class ReasonerUtils {
      * @param <T> type generic
      * @return map of compatible relation types and their corresponding role types
      */
-    public static <T extends OntologyConcept> Multimap<RelationType, RoleType> getCompatibleRelationTypesWithRoles(Set<T> types, OntologyConceptConverter<T> ontologyConceptConverter) {
-        Multimap<RelationType, RoleType> compatibleTypes = HashMultimap.create();
+    public static <T extends OntologyConcept> Multimap<RelationType, Role> getCompatibleRelationTypesWithRoles(Set<T> types, OntologyConceptConverter<T> ontologyConceptConverter) {
+        Multimap<RelationType, Role> compatibleTypes = HashMultimap.create();
         if (types.isEmpty()) return compatibleTypes;
         Iterator<T> it = types.iterator();
         compatibleTypes.putAll(ontologyConceptConverter.toRelationMultimap(it.next()));
@@ -328,10 +328,10 @@ public class ReasonerUtils {
      * @param roleMap initial rolePlayer-roleType roleMap to be complemented
      * @param roleMaps output set containing possible role mappings complementing the roleMap configuration
      */
-    public static void computeRoleCombinations(Set<Var> vars, Set<RoleType> roles, Map<Var, VarPattern> roleMap,
-                                        Set<Map<Var, VarPattern>> roleMaps){
+    public static void computeRoleCombinations(Set<Var> vars, Set<Role> roles, Map<Var, VarPattern> roleMap,
+                                               Set<Map<Var, VarPattern>> roleMaps){
         Set<Var> tempVars = Sets.newHashSet(vars);
-        Set<RoleType> tempRoles = Sets.newHashSet(roles);
+        Set<Role> tempRoles = Sets.newHashSet(roles);
         Var var = vars.iterator().next();
 
         roles.forEach(role -> {

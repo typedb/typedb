@@ -23,7 +23,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.test.GraphContext;
 
@@ -58,8 +58,8 @@ public class TransitivityChainGraph extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknGraph graph, int n) {
-        RoleType qfrom = graph.getRoleType("Q-from");
-        RoleType qto = graph.getRoleType("Q-to");
+        Role qfrom = graph.getRoleType("Q-from");
+        Role qto = graph.getRoleType("Q-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
         RelationType q = graph.getRelationType("Q");

@@ -20,10 +20,10 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
@@ -153,15 +153,15 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Optional<ValuePredicateAdmin> predicate =
                 resource.getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
 
-        RoleType owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
-        RoleType value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
+        Role owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
+        Role value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
 
         concept.asInstance().relations(owner).stream()
                 .filter(relation -> testPredicate(predicate, relation, value))
                 .forEach(Concept::delete);
     }
 
-    private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relation relation, RoleType resourceRole) {
+    private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relation relation, Role resourceRole) {
         Object value = relation.rolePlayers(resourceRole).iterator().next().asResource().getValue();
 
         return optPredicate

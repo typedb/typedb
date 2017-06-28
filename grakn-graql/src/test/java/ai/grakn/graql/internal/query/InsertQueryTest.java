@@ -25,7 +25,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
@@ -775,8 +775,8 @@ public class InsertQueryTest {
         Thing muppets = results.get(0).get("m").asInstance();
         Relation relation = results.get(0).get("r").asRelation();
 
-        RoleType clusterOfProduction = movieGraph.graph().getRoleType("cluster-of-production");
-        RoleType productionWithCluster = movieGraph.graph().getRoleType("production-with-cluster");
+        Role clusterOfProduction = movieGraph.graph().getRoleType("cluster-of-production");
+        Role productionWithCluster = movieGraph.graph().getRoleType("production-with-cluster");
 
         assertEquals(relation.rolePlayers(), ImmutableSet.of(cluster, godfather, muppets));
         assertEquals(relation.rolePlayers(clusterOfProduction), ImmutableSet.of(cluster));

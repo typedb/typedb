@@ -23,12 +23,12 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
@@ -282,8 +282,8 @@ abstract class ConceptImpl implements Concept {
      * @return A Role Type if the element is a Role Type
      */
     @Override
-    public RoleType asRoleType() {
-        return castConcept(RoleType.class);
+    public Role asRoleType() {
+        return castConcept(Role.class);
     }
 
     /**
@@ -392,7 +392,7 @@ abstract class ConceptImpl implements Concept {
      */
     @Override
     public boolean isRoleType() {
-        return this instanceof RoleType;
+        return this instanceof Role;
     }
 
     /**

@@ -25,7 +25,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import org.junit.Before;
@@ -36,8 +36,8 @@ import static ai.grakn.util.ErrorMessage.SCHEMA_LOCKED;
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
 
 public class OntologyMutationTest extends GraphTestBase{
-    private RoleType husband;
-    private RoleType wife;
+    private Role husband;
+    private Role wife;
     private RelationType marriage;
     private EntityType person;
     private EntityType woman;
@@ -50,8 +50,8 @@ public class OntologyMutationTest extends GraphTestBase{
     public void buildMarriageGraph() throws InvalidGraphException {
         husband = graknGraph.putRoleType("Husband");
         wife = graknGraph.putRoleType("Wife");
-        RoleType driver = graknGraph.putRoleType("Driver");
-        RoleType driven = graknGraph.putRoleType("Driven");
+        Role driver = graknGraph.putRoleType("Driver");
+        Role driven = graknGraph.putRoleType("Driven");
 
         marriage = graknGraph.putRelationType("marriage").relates(husband).relates(wife);
         graknGraph.putRelationType("car being driven by").relates(driven).relates(driver);
@@ -158,13 +158,13 @@ public class OntologyMutationTest extends GraphTestBase{
         graknGraph.putRelationType(relationTypeId);
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
-        RoleType roleType = graknGraphBatch.getRoleType(roleTypeId);
+        Role role = graknGraphBatch.getRoleType(roleTypeId);
         RelationType relationType = graknGraphBatch.getRelationType(relationTypeId);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
-        relationType.relates(roleType);
+        relationType.relates(role);
     }
 
     @Test
@@ -175,13 +175,13 @@ public class OntologyMutationTest extends GraphTestBase{
         graknGraph.putEntityType(entityTypeId);
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
-        RoleType roleType = graknGraphBatch.getRoleType(roleTypeId);
+        Role role = graknGraphBatch.getRoleType(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
-        entityType.plays(roleType);
+        entityType.plays(role);
     }
 
     @Test
@@ -207,35 +207,35 @@ public class OntologyMutationTest extends GraphTestBase{
     public void whenDeletingPlaysUsingBatchGraph_Throw(){
         String roleTypeId = "role-thing";
         String entityTypeId = "entityType";
-        RoleType roleType = graknGraph.putRoleType(roleTypeId);
-        graknGraph.putEntityType(entityTypeId).plays(roleType);
+        Role role = graknGraph.putRoleType(roleTypeId);
+        graknGraph.putEntityType(entityTypeId).plays(role);
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
-        roleType = graknGraphBatch.getRoleType(roleTypeId);
+        role = graknGraphBatch.getRoleType(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
-        entityType.deletePlays(roleType);
+        entityType.deletePlays(role);
     }
 
     @Test
     public void whenDeletingRelatesUsingBatchGraph_Throw(){
         String roleTypeId = "role-thing";
         String relationTypeId = "relationtype";
-        RoleType roleType = graknGraph.putRoleType(roleTypeId);
-        graknGraph.putRelationType(relationTypeId).relates(roleType);
+        Role role = graknGraph.putRoleType(roleTypeId);
+        graknGraph.putRelationType(relationTypeId).relates(role);
         graknGraph.commit();
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
-        roleType = graknGraphBatch.getRoleType(roleTypeId);
+        role = graknGraphBatch.getRoleType(roleTypeId);
         RelationType relationType = graknGraphBatch.getRelationType(relationTypeId);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
-        relationType.deleteRelates(roleType);
+        relationType.deleteRelates(role);
     }
 
     @Test

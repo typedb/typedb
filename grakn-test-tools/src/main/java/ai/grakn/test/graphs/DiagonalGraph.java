@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.test.GraphContext;
 
@@ -59,8 +59,8 @@ public class DiagonalGraph extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknGraph graph, int n, int m) {
-        RoleType relFrom = graph.getRoleType("rel-from");
-        RoleType relTo = graph.getRoleType("rel-to");
+        Role relFrom = graph.getRoleType("rel-from");
+        Role relTo = graph.getRoleType("rel-to");
 
         EntityType entity1 = graph.getEntityType("entity1");
         RelationType horizontal = graph.getRelationType("horizontal");

@@ -28,7 +28,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
@@ -84,7 +84,7 @@ public class MigratorTestUtils {
     public static void assertRelationBetweenInstancesExists(GraknGraph graph, Thing thing1, Thing thing2, TypeLabel relation){
         RelationType relationType = graph.getOntologyConcept(relation);
 
-        RoleType role1 = thing1.plays().stream().filter(r -> r.relationTypes().stream().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
+        Role role1 = thing1.plays().stream().filter(r -> r.relationTypes().stream().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
         assertTrue(thing1.relations(role1).stream().anyMatch(rel -> rel.rolePlayers().contains(thing2)));
     }
 
@@ -113,8 +113,8 @@ public class MigratorTestUtils {
     }
 
     public static Stream<Resource> getResources(GraknGraph graph, Thing thing, TypeLabel label) {
-        RoleType roleOwner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(label));
-        RoleType roleOther = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
+        Role roleOwner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(label));
+        Role roleOther = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
 
         Collection<Relation> relations = thing.relations(roleOwner);
         return relations.stream().flatMap(r -> r.rolePlayers(roleOther).stream()).map(Concept::asResource);

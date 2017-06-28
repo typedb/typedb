@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
@@ -53,7 +53,7 @@ import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
  * {@link HasResourceTypeProperty#required} field.
  *
  * This property is defined as an implicit ontological structure between a {@link Type} and a {@link ResourceType},
- * including one implicit {@link RelationType} and two implicit {@link RoleType}s. The labels of these types are derived
+ * including one implicit {@link RelationType} and two implicit {@link Role}s. The labels of these types are derived
  * from the label of the {@link ResourceType}.
  *
  * Like {@link HasResourceProperty}, if this is not a key and is used in a match query it will not use the implicit

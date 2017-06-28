@@ -24,7 +24,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
@@ -259,12 +259,12 @@ public class VertexPropertyTest {
                 }
 
                 if (ontologyConcept.isRoleType()) {
-                    RoleType roleType = ontologyConcept.asRoleType();
-                    assumeThat(roleType.playedByTypes(), empty());
-                    assumeThat(roleType.relationTypes(), empty());
+                    Role role = ontologyConcept.asRoleType();
+                    assumeThat(role.playedByTypes(), empty());
+                    assumeThat(role.relationTypes(), empty());
                     Collection<? extends Relation> allRelations = graph.admin().getMetaRelationType().instances();
-                    Set<RoleType> allRolesPlayed = allRelations.stream().flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
-                    assumeThat(allRolesPlayed, not(hasItem(roleType)));
+                    Set<Role> allRolesPlayed = allRelations.stream().flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
+                    assumeThat(allRolesPlayed, not(hasItem(role)));
                 } else if (ontologyConcept.isRelationType()) {
                     assumeThat(ontologyConcept.asRelationType().relates(), empty());
                 }

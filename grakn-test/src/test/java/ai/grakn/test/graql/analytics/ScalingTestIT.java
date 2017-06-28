@@ -25,7 +25,7 @@ import ai.grakn.client.BatchMutatorClient;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.QueryBuilderImplMock;
@@ -377,8 +377,8 @@ public class ScalingTestIT {
     private void simpleOntology(String keyspace) throws InvalidGraphException {
         GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
         EntityType thing = graph.putEntityType("thing");
-        RoleType relation1 = graph.putRoleType("relation1");
-        RoleType relation2 = graph.putRoleType("relation2");
+        Role relation1 = graph.putRoleType("relation1");
+        Role relation2 = graph.putRoleType("relation2");
         thing.plays(relation1).plays(relation2);
         graph.putRelationType("related").relates(relation1).relates(relation2);
         ResourceType<String> id = graph.putResourceType("node-id", ResourceType.DataType.STRING);

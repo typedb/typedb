@@ -20,11 +20,11 @@ package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
@@ -45,9 +45,9 @@ public class MovieGraph extends TestGraph {
     private static ResourceType<Double> tmdbVoteAverage;
     private static ResourceType<LocalDateTime> releaseDate;
     private static RelationType hasCast, authoredBy, directedBy, hasGenre, hasCluster;
-    private static RoleType productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
-    private static RoleType genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
-    private static RoleType work, author;
+    private static Role productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
+    private static Role genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
+    private static Role work, author;
     private static RuleType aRuleType;
 
     private static Thing godfather, theMuppets, heat, apocalypseNow, hocusPocus, spy, chineseCoffee;

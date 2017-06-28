@@ -22,7 +22,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.migration.owl.OwlModel;
@@ -175,12 +175,12 @@ public class TestSamplesImport extends TestOwlGraknBase {
             assertTrue(item1.resources().stream().anyMatch(r -> r.getValue().equals("First Item")));
             item1.resources().forEach(System.out::println);
             Entity item2 = getEntity("eItem2");
-            RoleType subjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(TypeLabel.of("op-related")));
-            RoleType objectRole = graph.getOntologyConcept(migrator.namer().objectRole(TypeLabel.of("op-related")));
+            Role subjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(TypeLabel.of("op-related")));
+            Role objectRole = graph.getOntologyConcept(migrator.namer().objectRole(TypeLabel.of("op-related")));
             assertTrue(item2.relations(subjectRole).stream().anyMatch(
                     relation -> item1.equals(relation.rolePlayers(objectRole).iterator().next())));
-            RoleType catsubjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(TypeLabel.of("op-hasCategory")));
-            RoleType catobjectRole = graph.getOntologyConcept(migrator.namer().objectRole(TypeLabel.of("op-hasCategory")));
+            Role catsubjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(TypeLabel.of("op-hasCategory")));
+            Role catobjectRole = graph.getOntologyConcept(migrator.namer().objectRole(TypeLabel.of("op-hasCategory")));
             assertTrue(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("tCategory")));
             assertTrue(catsubjectRole.playedByTypes().contains(migrator.graph().getEntityType("tThing")));
             //Assert.assertFalse(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("Thing")));

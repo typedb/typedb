@@ -37,44 +37,44 @@ import java.util.Collection;
  * @author fppt
  *
  */
-public interface RoleType extends OntologyConcept {
+public interface Role extends OntologyConcept {
     //------------------------------------- Modifiers ----------------------------------
 
     /**
-     * Sets the supertype of this RoleType.
+     * Sets the supertype of this Role.
      *
-     * @param type The supertype of this RoleType
-     * @return The RoleType itself
+     * @param type The supertype of this Role
+     * @return The Role itself
      */
-    RoleType superType(RoleType type);
+    Role superType(Role type);
 
     /**
      * Adds another subtype to this type
      *
      * @param type The sub type of this role type
-     * @return The RoleType itself
+     * @return The Role itself
      */
-    RoleType subType(RoleType type);
+    Role subType(Role type);
 
     //------------------------------------- Accessors ----------------------------------
     /**
-     * Returns the supertype of this RoleType.
+     * Returns the supertype of this Role.
      *
-     * @return The supertype of this RoleType
+     * @return The supertype of this Role
      */
     @Override
-    RoleType superType();
+    Role superType();
 
     /**
-     * Returns the subtypes of this RoleType.
+     * Returns the subtypes of this Role.
      *
-     * @return The sub types of this RoleType
+     * @return The sub types of this Role
      */
     @Override
-    Collection<RoleType> subTypes();
+    Collection<Role> subTypes();
 
     /**
-     * Returns the RelationTypes that this RoleType takes part in.
+     * Returns the RelationTypes that this Role takes part in.
      * @see RelationType
      *
      * @return The RelationTypes which this role takes part in.
@@ -83,7 +83,7 @@ public interface RoleType extends OntologyConcept {
     Collection<RelationType> relationTypes();
 
     /**
-     * Returns a collection of the Types that can play this RoleType.
+     * Returns a collection of the Types that can play this Role.
      * @see Type
      *
      * @return A list of all the Types which can play this role.

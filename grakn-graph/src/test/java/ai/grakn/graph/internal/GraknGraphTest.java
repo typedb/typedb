@@ -10,7 +10,7 @@ import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
@@ -87,13 +87,13 @@ public class GraknGraphTest extends GraphTestBase {
 
         EntityType entityType = graknGraph.putEntityType(entityTypeLabel);
         RelationType relationType = graknGraph.putRelationType(relationTypeLabel);
-        RoleType roleType = graknGraph.putRoleType(roleTypeLabel);
+        Role role = graknGraph.putRoleType(roleTypeLabel);
         ResourceType resourceType = graknGraph.putResourceType(resourceTypeLabel, ResourceType.DataType.STRING);
         RuleType ruleType = graknGraph.putRuleType(ruleTypeLabel);
 
         assertEquals(entityType, graknGraph.getEntityType(entityTypeLabel));
         assertEquals(relationType, graknGraph.getRelationType(relationTypeLabel));
-        assertEquals(roleType, graknGraph.getRoleType(roleTypeLabel));
+        assertEquals(role, graknGraph.getRoleType(roleTypeLabel));
         assertEquals(resourceType, graknGraph.getResourceType(resourceTypeLabel));
         assertEquals(ruleType, graknGraph.getRuleType(ruleTypeLabel));
     }
@@ -102,7 +102,7 @@ public class GraknGraphTest extends GraphTestBase {
     public void whenGettingSubTypesFromRootMeta_IncludeAllTypes(){
         EntityType sampleEntityType = graknGraph.putEntityType("Sample Entity Type");
         RelationType sampleRelationType = graknGraph.putRelationType("Sample Relation Type");
-        RoleType sampleRoleType = graknGraph.putRoleType("Sample Role Type");
+        Role sampleRole = graknGraph.putRoleType("Sample Role Type");
 
         assertThat(graknGraph.admin().getMetaConcept().subTypes(), containsInAnyOrder(
                 graknGraph.admin().getMetaConcept(),
@@ -115,7 +115,7 @@ public class GraknGraphTest extends GraphTestBase {
                 graknGraph.admin().getMetaRuleInference(),
                 sampleEntityType,
                 sampleRelationType,
-                sampleRoleType
+                sampleRole
         ));
     }
 
@@ -159,18 +159,18 @@ public class GraknGraphTest extends GraphTestBase {
 
         //Meta Types
         RelationType relationType = graknGraph.admin().getMetaRelationType();
-        RoleType roleType = graknGraph.admin().getMetaRoleType();
+        Role role = graknGraph.admin().getMetaRoleType();
 
         //Check nothing is revealed when returning result sets
         assertThat(type.plays(), is(empty()));
         assertThat(resourceType.plays(), is(empty()));
         assertThat(graknGraph.getMetaRelationType().subTypes(), containsInAnyOrder(relationType));
-        assertThat(graknGraph.getMetaRoleType().subTypes(), containsInAnyOrder(roleType));
+        assertThat(graknGraph.getMetaRoleType().subTypes(), containsInAnyOrder(role));
 
         //Check things are still returned when explicitly asking for them
         RelationType has = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
-        RoleType hasOwner = graknGraph.getRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType.getLabel()).getValue());
-        RoleType hasValue = graknGraph.getRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType.getLabel()).getValue());
+        Role hasOwner = graknGraph.getRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType.getLabel()).getValue());
+        Role hasValue = graknGraph.getRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType.getLabel()).getValue());
         assertNotNull(hasOwner);
         assertNotNull(hasValue);
         assertNotNull(has);
@@ -181,7 +181,7 @@ public class GraknGraphTest extends GraphTestBase {
 
         //Now check the result sets again
         assertThat(graknGraph.getMetaRelationType().subTypes(), containsInAnyOrder(relationType, has));
-        assertThat(graknGraph.getMetaRoleType().subTypes(), containsInAnyOrder(roleType, hasOwner, hasValue));
+        assertThat(graknGraph.getMetaRoleType().subTypes(), containsInAnyOrder(role, hasOwner, hasValue));
         assertThat(type.plays(), containsInAnyOrder(hasOwner));
         assertThat(resourceType.plays(), containsInAnyOrder(hasValue));
     }
@@ -230,8 +230,8 @@ public class GraknGraphTest extends GraphTestBase {
         //Check Central cache is empty
         assertCacheOnlyContainsMetaTypes();
 
-        RoleType r1 = graknGraph.putRoleType("r1");
-        RoleType r2 = graknGraph.putRoleType("r2");
+        Role r1 = graknGraph.putRoleType("r1");
+        Role r2 = graknGraph.putRoleType("r2");
         EntityType e1 = graknGraph.putEntityType("e1").plays(r1).plays(r2);
         RelationType rel1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
 
@@ -253,7 +253,7 @@ public class GraknGraphTest extends GraphTestBase {
         pool.submit(() -> {
             GraknGraph innerGraph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
             EntityType entityType = innerGraph.getEntityType("e1");
-            RoleType role = innerGraph.getRoleType("r1");
+            Role role = innerGraph.getRoleType("r1");
             entityType.deletePlays(role);
         }).get();
 
@@ -299,8 +299,8 @@ public class GraknGraphTest extends GraphTestBase {
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
         EntityType entityT = graknGraph.putEntityType(entityType);
         entityT.addEntity();
-        RoleType roleT1 = graknGraph.putRoleType(roleType1);
-        RoleType roleT2 = graknGraph.putRoleType(roleType2);
+        Role roleT1 = graknGraph.putRoleType(roleType1);
+        Role roleT2 = graknGraph.putRoleType(roleType2);
         RelationType relationT1 = graknGraph.putRelationType(relationType1).relates(roleT1);
         RelationType relationT2 = graknGraph.putRelationType(relationType2).relates(roleT2);
         ResourceType<String> resourceT = graknGraph.putResourceType(resourceType, ResourceType.DataType.STRING);

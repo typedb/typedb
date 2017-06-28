@@ -119,7 +119,7 @@ class Validator {
      * Validation rules exclusive to role types
      * @param roleType The roleType to validate
      */
-    private void validateRoleType(RoleTypeImpl roleType){
+    private void validateRoleType(RoleImpl roleType){
         ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(roleType).ifPresent(errorsFound::add);
     }
 

@@ -8,7 +8,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
@@ -205,8 +205,8 @@ public class ShortestPathTest {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 
-            RoleType role1 = graph.putRoleType("role1");
-            RoleType role2 = graph.putRoleType("role2");
+            Role role1 = graph.putRoleType("role1");
+            Role role2 = graph.putRoleType("role2");
             entityType.plays(role1).plays(role2);
             RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);
 
@@ -293,8 +293,8 @@ public class ShortestPathTest {
             entityId4 = entity4.getId();
             entityId5 = entity5.getId();
 
-            RoleType role1 = graph.putRoleType("role1");
-            RoleType role2 = graph.putRoleType("role2");
+            Role role1 = graph.putRoleType("role1");
+            Role role2 = graph.putRoleType("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
             RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);
@@ -328,13 +328,13 @@ public class ShortestPathTest {
             entityId2 = entity2.getId();
             entityId3 = entity3.getId();
 
-            RoleType role1 = graph.putRoleType("role1");
-            RoleType role2 = graph.putRoleType("role2");
+            Role role1 = graph.putRoleType("role1");
+            Role role2 = graph.putRoleType("role2");
             entityType.plays(role1).plays(role2);
             RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);
 
-            RoleType role3 = graph.putRoleType("role3");
-            RoleType role4 = graph.putRoleType("role4");
+            Role role3 = graph.putRoleType("role3");
+            Role role4 = graph.putRoleType("role4");
             entityType.plays(role3).plays(role4);
             relationType.plays(role3).plays(role4);
             RelationType relationType2 = graph.putRelationType(veryRelated).relates(role3).relates(role4);

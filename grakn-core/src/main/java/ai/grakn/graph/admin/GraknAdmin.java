@@ -25,7 +25,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
@@ -94,7 +94,7 @@ public interface GraknAdmin {
      * @return The meta role type -> role-type.
      */
     @CheckReturnValue
-    RoleType getMetaRoleType();
+    Role getMetaRoleType();
 
     /**
      * Get the root of all the Resource Types.

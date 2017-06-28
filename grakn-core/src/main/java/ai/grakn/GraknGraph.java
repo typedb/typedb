@@ -25,7 +25,7 @@ import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
@@ -166,28 +166,28 @@ public interface GraknGraph extends AutoCloseable{
     RelationType putRelationType(TypeLabel label);
 
     /**
-     * Create a {@link RoleType} with super-type {@code role}, or return a pre-existing {@link RoleType}, with the
+     * Create a {@link Role} with super-type {@code role}, or return a pre-existing {@link Role}, with the
      * specified label.
      *
-     * @param label A unique label for the {@link RoleType}
-     * @return new or existing {@link RoleType} with the provided Id.
+     * @param label A unique label for the {@link Role}
+     * @return new or existing {@link Role} with the provided Id.
      *
      * @throws GraphOperationException if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RoleType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Role}.
      */
-    RoleType putRoleType(String label);
+    Role putRoleType(String label);
 
     /**
-     * Create a {@link RoleType} with super-type {@code role}, or return a pre-existing {@link RoleType}, with the
+     * Create a {@link Role} with super-type {@code role}, or return a pre-existing {@link Role}, with the
      * specified label.
      *
-     * @param label A unique label for the {@link RoleType}
-     * @return new or existing {@link RoleType} with the provided Id.
+     * @param label A unique label for the {@link Role}
+     * @return new or existing {@link Role} with the provided Id.
      *
      * @throws GraphOperationException if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RoleType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Role}.
      */
-    RoleType putRoleType(TypeLabel label);
+    Role putRoleType(TypeLabel label);
 
     //------------------------------------- Concept Lookup ----------------------------------
     /**
@@ -281,7 +281,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      */
     @CheckReturnValue
-    RoleType getRoleType(String label);
+    Role getRoleType(String label);
 
     /**
      * Get the Rule Type with the label provided, if it exists.

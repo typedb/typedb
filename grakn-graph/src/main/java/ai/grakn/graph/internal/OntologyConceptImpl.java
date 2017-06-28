@@ -22,7 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
@@ -54,7 +54,7 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  * @author fppt
  *
  * @param <T> The leaf interface of the object concept.
- *           For example an {@link EntityType} or {@link RelationType} or {@link RoleType}
+ *           For example an {@link EntityType} or {@link RelationType} or {@link Role}
  */
 abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImpl implements OntologyConcept {
     private final TypeLabel cachedLabel;

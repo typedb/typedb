@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.test.GraphContext;
 
@@ -59,10 +59,10 @@ public class MatrixGraph extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknGraph graph, int n, int m) {
-        RoleType R1from = graph.getRoleType("R1-from");
-        RoleType R1to = graph.getRoleType("R1-to");
-        RoleType R2from = graph.getRoleType("R2-from");
-        RoleType R2to = graph.getRoleType("R2-to");
+        Role R1from = graph.getRoleType("R1-from");
+        Role R1to = graph.getRoleType("R1-to");
+        Role R2from = graph.getRoleType("R2-from");
+        Role R2to = graph.getRoleType("R2-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
         EntityType bEntity = graph.getEntityType("b-entity");

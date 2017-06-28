@@ -21,7 +21,7 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknOrientDBGraph;
@@ -90,8 +90,8 @@ public class GraknOrientDBGraphFactoryTest {
         graknGraph.commit();
         assertEquals(12, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
 
-        RoleType role1 = graknGraph.putRoleType("Role 1");
-        RoleType role2 = graknGraph.putRoleType("Role 2");
+        Role role1 = graknGraph.putRoleType("Role 1");
+        Role role2 = graknGraph.putRoleType("Role 2");
         graknGraph.putRelationType("My Relation Type").relates(role1).relates(role2);
         graknGraph.commit();
         assertEquals(15, graknGraph.getTinkerPopGraph().traversal().V().toList().size());

@@ -70,22 +70,22 @@ public interface EntityType extends Type{
     EntityType subType(EntityType type);
 
     /**
-     * Sets the RoleType which instances of this EntityType may play.
+     * Sets the Role which instances of this EntityType may play.
      *
-     * @param roleType The Role Type which the instances of this EntityType are allowed to play.
+     * @param role The Role Type which the instances of this EntityType are allowed to play.
      * @return The EntityType itself
      */
     @Override
-    EntityType plays(RoleType roleType);
+    EntityType plays(Role role);
 
     /**
-     * Removes the RoleType to prevent instances of this EntityType from playing it.
+     * Removes the Role to prevent instances of this EntityType from playing it.
      *
-     * @param roleType The Role Type which the instances of this EntityType should no longer be allowed to play.
+     * @param role The Role Type which the instances of this EntityType should no longer be allowed to play.
      * @return The EntityType itself
      */
     @Override
-    EntityType deletePlays(RoleType roleType);
+    EntityType deletePlays(Role role);
 
     /**
      * Creates and returns a new Entity instance, whose direct type will be this type.

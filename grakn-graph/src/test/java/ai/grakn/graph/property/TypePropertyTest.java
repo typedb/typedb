@@ -21,9 +21,9 @@ package ai.grakn.graph.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
@@ -82,12 +82,12 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void whenMakingAMetaTypePlayRole_Throw(@Meta Type type, RoleType roleType) {
-        assumeThat(type, not(is(roleType)));
+    public void whenMakingAMetaTypePlayRole_Throw(@Meta Type type, Role role) {
+        assumeThat(type, not(is(role)));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
-        type.plays(roleType);
+        type.plays(role);
     }
 
     @Property
@@ -316,51 +316,51 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void ATypePlayingARoleIsEquivalentToARoleBeingPlayed(Type type, @FromGraph RoleType roleType) {
-        assertEquals(type.plays().contains(roleType), roleType.playedByTypes().contains(type));
+    public void ATypePlayingARoleIsEquivalentToARoleBeingPlayed(Type type, @FromGraph Role role) {
+        assertEquals(type.plays().contains(role), role.playedByTypes().contains(type));
     }
 
     @Property
     public void whenAddingAPlays_TheTypePlaysThatRoleAndNoOtherNewRoles(
-            @Meta(false) Type type, @FromGraph RoleType roleType) {
-        assumeThat(type, not(is(roleType)));  // A role-type cannot play itself, TODO: is this sensible?
+            @Meta(false) Type type, @FromGraph Role role) {
+        assumeThat(type, not(is(role)));  // A role-type cannot play itself, TODO: is this sensible?
 
-        Set<RoleType> previousPlays = Sets.newHashSet(type.plays());
-        type.plays(roleType);
-        Set<RoleType> newPlays = Sets.newHashSet(type.plays());
+        Set<Role> previousPlays = Sets.newHashSet(type.plays());
+        type.plays(role);
+        Set<Role> newPlays = Sets.newHashSet(type.plays());
 
-        assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(roleType)));
+        assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(role)));
     }
 
     @Property
     public void whenAddingAPlaysToATypesIndirectSuperType_TheTypePlaysThatRole(
-            Type type, @FromGraph RoleType roleType, long seed) {
+            Type type, @FromGraph Role role, long seed) {
         Type superType = choose(indirectSuperTypes(type), seed);
 
         assumeFalse(isMetaLabel(superType.getLabel()));
-        assumeThat(superType, not(is(roleType)));
+        assumeThat(superType, not(is(role)));
 
-        Set<RoleType> previousPlays = Sets.newHashSet(type.plays());
-        superType.plays(roleType);
-        Set<RoleType> newPlays = Sets.newHashSet(type.plays());
+        Set<Role> previousPlays = Sets.newHashSet(type.plays());
+        superType.plays(role);
+        Set<Role> newPlays = Sets.newHashSet(type.plays());
 
-        assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(roleType)));
+        assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(role)));
     }
 
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypeDoesNotPlaysThatRole_TheTypeNoLongerPlaysThatRole(
-            @Meta(false) Type type, @FromGraph RoleType roleType) {
-        assumeThat(type.superType().plays(), not(hasItem(roleType)));
-        type.deletePlays(roleType);
-        assertThat(type.plays(), not(hasItem(roleType)));
+            @Meta(false) Type type, @FromGraph Role role) {
+        assumeThat(type.superType().plays(), not(hasItem(role)));
+        type.deletePlays(role);
+        assertThat(type.plays(), not(hasItem(role)));
     }
 
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypePlaysThatRole_TheTypeStillPlaysThatRole(
             @Meta(false) Type type, long seed) {
-        RoleType roleType = choose(type.superType() + " plays no roles", type.superType().plays(), seed);
-        type.deletePlays(roleType);
-        assertThat(type.plays(), hasItem(roleType));
+        Role role = choose(type.superType() + " plays no roles", type.superType().plays(), seed);
+        type.deletePlays(role);
+        assertThat(type.plays(), hasItem(role));
     }
 
     // TODO: Tests for `resource` and `key`

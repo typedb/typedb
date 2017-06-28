@@ -24,7 +24,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
@@ -105,7 +105,7 @@ public abstract class GraphWriterTestUtil {
         }
 
         RelationType relationType = two.getRelationType(relation1.type().getLabel().getValue());
-        Map<RoleType, Set<Thing>> rolemap = relation1.allRolePlayers().entrySet().stream().collect(toMap(
+        Map<Role, Set<Thing>> rolemap = relation1.allRolePlayers().entrySet().stream().collect(toMap(
                 e -> two.getRoleType(e.getKey().getLabel().getValue()),
                 e -> e.getValue().stream().
                         map(instance -> getInstanceUniqueByResourcesFromGraph(two, instance)).

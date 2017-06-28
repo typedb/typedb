@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.test.GraphContext;
 
@@ -57,12 +57,12 @@ public class NguyenGraph extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknGraph graph, int n) {
-        RoleType Rfrom = graph.getRoleType("R-rA");
-        RoleType Rto = graph.getRoleType("R-rB");
-        RoleType qfrom = graph.getRoleType("Q-rA");
-        RoleType qto = graph.getRoleType("Q-rB");
-        RoleType Pfrom = graph.getRoleType("P-rA");
-        RoleType Pto = graph.getRoleType("P-rB");
+        Role Rfrom = graph.getRoleType("R-rA");
+        Role Rto = graph.getRoleType("R-rB");
+        Role qfrom = graph.getRoleType("Q-rA");
+        Role qto = graph.getRoleType("Q-rB");
+        Role Pfrom = graph.getRoleType("P-rA");
+        Role Pto = graph.getRoleType("P-rB");
 
         EntityType entity = graph.getEntityType("entity2");
         EntityType aEntity = graph.getEntityType("a-entity");

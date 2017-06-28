@@ -33,7 +33,7 @@ import javax.annotation.CheckReturnValue;
  *     A concept which can represent anything in the graph which wraps a tinkerpop {@link Vertex}.
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
- *     ({@link EntityType}, {@link RoleType}, {@link RelationType}, {@link RuleType} or {@link ResourceType})
+ *     ({@link EntityType}, {@link Role}, {@link RelationType}, {@link RuleType} or {@link ResourceType})
  *     or an {@link Thing} ({@link Entity}, {@link Relation} , {@link Resource}, {@link Rule}).
  * </p>
  *
@@ -85,12 +85,12 @@ public interface Concept extends Comparable<Concept>{
     EntityType asEntityType();
 
     /**
-     * Return as a {@link RoleType} if the {@link Concept} is a {@link RoleType}.
+     * Return as a {@link Role} if the {@link Concept} is a {@link Role}.
      *
-     * @return A {@link RoleType} if the {@link Concept} is a {@link RoleType}
+     * @return A {@link Role} if the {@link Concept} is a {@link Role}
      */
     @CheckReturnValue
-    RoleType asRoleType();
+    Role asRoleType();
 
     /**
      * Return as a {@link RelationType} if the {@link Concept} is a {@link RelationType}.
@@ -180,9 +180,9 @@ public interface Concept extends Comparable<Concept>{
     boolean isEntityType();
 
     /**
-     * Determine if the {@link Concept} is a {@link RoleType}.
+     * Determine if the {@link Concept} is a {@link Role}.
      *
-     * @return true if the {@link Concept} is a {@link RoleType}
+     * @return true if the {@link Concept} is a {@link Role}
      */
     @CheckReturnValue
     boolean isRoleType();

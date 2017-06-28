@@ -20,10 +20,10 @@ package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
@@ -250,7 +250,7 @@ public class HALConceptData {
     private void embedRelationsNotConnectedToResources(Representation halResource, Concept concept, Relation relation, int separationDegree) {
         TypeLabel rolePlayedByCurrentConcept = null;
         boolean isResource = false;
-        for (Map.Entry<RoleType, Set<Thing>> entry : relation.allRolePlayers().entrySet()) {
+        for (Map.Entry<Role, Set<Thing>> entry : relation.allRolePlayers().entrySet()) {
             for (Thing thing : entry.getValue()) {
                 //Some role players can be null
                 if (thing != null) {
@@ -287,7 +287,7 @@ public class HALConceptData {
             });
         }
         // We only limit the number of instances and not subtypes.
-        // TODO: This `asOntologyElement` is a hack because `thing.subTypes()` will contain `RoleType`, which is not `Type`
+        // TODO: This `asOntologyElement` is a hack because `thing.subTypes()` will contain `Role`, which is not `Type`
         type.asOntologyConcept().subTypes().stream().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
             Representation subResource = factory.newRepresentation(resourceLinkPrefix + sub.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
