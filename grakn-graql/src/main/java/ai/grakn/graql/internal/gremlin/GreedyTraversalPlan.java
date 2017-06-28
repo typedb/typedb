@@ -79,11 +79,9 @@ public class GreedyTraversalPlan {
      * @return a semi-optimal traversal plan to execute the given conjunction
      */
     private static List<Fragment> semiOptimalConjunction(ConjunctionQuery query) {
-        List<Fragment> plan = new ArrayList<>();
 
+        List<Fragment> plan = new ArrayList<>();
         Collection<Set<Fragment>> connectedFragmentSets = getConnectedFragmentSets(query);
-        System.out.println("connectedFragmentSets = " + connectedFragmentSets.size());
-        connectedFragmentSets.forEach(set -> System.out.println("     SetEntry : " + set));
 
         connectedFragmentSets.forEach(fragmentSet -> {
             Map<String, Node> nodes = new HashMap<>();
@@ -137,8 +135,6 @@ public class GreedyTraversalPlan {
                         .max(Weighted::compareTo)
                         .map(arborescenceInside -> arborescenceInside.val).orElse(Arborescence.empty());
 
-                System.out.println("arborescence.getRoot() = " + arborescence.getRoot());
-                System.out.println("arborescence = " + arborescence);
                 greedyTraversal(plan, arborescence, nodes, edges);
             }
 
@@ -153,10 +149,6 @@ public class GreedyTraversalPlan {
                         .collect(Collectors.toSet());
             }
         });
-        System.out.println();
-        System.out.println("final plan = " + plan);
-        System.out.println();
-
         return plan;
     }
 
@@ -212,7 +204,6 @@ public class GreedyTraversalPlan {
         Node root = arborescence.getRoot();
         Set<Node> reachableNodes = Sets.newHashSet(root);
         while (!reachableNodes.isEmpty()) {
-            System.out.println("reachableNodes = " + reachableNodes);
             Node nodeWithMinCost = reachableNodes.stream().min(Comparator.comparingDouble(node ->
                     getEdgeFragmentCost(node, arborescence, edgeFragmentChildToParent))).get();
 
@@ -224,8 +215,6 @@ public class GreedyTraversalPlan {
             if (edgesParentToChild.containsKey(nodeWithMinCost)) {
                 reachableNodes.addAll(edgesParentToChild.get(nodeWithMinCost));
             }
-
-            System.out.println("plan = " + plan);
         }
     }
 

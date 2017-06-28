@@ -280,12 +280,6 @@ public class GraqlTraversalTest {
         ));
     }
 
-    @Test //TODO: Finish this
-    public void testDisconnectedQuery() {
-        Pattern pattern = and(var());
-        GraqlTraversal graqlTraversal = semiOptimal(pattern);
-    }
-
     private static GraqlTraversal semiOptimal(Pattern pattern) {
         return GreedyTraversalPlan.createTraversal(pattern.admin(), graph);
     }
