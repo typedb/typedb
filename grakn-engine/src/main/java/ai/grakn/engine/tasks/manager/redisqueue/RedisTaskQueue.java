@@ -23,6 +23,7 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.util.EngineID;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
@@ -61,6 +62,8 @@ class RedisTaskQueue {
 
     private final Client redisClient;
     private final Config config;
+    private final Histogram queueSize;
+    private final Meter failures;
     private Pool<Jedis> jedisPool;
     private LockProvider lockProvider;
     private final MetricRegistry metricRegistry;
@@ -77,6 +80,8 @@ class RedisTaskQueue {
         this.config = new ConfigBuilder().build();
         this.redisClient = new ClientPoolImpl(config, jedisPool);
         this.putJobMeter = metricRegistry.meter(name(RedisTaskQueue.class, "put-job"));
+        this.queueSize = metricRegistry.histogram(name(RedisTaskQueue.class, "queue-size"));
+        this.failures = metricRegistry.meter(name(RedisTaskQueue.class, "failures"));
     }
 
     void close() throws IOException {
@@ -102,12 +107,14 @@ class RedisTaskQueue {
         // task coming from the queue
         worker.getWorkerEventEmitter().addListener(
                 (event, worker1, queue, job, runner, result, t) -> {
+                    queueSize.update(queue.length());
                     if (runner instanceof RedisTaskQueueConsumer) {
                         ((RedisTaskQueueConsumer) runner).setRunningState(redisTaskManager, engineId, config, jedisPool, factory, lockProvider, metricRegistry);
                     }
                 }, WorkerEvent.JOB_EXECUTE);
         worker.setExceptionHandler((jobExecutor, exception, curQueue) -> {
             // TODO review this strategy
+            failures.mark();
             LOG.error("Exception while trying to run task", exception);
             return RecoveryStrategy.PROCEED;
         });

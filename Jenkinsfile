@@ -41,6 +41,7 @@ node('slave2-dev-jenkins') {
                 'LDBC_VALIDATION_CONFIG=readwrite_grakn--ldbc_driver_config--db_validation.properties']) {
             dir ('generate-SNB') {
                 stage('Load Validation Data') {
+                    sh 'sleep 60'
                     sh './load-SNB.sh arch validate'
                 }
             }

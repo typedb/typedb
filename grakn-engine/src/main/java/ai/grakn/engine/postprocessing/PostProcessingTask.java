@@ -27,6 +27,8 @@ import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import static com.codahale.metrics.MetricRegistry.name;
+import com.codahale.metrics.Timer.Context;
 import com.google.common.base.Preconditions;
 import java.time.Instant;
 import java.util.Map;
@@ -61,22 +63,32 @@ public class PostProcessingTask extends BackgroundTask {
      */
     @Override
     public boolean start() {
-        Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.RESOURCE, configuration());
+        Context context = metricRegistry()
+                .timer(name(PostProcessingTask.class, "execution")).time();
+        try {
+            Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.RESOURCE, configuration());
 
-        allToPostProcess.entrySet().forEach(e -> {
-            String conceptIndex = e.getKey();
-            Set<ConceptId> conceptIds = e.getValue();
+            allToPostProcess.forEach((conceptIndex, conceptIds) -> {
+                Context contextSingle = metricRegistry()
+                        .timer(name(PostProcessingTask.class, "execution-single")).time();
+                try {
+                    String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
+                    int maxRetry = engineConfiguration()
+                            .getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
-            String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
-            int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+                    GraphMutators.runGraphMutationWithRetry(factory(), keyspace, maxRetry,
+                            (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
+                } finally {
+                    contextSingle.stop();
+                }
+            });
 
-            GraphMutators.runGraphMutationWithRetry(factory(), keyspace, maxRetry,
-                    (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
-        });
+            LOG.debug(JOB_FINISHED, Schema.BaseType.RESOURCE.name(), allToPostProcess);
 
-        LOG.debug(JOB_FINISHED, Schema.BaseType.RESOURCE.name(), allToPostProcess);
-
-        return true;
+            return true;
+        } finally {
+            context.stop();
+        }
     }
 
     /**
