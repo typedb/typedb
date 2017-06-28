@@ -20,7 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 
 public class ResourceTypes extends AbstractTypeGenerator<ResourceType> {
 
@@ -29,7 +29,7 @@ public class ResourceTypes extends AbstractTypeGenerator<ResourceType> {
     }
 
     @Override
-    protected ResourceType newType(TypeLabel label) {
+    protected ResourceType newType(Label label) {
         ResourceType.DataType<?> dataType = gen(ResourceType.DataType.class);
 
         return graph().putResourceType(label, dataType);

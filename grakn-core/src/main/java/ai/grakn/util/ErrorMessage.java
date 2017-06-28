@@ -74,8 +74,8 @@ public enum ErrorMessage {
     VALIDATION_RELATION_CASTING_LOOP_FAIL("The relation [%s] has a role player playing the role [%s] " +
             "which it's type [%s] is not connecting to via a relates connection \n"),
 
-    VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play RoleType [%s] \n"),
-    VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("RoleType [%s] does not have a relates connection to any Relation Type. \n"),
+    VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play Role [%s] \n"),
+    VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relation Type. \n"),
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
     VALIDATION_INSTANCE("Thing [%s] of type [%s] does not play the required role [%s] \n"),
 

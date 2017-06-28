@@ -18,8 +18,8 @@
 package ai.grakn.util;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.test.GraknTestSetup;
 import org.junit.Before;
 import org.junit.Test;
@@ -62,14 +62,14 @@ public class GraphLoaderTest {
 
     @Test
     public void whenCreatingGraphWithPreLoader_EnsureGraphContainsPreLoadedEntities(){
-        Set<TypeLabel> labels = new HashSet<>(Arrays.asList(TypeLabel.of("1"), TypeLabel.of("2"), TypeLabel.of("3")));
+        Set<Label> labels = new HashSet<>(Arrays.asList(Label.of("1"), Label.of("2"), Label.of("3")));
 
         Consumer<GraknGraph> preLoader = graph -> labels.forEach(graph::putEntityType);
 
         GraphLoader loader = GraphLoader.preLoad(preLoader);
 
         try (GraknGraph graph = loader.graph()){
-            Set<TypeLabel> foundLabels = graph.admin().getMetaEntityType().subTypes().stream().
+            Set<Label> foundLabels = graph.admin().getMetaEntityType().subs().stream().
                     map(Type::getLabel).collect(Collectors.toSet());
 
             assertTrue(foundLabels.containsAll(labels));

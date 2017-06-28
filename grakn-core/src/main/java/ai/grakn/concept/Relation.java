@@ -64,30 +64,30 @@ public interface Relation extends Thing {
 
     /**
      * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
-     * @see RoleType
+     * @see Role
      *
      * @return A list of all the role types and the instances playing them in this relation.
      */
     @CheckReturnValue
-    Map<RoleType, Set<Thing>> allRolePlayers();
+    Map<Role, Set<Thing>> allRolePlayers();
 
     /**
-     * Retrieves a list of every {@link Thing} involved in the {@link Relation}, filtered by {@link RoleType} played.
-     * @param roleTypes used to filter the returned instances only to ones that play any of the role types.
+     * Retrieves a list of every {@link Thing} involved in the {@link Relation}, filtered by {@link Role} played.
+     * @param roles used to filter the returned instances only to ones that play any of the role types.
      *                  If blank, returns all role players.
      * @return a list of every {@link Thing} involved in the {@link Relation}.
      */
     @CheckReturnValue
-    Collection<Thing> rolePlayers(RoleType... roleTypes);
+    Collection<Thing> rolePlayers(Role... roles);
 
     /**
      * Expands this Relation to include a new role player which is playing a specific role.
      *
-     * @param roleType The Role Type of the new role player.
+     * @param role The Role Type of the new role player.
      * @param thing The new role player.
      * @return The Relation itself.
      *
      * @throws PropertyNotUniqueException if the concept is only allowed to play this role once.
      */
-    Relation addRolePlayer(RoleType roleType, Thing thing);
+    Relation addRolePlayer(Role role, Thing thing);
 }

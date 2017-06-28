@@ -23,7 +23,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
@@ -122,8 +122,8 @@ final class ElementFactory {
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
-    RoleTypeImpl buildRoleType(VertexElement vertex, RoleType type, Boolean isImplicit){
-        return getOrBuildConcept(vertex, (v) -> new RoleTypeImpl(v, type, isImplicit));
+    RoleImpl buildRole(VertexElement vertex, Role type, Boolean isImplicit){
+        return getOrBuildConcept(vertex, (v) -> new RoleImpl(v, type, isImplicit));
     }
 
     /**
@@ -157,8 +157,8 @@ final class ElementFactory {
                 case TYPE:
                     concept = new TypeImpl<>(vertexElement);
                     break;
-                case ROLE_TYPE:
-                    concept = new RoleTypeImpl(vertexElement);
+                case ROLE:
+                    concept = new RoleImpl(vertexElement);
                     break;
                 case RELATION_TYPE:
                     concept = new RelationTypeImpl(vertexElement);

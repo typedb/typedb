@@ -21,9 +21,9 @@ package ai.grakn.test.graphs;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Role;
 import ai.grakn.test.GraphContext;
 
 import java.util.function.Consumer;
@@ -35,7 +35,7 @@ import java.util.function.Consumer;
  */
 public class NguyenGraph extends TestGraph {
 
-    private final static TypeLabel key = TypeLabel.of("index");
+    private final static Label key = Label.of("index");
     private final static String gqlFile = "nguyen-test.gql";
 
     private final int n;
@@ -57,12 +57,12 @@ public class NguyenGraph extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknGraph graph, int n) {
-        RoleType Rfrom = graph.getRoleType("R-rA");
-        RoleType Rto = graph.getRoleType("R-rB");
-        RoleType qfrom = graph.getRoleType("Q-rA");
-        RoleType qto = graph.getRoleType("Q-rB");
-        RoleType Pfrom = graph.getRoleType("P-rA");
-        RoleType Pto = graph.getRoleType("P-rB");
+        Role Rfrom = graph.getRole("R-rA");
+        Role Rto = graph.getRole("R-rB");
+        Role qfrom = graph.getRole("Q-rA");
+        Role qto = graph.getRole("Q-rB");
+        Role Pfrom = graph.getRole("P-rA");
+        Role Pto = graph.getRole("P-rB");
 
         EntityType entity = graph.getEntityType("entity2");
         EntityType aEntity = graph.getEntityType("a-entity");

@@ -19,9 +19,9 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -99,7 +99,7 @@ public class HALUtils {
         } else if (ontologyConcept.isRuleType()) {
             return Schema.BaseType.RULE_TYPE;
         } else if (ontologyConcept.isRoleType()) {
-            return Schema.BaseType.ROLE_TYPE;
+            return Schema.BaseType.ROLE;
         } else if (ontologyConcept.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             return Schema.BaseType.TYPE;
         } else {
@@ -181,7 +181,7 @@ public class HALUtils {
                 );
                 String relationType = null;
                 if (var.getProperty(IsaProperty.class).isPresent()) {
-                    Optional<TypeLabel> relOptional = var.getProperty(IsaProperty.class).get().getType().getTypeLabel();
+                    Optional<Label> relOptional = var.getProperty(IsaProperty.class).get().getType().getTypeLabel();
                     relationType = (relOptional.isPresent()) ? relOptional.get().getValue() : "";
                 } else {
                     relationType = "";

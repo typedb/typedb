@@ -123,7 +123,7 @@ public class TypeAtom extends Binary{
         return this.getOntologyConcept() != null
                 //ensure not ontological atom query
                 && getPattern().asVar().hasProperty(IsaProperty.class)
-                && this.getOntologyConcept().subTypes().contains(ruleAtom.getOntologyConcept());
+                && this.getOntologyConcept().subs().contains(ruleAtom.getOntologyConcept());
     }
 
     @Override

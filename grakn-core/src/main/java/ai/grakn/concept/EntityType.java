@@ -56,7 +56,7 @@ public interface EntityType extends Type{
      * @throws GraphOperationException if this is a meta type
      * @throws GraphOperationException if the given supertype is already an indirect subtype of this type
      */
-    EntityType superType(EntityType type);
+    EntityType sup(EntityType type);
 
     /**
      * Adds another subtype to this type
@@ -67,25 +67,25 @@ public interface EntityType extends Type{
      * @throws GraphOperationException if the sub type is a meta type
      * @throws GraphOperationException if the given subtype is already an indirect supertype of this type
      */
-    EntityType subType(EntityType type);
+    EntityType sub(EntityType type);
 
     /**
-     * Sets the RoleType which instances of this EntityType may play.
+     * Sets the Role which instances of this EntityType may play.
      *
-     * @param roleType The Role Type which the instances of this EntityType are allowed to play.
+     * @param role The Role Type which the instances of this EntityType are allowed to play.
      * @return The EntityType itself
      */
     @Override
-    EntityType plays(RoleType roleType);
+    EntityType plays(Role role);
 
     /**
-     * Removes the RoleType to prevent instances of this EntityType from playing it.
+     * Removes the Role to prevent instances of this EntityType from playing it.
      *
-     * @param roleType The Role Type which the instances of this EntityType should no longer be allowed to play.
+     * @param role The Role Type which the instances of this EntityType should no longer be allowed to play.
      * @return The EntityType itself
      */
     @Override
-    EntityType deletePlays(RoleType roleType);
+    EntityType deletePlays(Role role);
 
     /**
      * Creates and returns a new Entity instance, whose direct type will be this type.
@@ -140,7 +140,7 @@ public interface EntityType extends Type{
      * @return The supertype of this EntityType
      */
     @Override
-    EntityType superType();
+    EntityType sup();
 
     /**
      * Returns a collection of subtypes of this EntityType.
@@ -148,7 +148,7 @@ public interface EntityType extends Type{
      * @return All the sub classes of this EntityType
      */
     @Override
-    Collection<EntityType> subTypes();
+    Collection<EntityType> subs();
 
     /**
      * Returns a collection of all Entity instances for this EntityType.

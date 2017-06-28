@@ -25,10 +25,10 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.LabelId;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -94,7 +94,7 @@ public interface GraknAdmin {
      * @return The meta role type -> role-type.
      */
     @CheckReturnValue
-    RoleType getMetaRoleType();
+    Role getMetaRoleType();
 
     /**
      * Get the root of all the Resource Types.
@@ -146,7 +146,7 @@ public interface GraknAdmin {
      * @return The matching type id
      */
     @CheckReturnValue
-    TypeId convertToId(TypeLabel label);
+    LabelId convertToId(Label label);
 
     /**
      * Commits to the graph without submitting any commit logs.

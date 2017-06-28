@@ -19,11 +19,11 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -53,7 +53,7 @@ import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
  * {@link HasResourceTypeProperty#required} field.
  *
  * This property is defined as an implicit ontological structure between a {@link Type} and a {@link ResourceType},
- * including one implicit {@link RelationType} and two implicit {@link RoleType}s. The labels of these types are derived
+ * including one implicit {@link RelationType} and two implicit {@link Role}s. The labels of these types are derived
  * from the label of the {@link ResourceType}.
  *
  * Like {@link HasResourceProperty}, if this is not a key and is used in a match query it will not use the implicit
@@ -76,7 +76,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         this.resourceType = resourceType;
         this.required = required;
 
-        TypeLabel resourceTypeLabel = resourceType.getTypeLabel().orElseThrow(GraqlQueryException::noLabelSpecifiedForHas);
+        Label resourceLabel = resourceType.getTypeLabel().orElseThrow(GraqlQueryException::noLabelSpecifiedForHas);
 
         VarPattern role = Graql.label(Schema.MetaSchema.ROLE.getLabel());
 
@@ -86,9 +86,9 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
         // If a key, limit only to the implicit key type
         if(required){
-            ownerRole = ownerRole.label(KEY_OWNER.getLabel(resourceTypeLabel));
-            valueRole = valueRole.label(KEY_VALUE.getLabel(resourceTypeLabel));
-            relationType = relationType.label(KEY.getLabel(resourceTypeLabel));
+            ownerRole = ownerRole.label(KEY_OWNER.getLabel(resourceLabel));
+            valueRole = valueRole.label(KEY_VALUE.getLabel(resourceLabel));
+            relationType = relationType.label(KEY.getLabel(resourceLabel));
         }
 
         this.ownerRole = ownerRole.admin();
@@ -171,9 +171,9 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
         Var varName = var.getVarName().asUserDefined();
-        TypeLabel typeLabel = this.getResourceType().getTypeLabel().orElse(null);
+        Label label = this.getResourceType().getTypeLabel().orElse(null);
         //isa part
-        VarPatternAdmin resVar = varName.has(Graql.label(typeLabel)).admin();
+        VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();
         return new TypeAtom(resVar, parent);
     }
 }

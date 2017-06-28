@@ -99,14 +99,14 @@ public interface RuleType extends Type {
      * @return The super type of this Rule Type
      */
     @Override
-    RuleType superType();
+    RuleType sup();
 
     /**
      *
      * @param type The super type of this Rule Type
      * @return The Rule Type itself
      */
-    RuleType superType(RuleType type);
+    RuleType sup(RuleType type);
 
     /**
      * Adds another subtype to this type
@@ -114,30 +114,30 @@ public interface RuleType extends Type {
      * @param type The sub type of this rule type
      * @return The RuleType itself
      */
-    RuleType subType(RuleType type);
+    RuleType sub(RuleType type);
 
     /**
      *
      * @return All the sub types of this rule type
      */
     @Override
-    Collection<RuleType> subTypes();
+    Collection<RuleType> subs();
 
     /**
      *
-     * @param roleType The Role Type which the instances of this Type are allowed to play.
+     * @param role The Role Type which the instances of this Type are allowed to play.
      * @return The Rule Type itself
      */
     @Override
-    RuleType plays(RoleType roleType);
+    RuleType plays(Role role);
 
     /**
      *
-     * @param roleType The Role Type which the instances of this Type should no longer be allowed to play.
+     * @param role The Role Type which the instances of this Type should no longer be allowed to play.
      * @return The Rule Type itself
      */
     @Override
-    RuleType deletePlays(RoleType roleType);
+    RuleType deletePlays(Role role);
 
     /**
      *

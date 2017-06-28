@@ -34,7 +34,7 @@ import java.util.Collection;
  * </p>
  *
  * @see EntityType
- * @see RoleType
+ * @see Role
  * @see RelationType
  * @see ResourceType
  * @see RuleType
@@ -57,12 +57,12 @@ public interface Type extends OntologyConcept {
 
     /**
      *
-     * @param roleType The Role Type which the instances of this Type are allowed to play.
+     * @param role The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      *
      * @throws GraphOperationException if this is a meta-type
      */
-    Type plays(RoleType roleType) throws GraphOperationException;
+    Type plays(Role role) throws GraphOperationException;
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
@@ -106,7 +106,7 @@ public interface Type extends OntologyConcept {
      *
      * @return A list of Role Types which instances of this Type can indirectly play.
      */
-    Collection<RoleType> plays();
+    Collection<Role> plays();
 
     /**
      *
@@ -127,7 +127,7 @@ public interface Type extends OntologyConcept {
      * @return The direct super of this Type
      */
     @CheckReturnValue
-    Type superType();
+    Type sup();
 
     /**
      * Get all indirect sub-types of this type.
@@ -137,7 +137,7 @@ public interface Type extends OntologyConcept {
      * @return All the indirect sub-types of this Type
      */
     @CheckReturnValue
-    Collection<? extends Type> subTypes();
+    Collection<? extends Type> subs();
 
     /**
      * Get all indirect instances of this type.
@@ -170,8 +170,8 @@ public interface Type extends OntologyConcept {
     //------------------------------------- Other ----------------------------------
     /**
      *
-     * @param roleType The Role Type which the instances of this Type should no longer be allowed to play.
+     * @param role The Role Type which the instances of this Type should no longer be allowed to play.
      * @return The Type itself.
      */
-    Type deletePlays(RoleType roleType);
+    Type deletePlays(Role role);
 }

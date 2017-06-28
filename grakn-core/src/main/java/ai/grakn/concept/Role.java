@@ -23,58 +23,55 @@ import java.util.Collection;
 
 /**
  * <p>
- *     An ontological element which defines a role which can be played in a relation type.
+ *     An {@link OntologyConcept} which defines a role which can be played in a {@link RelationType}
  * </p>
  *
  * <p>
- *     This ontological element defines the roles which make up a {@link RelationType}.
- *     It behaves similarly to {@link Type} when relating to other types.
- *     It has some additional functionality:
- *     1. It cannot play a role to itself.
- *     2. It is special in that it is unique to relation types.
+ *     This ontological element defines the {@link Role} which make up a {@link RelationType}.
+ *     It behaves similarly to {@link OntologyConcept} when relating to other types.
  * </p>
  *
  * @author fppt
  *
  */
-public interface RoleType extends OntologyConcept {
+public interface Role extends OntologyConcept {
     //------------------------------------- Modifiers ----------------------------------
 
     /**
-     * Sets the supertype of this RoleType.
+     * Sets the super of this Role.
      *
-     * @param type The supertype of this RoleType
-     * @return The RoleType itself
+     * @param type The super of this Role
+     * @return The Role itself
      */
-    RoleType superType(RoleType type);
+    Role sup(Role type);
 
     /**
-     * Adds another subtype to this type
+     * Adds another sub to this type
      *
      * @param type The sub type of this role type
-     * @return The RoleType itself
+     * @return The Role itself
      */
-    RoleType subType(RoleType type);
+    Role sub(Role type);
 
     //------------------------------------- Accessors ----------------------------------
     /**
-     * Returns the supertype of this RoleType.
+     * Returns the super of this Role.
      *
-     * @return The supertype of this RoleType
+     * @return The super of this Role
      */
     @Override
-    RoleType superType();
+    Role sup();
 
     /**
-     * Returns the subtypes of this RoleType.
+     * Returns the sub of this Role.
      *
-     * @return The sub types of this RoleType
+     * @return The sub of this Role
      */
     @Override
-    Collection<RoleType> subTypes();
+    Collection<Role> subs();
 
     /**
-     * Returns the RelationTypes that this RoleType takes part in.
+     * Returns the RelationTypes that this Role takes part in.
      * @see RelationType
      *
      * @return The RelationTypes which this role takes part in.
@@ -83,7 +80,7 @@ public interface RoleType extends OntologyConcept {
     Collection<RelationType> relationTypes();
 
     /**
-     * Returns a collection of the Types that can play this RoleType.
+     * Returns a collection of the Types that can play this Role.
      * @see Type
      *
      * @return A list of all the Types which can play this role.
