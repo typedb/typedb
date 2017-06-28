@@ -54,7 +54,8 @@ class OutHasScopeFragment extends AbstractFragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<Node, Map<Node, Fragment>> edgeToFragment) {
-        return getDirectedEdgesOut("has-scope", edgeToFragment);
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<String, Node> nodes,
+                                                              Map<Node, Map<Node, Fragment>> edges) {
+        return getDirectedEdgesOut("(has-scope)", nodes, edges);
     }
 }

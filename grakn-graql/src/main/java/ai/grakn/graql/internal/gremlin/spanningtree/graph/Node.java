@@ -19,8 +19,12 @@
 package ai.grakn.graql.internal.gremlin.spanningtree.graph;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * An node in a directed graph.
@@ -31,14 +35,32 @@ public class Node {
     private String name;
     private Optional<Var> var;
 
-    public Node(String name) {
+    private Set<Fragment> fragmentsWithoutDependency = new HashSet<>();
+    private Set<Fragment> fragmentsWithDependency = new HashSet<>();
+    private Set<Fragment> dependants = new HashSet<>();
+
+    private Node(String name) {
         this.name = name;
         this.var = Optional.empty();
     }
 
-    public Node(Var var) {
+    private Node(Var var) {
         this.name = var.getValue();
         this.var = Optional.of(var);
+    }
+
+    public static Node addIfAbsent(Var var, Map<String, Node> nodes) {
+        if (!nodes.containsKey(var.getValue())) {
+            nodes.put(var.getValue(), new Node(var));
+        }
+        return nodes.get(var.getValue());
+    }
+
+    public static Node addIfAbsent(String name, Map<String, Node> nodes) {
+        if (!nodes.containsKey(name)) {
+            nodes.put(name, new Node(name));
+        }
+        return nodes.get(name);
     }
 
     public Optional<Var> getVar() {
@@ -47,6 +69,18 @@ public class Node {
 
     public String getName() {
         return name;
+    }
+
+    public Set<Fragment> getFragmentsWithoutDependency() {
+        return fragmentsWithoutDependency;
+    }
+
+    public Set<Fragment> getFragmentsWithDependency() {
+        return fragmentsWithDependency;
+    }
+
+    public Set<Fragment> getDependants() {
+        return dependants;
     }
 
     @Override

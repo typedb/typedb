@@ -29,6 +29,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -61,12 +62,13 @@ abstract class AbstractFragment implements Fragment {
     static final double COST_ROLES_PER_TYPE = Math.log1p(NUM_ROLES_PER_TYPE);
     static final double COST_ROLE_PLAYERS_PER_RELATION = Math.log1p(NUM_ROLE_PLAYERS_PER_RELATION);
     static final double COST_ROLE_PLAYERS_PER_ROLE = Math.log1p(NUM_ROLE_PLAYERS_PER_ROLE);
-    static final double COST_RESOURCES_PER_VALUE = Math.log1p(NUM_RESOURCES_PER_VALUE);
 
-    static final double COST_INDEX = 0D;
+    static final double COST_INDEX = 0.05D; // arbitrary small number
+    static final double COST_RESOURCES_PER_VALUE = Math.log1p(COST_INDEX * NUM_RESOURCES_PER_VALUE);
+
     static final double COST_SAME_AS_PREVIOUS = Math.log1p(1);
     static final double COST_NEQ = Math.log1p(0.5);
-    static final double COST_DATA_TYPE = Math.log1p(1D / ResourceType.DataType.SUPPORTED_TYPES.size());
+    static final double COST_DATA_TYPE = Math.log1p(2D / ResourceType.DataType.SUPPORTED_TYPES.size());
     static final double COST_UNSPECIFIC_PREDICATE = Math.log1p(0.5);
 
     private final Var start;
@@ -133,6 +135,12 @@ abstract class AbstractFragment implements Fragment {
     }
 
     @Override
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<String, Node> Nodes,
+                                                              Map<Node, Map<Node, Fragment>> edges) {
+        return Collections.emptySet();
+    }
+
+    @Override
     public VarProperty getVarProperty() {
         return varProperty;
     }
@@ -162,38 +170,41 @@ abstract class AbstractFragment implements Fragment {
         return result;
     }
 
-    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesOut(String edge, Map<Node, Map<Node, Fragment>> edgeToFragment) {
+    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesOut(String edge, Map<String, Node> nodes,
+                                                          Map<Node, Map<Node, Fragment>> edgeToFragment) {
 
-        Node start = new Node(getStart());
-        Node end = new Node(getEnd().get());
-        Node middle = new Node(start + edge + end);
+        Node start = Node.addIfAbsent(getStart(), nodes);
+        Node end = Node.addIfAbsent(getEnd().get(), nodes);
+        Node middle = Node.addIfAbsent(start + edge + end, nodes);
         addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
                 weighted(DirectedEdge.from(middle).to(end), 0));
     }
 
-    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesIn(String edge, Map<Node, Map<Node, Fragment>> edgeToFragment) {
-        Node start = new Node(getStart());
-        Node end = new Node(getEnd().get());
-        Node middle = new Node(end + edge + start);
+    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesIn(String edge, Map<String, Node> nodes,
+                                                         Map<Node, Map<Node, Fragment>> edgeToFragment) {
+        Node start = Node.addIfAbsent(getStart(), nodes);
+        Node end = Node.addIfAbsent(getEnd().get(), nodes);
+        Node middle = Node.addIfAbsent(end + edge + start, nodes);
         addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
                 weighted(DirectedEdge.from(middle).to(end), 0));
     }
 
-    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesBoth(Var edge, Map<Node, Map<Node, Fragment>> edgeToFragment) {
-        Node start = new Node(getStart());
-        Node end = new Node(getEnd().get());
-        Node middle = new Node(edge);
+    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesBoth(Var edge, Map<String, Node> nodes,
+                                                           Map<Node, Map<Node, Fragment>> edgeToFragment) {
+        Node start = Node.addIfAbsent(getStart(), nodes);
+        Node end = Node.addIfAbsent(getEnd().get(), nodes);
+        Node middle = Node.addIfAbsent(edge, nodes);
         addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
                 weighted(DirectedEdge.from(middle).to(end), 0));
     }
 
-    private void addEdgeToFragmentMapping(Node child, Node parent, Map<Node, Map<Node, Fragment>> edgeToFragment) {
+    void addEdgeToFragmentMapping(Node child, Node parent, Map<Node, Map<Node, Fragment>> edgeToFragment) {
         if (!edgeToFragment.containsKey(child)) {
             edgeToFragment.put(child, new HashMap<>());
         }

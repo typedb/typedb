@@ -55,7 +55,8 @@ class InIsaFragment extends AbstractFragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<Node, Map<Node, Fragment>> edgeToFragment) {
-        return getDirectedEdgesIn("(isa)", edgeToFragment);
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<String, Node> nodes,
+                                                              Map<Node, Map<Node, Fragment>> edges) {
+        return getDirectedEdgesIn("(isa)", nodes, edges);
     }
 }

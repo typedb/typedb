@@ -54,7 +54,8 @@ class OutRelatesFragment extends AbstractFragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<Node, Map<Node, Fragment>> edgeToFragment) {
-        return getDirectedEdgesOut("(relates)", edgeToFragment);
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<String, Node> nodes,
+                                                              Map<Node, Map<Node, Fragment>> edges) {
+        return getDirectedEdgesOut("(relates)", nodes, edges);
     }
 }

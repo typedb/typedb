@@ -268,7 +268,6 @@ public class GraqlTraversalTest {
         ));
     }
 
-    @Ignore //TODO: Fix this
     @Test
     public void testShortcutOptimisationWithRoles() {
         VarPattern rel = var("x").rel("y").rel("wife", "z");
@@ -283,7 +282,7 @@ public class GraqlTraversalTest {
 
     @Test //TODO: Finish this
     public void testDisconnectedQuery() {
-        Pattern pattern = and(x.isa(y), xx.isa(y));
+        Pattern pattern = and(var());
         GraqlTraversal graqlTraversal = semiOptimal(pattern);
     }
 

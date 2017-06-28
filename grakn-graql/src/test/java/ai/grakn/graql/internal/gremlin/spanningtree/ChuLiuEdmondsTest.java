@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
@@ -44,18 +45,22 @@ public class ChuLiuEdmondsTest {
 
     @Test
     public void testNegativeWeightWithNodeObject() {
+        Map<String, Node> nodes = new HashMap<>();
+        Node.addIfAbsent("0", nodes);
+        Node.addIfAbsent("1", nodes);
+        Node.addIfAbsent("2", nodes);
         final WeightedGraph<Node> Isa = SparseWeightedGraph.from(ImmutableList.of(
-                weighted(DirectedEdge.from(new Node("0")).to(new Node("1")), -0.69),
-                weighted(DirectedEdge.from(new Node("1")).to(new Node("2")), 0),
-                weighted(DirectedEdge.from(new Node("2")).to(new Node("1")), -4.62),
-                weighted(DirectedEdge.from(new Node("1")).to(new Node("0")), 0)
+                weighted(DirectedEdge.from(nodes.get("0")).to(nodes.get("1")), -0.69),
+                weighted(DirectedEdge.from(nodes.get("1")).to(nodes.get("2")), 0),
+                weighted(DirectedEdge.from(nodes.get("2")).to(nodes.get("1")), -4.62),
+                weighted(DirectedEdge.from(nodes.get("1")).to(nodes.get("0")), 0)
         ));
-        Weighted<Arborescence<Node>> weightedSpanningTree = ChuLiuEdmonds.getMaxArborescence(Isa, new Node("2"));
+        Weighted<Arborescence<Node>> weightedSpanningTree = ChuLiuEdmonds.getMaxArborescence(Isa, nodes.get("2"));
         assertEquals(-4.62, weightedSpanningTree.weight, DELTA);
         ImmutableMap<Node, Node> edges = weightedSpanningTree.val.getParents();
         assertEquals(2, edges.size());
-        assertEquals("2", edges.get(new Node("1")).getName());
-        assertEquals("1", edges.get(new Node("0")).getName());
+        assertEquals("2", edges.get(nodes.get("1")).getName());
+        assertEquals("1", edges.get(nodes.get("0")).getName());
     }
 
     @Test

@@ -28,7 +28,6 @@ import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -127,7 +126,6 @@ public interface Fragment {
      * @param edgeToFragment a mapping from edge(child, parent) to its corresponding fragment
      * @return a set of edges
      */
-    default Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<Node, Map<Node, Fragment>> edgeToFragment) {
-        return Collections.emptySet();
-    }
+    Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<String, Node> nodes,
+                                                       Map<Node, Map<Node, Fragment>> edgeToFragment);
 }
