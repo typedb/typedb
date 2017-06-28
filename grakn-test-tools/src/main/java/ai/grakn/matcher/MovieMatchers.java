@@ -46,7 +46,8 @@ public class MovieMatchers {
     public static final Matcher<MatchableConcept> releaseDate = GraknMatchers.type("release-date");
     public static final Matcher<MatchableConcept> runtime = GraknMatchers.type("runtime");
     public static final Matcher<MatchableConcept> tmdbVoteAverage = GraknMatchers.type("tmdb-vote-average");
-    public static final Matcher<MatchableConcept> genreOfProduction = GraknMatchers.type("genre-of-production");
+    public static final Matcher<MatchableConcept> genreOfProduction = GraknMatchers.role("genre-of-production");
+    public static final Matcher<MatchableConcept> keyNameOwner = GraknMatchers.role("key-name-owner");
     public static final Matcher<MatchableConcept> aRuleType = GraknMatchers.type("a-rule-type");
     public static final Matcher<MatchableConcept> hasTitle = GraknMatchers.type(HAS.getLabel("title"));
     public static final Matcher<MatchableConcept> godfather = GraknMatchers.instance("Godfather");

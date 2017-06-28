@@ -61,7 +61,7 @@ public class TypeLabels extends FromGraphGenerator<TypeLabel> {
                         label = trueRandomLabel();
                     }
                     attempts += 1;
-                } while (graph.getType(label) != null);
+                } while (graph.getOntologyConcept(label) != null);
 
                 return label;
             };

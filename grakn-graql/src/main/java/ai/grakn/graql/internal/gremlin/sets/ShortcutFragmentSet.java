@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -95,7 +96,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
             @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.typeLabelOf(roleVar.get(), fragmentSets);
 
             if (roleLabel != null) {
-                RoleType roleType = graph.getType(roleLabel.label());
+                RoleType roleType = graph.getOntologyConcept(roleLabel.label());
 
                 fragmentSets.remove(shortcut);
                 fragmentSets.add(shortcut.substituteRoleTypeLabel(graph, roleType));
@@ -143,7 +144,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
             @Nullable LabelFragmentSet relationLabel = EquivalentFragmentSets.typeLabelOf(isa.type(), fragmentSets);
 
             if (relationLabel != null) {
-                RelationType relationType = graph.getType(relationLabel.label());
+                RelationType relationType = graph.getOntologyConcept(relationLabel.label());
 
                 fragmentSets.remove(shortcut);
                 fragmentSets.add(shortcut.addRelationTypeLabel(graph, relationType));
@@ -166,7 +167,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         Collection<RoleType> subTypes = withImplicitConceptsVisible(graph, roleType::subTypes);
 
-        Set<TypeLabel> newRoleTypeLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
+        Set<TypeLabel> newRoleTypeLabels = subTypes.stream().map(OntologyConcept::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(
                 relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleTypeLabels), relationTypeLabels

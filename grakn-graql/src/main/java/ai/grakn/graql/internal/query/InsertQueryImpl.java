@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.InsertQuery;
@@ -127,17 +128,17 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Set<Type> getTypes() {
+    public Set<OntologyConcept> getOntologyConcepts() {
         GraknGraph theGraph = getGraph().orElseThrow(GraqlQueryException::noGraph);
 
-        Set<Type> types = vars.stream()
+        Set<OntologyConcept> types = vars.stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .map(VarPatternAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(theGraph::<Type>getType)
+                .map(theGraph::<Type>getOntologyConcept)
                 .collect(Collectors.toSet());
 
-        matchQuery.ifPresent(mq -> types.addAll(mq.getTypes()));
+        matchQuery.ifPresent(mq -> types.addAll(mq.getOntologyConcepts()));
 
         return types;
     }

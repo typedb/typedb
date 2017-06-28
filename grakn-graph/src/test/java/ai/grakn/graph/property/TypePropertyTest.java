@@ -20,6 +20,7 @@
 package ai.grakn.graph.property;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -44,11 +45,11 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graph.property.PropertyUtil.choose;
 import static ai.grakn.graph.property.PropertyUtil.directInstances;
-import static ai.grakn.graph.property.PropertyUtil.directSubTypes;
+import static ai.grakn.graph.property.PropertyUtil.directSubs;
 import static ai.grakn.graph.property.PropertyUtil.indirectSuperTypes;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
-import static ai.grakn.util.ErrorMessage.SUPER_TYPE_LOOP_DETECTED;
+import static ai.grakn.util.ErrorMessage.SUPER_LOOP_DETECTED;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -162,7 +163,7 @@ public class TypePropertyTest {
     public void whenCallingGetLabel_TheResultCanBeUsedToRetrieveTheSameType(
             @Open GraknGraph graph, @FromGraph Type type) {
         TypeLabel label = type.getLabel();
-        assertEquals(type, graph.getType(label));
+        assertEquals(type, graph.getOntologyConcept(label));
     }
 
     @Ignore // TODO: Make this pass!
@@ -185,10 +186,10 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void whenATypeHasADirectSuperType_ItIsADirectSubTypeOfThatSuperType(
-            @Open GraknGraph graph, @FromGraph Type subType) {
-        Type superType = subType.superType();
-        assertThat(directSubTypes(graph, superType), hasItem(subType));
+    public void whenAnOntologyElementHasADirectSuper_ItIsADirectSubOfThatSuper(
+            @Open GraknGraph graph, @FromGraph OntologyConcept ontologyConcept) {
+        OntologyConcept superType = ontologyConcept.superType();
+        assertThat(directSubs(graph, superType), hasItem(ontologyConcept));
     }
 
     @Property
@@ -211,7 +212,7 @@ public class TypePropertyTest {
     @Property
     public void whenGettingIndirectSubTypes_ReturnSelfAndIndirectSubTypesOfDirectSubTypes(
             @Open GraknGraph graph, @FromGraph Type type) {
-        Collection<Type> directSubTypes = directSubTypes(graph, type);
+        Collection<Type> directSubTypes = directSubs(graph, type);
         Type[] expected = Stream.concat(
                 Stream.of(type),
                 directSubTypes.stream().flatMap(subType -> subType.subTypes().stream())
@@ -250,7 +251,7 @@ public class TypePropertyTest {
         Type newSuperType = choose(type.subTypes(), seed);
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(type.getLabel(), newSuperType.getLabel()));
+        exception.expectMessage(SUPER_LOOP_DETECTED.getMessage(type.getLabel(), newSuperType.getLabel()));
         setDirectSuperType(type, newSuperType);
     }
 
@@ -281,7 +282,7 @@ public class TypePropertyTest {
         Type type = choose(newSubType.subTypes(), seed);
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(newSubType.getLabel(), type.getLabel()));
+        exception.expectMessage(SUPER_LOOP_DETECTED.getMessage(newSubType.getLabel(), type.getLabel()));
         addDirectSubType(type, newSubType);
     }
 
@@ -293,13 +294,13 @@ public class TypePropertyTest {
 
         addDirectSubType(superType, subType);
 
-        assertThat(directSubTypes(graph, superType), hasItem(subType));
+        assertThat(directSubs(graph, superType), hasItem(subType));
     }
 
     @Property
     public void whenGettingIndirectInstances_ReturnDirectInstancesAndIndirectInstancesOfDirectSubTypes(
             @Open GraknGraph graph, @FromGraph Type type) {
-        Collection<Type> directSubTypes = directSubTypes(graph, type);
+        Collection<Type> directSubTypes = directSubs(graph, type);
         Thing[] expected = Stream.concat(
             directInstances(type).stream(),
             directSubTypes.stream().flatMap(subType -> subType.instances().stream())

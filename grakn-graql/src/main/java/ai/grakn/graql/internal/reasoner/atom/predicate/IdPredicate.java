@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.atom.predicate;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -80,8 +80,8 @@ public class IdPredicate extends Predicate<ConceptId>{
     }
 
     private static VarPatternAdmin createIdVar(Var varName, LabelProperty prop, GraknGraph graph){
-        Type type = graph.getType(prop.getLabelValue());
-        if (type == null) throw GraqlQueryException.labelNotFound(prop.getLabelValue());
-        return varName.id(type.getId()).admin();
+        OntologyConcept ontologyConcept = graph.getOntologyConcept(prop.getLabelValue());
+        if (ontologyConcept == null) throw GraqlQueryException.labelNotFound(prop.getLabelValue());
+        return varName.id(ontologyConcept.getId()).admin();
     }
 }

@@ -237,8 +237,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         if (!(atom.isRelation() && headAtom.isRelation())) return Collections.singleton(new UnifierImpl());
 
         //if atom is match all atom, add type from rule head and find unmapped roles
-        Relation relAtom = atom.getType() == null ?
-                ((Relation) AtomicFactory.create(atom, atom.getParentQuery())).addType(headAtom.getType()) :
+        Relation relAtom = atom.getOntologyConcept() == null ?
+                ((Relation) AtomicFactory.create(atom, atom.getParentQuery())).addType(headAtom.getOntologyConcept()) :
                 (Relation) atom;
         List<Var> permuteVars = new ArrayList<>(relAtom.getUnmappedRolePlayers());
         if (!(atom.isRelation() && headAtom.isRelation()) || permuteVars.isEmpty()) return Collections.singleton(new UnifierImpl());
@@ -380,7 +380,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     private Stream<ReasonerAtomicQuery> getQueryStream(Answer sub){
         Atom atom = getAtom();
-        if (!atom.isRelation() || atom.getType() != null) return Stream.of(this);
+        if (!atom.isRelation() || atom.getOntologyConcept() != null) return Stream.of(this);
         else{
             List<RelationType> relationTypes = ((Relation) atom).inferPossibleRelationTypes(sub);
             LOG.trace("AQ: " + this + ": inferred rel types for: " + relationTypes.stream().map(Type::getLabel).collect(Collectors.toList()));

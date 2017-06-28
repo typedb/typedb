@@ -61,7 +61,7 @@ import java.util.stream.Stream;
  * @param <V> The type of the concept which extends {@link Type} of the concept.
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
-abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl<T> implements Thing {
+abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
     private Cache<TypeLabel> cachedInternalType = new Cache<>(() -> {
         int typeId = vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID);
         Type type = vertex().graph().getConcept(Schema.VertexProperty.TYPE_ID, typeId);
@@ -212,9 +212,9 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl<T>
 
 
         TypeLabel label = resource.type().getLabel();
-        RelationType hasResource = vertex().graph().getType(has.getLabel(label));
-        RoleType hasResourceTarget = vertex().graph().getType(hasOwner.getLabel(label));
-        RoleType hasResourceValue = vertex().graph().getType(hasValue.getLabel(label));
+        RelationType hasResource = vertex().graph().getOntologyConcept(has.getLabel(label));
+        RoleType hasResourceTarget = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
+        RoleType hasResourceValue = vertex().graph().getOntologyConcept(hasValue.getLabel(label));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
             throw GraphOperationException.hasNotAllowed(this, resource, type);

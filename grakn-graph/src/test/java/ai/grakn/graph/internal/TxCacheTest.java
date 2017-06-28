@@ -22,6 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -305,8 +306,8 @@ public class TxCacheTest extends GraphTestBase{
      * @param expectedMatch The expected result of the above operation
      */
     @SuppressWarnings("unchecked")
-    private <T extends Type> void assertTxBoundConceptMatches(T type, Function<T, Object> resultSupplier, Matcher expectedMatch){
+    private <T extends OntologyConcept> void assertTxBoundConceptMatches(T type, Function<T, Object> resultSupplier, Matcher expectedMatch){
         assertThat(resultSupplier.apply(type), expectedMatch);
-        assertThat(resultSupplier.apply(graknGraph.txCache().getCachedType(type.getLabel())), expectedMatch);
+        assertThat(resultSupplier.apply(graknGraph.txCache().getCachedOntologyElement(type.getLabel())), expectedMatch);
     }
 }

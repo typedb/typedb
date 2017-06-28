@@ -19,9 +19,10 @@
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
@@ -195,14 +196,14 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
 
     /**
      * Color-codes the given type if colorization enabled
-     * @param type a type to color-code using ANSI colors
+     * @param ontologyConcept a type to color-code using ANSI colors
      * @return the type, color-coded
      */
-    private String colorType(Type type) {
+    private String colorType(OntologyConcept ontologyConcept) {
         if(colorize) {
-            return ANSI.color(typeLabelToString(type.getLabel()), ANSI.PURPLE);
+            return ANSI.color(typeLabelToString(ontologyConcept.getLabel()), ANSI.PURPLE);
         } else {
-            return typeLabelToString(type.getLabel());
+            return typeLabelToString(ontologyConcept.getLabel());
         }
     }
 }

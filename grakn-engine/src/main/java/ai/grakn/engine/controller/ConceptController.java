@@ -18,6 +18,26 @@
 
 package ai.grakn.engine.controller;
 
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.TypeLabel;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.exception.GraknServerException;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import mjson.Json;
+import spark.Request;
+import spark.Response;
+import spark.Service;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import java.util.List;
+import java.util.Optional;
+
 import static ai.grakn.GraknTxType.READ;
 import static ai.grakn.engine.controller.GraqlController.getAcceptType;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
@@ -38,25 +58,6 @@ import static ai.grakn.util.REST.Response.Json.ROLES_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Concept.CONCEPT;
 import static ai.grakn.util.REST.WebPath.Concept.ONTOLOGY;
 import static java.util.stream.Collectors.toList;
-
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.exception.GraknServerException;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import java.util.List;
-import java.util.Optional;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import mjson.Json;
-import spark.Request;
-import spark.Response;
-import spark.Service;
 
 /**
  * <p>
@@ -122,10 +123,10 @@ public class ConceptController {
 
         try(GraknGraph graph = factory.getGraph(keyspace, READ)){
             Json responseObj = Json.object();
-            responseObj.set(ROLES_JSON_FIELD, instances(graph.admin().getMetaRoleType()));
-            responseObj.set(ENTITIES_JSON_FIELD, instances(graph.admin().getMetaEntityType()));
-            responseObj.set(RELATIONS_JSON_FIELD, instances(graph.admin().getMetaRelationType()));
-            responseObj.set(RESOURCES_JSON_FIELD, instances(graph.admin().getMetaResourceType()));
+            responseObj.set(ROLES_JSON_FIELD, subLabels(graph.admin().getMetaRoleType()));
+            responseObj.set(ENTITIES_JSON_FIELD, subLabels(graph.admin().getMetaEntityType()));
+            responseObj.set(RELATIONS_JSON_FIELD, subLabels(graph.admin().getMetaRelationType()));
+            responseObj.set(RESOURCES_JSON_FIELD, subLabels(graph.admin().getMetaResourceType()));
             return responseObj.toString();
         } catch (Exception e) {
             throw GraknServerException.serverException(500, e);
@@ -147,8 +148,10 @@ public class ConceptController {
         if(!acceptType.equals(APPLICATION_HAL)) throw GraknServerException.unsupportedContentType(acceptType);
     }
 
-    private List<String> instances(Type type) {
-        return type.subTypes().stream().map(Type::getLabel).map(TypeLabel::getValue).collect(toList());
+    private List<String> subLabels(OntologyConcept ontologyConcept) {
+        return ontologyConcept.subTypes().stream().
+                map(OntologyConcept::getLabel).
+                map(TypeLabel::getValue).collect(toList());
     }
 
     /**

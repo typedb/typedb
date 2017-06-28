@@ -294,7 +294,7 @@ public class InsertQueryTest {
     public void testInsertSubRoleType() {
         qb.insert(
                 label("marriage").sub(Schema.MetaSchema.RELATION.getLabel().getValue()).relates("spouse1").relates("spouse2"),
-                label("spouse").sub(Schema.MetaSchema.ROLE.getLabel().getValue()).isAbstract(),
+                label("spouse").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 label("spouse1").sub("spouse"),
                 label("spouse2").sub("spouse")
         ).execute();

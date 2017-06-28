@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.utils;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
@@ -39,7 +40,7 @@ import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
+import ai.grakn.graql.internal.reasoner.utils.conversion.OntologyConceptConverter;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
@@ -236,12 +237,12 @@ public class ReasonerUtils {
     }
 
     /**
-     * @param type input type
+     * @param ontologyConcept input type
      * @return set of all non-meta super types of the role
      */
-    public static Set<Type> getSuperTypes(Type type){
-        Set<Type> superTypes = new HashSet<>();
-        Type superType = type.superType();
+    public static Set<OntologyConcept> getSupers(OntologyConcept ontologyConcept){
+        Set<OntologyConcept> superTypes = new HashSet<>();
+        OntologyConcept superType = ontologyConcept.superType();
         while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
             superTypes.add(superType);
             superType = superType.superType();
@@ -263,12 +264,12 @@ public class ReasonerUtils {
     }
 
     /**
-     * @param types entry type set
-     * @return top non-meta types from within the provided set of role types
+     * @param ontologyConcepts entry set
+     * @return top non-meta {@link OntologyConcept} from within the provided set of {@link RoleType}
      */
-    public static <T extends Type> Set<T> getTopTypes(Set<T> types) {
-        return types.stream()
-                .filter(rt -> Sets.intersection(getSuperTypes(rt), types).isEmpty())
+    public static <T extends OntologyConcept> Set<T> getOntologyConcepts(Set<T> ontologyConcepts) {
+        return ontologyConcepts.stream()
+                .filter(rt -> Sets.intersection(getSupers(rt), ontologyConcepts).isEmpty())
                 .collect(toSet());
     }
 
@@ -309,13 +310,13 @@ public class ReasonerUtils {
      * @param <T> type generic
      * @return map of compatible relation types and their corresponding role types
      */
-    public static <T extends Type> Multimap<RelationType, RoleType> getCompatibleRelationTypesWithRoles(Set<T> types, TypeConverter<T> typeConverter) {
+    public static <T extends OntologyConcept> Multimap<RelationType, RoleType> getCompatibleRelationTypesWithRoles(Set<T> types, OntologyConceptConverter<T> ontologyConceptConverter) {
         Multimap<RelationType, RoleType> compatibleTypes = HashMultimap.create();
         if (types.isEmpty()) return compatibleTypes;
         Iterator<T> it = types.iterator();
-        compatibleTypes.putAll(typeConverter.toRelationMultimap(it.next()));
+        compatibleTypes.putAll(ontologyConceptConverter.toRelationMultimap(it.next()));
         while(it.hasNext() && compatibleTypes.size() > 1) {
-            compatibleTypes = multimapIntersection(compatibleTypes, typeConverter.toRelationMultimap(it.next()));
+            compatibleTypes = multimapIntersection(compatibleTypes, ontologyConceptConverter.toRelationMultimap(it.next()));
         }
         return compatibleTypes;
     }
@@ -444,9 +445,9 @@ public class ReasonerUtils {
      * @param child type
      * @return true if child is a subtype of parent
      */
-    public static boolean checkTypesCompatible(Type parent, Type child) {
+    public static boolean checkCompatible(OntologyConcept parent, OntologyConcept child) {
         if(Schema.MetaSchema.isMetaLabel(parent.getLabel())) return true;
-        Type superType = child;
+        OntologyConcept superType = child;
         while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())){
             if (superType.equals(parent)) return true;
             superType = superType.superType();
@@ -459,7 +460,7 @@ public class ReasonerUtils {
      * @param child type
      * @return true if types do not belong to the same type hierarchy
      */
-    public static boolean checkTypesDisjoint(Type parent, Type child) {
-        return !checkTypesCompatible(parent, child) && !checkTypesCompatible(child, parent);
+    public static boolean checkDisjoint(OntologyConcept parent, OntologyConcept child) {
+        return !checkCompatible(parent, child) && !checkCompatible(child, parent);
     }
 }

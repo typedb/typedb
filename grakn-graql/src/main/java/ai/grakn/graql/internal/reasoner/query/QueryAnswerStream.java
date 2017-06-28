@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
@@ -30,13 +30,14 @@ import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import javafx.util.Pair;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
-import javafx.util.Pair;
 
 /**
  *
@@ -100,7 +101,7 @@ public class QueryAnswerStream {
         if (types.isEmpty()) return true;
         for (TypeAtom type : types){
             Var var = type.getVarName();
-            Type t = type.getType();
+            OntologyConcept t = type.getOntologyConcept();
             if(!t.subTypes().contains(answer.get(var).asInstance().type())){
                 return false;
             }
