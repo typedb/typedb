@@ -226,6 +226,10 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         //Updated caches of linked types
         cachedDirectPlays.get().keySet().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
     }
+    @Override
+    boolean deletionAllowed(){
+        return super.deletionAllowed() && !currentShard().links().findAny().isPresent();
+    }
 
     /**
      *

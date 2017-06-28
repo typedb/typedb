@@ -21,7 +21,6 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -131,23 +130,18 @@ class RoleTypeImpl extends OntologyConceptImpl<RoleType> implements RoleType{
 
     @Override
     public void delete(){
-        boolean hasRelates = neighbours(Direction.IN, Schema.EdgeLabel.RELATES).findAny().isPresent();
-        boolean hasPlays = neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).findAny().isPresent();
+        super.delete();
 
-        boolean deletionNotAllowed = hasRelates || hasPlays;
-
-        //This check is independent as it is slower than the ones above
-        if(!deletionNotAllowed) deletionNotAllowed = rolePlayers().findAny().isPresent();
-
-        if(deletionNotAllowed){
-            throw GraphOperationException.typeCannotBeDeleted(getLabel());
-        } else {
-            super.delete();
-
-            //Clear all internal caching
-            cachedRelationTypes.clear();
-            cachedDirectPlayedByTypes.clear();
-        }
+        //Clear all internal caching
+        cachedRelationTypes.clear();
+        cachedDirectPlayedByTypes.clear();
+    }
+    @Override
+    boolean deletionAllowed(){
+        return super.deletionAllowed() &&
+                !neighbours(Direction.IN, Schema.EdgeLabel.RELATES).findAny().isPresent() && // This role is not linked t any relation type
+                !neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).findAny().isPresent() && // Nothing can play this role
+                !rolePlayers().findAny().isPresent(); // This role has no role players
     }
 
     @Override

@@ -157,13 +157,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      */
     @Override
     public void delete(){
-        checkOntologyMutationAllowed();
-        boolean hasSubs = neighbours(Direction.IN, Schema.EdgeLabel.SUB).findAny().isPresent();
-        boolean hasInstances = currentShard().links().findAny().isPresent();
-
-        if(hasSubs || hasInstances){
-            throw GraphOperationException.typeCannotBeDeleted(getLabel());
-        } else {
+        if(deletionAllowed()){
             //Force load of linked concepts whose caches need to be updated
             //noinspection unchecked
             cachedSuperType.get();
@@ -179,7 +173,14 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
 
             //Clear Global Cache
             vertex().graph().txCache().remove(this);
+        } else {
+            throw GraphOperationException.typeCannotBeDeleted(getLabel());
         }
+    }
+
+    boolean deletionAllowed(){
+        checkOntologyMutationAllowed();
+        return !neighbours(Direction.IN, Schema.EdgeLabel.SUB).findAny().isPresent();
     }
 
     /**
