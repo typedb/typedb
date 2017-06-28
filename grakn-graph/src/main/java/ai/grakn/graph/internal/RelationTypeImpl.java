@@ -61,9 +61,15 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     }
 
     @Override
-    public void flushTxCache(){
-        super.flushTxCache();
+    public void txCacheFlush(){
+        super.txCacheFlush();
         cachedRelates.flush();
+    }
+
+    @Override
+    public void txCacheClear(){
+        super.txCacheFlush();
+        cachedRelates.clear();
     }
 
     /**
@@ -82,7 +88,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public RelationType relates(RoleType roleType) {
-        checkTypeMutationAllowed();
+        checkOntologyMutationAllowed();
         putEdge(roleType, Schema.EdgeLabel.RELATES);
 
         //TODO: the following lines below this comment should only be executed if the edge is added
@@ -106,7 +112,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public RelationType deleteRelates(RoleType roleType) {
-        checkTypeMutationAllowed();
+        checkOntologyMutationAllowed();
         deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, (Concept) roleType);
 
         RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
@@ -141,8 +147,5 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
 
         //Update the cache of the connected role types
         cachedRelates.get().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedRelationType(this));
-
-        //Clear internal Cache
-        cachedRelates.clear();
     }
 }

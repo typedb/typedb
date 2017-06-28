@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
@@ -122,9 +123,6 @@ class ValidateGlobalRules {
      * @return An error message if the relates does not have a single incoming RELATES edge
      */
     static Optional<String> validateHasSingleIncomingRelatesEdge(RoleType roleType){
-        if(roleType.isAbstract()) {
-            return Optional.empty();
-        }
         if(roleType.relationTypes().isEmpty()) {
             return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(roleType.getLabel()));
         }
@@ -193,17 +191,17 @@ class ValidateGlobalRules {
 
         Collection<RoleType> superRelates = superRelationType.relates();
         Collection<RoleType> relates = relationType.relates();
-        Set<TypeLabel> relatesLabels = relates.stream().map(Type::getLabel).collect(Collectors.toSet());
+        Set<TypeLabel> relatesLabels = relates.stream().map(OntologyConcept::getLabel).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationTypes is the sub of a role which is in the relates of it's supers
         if(!superRelationType.isAbstract()) {
             Set<TypeLabel> allSuperRolesPlayed = new HashSet<>();
-            superRelationType.superTypeSet().forEach(rel -> rel.relates().forEach(roleType -> allSuperRolesPlayed.add(roleType.getLabel())));
+            superRelationType.superSet().forEach(rel -> rel.relates().forEach(roleType -> allSuperRolesPlayed.add(roleType.getLabel())));
 
             for (RoleType relate : relates) {
                 boolean validRoleTypeFound = false;
-                Set<RoleType> superRoleTypes = ((RoleTypeImpl) relate).superTypeSet();
+                Set<RoleType> superRoleTypes = ((RoleTypeImpl) relate).superSet();
                 for (RoleType superRoleType : superRoleTypes) {
                     if(allSuperRolesPlayed.contains(superRoleType.getLabel())){
                         validRoleTypeFound = true;
@@ -302,14 +300,14 @@ class ValidateGlobalRules {
         pattern.admin().getVars().stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
-                    Type type = graph.getType(typeLabel);
-                    if(type == null){
+                    OntologyConcept ontologyConcept = graph.getOntologyConcept(typeLabel);
+                    if(ontologyConcept == null){
                         errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getLabel(), typeLabel));
                     } else {
                         if(side.equalsIgnoreCase("LHS")){
-                            rule.addHypothesis(type);
+                            rule.addHypothesis(ontologyConcept);
                         } else {
-                            rule.addConclusion(type);
+                            rule.addConclusion(ontologyConcept);
                         }
                     }
                 });

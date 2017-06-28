@@ -91,10 +91,10 @@ public class SystemKeyspace {
          }
 
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
-            ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
+            ResourceType<String> keyspaceName = graph.getOntologyConcept(KEYSPACE_RESOURCE);
             Resource<String> resource = keyspaceName.putResource(keyspace);
             if (resource.owner() == null) {
-                graph.<EntityType>getType(KEYSPACE_ENTITY).addEntity().resource(resource);
+                graph.<EntityType>getOntologyConcept(KEYSPACE_ENTITY).addEntity().resource(resource);
             }
             graph.admin().commitNoLogs();
         } catch (InvalidGraphException e) {
@@ -129,7 +129,7 @@ public class SystemKeyspace {
         }
 
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
-            ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
+            ResourceType<String> keyspaceName = graph.getOntologyConcept(KEYSPACE_RESOURCE);
             Resource<String> resource = keyspaceName.getResource(keyspace);
 
             if(resource == null) return false;
@@ -152,7 +152,7 @@ public class SystemKeyspace {
      */
     void loadSystemOntology() {
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
-            if (graph.getType(KEYSPACE_ENTITY) != null) {
+            if (graph.getOntologyConcept(KEYSPACE_ENTITY) != null) {
                 checkVersion(graph);
                 return;
             }

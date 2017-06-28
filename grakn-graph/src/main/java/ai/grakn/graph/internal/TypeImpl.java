@@ -19,13 +19,11 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Rule;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.CommonUtil;
@@ -44,7 +42,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -65,15 +62,10 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
  * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
  */
-class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implements Type{
+class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
-    private final TypeId cachedTypeId;
-    private final TypeLabel cachedTypeLabel;
-    private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
     private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
-    private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
     private Cache<Set<T>> cachedShards = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
 
     //This cache is different in order to keep track of which plays are required
@@ -91,33 +83,36 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
 
     TypeImpl(VertexElement vertexElement) {
         super(vertexElement);
-        String typeLabel = vertex().property(Schema.VertexProperty.TYPE_LABEL);
-        cachedTypeLabel = TypeLabel.of(typeLabel);
-        cachedTypeId = TypeId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
     }
 
     TypeImpl(VertexElement vertexElement, T superType) {
-        this(vertexElement);
-        if(superType() == null) superType(superType);
+        super(vertexElement, superType);
     }
 
     TypeImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
-        this(vertexElement, superType);
-        vertex().propertyImmutable(Schema.VertexProperty.IS_IMPLICIT, isImplicit, vertex().property(Schema.VertexProperty.IS_IMPLICIT), Function.identity());
-        cachedIsImplicit.set(isImplicit);
+        super(vertexElement, superType, isImplicit);
     }
 
     /**
-     * Flushes the internal transaction caches so that persisted information can be cached and shared between
-     * concepts
+     * Flushes the internal transaction caches so they can refresh with persisted graph
      */
-    public void flushTxCache(){
-        cachedIsImplicit.flush();
+    @Override
+    public void txCacheFlush(){
+        super.txCacheFlush();
         cachedIsAbstract.flush();
-        cachedSuperType.flush();
-        cachedDirectSubTypes.flush();
         cachedShards.flush();
         cachedDirectPlays.flush();
+    }
+
+    /**
+     * Clears the internal transaction caches
+     */
+    @Override
+    public void txCacheClear(){
+        super.txCacheClear();
+        cachedIsAbstract.clear();
+        cachedShards.clear();
+        cachedDirectPlays.clear();
     }
 
     /**
@@ -171,20 +166,11 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
         allRoleTypes.addAll(cachedDirectPlays.get().keySet());
 
         //Now get the super type plays (Which may also be cached locally within their own context
-        Set<T> superSet = superTypeSet();
+        Set<T> superSet = superSet();
         superSet.remove(this); //We already have the plays from ourselves
         superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlays().keySet()));
 
         return Collections.unmodifiableCollection(filterImplicitStructures(allRoleTypes));
-    }
-
-    /**
-     *
-     * @return The internal type id which is used for fast lookups
-     */
-    @Override
-    public TypeId getTypeId(){
-        return cachedTypeId;
     }
 
     @Override
@@ -226,117 +212,32 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
         return cachedDirectPlays.get();
     }
 
-    private <X extends Concept> Set<X> filterImplicitStructures(Set<X> types){
-        if (!vertex().graph().implicitConceptsVisible() && !types.isEmpty() && types.iterator().next().isType()) {
-            return types.stream().filter(t -> !t.asType().isImplicit()).collect(Collectors.toSet());
-        }
-        return types;
-    }
-
     /**
      * Deletes the concept as type
      */
     @Override
     public void delete(){
-        checkTypeMutationAllowed();
-        boolean hasSubs = neighbours(Direction.IN, Schema.EdgeLabel.SUB).findAny().isPresent();
-        boolean hasInstances = currentShard().links().findAny().isPresent();
 
-        if(hasSubs || hasInstances){
-            throw GraphOperationException.typeCannotBeDeleted(getLabel());
-        } else {
-            //Force load of linked concepts whose caches need to be updated
-            cachedSuperType.get();
-            cachedDirectPlays.get();
+        //If the deletion is successful we will need to update the cache of linked concepts. To do this caches must be loaded
+        cachedDirectPlays.get();
 
-            deleteNode();
+        super.delete();
 
-            //Update neighbouring caches
-            //noinspection unchecked
-            ((TypeImpl<T, V>) cachedSuperType.get()).deleteCachedDirectedSubType(getThis());
-            cachedDirectPlays.get().keySet().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
-
-            //Clear internal caching
-            cachedIsImplicit.clear();
-            cachedIsAbstract.clear();
-            cachedSuperType.clear();
-            cachedDirectSubTypes.clear();
-            cachedDirectPlays.clear();
-
-            //Clear Global Cache
-            vertex().graph().txCache().remove(this);
-        }
+        //Updated caches of linked types
+        cachedDirectPlays.get().keySet().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
+    }
+    @Override
+    boolean deletionAllowed(){
+        return super.deletionAllowed() && !currentShard().links().findAny().isPresent();
     }
 
     /**
      *
-     * @return This type's super type
-     */
-    public T superType() {
-        return cachedSuperType.get();
-    }
-
-    /**
-     *
-     * @return All outgoing sub parents including itself
-     */
-    Set<T> superTypeSet() {
-        Set<T> superSet= new HashSet<>();
-        superSet.add(getThis());
-        T superParent = superType();
-
-        while(superParent != null && !Schema.MetaSchema.THING.getLabel().equals(superParent.getLabel())){
-            superSet.add(superParent);
-            //noinspection unchecked
-            superParent = (T) superParent.superType();
-        }
-
-        return superSet;
-    }
-
-    /**
-     *
-     * @param root The current type to example
-     * @return All the sub children of the root. Effectively calls  the cache {@link TypeImpl#cachedDirectSubTypes} recursively
-     */
-    @SuppressWarnings("unchecked")
-    private Set<T> nextSubLevel(TypeImpl<T, V> root){
-        Set<T> results = new HashSet<>();
-        results.add((T) root);
-
-        Set<T> children = root.cachedDirectSubTypes.get();
-        for(T child: children){
-            results.addAll(nextSubLevel((TypeImpl<T, V>) child));
-        }
-
-        return results;
-    }
-
-    /**
-     *
-     * @return All the subtypes of this concept including itself
+     * @return All the subs of this concept including itself
      */
     @Override
     public Collection<T> subTypes(){
-        return Collections.unmodifiableCollection(filterImplicitStructures(nextSubLevel(this)));
-    }
-
-    /**
-     * Adds a new sub type to the currently cached sub types. If no subtypes have been cached then this will hit the database.
-     *
-     * @param newSubType The new subtype
-     */
-    private void addCachedDirectSubType(T newSubType){
-        cachedDirectSubTypes.ifPresent(set -> set.add(newSubType));
-    }
-
-    /**
-     * Removes an old sub type from the currently cached sub types. If no subtypes have been cached then this will hit the database.
-     *
-     * @param oldSubType The old sub type which should not be cached anymore
-     */
-    private void deleteCachedDirectedSubType(T oldSubType){
-        cachedDirectSubTypes.ifPresent(set -> set.remove(oldSubType));
+        return Collections.unmodifiableCollection(filterImplicitStructures(super.subTypes()));
     }
 
     /**
@@ -357,7 +258,7 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
                 .in(Schema.EdgeLabel.ISA.getLabel());
 
         traversal.forEachRemaining(vertex -> {
-            ConceptImpl<Concept> concept = vertex().graph().factory().buildConcept(vertex);
+            ConceptImpl concept = vertex().graph().factory().buildConcept(vertex);
             if (concept != null) instances.add((V) concept);
         });
 
@@ -371,37 +272,6 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
     @Override
     public Boolean isAbstract() {
         return cachedIsAbstract.get();
-    }
-
-    /**
-     *
-     * @return returns true if the type was created implicitly through {@link #has}
-     */
-    @Override
-    public Boolean isImplicit(){
-        return cachedIsImplicit.get();
-    }
-
-    /**
-     *
-     * @return A collection of Rules for which this Type serves as a hypothesis
-     */
-    @Override
-    public Collection<Rule> getRulesOfHypothesis() {
-        Set<Rule> rules = new HashSet<>();
-        neighbours(Direction.IN, Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> rules.add(concept.asRule()));
-        return Collections.unmodifiableCollection(rules);
-    }
-
-    /**
-     *
-     * @return A collection of Rules for which this Type serves as a conclusion
-     */
-    @Override
-    public Collection<Rule> getRulesOfConclusion() {
-        Set<Rule> rules = new HashSet<>();
-        neighbours(Direction.IN, Schema.EdgeLabel.CONCLUSION).forEach(concept -> rules.add(concept.asRule()));
-        return Collections.unmodifiableCollection(rules);
     }
 
     /**
@@ -436,79 +306,17 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
         return getThis();
     }
 
-    /**
-     *
-     * @param newSuperType This type's super type
-     * @return The Type itself
-     */
-    public T superType(T newSuperType) {
-        checkTypeMutationAllowed();
-
-        T oldSuperType = superType();
-        if(oldSuperType == null || (!oldSuperType.equals(newSuperType))) {
-            //Update the super type of this type in cache
-            cachedSuperType.set(newSuperType);
-
-            //Note the check before the actual construction
-            if(superTypeLoops()){
-                cachedSuperType.set(oldSuperType); //Reset if the new super type causes a loop
-                throw GraphOperationException.loopCreated(this, newSuperType);
+    void trackSuperChange(){
+        instances().forEach(concept -> {
+            if (concept.isInstance()) {
+                ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
+                        rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
             }
-
-            //Modify the graph once we have checked no loop occurs
-            deleteEdge(Direction.OUT, Schema.EdgeLabel.SUB);
-            putEdge(newSuperType, Schema.EdgeLabel.SUB);
-
-            //Update the sub types of the old super type
-            if(oldSuperType != null) {
-                //noinspection unchecked - Casting is needed to access {deleteCachedDirectedSubTypes} method
-                ((TypeImpl<T, V>) oldSuperType).deleteCachedDirectedSubType(getThis());
-            }
-
-            //Add this as the subtype to the supertype
-            //noinspection unchecked - Casting is needed to access {addCachedDirectSubTypes} method
-            ((TypeImpl<T, V>) newSuperType).addCachedDirectSubType(getThis());
-
-            //Track any existing data if there is some
-            instances().forEach(concept -> {
-                if (concept.isInstance()) {
-                    ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
-                            rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
-                }
-            });
-        }
-        
-        return getThis();
-    }
-
-    /**
-     * Adds another subtype to this type
-     *
-     * @param type The sub type of this type
-     * @return The Type itself
-     */
-    public T subType(T type){
-        //noinspection unchecked
-        ((TypeImpl) type).superType(this);
-        return getThis();
-    }
-
-    private boolean superTypeLoops(){
-        //Check For Loop
-        HashSet<Type> foundTypes = new HashSet<>();
-        Type currentSuperType = superType();
-        while (currentSuperType != null){
-            foundTypes.add(currentSuperType);
-            currentSuperType = currentSuperType.superType();
-            if(foundTypes.contains(currentSuperType)){
-                return true;
-            }
-        }
-        return false;
+        });
     }
 
     T plays(RoleType roleType, boolean required) {
-        checkTypeMutationAllowed();
+        checkOntologyMutationAllowed();
 
         //Update the internal cache of role types played
         cachedDirectPlays.ifPresent(map -> map.put(roleType, required));
@@ -541,7 +349,7 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
      */
     @Override
     public T deletePlays(RoleType roleType) {
-        checkTypeMutationAllowed();
+        checkOntologyMutationAllowed();
         deleteEdge(Direction.OUT, Schema.EdgeLabel.PLAYS, (Concept) roleType);
         cachedDirectPlays.ifPresent(set -> set.remove(roleType));
         ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(this);
@@ -555,13 +363,6 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
 
 
         return getThis();
-    }
-
-    @Override
-    public String innerToString(){
-        String message = super.innerToString();
-        message = message + " - Label [" + getLabel() + "] - Abstract [" + isAbstract() + "] ";
-        return message;
     }
 
     /**
@@ -581,21 +382,9 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
     }
 
     T property(Schema.VertexProperty key, Object value){
-        if(!Schema.VertexProperty.CURRENT_TYPE_ID.equals(key)) checkTypeMutationAllowed();
+        if(!Schema.VertexProperty.CURRENT_TYPE_ID.equals(key)) checkOntologyMutationAllowed();
         vertex().property(key, value);
         return getThis();
-    }
-
-    /**
-     * Checks if we are mutating a type in a valid way. Type mutations are valid if:
-     * 1. The type is not a meta-type
-     * 2. The graph is not batch loading
-     */
-    void checkTypeMutationAllowed(){
-        vertex().graph().checkOntologyMutationAllowed();
-        if(Schema.MetaSchema.isMetaLabel(getLabel())){
-            throw GraphOperationException.metaTypeImmutable(getLabel());
-        }
     }
 
     /**
@@ -609,7 +398,7 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
      */
     public T has(ResourceType resourceType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
         //Check if this is a met type
-        checkTypeMutationAllowed();
+        checkOntologyMutationAllowed();
 
         //Check if resource type is the meta
         if(Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())){
@@ -646,15 +435,6 @@ class TypeImpl<T extends Type, V extends Thing> extends ConceptImpl<T> implement
         ((ResourceTypeImpl) resourceType).plays(valueRole, false);
 
         return getThis();
-    }
-
-    /**
-     *
-     * @return The name of this type
-     */
-    @Override
-    public TypeLabel getLabel() {
-        return cachedTypeLabel;
     }
 
     /**

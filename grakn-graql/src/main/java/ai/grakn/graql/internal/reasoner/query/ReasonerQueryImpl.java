@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
@@ -347,11 +347,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return map of variable name - type pairs
      */
     @Override
-    public Map<Var, Type> getVarTypeMap() {
-        Map<Var, Type> typeMap = new HashMap<>();
+    public Map<Var, OntologyConcept> getVarOntologyConceptMap() {
+        Map<Var, OntologyConcept> typeMap = new HashMap<>();
         getTypeConstraints().stream()
-                .filter(at -> Objects.nonNull(at.getType()))
-                .forEach(atom -> typeMap.putIfAbsent(atom.getVarName(), atom.getType()));
+                .filter(at -> Objects.nonNull(at.getOntologyConcept()))
+                .forEach(atom -> typeMap.putIfAbsent(atom.getVarName(), atom.getOntologyConcept()));
         return typeMap;
     }
 

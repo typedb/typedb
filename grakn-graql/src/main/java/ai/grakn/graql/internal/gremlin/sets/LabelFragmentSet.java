@@ -72,7 +72,7 @@ class LabelFragmentSet extends EquivalentFragmentSet {
             boolean hasUserDefinedVar = labelSet.type().isUserDefinedName();
             if (hasUserDefinedVar) continue;
 
-            boolean existsInGraph = graph.getType(labelSet.label()) != null;
+            boolean existsInGraph = graph.getOntologyConcept(labelSet.label()) != null;
             if (!existsInGraph) continue;
 
             boolean varReferredToInOtherFragment = fragmentSets.stream()

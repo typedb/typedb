@@ -21,6 +21,7 @@ package ai.grakn.matcher;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableSet;
 
@@ -57,8 +58,12 @@ public class MatchableConcept {
                     .map(Resource::getValue).findFirst();
 
             return "instance(" + value.map(StringUtil::valueToString).orElse("") + ")";
-        } else {
+        } else if (concept.isType()) {
             return "type(" + concept.asType().getLabel() + ")";
+        } else if (concept.isRoleType()) {
+            return "role(" + concept.asRoleType().getLabel() + ")";
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
     }
 }

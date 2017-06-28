@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -115,13 +116,6 @@ public class EntityTypeTest extends GraphTestBase{
     }
 
     @Test
-    public void whenGettingARoleTypeAsType_TheTypeIsReturned(){
-        RoleType test1 = graknGraph.putRoleType("test");
-        Type test2 = graknGraph.getType(TypeLabel.of("test"));
-        assertEquals(test1, test2);
-    }
-
-    @Test
     public void whenGettingTheRolesPlayedByType_ReturnTheRoles() throws Exception{
         RoleType monster = graknGraph.putRoleType("monster");
         RoleType animal = graknGraph.putRoleType("animal");
@@ -142,10 +136,10 @@ public class EntityTypeTest extends GraphTestBase{
         EntityType c3 = graknGraph.putEntityType("c3").superType(c2);
         EntityType c4 = graknGraph.putEntityType("c4").superType(c1);
 
-        Set<EntityType> c1SuperTypes = ((TypeImpl) c1).superTypeSet();
-        Set<EntityType> c2SuperTypes = ((TypeImpl) c2).superTypeSet();
-        Set<EntityType> c3SuperTypes = ((TypeImpl) c3).superTypeSet();
-        Set<EntityType> c4SuperTypes = ((TypeImpl) c4).superTypeSet();
+        Set<EntityType> c1SuperTypes = ((TypeImpl) c1).superSet();
+        Set<EntityType> c2SuperTypes = ((TypeImpl) c2).superSet();
+        Set<EntityType> c3SuperTypes = ((TypeImpl) c3).superSet();
+        Set<EntityType> c4SuperTypes = ((TypeImpl) c4).superSet();
 
         assertThat(c1SuperTypes, containsInAnyOrder(entityType, c1));
         assertThat(c2SuperTypes, containsInAnyOrder(entityType, c2, c1));
@@ -220,7 +214,7 @@ public class EntityTypeTest extends GraphTestBase{
     public void settingTheSuperTypeToItself_Throw(){
         EntityType entityType = graknGraph.putEntityType("Entity");
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(ErrorMessage.SUPER_TYPE_LOOP_DETECTED.getMessage(entityType.getLabel(), entityType.getLabel()));
+        expectedException.expectMessage(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(entityType.getLabel(), entityType.getLabel()));
         entityType.superType(entityType);
     }
 
@@ -233,7 +227,7 @@ public class EntityTypeTest extends GraphTestBase{
         entityType2.superType(entityType3);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(ErrorMessage.SUPER_TYPE_LOOP_DETECTED.getMessage(entityType3.getLabel(), entityType1.getLabel()));
+        expectedException.expectMessage(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(entityType3.getLabel(), entityType1.getLabel()));
 
         entityType3.superType(entityType1);
     }
@@ -276,7 +270,7 @@ public class EntityTypeTest extends GraphTestBase{
         RelationType relationType = graknGraph.getRelationType(hasResourceLabel.getValue());
         assertEquals(hasResourceLabel, relationType.getLabel());
 
-        Set<TypeLabel> roleLabels = relationType.relates().stream().map(Type::getLabel).collect(toSet());
+        Set<TypeLabel> roleLabels = relationType.relates().stream().map(OntologyConcept::getLabel).collect(toSet());
         assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
 
         assertThat(entityType.plays(), containsInAnyOrder(graknGraph.getRoleType(hasResourceOwnerLabel.getValue())));
@@ -317,13 +311,13 @@ public class EntityTypeTest extends GraphTestBase{
                 containsInAnyOrder(graknGraph.getRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
 
         //Check Implicit Types Follow SUB Structure
-        RelationType rtSuperRelation = graknGraph.getType(Schema.ImplicitType.HAS.getLabel(rtSuper.getLabel()));
-        RoleType rtSuperRoleOwner = graknGraph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(rtSuper.getLabel()));
-        RoleType rtSuperRoleValue = graknGraph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(rtSuper.getLabel()));
+        RelationType rtSuperRelation = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(rtSuper.getLabel()));
+        RoleType rtSuperRoleOwner = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rtSuper.getLabel()));
+        RoleType rtSuperRoleValue = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rtSuper.getLabel()));
 
-        RelationType rtRelation = graknGraph.getType(Schema.ImplicitType.HAS.getLabel(rt.getLabel()));
-        RoleType reRoleOwner = graknGraph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(rt.getLabel()));
-        RoleType reRoleValue = graknGraph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(rt.getLabel()));
+        RelationType rtRelation = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(rt.getLabel()));
+        RoleType reRoleOwner = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rt.getLabel()));
+        RoleType reRoleValue = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rt.getLabel()));
 
         assertEquals(rtSuperRoleOwner, reRoleOwner.superType());
         assertEquals(rtSuperRoleValue, reRoleValue.superType());

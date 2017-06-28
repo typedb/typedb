@@ -47,9 +47,11 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertDataEqual(GraknGraph one, GraknGraph two){
-        one.admin().getMetaConcept().instances().stream()
-                .map(Concept::asInstance)
-                .forEach(i -> assertInstanceCopied(i, two));
+        one.admin().getMetaConcept().subTypes().stream().
+                filter(Concept::isType).
+                map(Concept::asType).
+                flatMap(t -> t.instances().stream()).
+                forEach(i -> assertInstanceCopied(i, two));
     }
 
     public static void assertInstanceCopied(Thing thing, GraknGraph two){
@@ -104,7 +106,7 @@ public abstract class GraphWriterTestUtil {
 
         RelationType relationType = two.getRelationType(relation1.type().getLabel().getValue());
         Map<RoleType, Set<Thing>> rolemap = relation1.allRolePlayers().entrySet().stream().collect(toMap(
-                e -> two.getRoleType(e.getKey().asType().getLabel().getValue()),
+                e -> two.getRoleType(e.getKey().getLabel().getValue()),
                 e -> e.getValue().stream().
                         map(instance -> getInstanceUniqueByResourcesFromGraph(two, instance)).
                         collect(Collectors.toSet())
@@ -135,8 +137,8 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertOntologiesEqual(GraknGraph one, GraknGraph two){
-        boolean ontologyCorrect = one.admin().getMetaConcept().subTypes().stream()
-                .allMatch(t -> typesEqual(t.asType(), two.getType(t.asType().getLabel())));
+        boolean ontologyCorrect = one.admin().getMetaConcept().subTypes().stream().filter(Concept::isType)
+                .allMatch(t -> typesEqual(t.asType(), two.getOntologyConcept(t.asType().getLabel())));
         assertEquals(true, ontologyCorrect);
     }
 

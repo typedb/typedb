@@ -71,8 +71,8 @@ public class ConjunctionQueryTest {
         doReturn(ImmutableList.of(resourceTypeWithoutSubTypesMock, resourceTypeWithSubTypesMock))
                 .when(resourceTypeWithSubTypesMock).subTypes();
 
-        when(graph.getType(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
-        when(graph.getType(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);
+        when(graph.getOntologyConcept(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
+        when(graph.getOntologyConcept(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);
     }
 
     @Test

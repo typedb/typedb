@@ -19,6 +19,7 @@
 package ai.grakn.exception;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -37,6 +38,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Set;
 
+import static ai.grakn.util.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_INSTANCE_WITH_NAME;
 import static ai.grakn.util.ErrorMessage.INSERT_ISA_AND_SUB;
 import static ai.grakn.util.ErrorMessage.INSERT_MULTIPLE_VALUES;
@@ -158,8 +160,8 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(var + " cannot be an instance of meta-type " + type.getLabel());
     }
 
-    public static GraqlQueryException insertMetaType(TypeLabel label, Type superType) {
-        return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, superType.getLabel()));
+    public static GraqlQueryException insertMetaType(TypeLabel label, OntologyConcept ontologyConcept) {
+        return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, ontologyConcept.getLabel()));
     }
 
     public static GraqlQueryException insertMultipleValues(ValuePredicateAdmin predicate, Object value) {
@@ -297,6 +299,10 @@ public class GraqlQueryException extends GraknException{
 
     public static GraqlQueryException insertTypeWithoutLabel() {
         return new GraqlQueryException(INSERT_TYPE_WITHOUT_LABEL.getMessage());
+    }
+
+    public static GraqlQueryException insertAbstractOnNonType(OntologyConcept concept){
+        return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.getLabel()));
     }
 
     public static GraqlQueryException insertResourceTypeWithoutDataType(VarPatternAdmin var) {

@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
@@ -79,7 +80,7 @@ public class HALBuilder {
             roleTypes = computeRoleTypesFromQuery(matchQuery, results.iterator().next());
         }
         //Collect all the types explicitly asked in the match query
-        Set<TypeLabel> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x -> x.asType().getLabel()).collect(toSet());
+        Set<TypeLabel> typesAskedInQuery = matchQuery.admin().getOntologyConcepts().stream().map(OntologyConcept::getLabel).collect(toSet());
 
         return buildHALRepresentations(results, typesAskedInQuery, roleTypes, keyspace, offset, limit, filterInstances);
     }

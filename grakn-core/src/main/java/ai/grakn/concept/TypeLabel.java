@@ -24,7 +24,7 @@ import java.util.function.Function;
 
 /**
  * <p>
- *     A Type Label
+ *     A Label
  * </p>
  *
  * <p>

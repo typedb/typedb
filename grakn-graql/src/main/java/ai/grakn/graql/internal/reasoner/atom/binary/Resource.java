@@ -18,7 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -43,7 +43,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesDisjoint;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint;
 
 /**
  *
@@ -71,7 +71,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
         String multiPredicateString = getMultiPredicate().isEmpty()?
                 getValueVariable().toString() :
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
-        return getVarName() + " has " + getType().getLabel() + " " +
+        return getVarName() + " has " + getOntologyConcept().getLabel() + " " +
                 multiPredicateString +
                 getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
     }
@@ -103,9 +103,9 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
         TypeAtom parentTypeConstraint = this.getTypeConstraints().stream().findFirst().orElse(null);
         TypeAtom childTypeConstraint = childAtom.getTypeConstraints().stream().findFirst().orElse(null);
 
-        Type parentType = parentTypeConstraint != null? parentTypeConstraint.getType() : null;
-        Type childType = childTypeConstraint != null? childTypeConstraint.getType() : null;
-        if (parentType != null && childType != null && checkTypesDisjoint(parentType, childType)) return false;
+        OntologyConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getOntologyConcept() : null;
+        OntologyConcept childType = childTypeConstraint != null? childTypeConstraint.getOntologyConcept() : null;
+        if (parentType != null && childType != null && checkDisjoint(parentType, childType)) return false;
 
         //check predicates
         if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
@@ -132,7 +132,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     protected ConceptId extractTypeId(VarPatternAdmin var) {
         HasResourceProperty resProp = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         TypeLabel typeLabel = resProp != null? resProp.getType() : null;
-        return typeLabel != null ? getParentQuery().graph().getType(typeLabel).getId() : null;
+        return typeLabel != null ? getParentQuery().graph().getOntologyConcept(typeLabel).getId() : null;
     }
 
     @Override
@@ -153,7 +153,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
     @Override
     public boolean isAllowedToFormRuleHead(){
-        if (getType() == null || getMultiPredicate().size() > 1) return false;
+        if (getOntologyConcept() == null || getMultiPredicate().size() > 1) return false;
         if (getMultiPredicate().isEmpty()) return true;
 
         ValuePredicate predicate = getMultiPredicate().iterator().next();
@@ -236,7 +236,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     public Set<TypeAtom> getSpecificTypeConstraints() {
         return getTypeConstraints().stream()
                 .filter(t -> t.getVarName().equals(getVarName()))
-                .filter(t -> Objects.nonNull(t.getType()))
+                .filter(t -> Objects.nonNull(t.getOntologyConcept()))
                 .collect(Collectors.toSet());
     }
 

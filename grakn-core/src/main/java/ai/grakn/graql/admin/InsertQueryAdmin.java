@@ -19,7 +19,7 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 
@@ -45,7 +45,7 @@ public interface InsertQueryAdmin extends InsertQuery {
      * @return all concept types referred to explicitly in the query
      */
     @CheckReturnValue
-    Set<Type> getTypes();
+    Set<OntologyConcept> getOntologyConcepts();
 
     /**
      * @return the variables to insert in the insert query

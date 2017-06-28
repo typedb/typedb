@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RoleType;
@@ -157,7 +158,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                 var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarPatternAdmin::getTypeLabel);
 
         maybeLabel.ifPresent(label -> {
-            Type type = graph.getType(label);
+            Type type = graph.getOntologyConcept(label);
 
             if (type == null || !type.isRelationType()) {
                 throw GraqlQueryException.notARelationType(label);
@@ -166,8 +167,8 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
         // Check all role types exist
         roleTypes.forEach(roleId -> {
-            Type type = graph.getType(roleId);
-            if (type == null || !type.isRoleType()) {
+            OntologyConcept ontologyConcept = graph.getOntologyConcept(roleId);
+            if (ontologyConcept == null || !ontologyConcept.isRoleType()) {
                 throw GraqlQueryException.notARoleType(roleId);
             }
         });
@@ -244,7 +245,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             relVar = relVar.isa(typeVariable);
             if (typeLabel != null) {
                 GraknGraph graph = parent.graph();
-                VarPatternAdmin idVar = typeVariable.id(graph.getType(typeLabel).getId()).admin();
+                VarPatternAdmin idVar = typeVariable.id(graph.getOntologyConcept(typeLabel).getId()).admin();
                 predicate = new IdPredicate(idVar, parent);
             } else {
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);

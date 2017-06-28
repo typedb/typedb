@@ -21,8 +21,8 @@ package ai.grakn.engine.session;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
@@ -362,7 +362,7 @@ class GraqlSession {
      * @return all type IDs in the ontology
      */
     private static Stream<TypeLabel> getTypes(GraknGraph graph) {
-        return graph.admin().getMetaConcept().subTypes().stream().map(Type::getLabel);
+        return graph.admin().getMetaConcept().subTypes().stream().map(OntologyConcept::getLabel);
     }
 
     private Printer getPrinter(ResourceType... resources) {

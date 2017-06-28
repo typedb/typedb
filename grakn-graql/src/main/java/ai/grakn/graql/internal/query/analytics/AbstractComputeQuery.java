@@ -121,7 +121,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     private void getAllSubTypes(GraknGraph graph) {
         // fetch all the types in the subGraph
         Set<Type> subGraph = subTypeLabels.stream().map((label) -> {
-            Type type = graph.getType(label);
+            Type type = graph.getOntologyConcept(label);
             if (type == null) throw GraqlQueryException.labelNotFound(label);
             return type;
         }).collect(Collectors.toSet());
@@ -181,7 +181,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     Set<TypeLabel> getHasResourceRelationTypes() {
         return subTypeLabels.stream()
-                .filter(type -> graph.get().getType(type).isResourceType())
+                .filter(type -> graph.get().getOntologyConcept(type).isResourceType())
                 .map(Schema.ImplicitType.HAS::getLabel)
                 .collect(Collectors.toSet());
     }

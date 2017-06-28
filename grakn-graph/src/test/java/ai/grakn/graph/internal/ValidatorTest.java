@@ -168,14 +168,6 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void ensureRoleTypesCanPlayOtherRoleTypes_WhenRoleTypesAreAbstract() throws InvalidGraphException {
-        RoleType role1 = graknGraph.putRoleType("role1").setAbstract(true);
-        RoleType role2 = graknGraph.putRoleType("role2").setAbstract(true);
-        graknGraph.putEntityType("my type").plays(role1).plays(role2);
-        graknGraph.commit();
-    }
-
-    @Test
     public void whenManuallyCreatingCorrectBinaryRelation_Commit() throws InvalidGraphException {
         RoleType characterBeingPlayed = graknGraph.putRoleType("Character being played");
         RoleType personPlayingCharacter = graknGraph.putRoleType("Person Playing Char");
@@ -330,13 +322,16 @@ public class ValidatorTest extends GraphTestBase{
     /*------------------------------- Relation Type to Role Type Validation (Schema) ---------------------------------*/
     @Test
     public void whenARelationTypeHasASubTypeHierarchy_EnsureThatWhenARelationTypeHasMatchingRoleTypes1() throws InvalidGraphException {
-        RoleType relative = graknGraph.putRoleType("relative").setAbstract(true);
+        RoleType relative = graknGraph.putRoleType("relative");
         RoleType parent = graknGraph.putRoleType("parent").superType(relative);
         RoleType father = graknGraph.putRoleType("father").superType(parent);
         RoleType mother = graknGraph.putRoleType("mother").superType(parent);
         RoleType pChild = graknGraph.putRoleType("pChild").superType(relative);
         RoleType fChild = graknGraph.putRoleType("fChild").superType(pChild);
         RoleType mChild = graknGraph.putRoleType("mChild").superType(pChild);
+
+        //This is to bypass a specific validation rule
+        graknGraph.putRelationType("filler").relates(relative);
 
         graknGraph.putEntityType("animal").
                 plays(relative).
@@ -356,12 +351,15 @@ public class ValidatorTest extends GraphTestBase{
 
     @Test
     public void whenARelationTypeHasASubTypeHierarchy_EnsureThatWhenARelationTypeHasMatchingRoleTypes2() throws InvalidGraphException {
-        RoleType relative = graknGraph.putRoleType("relative").setAbstract(true);
+        RoleType relative = graknGraph.putRoleType("relative");
         RoleType parent = graknGraph.putRoleType("parent").superType(relative);
         RoleType father = graknGraph.putRoleType("father").superType(parent);
         RoleType mother = graknGraph.putRoleType("mother").superType(parent);
         RoleType pChild = graknGraph.putRoleType("pChild").superType(relative);
         RoleType fmChild = graknGraph.putRoleType("fChild").superType(pChild);
+
+        //This is to bypass a specific validation rule
+        graknGraph.putRelationType("filler").relates(relative);
 
         graknGraph.putEntityType("animal").
                 plays(relative).

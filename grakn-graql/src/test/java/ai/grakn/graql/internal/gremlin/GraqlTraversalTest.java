@@ -98,7 +98,7 @@ public class GraqlTraversalTest {
         TypeLabel wifeLabel = TypeLabel.of("wife");
         RoleType wife = mock(RoleType.class);
 
-        when(graph.getType(wifeLabel)).thenAnswer(invocation -> {
+        when(graph.getOntologyConcept(wifeLabel)).thenAnswer(invocation -> {
             //noinspection unchecked
             when(wife.subTypes()).thenReturn((Collection) ImmutableSet.of(wife));
             when(wife.getLabel()).thenReturn(wifeLabel);
@@ -108,7 +108,7 @@ public class GraqlTraversalTest {
         TypeLabel marriageLabel = TypeLabel.of("marriage");
         RelationType marriage = mock(RelationType.class);
 
-        when(graph.getType(marriageLabel)).thenAnswer(invocation -> {
+        when(graph.getOntologyConcept(marriageLabel)).thenAnswer(invocation -> {
             //noinspection unchecked
             when(marriage.subTypes()).thenReturn((Collection) ImmutableSet.of(marriage));
             when(marriage.getLabel()).thenReturn(marriageLabel);
