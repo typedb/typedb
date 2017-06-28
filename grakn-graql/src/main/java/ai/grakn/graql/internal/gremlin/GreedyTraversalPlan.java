@@ -52,6 +52,7 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
  * Class for generating greedy traversal plans
  *
  * @author Felix Chapman
+ * @author Jason Liu
  */
 public class GreedyTraversalPlan {
 
@@ -66,7 +67,7 @@ public class GreedyTraversalPlan {
 
         Set<? extends List<Fragment>> fragments = patterns.stream()
                 .map(conjunction -> new ConjunctionQuery(conjunction, graph))
-                .map(GreedyTraversalPlan::semiOptimalConjunction)
+                .map(GreedyTraversalPlan::planForConjunction)
                 .collect(toImmutableSet());
 
         return GraqlTraversal.create(fragments);
@@ -78,7 +79,7 @@ public class GreedyTraversalPlan {
      * @param query the conjunction query to find a traversal plan
      * @return a semi-optimal traversal plan to execute the given conjunction
      */
-    private static List<Fragment> semiOptimalConjunction(ConjunctionQuery query) {
+    private static List<Fragment> planForConjunction(ConjunctionQuery query) {
 
         List<Fragment> plan = new ArrayList<>();
         Collection<Set<Fragment>> connectedFragmentSets = getConnectedFragmentSets(query);
