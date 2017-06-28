@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -97,7 +97,7 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        TypeLabel roleLabel = role.getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
+        Label roleLabel = role.getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
         concept.asType().deletePlays(graph.getOntologyConcept(roleLabel));
     }
 

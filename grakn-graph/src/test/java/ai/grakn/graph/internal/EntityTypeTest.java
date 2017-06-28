@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -27,7 +28,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -112,7 +112,7 @@ public class EntityTypeTest extends GraphTestBase{
     @Test
     public void whenGettingTheLabelOfType_TheTypeLabelIsReturned(){
         Type test = graknGraph.putEntityType("test");
-        assertEquals(TypeLabel.of("test"), test.getLabel());
+        assertEquals(Label.of("test"), test.getLabel());
     }
 
     @Test
@@ -256,21 +256,21 @@ public class EntityTypeTest extends GraphTestBase{
     @Test
     public void whenSpecifyingTheResourceTypeOfAnEntityType_EnsureTheImplicitStructureIsCreated(){
         graknGraph.showImplicitConcepts(true);
-        TypeLabel resourceTypeLabel = TypeLabel.of("Resource Type");
+        Label resourceLabel = Label.of("Resource Type");
         EntityType entityType = graknGraph.putEntityType("Entity1");
         ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
         //Implicit Names
-        TypeLabel hasResourceOwnerLabel = Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeLabel);
-        TypeLabel hasResourceValueLabel = Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeLabel);
-        TypeLabel hasResourceLabel = Schema.ImplicitType.HAS.getLabel(resourceTypeLabel);
+        Label hasResourceOwnerLabel = Schema.ImplicitType.HAS_OWNER.getLabel(resourceLabel);
+        Label hasResourceValueLabel = Schema.ImplicitType.HAS_VALUE.getLabel(resourceLabel);
+        Label hasResourceLabel = Schema.ImplicitType.HAS.getLabel(resourceLabel);
 
         entityType.resource(resourceType);
 
         RelationType relationType = graknGraph.getRelationType(hasResourceLabel.getValue());
         assertEquals(hasResourceLabel, relationType.getLabel());
 
-        Set<TypeLabel> roleLabels = relationType.relates().stream().map(OntologyConcept::getLabel).collect(toSet());
+        Set<Label> roleLabels = relationType.relates().stream().map(OntologyConcept::getLabel).collect(toSet());
         assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
 
         assertThat(entityType.plays(), containsInAnyOrder(graknGraph.getRoleType(hasResourceOwnerLabel.getValue())));
@@ -292,8 +292,8 @@ public class EntityTypeTest extends GraphTestBase{
         EntityType entityType1 = graknGraph.putEntityType("Entity Type 1");
         EntityType entityType2 = graknGraph.putEntityType("Entity Type 2");
 
-        TypeLabel superLabel = TypeLabel.of("Super Resource Type");
-        TypeLabel label = TypeLabel.of("Resource Type");
+        Label superLabel = Label.of("Super Resource Type");
+        Label label = Label.of("Resource Type");
 
         ResourceType rtSuper = graknGraph.putResourceType(superLabel, ResourceType.DataType.STRING);
         ResourceType rt = graknGraph.putResourceType(label, ResourceType.DataType.STRING).superType(rtSuper);

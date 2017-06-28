@@ -29,16 +29,16 @@ import java.util.function.Function;
  *
  * <p>
  *     A class which represents the unique label of any {@link Type} in the {@link ai.grakn.GraknGraph}.
- *     Also contains a static method for producing {@link TypeLabel}s from Strings.
+ *     Also contains a static method for producing {@link Label}s from Strings.
  * </p>
  *
  * @author fppt
  */
-public class TypeLabel implements Comparable<TypeLabel>, Serializable {
+public class Label implements Comparable<Label>, Serializable {
     private static final long serialVersionUID = 2051578406740868932L;
 
     private String label;
-    private TypeLabel(String label){
+    private Label(String label){
         this.label = label;
     }
 
@@ -48,13 +48,13 @@ public class TypeLabel implements Comparable<TypeLabel>, Serializable {
     }
 
     /**
-     * Rename a {@link TypeLabel} (does not modify the original {@link TypeLabel})
+     * Rename a {@link Label} (does not modify the original {@link Label})
      * @param mapper a function to apply to the underlying type label
      * @return the new type label
      */
     @CheckReturnValue
-    public TypeLabel map(Function<String, String> mapper) {
-        return TypeLabel.of(mapper.apply(label));
+    public Label map(Function<String, String> mapper) {
+        return Label.of(mapper.apply(label));
     }
 
     @Override
@@ -62,9 +62,9 @@ public class TypeLabel implements Comparable<TypeLabel>, Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        TypeLabel typeLabel = (TypeLabel) o;
+        Label label = (Label) o;
 
-        return label.equals(typeLabel.label);
+        return this.label.equals(label.label);
     }
 
     @Override
@@ -73,7 +73,7 @@ public class TypeLabel implements Comparable<TypeLabel>, Serializable {
     }
 
     @Override
-    public int compareTo(TypeLabel o) {
+    public int compareTo(Label o) {
         return getValue().compareTo(o.getValue());
     }
 
@@ -88,7 +88,7 @@ public class TypeLabel implements Comparable<TypeLabel>, Serializable {
      * @return The matching Type Label
      */
     @CheckReturnValue
-    public static TypeLabel of(String value){
-        return new TypeLabel(value);
+    public static Label of(String value){
+        return new Label(value);
     }
 }

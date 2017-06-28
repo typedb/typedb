@@ -20,12 +20,12 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -47,7 +47,7 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  * <p>
  *     Allows you to create schema or ontological elements.
  *     These differ from normal graph constructs in two ways:
- *     1. They have a unique {@link TypeLabel} which identifies them
+ *     1. They have a unique {@link Label} which identifies them
  *     2. You can link them together into a hierarchical structure
  * </p>
  *
@@ -57,7 +57,7 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  *           For example an {@link EntityType} or {@link RelationType} or {@link Role}
  */
 abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImpl implements OntologyConcept {
-    private final TypeLabel cachedLabel;
+    private final Label cachedLabel;
     private final TypeId cachedLabelId;
 
     private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
@@ -66,7 +66,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
 
     OntologyConceptImpl(VertexElement vertexElement) {
         super(vertexElement);
-        cachedLabel = TypeLabel.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
+        cachedLabel = Label.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
         cachedLabelId = TypeId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
     }
 
@@ -95,7 +95,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      * @return The label of this ontological element
      */
     @Override
-    public TypeLabel getLabel() {
+    public Label getLabel() {
         return cachedLabel;
     }
 

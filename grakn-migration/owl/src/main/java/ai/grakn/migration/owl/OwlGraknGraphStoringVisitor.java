@@ -20,11 +20,11 @@ package ai.grakn.migration.owl;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import javafx.util.Pair;
@@ -192,7 +192,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         RelationType subRelation = migrator.relation(axiom.getSubProperty().asOWLObjectProperty());
         RelationType superRelation = migrator.relation(axiom.getSuperProperty().asOWLObjectProperty());
 
-        Map<TypeLabel, TypeLabel> roleMap = new HashMap<>();
+        Map<Label, Label> roleMap = new HashMap<>();
         roleMap.put(migrator.namer().subjectRole(superRelation.getLabel()), migrator.namer().subjectRole(subRelation.getLabel()));
         roleMap.put(migrator.namer().objectRole(superRelation.getLabel()), migrator.namer().objectRole(subRelation.getLabel()));
         ReasonerUtils.createSubPropertyRule(superRelation, subRelation, roleMap, migrator.graph());
@@ -227,7 +227,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
             properties.forEach(prop -> {
                 RelationType eqRelation = migrator.relation(prop.asOWLObjectProperty());
                 if (!relation.equals(eqRelation)) {
-                    Map<TypeLabel, TypeLabel> roleMap = new HashMap<>();
+                    Map<Label, Label> roleMap = new HashMap<>();
                     roleMap.put(migrator.namer().subjectRole(relation.getLabel()),
                             migrator.namer().subjectRole(eqRelation.getLabel()));
                     roleMap.put(migrator.namer().objectRole(relation.getLabel()),
@@ -247,12 +247,12 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         RelationType relation = migrator.relation(axiom.getFirstProperty().asOWLObjectProperty());
         RelationType inverseRelation = migrator.relation(axiom.getSecondProperty().asOWLObjectProperty());
 
-        Map<TypeLabel, TypeLabel> roleMapFD = new HashMap<>();
+        Map<Label, Label> roleMapFD = new HashMap<>();
         roleMapFD.put(migrator.namer().subjectRole(relation.getLabel()), migrator.namer().objectRole(inverseRelation.getLabel()));
         roleMapFD.put(migrator.namer().objectRole(relation.getLabel()), migrator.namer().subjectRole(inverseRelation.getLabel()));
         ReasonerUtils.createSubPropertyRule(relation, inverseRelation, roleMapFD, migrator.graph());
 
-        Map<TypeLabel, TypeLabel> roleMapBD = new HashMap<>();
+        Map<Label, Label> roleMapBD = new HashMap<>();
         roleMapBD.put(migrator.namer().subjectRole(inverseRelation.getLabel()), migrator.namer().objectRole(relation.getLabel()));
         roleMapBD.put(migrator.namer().objectRole(inverseRelation.getLabel()), migrator.namer().subjectRole(relation.getLabel()));
         ReasonerUtils.createSubPropertyRule(inverseRelation, relation, roleMapBD, migrator.graph());
@@ -293,7 +293,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
             return null;
         }
         RelationType superRelation = migrator.relation(axiom.getSuperProperty().asOWLObjectProperty());
-        LinkedHashMap<RelationType, Pair<TypeLabel, TypeLabel>> chain = new LinkedHashMap<>();
+        LinkedHashMap<RelationType, Pair<Label, Label>> chain = new LinkedHashMap<>();
 
         axiom.getPropertyChain().forEach(property -> {
             RelationType relation = migrator.relation(property.asOWLObjectProperty());

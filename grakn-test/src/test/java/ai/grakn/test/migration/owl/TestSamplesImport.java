@@ -20,10 +20,10 @@ package ai.grakn.test.migration.owl;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.migration.owl.OwlModel;
 import org.junit.Assert;
@@ -110,7 +110,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             Assert.assertNotNull(author);
             final Entity work = getEntity("eHamlet");
             Assert.assertNotNull(work);
-            assertRelationBetweenInstancesExists(graph, work, author, TypeLabel.of("op-wrote"));
+            assertRelationBetweenInstancesExists(graph, work, author, Label.of("op-wrote"));
             Assert.assertTrue(!ReasonerUtils.getRules(graph).isEmpty());
         }
         catch (Throwable t) {
@@ -175,12 +175,12 @@ public class TestSamplesImport extends TestOwlGraknBase {
             assertTrue(item1.resources().stream().anyMatch(r -> r.getValue().equals("First Item")));
             item1.resources().forEach(System.out::println);
             Entity item2 = getEntity("eItem2");
-            Role subjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(TypeLabel.of("op-related")));
-            Role objectRole = graph.getOntologyConcept(migrator.namer().objectRole(TypeLabel.of("op-related")));
+            Role subjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(Label.of("op-related")));
+            Role objectRole = graph.getOntologyConcept(migrator.namer().objectRole(Label.of("op-related")));
             assertTrue(item2.relations(subjectRole).stream().anyMatch(
                     relation -> item1.equals(relation.rolePlayers(objectRole).iterator().next())));
-            Role catsubjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(TypeLabel.of("op-hasCategory")));
-            Role catobjectRole = graph.getOntologyConcept(migrator.namer().objectRole(TypeLabel.of("op-hasCategory")));
+            Role catsubjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(Label.of("op-hasCategory")));
+            Role catobjectRole = graph.getOntologyConcept(migrator.namer().objectRole(Label.of("op-hasCategory")));
             assertTrue(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("tCategory")));
             assertTrue(catsubjectRole.playedByTypes().contains(migrator.graph().getEntityType("tThing")));
             //Assert.assertFalse(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("Thing")));

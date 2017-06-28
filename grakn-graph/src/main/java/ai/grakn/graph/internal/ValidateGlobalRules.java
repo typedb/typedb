@@ -19,13 +19,13 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -191,12 +191,12 @@ class ValidateGlobalRules {
 
         Collection<Role> superRelates = superRelationType.relates();
         Collection<Role> relates = relationType.relates();
-        Set<TypeLabel> relatesLabels = relates.stream().map(OntologyConcept::getLabel).collect(Collectors.toSet());
+        Set<Label> relatesLabels = relates.stream().map(OntologyConcept::getLabel).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationTypes is the sub of a role which is in the relates of it's supers
         if(!superRelationType.isAbstract()) {
-            Set<TypeLabel> allSuperRolesPlayed = new HashSet<>();
+            Set<Label> allSuperRolesPlayed = new HashSet<>();
             superRelationType.superSet().forEach(rel -> rel.relates().forEach(roleType -> allSuperRolesPlayed.add(roleType.getLabel())));
 
             for (Role relate : relates) {

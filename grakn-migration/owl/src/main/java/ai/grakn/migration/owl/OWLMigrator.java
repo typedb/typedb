@@ -26,7 +26,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
@@ -139,7 +139,7 @@ public class OWLMigrator {
         Entity current = getEntity(id, owlIriResource());
         if(current != null) return current;
 
-        TypeLabel hasIriResourceId = TypeLabel.of(OwlModel.IRI.owlname());
+        Label hasIriResourceId = Label.of(OwlModel.IRI.owlname());
         ResourceType<String> iriResource = owlIriResource();
         Role hasIriOwner = entityRole(type, iriResource);
         Role hasIriValue = resourceRole(iriResource);

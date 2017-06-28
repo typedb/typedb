@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
@@ -52,15 +52,15 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         if (!selectedTypesHaveInstance()) return (T) Collections.emptyMap();
 
         ComputerResult result;
-        Set<TypeLabel> withResourceRelationTypes = getHasResourceRelationTypes();
-        withResourceRelationTypes.addAll(subTypeLabels);
+        Set<Label> withResourceRelationTypes = getHasResourceRelationTypes();
+        withResourceRelationTypes.addAll(subLabels);
 
         String randomId = getRandomJobId();
 
         Set<TypeId> withResourceRelationTypeIds =
                 withResourceRelationTypes.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
         Set<TypeId> subTypeIds =
-                subTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+                subLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
 
         if (members) {
             if (anySize) {
@@ -119,8 +119,8 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     }
 
     @Override
-    public ClusterQuery<T> in(Collection<TypeLabel> subTypeLabels) {
-        return (ClusterQuery<T>) super.in(subTypeLabels);
+    public ClusterQuery<T> in(Collection<Label> subLabels) {
+        return (ClusterQuery<T>) super.in(subLabels);
     }
 
     @Override

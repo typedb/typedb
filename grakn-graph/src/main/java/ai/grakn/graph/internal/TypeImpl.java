@@ -19,12 +19,12 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
@@ -405,16 +405,16 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
             throw GraphOperationException.metaTypeImmutable(resourceType.getLabel());
         }
 
-        TypeLabel resourceTypeLabel = resourceType.getLabel();
-        Role ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(resourceTypeLabel));
-        Role valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(resourceTypeLabel));
-        RelationType relationType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceTypeLabel)).
+        Label resourceLabel = resourceType.getLabel();
+        Role ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(resourceLabel));
+        Role valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(resourceLabel));
+        RelationType relationType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceLabel)).
                 relates(ownerRole).
                 relates(valueRole);
 
         //Linking with ako structure if present
         ResourceType resourceTypeSuper = resourceType.superType();
-        TypeLabel superLabel = resourceTypeSuper.getLabel();
+        Label superLabel = resourceTypeSuper.getLabel();
         if(!Schema.MetaSchema.RESOURCE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
             Role ownerRoleSuper = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
             Role valueRoleSuper = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(superLabel));

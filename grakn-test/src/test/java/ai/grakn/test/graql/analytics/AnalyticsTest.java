@@ -23,11 +23,11 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
@@ -75,8 +75,8 @@ public class AnalyticsTest {
     @Test
     public void testInferredResourceRelation() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            TypeLabel resourceTypeLabel = TypeLabel.of("degree");
-            ResourceType<Long> degree = graph.putResourceType(resourceTypeLabel, ResourceType.DataType.LONG);
+            Label resourceLabel = Label.of("degree");
+            ResourceType<Long> degree = graph.putResourceType(resourceLabel, ResourceType.DataType.LONG);
             EntityType thingy = graph.putEntityType("thingy");
             thingy.resource(degree);
 
@@ -102,7 +102,7 @@ public class AnalyticsTest {
     public void testNullResourceDoesntBreakAnalytics() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // make slightly odd graph
-            TypeLabel resourceTypeId = TypeLabel.of("degree");
+            Label resourceTypeId = Label.of("degree");
             EntityType thingy = graph.putEntityType("thingy");
 
             graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);

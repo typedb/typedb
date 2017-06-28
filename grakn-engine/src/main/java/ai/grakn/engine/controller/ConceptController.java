@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
 import io.swagger.annotations.ApiImplicitParam;
@@ -151,7 +151,7 @@ public class ConceptController {
     private List<String> subLabels(OntologyConcept ontologyConcept) {
         return ontologyConcept.subTypes().stream().
                 map(OntologyConcept::getLabel).
-                map(TypeLabel::getValue).collect(toList());
+                map(Label::getValue).collect(toList());
     }
 
     /**

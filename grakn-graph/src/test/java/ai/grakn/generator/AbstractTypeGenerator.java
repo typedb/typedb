@@ -21,7 +21,7 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -71,7 +71,7 @@ public abstract class AbstractTypeGenerator<T extends OntologyConcept> extends F
         }
 
         if (types.isEmpty() && includeNonMeta()) {
-            TypeLabel label = genFromGraph(TypeLabels.class).mustBeUnused().generate(random, status);
+            Label label = genFromGraph(TypeLabels.class).mustBeUnused().generate(random, status);
             assert graph().getOntologyConcept(label) == null;
             return newType(label);
         } else {
@@ -79,7 +79,7 @@ public abstract class AbstractTypeGenerator<T extends OntologyConcept> extends F
         }
     }
 
-    protected abstract T newType(TypeLabel label);
+    protected abstract T newType(Label label);
 
     protected abstract T metaType();
 

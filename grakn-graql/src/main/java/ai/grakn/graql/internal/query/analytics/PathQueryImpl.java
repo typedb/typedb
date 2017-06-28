@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
@@ -69,7 +69,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
         ComputerResult result;
 
         Set<TypeId> subTypeIds =
-                subTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+                subLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
 
         try {
             result = getGraphComputer().compute(
@@ -123,8 +123,8 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     }
 
     @Override
-    public PathQuery in(Collection<TypeLabel> subTypeLabels) {
-        return (PathQuery) super.in(subTypeLabels);
+    public PathQuery in(Collection<Label> subLabels) {
+        return (PathQuery) super.in(subLabels);
     }
 
     @Override

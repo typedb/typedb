@@ -25,7 +25,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
@@ -162,7 +162,7 @@ public class TypePropertyTest {
     @Property
     public void whenCallingGetLabel_TheResultCanBeUsedToRetrieveTheSameType(
             @Open GraknGraph graph, @FromGraph Type type) {
-        TypeLabel label = type.getLabel();
+        Label label = type.getLabel();
         assertEquals(type, graph.getOntologyConcept(label));
     }
 

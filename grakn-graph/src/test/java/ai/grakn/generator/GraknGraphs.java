@@ -26,6 +26,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
@@ -36,7 +37,6 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableList;
@@ -151,32 +151,32 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     // A list of methods that will mutate the graph in some random way when called
     private final ImmutableList<Runnable> mutators = ImmutableList.of(
             () -> {
-                TypeLabel typeLabel = typeLabel();
+                Label label = typeLabel();
                 EntityType superType = entityType();
-                EntityType entityType = graph.putEntityType(typeLabel).superType(superType);
-                summaryAssign(entityType, "graph", "putEntityType", typeLabel);
+                EntityType entityType = graph.putEntityType(label).superType(superType);
+                summaryAssign(entityType, "graph", "putEntityType", label);
                 summary(entityType, "superType", superType);
             },
             () -> {
-                TypeLabel typeLabel = typeLabel();
+                Label label = typeLabel();
                 ResourceType.DataType dataType = gen(ResourceType.DataType.class);
                 ResourceType superType = resourceType();
-                ResourceType resourceType = graph.putResourceType(typeLabel, dataType).superType(superType);
-                summaryAssign(resourceType, "graph", "putResourceType", typeLabel, dataType);
+                ResourceType resourceType = graph.putResourceType(label, dataType).superType(superType);
+                summaryAssign(resourceType, "graph", "putResourceType", label, dataType);
                 summary(resourceType, "superType", superType);
             },
             () -> {
-                TypeLabel typeLabel = typeLabel();
+                Label label = typeLabel();
                 Role superType = roleType();
-                Role role = graph.putRoleType(typeLabel).superType(superType);
-                summaryAssign(role, "graph", "putRoleType", typeLabel);
+                Role role = graph.putRoleType(label).superType(superType);
+                summaryAssign(role, "graph", "putRoleType", label);
                 summary(role, "superType", superType);
             },
             () -> {
-                TypeLabel typeLabel = typeLabel();
+                Label label = typeLabel();
                 RelationType superType = relationType();
-                RelationType relationType = graph.putRelationType(typeLabel).superType(superType);
-                summaryAssign(relationType, "graph", "putRelationType", typeLabel);
+                RelationType relationType = graph.putRelationType(label).superType(superType);
+                summaryAssign(relationType, "graph", "putRelationType", label);
                 summary(relationType, "superType", superType);
             },
             () -> {
@@ -307,14 +307,14 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         } else if (object instanceof Thing) {
             Thing thing = (Thing) object;
             return summaryFormat(thing.type()) + thing.getId().getValue();
-        } else if (object instanceof TypeLabel) {
-            return valueToString(((TypeLabel) object).getValue());
+        } else if (object instanceof Label) {
+            return valueToString(((Label) object).getValue());
         } else {
             return object.toString();
         }
     }
 
-    private TypeLabel typeLabel() {
+    private Label typeLabel() {
         return gen().make(TypeLabels.class, gen().make(MetasyntacticStrings.class)).generate(random, status);
     }
 

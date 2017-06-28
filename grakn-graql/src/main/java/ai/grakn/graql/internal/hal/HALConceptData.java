@@ -20,13 +20,13 @@ package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.theoryinpractise.halbuilder.api.Representation;
@@ -66,13 +66,13 @@ public class HALConceptData {
     private final String keyspace;
 
     private final boolean embedType;
-    private final Set<TypeLabel> typesInQuery;
+    private final Set<Label> typesInQuery;
 
     private final int offset;
     private final int limit;
 
 
-    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<TypeLabel> typesInQuery, String keyspace, int offset, int limit){
+    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<Label> typesInQuery, String keyspace, int offset, int limit){
 
         embedType = embedTypeParam;
         this.typesInQuery = typesInQuery;
@@ -172,7 +172,7 @@ public class HALConceptData {
     }
 
     private void generateOwnerInstances(Representation halResource, Resource<?> conceptResource, int separationDegree) {
-        final TypeLabel roleType = conceptResource.type().getLabel();
+        final Label roleType = conceptResource.type().getLabel();
         Stream<Thing> ownersStream = conceptResource.ownerInstances().stream().skip(offset);
         if (limit >= 0) ownersStream = ownersStream.limit(limit);
         ownersStream.forEach(instance -> {
@@ -220,7 +220,7 @@ public class HALConceptData {
         });
     }
 
-    private void attachRelation(Representation halResource, Concept rel, TypeLabel role, int separationDegree) {
+    private void attachRelation(Representation halResource, Concept rel, Label role, int separationDegree) {
         Representation relationResource = factory.newRepresentation(resourceLinkPrefix + rel.getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
         handleConcept(relationResource, rel, separationDegree - 1);
@@ -248,7 +248,7 @@ public class HALConceptData {
     }
 
     private void embedRelationsNotConnectedToResources(Representation halResource, Concept concept, Relation relation, int separationDegree) {
-        TypeLabel rolePlayedByCurrentConcept = null;
+        Label rolePlayedByCurrentConcept = null;
         boolean isResource = false;
         for (Map.Entry<Role, Set<Thing>> entry : relation.allRolePlayers().entrySet()) {
             for (Thing thing : entry.getValue()) {
