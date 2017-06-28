@@ -57,8 +57,8 @@ public class OntologyMutationTest extends GraphTestBase{
         graknGraph.putRelationType("car being driven by").relates(driven).relates(driver);
 
         person = graknGraph.putEntityType("Person").plays(husband).plays(wife);
-        man = graknGraph.putEntityType("Man").superType(person);
-        woman = graknGraph.putEntityType("Woman").superType(person);
+        man = graknGraph.putEntityType("Man").sup(person);
+        woman = graknGraph.putEntityType("Woman").sup(person);
         car = graknGraph.putEntityType("Car");
 
         alice = woman.addEntity();
@@ -87,7 +87,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
     @Test
     public void whenChanginSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidGraphException {
-        man.superType(car);
+        man.sup(car);
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(VALIDATION_CASTING.getMessage(man.getLabel(), bob.getId(), husband.getLabel()));
@@ -199,7 +199,7 @@ public class OntologyMutationTest extends GraphTestBase{
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
-        entityType1.superType(entityType2);
+        entityType1.sup(entityType2);
     }
 
 
@@ -243,7 +243,7 @@ public class OntologyMutationTest extends GraphTestBase{
         //Create initial Ontology
         ResourceType<String> name = graknGraph.putResourceType("name", ResourceType.DataType.STRING);
         EntityType person = graknGraph.putEntityType("perspn").resource(name);
-        EntityType animal = graknGraph.putEntityType("animal").superType(person);
+        EntityType animal = graknGraph.putEntityType("animal").sup(person);
         Resource bob = name.putResource("Bob");
         person.addEntity().resource(bob);
         graknGraph.commit();

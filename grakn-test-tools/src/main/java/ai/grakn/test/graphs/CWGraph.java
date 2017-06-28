@@ -101,7 +101,7 @@ public class CWGraph extends TestGraph {
                 .resource(propulsion);
 
         graph.putEntityType("missile")
-                .superType(weapon)
+                .sup(weapon)
                 .plays(transactionItem)
                 .resource(key);
 

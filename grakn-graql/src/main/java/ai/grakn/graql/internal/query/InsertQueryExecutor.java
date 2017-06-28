@@ -272,15 +272,15 @@ public class InsertQueryExecutor {
         OntologyConcept superConcept = getConcept(sub.getSuperType()).asOntologyConcept();
 
         if (superConcept.isEntityType()) {
-            return graph.putEntityType(label).superType(superConcept.asEntityType());
+            return graph.putEntityType(label).sup(superConcept.asEntityType());
         } else if (superConcept.isRelationType()) {
-            return graph.putRelationType(label).superType(superConcept.asRelationType());
+            return graph.putRelationType(label).sup(superConcept.asRelationType());
         } else if (superConcept.isRoleType()) {
             return graph.putRole(label).sup(superConcept.asRoleType());
         } else if (superConcept.isResourceType()) {
-            return graph.putResourceType(label, getDataType(var)).superType(superConcept.asResourceType());
+            return graph.putResourceType(label, getDataType(var)).sup(superConcept.asResourceType());
         } else if (superConcept.isRuleType()) {
-            return graph.putRuleType(label).superType(superConcept.asRuleType());
+            return graph.putRuleType(label).sup(superConcept.asRuleType());
         } else {
             throw GraqlQueryException.insertMetaType(label, superConcept);
         }

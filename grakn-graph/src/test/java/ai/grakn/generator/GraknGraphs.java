@@ -153,7 +153,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             () -> {
                 Label label = typeLabel();
                 EntityType superType = entityType();
-                EntityType entityType = graph.putEntityType(label).superType(superType);
+                EntityType entityType = graph.putEntityType(label).sup(superType);
                 summaryAssign(entityType, "graph", "putEntityType", label);
                 summary(entityType, "superType", superType);
             },
@@ -161,7 +161,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 Label label = typeLabel();
                 ResourceType.DataType dataType = gen(ResourceType.DataType.class);
                 ResourceType superType = resourceType();
-                ResourceType resourceType = graph.putResourceType(label, dataType).superType(superType);
+                ResourceType resourceType = graph.putResourceType(label, dataType).sup(superType);
                 summaryAssign(resourceType, "graph", "putResourceType", label, dataType);
                 summary(resourceType, "superType", superType);
             },
@@ -175,7 +175,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             () -> {
                 Label label = typeLabel();
                 RelationType superType = relationType();
-                RelationType relationType = graph.putRelationType(label).superType(superType);
+                RelationType relationType = graph.putRelationType(label).sup(superType);
                 summaryAssign(relationType, "graph", "putRelationType", label);
                 summary(relationType, "superType", superType);
             },
@@ -211,7 +211,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             () -> {
                 EntityType entityType1 = entityType();
                 EntityType entityType2 = entityType();
-                entityType1.superType(entityType2);
+                entityType1.sup(entityType2);
                 summary(entityType1, "superType", entityType2);
             },
             () -> {
@@ -228,7 +228,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             () -> {
                 RelationType relationType1 = relationType();
                 RelationType relationType2 = relationType();
-                relationType1.superType(relationType2);
+                relationType1.sup(relationType2);
                 summary(relationType1, "superType", relationType2);
             },
             () -> {
@@ -245,7 +245,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             () -> {
                 ResourceType resourceType1 = resourceType();
                 ResourceType resourceType2 = resourceType();
-                resourceType1.superType(resourceType2);
+                resourceType1.sup(resourceType2);
                 summary(resourceType1, "superType", resourceType2);
             },
             () -> {
@@ -258,7 +258,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             () -> {
                 RuleType ruleType1 = ruleType();
                 RuleType ruleType2 = ruleType();
-                ruleType1.superType(ruleType2);
+                ruleType1.sup(ruleType2);
                 summary(ruleType1, "superType", ruleType2);
             },
             //TODO: re-enable when grakn-graph can create graql constructs

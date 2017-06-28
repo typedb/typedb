@@ -108,7 +108,7 @@ public class TxCacheTest extends GraphTestBase{
 
         assertThat(graknGraph.txCache().getModifiedCastings(), is(empty()));
 
-        t1.superType(t2);
+        t1.sup(t2);
         assertTrue(graknGraph.txCache().getModifiedCastings().containsAll(relation.castingsRelation().collect(Collectors.toSet())));
     }
 
@@ -250,7 +250,7 @@ public class TxCacheTest extends GraphTestBase{
     @Test
     public void whenMutatingSuperTypeOfConceptCreatedInAnotherTransaction_EnsureTransactionBoundConceptIsMutated(){
         EntityType e1 = graknGraph.putEntityType("e1");
-        EntityType e2 = graknGraph.putEntityType("e2").superType(e1);
+        EntityType e2 = graknGraph.putEntityType("e2").sup(e1);
         EntityType e3 = graknGraph.putEntityType("e3");
         graknGraph.commit();
 
@@ -259,7 +259,7 @@ public class TxCacheTest extends GraphTestBase{
         assertTxBoundConceptMatches(e2, Type::sup, is(e1));
 
         //Mutate Super Type
-        e2.superType(e3);
+        e2.sup(e3);
         assertTxBoundConceptMatches(e2, Type::sup, is(e3));
     }
 

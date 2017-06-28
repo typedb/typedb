@@ -66,7 +66,7 @@ public interface ResourceType<D> extends Type {
      * @param type The super type of this ResourceType.
      * @return The ResourceType itself.
      */
-    ResourceType<D> superType(ResourceType<D> type);
+    ResourceType<D> sup(ResourceType<D> type);
 
     /**
      * Adds another subtype to this type
@@ -74,7 +74,7 @@ public interface ResourceType<D> extends Type {
      * @param type The sub type of this resource type
      * @return The ResourceType itself
      */
-    ResourceType<D> subType(ResourceType<D> type);
+    ResourceType<D> sub(ResourceType<D> type);
 
     /**
      * Sets the Role which instances of this ResourceType may play.

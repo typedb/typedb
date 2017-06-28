@@ -70,7 +70,7 @@ public class MovieGraph extends TestGraph {
 
         productionBeingDirected = graph.putRole("production-being-directed").sup(work);
         director = graph.putRole("director").sup(author);
-        directedBy = graph.putRelationType("directed-by").superType(authoredBy)
+        directedBy = graph.putRelationType("directed-by").sup(authoredBy)
                 .relates(productionBeingDirected).relates(director);
 
         productionWithCast = graph.putRole("production-with-cast");
@@ -108,9 +108,9 @@ public class MovieGraph extends TestGraph {
         production.resource(releaseDate);
         production.resource(runtime);
 
-        movie = graph.putEntityType("movie").superType(production);
+        movie = graph.putEntityType("movie").sup(production);
 
-        graph.putEntityType("tv-show").superType(production);
+        graph.putEntityType("tv-show").sup(production);
 
         person = graph.putEntityType("person")
                 .plays(director).plays(actor).plays(characterBeingPlayed);

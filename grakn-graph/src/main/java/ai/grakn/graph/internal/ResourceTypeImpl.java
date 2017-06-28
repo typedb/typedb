@@ -60,7 +60,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      * can be applied to all the existing instances.
      */
     @Override
-    public ResourceType<D> superType(ResourceType<D> superType){
+    public ResourceType<D> sup(ResourceType<D> superType){
         ((ResourceTypeImpl<D>) superType).superSet().forEach(st -> checkInstancesMatchRegex(st.getRegex()));
         return super.sup(superType);
     }

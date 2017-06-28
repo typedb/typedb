@@ -91,15 +91,15 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
         Concept superConcept = insertQueryExecutor.getConcept(superType);
 
         if (concept.isEntityType()) {
-            concept.asEntityType().superType(superConcept.asEntityType());
+            concept.asEntityType().sup(superConcept.asEntityType());
         } else if (concept.isRelationType()) {
-            concept.asRelationType().superType(superConcept.asRelationType());
+            concept.asRelationType().sup(superConcept.asRelationType());
         } else if (concept.isRoleType()) {
             concept.asRoleType().sup(superConcept.asRoleType());
         } else if (concept.isResourceType()) {
-            concept.asResourceType().superType(superConcept.asResourceType());
+            concept.asResourceType().sup(superConcept.asResourceType());
         } else if (concept.isRuleType()) {
-            concept.asRuleType().superType(superConcept.asRuleType());
+            concept.asRuleType().sup(superConcept.asRuleType());
         } else {
             throw CommonUtil.unreachableStatement("Can't recognize type " + concept);
         }

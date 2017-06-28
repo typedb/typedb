@@ -146,7 +146,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
             return null;
         }
         if (!supertype.equals(subtype.sup())) {
-            subtype.superType(supertype);
+            subtype.sup(supertype);
         }
         return null;
     }
@@ -199,7 +199,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
 
         migrator.subjectRole(subRelation).sup(migrator.subjectRole(superRelation));
         migrator.objectRole(subRelation).sup(migrator.objectRole(superRelation));
-        subRelation.superType(superRelation);
+        subRelation.sup(superRelation);
         return null;
     }
 
@@ -210,7 +210,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         }
         RelationType subRelation = migrator.relation(axiom.getSubProperty().asOWLDataProperty());
         RelationType superRelation = migrator.relation(axiom.getSuperProperty().asOWLDataProperty());
-        subRelation.superType(superRelation);
+        subRelation.sup(superRelation);
         return null;
     }
 

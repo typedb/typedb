@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import ai.grakn.exception.GraphOperationException;
+
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
@@ -52,7 +54,7 @@ public interface RelationType extends Type {
      * @param type The supertype of this RelationType
      * @return  The RelationType itself.
      */
-    RelationType superType(RelationType type);
+    RelationType sup(RelationType type);
 
     /**
      * Adds another subtype to this type
@@ -60,7 +62,7 @@ public interface RelationType extends Type {
      * @param type The sub type of this relation type
      * @return The RelationType itself
      */
-    RelationType subType(RelationType type);
+    RelationType sub(RelationType type);
 
     /**
      * Classifies the type to a specific scope. This allows you to optionally categorise types.

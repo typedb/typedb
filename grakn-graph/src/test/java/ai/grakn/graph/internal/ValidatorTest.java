@@ -195,8 +195,8 @@ public class ValidatorTest extends GraphTestBase{
         Role mother = graknGraph.putRole("mother").sup(parent);
 
         EntityType person = graknGraph.putEntityType("person").plays(relative).plays(parent);
-        graknGraph.putEntityType("man").superType(person).plays(father);
-        graknGraph.putEntityType("woman").superType(person).plays(mother);
+        graknGraph.putEntityType("man").sup(person).plays(father);
+        graknGraph.putEntityType("woman").sup(person).plays(mother);
 
         Role child = graknGraph.putRole("child");
 
@@ -212,7 +212,7 @@ public class ValidatorTest extends GraphTestBase{
         Role child = graknGraph.putRole("child");
 
         EntityType company = graknGraph.putEntityType("company").plays(parent);
-        graknGraph.putEntityType("companySub").superType(company).plays(child);
+        graknGraph.putEntityType("companySub").sup(company).plays(child);
         graknGraph.putEntityType("person").plays(parent).plays(child);
 
         //Padding to make it valid
@@ -228,8 +228,8 @@ public class ValidatorTest extends GraphTestBase{
         Role child = graknGraph.putRole("child");
 
         EntityType person = graknGraph.putEntityType("person").plays(parent).plays(child);
-        EntityType man = graknGraph.putEntityType("man").superType(person);
-        EntityType oneEyedMan = graknGraph.putEntityType("oneEyedMan").superType(man);
+        EntityType man = graknGraph.putEntityType("man").sup(person);
+        EntityType oneEyedMan = graknGraph.putEntityType("oneEyedMan").sup(man);
 
         RelationType parenthood = graknGraph.putRelationType("parenthood").relates(parent).relates(child);
 
@@ -343,8 +343,8 @@ public class ValidatorTest extends GraphTestBase{
                 plays(mChild);
 
         RelationType parenthood = graknGraph.putRelationType("parenthood").relates(parent).relates(pChild);
-        graknGraph.putRelationType("fatherhood").superType(parenthood).relates(father).relates(fChild);
-        graknGraph.putRelationType("motherhood").superType(parenthood).relates(mother).relates(mChild);
+        graknGraph.putRelationType("fatherhood").sup(parenthood).relates(father).relates(fChild);
+        graknGraph.putRelationType("motherhood").sup(parenthood).relates(mother).relates(mChild);
 
         graknGraph.commit();
     }
@@ -370,7 +370,7 @@ public class ValidatorTest extends GraphTestBase{
                 plays(fmChild);
 
         RelationType parenthood = graknGraph.putRelationType("parenthood").relates(parent).relates(pChild);
-        graknGraph.putRelationType("fathermotherhood").superType(parenthood).relates(father).relates(mother).relates(fmChild);
+        graknGraph.putRelationType("fathermotherhood").sup(parenthood).relates(father).relates(mother).relates(fmChild);
 
         graknGraph.commit();
     }
@@ -391,7 +391,7 @@ public class ValidatorTest extends GraphTestBase{
 
         RelationType parentrelativehood = graknGraph.putRelationType("parentrelativehood").
                 relates(relative).relates(parent).relates(pChild);
-        graknGraph.putRelationType("fatherhood").superType(parentrelativehood).
+        graknGraph.putRelationType("fatherhood").sup(parentrelativehood).
                 relates(father).relates(fChild);
 
         graknGraph.commit();
@@ -409,7 +409,7 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.putEntityType("context").plays(inContext);
 
         RelationType parenthood = graknGraph.putRelationType("parenthood").relates(parent).relates(pChild);
-        RelationType fatherhood = graknGraph.putRelationType("fatherhood").superType(parenthood).relates(father).relates(fChild).relates(inContext);
+        RelationType fatherhood = graknGraph.putRelationType("fatherhood").sup(parenthood).relates(father).relates(fChild).relates(inContext);
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(
@@ -430,7 +430,7 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.putEntityType("context").plays(inContext);
 
         RelationType parenthood = graknGraph.putRelationType("parenthood").relates(parent).relates(pChild).relates(inContext);
-        RelationType fatherhood = graknGraph.putRelationType("fatherhood").superType(parenthood).relates(father).relates(fChild);
+        RelationType fatherhood = graknGraph.putRelationType("fatherhood").sup(parenthood).relates(father).relates(fChild);
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(
@@ -445,7 +445,7 @@ public class ValidatorTest extends GraphTestBase{
         Role monoline = graknGraph.putRole("monoline").sup(insurer);
         Role insured = graknGraph.putRole("insured");
         RelationType insure = graknGraph.putRelationType("insure").relates(insurer).relates(insured);
-        graknGraph.putRelationType("monoline-insure").relates(monoline).relates(insured).superType(insure);
+        graknGraph.putRelationType("monoline-insure").relates(monoline).relates(insured).sup(insure);
         graknGraph.commit();
     }
 

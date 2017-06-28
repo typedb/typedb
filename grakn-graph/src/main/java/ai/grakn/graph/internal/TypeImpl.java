@@ -424,7 +424,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
             //Create the super type edges from sub role/relations to super roles/relation
             ownerRole.sup(ownerRoleSuper);
             valueRole.sup(valueRoleSuper);
-            relationType.superType(relationTypeSuper);
+            relationType.sup(relationTypeSuper);
 
             //Make sure the supertype resource is linked with the role as well
             ((ResourceTypeImpl) resourceTypeSuper).plays(valueRoleSuper);

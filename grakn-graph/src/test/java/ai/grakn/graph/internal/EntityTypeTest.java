@@ -63,10 +63,10 @@ public class EntityTypeTest extends GraphTestBase{
         EntityType middle3 = graknGraph.putEntityType("mid3'");
         EntityType bottom = graknGraph.putEntityType("bottom");
 
-        bottom.superType(middle1);
-        middle1.superType(top);
-        middle2.superType(top);
-        middle3.superType(top);
+        bottom.sup(middle1);
+        middle1.sup(top);
+        middle2.sup(top);
+        middle3.sup(top);
     }
 
     @Test
@@ -101,7 +101,7 @@ public class EntityTypeTest extends GraphTestBase{
     public void whenDeletingEntityTypeWithSubTypes_Throw() throws GraphOperationException{
         EntityType c1 = graknGraph.putEntityType("C1");
         EntityType c2 = graknGraph.putEntityType("C2");
-        c1.superType(c2);
+        c1.sup(c2);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(c2.getLabel()));
@@ -122,7 +122,7 @@ public class EntityTypeTest extends GraphTestBase{
         Role monsterEvil = graknGraph.putRole("evil monster").sup(monster);
 
         EntityType creature = graknGraph.putEntityType("creature").plays(monster).plays(animal);
-        EntityType creatureMysterious = graknGraph.putEntityType("mysterious creature").superType(creature).plays(monsterEvil);
+        EntityType creatureMysterious = graknGraph.putEntityType("mysterious creature").sup(creature).plays(monsterEvil);
 
         assertThat(creature.plays(), containsInAnyOrder(monster, animal));
         assertThat(creatureMysterious.plays(), containsInAnyOrder(monster, animal, monsterEvil));
@@ -132,9 +132,9 @@ public class EntityTypeTest extends GraphTestBase{
     public void whenGettingTheSuperSet_ReturnAllOfItsSuperTypes() throws Exception{
         EntityType entityType = graknGraph.admin().getMetaEntityType();
         EntityType c1 = graknGraph.putEntityType("c1");
-        EntityType c2 = graknGraph.putEntityType("c2").superType(c1);
-        EntityType c3 = graknGraph.putEntityType("c3").superType(c2);
-        EntityType c4 = graknGraph.putEntityType("c4").superType(c1);
+        EntityType c2 = graknGraph.putEntityType("c2").sup(c1);
+        EntityType c3 = graknGraph.putEntityType("c3").sup(c2);
+        EntityType c4 = graknGraph.putEntityType("c4").sup(c1);
 
         Set<EntityType> c1SuperTypes = ((TypeImpl) c1).superSet();
         Set<EntityType> c2SuperTypes = ((TypeImpl) c2).superSet();
@@ -150,9 +150,9 @@ public class EntityTypeTest extends GraphTestBase{
     @Test
     public void whenGettingTheSubTypesOfaType_ReturnAllSubTypes(){
         EntityType parent = graknGraph.putEntityType("parent");
-        EntityType c1 = graknGraph.putEntityType("c1").superType(parent);
-        EntityType c2 = graknGraph.putEntityType("c2").superType(parent);
-        EntityType c3 = graknGraph.putEntityType("c3").superType(c1);
+        EntityType c1 = graknGraph.putEntityType("c1").sup(parent);
+        EntityType c2 = graknGraph.putEntityType("c2").sup(parent);
+        EntityType c3 = graknGraph.putEntityType("c3").sup(c1);
 
         assertThat(parent.subs(), containsInAnyOrder(parent, c1, c2, c3));
         assertThat(c1.subs(), containsInAnyOrder(c1, c3));
@@ -163,8 +163,8 @@ public class EntityTypeTest extends GraphTestBase{
     @Test
     public void whenGettingTheSuperTypeOfType_ReturnSuperType(){
         EntityType c1 = graknGraph.putEntityType("c1");
-        EntityType c2 = graknGraph.putEntityType("c2").superType(c1);
-        EntityType c3 = graknGraph.putEntityType("c3").superType(c2);
+        EntityType c2 = graknGraph.putEntityType("c2").sup(c1);
+        EntityType c3 = graknGraph.putEntityType("c3").sup(c2);
 
         assertEquals(graknGraph.admin().getMetaEntityType(), c1.sup());
         assertEquals(c1, c2.sup());
@@ -195,8 +195,8 @@ public class EntityTypeTest extends GraphTestBase{
     @Test
     public void whenGettingTheInstancesOfType_ReturnAllInstances(){
         EntityType e1 = graknGraph.putEntityType("e1");
-        EntityType e2 = graknGraph.putEntityType("e2").superType(e1);
-        EntityType e3 = graknGraph.putEntityType("e3").superType(e1);
+        EntityType e2 = graknGraph.putEntityType("e2").sup(e1);
+        EntityType e3 = graknGraph.putEntityType("e3").sup(e1);
 
         Entity e2_child1 = e2.addEntity();
         Entity e2_child2 = e2.addEntity();
@@ -215,7 +215,7 @@ public class EntityTypeTest extends GraphTestBase{
         EntityType entityType = graknGraph.putEntityType("Entity");
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(entityType.getLabel(), entityType.getLabel()));
-        entityType.superType(entityType);
+        entityType.sup(entityType);
     }
 
     @Test
@@ -223,13 +223,13 @@ public class EntityTypeTest extends GraphTestBase{
         EntityType entityType1 = graknGraph.putEntityType("Entity1");
         EntityType entityType2 = graknGraph.putEntityType("Entity2");
         EntityType entityType3 = graknGraph.putEntityType("Entity3");
-        entityType1.superType(entityType2);
-        entityType2.superType(entityType3);
+        entityType1.sup(entityType2);
+        entityType2.sup(entityType3);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(entityType3.getLabel(), entityType1.getLabel()));
 
-        entityType3.superType(entityType1);
+        entityType3.sup(entityType1);
     }
 
     @Test
@@ -296,7 +296,7 @@ public class EntityTypeTest extends GraphTestBase{
         Label label = Label.of("Resource Type");
 
         ResourceType rtSuper = graknGraph.putResourceType(superLabel, ResourceType.DataType.STRING);
-        ResourceType rt = graknGraph.putResourceType(label, ResourceType.DataType.STRING).superType(rtSuper);
+        ResourceType rt = graknGraph.putResourceType(label, ResourceType.DataType.STRING).sup(rtSuper);
 
         entityType1.resource(rtSuper);
         entityType2.resource(rt);
@@ -343,7 +343,7 @@ public class EntityTypeTest extends GraphTestBase{
     @Test
     public void whenChangingSuperTypeBackToMetaType_EnsureTypeIsResetToMeta(){
         EntityType entityTypeA = graknGraph.putEntityType("entityTypeA");
-        EntityType entityTypeB = graknGraph.putEntityType("entityTypeB").superType(entityTypeA);
+        EntityType entityTypeB = graknGraph.putEntityType("entityTypeB").sup(entityTypeA);
         assertEquals(entityTypeA, entityTypeB.sup());
 
         //Making sure put does not effect super type
@@ -351,7 +351,7 @@ public class EntityTypeTest extends GraphTestBase{
         assertEquals(entityTypeA, entityTypeB.sup());
 
         //Changing super type back to meta explicitly
-        entityTypeB.superType(graknGraph.getMetaEntityType());
+        entityTypeB.sup(graknGraph.getMetaEntityType());
         assertEquals(graknGraph.getMetaEntityType(), entityTypeB.sup());
 
     }
@@ -359,18 +359,18 @@ public class EntityTypeTest extends GraphTestBase{
     @Test
     public void checkSubTypeCachingUpdatedCorrectlyWhenChangingSuperTypes(){
         EntityType e1 = graknGraph.putEntityType("entityType1");
-        EntityType e2 = graknGraph.putEntityType("entityType2").superType(e1);
-        EntityType e3 = graknGraph.putEntityType("entityType3").superType(e1);
-        EntityType e4 = graknGraph.putEntityType("entityType4").superType(e1);
+        EntityType e2 = graknGraph.putEntityType("entityType2").sup(e1);
+        EntityType e3 = graknGraph.putEntityType("entityType3").sup(e1);
+        EntityType e4 = graknGraph.putEntityType("entityType4").sup(e1);
         EntityType e5 = graknGraph.putEntityType("entityType5");
-        EntityType e6 = graknGraph.putEntityType("entityType6").superType(e5);
+        EntityType e6 = graknGraph.putEntityType("entityType6").sup(e5);
 
         assertThat(e1.subs(), containsInAnyOrder(e1, e2, e3, e4));
         assertThat(e5.subs(), containsInAnyOrder(e6, e5));
 
         //Now change subtypes
-        e6.superType(e1);
-        e3.superType(e5);
+        e6.sup(e1);
+        e3.sup(e5);
 
         assertThat(e1.subs(), containsInAnyOrder(e1, e2, e4, e6));
         assertThat(e5.subs(), containsInAnyOrder(e3, e5));

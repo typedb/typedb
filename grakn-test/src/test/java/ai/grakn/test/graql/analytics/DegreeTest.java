@@ -209,7 +209,7 @@ public class DegreeTest {
         graph.putRelationType("mans-best-friend").relates(pet).relates(owner);
         graph.putEntityType("person").plays(owner);
         EntityType animal = graph.putEntityType("animal").plays(pet);
-        EntityType dog = graph.putEntityType("dog").superType(animal);
+        EntityType dog = graph.putEntityType("dog").sup(animal);
         dog.addEntity();
         graph.commit();
 

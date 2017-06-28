@@ -158,7 +158,7 @@ public class OWLMigrator {
         EntityType type = graph.putEntityType(namer.classEntityTypeLabel(owlclass.getIRI()));
         EntityType thing = owlThingEntityType();
         if (Schema.MetaSchema.isMetaLabel(type.sup().getLabel()) && !type.equals(thing)) {
-            type.superType(thing);
+            type.sup(thing);
         }
         return type;
     }

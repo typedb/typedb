@@ -376,15 +376,15 @@ public class TypePropertyTest {
 
     private void setDirectSuperType(Type subType, Type superType) {
         if (subType.isEntityType()) {
-            subType.asEntityType().superType(superType.asEntityType());
+            subType.asEntityType().sup(superType.asEntityType());
         } else if (subType.isRelationType()) {
-            subType.asRelationType().superType(superType.asRelationType());
+            subType.asRelationType().sup(superType.asRelationType());
         } else if (subType.isRoleType()) {
             subType.asRoleType().sup(superType.asRoleType());
         } else if (subType.isResourceType()) {
-            subType.asResourceType().superType(superType.asResourceType());
+            subType.asResourceType().sup(superType.asResourceType());
         } else if (subType.isRuleType()) {
-            subType.asRuleType().superType(superType.asRuleType());
+            subType.asRuleType().sup(superType.asRuleType());
         } else {
             fail("unreachable");
         }
@@ -392,15 +392,15 @@ public class TypePropertyTest {
 
     private void addDirectSubType(Type superType, Type subType) {
         if (superType.isEntityType()) {
-            superType.asEntityType().subType(subType.asEntityType());
+            superType.asEntityType().sub(subType.asEntityType());
         } else if (superType.isRelationType()) {
-            superType.asRelationType().subType(subType.asRelationType());
+            superType.asRelationType().sub(subType.asRelationType());
         } else if (superType.isRoleType()) {
             superType.asRoleType().sub(subType.asRoleType());
         } else if (superType.isResourceType()) {
-            superType.asResourceType().subType(subType.asResourceType());
+            superType.asResourceType().sub(subType.asResourceType());
         } else if (superType.isRuleType()) {
-            superType.asRuleType().subType(subType.asRuleType());
+            superType.asRuleType().sub(subType.asRuleType());
         } else {
             fail("unreachable");
         }

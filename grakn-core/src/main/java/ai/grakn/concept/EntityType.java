@@ -56,7 +56,7 @@ public interface EntityType extends Type{
      * @throws GraphOperationException if this is a meta type
      * @throws GraphOperationException if the given supertype is already an indirect subtype of this type
      */
-    EntityType superType(EntityType type);
+    EntityType sup(EntityType type);
 
     /**
      * Adds another subtype to this type
@@ -67,7 +67,7 @@ public interface EntityType extends Type{
      * @throws GraphOperationException if the sub type is a meta type
      * @throws GraphOperationException if the given subtype is already an indirect supertype of this type
      */
-    EntityType subType(EntityType type);
+    EntityType sub(EntityType type);
 
     /**
      * Sets the Role which instances of this EntityType may play.

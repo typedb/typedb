@@ -71,18 +71,18 @@ public class GeoGraph extends TestGraph {
         geographicalObject.resource(key);
 
         continent = graph.putEntityType("continent")
-                .superType(geographicalObject)
+                .sup(geographicalObject)
                 .plays(entityLocation);
         country = graph.putEntityType("country")
-                .superType(geographicalObject)
+                .sup(geographicalObject)
                 .plays(geoEntity)
                 .plays(entityLocation);
         region = graph.putEntityType("region")
-                .superType(geographicalObject)
+                .sup(geographicalObject)
                 .plays(geoEntity)
                 .plays(entityLocation);
         city = graph.putEntityType("city")
-                .superType(geographicalObject)
+                .sup(geographicalObject)
                 .plays(geoEntity)
                 .plays(entityLocation);
         university = graph.putEntityType("university")
