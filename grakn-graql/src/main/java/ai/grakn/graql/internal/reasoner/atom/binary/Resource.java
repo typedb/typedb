@@ -86,6 +86,55 @@ public class Resource extends Binary{
     }
 
     @Override
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
+        hashCode = hashCode * 37 + this.getValueVariable().hashCode();
+        return hashCode;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        Binary a2 = (Binary) obj;
+        return Objects.equals(this.getTypeId(), a2.getTypeId())
+                && this.getVarName().equals(a2.getVarName())
+                && this.getValueVariable().equals(a2.getPredicateVariable());
+    }
+
+    @Override
+    public int equivalenceHashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + multiPredicateEquivalenceHashCode();
+        return hashCode;
+    }
+
+    private int multiPredicateEquivalenceHashCode(){
+        int hashCode = 0;
+        for (Predicate aMultiPredicate : multiPredicate) hashCode += aMultiPredicate.equivalenceHashCode();
+        return hashCode;
+    }
+
+    @Override
+    protected boolean hasEquivalentPredicatesWith(Binary at) {
+        if (!(at instanceof Resource)) return false;
+        Resource atom = (Resource) at;
+        if(this.getMultiPredicate().size() != atom.getMultiPredicate().size()) return false;
+        for (ValuePredicate predicate : getMultiPredicate()) {
+            Iterator<ValuePredicate> objIt = atom.getMultiPredicate().iterator();
+            boolean predicateHasEquivalent = false;
+            while (objIt.hasNext() && !predicateHasEquivalent) {
+                predicateHasEquivalent = predicate.isEquivalent(objIt.next());
+            }
+            if (!predicateHasEquivalent) return false;
+        }
+        return true;
+    }
+
+    @Override
     protected Var extractPredicateVariableName(VarPatternAdmin var){
         HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         VarPatternAdmin resVar = prop.getResource();
@@ -115,36 +164,6 @@ public class Resource extends Binary{
                 .collect(Collectors.toSet());
         vars.add(super.getPattern().asVar());
         return Patterns.conjunction(vars);
-    }
-
-    private int multiPredicateEquivalenceHashCode(){
-        int hashCode = 0;
-        for (Predicate aMultiPredicate : multiPredicate) hashCode += aMultiPredicate.equivalenceHashCode();
-        return hashCode;
-    }
-
-    @Override
-    public int equivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + multiPredicateEquivalenceHashCode();
-        return hashCode;
-    }
-
-    @Override
-    protected boolean hasEquivalentPredicatesWith(Binary at) {
-        if (!(at instanceof Resource)) return false;
-        Resource atom = (Resource) at;
-        if(this.getMultiPredicate().size() != atom.getMultiPredicate().size()) return false;
-        for (ValuePredicate predicate : getMultiPredicate()) {
-            Iterator<ValuePredicate> objIt = atom.getMultiPredicate().iterator();
-            boolean predicateHasEquivalent = false;
-            while (objIt.hasNext() && !predicateHasEquivalent) {
-                predicateHasEquivalent = predicate.isEquivalent(objIt.next());
-            }
-            if (!predicateHasEquivalent) return false;
-        }
-        return true;
     }
 
     @Override

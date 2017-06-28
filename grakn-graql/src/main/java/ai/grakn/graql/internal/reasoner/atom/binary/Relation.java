@@ -159,16 +159,6 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        Relation a2 = (Relation) obj;
-        return Objects.equals(this.getTypeId(), a2.getTypeId())
-                && this.getVarNames().equals(a2.getVarNames())
-                && getRelationPlayers().equals(a2.getRelationPlayers());
-    }
-
-    @Override
     public int hashCode() {
         if (hashCode == 0) {
             hashCode = 1;
@@ -176,6 +166,16 @@ public class Relation extends TypeAtom {
             hashCode = hashCode * 37 + getVarNames().hashCode();
         }
         return hashCode;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        Relation a2 = (Relation) obj;
+        return Objects.equals(this.getTypeId(), a2.getTypeId())
+                && this.getVarNames().equals(a2.getVarNames())
+                && getRelationPlayers().equals(a2.getRelationPlayers());
     }
 
     @Override

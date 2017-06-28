@@ -18,6 +18,9 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -47,23 +50,24 @@ import java.util.Set;
  */
 public abstract class Binary extends Atom {
     private Var predicateVariable;
+    private Type type = null;
+    private ConceptId typeId = null;
     private IdPredicate predicate = null;
 
     Binary(VarPatternAdmin pattern, IdPredicate p, ReasonerQuery par) {
         super(pattern, par);
         this.predicate = p;
-        /*
-        this.predicateVariable = p != null? p.getVarName() : Graql.var("");
-        */
-        //TODO remove and use above?
-        this.predicateVariable = extractPredicateVariableName(pattern);
-        this.typeId = getPredicate() != null? getPredicate().getPredicate() : null;
 
+        //TODO pass predicate var as parameter?
+        this.typeId = getPredicate() != null? getPredicate().getPredicate() : null;
+        this.predicateVariable = extractPredicateVariableName(pattern);
     }
 
     Binary(Binary a) {
         super(a);
-        this.predicateVariable = a.getPredicateVariable();
+        this.type = a.type;
+        this.typeId = a.typeId;
+        this.predicateVariable = a.predicateVariable;
         this.predicate = a.getPredicate() != null ? (IdPredicate) AtomicFactory.create(a.getPredicate(), getParentQuery()) : null;
     }
 
@@ -74,22 +78,22 @@ public abstract class Binary extends Atom {
     public IdPredicate getPredicate() { return predicate;}
 
     @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        hashCode = hashCode * 37 + this.predicateVariable.hashCode();
-        return hashCode;
+    public OntologyConcept getOntologyConcept(){
+        if (type == null && typeId != null) {
+            type = getParentQuery().graph().getConcept(typeId).asType();
+        }
+        return type;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        Binary a2 = (Binary) obj;
-        return Objects.equals(this.getTypeId(), a2.getTypeId())
-                && this.getVarName().equals(a2.getVarName())
-                && this.predicateVariable.equals(a2.getPredicateVariable());
+    public ConceptId getTypeId(){ return typeId;}
+
+    @Override
+    public int equivalenceHashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + (this.predicate != null ? this.predicate.equivalenceHashCode() : 0);
+        return hashCode;
     }
 
     @Override
@@ -99,6 +103,13 @@ public abstract class Binary extends Atom {
         Binary a2 = (Binary) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && hasEquivalentPredicatesWith(a2);
+    }
+
+    protected boolean hasEquivalentPredicatesWith(Binary atom) {
+        Predicate pred = getPredicate();
+        Predicate objPredicate = atom.getPredicate();
+        return (pred == null && objPredicate == null)
+                || (pred != null  && pred.isEquivalent(objPredicate));
     }
 
     @Override
@@ -112,21 +123,6 @@ public abstract class Binary extends Atom {
     public void setParentQuery(ReasonerQuery q) {
         super.setParentQuery(q);
         if (predicate != null) predicate.setParentQuery(q);
-    }
-
-    protected boolean hasEquivalentPredicatesWith(Binary atom) {
-        Predicate pred = getPredicate();
-        Predicate objPredicate = atom.getPredicate();
-        return (pred == null && objPredicate == null)
-                || (pred != null  && pred.isEquivalent(objPredicate));
-    }
-
-    @Override
-    public int equivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + (this.predicate != null ? this.predicate.equivalenceHashCode() : 0);
-        return hashCode;
     }
 
     @Override
