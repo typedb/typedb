@@ -242,7 +242,7 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when trying to create something using a label reserved by the system
      */
-    public static GraphOperationException reservedLabel(TypeLabel label){
+    public static GraphOperationException reservedLabel(Label label){
         return new GraphOperationException(RESERVED_WORD.getMessage(label.getValue()));
     }
 }
