@@ -39,6 +39,14 @@ public enum GraknSystemProperty {
     }
 
     /**
+     * Return the key identifying the system property
+     * @return the key identifying the system property
+     */
+    public String key() {
+        return key;
+    }
+
+    /**
      * Retrieve the value of the system property
      * @return the value of the system property, or null if the system property is not set
      */
