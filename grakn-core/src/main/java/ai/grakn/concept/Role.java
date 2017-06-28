@@ -38,15 +38,15 @@ public interface Role extends OntologyConcept {
     //------------------------------------- Modifiers ----------------------------------
 
     /**
-     * Sets the supertype of this Role.
+     * Sets the super of this Role.
      *
-     * @param type The supertype of this Role
+     * @param type The super of this Role
      * @return The Role itself
      */
     Role sup(Role type);
 
     /**
-     * Adds another subtype to this type
+     * Adds another sub to this type
      *
      * @param type The sub type of this role type
      * @return The Role itself
@@ -55,17 +55,17 @@ public interface Role extends OntologyConcept {
 
     //------------------------------------- Accessors ----------------------------------
     /**
-     * Returns the supertype of this Role.
+     * Returns the super of this Role.
      *
-     * @return The supertype of this Role
+     * @return The super of this Role
      */
     @Override
     Role sup();
 
     /**
-     * Returns the subtypes of this Role.
+     * Returns the sub of this Role.
      *
-     * @return The sub types of this Role
+     * @return The sub of this Role
      */
     @Override
     Collection<Role> subs();
