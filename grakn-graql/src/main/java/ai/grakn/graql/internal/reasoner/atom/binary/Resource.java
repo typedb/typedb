@@ -17,16 +17,16 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -37,7 +37,9 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
@@ -54,12 +56,19 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint
  * @author Kasper Piskorski
  *
  */
-public class Resource extends MultiPredicateBinary<ValuePredicate>{
+public class Resource extends Binary{
+    private final Var valueVariable;
+    private final Set<ValuePredicate> multiPredicate = new HashSet<>();
 
-    public Resource(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, Collections.emptySet(), par);}
-    public Resource(VarPatternAdmin pattern, Set<ValuePredicate> p, ReasonerQuery par){ super(pattern, p, par);}
+    public Resource(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, null, Collections.emptySet(), par);}
+    public Resource(VarPatternAdmin pattern, IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
+        super(pattern, idPred, par);
+        this.valueVariable = extractValueVariableName(pattern);
+        this.multiPredicate.addAll(ps);
+    }
     private Resource(Resource a) {
         super(a);
+        this.valueVariable = a.getValueVariable();
         Set<ValuePredicate> multiPredicate = getMultiPredicate();
         a.getMultiPredicate().stream()
                 .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
@@ -77,7 +86,53 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
-    protected boolean hasEquivalentPredicatesWith(BinaryBase at) {
+    protected Var extractPredicateVariableName(VarPatternAdmin var){
+        HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
+        VarPatternAdmin resVar = prop.getResource();
+        return resVar.getVarName().isUserDefinedName()? resVar.getVarName() : Graql.var("");
+    }
+
+    private Var extractValueVariableName(VarPatternAdmin var){
+        HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
+        VarPatternAdmin resVar = prop.getResource();
+        return resVar.getVarName().isUserDefinedName()? resVar.getVarName() : Graql.var("");
+    }
+
+    @Override
+    public void setParentQuery(ReasonerQuery q) {
+        super.setParentQuery(q);
+        multiPredicate.forEach(pred -> pred.setParentQuery(q));
+    }
+
+    public Var getValueVariable(){ return valueVariable;}
+    public Set<ValuePredicate> getMultiPredicate() { return multiPredicate;}
+
+    @Override
+    public PatternAdmin getCombinedPattern() {
+        Set<VarPatternAdmin> vars = getMultiPredicate().stream()
+                .map(Atomic::getPattern)
+                .map(PatternAdmin::asVar)
+                .collect(Collectors.toSet());
+        vars.add(super.getPattern().asVar());
+        return Patterns.conjunction(vars);
+    }
+
+    private int multiPredicateEquivalenceHashCode(){
+        int hashCode = 0;
+        for (Predicate aMultiPredicate : multiPredicate) hashCode += aMultiPredicate.equivalenceHashCode();
+        return hashCode;
+    }
+
+    @Override
+    public int equivalenceHashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + multiPredicateEquivalenceHashCode();
+        return hashCode;
+    }
+
+    @Override
+    protected boolean hasEquivalentPredicatesWith(Binary at) {
         if (!(at instanceof Resource)) return false;
         Resource atom = (Resource) at;
         if(this.getMultiPredicate().size() != atom.getMultiPredicate().size()) return false;
@@ -124,22 +179,8 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     @Override
     public Set<Var> getVarNames() {
         Set<Var> vars = super.getVarNames();
-        getMultiPredicate().stream().flatMap(p -> p.getVarNames().stream()).forEach(vars::add);
+        vars.add(getValueVariable());
         return vars;
-    }
-
-    @Override
-    protected ConceptId extractTypeId(VarPatternAdmin var) {
-        HasResourceProperty resProp = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
-        TypeLabel typeLabel = resProp != null? resProp.getType() : null;
-        return typeLabel != null ? getParentQuery().graph().getOntologyConcept(typeLabel).getId() : null;
-    }
-
-    @Override
-    protected Var extractValueVariableName(VarPatternAdmin var){
-        HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
-        VarPatternAdmin resVar = prop.getResource();
-        return resVar.getVarName().isUserDefinedName()? resVar.getVarName() : Graql.var("");
     }
 
     @Override
@@ -171,7 +212,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
         if (vps.isEmpty()) {
             if (subbedVars.contains(getVarName())
-                    || subbedVars.contains(getValueVariable())) {
+                    || subbedVars.contains(getPredicateVariable())) {
                     priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
             } else{
                     priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
@@ -217,11 +258,21 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
     @Override
     public Unifier getUnifier(Atom parentAtom) {
-        if (!(parentAtom instanceof TypeAtom)) return super.getUnifier(parentAtom);
+        if (!(parentAtom instanceof Resource)){
+            return new UnifierImpl(ImmutableMap.of(this.getValueVariable(), parentAtom.getVarName()));
+        }
+        Unifier unifier = super.getUnifier(parentAtom);
 
-        //case when parent is a type atom
-        Unifier unifier = new UnifierImpl();
-        unifier.addMapping(this.getValueVariable(), parentAtom.getVarName());
+        Resource parent = (Resource) parentAtom;
+        Var childValueVarName = this.getValueVariable();
+        Var parentValueVarName = parent.getValueVariable();
+
+        if (!childValueVarName.getValue().isEmpty()
+                && !parentValueVarName.getValue().isEmpty()
+                && !childValueVarName.equals(parentValueVarName)) {
+            unifier.addMapping(childValueVarName, parentValueVarName);
+        }
+
         return unifier;
     }
 

@@ -17,7 +17,6 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -63,6 +62,11 @@ public class TypeAtom extends Binary{
     protected TypeAtom(TypeAtom a) { super(a);}
 
     @Override
+    protected Var extractPredicateVariableName(VarPatternAdmin var) {
+        return var.getProperties().findFirst().get().getInnerVars().findFirst().get().getVarName();
+    }
+
+    @Override
     public int hashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
@@ -74,7 +78,7 @@ public class TypeAtom extends Binary{
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        BinaryBase a2 = (BinaryBase) obj;
+        Binary a2 = (Binary) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarName().equals(a2.getVarName());
     }
@@ -86,23 +90,13 @@ public class TypeAtom extends Binary{
     }
 
     @Override
-    protected ConceptId extractTypeId() {
-        return getPredicate() != null? getPredicate().getPredicate() : null;
-    }
-
-    @Override
-    protected Var extractValueVariableName(VarPatternAdmin var) {
-        return var.getProperties().findFirst().get().getInnerVars().findFirst().get().getVarName();
-    }
-
-    @Override
     public Atomic copy(){
         return new TypeAtom(this);
     }
 
     public Set<TypeAtom> unify(Unifier u){
         Collection<Var> vars = u.get(getVarName());
-        Var valueVar = getValueVariable();
+        Var valueVar = getPredicateVariable();
         return vars.isEmpty()?
                 Collections.singleton(this) :
                 vars.stream().map(v -> new TypeAtom(v, valueVar, getPredicate(), this.getParentQuery())).collect(Collectors.toSet());

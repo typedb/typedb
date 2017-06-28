@@ -209,7 +209,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return value variable name
      */
-    public abstract Var getValueVariable();
+    public abstract Var getPredicateVariable();
 
     /**
      * @return set of predicates relevant to this atom
@@ -234,7 +234,7 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<ValuePredicate> getValuePredicates(){
         return ((ReasonerQueryImpl) getParentQuery()).getValuePredicates().stream()
-                .filter(atom -> atom.getVarName().equals(getValueVariable()))
+                .filter(atom -> atom.getVarName().equals(getPredicateVariable()))
                 .collect(Collectors.toSet());
     }
 

@@ -105,6 +105,12 @@ public class Relation extends TypeAtom {
     }
 
     @Override
+    protected Var extractPredicateVariableName(VarPatternAdmin var) {
+        IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
+        return isaProp != null ? isaProp.getType().getVarName() : Graql.var("");
+    }
+
+    @Override
     public String toString(){
         String relationString = (isUserDefinedName()? getVarName() + " ": "") +
                 (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") +
@@ -121,12 +127,6 @@ public class Relation extends TypeAtom {
                             .forEach(relationPlayers::add));
         }
         return relationPlayers;
-    }
-
-    @Override
-    protected Var extractValueVariableName(VarPatternAdmin var) {
-        IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
-        return isaProp != null ? isaProp.getType().getVarName() : Graql.var("");
     }
 
     @Override
@@ -333,7 +333,7 @@ public class Relation extends TypeAtom {
      */
     public Relation addType(OntologyConcept  type) {
         ConceptId typeId = type.getId();
-        Var typeVariable = getValueVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getValueVariable();
+        Var typeVariable = getPredicateVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getPredicateVariable();
 
         VarPatternAdmin newPattern = getPattern().asVar().isa(typeVariable).admin();
         IdPredicate newPredicate = new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery());
@@ -475,7 +475,7 @@ public class Relation extends TypeAtom {
         if (!headAtom.isRelation()) return Collections.singleton(new UnifierImpl());
 
         //if this atom is a match all atom, add type from rule head and find unmapped roles
-        Relation relAtom = getValueVariable().getValue().isEmpty() ? this.addType(headAtom.getOntologyConcept()) : this;
+        Relation relAtom = getPredicateVariable().getValue().isEmpty() ? this.addType(headAtom.getOntologyConcept()) : this;
         List<Var> permuteVars = new ArrayList<>(relAtom.getNonSpecificRolePlayers());
         if (permuteVars.isEmpty()) return Collections.singleton(new UnifierImpl());
 
@@ -565,7 +565,7 @@ public class Relation extends TypeAtom {
                     rolePlayerMappings.add(new Pair<>(varName, metaRoleVar));
                 });
 
-        PatternAdmin newPattern = constructRelationVar(getVarName(), getValueVariable(), rolePlayerMappings);
+        PatternAdmin newPattern = constructRelationVar(getVarName(), getPredicateVariable(), rolePlayerMappings);
         return new Relation(newPattern.asVar(), getPredicate(), getParentQuery());
     }
 
