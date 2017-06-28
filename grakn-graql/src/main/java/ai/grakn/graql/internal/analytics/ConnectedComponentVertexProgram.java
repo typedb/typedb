@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeId;
+import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -54,7 +54,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public ConnectedComponentVertexProgram() {
     }
 
-    public ConnectedComponentVertexProgram(Set<TypeId> selectedTypes, String randomId) {
+    public ConnectedComponentVertexProgram(Set<LabelId> selectedTypes, String randomId) {
         this.selectedTypes = selectedTypes;
 
         clusterLabel = CLUSTER_LABEL + randomId;

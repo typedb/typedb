@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -47,19 +47,19 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-class RoleTypeImpl extends OntologyConceptImpl<RoleType> implements RoleType{
+class RoleImpl extends OntologyConceptImpl<Role> implements Role {
     private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
     private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RoleTypeImpl(VertexElement vertexElement) {
+    RoleImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    RoleTypeImpl(VertexElement vertexElement, RoleType type) {
+    RoleImpl(VertexElement vertexElement, Role type) {
         super(vertexElement, type);
     }
 
-    RoleTypeImpl(VertexElement vertexElement, RoleType type, Boolean isImplicit) {
+    RoleImpl(VertexElement vertexElement, Role type, Boolean isImplicit) {
         super(vertexElement, type, isImplicit);
     }
 
@@ -113,7 +113,7 @@ class RoleTypeImpl extends OntologyConceptImpl<RoleType> implements RoleType{
     @Override
     public Collection<Type> playedByTypes() {
         Set<Type> playedByTypes = new HashSet<>();
-        cachedDirectPlayedByTypes.get().forEach(type -> playedByTypes.addAll(type.subTypes()));
+        cachedDirectPlayedByTypes.get().forEach(type -> playedByTypes.addAll(type.subs()));
         return Collections.unmodifiableCollection(playedByTypes);
     }
 

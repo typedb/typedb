@@ -64,7 +64,7 @@ class Validator {
             graknGraph.txCache().getModifiedEntities().forEach(this::validateInstance);
 
             //Validate RoleTypes
-            graknGraph.txCache().getModifiedRoleTypes().forEach(this::validateRoleType);
+            graknGraph.txCache().getModifiedRoles().forEach(this::validateRoleType);
             //Validate Role Players
             graknGraph.txCache().getModifiedCastings().forEach(this::validateCasting);
 
@@ -119,7 +119,7 @@ class Validator {
      * Validation rules exclusive to role types
      * @param roleType The roleType to validate
      */
-    private void validateRoleType(RoleTypeImpl roleType){
+    private void validateRoleType(RoleImpl roleType){
         ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(roleType).ifPresent(errorsFound::add);
     }
 

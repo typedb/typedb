@@ -20,11 +20,11 @@ package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
@@ -45,9 +45,9 @@ public class MovieGraph extends TestGraph {
     private static ResourceType<Double> tmdbVoteAverage;
     private static ResourceType<LocalDateTime> releaseDate;
     private static RelationType hasCast, authoredBy, directedBy, hasGenre, hasCluster;
-    private static RoleType productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
-    private static RoleType genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
-    private static RoleType work, author;
+    private static Role productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
+    private static Role genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
+    private static Role work, author;
     private static RuleType aRuleType;
 
     private static Thing godfather, theMuppets, heat, apocalypseNow, hocusPocus, spy, chineseCoffee;
@@ -64,28 +64,28 @@ public class MovieGraph extends TestGraph {
 
     @Override
     public void buildOntology(GraknGraph graph) {
-        work = graph.putRoleType("work");
-        author = graph.putRoleType("author");
+        work = graph.putRole("work");
+        author = graph.putRole("author");
         authoredBy = graph.putRelationType("authored-by").relates(work).relates(author);
 
-        productionBeingDirected = graph.putRoleType("production-being-directed").superType(work);
-        director = graph.putRoleType("director").superType(author);
-        directedBy = graph.putRelationType("directed-by").superType(authoredBy)
+        productionBeingDirected = graph.putRole("production-being-directed").sup(work);
+        director = graph.putRole("director").sup(author);
+        directedBy = graph.putRelationType("directed-by").sup(authoredBy)
                 .relates(productionBeingDirected).relates(director);
 
-        productionWithCast = graph.putRoleType("production-with-cast");
-        actor = graph.putRoleType("actor");
-        characterBeingPlayed = graph.putRoleType("character-being-played");
+        productionWithCast = graph.putRole("production-with-cast");
+        actor = graph.putRole("actor");
+        characterBeingPlayed = graph.putRole("character-being-played");
         hasCast = graph.putRelationType("has-cast")
                 .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
 
-        genreOfProduction = graph.putRoleType("genre-of-production");
-        productionWithGenre = graph.putRoleType("production-with-genre");
+        genreOfProduction = graph.putRole("genre-of-production");
+        productionWithGenre = graph.putRole("production-with-genre");
         hasGenre = graph.putRelationType("has-genre")
                 .relates(genreOfProduction).relates(productionWithGenre);
 
-        clusterOfProduction = graph.putRoleType("cluster-of-production");
-        productionWithCluster = graph.putRoleType("production-with-cluster");
+        clusterOfProduction = graph.putRole("cluster-of-production");
+        productionWithCluster = graph.putRole("production-with-cluster");
         hasCluster = graph.putRelationType("has-cluster")
                 .relates(clusterOfProduction).relates(productionWithCluster);
 
@@ -108,9 +108,9 @@ public class MovieGraph extends TestGraph {
         production.resource(releaseDate);
         production.resource(runtime);
 
-        movie = graph.putEntityType("movie").superType(production);
+        movie = graph.putEntityType("movie").sup(production);
 
-        graph.putEntityType("tv-show").superType(production);
+        graph.putEntityType("tv-show").sup(production);
 
         person = graph.putEntityType("person")
                 .plays(director).plays(actor).plays(characterBeingPlayed);

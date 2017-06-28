@@ -76,8 +76,8 @@ public class ConceptTest extends GraphTestBase{
     @Test
     public void whenGettingEdgesFromAConcept_EdgesFilteredByLabelAreReturned(){
         EntityType entityType1 = graknGraph.putEntityType("entity type");
-        EntityTypeImpl entityType2 = (EntityTypeImpl) graknGraph.putEntityType("entity type 1").superType(entityType1);
-        EntityType entityType3 = graknGraph.putEntityType("entity type 2").superType(entityType2);
+        EntityTypeImpl entityType2 = (EntityTypeImpl) graknGraph.putEntityType("entity type 1").sup(entityType1);
+        EntityType entityType3 = graknGraph.putEntityType("entity type 2").sup(entityType2);
 
         Set<EdgeElement> superType = entityType2.vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
         Set<EdgeElement> subs = entityType2.vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet());

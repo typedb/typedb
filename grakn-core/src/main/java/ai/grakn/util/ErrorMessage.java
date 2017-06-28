@@ -66,6 +66,7 @@ public enum ErrorMessage {
     VERSION_MISMATCH("You are attempting to use Grakn Version [%s] with a graph build using version [%s], this is not supported."),
     NO_TYPE("Concept [%s] does not have a type"),
     INVALID_DIRECTION("Cannot traverse an edge in direction [%s]"),
+    RESERVED_WORD("The word [%s] is reserved internally and cannot be used"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -74,8 +75,8 @@ public enum ErrorMessage {
     VALIDATION_RELATION_CASTING_LOOP_FAIL("The relation [%s] has a role player playing the role [%s] " +
             "which it's type [%s] is not connecting to via a relates connection \n"),
 
-    VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play RoleType [%s] \n"),
-    VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("RoleType [%s] does not have a relates connection to any Relation Type. \n"),
+    VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play Role [%s] \n"),
+    VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relation Type. \n"),
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
     VALIDATION_INSTANCE("Thing [%s] of type [%s] does not play the required role [%s] \n"),
 

@@ -20,12 +20,12 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -62,7 +62,7 @@ import static java.util.stream.Collectors.toSet;
  * This property can be queried and inserted.
  *
  * This propert is comprised of instances of {@link RelationPlayer}, which represents associations between a
- * role-player {@link Thing} and an optional {@link RoleType}.
+ * role-player {@link Thing} and an optional {@link Role}.
  *
  * @author Felix Chapman
  */
@@ -149,12 +149,12 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     @Override
     public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
 
-        Set<TypeLabel> roleTypes = relationPlayers.stream()
+        Set<Label> roleTypes = relationPlayers.stream()
                 .map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream)
                 .map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
-        Optional<TypeLabel> maybeLabel =
+        Optional<Label> maybeLabel =
                 var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarPatternAdmin::getTypeLabel);
 
         maybeLabel.ifPresent(label -> {
@@ -195,9 +195,9 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     private void addRoleplayer(InsertQueryExecutor insertQueryExecutor, Relation relation, RelationPlayer relationPlayer) {
         VarPatternAdmin roleVar = relationPlayer.getRoleType().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
 
-        RoleType roleType = insertQueryExecutor.getConcept(roleVar).asRoleType();
+        Role role = insertQueryExecutor.getConcept(roleVar).asRoleType();
         Thing roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asInstance();
-        relation.addRolePlayer(roleType, roleplayer);
+        relation.addRolePlayer(role, roleplayer);
     }
 
     @Override
@@ -240,12 +240,12 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         //Isa present
         if (isaProp != null) {
             VarPatternAdmin isaVar = isaProp.getType();
-            TypeLabel typeLabel = isaVar.getTypeLabel().orElse(null);
-            Var typeVariable = typeLabel == null ? isaVar.getVarName() : Graql.var().asUserDefined();
+            Label label = isaVar.getTypeLabel().orElse(null);
+            Var typeVariable = label == null ? isaVar.getVarName() : Graql.var().asUserDefined();
             relVar = relVar.isa(typeVariable);
-            if (typeLabel != null) {
+            if (label != null) {
                 GraknGraph graph = parent.graph();
-                VarPatternAdmin idVar = typeVariable.id(graph.getOntologyConcept(typeLabel).getId()).admin();
+                VarPatternAdmin idVar = typeVariable.id(graph.getOntologyConcept(label).getId()).admin();
                 predicate = new IdPredicate(idVar, parent);
             } else {
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);

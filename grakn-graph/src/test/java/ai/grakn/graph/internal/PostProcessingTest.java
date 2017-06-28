@@ -24,7 +24,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
@@ -42,24 +42,24 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class PostProcessingTest extends GraphTestBase{
-    private RoleType roleType1;
-    private RoleType roleType2;
+    private Role role1;
+    private Role role2;
     private RelationType relationType;
     private ThingImpl instance1;
     private ThingImpl instance2;
 
     @Before
     public void buildSampleGraph(){
-        roleType1 = graknGraph.putRoleType("role 1");
-        roleType2 = graknGraph.putRoleType("role 2");
-        relationType = graknGraph.putRelationType("rel type").relates(roleType1).relates(roleType2);
-        EntityType thing = graknGraph.putEntityType("thingy").plays(roleType1).plays(roleType2);
+        role1 = graknGraph.putRole("role 1");
+        role2 = graknGraph.putRole("role 2");
+        relationType = graknGraph.putRelationType("rel type").relates(role1).relates(role2);
+        EntityType thing = graknGraph.putEntityType("thingy").plays(role1).plays(role2);
         instance1 = (ThingImpl) thing.addEntity();
         instance2 = (ThingImpl) thing.addEntity();
         thing.addEntity();
         thing.addEntity();
 
-        relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
+        relationType.addRelation().addRolePlayer(role1, instance1).addRolePlayer(role2, instance2);
     }
 
     @Test
@@ -85,8 +85,8 @@ public class PostProcessingTest extends GraphTestBase{
 
     @Test
     public void whenMergingDuplicateResourcesWithRelations_EnsureSingleResourceRemainsAndNoDuplicateRelationsAreCreated(){
-        RoleType roleEntity = graknGraph.putRoleType("Entity Role");
-        RoleType roleResource = graknGraph.putRoleType("Resource Role");
+        Role roleEntity = graknGraph.putRole("Entity Role");
+        Role roleResource = graknGraph.putRole("Resource Role");
         RelationType relationType = graknGraph.putRelationType("Relation Type").relates(roleEntity).relates(roleResource);
         ResourceTypeImpl<String> resourceType = (ResourceTypeImpl<String>) graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).plays(roleResource);
         EntityType entityType = graknGraph.putEntityType("Entity Type").plays(roleEntity);

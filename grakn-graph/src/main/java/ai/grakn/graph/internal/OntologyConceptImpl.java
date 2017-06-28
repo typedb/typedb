@@ -20,12 +20,12 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -47,18 +47,18 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  * <p>
  *     Allows you to create schema or ontological elements.
  *     These differ from normal graph constructs in two ways:
- *     1. They have a unique {@link TypeLabel} which identifies them
+ *     1. They have a unique {@link Label} which identifies them
  *     2. You can link them together into a hierarchical structure
  * </p>
  *
  * @author fppt
  *
  * @param <T> The leaf interface of the object concept.
- *           For example an {@link EntityType} or {@link RelationType} or {@link RoleType}
+ *           For example an {@link EntityType} or {@link RelationType} or {@link Role}
  */
 abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImpl implements OntologyConcept {
-    private final TypeLabel cachedLabel;
-    private final TypeId cachedLabelId;
+    private final Label cachedLabel;
+    private final LabelId cachedLabelId;
 
     private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
     private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
@@ -66,13 +66,13 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
 
     OntologyConceptImpl(VertexElement vertexElement) {
         super(vertexElement);
-        cachedLabel = TypeLabel.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
-        cachedLabelId = TypeId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
+        cachedLabel = Label.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
+        cachedLabelId = LabelId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
     }
 
     OntologyConceptImpl(VertexElement vertexElement, T superType) {
         this(vertexElement);
-        if(superType() == null) superType(superType);
+        if(sup() == null) sup(superType);
     }
 
     OntologyConceptImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
@@ -86,7 +86,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      * @return The internal id which is used for fast lookups
      */
     @Override
-    public TypeId getTypeId(){
+    public LabelId getTypeId(){
         return cachedLabelId;
     }
 
@@ -95,7 +95,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      * @return The label of this ontological element
      */
     @Override
-    public TypeLabel getLabel() {
+    public Label getLabel() {
         return cachedLabel;
     }
 
@@ -121,7 +121,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      *
      * @return The super of this Ontology Element
      */
-    public T superType() {
+    public T sup() {
         return cachedSuperType.get();
     }
 
@@ -132,12 +132,12 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
     Set<T> superSet() {
         Set<T> superSet= new HashSet<>();
         superSet.add(getThis());
-        T superParent = superType();
+        T superParent = sup();
 
         while(superParent != null && !Schema.MetaSchema.THING.getLabel().equals(superParent.getLabel())){
             superSet.add(superParent);
             //noinspection unchecked
-            superParent = (T) superParent.superType();
+            superParent = (T) superParent.sup();
         }
 
         return superSet;
@@ -188,7 +188,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      * @return All the subs of this concept including itself
      */
     @Override
-    public Collection<T> subTypes(){
+    public Collection<T> subs(){
         return Collections.unmodifiableCollection(filterImplicitStructures(nextSubLevel(this)));
     }
 
@@ -253,9 +253,9 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      * @param type The sub type of this type
      * @return The Type itself
      */
-    public T subType(T type){
+    public T sub(T type){
         //noinspection unchecked
-        ((TypeImpl) type).superType(this);
+        ((TypeImpl) type).sup(this);
         return getThis();
     }
 
@@ -264,10 +264,10 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      * @param newSuperType This type's super type
      * @return The Type itself
      */
-    public T superType(T newSuperType) {
+    public T sup(T newSuperType) {
         checkOntologyMutationAllowed();
 
-        T oldSuperType = superType();
+        T oldSuperType = sup();
         if(oldSuperType == null || (!oldSuperType.equals(newSuperType))) {
             //Update the super type of this type in cache
             cachedSuperType.set(newSuperType);
@@ -307,10 +307,10 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
     private boolean superLoops(){
         //Check For Loop
         HashSet<OntologyConcept> foundTypes = new HashSet<>();
-        OntologyConcept currentSuperType = superType();
+        OntologyConcept currentSuperType = sup();
         while (currentSuperType != null){
             foundTypes.add(currentSuperType);
-            currentSuperType = currentSuperType.superType();
+            currentSuperType = currentSuperType.sup();
             if(foundTypes.contains(currentSuperType)){
                 return true;
             }

@@ -21,10 +21,10 @@ package ai.grakn.test.graphs;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.test.GraphContext;
 
 import java.util.function.Consumer;
@@ -36,7 +36,7 @@ import java.util.function.Consumer;
  */
 public class MatrixGraphII extends TestGraph {
 
-    private final static TypeLabel key = TypeLabel.of("index");
+    private final static Label key = Label.of("index");
     private final static String gqlFile = "matrix-testII.gql";
 
     private final int n;
@@ -60,8 +60,8 @@ public class MatrixGraphII extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknGraph graph, int n, int m) {
-        RoleType Qfrom = graph.getRoleType("Q-from");
-        RoleType Qto = graph.getRoleType("Q-to");
+        Role Qfrom = graph.getRole("Q-from");
+        Role Qto = graph.getRole("Q-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
         RelationType Q = graph.getRelationType("Q");

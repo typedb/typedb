@@ -18,11 +18,11 @@
 package ai.grakn.migration.export;
 
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarPattern;
@@ -135,8 +135,8 @@ public class InstanceMapper {
      * @return var pattern with roleplayers
      */
     private static VarPattern roleplayers(VarPattern var, Relation relation){
-        for(Map.Entry<RoleType, Set<Thing>> entry:relation.allRolePlayers().entrySet()){
-            RoleType role = entry.getKey();
+        for(Map.Entry<Role, Set<Thing>> entry:relation.allRolePlayers().entrySet()){
+            Role role = entry.getKey();
             for (Thing thing : entry.getValue()) {
                 var = var.rel(Graql.label(role.getLabel()), thing.getId().getValue());
             }
@@ -163,7 +163,7 @@ public class InstanceMapper {
         ResourceType resourceType = resource.type();
 
         // TODO: Make sure this is tested
-        boolean plays = resourceType.plays().stream().map(RoleType::getLabel)
+        boolean plays = resourceType.plays().stream().map(Role::getLabel)
                 .allMatch(c -> c.equals(HAS_VALUE.getLabel(resourceType.getLabel())));
         return !resource.ownerInstances().isEmpty() && plays;
     }

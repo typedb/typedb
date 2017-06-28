@@ -111,17 +111,17 @@ public class SystemKeyspaceTest {
 
             //Check Plays
             assertTrue(user.plays().contains(
-                    graph.getRoleType(Schema.ImplicitType.KEY_OWNER.getLabel(userName.getLabel()).getValue())));
+                    graph.getRole(Schema.ImplicitType.KEY_OWNER.getLabel(userName.getLabel()).getValue())));
             assertTrue(user.plays().contains(
-                    graph.getRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(userPassword.getLabel()).getValue())));
+                    graph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(userPassword.getLabel()).getValue())));
             assertTrue(user.plays().contains(
-                    graph.getRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(userFirstName.getLabel()).getValue())));
+                    graph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(userFirstName.getLabel()).getValue())));
             assertTrue(user.plays().contains(
-                    graph.getRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(userLastName.getLabel()).getValue())));
+                    graph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(userLastName.getLabel()).getValue())));
             assertTrue(user.plays().contains(
-                    graph.getRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(userEmail.getLabel()).getValue())));
+                    graph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(userEmail.getLabel()).getValue())));
             assertTrue(user.plays().contains(
-                    graph.getRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(userIsAdmin.getLabel()).getValue())));
+                    graph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(userIsAdmin.getLabel()).getValue())));
 
             graph.close();
         }

@@ -21,9 +21,9 @@ package ai.grakn.test.graphs;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Role;
 import ai.grakn.test.GraphContext;
 
 import java.util.function.Consumer;
@@ -35,7 +35,7 @@ import java.util.function.Consumer;
  */
 public class DiagonalGraph extends TestGraph {
 
-    private final static TypeLabel key = TypeLabel.of("name");
+    private final static Label key = Label.of("name");
     private final static String gqlFile = "diagonal-test.gql";
 
     private final int n;
@@ -59,8 +59,8 @@ public class DiagonalGraph extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknGraph graph, int n, int m) {
-        RoleType relFrom = graph.getRoleType("rel-from");
-        RoleType relTo = graph.getRoleType("rel-to");
+        Role relFrom = graph.getRole("rel-from");
+        Role relTo = graph.getRole("rel-to");
 
         EntityType entity1 = graph.getEntityType("entity1");
         RelationType horizontal = graph.getRelationType("horizontal");
