@@ -122,7 +122,7 @@ final class ElementFactory {
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
-    RoleImpl buildRoleType(VertexElement vertex, Role type, Boolean isImplicit){
+    RoleImpl buildRole(VertexElement vertex, Role type, Boolean isImplicit){
         return getOrBuildConcept(vertex, (v) -> new RoleImpl(v, type, isImplicit));
     }
 

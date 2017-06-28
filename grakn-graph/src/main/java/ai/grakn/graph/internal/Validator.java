@@ -64,7 +64,7 @@ class Validator {
             graknGraph.txCache().getModifiedEntities().forEach(this::validateInstance);
 
             //Validate RoleTypes
-            graknGraph.txCache().getModifiedRoleTypes().forEach(this::validateRoleType);
+            graknGraph.txCache().getModifiedRoles().forEach(this::validateRoleType);
             //Validate Role Players
             graknGraph.txCache().getModifiedCastings().forEach(this::validateCasting);
 

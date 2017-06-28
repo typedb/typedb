@@ -68,7 +68,7 @@ public class TxCacheTest extends GraphTestBase{
         ResourceType t5 = graknGraph.putResourceType("5", ResourceType.DataType.STRING);
 
         // verify the concepts that we expected are returned in the set
-        assertThat(graknGraph.txCache().getModifiedRoleTypes(), containsInAnyOrder(t3));
+        assertThat(graknGraph.txCache().getModifiedRoles(), containsInAnyOrder(t3));
         assertThat(graknGraph.txCache().getModifiedRelationTypes(), containsInAnyOrder(t2));
     }
 
@@ -222,7 +222,7 @@ public class TxCacheTest extends GraphTestBase{
 
         //Check the caches are not empty
         assertThat(cache.getConceptCache().keySet(), not(empty()));
-        assertThat(cache.getTypeCache().keySet(), not(empty()));
+        assertThat(cache.getOntologyConceptCache().keySet(), not(empty()));
         assertThat(cache.getLabelCache().keySet(), not(empty()));
         assertThat(cache.getRelationIndexCache().keySet(), not(empty()));
         assertThat(cache.getModifiedResources(), not(empty()));
@@ -234,12 +234,12 @@ public class TxCacheTest extends GraphTestBase{
 
         //Check the caches are empty
         assertThat(cache.getConceptCache().keySet(), empty());
-        assertThat(cache.getTypeCache().keySet(), empty());
+        assertThat(cache.getOntologyConceptCache().keySet(), empty());
         assertThat(cache.getLabelCache().keySet(), empty());
         assertThat(cache.getRelationIndexCache().keySet(), empty());
         assertThat(cache.getShardingCount().keySet(), empty());
         assertThat(cache.getModifiedEntities(), empty());
-        assertThat(cache.getModifiedRoleTypes(), empty());
+        assertThat(cache.getModifiedRoles(), empty());
         assertThat(cache.getModifiedRelationTypes(), empty());
         assertThat(cache.getModifiedRelations(), empty());
         assertThat(cache.getModifiedRules(), empty());

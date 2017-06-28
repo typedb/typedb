@@ -58,13 +58,13 @@ class TxCache {
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
-    private final Map<Label, OntologyConceptImpl> typeCache = new HashMap<>();
+    private final Map<Label, OntologyConceptImpl> ontologyConceptCache = new HashMap<>();
     private final Map<Label, LabelId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
     private final Set<EntityImpl> modifiedEntities = new HashSet<>();
 
-    private final Set<RoleImpl> modifiedRoleTypes = new HashSet<>();
+    private final Set<RoleImpl> modifiedRoles = new HashSet<>();
     private final Set<Casting> modifiedCastings = new HashSet<>();
 
     private final Set<RelationTypeImpl> modifiedRelationTypes = new HashSet<>();
@@ -138,7 +138,7 @@ class TxCache {
         if (element.isEntity()) {
             modifiedEntities.add((EntityImpl) element);
         } else if (element.isRoleType()) {
-            modifiedRoleTypes.add((RoleImpl) element);
+            modifiedRoles.add((RoleImpl) element);
         } else if (element.isRelationType()) {
             modifiedRelationTypes.add((RelationTypeImpl) element);
         } else if (element.isRelation()){
@@ -176,8 +176,8 @@ class TxCache {
      *
      * @return All the types currently cached in the transaction. Used for
      */
-    Map<Label, OntologyConceptImpl> getTypeCache(){
-        return typeCache;
+    Map<Label, OntologyConceptImpl> getOntologyConceptCache(){
+        return ontologyConceptCache;
     }
 
     /**
@@ -203,7 +203,7 @@ class TxCache {
     @SuppressWarnings("SuspiciousMethodCalls")
     void remove(ConceptImpl concept){
         modifiedEntities.remove(concept);
-        modifiedRoleTypes.remove(concept);
+        modifiedRoles.remove(concept);
         modifiedRelationTypes.remove(concept);
         modifiedRelations.remove(concept);
         modifiedRules.remove(concept);
@@ -212,7 +212,7 @@ class TxCache {
         conceptCache.remove(concept.getId());
         if (concept.isOntologyConcept()) {
             Label label = ((OntologyConceptImpl) concept).getLabel();
-            typeCache.remove(label);
+            ontologyConceptCache.remove(label);
             labelCache.remove(label);
         }
     }
@@ -235,7 +235,7 @@ class TxCache {
         conceptCache.put(concept.getId(), concept);
         if(concept.isOntologyConcept()){
             OntologyConceptImpl ontologyElement = (OntologyConceptImpl) concept;
-            typeCache.put(ontologyElement.getLabel(), ontologyElement);
+            ontologyConceptCache.put(ontologyElement.getLabel(), ontologyElement);
             labelCache.put(ontologyElement.getLabel(), ontologyElement.getTypeId());
         }
     }
@@ -267,7 +267,7 @@ class TxCache {
      * @return true if the concept is cached
      */
     boolean isTypeCached(Label label){
-        return typeCache.containsKey(label);
+        return ontologyConceptCache.containsKey(label);
     }
 
     /**
@@ -300,7 +300,7 @@ class TxCache {
      */
     <X extends OntologyConcept> X getCachedOntologyElement(Label label){
         //noinspection unchecked
-        return (X) typeCache.get(label);
+        return (X) ontologyConceptCache.get(label);
     }
 
     LabelId convertLabelToId(Label label){
@@ -353,8 +353,8 @@ class TxCache {
         return modifiedEntities;
     }
 
-    Set<RoleImpl> getModifiedRoleTypes() {
-        return modifiedRoleTypes;
+    Set<RoleImpl> getModifiedRoles() {
+        return modifiedRoles;
     }
 
     Set<RelationTypeImpl> getModifiedRelationTypes() {
@@ -381,7 +381,7 @@ class TxCache {
         isTxOpen = false;
         this.closedReason = closedReason;
         modifiedEntities.clear();
-        modifiedRoleTypes.clear();
+        modifiedRoles.clear();
         modifiedRelationTypes.clear();
         modifiedRelations.clear();
         modifiedRules.clear();
@@ -390,7 +390,7 @@ class TxCache {
         relationIndexCache.clear();
         shardingCount.clear();
         conceptCache.clear();
-        typeCache.clear();
+        ontologyConceptCache.clear();
         labelCache.clear();
     }
     void openTx(GraknTxType txType){
