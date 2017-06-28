@@ -20,17 +20,17 @@ package ai.grakn.util;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
@@ -85,26 +85,26 @@ public final class Schema {
         CONSTRAINT_RULE("constraint-rule", 8);
 
 
-        private final TypeLabel label;
-        private final TypeId id;
+        private final Label label;
+        private final LabelId id;
 
         MetaSchema(String s, int i) {
-            label = TypeLabel.of(s);
-            id = TypeId.of(i);
+            label = Label.of(s);
+            id = LabelId.of(i);
         }
 
         @CheckReturnValue
-        public TypeLabel getLabel() {
+        public Label getLabel() {
             return label;
         }
 
         @CheckReturnValue
-        public TypeId getId(){
+        public LabelId getId(){
             return id;
         }
 
         @CheckReturnValue
-        public static boolean isMetaLabel(TypeLabel label) {
+        public static boolean isMetaLabel(Label label) {
             for (MetaSchema metaSchema : MetaSchema.values()) {
                 if (metaSchema.getLabel().equals(label)) return true;
             }
@@ -119,7 +119,7 @@ public final class Schema {
         //Ontology Elements
         ONTOLOGY_ELEMENT(OntologyConcept.class),
         TYPE(Type.class),
-        ROLE_TYPE(RoleType.class),
+        ROLE(Role.class),
         RELATION_TYPE(RelationType.class),
         RESOURCE_TYPE(ResourceType.class),
         ENTITY_TYPE(EntityType.class),
@@ -237,13 +237,13 @@ public final class Schema {
         }
 
         @CheckReturnValue
-        public TypeLabel getLabel(TypeLabel resourceType) {
+        public Label getLabel(Label resourceType) {
             return resourceType.map(resource -> String.format(label, resource));
         }
 
         @CheckReturnValue
-        public TypeLabel getLabel(String resourceType) {
-            return TypeLabel.of(String.format(label, resourceType));
+        public Label getLabel(String resourceType) {
+            return Label.of(String.format(label, resourceType));
         }
     }
 
@@ -262,19 +262,19 @@ public final class Schema {
         }
 
         @CheckReturnValue
-        public TypeLabel getLabel() {
-            return TypeLabel.of(label);
+        public Label getLabel() {
+            return Label.of(label);
         }
     }
 
     /**
      *
-     * @param typeLabel The resource type label
+     * @param label The resource type label
      * @param value The value of the resource
      * @return A unique id for the resource
      */
     @CheckReturnValue
-    public static String generateResourceIndex(TypeLabel typeLabel, String value){
-        return Schema.BaseType.RESOURCE.name() + "-" + typeLabel + "-" + value;
+    public static String generateResourceIndex(Label label, String value){
+        return Schema.BaseType.RESOURCE.name() + "-" + label + "-" + value;
     }
 }

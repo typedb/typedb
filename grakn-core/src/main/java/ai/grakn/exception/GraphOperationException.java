@@ -20,13 +20,13 @@ package ai.grakn.exception;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
@@ -40,6 +40,7 @@ import static ai.grakn.util.ErrorMessage.INVALID_DIRECTION;
 import static ai.grakn.util.ErrorMessage.INVALID_PATH_TO_CONFIG;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.NO_TYPE;
+import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 
 /**
@@ -66,7 +67,7 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when attempting to mutate a {@link ai.grakn.util.Schema.MetaSchema}
      */
-    public static GraphOperationException metaTypeImmutable(TypeLabel metaLabel){
+    public static GraphOperationException metaTypeImmutable(Label metaLabel){
         return new GraphOperationException(META_TYPE_IMMUTABLE.getMessage(metaLabel));
     }
 
@@ -88,15 +89,15 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when a {@link Type} has incoming edges and therefore cannot be deleted
      */
-    public static GraphOperationException typeCannotBeDeleted(TypeLabel label){
+    public static GraphOperationException typeCannotBeDeleted(Label label){
         return new GraphOperationException(ErrorMessage.CANNOT_DELETE.getMessage(label));
     }
 
     /**
      * Thrown when a {@link Type} cannot play a specific role type.
      */
-    public static GraphOperationException invalidPlays(RoleType roleType){
-        return new GraphOperationException(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getLabel()));
+    public static GraphOperationException invalidPlays(Role role){
+        return new GraphOperationException(ErrorMessage.ROLE_TYPE_ERROR.getMessage(role.getLabel()));
     }
 
     /**
@@ -236,5 +237,12 @@ public class GraphOperationException extends GraknException{
      */
     public static GraphOperationException invalidGraphConfig(String pathToFile){
         return new GraphOperationException(INVALID_PATH_TO_CONFIG.getMessage(pathToFile));
+    }
+
+    /**
+     * Thrown when trying to create something using a label reserved by the system
+     */
+    public static GraphOperationException reservedLabel(Label label){
+        return new GraphOperationException(RESERVED_WORD.getMessage(label.getValue()));
     }
 }

@@ -20,12 +20,12 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -71,20 +71,20 @@ import static java.util.stream.Collectors.joining;
  */
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final TypeLabel resourceType;
+    private final Label resourceType;
     private final VarPatternAdmin resource;
 
-    private HasResourceProperty(TypeLabel resourceType, VarPatternAdmin resource) {
+    private HasResourceProperty(Label resourceType, VarPatternAdmin resource) {
         this.resourceType = resourceType;
         this.resource = resource;
     }
 
-    public static HasResourceProperty of(TypeLabel resourceType, VarPatternAdmin resource) {
+    public static HasResourceProperty of(Label resourceType, VarPatternAdmin resource) {
         resource = resource.isa(label(resourceType)).admin();
         return new HasResourceProperty(resourceType, resource);
     }
 
-    public TypeLabel getType() {
+    public Label getType() {
         return resourceType;
     }
 
@@ -155,15 +155,15 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Optional<ValuePredicateAdmin> predicate =
                 resource.getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
 
-        RoleType owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
-        RoleType value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
+        Role owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
+        Role value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
 
         concept.asInstance().relations(owner).stream()
                 .filter(relation -> testPredicate(predicate, relation, value))
                 .forEach(Concept::delete);
     }
 
-    private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relation relation, RoleType resourceRole) {
+    private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relation relation, Role resourceRole) {
         Object value = relation.rolePlayers(resourceRole).iterator().next().asResource().getValue();
 
         return optPredicate
@@ -197,7 +197,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         Var varName = var.getVarName().asUserDefined();
-        TypeLabel type = this.getType();
+
+        Label type = this.getType();
         VarPatternAdmin resource = this.getResource();
         Var valueVariable = resource.getVarName().asUserDefined();
         Set<ValuePredicate> predicates = getValuePredicates(valueVariable, resource, vars, parent);

@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
@@ -124,7 +124,7 @@ class ConjunctionQuery {
     /**
      * @return a stream of concept names mentioned in the query
      */
-    Stream<TypeLabel> getTypes() {
+    Stream<Label> getTypes() {
         return vars.stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeLabels().stream());

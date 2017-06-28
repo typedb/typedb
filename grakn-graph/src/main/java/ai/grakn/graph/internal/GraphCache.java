@@ -18,9 +18,9 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
@@ -51,8 +51,8 @@ import java.util.concurrent.TimeUnit;
  */
 class GraphCache {
     //Caches
-    private final Cache<TypeLabel, OntologyConcept> cachedTypes;
-    private final Map<TypeLabel, TypeId> cachedLabels;
+    private final Cache<Label, OntologyConcept> cachedTypes;
+    private final Map<Label, LabelId> cachedLabels;
 
     GraphCache(Properties properties){
         cachedLabels = new ConcurrentHashMap<>();
@@ -70,7 +70,7 @@ class GraphCache {
      * @param label The label of the type to cache
      * @param type The type to cache
      */
-    void cacheType(TypeLabel label, OntologyConcept type){
+    void cacheType(Label label, OntologyConcept type){
         cachedTypes.put(label, type);
     }
 
@@ -80,7 +80,7 @@ class GraphCache {
      * @param label The label of the type to cache
      * @param id The id of the type to cache
      */
-    void cacheLabel(TypeLabel label, TypeId id){
+    void cacheLabel(Label label, LabelId id){
         cachedLabels.put(label, id);
     }
 
@@ -94,10 +94,10 @@ class GraphCache {
     void readTxCache(TxCache txCache){
         //TODO: The difference between the caches need to be taken into account. For example if a type is delete then it should be removed from the cachedLabels
         cachedLabels.putAll(txCache.getLabelCache());
-        cachedTypes.putAll(txCache.getTypeCache());
+        cachedTypes.putAll(txCache.getOntologyConceptCache());
 
         //Flush All The Internal Transaction Caches
-        txCache.getTypeCache().values().forEach(OntologyConceptImpl::txCacheFlush);
+        txCache.getOntologyConceptCache().values().forEach(OntologyConceptImpl::txCacheFlush);
     }
 
     /**
@@ -105,7 +105,7 @@ class GraphCache {
      *
      * @return an immutable copy of the cached labels.
      */
-    Map<TypeLabel, TypeId> getCachedLabels(){
+    Map<Label, LabelId> getCachedLabels(){
         return ImmutableMap.copyOf(cachedLabels);
     }
 
@@ -114,7 +114,7 @@ class GraphCache {
      *
      * @return an immutable copy of the cached ontology.
      */
-    Map<TypeLabel, OntologyConcept> getCachedTypes(){
+    Map<Label, OntologyConcept> getCachedTypes(){
         return ImmutableMap.copyOf(cachedTypes.asMap());
     }
 }

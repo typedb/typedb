@@ -20,8 +20,8 @@
 package ai.grakn.graql.internal.pattern;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
@@ -96,7 +96,7 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     }
 
     @Override
-    public final Optional<TypeLabel> getTypeLabel() {
+    public final Optional<Label> getTypeLabel() {
         return getProperty(LabelProperty.class).map(LabelProperty::getLabelValue);
     }
 
@@ -148,7 +148,7 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     }
 
     @Override
-    public final Set<TypeLabel> getTypeLabels() {
+    public final Set<Label> getTypeLabels() {
         return getProperties()
                 .flatMap(VarProperty::getTypes)
                 .map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
@@ -177,11 +177,11 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
 
     @Override
     public final VarPattern label(String label) {
-        return label(TypeLabel.of(label));
+        return label(Label.of(label));
     }
 
     @Override
-    public final VarPattern label(TypeLabel label) {
+    public final VarPattern label(Label label) {
         return addProperty(new LabelProperty(label));
     }
 
@@ -207,11 +207,11 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
 
     @Override
     public final VarPattern has(String type, VarPattern varPattern) {
-        return has(TypeLabel.of(type), varPattern);
+        return has(Label.of(type), varPattern);
     }
 
     @Override
-    public final VarPattern has(TypeLabel type, VarPattern varPattern) {
+    public final VarPattern has(Label type, VarPattern varPattern) {
         return addProperty(HasResourceProperty.of(type, varPattern.admin()));
     }
 

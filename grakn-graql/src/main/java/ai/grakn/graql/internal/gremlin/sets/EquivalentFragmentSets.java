@@ -23,7 +23,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -130,7 +130,7 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable representing a type with a particular label.
      */
-    public static EquivalentFragmentSet label(Var type, TypeLabel label) {
+    public static EquivalentFragmentSet label(Var type, Label label) {
         return new LabelFragmentSet(type, label);
     }
 
@@ -182,9 +182,9 @@ public class EquivalentFragmentSets {
         return fragmentSets.stream().filter(clazz::isInstance).map(clazz::cast);
     }
 
-    static boolean hasDirectSubTypes(GraknGraph graph, TypeLabel label) {
+    static boolean hasDirectSubTypes(GraknGraph graph, Label label) {
         Type type = graph.getOntologyConcept(label);
-        return type != null && type.subTypes().size() != 1;
+        return type != null && type.subs().size() != 1;
     }
 
     static @Nullable LabelFragmentSet typeLabelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {

@@ -52,24 +52,24 @@ public interface Thing extends Concept{
 
     /**
      * Retrieves a Relations which the Thing takes part in, which may optionally be narrowed to a particular set
-     * according to the RoleType you are interested in.
-     * @see RoleType
+     * according to the Role you are interested in.
+     * @see Role
      * @see Relation
      *
-     * @param roleTypes An optional parameter which allows you to specify the role of the relations you wish to retrieve.
+     * @param roles An optional parameter which allows you to specify the role of the relations you wish to retrieve.
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
      */
     @CheckReturnValue
-    Collection<Relation> relations(RoleType... roleTypes);
+    Collection<Relation> relations(Role... roles);
 
     /**
      * Determine the Role Types that this Thing may play.
-     * @see RoleType
+     * @see Role
      *
      * @return A set of all the Role Types which this instance plays.
      */
     @CheckReturnValue
-    Collection<RoleType> plays();
+    Collection<Role> plays();
 
     /**
      * Creates a relation from this instance to the provided resource.
