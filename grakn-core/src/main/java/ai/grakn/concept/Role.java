@@ -23,15 +23,12 @@ import java.util.Collection;
 
 /**
  * <p>
- *     An ontological element which defines a role which can be played in a relation type.
+ *     An {@link OntologyConcept} which defines a role which can be played in a {@link RelationType}
  * </p>
  *
  * <p>
- *     This ontological element defines the roles which make up a {@link RelationType}.
- *     It behaves similarly to {@link Type} when relating to other types.
- *     It has some additional functionality:
- *     1. It cannot play a role to itself.
- *     2. It is special in that it is unique to relation types.
+ *     This ontological element defines the {@link Role} which make up a {@link RelationType}.
+ *     It behaves similarly to {@link OntologyConcept} when relating to other types.
  * </p>
  *
  * @author fppt
