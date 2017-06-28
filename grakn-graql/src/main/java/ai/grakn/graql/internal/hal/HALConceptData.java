@@ -277,7 +277,7 @@ public class HALConceptData {
 
     private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
         if (!type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
-            Stream<? extends Thing> instancesStream = type.instances().stream().filter(instance -> (!instance.isType() || !instance.asType().isImplicit())).skip(offset);
+            Stream<? extends Thing> instancesStream = type.instances().stream().skip(offset);
             if (limit >= 0) instancesStream = instancesStream.limit(limit);
             instancesStream.forEach(instance -> {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
@@ -287,11 +287,12 @@ public class HALConceptData {
             });
         }
         // We only limit the number of instances and not subtypes.
-        type.subTypes().stream().filter(instance -> (!instance.getLabel().equals(type.getLabel()))).forEach(instance -> {
-            Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
+        // TODO: This `asOntologyElement` is a hack because `thing.subTypes()` will contain `RoleType`, which is not `Type`
+        type.asOntologyConcept().subTypes().stream().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
+            Representation subResource = factory.newRepresentation(resourceLinkPrefix + sub.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-            handleConcept(instanceResource, instance, separationDegree - 1);
-            halResource.withRepresentation(SUB_EDGE, instanceResource);
+            handleConcept(subResource, sub, separationDegree - 1);
+            halResource.withRepresentation(SUB_EDGE, subResource);
         });
     }
 
