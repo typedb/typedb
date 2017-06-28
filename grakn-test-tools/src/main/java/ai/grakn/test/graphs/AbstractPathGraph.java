@@ -50,8 +50,8 @@ public abstract class AbstractPathGraph extends TestGraph {
 
         EntityType vertex = graph.getEntityType("vertex");
         EntityType startVertex = graph.getEntityType("start-vertex");
-        Role arcFrom = graph.getRoleType("arc-from");
-        Role arcTo = graph.getRoleType("arc-to");
+        Role arcFrom = graph.getRole("arc-from");
+        Role arcTo = graph.getRole("arc-to");
 
         RelationType arc = graph.getRelationType("arc");
         putEntity(graph, "a0", startVertex, key);

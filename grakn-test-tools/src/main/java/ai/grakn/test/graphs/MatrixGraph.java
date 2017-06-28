@@ -59,10 +59,10 @@ public class MatrixGraph extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknGraph graph, int n, int m) {
-        Role R1from = graph.getRoleType("R1-from");
-        Role R1to = graph.getRoleType("R1-to");
-        Role R2from = graph.getRoleType("R2-from");
-        Role R2to = graph.getRoleType("R2-to");
+        Role R1from = graph.getRole("R1-from");
+        Role R1to = graph.getRole("R1-to");
+        Role R2from = graph.getRole("R2-from");
+        Role R2to = graph.getRole("R2-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
         EntityType bEntity = graph.getEntityType("b-entity");

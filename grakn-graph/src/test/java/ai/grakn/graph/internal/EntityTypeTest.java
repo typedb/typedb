@@ -273,8 +273,8 @@ public class EntityTypeTest extends GraphTestBase{
         Set<Label> roleLabels = relationType.relates().stream().map(OntologyConcept::getLabel).collect(toSet());
         assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
 
-        assertThat(entityType.plays(), containsInAnyOrder(graknGraph.getRoleType(hasResourceOwnerLabel.getValue())));
-        assertThat(resourceType.plays(), containsInAnyOrder(graknGraph.getRoleType(hasResourceValueLabel.getValue())));
+        assertThat(entityType.plays(), containsInAnyOrder(graknGraph.getRole(hasResourceOwnerLabel.getValue())));
+        assertThat(resourceType.plays(), containsInAnyOrder(graknGraph.getRole(hasResourceValueLabel.getValue())));
 
         //Check everything is implicit
         assertTrue(relationType.isImplicit());
@@ -305,10 +305,10 @@ public class EntityTypeTest extends GraphTestBase{
 
         //Check role types are only built explicitly
         assertThat(entityType1.plays(),
-                containsInAnyOrder(graknGraph.getRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(superLabel).getValue())));
+                containsInAnyOrder(graknGraph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(superLabel).getValue())));
 
         assertThat(entityType2.plays(),
-                containsInAnyOrder(graknGraph.getRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
+                containsInAnyOrder(graknGraph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
 
         //Check Implicit Types Follow SUB Structure
         RelationType rtSuperRelation = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(rtSuper.getLabel()));

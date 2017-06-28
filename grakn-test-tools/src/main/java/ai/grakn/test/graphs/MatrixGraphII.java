@@ -60,8 +60,8 @@ public class MatrixGraphII extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknGraph graph, int n, int m) {
-        Role Qfrom = graph.getRoleType("Q-from");
-        Role Qto = graph.getRoleType("Q-to");
+        Role Qfrom = graph.getRole("Q-from");
+        Role Qto = graph.getRole("Q-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
         RelationType Q = graph.getRelationType("Q");

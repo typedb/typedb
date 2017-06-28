@@ -57,12 +57,12 @@ public class NguyenGraph extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknGraph graph, int n) {
-        Role Rfrom = graph.getRoleType("R-rA");
-        Role Rto = graph.getRoleType("R-rB");
-        Role qfrom = graph.getRoleType("Q-rA");
-        Role qto = graph.getRoleType("Q-rB");
-        Role Pfrom = graph.getRoleType("P-rA");
-        Role Pto = graph.getRoleType("P-rB");
+        Role Rfrom = graph.getRole("R-rA");
+        Role Rto = graph.getRole("R-rB");
+        Role qfrom = graph.getRole("Q-rA");
+        Role qto = graph.getRole("Q-rB");
+        Role Pfrom = graph.getRole("P-rA");
+        Role Pto = graph.getRole("P-rB");
 
         EntityType entity = graph.getEntityType("entity2");
         EntityType aEntity = graph.getEntityType("a-entity");

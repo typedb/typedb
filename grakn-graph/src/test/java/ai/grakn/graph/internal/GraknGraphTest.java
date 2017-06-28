@@ -81,7 +81,7 @@ public class GraknGraphTest extends GraphTestBase {
 
         assertNull(graknGraph.getEntityType(entityTypeLabel));
         assertNull(graknGraph.getRelationType(relationTypeLabel));
-        assertNull(graknGraph.getRoleType(roleTypeLabel));
+        assertNull(graknGraph.getRole(roleTypeLabel));
         assertNull(graknGraph.getResourceType(resourceTypeLabel));
         assertNull(graknGraph.getRuleType(ruleTypeLabel));
 
@@ -93,7 +93,7 @@ public class GraknGraphTest extends GraphTestBase {
 
         assertEquals(entityType, graknGraph.getEntityType(entityTypeLabel));
         assertEquals(relationType, graknGraph.getRelationType(relationTypeLabel));
-        assertEquals(role, graknGraph.getRoleType(roleTypeLabel));
+        assertEquals(role, graknGraph.getRole(roleTypeLabel));
         assertEquals(resourceType, graknGraph.getResourceType(resourceTypeLabel));
         assertEquals(ruleType, graknGraph.getRuleType(ruleTypeLabel));
     }
@@ -169,8 +169,8 @@ public class GraknGraphTest extends GraphTestBase {
 
         //Check things are still returned when explicitly asking for them
         RelationType has = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
-        Role hasOwner = graknGraph.getRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType.getLabel()).getValue());
-        Role hasValue = graknGraph.getRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType.getLabel()).getValue());
+        Role hasOwner = graknGraph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType.getLabel()).getValue());
+        Role hasValue = graknGraph.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType.getLabel()).getValue());
         assertNotNull(hasOwner);
         assertNotNull(hasValue);
         assertNotNull(has);
@@ -253,7 +253,7 @@ public class GraknGraphTest extends GraphTestBase {
         pool.submit(() -> {
             GraknGraph innerGraph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
             EntityType entityType = innerGraph.getEntityType("e1");
-            Role role = innerGraph.getRoleType("r1");
+            Role role = innerGraph.getRole("r1");
             entityType.deletePlays(role);
         }).get();
 

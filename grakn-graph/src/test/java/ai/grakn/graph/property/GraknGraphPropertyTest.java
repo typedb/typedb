@@ -229,7 +229,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingGetRoleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph Role type) {
         Label label = type.getLabel();
-        assertSameResult(() -> graph.getOntologyConcept(label), () -> graph.getRoleType(label.getValue()));
+        assertSameResult(() -> graph.getOntologyConcept(label), () -> graph.getRole(label.getValue()));
     }
 
     @Property

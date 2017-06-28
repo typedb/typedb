@@ -419,7 +419,7 @@ public class InsertQueryTest {
         //noinspection OptionalGetWithoutIsPresent
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
-        assertTrue(newType.plays().contains(movieGraph.graph().getRoleType(roleTypeLabel)));
+        assertTrue(newType.plays().contains(movieGraph.graph().getRole(roleTypeLabel)));
 
         assertTrue(qb.match(var().isa("new-type")).ask().execute());
     }
@@ -775,8 +775,8 @@ public class InsertQueryTest {
         Thing muppets = results.get(0).get("m").asInstance();
         Relation relation = results.get(0).get("r").asRelation();
 
-        Role clusterOfProduction = movieGraph.graph().getRoleType("cluster-of-production");
-        Role productionWithCluster = movieGraph.graph().getRoleType("production-with-cluster");
+        Role clusterOfProduction = movieGraph.graph().getRole("cluster-of-production");
+        Role productionWithCluster = movieGraph.graph().getRole("production-with-cluster");
 
         assertEquals(relation.rolePlayers(), ImmutableSet.of(cluster, godfather, muppets));
         assertEquals(relation.rolePlayers(clusterOfProduction), ImmutableSet.of(cluster));

@@ -106,7 +106,7 @@ public abstract class GraphWriterTestUtil {
 
         RelationType relationType = two.getRelationType(relation1.type().getLabel().getValue());
         Map<Role, Set<Thing>> rolemap = relation1.allRolePlayers().entrySet().stream().collect(toMap(
-                e -> two.getRoleType(e.getKey().getLabel().getValue()),
+                e -> two.getRole(e.getKey().getLabel().getValue()),
                 e -> e.getValue().stream().
                         map(instance -> getInstanceUniqueByResourcesFromGraph(two, instance)).
                         collect(Collectors.toSet())

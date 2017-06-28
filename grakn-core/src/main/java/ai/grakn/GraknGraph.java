@@ -281,7 +281,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      */
     @CheckReturnValue
-    Role getRoleType(String label);
+    Role getRole(String label);
 
     /**
      * Get the Rule Type with the label provided, if it exists.

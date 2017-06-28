@@ -59,8 +59,8 @@ public class DiagonalGraph extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknGraph graph, int n, int m) {
-        Role relFrom = graph.getRoleType("rel-from");
-        Role relTo = graph.getRoleType("rel-to");
+        Role relFrom = graph.getRole("rel-from");
+        Role relTo = graph.getRole("rel-to");
 
         EntityType entity1 = graph.getEntityType("entity1");
         RelationType horizontal = graph.getRelationType("horizontal");

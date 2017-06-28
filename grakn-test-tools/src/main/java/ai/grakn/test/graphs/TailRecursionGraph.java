@@ -58,8 +58,8 @@ public class TailRecursionGraph extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknGraph graph, int n, int m) {
-        Role qfrom = graph.getRoleType("Q-from");
-        Role qto = graph.getRoleType("Q-to");
+        Role qfrom = graph.getRole("Q-from");
+        Role qto = graph.getRole("Q-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
         EntityType bEntity = graph.getEntityType("b-entity");
