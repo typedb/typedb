@@ -39,6 +39,7 @@ import java.util.Set;
 
 import static ai.grakn.util.ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
+import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
 import static ai.grakn.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static java.util.stream.Collectors.toSet;
@@ -474,6 +475,16 @@ public class EntityTypeTest extends GraphTestBase{
 
         assertFalse("The isa edge was places on the type rather than the shard", entityType.neighbours(Direction.IN, Schema.EdgeLabel.ISA).iterator().hasNext());
         assertEquals(e1, shard.links().findAny().get());
+    }
+
+    @Test
+    public void whenAddingTypeUsingReservedWord_ThrowReadableError(){
+        String reservedWord = Schema.MetaSchema.THING.getLabel().getValue();
+
+        expectedException.expect(GraphOperationException.class);
+        expectedException.expectMessage(RESERVED_WORD.getMessage(reservedWord));
+
+        graknGraph.putEntityType(reservedWord);
     }
 
 }

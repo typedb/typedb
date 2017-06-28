@@ -40,6 +40,7 @@ import static ai.grakn.util.ErrorMessage.INVALID_DIRECTION;
 import static ai.grakn.util.ErrorMessage.INVALID_PATH_TO_CONFIG;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.NO_TYPE;
+import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 
 /**
@@ -236,5 +237,12 @@ public class GraphOperationException extends GraknException{
      */
     public static GraphOperationException invalidGraphConfig(String pathToFile){
         return new GraphOperationException(INVALID_PATH_TO_CONFIG.getMessage(pathToFile));
+    }
+
+    /**
+     * Thrown when trying to create something using a label reserved by the system
+     */
+    public static GraphOperationException reservedLabel(Label label){
+        return new GraphOperationException(RESERVED_WORD.getMessage(label.getValue()));
     }
 }

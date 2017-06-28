@@ -66,6 +66,7 @@ public enum ErrorMessage {
     VERSION_MISMATCH("You are attempting to use Grakn Version [%s] with a graph build using version [%s], this is not supported."),
     NO_TYPE("Concept [%s] does not have a type"),
     INVALID_DIRECTION("Cannot traverse an edge in direction [%s]"),
+    RESERVED_WORD("The word [%s] is reserved internally and cannot be used"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
