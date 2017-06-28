@@ -47,7 +47,7 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertDataEqual(GraknGraph one, GraknGraph two){
-        one.admin().getMetaConcept().subTypes().stream().
+        one.admin().getMetaConcept().subs().stream().
                 filter(Concept::isType).
                 map(Concept::asType).
                 flatMap(t -> t.instances().stream()).
@@ -137,7 +137,7 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertOntologiesEqual(GraknGraph one, GraknGraph two){
-        boolean ontologyCorrect = one.admin().getMetaConcept().subTypes().stream().filter(Concept::isType)
+        boolean ontologyCorrect = one.admin().getMetaConcept().subs().stream().filter(Concept::isType)
                 .allMatch(t -> typesEqual(t.asType(), two.getOntologyConcept(t.asType().getLabel())));
         assertEquals(true, ontologyCorrect);
     }
@@ -145,7 +145,7 @@ public abstract class GraphWriterTestUtil {
     public static boolean typesEqual(Type one, Type two){
         return one.getLabel().equals(two.getLabel())
                 && one.isAbstract().equals(two.isAbstract())
-                && (one.superType() == null || one.superType().getLabel().equals(two.superType().getLabel()))
+                && (one.sup() == null || one.sup().getLabel().equals(two.sup().getLabel()))
                 && (!one.isResourceType() || Objects.equals(one.asResourceType().getDataType(), two.asResourceType().getDataType()));
     }
 }

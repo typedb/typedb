@@ -153,7 +153,7 @@ public interface ResourceType<D> extends Type {
      * @return The supertype of this ResourceType,
      */
     @Override
-    ResourceType<D> superType();
+    ResourceType<D> sup();
 
     /**
      * Get the Resource with the value provided, and its type, or return NULL
@@ -172,7 +172,7 @@ public interface ResourceType<D> extends Type {
      * @return The subtypes of this ResourceType
      */
     @Override
-    Collection<ResourceType<D>> subTypes();
+    Collection<ResourceType<D>> subs();
 
     /**
      * Returns a collection of all Resource Instances of this ResourceType.

@@ -56,7 +56,7 @@ public abstract class AbstractTypeGenerator<T extends OntologyConcept> extends F
             types = Sets.newHashSet(otherMetaTypes());
             types.add(metaType());
         } else {
-            types = (Collection<T>) metaType().subTypes();
+            types = (Collection<T>) metaType().subs();
         }
 
         types = types.stream().filter(this::filter).collect(toSet());

@@ -145,7 +145,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
             // on instances
             return null;
         }
-        if (!supertype.equals(subtype.superType())) {
+        if (!supertype.equals(subtype.sup())) {
             subtype.superType(supertype);
         }
         return null;
@@ -197,8 +197,8 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         roleMap.put(migrator.namer().objectRole(superRelation.getLabel()), migrator.namer().objectRole(subRelation.getLabel()));
         ReasonerUtils.createSubPropertyRule(superRelation, subRelation, roleMap, migrator.graph());
 
-        migrator.subjectRole(subRelation).superType(migrator.subjectRole(superRelation));
-        migrator.objectRole(subRelation).superType(migrator.objectRole(superRelation));
+        migrator.subjectRole(subRelation).sup(migrator.subjectRole(superRelation));
+        migrator.objectRole(subRelation).sup(migrator.objectRole(superRelation));
         subRelation.superType(superRelation);
         return null;
     }

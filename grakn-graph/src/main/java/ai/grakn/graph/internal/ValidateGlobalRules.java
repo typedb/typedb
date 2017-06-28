@@ -107,7 +107,7 @@ class ValidateGlobalRules {
                     }
                 }
             }
-            currentConcept = (TypeImpl) currentConcept.superType();
+            currentConcept = (TypeImpl) currentConcept.sup();
         }
 
         if(satisfiesPlays) {
@@ -182,7 +182,7 @@ class ValidateGlobalRules {
      * @return Error messages if the role type sub structure does not match the relation type sub structure
      */
     static Set<String> validateRelationTypesToRolesSchema(RelationTypeImpl relationType){
-        RelationTypeImpl superRelationType = (RelationTypeImpl) relationType.superType();
+        RelationTypeImpl superRelationType = (RelationTypeImpl) relationType.sup();
         if(Schema.MetaSchema.isMetaLabel(superRelationType.getLabel())){ //If super type is a meta type no validation needed
             return Collections.emptySet();
         }
@@ -219,7 +219,7 @@ class ValidateGlobalRules {
         for (Role superRelate : superRelates) {
             boolean subRoleNotFoundInRelates = true;
 
-            for (Role subRole : superRelate.subTypes()) {
+            for (Role subRole : superRelate.subs()) {
                 if(relatesLabels.contains(subRole.getLabel())){
                     subRoleNotFoundInRelates = false;
                     break;
@@ -254,7 +254,7 @@ class ValidateGlobalRules {
                     }
                 }
             }
-            currentConcept = (TypeImpl) currentConcept.superType();
+            currentConcept = (TypeImpl) currentConcept.sup();
         }
         return Optional.empty();
     }

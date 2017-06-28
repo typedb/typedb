@@ -325,7 +325,7 @@ public class GraknGraphPropertyTest {
         exception.expect(GraphOperationException.class);
 
         //noinspection ResultOfMethodCallIgnored
-        resource.superType();
+        resource.sup();
     }
 
     @Property

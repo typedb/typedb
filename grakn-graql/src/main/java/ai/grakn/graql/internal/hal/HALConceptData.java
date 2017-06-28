@@ -108,13 +108,13 @@ public class HALConceptData {
         if (embedType && concept.isInstance()) {
             Thing thing = concept.asInstance();
             if (typesInQuery.contains(thing.type().getLabel())
-                    || (thing.type().superType() != null &&
-                    typesInQuery.contains(thing.type().superType().getLabel()))) {
+                    || (thing.type().sup() != null &&
+                    typesInQuery.contains(thing.type().sup().getLabel()))) {
                 embedType(halResource, thing);
             }
         }
 
-        if (concept.isType() && concept.asType().superType() != null) {
+        if (concept.isType() && concept.asType().sup() != null) {
             embedSuperType(halResource, concept.asType());
         }
 
@@ -184,9 +184,9 @@ public class HALConceptData {
     }
 
     private void embedSuperType(Representation halResource, Type type) {
-        Representation HALType = factory.newRepresentation(resourceLinkPrefix + type.superType().getId() + getURIParams(0))
+        Representation HALType = factory.newRepresentation(resourceLinkPrefix + type.sup().getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-        generateStateAndLinks(HALType, type.superType());
+        generateStateAndLinks(HALType, type.sup());
         halResource.withRepresentation(SUB_EDGE, HALType);
     }
 
@@ -288,7 +288,7 @@ public class HALConceptData {
         }
         // We only limit the number of instances and not subtypes.
         // TODO: This `asOntologyElement` is a hack because `thing.subTypes()` will contain `Role`, which is not `Type`
-        type.asOntologyConcept().subTypes().stream().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
+        type.asOntologyConcept().subs().stream().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
             Representation subResource = factory.newRepresentation(resourceLinkPrefix + sub.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             handleConcept(subResource, sub, separationDegree - 1);

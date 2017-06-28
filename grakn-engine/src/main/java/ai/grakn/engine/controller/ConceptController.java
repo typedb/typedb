@@ -149,7 +149,7 @@ public class ConceptController {
     }
 
     private List<String> subLabels(OntologyConcept ontologyConcept) {
-        return ontologyConcept.subTypes().stream().
+        return ontologyConcept.subs().stream().
                 map(OntologyConcept::getLabel).
                 map(Label::getValue).collect(toList());
     }

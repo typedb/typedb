@@ -116,7 +116,7 @@ public class TypePropertyTest {
 
     @Property
     public void whenDeletingATypeWithDirectSubTypes_Throw(@Meta(false) Type type) {
-        Type superType = type.superType();
+        Type superType = type.sup();
         assumeFalse(isMetaLabel(superType.getLabel()));
 
         exception.expect(GraphOperationException.class);
@@ -188,24 +188,24 @@ public class TypePropertyTest {
     @Property
     public void whenAnOntologyElementHasADirectSuper_ItIsADirectSubOfThatSuper(
             @Open GraknGraph graph, @FromGraph OntologyConcept ontologyConcept) {
-        OntologyConcept superType = ontologyConcept.superType();
+        OntologyConcept superType = ontologyConcept.sup();
         assertThat(directSubs(graph, superType), hasItem(ontologyConcept));
     }
 
     @Property
     public void whenGettingSuperType_TheResultIsNeverItself(Type type) {
-        assertNotEquals(type, type.superType());
+        assertNotEquals(type, type.sup());
     }
 
     @Property
     public void whenATypeHasAnIndirectSuperType_ItIsAnIndirectSubTypeOfThatSuperType(Type subType, long seed) {
         Type superType = choose(indirectSuperTypes(subType), seed);
-        assertThat((Collection<Type>) superType.subTypes(), hasItem(subType));
+        assertThat((Collection<Type>) superType.subs(), hasItem(subType));
     }
 
     @Property
     public void whenATypeHasAnIndirectSubType_ItIsAnIndirectSuperTypeOfThatSubType(Type superType, long seed) {
-        Type subType = choose(superType.subTypes(), seed);
+        Type subType = choose(superType.subs(), seed);
         assertThat(indirectSuperTypes(subType), hasItem(superType));
     }
 
@@ -215,22 +215,22 @@ public class TypePropertyTest {
         Collection<Type> directSubTypes = directSubs(graph, type);
         Type[] expected = Stream.concat(
                 Stream.of(type),
-                directSubTypes.stream().flatMap(subType -> subType.subTypes().stream())
+                directSubTypes.stream().flatMap(subType -> subType.subs().stream())
         ).toArray(Type[]::new);
 
-        assertThat(type.subTypes(), containsInAnyOrder(expected));
+        assertThat(type.subs(), containsInAnyOrder(expected));
     }
 
     @Property
     public void whenGettingTheIndirectSubTypes_TheyContainTheType(Type type) {
-        assertThat((Collection<Type>) type.subTypes(), hasItem(type));
+        assertThat((Collection<Type>) type.subs(), hasItem(type));
     }
 
     @Property
     public void whenGettingTheIndirectSubTypesWithoutImplicitConceptsVisible_TheyDoNotContainImplicitConcepts(
             @Open GraknGraph graph, @FromGraph Type type) {
         assumeFalse(graph.implicitConceptsVisible());
-        type.subTypes().forEach(subType -> {
+        type.subs().forEach(subType -> {
             assertFalse(subType + " should not be implicit", subType.isImplicit());
         });
     }
@@ -248,7 +248,7 @@ public class TypePropertyTest {
     @Property
     public void whenSettingTheDirectSuperTypeToAnIndirectSubType_Throw(
             @Meta(false) Type type, long seed) {
-        Type newSuperType = choose(type.subTypes(), seed);
+        Type newSuperType = choose(type.subs(), seed);
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(SUPER_LOOP_DETECTED.getMessage(type.getLabel(), newSuperType.getLabel()));
@@ -259,11 +259,11 @@ public class TypePropertyTest {
     public void whenSettingTheDirectSuperType_TheDirectSuperTypeIsSet(
             @Meta(false) Type subType, @FromGraph Type superType) {
         assumeTrue(sameType(subType, superType));
-        assumeThat((Collection<Type>) subType.subTypes(), not(hasItem(superType)));
+        assumeThat((Collection<Type>) subType.subs(), not(hasItem(superType)));
 
         setDirectSuperType(subType, superType);
 
-        assertEquals(superType, subType.superType());
+        assertEquals(superType, subType.sup());
     }
 
     @Property
@@ -279,7 +279,7 @@ public class TypePropertyTest {
     @Property
     public void whenAddingADirectSubTypeWhichIsAnIndirectSuperType_Throw(
             @Meta(false) Type newSubType, long seed) {
-        Type type = choose(newSubType.subTypes(), seed);
+        Type type = choose(newSubType.subs(), seed);
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(SUPER_LOOP_DETECTED.getMessage(newSubType.getLabel(), type.getLabel()));
@@ -290,7 +290,7 @@ public class TypePropertyTest {
     public void whenAddingADirectSubType_TheDirectSubTypeIsAdded(
             @Open GraknGraph graph, @FromGraph Type superType, @Meta(false) @FromGraph Type subType) {
         assumeTrue(sameType(subType, superType));
-        assumeThat((Collection<Type>) subType.subTypes(), not(hasItem(superType)));
+        assumeThat((Collection<Type>) subType.subs(), not(hasItem(superType)));
 
         addDirectSubType(superType, subType);
 
@@ -311,8 +311,8 @@ public class TypePropertyTest {
 
     @Property
     public void whenGettingPlays_ResultIsASupersetOfDirectSuperTypePlays(Type type) {
-        assumeNotNull(type.superType());
-        assertTrue(type.plays().containsAll(type.superType().plays()));
+        assumeNotNull(type.sup());
+        assertTrue(type.plays().containsAll(type.sup().plays()));
     }
 
     @Property
@@ -350,7 +350,7 @@ public class TypePropertyTest {
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypeDoesNotPlaysThatRole_TheTypeNoLongerPlaysThatRole(
             @Meta(false) Type type, @FromGraph Role role) {
-        assumeThat(type.superType().plays(), not(hasItem(role)));
+        assumeThat(type.sup().plays(), not(hasItem(role)));
         type.deletePlays(role);
         assertThat(type.plays(), not(hasItem(role)));
     }
@@ -358,7 +358,7 @@ public class TypePropertyTest {
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypePlaysThatRole_TheTypeStillPlaysThatRole(
             @Meta(false) Type type, long seed) {
-        Role role = choose(type.superType() + " plays no roles", type.superType().plays(), seed);
+        Role role = choose(type.sup() + " plays no roles", type.sup().plays(), seed);
         type.deletePlays(role);
         assertThat(type.plays(), hasItem(role));
     }
@@ -380,7 +380,7 @@ public class TypePropertyTest {
         } else if (subType.isRelationType()) {
             subType.asRelationType().superType(superType.asRelationType());
         } else if (subType.isRoleType()) {
-            subType.asRoleType().superType(superType.asRoleType());
+            subType.asRoleType().sup(superType.asRoleType());
         } else if (subType.isResourceType()) {
             subType.asResourceType().superType(superType.asResourceType());
         } else if (subType.isRuleType()) {
@@ -396,7 +396,7 @@ public class TypePropertyTest {
         } else if (superType.isRelationType()) {
             superType.asRelationType().subType(subType.asRelationType());
         } else if (superType.isRoleType()) {
-            superType.asRoleType().subType(subType.asRoleType());
+            superType.asRoleType().sub(subType.asRoleType());
         } else if (superType.isResourceType()) {
             superType.asResourceType().subType(subType.asResourceType());
         } else if (superType.isRuleType()) {

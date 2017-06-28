@@ -256,11 +256,11 @@ public class TxCacheTest extends GraphTestBase{
 
         //Check everything is okay
         graknGraph = (AbstractGraknGraph<?>) graknSession.open(GraknTxType.WRITE);
-        assertTxBoundConceptMatches(e2, Type::superType, is(e1));
+        assertTxBoundConceptMatches(e2, Type::sup, is(e1));
 
         //Mutate Super Type
         e2.superType(e3);
-        assertTxBoundConceptMatches(e2, Type::superType, is(e3));
+        assertTxBoundConceptMatches(e2, Type::sup, is(e3));
     }
 
     @Test

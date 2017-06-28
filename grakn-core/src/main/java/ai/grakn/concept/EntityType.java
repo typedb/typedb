@@ -140,7 +140,7 @@ public interface EntityType extends Type{
      * @return The supertype of this EntityType
      */
     @Override
-    EntityType superType();
+    EntityType sup();
 
     /**
      * Returns a collection of subtypes of this EntityType.
@@ -148,7 +148,7 @@ public interface EntityType extends Type{
      * @return All the sub classes of this EntityType
      */
     @Override
-    Collection<EntityType> subTypes();
+    Collection<EntityType> subs();
 
     /**
      * Returns a collection of all Entity instances for this EntityType.

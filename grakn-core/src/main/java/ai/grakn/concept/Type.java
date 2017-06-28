@@ -127,7 +127,7 @@ public interface Type extends OntologyConcept {
      * @return The direct super of this Type
      */
     @CheckReturnValue
-    Type superType();
+    Type sup();
 
     /**
      * Get all indirect sub-types of this type.
@@ -137,7 +137,7 @@ public interface Type extends OntologyConcept {
      * @return All the indirect sub-types of this Type
      */
     @CheckReturnValue
-    Collection<? extends Type> subTypes();
+    Collection<? extends Type> subs();
 
     /**
      * Get all indirect instances of this type.

@@ -184,7 +184,7 @@ public class EquivalentFragmentSets {
 
     static boolean hasDirectSubTypes(GraknGraph graph, Label label) {
         Type type = graph.getOntologyConcept(label);
-        return type != null && type.subTypes().size() != 1;
+        return type != null && type.subs().size() != 1;
     }
 
     static @Nullable LabelFragmentSet typeLabelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {

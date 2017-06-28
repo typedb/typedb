@@ -35,7 +35,7 @@ public class RoleTypeConverter implements OntologyConceptConverter<Role> {
     @Override
     public Multimap<RelationType, Role> toRelationMultimap(Role role) {
         Multimap<RelationType, Role> relationMap = HashMultimap.create();
-        Collection<Role> roles = role.subTypes();
+        Collection<Role> roles = role.subs();
         roles
                 .forEach(roleType -> {
                     roleType.relationTypes().stream()

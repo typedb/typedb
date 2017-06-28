@@ -65,11 +65,11 @@ public class ConjunctionQueryTest {
         graph = mock(GraknGraph.class);
 
         Type resourceTypeWithoutSubTypesMock = mock(Type.class);
-        doReturn(ImmutableList.of(resourceTypeWithoutSubTypesMock)).when(resourceTypeWithoutSubTypesMock).subTypes();
+        doReturn(ImmutableList.of(resourceTypeWithoutSubTypesMock)).when(resourceTypeWithoutSubTypesMock).subs();
 
         Type resourceTypeWithSubTypesMock = mock(Type.class);
         doReturn(ImmutableList.of(resourceTypeWithoutSubTypesMock, resourceTypeWithSubTypesMock))
-                .when(resourceTypeWithSubTypesMock).subTypes();
+                .when(resourceTypeWithSubTypesMock).subs();
 
         when(graph.getOntologyConcept(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
         when(graph.getOntologyConcept(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);

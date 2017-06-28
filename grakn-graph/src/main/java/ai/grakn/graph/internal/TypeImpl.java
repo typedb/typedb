@@ -236,8 +236,8 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
      * @return All the subs of this concept including itself
      */
     @Override
-    public Collection<T> subTypes(){
-        return Collections.unmodifiableCollection(filterImplicitStructures(super.subTypes()));
+    public Collection<T> subs(){
+        return Collections.unmodifiableCollection(filterImplicitStructures(super.subs()));
     }
 
     /**
@@ -413,7 +413,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
                 relates(valueRole);
 
         //Linking with ako structure if present
-        ResourceType resourceTypeSuper = resourceType.superType();
+        ResourceType resourceTypeSuper = resourceType.sup();
         Label superLabel = resourceTypeSuper.getLabel();
         if(!Schema.MetaSchema.RESOURCE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
             Role ownerRoleSuper = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
@@ -422,8 +422,8 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
                     relates(ownerRoleSuper).relates(valueRoleSuper);
 
             //Create the super type edges from sub role/relations to super roles/relation
-            ownerRole.superType(ownerRoleSuper);
-            valueRole.superType(valueRoleSuper);
+            ownerRole.sup(ownerRoleSuper);
+            valueRole.sup(valueRoleSuper);
             relationType.superType(relationTypeSuper);
 
             //Make sure the supertype resource is linked with the role as well

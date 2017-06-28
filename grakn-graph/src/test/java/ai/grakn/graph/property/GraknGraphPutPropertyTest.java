@@ -77,7 +77,7 @@ public class GraknGraphPutPropertyTest {
             @Unused Label label, @From(PutTypeFunctions.class) BiFunction<GraknGraph, Label, OntologyConcept> putOntologyElement) {
         OntologyConcept ontologyConcept = putOntologyElement.apply(graph, label);
 
-        assertThat("Type should only have one sub-type: itself", ontologyConcept.subTypes(), contains(ontologyConcept));
+        assertThat("Type should only have one sub-type: itself", ontologyConcept.subs(), contains(ontologyConcept));
         if(ontologyConcept.isType()) {
             Type type = ontologyConcept.asType();
             assertThat("Type should not play any roles", type.plays(), empty());
@@ -93,7 +93,7 @@ public class GraknGraphPutPropertyTest {
     public void whenCallingPutEntityType_CreateATypeWithSuperTypeEntity(
             @Open GraknGraph graph, @Unused Label label) {
         EntityType entityType = graph.putEntityType(label);
-        assertEquals(graph.admin().getMetaEntityType(), entityType.superType());
+        assertEquals(graph.admin().getMetaEntityType(), entityType.sup());
     }
 
     @Property
@@ -118,7 +118,7 @@ public class GraknGraphPutPropertyTest {
     public void whenCallingPutResourceType_CreateATypeWithSuperTypeResource(
             @Open GraknGraph graph, @Unused Label label, ResourceType.DataType<?> dataType) {
         ResourceType<?> resourceType = graph.putResourceType(label, dataType);
-        assertEquals(graph.admin().getMetaResourceType(), resourceType.superType());
+        assertEquals(graph.admin().getMetaResourceType(), resourceType.sup());
     }
 
     @Property
@@ -174,7 +174,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutRuleType_CreateATypeWithSuperTypeRule(@Open GraknGraph graph, @Unused Label label) {
         RuleType ruleType = graph.putRuleType(label);
-        assertEquals(graph.admin().getMetaRuleType(), ruleType.superType());
+        assertEquals(graph.admin().getMetaRuleType(), ruleType.sup());
     }
 
     @Property
@@ -199,7 +199,7 @@ public class GraknGraphPutPropertyTest {
     public void whenCallingPutRelationType_CreateATypeWithSuperTypeRelation(
             @Open GraknGraph graph, @Unused Label label) {
         RelationType relationType = graph.putRelationType(label);
-        assertEquals(graph.admin().getMetaRelationType(), relationType.superType());
+        assertEquals(graph.admin().getMetaRelationType(), relationType.sup());
     }
 
     @Property
@@ -231,7 +231,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutRoleType_CreateATypeWithSuperTypeRole(@Open GraknGraph graph, @Unused Label label) {
         Role role = graph.putRoleType(label);
-        assertEquals(graph.admin().getMetaRoleType(), role.superType());
+        assertEquals(graph.admin().getMetaRoleType(), role.sup());
     }
 
     @Property

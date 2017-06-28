@@ -39,7 +39,7 @@ public class OntologyConceptConverterImpl implements OntologyConceptConverter<On
     @Override
     public Multimap<RelationType, Role> toRelationMultimap(OntologyConcept ontologyConcept) {
         Multimap<RelationType, Role> relationMap = HashMultimap.create();
-        Collection<? extends OntologyConcept> types = ontologyConcept.subTypes();
+        Collection<? extends OntologyConcept> types = ontologyConcept.subs();
         types.stream()
                 .filter(Concept::isType)
                 .flatMap(t -> t.asType().plays().stream())

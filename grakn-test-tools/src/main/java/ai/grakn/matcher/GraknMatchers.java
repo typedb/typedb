@@ -301,7 +301,7 @@ public class GraknMatchers {
 
         while (type != null) {
             types.add(type);
-            type = type.superType();
+            type = type.sup();
         }
 
         return types;

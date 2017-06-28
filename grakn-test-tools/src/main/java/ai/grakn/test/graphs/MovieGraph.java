@@ -68,8 +68,8 @@ public class MovieGraph extends TestGraph {
         author = graph.putRoleType("author");
         authoredBy = graph.putRelationType("authored-by").relates(work).relates(author);
 
-        productionBeingDirected = graph.putRoleType("production-being-directed").superType(work);
-        director = graph.putRoleType("director").superType(author);
+        productionBeingDirected = graph.putRoleType("production-being-directed").sup(work);
+        director = graph.putRoleType("director").sup(author);
         directedBy = graph.putRelationType("directed-by").superType(authoredBy)
                 .relates(productionBeingDirected).relates(director);
 

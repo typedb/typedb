@@ -63,7 +63,7 @@ public class RelationTypePropertyTest {
     public void whenANonMetaRelationTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
             @Open GraknGraph graph, @FromGraph @Meta(false) RelationType type) {
         assumeThat(type.instances(), empty());
-        assumeThat(type.subTypes(), contains(type));
+        assumeThat(type.subs(), contains(type));
         assumeThat(type.getRulesOfHypothesis(), empty());
         assumeThat(type.getRulesOfConclusion(), empty());
 
@@ -135,7 +135,7 @@ public class RelationTypePropertyTest {
     @Property
     public void whenRelatingARole_TheDirectSuperTypeRelatedRolesAreUnchanged(
             @Meta(false) RelationType subType, @FromGraph Role role) {
-        RelationType superType = subType.superType();
+        RelationType superType = subType.sup();
 
         Set<Role> previousHasRoles = Sets.newHashSet(superType.relates());
         subType.relates(role);
@@ -147,7 +147,7 @@ public class RelationTypePropertyTest {
     @Property
     public void whenRelatingARole_TheDirectSubTypeRelatedRolesAreUnchanged(
             @Meta(false) RelationType subType, @FromGraph Role role) {
-        RelationType superType = subType.superType();
+        RelationType superType = subType.sup();
         assumeFalse(isMetaLabel(superType.getLabel()));
 
         Set<Role> previousHasRoles = Sets.newHashSet(subType.relates());
@@ -178,7 +178,7 @@ public class RelationTypePropertyTest {
     @Property
     public void whenDeletingARelatedRole_TheDirectSuperTypeRelatedRolesAreUnchanged(
             @Meta(false) RelationType subType, @FromGraph Role role) {
-        RelationType superType = subType.superType();
+        RelationType superType = subType.sup();
 
         Set<Role> previousHasRoles = Sets.newHashSet(superType.relates());
         subType.deleteRelates(role);
@@ -190,7 +190,7 @@ public class RelationTypePropertyTest {
     @Property
     public void whenDeletingARelatedRole_TheDirectSubTypeRelatedRolesAreUnchanged(
             @Meta(false) RelationType subType, @FromGraph Role role) {
-        RelationType superType = subType.superType();
+        RelationType superType = subType.sup();
         assumeFalse(isMetaLabel(superType.getLabel()));
 
         Set<Role> previousHasRoles = Sets.newHashSet(subType.relates());

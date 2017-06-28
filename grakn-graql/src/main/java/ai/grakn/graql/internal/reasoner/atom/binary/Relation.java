@@ -642,7 +642,7 @@ public class Relation extends TypeAtom {
                         Var parentRolePlayer = prp.getRolePlayer().getVarName();
                         OntologyConcept parent = parentVarOntologyConceptMap.get(parentRolePlayer);
 
-                        Set<Role> compatibleChildRoles = isMetaRole? childRoles : Sets.intersection(new HashSet<>(parentRole.subTypes()), childRoles);
+                        Set<Role> compatibleChildRoles = isMetaRole? childRoles : Sets.intersection(new HashSet<>(parentRole.subs()), childRoles);
 
                         if (parent != null && parent.isType()){
                             boolean isMetaType = Schema.MetaSchema.isMetaLabel(parent.getLabel());

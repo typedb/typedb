@@ -68,7 +68,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                 Type type = concept.asType();
                 sb.append(colorKeyword("label ")).append(colorType(type));
 
-                Type superType = type.superType();
+                Type superType = type.sup();
 
                 if (superType != null) {
                     sb.append(colorKeyword(" sub ")).append(colorType(superType));

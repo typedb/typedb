@@ -77,8 +77,8 @@ public class OntologyConceptMapper {
     private static VarPattern formatBase(OntologyConcept ontologyConcept) {
         VarPattern var = var().label(ontologyConcept.getLabel());
 
-        OntologyConcept superType = ontologyConcept.superType();
-        if (ontologyConcept.superType() != null) {
+        OntologyConcept superType = ontologyConcept.sup();
+        if (ontologyConcept.sup() != null) {
             var = var.sub(Graql.label(superType.getLabel()));
         }
 

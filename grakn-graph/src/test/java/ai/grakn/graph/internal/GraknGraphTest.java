@@ -104,7 +104,7 @@ public class GraknGraphTest extends GraphTestBase {
         RelationType sampleRelationType = graknGraph.putRelationType("Sample Relation Type");
         Role sampleRole = graknGraph.putRoleType("Sample Role Type");
 
-        assertThat(graknGraph.admin().getMetaConcept().subTypes(), containsInAnyOrder(
+        assertThat(graknGraph.admin().getMetaConcept().subs(), containsInAnyOrder(
                 graknGraph.admin().getMetaConcept(),
                 graknGraph.admin().getMetaRoleType(),
                 graknGraph.admin().getMetaRelationType(),
@@ -123,12 +123,12 @@ public class GraknGraphTest extends GraphTestBase {
     public void whenClosingReadOnlyGraph_EnsureTypesAreCached(){
         assertCacheOnlyContainsMetaTypes();
         //noinspection ResultOfMethodCallIgnored
-        graknGraph.getMetaConcept().subTypes(); //This loads some types into transaction cache
+        graknGraph.getMetaConcept().subs(); //This loads some types into transaction cache
         graknGraph.abort();
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.READ);
-        Collection<? extends OntologyConcept> types = graknGraph.getMetaConcept().subTypes();
+        Collection<? extends OntologyConcept> types = graknGraph.getMetaConcept().subs();
         graknGraph.abort();
 
         for (OntologyConcept type : graknGraph.getGraphCache().getCachedTypes().values()) {
@@ -164,8 +164,8 @@ public class GraknGraphTest extends GraphTestBase {
         //Check nothing is revealed when returning result sets
         assertThat(type.plays(), is(empty()));
         assertThat(resourceType.plays(), is(empty()));
-        assertThat(graknGraph.getMetaRelationType().subTypes(), containsInAnyOrder(relationType));
-        assertThat(graknGraph.getMetaRoleType().subTypes(), containsInAnyOrder(role));
+        assertThat(graknGraph.getMetaRelationType().subs(), containsInAnyOrder(relationType));
+        assertThat(graknGraph.getMetaRoleType().subs(), containsInAnyOrder(role));
 
         //Check things are still returned when explicitly asking for them
         RelationType has = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
@@ -180,8 +180,8 @@ public class GraknGraphTest extends GraphTestBase {
         assertTrue(graknGraph.implicitConceptsVisible());
 
         //Now check the result sets again
-        assertThat(graknGraph.getMetaRelationType().subTypes(), containsInAnyOrder(relationType, has));
-        assertThat(graknGraph.getMetaRoleType().subTypes(), containsInAnyOrder(role, hasOwner, hasValue));
+        assertThat(graknGraph.getMetaRelationType().subs(), containsInAnyOrder(relationType, has));
+        assertThat(graknGraph.getMetaRoleType().subs(), containsInAnyOrder(role, hasOwner, hasValue));
         assertThat(type.plays(), containsInAnyOrder(hasOwner));
         assertThat(resourceType.plays(), containsInAnyOrder(hasValue));
     }

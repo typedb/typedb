@@ -72,7 +72,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
 
     OntologyConceptImpl(VertexElement vertexElement, T superType) {
         this(vertexElement);
-        if(superType() == null) superType(superType);
+        if(sup() == null) sup(superType);
     }
 
     OntologyConceptImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
@@ -121,7 +121,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      *
      * @return The super of this Ontology Element
      */
-    public T superType() {
+    public T sup() {
         return cachedSuperType.get();
     }
 
@@ -132,12 +132,12 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
     Set<T> superSet() {
         Set<T> superSet= new HashSet<>();
         superSet.add(getThis());
-        T superParent = superType();
+        T superParent = sup();
 
         while(superParent != null && !Schema.MetaSchema.THING.getLabel().equals(superParent.getLabel())){
             superSet.add(superParent);
             //noinspection unchecked
-            superParent = (T) superParent.superType();
+            superParent = (T) superParent.sup();
         }
 
         return superSet;
@@ -188,7 +188,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      * @return All the subs of this concept including itself
      */
     @Override
-    public Collection<T> subTypes(){
+    public Collection<T> subs(){
         return Collections.unmodifiableCollection(filterImplicitStructures(nextSubLevel(this)));
     }
 
@@ -253,9 +253,9 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      * @param type The sub type of this type
      * @return The Type itself
      */
-    public T subType(T type){
+    public T sub(T type){
         //noinspection unchecked
-        ((TypeImpl) type).superType(this);
+        ((TypeImpl) type).sup(this);
         return getThis();
     }
 
@@ -264,10 +264,10 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      * @param newSuperType This type's super type
      * @return The Type itself
      */
-    public T superType(T newSuperType) {
+    public T sup(T newSuperType) {
         checkOntologyMutationAllowed();
 
-        T oldSuperType = superType();
+        T oldSuperType = sup();
         if(oldSuperType == null || (!oldSuperType.equals(newSuperType))) {
             //Update the super type of this type in cache
             cachedSuperType.set(newSuperType);
@@ -307,10 +307,10 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
     private boolean superLoops(){
         //Check For Loop
         HashSet<OntologyConcept> foundTypes = new HashSet<>();
-        OntologyConcept currentSuperType = superType();
+        OntologyConcept currentSuperType = sup();
         while (currentSuperType != null){
             foundTypes.add(currentSuperType);
-            currentSuperType = currentSuperType.superType();
+            currentSuperType = currentSuperType.sup();
             if(foundTypes.contains(currentSuperType)){
                 return true;
             }

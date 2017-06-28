@@ -99,7 +99,7 @@ public interface RuleType extends Type {
      * @return The super type of this Rule Type
      */
     @Override
-    RuleType superType();
+    RuleType sup();
 
     /**
      *
@@ -121,7 +121,7 @@ public interface RuleType extends Type {
      * @return All the sub types of this rule type
      */
     @Override
-    Collection<RuleType> subTypes();
+    Collection<RuleType> subs();
 
     /**
      *

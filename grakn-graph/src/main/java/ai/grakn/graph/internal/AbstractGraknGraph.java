@@ -281,7 +281,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         //Copy entire ontology to the graph cache. This may be a bad idea as it will slow down graph initialisation
-        getMetaConcept().subTypes().forEach(type -> {
+        getMetaConcept().subs().forEach(type -> {
             getGraphCache().cacheLabel(type.getLabel(), type.getTypeId());
             getGraphCache().cacheType(type.getLabel(), type);
         });

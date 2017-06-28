@@ -68,7 +68,7 @@ class HALExploreType extends HALExploreConcept{
     }
 
     private void attachSubTypes(Representation halResource, Type conceptType) {
-        conceptType.subTypes().forEach(instance -> {
+        conceptType.subs().forEach(instance -> {
             // let's not put the current type in its own embedded
             if (!instance.getId().equals(conceptType.getId())) {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams())

@@ -95,7 +95,7 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
         } else if (concept.isRelationType()) {
             concept.asRelationType().superType(superConcept.asRelationType());
         } else if (concept.isRoleType()) {
-            concept.asRoleType().superType(superConcept.asRoleType());
+            concept.asRoleType().sup(superConcept.asRoleType());
         } else if (concept.isResourceType()) {
             concept.asResourceType().superType(superConcept.asResourceType());
         } else if (concept.isRuleType()) {

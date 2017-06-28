@@ -145,7 +145,7 @@ public interface RelationType extends Type {
      * @return The direct supertype of this RelationType
      */
     @Override
-    RelationType superType();
+    RelationType sup();
 
     /**
      * Returns a collection of subtypes of this RelationType.
@@ -153,7 +153,7 @@ public interface RelationType extends Type {
      * @return All the sub types of this RelationType
      */
     @Override
-    Collection<RelationType> subTypes();
+    Collection<RelationType> subs();
 
     /**
      * Sets the Role which instances of this RelationType may play.

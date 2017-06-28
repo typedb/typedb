@@ -242,10 +242,10 @@ public class ReasonerUtils {
      */
     public static Set<OntologyConcept> getSupers(OntologyConcept ontologyConcept){
         Set<OntologyConcept> superTypes = new HashSet<>();
-        OntologyConcept superType = ontologyConcept.superType();
+        OntologyConcept superType = ontologyConcept.sup();
         while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
             superTypes.add(superType);
-            superType = superType.superType();
+            superType = superType.sup();
         }
         return superTypes;
     }
@@ -258,7 +258,7 @@ public class ReasonerUtils {
     public static Type getTopType(Type type){
         Type superType = type;
         while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
-            superType = superType.superType();
+            superType = superType.sup();
         }
         return superType;
     }
@@ -450,7 +450,7 @@ public class ReasonerUtils {
         OntologyConcept superType = child;
         while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())){
             if (superType.equals(parent)) return true;
-            superType = superType.superType();
+            superType = superType.sup();
         }
         return false;
     }

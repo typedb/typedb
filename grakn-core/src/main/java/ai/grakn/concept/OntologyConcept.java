@@ -60,7 +60,7 @@ public interface OntologyConcept extends Concept {
      * @return The direct super of this concept
      */
     @CheckReturnValue
-    OntologyConcept superType();
+    OntologyConcept sup();
 
     /**
      * Get all indirect subs of this concept.
@@ -70,7 +70,7 @@ public interface OntologyConcept extends Concept {
      * @return All the indirect sub-types of this Type
      */
     @CheckReturnValue
-    Collection<? extends OntologyConcept> subTypes();
+    Collection<? extends OntologyConcept> subs();
 
     /**
      * Return whether the Ontology Element was created implicitly.

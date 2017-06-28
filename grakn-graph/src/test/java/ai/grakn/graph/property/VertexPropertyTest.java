@@ -250,7 +250,7 @@ public class VertexPropertyTest {
         Function<GraknGraph,Object> function = g -> {
             if (concept.isOntologyConcept()) {
                 OntologyConcept ontologyConcept = concept.asOntologyConcept();
-                assumeThat(ontologyConcept.subTypes(), contains(ontologyConcept));
+                assumeThat(ontologyConcept.subs(), contains(ontologyConcept));
                 if(ontologyConcept.isType()) {
                     Type type = ontologyConcept.asType();
                     assumeThat(type.instances(), empty());

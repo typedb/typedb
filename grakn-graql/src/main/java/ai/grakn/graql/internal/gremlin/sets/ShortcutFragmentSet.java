@@ -165,7 +165,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         Preconditions.checkState(this.roleType.isPresent());
         Preconditions.checkState(!roleTypeLabels.isPresent());
 
-        Collection<Role> subTypes = withImplicitConceptsVisible(graph, role::subTypes);
+        Collection<Role> subTypes = withImplicitConceptsVisible(graph, role::subs);
 
         Set<Label> newRoleLabels = subTypes.stream().map(OntologyConcept::getLabel).collect(toSet());
 
@@ -182,7 +182,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
     private ShortcutFragmentSet addRelationTypeLabel(GraknGraph graph, RelationType relationType) {
         Preconditions.checkState(!relationTypeLabels.isPresent());
 
-        Collection<RelationType> subTypes = withImplicitConceptsVisible(graph, relationType::subTypes);
+        Collection<RelationType> subTypes = withImplicitConceptsVisible(graph, relationType::subs);
 
         Set<Label> newRelationLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
 

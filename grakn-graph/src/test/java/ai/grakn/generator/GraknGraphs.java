@@ -168,7 +168,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             () -> {
                 Label label = typeLabel();
                 Role superType = roleType();
-                Role role = graph.putRoleType(label).superType(superType);
+                Role role = graph.putRoleType(label).sup(superType);
                 summaryAssign(role, "graph", "putRoleType", label);
                 summary(role, "superType", superType);
             },
@@ -222,7 +222,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             () -> {
                 Role role1 = roleType();
                 Role role2 = roleType();
-                role1.superType(role2);
+                role1.sup(role2);
                 summary(role1, "superType", role2);
             },
             () -> {
@@ -319,37 +319,37 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private OntologyConcept ontologyConcept() {
-        return random.choose(graph.admin().getMetaConcept().subTypes());
+        return random.choose(graph.admin().getMetaConcept().subs());
     }
 
     private Type type() {
-        Collection<? extends Type> candidates = graph.admin().getMetaConcept().subTypes().stream().
+        Collection<? extends Type> candidates = graph.admin().getMetaConcept().subs().stream().
                 filter(o -> !o.isRoleType()).map(o -> (Type) o).collect(Collectors.toSet());
         return random.choose(candidates);
     }
 
     private EntityType entityType() {
-        return random.choose(graph.admin().getMetaEntityType().subTypes());
+        return random.choose(graph.admin().getMetaEntityType().subs());
     }
 
     private Role roleType() {
-        return random.choose(graph.admin().getMetaRoleType().subTypes());
+        return random.choose(graph.admin().getMetaRoleType().subs());
     }
 
     private ResourceType resourceType() {
-        return random.choose((Collection<ResourceType>) graph.admin().getMetaResourceType().subTypes());
+        return random.choose((Collection<ResourceType>) graph.admin().getMetaResourceType().subs());
     }
 
     private RelationType relationType() {
-        return random.choose(graph.admin().getMetaRelationType().subTypes());
+        return random.choose(graph.admin().getMetaRelationType().subs());
     }
 
     private RuleType ruleType() {
-        return random.choose(graph.admin().getMetaRuleType().subTypes());
+        return random.choose(graph.admin().getMetaRuleType().subs());
     }
 
     private Thing instance() {
-        Set<? extends Thing> candidates = graph.admin().getMetaConcept().subTypes().stream().
+        Set<? extends Thing> candidates = graph.admin().getMetaConcept().subs().stream().
                 filter(element -> !element.isRoleType()).
                 flatMap(element -> ((Type) element).instances().stream()).
                 collect(Collectors.toSet());
@@ -383,12 +383,12 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     public static Collection<? extends OntologyConcept> allOntologyElementsFrom(GraknGraph graph) {
-        Function<GraknGraph, ? extends Collection<? extends OntologyConcept>> function = g -> g.admin().getMetaConcept().subTypes();
+        Function<GraknGraph, ? extends Collection<? extends OntologyConcept>> function = g -> g.admin().getMetaConcept().subs();
         return CommonUtil.withImplicitConceptsVisible(graph, function);
     }
 
     public static Collection<? extends Thing> allInstancesFrom(GraknGraph graph) {
-        Function<GraknGraph, ? extends Collection<? extends Thing>> function = g -> g.admin().getMetaConcept().subTypes().stream().
+        Function<GraknGraph, ? extends Collection<? extends Thing>> function = g -> g.admin().getMetaConcept().subs().stream().
                 filter(element -> !element.isRoleType()).
                 flatMap(element -> ((Type) element).instances().stream()).
                 collect(Collectors.toSet());

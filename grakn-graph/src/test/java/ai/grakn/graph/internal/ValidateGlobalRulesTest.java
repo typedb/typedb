@@ -60,7 +60,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         assertFalse(flags[0] && flags[1]);
         assertTrue(flags[0] || flags[1]);
 
-        wolf.superType(creature);
+        wolf.sup(creature);
         creature.plays(monster);
 
         for (Casting casting : assertion.castingsRelation().collect(Collectors.toSet())) {
