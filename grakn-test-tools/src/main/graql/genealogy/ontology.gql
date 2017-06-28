@@ -103,8 +103,8 @@ marriage sub relatives
 	relates husband
 	relates wife
 	has "date";
-spouse sub role is-abstract;
-generic-spouse sub spouse is-abstract;
+spouse sub role;
+generic-spouse sub spouse;
 spouse1 sub generic-spouse;
 spouse2 sub generic-spouse;
 husband sub spouse;
@@ -128,7 +128,7 @@ daughter sub child;
 siblings sub relatives
 	relates sibling1
 	relates sibling2;
-sibling sub role is-abstract;
+sibling sub role;
 sibling1 sub sibling;
 sibling2 sub sibling;
 
@@ -149,7 +149,7 @@ granddaughter sub grandchild;
 cousins sub relatives
 	relates cousin1
 	relates cousin2;
-cousin sub role is-abstract;
+cousin sub role;
 cousin1 sub cousin;
 cousin2 sub cousin;
 
@@ -166,3 +166,13 @@ daughter-in-law sub child-in-law;
 parent-in-law sub role;
 mother-in-law sub parent-in-law;
 father-in-law sub parent-in-law;
+
+#TODO: Kill this rubbish
+#This should really be looked at and removed later on
+#Filler relation type to bypass role validation rule which states every role must be linked to at least on relation type
+#Before these roles were abstract but now role cannot be abstract. Hence the hack you see blow
+"fake-relation" sub relation
+    relates cousin
+    relates spouse
+    relates generic-spouse
+    relates sibling;

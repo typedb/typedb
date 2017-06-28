@@ -175,12 +175,12 @@ public class TestSamplesImport extends TestOwlGraknBase {
             assertTrue(item1.resources().stream().anyMatch(r -> r.getValue().equals("First Item")));
             item1.resources().forEach(System.out::println);
             Entity item2 = getEntity("eItem2");
-            RoleType subjectRole = graph.getType(migrator.namer().subjectRole(TypeLabel.of("op-related")));
-            RoleType objectRole = graph.getType(migrator.namer().objectRole(TypeLabel.of("op-related")));
+            RoleType subjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(TypeLabel.of("op-related")));
+            RoleType objectRole = graph.getOntologyConcept(migrator.namer().objectRole(TypeLabel.of("op-related")));
             assertTrue(item2.relations(subjectRole).stream().anyMatch(
                     relation -> item1.equals(relation.rolePlayers(objectRole).iterator().next())));
-            RoleType catsubjectRole = graph.getType(migrator.namer().subjectRole(TypeLabel.of("op-hasCategory")));
-            RoleType catobjectRole = graph.getType(migrator.namer().objectRole(TypeLabel.of("op-hasCategory")));
+            RoleType catsubjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(TypeLabel.of("op-hasCategory")));
+            RoleType catobjectRole = graph.getOntologyConcept(migrator.namer().objectRole(TypeLabel.of("op-hasCategory")));
             assertTrue(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("tCategory")));
             assertTrue(catsubjectRole.playedByTypes().contains(migrator.graph().getEntityType("tThing")));
             //Assert.assertFalse(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("Thing")));

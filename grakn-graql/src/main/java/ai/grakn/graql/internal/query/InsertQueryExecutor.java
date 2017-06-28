@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
@@ -179,7 +180,7 @@ public class InsertQueryExecutor {
         // If type provided, then 'put' the concept, else 'get' it by ID or label
         if (sub.isPresent()) {
             TypeLabel label = getTypeLabelOrThrow(typeLabel);
-            return putType(label, var, sub.get());
+            return putOntologyConcept(label, var, sub.get());
         } else if (type.isPresent()) {
             return putInstance(id, var, type.get());
         } else if (id.isPresent()) {
@@ -187,7 +188,7 @@ public class InsertQueryExecutor {
             if (concept == null) throw GraqlQueryException.insertWithoutType(id.get());
             return concept;
         } else if (typeLabel.isPresent()) {
-            Concept concept = graph.getType(typeLabel.get());
+            Concept concept = graph.getOntologyConcept(typeLabel.get());
             if (concept == null) throw GraqlQueryException.labelNotFound(typeLabel.get());
             return concept;
         } else {
@@ -267,21 +268,21 @@ public class InsertQueryExecutor {
      * @param sub the supertype property of the var
      * @return a concept with the given ID and the specified type
      */
-    private Type putType(TypeLabel label, VarPatternAdmin var, SubProperty sub) {
-        Type superType = getConcept(sub.getSuperType()).asType();
+    private OntologyConcept putOntologyConcept(TypeLabel label, VarPatternAdmin var, SubProperty sub) {
+        OntologyConcept superConcept = getConcept(sub.getSuperType()).asOntologyConcept();
 
-        if (superType.isEntityType()) {
-            return graph.putEntityType(label).superType(superType.asEntityType());
-        } else if (superType.isRelationType()) {
-            return graph.putRelationType(label).superType(superType.asRelationType());
-        } else if (superType.isRoleType()) {
-            return graph.putRoleType(label).superType(superType.asRoleType());
-        } else if (superType.isResourceType()) {
-            return graph.putResourceType(label, getDataType(var)).superType(superType.asResourceType());
-        } else if (superType.isRuleType()) {
-            return graph.putRuleType(label).superType(superType.asRuleType());
+        if (superConcept.isEntityType()) {
+            return graph.putEntityType(label).superType(superConcept.asEntityType());
+        } else if (superConcept.isRelationType()) {
+            return graph.putRelationType(label).superType(superConcept.asRelationType());
+        } else if (superConcept.isRoleType()) {
+            return graph.putRoleType(label).superType(superConcept.asRoleType());
+        } else if (superConcept.isResourceType()) {
+            return graph.putResourceType(label, getDataType(var)).superType(superConcept.asResourceType());
+        } else if (superConcept.isRuleType()) {
+            return graph.putRuleType(label).superType(superConcept.asRuleType());
         } else {
-            throw GraqlQueryException.insertMetaType(label, superType);
+            throw GraqlQueryException.insertMetaType(label, superConcept);
         }
     }
 

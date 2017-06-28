@@ -26,10 +26,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.Schema;
 import com.google.common.io.Files;
-import java.util.Collections;
-import java.util.stream.Collectors;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.BufferedWriter;
@@ -43,10 +40,12 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.count;
@@ -131,7 +130,7 @@ public class MigrationCLI {
             builder.append("Graph ontology contains:\n");
             builder.append("\t ").append(graph.admin().getMetaEntityType().instances().size()).append(" entity types\n");
             builder.append("\t ").append(graph.admin().getMetaRelationType().instances().size()).append(" relation types\n");
-            builder.append("\t ").append(graph.admin().getMetaRoleType().instances().size()).append(" role types\n");
+            builder.append("\t ").append("0 role types\n");
             builder.append("\t ").append(graph.admin().getMetaResourceType().instances().size()).append(" resource types\n");
             builder.append("\t ").append(graph.admin().getMetaRuleType().instances().size()).append(" rule types\n\n");
 
@@ -151,16 +150,8 @@ public class MigrationCLI {
         try {
             return Files.readLines(file, StandardCharsets.UTF_8).stream().collect(joining("\n"));
         } catch (IOException e) {
-            throw die("Could not read file " + file.getPath());
+            throw new IllegalArgumentException("Could not read file " + file.getPath(), e);
         }
-    }
-
-    public static RuntimeException die(Throwable throwable){
-        return die(ExceptionUtils.getFullStackTrace(throwable));
-    }
-
-    public static RuntimeException die(String errorMsg) {
-        throw new RuntimeException(errorMsg);
     }
 
     private static void printHelpMessage(MigrationOptions options){

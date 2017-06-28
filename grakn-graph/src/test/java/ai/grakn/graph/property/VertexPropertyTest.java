@@ -22,6 +22,7 @@ package ai.grakn.graph.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -247,22 +248,25 @@ public class VertexPropertyTest {
         // Confirm this concept is allowed to be deleted
         // TODO: A better way to handle these assumptions?
         Function<GraknGraph,Object> function = g -> {
-            if (concept.isType()) {
-                Type type = concept.asType();
-                assumeThat(type.subTypes(), contains(type));
-                assumeThat(type.instances(), empty());
-                assumeThat(type.getRulesOfHypothesis(), empty());
-                assumeThat(type.getRulesOfConclusion(), empty());
+            if (concept.isOntologyConcept()) {
+                OntologyConcept ontologyConcept = concept.asOntologyConcept();
+                assumeThat(ontologyConcept.subTypes(), contains(ontologyConcept));
+                if(ontologyConcept.isType()) {
+                    Type type = ontologyConcept.asType();
+                    assumeThat(type.instances(), empty());
+                    assumeThat(type.getRulesOfHypothesis(), empty());
+                    assumeThat(type.getRulesOfConclusion(), empty());
+                }
 
-                if (type.isRoleType()) {
-                    RoleType roleType = type.asRoleType();
+                if (ontologyConcept.isRoleType()) {
+                    RoleType roleType = ontologyConcept.asRoleType();
                     assumeThat(roleType.playedByTypes(), empty());
                     assumeThat(roleType.relationTypes(), empty());
                     Collection<? extends Relation> allRelations = graph.admin().getMetaRelationType().instances();
                     Set<RoleType> allRolesPlayed = allRelations.stream().flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
                     assumeThat(allRolesPlayed, not(hasItem(roleType)));
-                } else if (type.isRelationType()) {
-                    assumeThat(type.asRelationType().relates(), empty());
+                } else if (ontologyConcept.isRelationType()) {
+                    assumeThat(ontologyConcept.asRelationType().relates(), empty());
                 }
             }
 

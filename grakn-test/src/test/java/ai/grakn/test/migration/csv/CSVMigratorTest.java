@@ -136,7 +136,7 @@ public class CSVMigratorTest {
     public void parsedLineIsEmpty_MigratorSkipsThatLine(){
         load(factory, getFile("csv", "pets/schema.gql"));
 
-        // Only insert Puffball
+        // Only dont insert Puffball
         String template = "if (<name> != \"Puffball\") do { insert $x isa cat; }";
         declareAndLoad(template, "pets/data/pets.quotes");
 

@@ -19,6 +19,7 @@
 package ai.grakn.test;
 
 
+import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.EmbeddedCassandra;
 import ai.grakn.util.EmbeddedRedis;
 
@@ -36,7 +37,7 @@ import ai.grakn.util.EmbeddedRedis;
  *
  */
 public class GraknTestSetup {
-    private static String CONFIG = System.getProperty("grakn.test-profile");
+    private static String CONFIG = GraknSystemProperty.TEST_PROFILE.value();
 
     /**
      * Starts cassandra if needed.

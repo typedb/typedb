@@ -32,6 +32,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.SystemErrRule;
 import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
@@ -42,6 +43,8 @@ import static ai.grakn.test.migration.MigratorTestUtils.getProperty;
 import static ai.grakn.test.migration.MigratorTestUtils.getResource;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 public class JsonMigratorMainTest {
 
@@ -51,7 +54,7 @@ public class JsonMigratorMainTest {
     private GraknGraph graph;
 
     @Rule
-    public final ExpectedException exception = ExpectedException.none();
+    public final SystemErrRule sysErr = new SystemErrRule().enableLog();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -75,28 +78,26 @@ public class JsonMigratorMainTest {
 
     @Test
     public void jsonMainNoTemplateFileNameTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Template file missing (-t)");
         run("-input", "");
+        assertThat(sysErr.getLog(), containsString("Template file missing (-t)"));
     }
 
     @Test
     public void jsonMainUnknownArgumentTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Unrecognized option: -whale");
         run("-whale", "");
+        assertThat(sysErr.getLog(), containsString("Unrecognized option: -whale"));
     }
 
     @Test
     public void jsonMainNoDataFileExistsTest(){
-        exception.expect(RuntimeException.class);
         run("-input", dataFile + "wrong", "-template", templateFile + "wrong");
+        assertThat(sysErr.getLog(), containsString("Cannot find file:"));
     }
 
     @Test
     public void jsonMainNoTemplateFileExistsTest(){
-        exception.expect(RuntimeException.class);
         run("-input", dataFile, "-template", templateFile + "wrong");
+        assertThat(sysErr.getLog(), containsString("Cannot find file:"));
     }
 
     @Test
@@ -107,12 +108,6 @@ public class JsonMigratorMainTest {
     @Test
     public void jsonMainActiveTasksArgumentTest(){
         runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-a", "2", "-keyspace", graph.getKeyspace());
-    }
-
-    @Test
-    public void jsonMainThrowableTest(){
-        exception.expect(RuntimeException.class);
-        run("-input", dataFile, "-template", templateFile, "-batch", "hello");
     }
 
     private void run(String... args){

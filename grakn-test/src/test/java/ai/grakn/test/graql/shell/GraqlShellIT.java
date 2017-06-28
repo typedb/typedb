@@ -23,6 +23,7 @@ import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.test.DistributionContext;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -72,7 +73,7 @@ public class GraqlShellIT {
     private static PrintStream trueOut;
     private static PrintStream trueErr;
     private static final String expectedVersion = "graql-9.9.9";
-    private static final String historyFile = System.getProperty("java.io.tmpdir") + "/graql-test-history";
+    private static final String historyFile = StandardSystemProperty.JAVA_IO_TMPDIR.value() + "/graql-test-history";
 
     private static int keyspaceSuffix = 0;
 

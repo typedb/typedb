@@ -34,7 +34,7 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
         checkValidProperty(graph, var);
 
         getInnerVars().map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
-            if (graph.getType(label) == null) {
+            if (graph.getOntologyConcept(label) == null) {
                 throw GraqlQueryException.labelNotFound(label);
             }
         });

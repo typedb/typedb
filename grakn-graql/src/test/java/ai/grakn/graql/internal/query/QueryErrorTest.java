@@ -20,6 +20,8 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Thing;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
@@ -200,5 +202,16 @@ public class QueryErrorTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(INVALID_VALUE.getMessage(qb.getClass()));
         qb.match(var("x").val(qb));
+    }
+
+    @Test
+    public void whenTryingToSetExistingInstanceType_Throw() {
+        Thing movie = rule.graph().getEntityType("movie").instances().iterator().next();
+        Type person = rule.graph().getEntityType("person");
+
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(ErrorMessage.INSERT_NEW_TYPE.getMessage(movie, person));
+
+        qb.match(var("x").id(movie.getId())).insert(var("x").isa(label(person.getLabel()))).execute();
     }
 }

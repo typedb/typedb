@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
@@ -83,21 +84,21 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
 
     /**
      *
-     * @param type The concept type which this rules applies to.
-     * @return The Rule itself
+     * @param ontologyConcept The {@link OntologyConcept} which this {@link Rule} applies to.
+     * @return The {@link Rule} itself
      */
-    Rule addHypothesis(Type type) {
-        putEdge(type, Schema.EdgeLabel.HYPOTHESIS);
+    Rule addHypothesis(OntologyConcept ontologyConcept) {
+        putEdge(ontologyConcept, Schema.EdgeLabel.HYPOTHESIS);
         return getThis();
     }
 
     /**
      *
-     * @param type The concept type which is the conclusion of this Rule.
-     * @return The Rule itself
+     * @param ontologyConcept The {@link OntologyConcept} which is the conclusion of this {@link Rule}.
+     * @return The {@link Rule} itself
      */
-    Rule addConclusion(Type type) {
-        putEdge(type, Schema.EdgeLabel.CONCLUSION);
+    Rule addConclusion(OntologyConcept ontologyConcept) {
+        putEdge(ontologyConcept, Schema.EdgeLabel.CONCLUSION);
         return getThis();
     }
 

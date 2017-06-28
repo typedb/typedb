@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
@@ -66,11 +66,11 @@ public class AdminTest {
                 var().rel("production-with-cast", "x").rel("y").isa("has-cast")
         );
 
-        Set<Type> types = Stream.of(
+        Set<OntologyConcept> types = Stream.of(
                 "movie", "production", "tmdb-vote-count", "character", "production-with-cast", "has-cast"
-        ).map(t -> rule.graph().<Type>getType(TypeLabel.of(t))).collect(toSet());
+        ).map(t -> rule.graph().<OntologyConcept>getOntologyConcept(TypeLabel.of(t))).collect(toSet());
 
-        assertEquals(types, query.admin().getTypes());
+        assertEquals(types, query.admin().getOntologyConcepts());
     }
 
     @Test
@@ -142,8 +142,8 @@ public class AdminTest {
     @Test
     public void testInsertQueryGetTypes() {
         InsertQuery query = qb.insert(var("x").isa("person").has("name", var("y")), var().rel("actor", "x").isa("has-cast"));
-        Set<Type> types = Stream.of("person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getType(TypeLabel.of(t))).collect(toSet());
-        assertEquals(types, query.admin().getTypes());
+        Set<OntologyConcept> types = Stream.of("person", "name", "actor", "has-cast").map(t -> rule.graph().<OntologyConcept>getOntologyConcept(TypeLabel.of(t))).collect(toSet());
+        assertEquals(types, query.admin().getOntologyConcepts());
     }
 
     @Test
@@ -151,9 +151,9 @@ public class AdminTest {
         InsertQuery query = qb.match(var("y").isa("movie"))
                         .insert(var("x").isa("person").has("name", var("z")), var().rel("actor", "x").isa("has-cast"));
 
-        Set<Type> types =
-                Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getType(TypeLabel.of(t))).collect(toSet());
+        Set<OntologyConcept> types =
+                Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> rule.graph().<OntologyConcept>getOntologyConcept(TypeLabel.of(t))).collect(toSet());
 
-        assertEquals(types, query.admin().getTypes());
+        assertEquals(types, query.admin().getOntologyConcepts());
     }
 }

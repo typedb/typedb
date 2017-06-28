@@ -42,7 +42,7 @@ import java.util.Collection;
  * @author fppt
  *
  */
-public interface Type extends Concept {
+public interface Type extends OntologyConcept {
     //------------------------------------- Modifiers ----------------------------------
     // TODO: Describe behaviour when setting a type with direct instances as abstract
     /**
@@ -101,21 +101,6 @@ public interface Type extends Concept {
     Type deleteScope(Thing scope);
 
     //------------------------------------- Accessors ---------------------------------
-    /**
-     * Returns the unique id of this Type.
-     *
-     * @return The unique id of this type
-     */
-    @CheckReturnValue
-    TypeId getTypeId();
-
-    /**
-     * Returns the unique label of this Type.
-     *
-     * @return The unique label of this type
-     */
-    @CheckReturnValue
-    TypeLabel getLabel();
 
     /**
      *
@@ -173,34 +158,6 @@ public interface Type extends Concept {
      */
     @CheckReturnValue
     Boolean isAbstract();
-
-    /**
-     * Return whether the Type was created implicitly.
-     *
-     * By default, types are not implicit.
-     *
-     * @return returns true if the type was created implicitly through {@link #resource}
-     */
-    @CheckReturnValue
-    Boolean isImplicit();
-
-    /**
-     * Return the collection of Rules for which this Type serves as a hypothesis.
-     * @see Rule
-     *
-     * @return A collection of Rules for which this Type serves as a hypothesis
-     */
-    @CheckReturnValue
-    Collection<Rule> getRulesOfHypothesis();
-
-    /**
-     * Return the collection of Rules for which this Type serves as a conclusion.
-     * @see Rule
-     *
-     * @return A collection of Rules for which this Type serves as a conclusion
-     */
-    @CheckReturnValue
-    Collection<Rule> getRulesOfConclusion();
 
     /**
      * Retrieve a list of the Instances that scope this Type.

@@ -21,6 +21,7 @@ package ai.grakn;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -28,8 +29,8 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
@@ -200,6 +201,18 @@ public interface GraknGraph extends AutoCloseable{
      */
     @CheckReturnValue
     <T extends Concept> T getConcept(ConceptId id);
+
+    /**
+     * Get the {@link OntologyConcept} with the label provided, if it exists.
+     *
+     * @param label A unique label which identifies the {@link OntologyConcept} in the graph.
+     * @return The {@link OntologyConcept} with the provided label or null if no such {@link OntologyConcept} exists.
+     *
+     * @throws GraphOperationException if the graph is closed
+     * @throws ClassCastException if the type is not an instance of {@link T}
+     */
+    @CheckReturnValue
+    <T extends OntologyConcept> T getOntologyConcept(TypeLabel label);
 
     /**
      * Get the {@link Type} with the label provided, if it exists.

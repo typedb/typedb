@@ -8,8 +8,6 @@ GRAKN_DIST_BIN=${GRAKN_DIST_TMP}/bin/
 startEngine(){
   echo "Starting!"
   "${GRAKN_DIST_BIN}/grakn.sh" start
-  sleep 30  # TODO: not this awful shit, will be fixed by #15670
-  echo "exit" | "${GRAKN_DIST_BIN}"/graql.sh # Waiting for Engine
 }
 
 loadData(){
