@@ -18,11 +18,11 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.TypeId;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
@@ -40,8 +40,8 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  */
 class Casting {
     private final EdgeElement edgeElement;
-    private final Cache<Role> cachedRoleType = new Cache<>(() -> (Role) edge().graph().getOntologyConcept(TypeId.of(edge().property(Schema.EdgeProperty.ROLE_TYPE_ID))));
-    private final Cache<RelationType> cachedRelationType = new Cache<>(() -> (RelationType) edge().graph().getOntologyConcept(TypeId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_ID))));
+    private final Cache<Role> cachedRoleType = new Cache<>(() -> (Role) edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_TYPE_ID))));
+    private final Cache<RelationType> cachedRelationType = new Cache<>(() -> (RelationType) edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_ID))));
     private final Cache<Thing> cachedInstance = new Cache<>(() -> edge().graph().factory().buildConcept(edge().target()));
     private final Cache<Relation> cachedRelation = new Cache<>(() -> edge().graph().factory().buildConcept(edge().source()));
 

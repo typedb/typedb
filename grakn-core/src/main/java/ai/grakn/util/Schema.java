@@ -21,6 +21,7 @@ package ai.grakn.util;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
@@ -30,7 +31,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
@@ -86,11 +86,11 @@ public final class Schema {
 
 
         private final Label label;
-        private final TypeId id;
+        private final LabelId id;
 
         MetaSchema(String s, int i) {
             label = Label.of(s);
-            id = TypeId.of(i);
+            id = LabelId.of(i);
         }
 
         @CheckReturnValue
@@ -99,7 +99,7 @@ public final class Schema {
         }
 
         @CheckReturnValue
-        public TypeId getId(){
+        public LabelId getId(){
             return id;
         }
 

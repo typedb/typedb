@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.TypeId;
+import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
@@ -57,21 +57,21 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
 
         String randomId = getRandomJobId();
 
-        Set<TypeId> withResourceRelationTypeIds =
+        Set<LabelId> withResourceRelationLabelIds =
                 withResourceRelationTypes.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
-        Set<TypeId> subTypeIds =
+        Set<LabelId> subLabelIds =
                 subLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
 
         if (members) {
             if (anySize) {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationTypeIds, randomId),
-                        new ClusterMemberMapReduce(subTypeIds,
+                        new ConnectedComponentVertexProgram(withResourceRelationLabelIds, randomId),
+                        new ClusterMemberMapReduce(subLabelIds,
                                 ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId));
             } else {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationTypeIds, randomId),
-                        new ClusterMemberMapReduce(subTypeIds,
+                        new ConnectedComponentVertexProgram(withResourceRelationLabelIds, randomId),
+                        new ClusterMemberMapReduce(subLabelIds,
                                 ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize));
             }
             LOGGER.info("ConnectedComponentsVertexProgram is done in "
@@ -80,13 +80,13 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         } else {
             if (anySize) {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationTypeIds, randomId),
-                        new ClusterSizeMapReduce(subTypeIds,
+                        new ConnectedComponentVertexProgram(withResourceRelationLabelIds, randomId),
+                        new ClusterSizeMapReduce(subLabelIds,
                                 ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId));
             } else {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationTypeIds, randomId),
-                        new ClusterSizeMapReduce(subTypeIds,
+                        new ConnectedComponentVertexProgram(withResourceRelationLabelIds, randomId),
+                        new ClusterSizeMapReduce(subLabelIds,
                                 ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize));
             }
             LOGGER.info("ConnectedComponentsVertexProgram is done in "

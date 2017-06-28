@@ -21,11 +21,11 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.TypeId;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -58,7 +58,7 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  */
 abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImpl implements OntologyConcept {
     private final Label cachedLabel;
-    private final TypeId cachedLabelId;
+    private final LabelId cachedLabelId;
 
     private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
     private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
@@ -67,7 +67,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
     OntologyConceptImpl(VertexElement vertexElement) {
         super(vertexElement);
         cachedLabel = Label.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
-        cachedLabelId = TypeId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
+        cachedLabelId = LabelId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
     }
 
     OntologyConceptImpl(VertexElement vertexElement, T superType) {
@@ -86,7 +86,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      * @return The internal id which is used for fast lookups
      */
     @Override
-    public TypeId getTypeId(){
+    public LabelId getTypeId(){
         return cachedLabelId;
     }
 
