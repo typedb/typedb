@@ -87,7 +87,7 @@ public class GraknGraphTest extends GraphTestBase {
 
         EntityType entityType = graknGraph.putEntityType(entityTypeLabel);
         RelationType relationType = graknGraph.putRelationType(relationTypeLabel);
-        Role role = graknGraph.putRoleType(roleTypeLabel);
+        Role role = graknGraph.putRole(roleTypeLabel);
         ResourceType resourceType = graknGraph.putResourceType(resourceTypeLabel, ResourceType.DataType.STRING);
         RuleType ruleType = graknGraph.putRuleType(ruleTypeLabel);
 
@@ -102,7 +102,7 @@ public class GraknGraphTest extends GraphTestBase {
     public void whenGettingSubTypesFromRootMeta_IncludeAllTypes(){
         EntityType sampleEntityType = graknGraph.putEntityType("Sample Entity Type");
         RelationType sampleRelationType = graknGraph.putRelationType("Sample Relation Type");
-        Role sampleRole = graknGraph.putRoleType("Sample Role Type");
+        Role sampleRole = graknGraph.putRole("Sample Role Type");
 
         assertThat(graknGraph.admin().getMetaConcept().subs(), containsInAnyOrder(
                 graknGraph.admin().getMetaConcept(),
@@ -230,8 +230,8 @@ public class GraknGraphTest extends GraphTestBase {
         //Check Central cache is empty
         assertCacheOnlyContainsMetaTypes();
 
-        Role r1 = graknGraph.putRoleType("r1");
-        Role r2 = graknGraph.putRoleType("r2");
+        Role r1 = graknGraph.putRole("r1");
+        Role r2 = graknGraph.putRole("r2");
         EntityType e1 = graknGraph.putEntityType("e1").plays(r1).plays(r2);
         RelationType rel1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
 
@@ -291,7 +291,7 @@ public class GraknGraphTest extends GraphTestBase {
         //Fail Some Mutations
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
         failMutation(graknGraph, () -> graknGraph.putEntityType(entityType));
-        failMutation(graknGraph, () -> graknGraph.putRoleType(roleType1));
+        failMutation(graknGraph, () -> graknGraph.putRole(roleType1));
         failMutation(graknGraph, () -> graknGraph.putRelationType(relationType1));
 
         //Pass some mutations
@@ -299,8 +299,8 @@ public class GraknGraphTest extends GraphTestBase {
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
         EntityType entityT = graknGraph.putEntityType(entityType);
         entityT.addEntity();
-        Role roleT1 = graknGraph.putRoleType(roleType1);
-        Role roleT2 = graknGraph.putRoleType(roleType2);
+        Role roleT1 = graknGraph.putRole(roleType1);
+        Role roleT2 = graknGraph.putRole(roleType2);
         RelationType relationT1 = graknGraph.putRelationType(relationType1).relates(roleT1);
         RelationType relationT2 = graknGraph.putRelationType(relationType2).relates(roleT2);
         ResourceType<String> resourceT = graknGraph.putResourceType(resourceType, ResourceType.DataType.STRING);

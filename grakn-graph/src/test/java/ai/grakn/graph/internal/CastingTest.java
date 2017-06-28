@@ -43,9 +43,9 @@ public class CastingTest extends GraphTestBase {
 
     @Before
     public void createOntology(){
-        role1 = graknGraph.putRoleType("role1");
-        role2 = graknGraph.putRoleType("role2");
-        role3 = graknGraph.putRoleType("role3");
+        role1 = graknGraph.putRole("role1");
+        role2 = graknGraph.putRole("role2");
+        role3 = graknGraph.putRole("role3");
         entityType = graknGraph.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
         relationType = graknGraph.putRelationType("Relation Type").relates(role1).relates(role2).relates(role3);
     }

@@ -70,15 +70,15 @@ public class CWGraph extends TestGraph {
         alignment = graph.putResourceType("alignment", ResourceType.DataType.STRING);
 
         //Roles
-        owner = graph.putRoleType("item-owner");
-        ownedItem = graph.putRoleType("owned-item");
-        seller = graph.putRoleType("seller");
-        buyer = graph.putRoleType("buyer");
-        payee = graph.putRoleType("payee");
-        payer = graph.putRoleType("payer");
-        enemySource = graph.putRoleType("enemy-source");
-        enemyTarget = graph.putRoleType("enemy-target");
-        transactionItem = graph.putRoleType("transaction-item");
+        owner = graph.putRole("item-owner");
+        ownedItem = graph.putRole("owned-item");
+        seller = graph.putRole("seller");
+        buyer = graph.putRole("buyer");
+        payee = graph.putRole("payee");
+        payer = graph.putRole("payer");
+        enemySource = graph.putRole("enemy-source");
+        enemyTarget = graph.putRole("enemy-target");
+        transactionItem = graph.putRole("transaction-item");
 
         //Entitites
         person = graph.putEntityType("person")

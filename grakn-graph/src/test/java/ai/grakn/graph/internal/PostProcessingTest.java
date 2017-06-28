@@ -50,8 +50,8 @@ public class PostProcessingTest extends GraphTestBase{
 
     @Before
     public void buildSampleGraph(){
-        role1 = graknGraph.putRoleType("role 1");
-        role2 = graknGraph.putRoleType("role 2");
+        role1 = graknGraph.putRole("role 1");
+        role2 = graknGraph.putRole("role 2");
         relationType = graknGraph.putRelationType("rel type").relates(role1).relates(role2);
         EntityType thing = graknGraph.putEntityType("thingy").plays(role1).plays(role2);
         instance1 = (ThingImpl) thing.addEntity();
@@ -85,8 +85,8 @@ public class PostProcessingTest extends GraphTestBase{
 
     @Test
     public void whenMergingDuplicateResourcesWithRelations_EnsureSingleResourceRemainsAndNoDuplicateRelationsAreCreated(){
-        Role roleEntity = graknGraph.putRoleType("Entity Role");
-        Role roleResource = graknGraph.putRoleType("Resource Role");
+        Role roleEntity = graknGraph.putRole("Entity Role");
+        Role roleResource = graknGraph.putRole("Resource Role");
         RelationType relationType = graknGraph.putRelationType("Relation Type").relates(roleEntity).relates(roleResource);
         ResourceTypeImpl<String> resourceType = (ResourceTypeImpl<String>) graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).plays(roleResource);
         EntityType entityType = graknGraph.putEntityType("Entity Type").plays(roleEntity);

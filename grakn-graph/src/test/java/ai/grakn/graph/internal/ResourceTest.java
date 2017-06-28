@@ -49,8 +49,8 @@ public class ResourceTest extends GraphTestBase{
         EntityType randomThing = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
         RelationType hasResource = graknGraph.putRelationType("Has Resource");
-        Role resourceRole = graknGraph.putRoleType("Resource Role");
-        Role actorRole = graknGraph.putRoleType("Actor");
+        Role resourceRole = graknGraph.putRole("Resource Role");
+        Role actorRole = graknGraph.putRole("Actor");
         Thing pacino = randomThing.addEntity();
         Thing jennifer = randomThing.addEntity();
         Thing bob = randomThing.addEntity();

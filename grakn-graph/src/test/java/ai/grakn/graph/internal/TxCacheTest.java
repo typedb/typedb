@@ -63,7 +63,7 @@ public class TxCacheTest extends GraphTestBase{
         // add concepts to rootGraph in as many ways as possible
         EntityType t1 = graknGraph.putEntityType("1");
         RelationType t2 = graknGraph.putRelationType("2");
-        Role t3 = graknGraph.putRoleType("3");
+        Role t3 = graknGraph.putRole("3");
         RuleType t4 = graknGraph.putRuleType("4");
         ResourceType t5 = graknGraph.putResourceType("5", ResourceType.DataType.STRING);
 
@@ -74,8 +74,8 @@ public class TxCacheTest extends GraphTestBase{
 
     @Test
     public void whenCreatingRelations_EnsureRolePlayersAreCached(){
-        Role r1 = graknGraph.putRoleType("r1");
-        Role r2 = graknGraph.putRoleType("r2");
+        Role r1 = graknGraph.putRole("r1");
+        Role r2 = graknGraph.putRole("r2");
         EntityType t1 = graknGraph.putEntityType("t1").plays(r1).plays(r2);
         RelationType rt1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
 
@@ -94,8 +94,8 @@ public class TxCacheTest extends GraphTestBase{
 
     @Test
     public void whenCreatingSuperTypes_EnsureLogContainsSubTypeCastings() {
-        Role r1 = graknGraph.putRoleType("r1");
-        Role r2 = graknGraph.putRoleType("r2");
+        Role r1 = graknGraph.putRole("r1");
+        Role r2 = graknGraph.putRole("r2");
         EntityType t1 = graknGraph.putEntityType("t1").plays(r1).plays(r2);
         EntityType t2 = graknGraph.putEntityType("t2");
         RelationType rt1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
@@ -127,8 +127,8 @@ public class TxCacheTest extends GraphTestBase{
 
     @Test
     public void whenCreatingRelations_EnsureLogContainsRelation(){
-        Role r1 = graknGraph.putRoleType("r1");
-        Role r2 = graknGraph.putRoleType("r2");
+        Role r1 = graknGraph.putRole("r1");
+        Role r2 = graknGraph.putRole("r2");
         EntityType t1 = graknGraph.putEntityType("t1").plays(r1).plays(r2);
         RelationType rt1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
         Entity i1 = t1.addEntity();
@@ -209,8 +209,8 @@ public class TxCacheTest extends GraphTestBase{
 
         //Load some sample data
         ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
-        Role role1 = graknGraph.putRoleType("role 1");
-        Role role2 = graknGraph.putRoleType("role 2");
+        Role role1 = graknGraph.putRole("role 1");
+        Role role2 = graknGraph.putRole("role 2");
         EntityType entityType = graknGraph.putEntityType("My Type").plays(role1).plays(role2).resource(resourceType);
         RelationType relationType = graknGraph.putRelationType("My Relation Type").relates(role1).relates(role2);
         Entity e1 = entityType.addEntity();
@@ -265,8 +265,8 @@ public class TxCacheTest extends GraphTestBase{
 
     @Test
     public void whenMutatingRoleTypesOfTypeCreatedInAnotherTransaction_EnsureTransactionBoundConceptsAreMutated(){
-        Role rol1 = graknGraph.putRoleType("role1");
-        Role rol2 = graknGraph.putRoleType("role2");
+        Role rol1 = graknGraph.putRole("role1");
+        Role rol2 = graknGraph.putRole("role2");
         EntityType e1 = graknGraph.putEntityType("e1").plays(rol1).plays(rol2);
         EntityType e2 = graknGraph.putEntityType("e2");
         RelationType rel = graknGraph.putRelationType("rel").relates(rol1).relates(rol2);

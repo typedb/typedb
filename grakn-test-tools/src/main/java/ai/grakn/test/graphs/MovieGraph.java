@@ -64,28 +64,28 @@ public class MovieGraph extends TestGraph {
 
     @Override
     public void buildOntology(GraknGraph graph) {
-        work = graph.putRoleType("work");
-        author = graph.putRoleType("author");
+        work = graph.putRole("work");
+        author = graph.putRole("author");
         authoredBy = graph.putRelationType("authored-by").relates(work).relates(author);
 
-        productionBeingDirected = graph.putRoleType("production-being-directed").sup(work);
-        director = graph.putRoleType("director").sup(author);
+        productionBeingDirected = graph.putRole("production-being-directed").sup(work);
+        director = graph.putRole("director").sup(author);
         directedBy = graph.putRelationType("directed-by").superType(authoredBy)
                 .relates(productionBeingDirected).relates(director);
 
-        productionWithCast = graph.putRoleType("production-with-cast");
-        actor = graph.putRoleType("actor");
-        characterBeingPlayed = graph.putRoleType("character-being-played");
+        productionWithCast = graph.putRole("production-with-cast");
+        actor = graph.putRole("actor");
+        characterBeingPlayed = graph.putRole("character-being-played");
         hasCast = graph.putRelationType("has-cast")
                 .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
 
-        genreOfProduction = graph.putRoleType("genre-of-production");
-        productionWithGenre = graph.putRoleType("production-with-genre");
+        genreOfProduction = graph.putRole("genre-of-production");
+        productionWithGenre = graph.putRole("production-with-genre");
         hasGenre = graph.putRelationType("has-genre")
                 .relates(genreOfProduction).relates(productionWithGenre);
 
-        clusterOfProduction = graph.putRoleType("cluster-of-production");
-        productionWithCluster = graph.putRoleType("production-with-cluster");
+        clusterOfProduction = graph.putRole("cluster-of-production");
+        productionWithCluster = graph.putRole("production-with-cluster");
         hasCluster = graph.putRelationType("has-cluster")
                 .relates(clusterOfProduction).relates(productionWithCluster);
 

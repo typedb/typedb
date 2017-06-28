@@ -377,8 +377,8 @@ public class ScalingTestIT {
     private void simpleOntology(String keyspace) throws InvalidGraphException {
         GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
         EntityType thing = graph.putEntityType("thing");
-        Role relation1 = graph.putRoleType("relation1");
-        Role relation2 = graph.putRoleType("relation2");
+        Role relation1 = graph.putRole("relation1");
+        Role relation2 = graph.putRole("relation2");
         thing.plays(relation1).plays(relation2);
         graph.putRelationType("related").relates(relation1).relates(relation2);
         ResourceType<String> id = graph.putResourceType("node-id", ResourceType.DataType.STRING);

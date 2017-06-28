@@ -225,8 +225,8 @@ public class CommitLogControllerTest {
             return true;
         }).when(manager).addTask(any(), any());
 
-        Role role1 = graph.putRoleType("Role 1");
-        Role role2 = graph.putRoleType("Role 2");
+        Role role1 = graph.putRole("Role 1");
+        Role role2 = graph.putRole("Role 2");
         RelationType relationType = graph.putRelationType("A Relation Type").relates(role1).relates(role2);
         EntityType type = graph.putEntityType("A Thing").plays(role1).plays(role2);
         ResourceType<String> resourceType = graph.putResourceType("A Resource Type Thing", ResourceType.DataType.STRING).plays(role1).plays(role2);

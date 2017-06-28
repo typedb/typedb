@@ -175,7 +175,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Role}.
      */
-    Role putRoleType(String label);
+    Role putRole(String label);
 
     /**
      * Create a {@link Role} with super-type {@code role}, or return a pre-existing {@link Role}, with the
@@ -187,7 +187,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Role}.
      */
-    Role putRoleType(Label label);
+    Role putRole(Label label);
 
     //------------------------------------- Concept Lookup ----------------------------------
     /**

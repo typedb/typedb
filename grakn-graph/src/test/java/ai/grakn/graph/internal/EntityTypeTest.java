@@ -71,7 +71,7 @@ public class EntityTypeTest extends GraphTestBase{
 
     @Test
     public void whenCreatingEntityTypeUsingLabelTakenByAnotherType_Throw(){
-        Role original = graknGraph.putRoleType("Role Type");
+        Role original = graknGraph.putRole("Role Type");
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(UNIQUE_PROPERTY_TAKEN.getMessage(original.getLabel(), original.toString()));
         graknGraph.putEntityType(original.getLabel());
@@ -117,9 +117,9 @@ public class EntityTypeTest extends GraphTestBase{
 
     @Test
     public void whenGettingTheRolesPlayedByType_ReturnTheRoles() throws Exception{
-        Role monster = graknGraph.putRoleType("monster");
-        Role animal = graknGraph.putRoleType("animal");
-        Role monsterEvil = graknGraph.putRoleType("evil monster").sup(monster);
+        Role monster = graknGraph.putRole("monster");
+        Role animal = graknGraph.putRole("animal");
+        Role monsterEvil = graknGraph.putRole("evil monster").sup(monster);
 
         EntityType creature = graknGraph.putEntityType("creature").plays(monster).plays(animal);
         EntityType creatureMysterious = graknGraph.putEntityType("mysterious creature").superType(creature).plays(monsterEvil);
@@ -183,8 +183,8 @@ public class EntityTypeTest extends GraphTestBase{
 
     @Test
     public void whenRemovingRoleFromEntityType_TheRoleCanNoLongerBePlayed(){
-        Role role1 = graknGraph.putRoleType("A Role 1");
-        Role role2 = graknGraph.putRoleType("A Role 2");
+        Role role1 = graknGraph.putRole("A Role 1");
+        Role role2 = graknGraph.putRole("A Role 2");
         EntityType type = graknGraph.putEntityType("A Concept Type").plays(role1).plays(role2);
 
         assertThat(type.plays(), containsInAnyOrder(role1, role2));
@@ -245,7 +245,7 @@ public class EntityTypeTest extends GraphTestBase{
     @Test
     public void whenAddingRoleToMetaType_Throw(){
         Type meta = graknGraph.getMetaRuleType();
-        Role role = graknGraph.putRoleType("A Role");
+        Role role = graknGraph.putRole("A Role");
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(META_TYPE_IMMUTABLE.getMessage(meta.getLabel()));

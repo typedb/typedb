@@ -230,14 +230,14 @@ public class GraknGraphPutPropertyTest {
 
     @Property
     public void whenCallingPutRoleType_CreateATypeWithSuperTypeRole(@Open GraknGraph graph, @Unused Label label) {
-        Role role = graph.putRoleType(label);
+        Role role = graph.putRole(label);
         assertEquals(graph.admin().getMetaRoleType(), role.sup());
     }
 
     @Property
     public void whenCallingPutRoleType_CreateATypeWithDefaultProperties(
             @Open GraknGraph graph, @Unused Label label) {
-        Role role = graph.putRoleType(label);
+        Role role = graph.putRole(label);
 
         assertThat("The role type should be played by no types", role.playedByTypes(), empty());
         assertThat("The role type should be owned by no relation types", role.relationTypes(), empty());
@@ -246,7 +246,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutRoleTypeWithAnExistingRoleTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph Role role) {
-        Role newType = graph.putRoleType(role.getLabel());
+        Role newType = graph.putRole(role.getLabel());
         assertEquals(role, newType);
     }
 
@@ -258,6 +258,6 @@ public class GraknGraphPutPropertyTest {
         exception.expect(PropertyNotUniqueException.class);
         exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
 
-        graph.putRoleType(type.getLabel());
+        graph.putRole(type.getLabel());
     }
 }

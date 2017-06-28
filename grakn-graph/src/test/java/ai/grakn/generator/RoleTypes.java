@@ -30,7 +30,7 @@ public class RoleTypes extends AbstractTypeGenerator<Role> {
 
     @Override
     protected Role newType(Label label) {
-        return graph().putRoleType(label);
+        return graph().putRole(label);
     }
 
     @Override

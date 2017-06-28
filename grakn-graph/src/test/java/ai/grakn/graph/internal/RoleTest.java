@@ -41,7 +41,7 @@ public class RoleTest extends GraphTestBase {
 
     @Before
     public void buildGraph(){
-        role = graknGraph.putRoleType("My Role");
+        role = graknGraph.putRole("My Role");
         relationType = graknGraph.putRelationType("RelationType");
     }
 
@@ -68,7 +68,7 @@ public class RoleTest extends GraphTestBase {
         foundType.delete();
         assertNull(graknGraph.getRoleType("My Role"));
 
-        Role role = graknGraph.putRoleType("New Role Type");
+        Role role = graknGraph.putRole("New Role Type");
         graknGraph.putEntityType("Entity Type").plays(role);
 
         expectedException.expect(GraphOperationException.class);
@@ -79,7 +79,7 @@ public class RoleTest extends GraphTestBase {
 
     @Test
     public void whenDeletingRoleTypeWithRelationTypes_Throw(){
-        Role role2 = graknGraph.putRoleType("New Role Type");
+        Role role2 = graknGraph.putRole("New Role Type");
         graknGraph.putRelationType("Thing").relates(role2).relates(role);
 
         expectedException.expect(GraphOperationException.class);
@@ -90,8 +90,8 @@ public class RoleTest extends GraphTestBase {
 
     @Test
     public void whenDeletingRoleTypeWithRolePlayers_Throw(){
-        Role roleA = graknGraph.putRoleType("roleA");
-        Role roleB = graknGraph.putRoleType("roleB");
+        Role roleA = graknGraph.putRole("roleA");
+        Role roleB = graknGraph.putRole("roleB");
         RelationType relationType = graknGraph.putRelationType("relationTypes").relates(roleA).relates(roleB);
         EntityType entityType = graknGraph.putEntityType("entityType").plays(roleA).plays(roleB);
 
@@ -108,8 +108,8 @@ public class RoleTest extends GraphTestBase {
 
     @Test
     public void whenAddingRoleTypeToMultipleRelationTypes_EnsureItLinkedToBothRelationTypes() throws InvalidGraphException {
-        Role roleA = graknGraph.putRoleType("roleA");
-        Role roleB = graknGraph.putRoleType("roleB");
+        Role roleA = graknGraph.putRole("roleA");
+        Role roleB = graknGraph.putRole("roleB");
         relationType.relates(roleA).relates(role);
         RelationType relationType2 = graknGraph.putRelationType("relationType2").relates(roleB).relates(role);
         graknGraph.commit();

@@ -56,9 +56,9 @@ public class EntityTest extends GraphTestBase{
         //Ontology
         EntityType type = graknGraph.putEntityType("Concept Type");
         RelationType relationType = graknGraph.putRelationType("relationTypes");
-        Role role1 = graknGraph.putRoleType("role1");
-        Role role2 = graknGraph.putRoleType("role2");
-        Role role3 = graknGraph.putRoleType("role3");
+        Role role1 = graknGraph.putRole("role1");
+        Role role2 = graknGraph.putRole("role2");
+        Role role3 = graknGraph.putRole("role3");
 
         //Data
         ThingImpl<?, ?> rolePlayer1 = (ThingImpl) type.addEntity();
@@ -93,7 +93,7 @@ public class EntityTest extends GraphTestBase{
     public void whenDeletingLastRolePlayerInRelation_TheRelationIsDeleted() throws GraphOperationException {
         EntityType type = graknGraph.putEntityType("Concept Type");
         RelationType relationType = graknGraph.putRelationType("relationTypes");
-        Role role1 = graknGraph.putRoleType("role1");
+        Role role1 = graknGraph.putRole("role1");
         Thing rolePlayer1 = type.addEntity();
 
         Relation relation = relationType.addRelation().
@@ -205,8 +205,8 @@ public class EntityTest extends GraphTestBase{
 
     @Test
     public void whenDeletingEntityInRelations_DeleteAllImplicitRelations(){
-        Role role1 = graknGraph.putRoleType("Role 1");
-        Role role2 = graknGraph.putRoleType("Role 2");
+        Role role1 = graknGraph.putRole("Role 1");
+        Role role2 = graknGraph.putRole("Role 2");
         RelationType relationType = graknGraph.putRelationType("A Relation Type Thing").relates(role1).relates(role2);
         EntityType entityType = graknGraph.putEntityType("A Thing").plays(role1).plays(role2);
         ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);

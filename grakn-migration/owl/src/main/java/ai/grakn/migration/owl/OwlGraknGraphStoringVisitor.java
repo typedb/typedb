@@ -87,8 +87,8 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
     public OwlGraknGraphStoringVisitor prepareOWL() {
         migrator.entityType(migrator.ontology().getOWLOntologyManager().getOWLDataFactory().getOWLClass(OwlModel.THING.owlname()));
         migrator.relation(migrator.ontology().getOWLOntologyManager().getOWLDataFactory().getOWLObjectProperty(OwlModel.OBJECT_PROPERTY.owlname()))
-          .relates(migrator.graph().putRoleType(OwlModel.OBJECT.owlname()))
-          .relates(migrator.graph().putRoleType(OwlModel.SUBJECT.owlname()));
+          .relates(migrator.graph().putRole(OwlModel.OBJECT.owlname()))
+          .relates(migrator.graph().putRole(OwlModel.SUBJECT.owlname()));
         return this;
     }
     

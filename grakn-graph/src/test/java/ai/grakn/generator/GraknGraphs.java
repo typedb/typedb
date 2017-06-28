@@ -168,7 +168,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             () -> {
                 Label label = typeLabel();
                 Role superType = roleType();
-                Role role = graph.putRoleType(label).sup(superType);
+                Role role = graph.putRole(label).sup(superType);
                 summaryAssign(role, "graph", "putRoleType", label);
                 summary(role, "superType", superType);
             },

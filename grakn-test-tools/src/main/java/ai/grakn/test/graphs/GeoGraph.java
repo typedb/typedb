@@ -60,8 +60,8 @@ public class GeoGraph extends TestGraph {
     public void buildOntology(GraknGraph graph) {
         key = graph.putResourceType("name", ResourceType.DataType.STRING);
 
-        geoEntity = graph.putRoleType("geo-entity");
-        entityLocation = graph.putRoleType("entity-location");
+        geoEntity = graph.putRole("geo-entity");
+        entityLocation = graph.putRole("entity-location");
         isLocatedIn = graph.putRelationType("is-located-in")
                 .relates(geoEntity).relates(entityLocation);
 

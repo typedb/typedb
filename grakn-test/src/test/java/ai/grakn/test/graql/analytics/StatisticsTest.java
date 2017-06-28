@@ -523,8 +523,8 @@ public class StatisticsTest {
             entityId3 = entity3.getId();
             entityId4 = entity4.getId();
 
-            Role relation1 = graph.putRoleType("relation1");
-            Role relation2 = graph.putRoleType("relation2");
+            Role relation1 = graph.putRole("relation1");
+            Role relation2 = graph.putRole("relation2");
             entityType1.plays(relation1).plays(relation2);
             entityType2.plays(relation1).plays(relation2);
             RelationType related = graph.putRelationType("related").relates(relation1).relates(relation2);
@@ -548,21 +548,21 @@ public class StatisticsTest {
             resourceTypeList.add(graph.putResourceType(resourceType6, ResourceType.DataType.DOUBLE));
             resourceTypeList.add(graph.putResourceType(resourceType7, ResourceType.DataType.DOUBLE));
 
-            Role resourceOwner1 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType1)));
-            Role resourceOwner2 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType2)));
-            Role resourceOwner3 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType3)));
-            Role resourceOwner4 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType4)));
-            Role resourceOwner5 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType5)));
-            Role resourceOwner6 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType6)));
-            Role resourceOwner7 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType7)));
+            Role resourceOwner1 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType1)));
+            Role resourceOwner2 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType2)));
+            Role resourceOwner3 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType3)));
+            Role resourceOwner4 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType4)));
+            Role resourceOwner5 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType5)));
+            Role resourceOwner6 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType6)));
+            Role resourceOwner7 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType7)));
 
-            Role resourceValue1 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType1)));
-            Role resourceValue2 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType2)));
-            Role resourceValue3 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType3)));
-            Role resourceValue4 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType4)));
-            Role resourceValue5 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType5)));
-            Role resourceValue6 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)));
-            Role resourceValue7 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType7)));
+            Role resourceValue1 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType1)));
+            Role resourceValue2 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType2)));
+            Role resourceValue3 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType3)));
+            Role resourceValue4 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType4)));
+            Role resourceValue5 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType5)));
+            Role resourceValue6 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)));
+            Role resourceValue7 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType7)));
 
             graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)))
                     .relates(resourceOwner1).relates(resourceValue1);
