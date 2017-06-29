@@ -123,46 +123,50 @@ public class MigratorTestUtils {
     /**
      * Check that the pet graph has been loaded correctly
      */
-    public static void assertPetGraphCorrect(GraknGraph graph){
-        Collection<Entity> pets = graph.getEntityType("pet").instances();
-        assertEquals(9, pets.size());
+    public static void assertPetGraphCorrect(GraknSession session){
+        try(GraknGraph graph = session.open(GraknTxType.READ)) {
+            Collection<Entity> pets = graph.getEntityType("pet").instances();
+            assertEquals(9, pets.size());
 
-        Collection<Entity> cats = graph.getEntityType("cat").instances();
-        assertEquals(2, cats.size());
+            Collection<Entity> cats = graph.getEntityType("cat").instances();
+            assertEquals(2, cats.size());
 
-        Collection<Entity> hamsters = graph.getEntityType("hamster").instances();
-        assertEquals(1, hamsters.size());
+            Collection<Entity> hamsters = graph.getEntityType("hamster").instances();
+            assertEquals(1, hamsters.size());
 
-        ResourceType<String> name = graph.getResourceType("name");
-        ResourceType<String> death = graph.getResourceType("death");
+            ResourceType<String> name = graph.getResourceType("name");
+            ResourceType<String> death = graph.getResourceType("death");
 
-        Entity puffball = name.getResource("Puffball").ownerInstances().iterator().next().asEntity();
-        assertEquals(0, puffball.resources(death).size());
+            Entity puffball = name.getResource("Puffball").ownerInstances().iterator().next().asEntity();
+            assertEquals(0, puffball.resources(death).size());
 
-        Entity bowser = name.getResource("Bowser").ownerInstances().iterator().next().asEntity();
-        assertEquals(1, bowser.resources(death).size());
+            Entity bowser = name.getResource("Bowser").ownerInstances().iterator().next().asEntity();
+            assertEquals(1, bowser.resources(death).size());
+        }
     }
 
     /**
      * Check that the pokemon graph has been loaded correctly
      */
-    public static void assertPokemonGraphCorrect(GraknGraph graph){
-        Collection<Entity> pokemon = graph.getEntityType("pokemon").instances();
-        assertEquals(9, pokemon.size());
+    public static void assertPokemonGraphCorrect(GraknSession session){
+        try(GraknGraph graph = session.open(GraknTxType.READ)){
+            Collection<Entity> pokemon = graph.getEntityType("pokemon").instances();
+            assertEquals(9, pokemon.size());
 
-        ResourceType<String> typeid = graph.getResourceType("type-id");
-        ResourceType<String> pokedexno = graph.getResourceType("pokedex-no");
+            ResourceType<String> typeid = graph.getResourceType("type-id");
+            ResourceType<String> pokedexno = graph.getResourceType("pokedex-no");
 
-        Entity grass = typeid.getResource("12").ownerInstances().iterator().next().asEntity();
-        Entity poison = typeid.getResource("4").ownerInstances().iterator().next().asEntity();
-        Entity bulbasaur = pokedexno.getResource("1").ownerInstances().iterator().next().asEntity();
-        RelationType relation = graph.getRelationType("has-type");
+            Entity grass = typeid.getResource("12").ownerInstances().iterator().next().asEntity();
+            Entity poison = typeid.getResource("4").ownerInstances().iterator().next().asEntity();
+            Entity bulbasaur = pokedexno.getResource("1").ownerInstances().iterator().next().asEntity();
+            RelationType relation = graph.getRelationType("has-type");
 
-        assertNotNull(grass);
-        assertNotNull(poison);
-        assertNotNull(bulbasaur);
+            assertNotNull(grass);
+            assertNotNull(poison);
+            assertNotNull(bulbasaur);
 
-        assertRelationBetweenInstancesExists(graph, bulbasaur, grass, relation.getLabel());
-        assertRelationBetweenInstancesExists(graph, bulbasaur, poison, relation.getLabel());
+            assertRelationBetweenInstancesExists(graph, bulbasaur, grass, relation.getLabel());
+            assertRelationBetweenInstancesExists(graph, bulbasaur, poison, relation.getLabel());
+        }
     }
 }

@@ -18,6 +18,7 @@
 
 package ai.grakn.test.migration.sql;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
@@ -26,6 +27,7 @@ import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
+import ai.grakn.util.GraphLoader;
 import org.jooq.exception.DataAccessException;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -55,27 +57,25 @@ public class SQLMigratorTest {
 
     @Before
     public void setup(){
-        factory = engine.factoryWithNewKeyspace();
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
-        graph.close();
-        migrator = Migrator.to(engine.uri(), graph.getKeyspace());
+        String keyspace = GraphLoader.randomKeyspace();
+        factory = Grakn.session(engine.uri(), keyspace);
+        migrator = Migrator.to(engine.uri(), keyspace);
     }
 
     @Test
-    public void singleTableTest() throws SQLException {
+    public void whenMigratorExecutedOverSingleTable_AllDataIsPersistedInGraph() throws SQLException {
         String template = MigratorTestUtils.getFileAsString("sql", "pets/template.gql");
         String query = "SELECT * FROM pet";
 
         try(Connection connection = setupExample(factory, "pets")){
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.open(GraknTxType.WRITE);
-            assertPetGraphCorrect(graph);
+            assertPetGraphCorrect(factory);
         }
     }
 
     @Test
-    public void multipleTableTest() throws SQLException {
+    public void whenMigratorExecutedSequentiallyOverMultipleTables_AllDataIsPersistedInGraph() throws SQLException {
         try(Connection connection = setupExample(factory, "pokemon")){
             String query = "SELECT * FROM type";
             String template =  "" +
@@ -104,13 +104,12 @@ public class SQLMigratorTest {
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.open(GraknTxType.WRITE);
-            assertPokemonGraphCorrect(graph);
+            assertPokemonGraphCorrect(factory);
         }
     }
 
     @Test
-    public void migrateOverJoinTest() throws SQLException {
+    public void whenSQLQueryContainsJoin_MigrationCanAccessResultOfJoin() throws SQLException {
         try(Connection connection = setupExample(factory, "pokemon")){
 
             String query = "SELECT * FROM type";
@@ -142,13 +141,12 @@ public class SQLMigratorTest {
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.open(GraknTxType.WRITE);
-            assertPokemonGraphCorrect(graph);
+            assertPokemonGraphCorrect(factory);
         }
     }
 
     @Test
-    public void migrateWithSQLFunctionTest() throws SQLException {
+    public void whenSQLQueryContainsFunction_MigrationCanAccessResultOfFunction() throws SQLException {
         try(Connection connection = setupExample(factory, "pets")){
             String template = "insert $x isa count val <COUNT>;";
             String query = "SELECT count(*) AS count FROM pet";
@@ -163,7 +161,7 @@ public class SQLMigratorTest {
     }
 
     @Test
-    public void incorrectSQLStatementTest() throws SQLException {
+    public void whenSQLQueryIsInvalid_ExceptionIsThrown() throws SQLException {
         exception.expect(DataAccessException.class);
 
         try(Connection connection = setupExample(factory, "pokemon")) {
