@@ -23,12 +23,13 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
@@ -88,6 +89,7 @@ import static ai.grakn.matcher.GraknMatchers.isInstance;
 import static ai.grakn.matcher.GraknMatchers.isShard;
 import static ai.grakn.matcher.GraknMatchers.resource;
 import static ai.grakn.matcher.GraknMatchers.results;
+import static ai.grakn.matcher.GraknMatchers.role;
 import static ai.grakn.matcher.GraknMatchers.rule;
 import static ai.grakn.matcher.GraknMatchers.type;
 import static ai.grakn.matcher.GraknMatchers.variable;
@@ -116,6 +118,7 @@ import static ai.grakn.matcher.MovieMatchers.heat;
 import static ai.grakn.matcher.MovieMatchers.hocusPocus;
 import static ai.grakn.matcher.MovieMatchers.judeLaw;
 import static ai.grakn.matcher.MovieMatchers.kermitTheFrog;
+import static ai.grakn.matcher.MovieMatchers.keyNameOwner;
 import static ai.grakn.matcher.MovieMatchers.language;
 import static ai.grakn.matcher.MovieMatchers.marlonBrando;
 import static ai.grakn.matcher.MovieMatchers.martinSheen;
@@ -232,7 +235,8 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var().rel(x, var().has("name", "Michael Corleone"))).distinct();
 
         assertThat(query, variable("x", containsInAnyOrder(
-                type(Schema.MetaSchema.THING.getLabel().getValue()), type("role"), type("character-being-played")
+                type(Schema.MetaSchema.THING.getLabel()), role("role"), role("character-being-played"),
+                role("has-name-owner")
         )));
     }
 
@@ -442,7 +446,7 @@ public class MatchQueryTest {
     @Test
     public void testTypeAsVariable() {
         MatchQuery query = qb.match(label("genre").plays(x));
-        assertThat(query, variable("x", contains(genreOfProduction)));
+        assertThat(query, variable("x", containsInAnyOrder(genreOfProduction, keyNameOwner)));
     }
 
     @Test
@@ -639,12 +643,12 @@ public class MatchQueryTest {
         GraknGraph graph = GraphContext.empty().graph(); // TODO: Try and remove this call if possible
         QueryBuilder qb = graph.graql();
 
-        TypeLabel a = TypeLabel.of("a");
-        TypeLabel b = TypeLabel.of("b");
-        TypeLabel c = TypeLabel.of("c");
-        TypeLabel d = TypeLabel.of("d");
-        TypeLabel e = TypeLabel.of("e");
-        TypeLabel f = TypeLabel.of("f");
+        Label a = Label.of("a");
+        Label b = Label.of("b");
+        Label c = Label.of("c");
+        Label d = Label.of("d");
+        Label e = Label.of("e");
+        Label f = Label.of("f");
 
         qb.insert(
                 Graql.label(c).sub(Graql.label(b).sub(Graql.label(a).sub("entity"))),
@@ -654,14 +658,21 @@ public class MatchQueryTest {
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
             Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(x)).get("x").collect(Collectors.toSet());
-            Collection<RoleType> graphAPIPlays = new HashSet<>(graph.getType(type).plays());
+            Collection<Role> graphAPIPlays;
+
+            OntologyConcept ontologyConcept = graph.getOntologyConcept(type);
+            if(ontologyConcept.isType()){
+                graphAPIPlays = new HashSet<>(ontologyConcept.asType().plays());
+            } else {
+                graphAPIPlays = Collections.EMPTY_SET;
+            }
 
             assertEquals(graqlPlays, graphAPIPlays);
         });
 
         Stream.of(d, e, f).forEach(type -> {
             Set<Concept> graqlPlayedBy = qb.match(x.plays(Graql.label(type))).get("x").collect(toSet());
-            Collection<Type> graphAPIPlayedBy = new HashSet<>(graph.<RoleType>getType(type).playedByTypes());
+            Collection<Type> graphAPIPlayedBy = new HashSet<>(graph.<Role>getOntologyConcept(type).playedByTypes());
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });

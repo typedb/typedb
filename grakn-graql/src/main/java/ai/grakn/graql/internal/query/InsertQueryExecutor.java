@@ -21,10 +21,11 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -71,7 +72,7 @@ public class InsertQueryExecutor {
     private final Map<Var, Concept> namedConcepts = new HashMap<>();
     private final Stack<Var> visitedVars = new Stack<>();
     private final ImmutableMap<Var, List<VarPatternAdmin>> varsByVarName;
-    private final ImmutableMap<TypeLabel, List<VarPatternAdmin>> varsByTypeLabel;
+    private final ImmutableMap<Label, List<VarPatternAdmin>> varsByTypeLabel;
     private final ImmutableMap<ConceptId, List<VarPatternAdmin>> varsById;
 
     InsertQueryExecutor(Collection<VarPatternAdmin> vars, GraknGraph graph) {
@@ -167,7 +168,7 @@ public class InsertQueryExecutor {
             throw GraqlQueryException.insertIsaAndSub(printableName);
         }
 
-        Optional<TypeLabel> typeLabel = var.getTypeLabel();
+        Optional<Label> typeLabel = var.getTypeLabel();
         Optional<ConceptId> id = var.getId();
 
         typeLabel.ifPresent(label -> {
@@ -178,8 +179,8 @@ public class InsertQueryExecutor {
 
         // If type provided, then 'put' the concept, else 'get' it by ID or label
         if (sub.isPresent()) {
-            TypeLabel label = getTypeLabelOrThrow(typeLabel);
-            return putType(label, var, sub.get());
+            Label label = getTypeLabelOrThrow(typeLabel);
+            return putOntologyConcept(label, var, sub.get());
         } else if (type.isPresent()) {
             return putInstance(id, var, type.get());
         } else if (id.isPresent()) {
@@ -187,7 +188,7 @@ public class InsertQueryExecutor {
             if (concept == null) throw GraqlQueryException.insertWithoutType(id.get());
             return concept;
         } else if (typeLabel.isPresent()) {
-            Concept concept = graph.getType(typeLabel.get());
+            Concept concept = graph.getOntologyConcept(typeLabel.get());
             if (concept == null) throw GraqlQueryException.labelNotFound(typeLabel.get());
             return concept;
         } else {
@@ -267,21 +268,21 @@ public class InsertQueryExecutor {
      * @param sub the supertype property of the var
      * @return a concept with the given ID and the specified type
      */
-    private Type putType(TypeLabel label, VarPatternAdmin var, SubProperty sub) {
-        Type superType = getConcept(sub.getSuperType()).asType();
+    private OntologyConcept putOntologyConcept(Label label, VarPatternAdmin var, SubProperty sub) {
+        OntologyConcept superConcept = getConcept(sub.getSuperType()).asOntologyConcept();
 
-        if (superType.isEntityType()) {
-            return graph.putEntityType(label).superType(superType.asEntityType());
-        } else if (superType.isRelationType()) {
-            return graph.putRelationType(label).superType(superType.asRelationType());
-        } else if (superType.isRoleType()) {
-            return graph.putRoleType(label).superType(superType.asRoleType());
-        } else if (superType.isResourceType()) {
-            return graph.putResourceType(label, getDataType(var)).superType(superType.asResourceType());
-        } else if (superType.isRuleType()) {
-            return graph.putRuleType(label).superType(superType.asRuleType());
+        if (superConcept.isEntityType()) {
+            return graph.putEntityType(label).sup(superConcept.asEntityType());
+        } else if (superConcept.isRelationType()) {
+            return graph.putRelationType(label).sup(superConcept.asRelationType());
+        } else if (superConcept.isRoleType()) {
+            return graph.putRole(label).sup(superConcept.asRoleType());
+        } else if (superConcept.isResourceType()) {
+            return graph.putResourceType(label, getDataType(var)).sup(superConcept.asResourceType());
+        } else if (superConcept.isRuleType()) {
+            return graph.putRuleType(label).sup(superConcept.asRuleType());
         } else {
-            throw GraqlQueryException.insertMetaType(label, superType);
+            throw GraqlQueryException.insertMetaType(label, superConcept);
         }
     }
 
@@ -304,7 +305,7 @@ public class InsertQueryExecutor {
      * @return the label, if present
      * @throws GraqlQueryException if the label was not present
      */
-    private TypeLabel getTypeLabelOrThrow(Optional<TypeLabel> label) throws GraqlQueryException {
+    private Label getTypeLabelOrThrow(Optional<Label> label) throws GraqlQueryException {
         return label.orElseThrow(GraqlQueryException::insertTypeWithoutLabel);
     }
 

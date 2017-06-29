@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
@@ -68,7 +68,7 @@ class HALExploreType extends HALExploreConcept{
     }
 
     private void attachSubTypes(Representation halResource, Type conceptType) {
-        conceptType.subTypes().forEach(instance -> {
+        conceptType.subs().forEach(instance -> {
             // let's not put the current type in its own embedded
             if (!instance.getId().equals(conceptType.getId())) {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams())
@@ -80,15 +80,15 @@ class HALExploreType extends HALExploreConcept{
     }
 
 
-    private void roleTypeOntology(Representation halResource, RoleType roleType) {
-        roleType.playedByTypes().forEach(type -> {
+    private void roleTypeOntology(Representation halResource, Role role) {
+        role.playedByTypes().forEach(type -> {
             Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + type.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, type);
             halResource.withRepresentation(PLAYS_EDGE, roleRepresentation);
         });
 
-        roleType.relationTypes().forEach(relType -> {
+        role.relationTypes().forEach(relType -> {
             Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + relType.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, relType);
@@ -117,7 +117,7 @@ class HALExploreType extends HALExploreConcept{
         });
     }
 
-    private void attachRolesPlayed(Representation halResource, Collection<RoleType> roles) {
+    private void attachRolesPlayed(Representation halResource, Collection<Role> roles) {
         roles.forEach(role -> {
             Representation roleRepresentation = factory
                     .newRepresentation(resourceLinkPrefix + role.getId() + getURIParams())

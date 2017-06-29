@@ -17,9 +17,10 @@
  */
 package ai.grakn.migration.export;
 
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarPattern;
@@ -30,19 +31,19 @@ import static ai.grakn.graql.Graql.var;
  * Map Grakn Core type to equivalent Graql representation
  * @author alexandraorth
  */
-public class TypeMapper {
+public class OntologyConceptMapper {
 
     /**
      * Map a Type to the Graql string representation
-     * @param type type to be mapped
+     * @param ontologyConcept type to be mapped
      * @return Graql var equivalent to the given type
      */
-    public static VarPattern map(Type type) {
-        VarPattern mapped = formatBase(type);
-        if (type.isRelationType()) {
-            mapped = map(mapped, type.asRelationType());
-        } else if (type.isResourceType()) {
-            mapped = map(mapped, type.asResourceType());
+    public static VarPattern map(OntologyConcept ontologyConcept) {
+        VarPattern mapped = formatBase(ontologyConcept);
+        if (ontologyConcept.isRelationType()) {
+            mapped = map(mapped, ontologyConcept.asRelationType());
+        } else if (ontologyConcept.isResourceType()) {
+            mapped = map(mapped, ontologyConcept.asResourceType());
         }
 
         return mapped;
@@ -70,19 +71,22 @@ public class TypeMapper {
 
     /**
      * Create a var with the information underlying all Types
-     * @param type type to be mapped
+     * @param ontologyConcept type to be mapped
      * @return {@link VarPattern} containing basic information about the given type
      */
-    private static VarPattern formatBase(Type type) {
-        VarPattern var = var().label(type.getLabel());
+    private static VarPattern formatBase(OntologyConcept ontologyConcept) {
+        VarPattern var = var().label(ontologyConcept.getLabel());
 
-        Type superType = type.superType();
-        if (type.superType() != null) {
+        OntologyConcept superType = ontologyConcept.sup();
+        if (ontologyConcept.sup() != null) {
             var = var.sub(Graql.label(superType.getLabel()));
         }
 
-        var = plays(var, type);
-        var = isAbstract(var, type);
+        if(ontologyConcept.isType()) {
+            Type type = ontologyConcept.asType();
+            var = plays(var, type);
+            var = isAbstract(var, type);
+        }
 
         return var;
     }
@@ -103,7 +107,7 @@ public class TypeMapper {
      * @return var with appropriate plays edges
      */
     private static VarPattern plays(VarPattern var, Type type) {
-        for(RoleType role:type.plays()){
+        for(Role role:type.plays()){
             var = var.plays(Graql.label(role.getLabel()));
         }
         return var;
@@ -116,7 +120,7 @@ public class TypeMapper {
      * @return var with appropriate relates edges
      */
     private static VarPattern relates(VarPattern var, RelationType type){
-        for(RoleType role:type.relates()){
+        for(Role role:type.relates()){
             var = var.relates(Graql.label(role.getLabel()));
         }
         return var;

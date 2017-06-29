@@ -21,9 +21,9 @@ package ai.grakn.graph.internal;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -58,13 +58,13 @@ class TxCache {
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
-    private final Map<TypeLabel, TypeImpl> typeCache = new HashMap<>();
-    private final Map<TypeLabel, TypeId> labelCache = new HashMap<>();
+    private final Map<Label, OntologyConceptImpl> ontologyConceptCache = new HashMap<>();
+    private final Map<Label, LabelId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
     private final Set<EntityImpl> modifiedEntities = new HashSet<>();
 
-    private final Set<RoleTypeImpl> modifiedRoleTypes = new HashSet<>();
+    private final Set<RoleImpl> modifiedRoles = new HashSet<>();
     private final Set<Casting> modifiedCastings = new HashSet<>();
 
     private final Set<RelationTypeImpl> modifiedRelationTypes = new HashSet<>();
@@ -118,12 +118,12 @@ class TxCache {
      *
      */
     void refreshOntologyCache(){
-        Map<TypeLabel, Type> cachedOntologySnapshot = graphCache.getCachedTypes();
-        Map<TypeLabel, TypeId> cachedLabelsSnapshot = graphCache.getCachedLabels();
+        Map<Label, OntologyConcept> cachedOntologySnapshot = graphCache.getCachedTypes();
+        Map<Label, LabelId> cachedLabelsSnapshot = graphCache.getCachedLabels();
 
         //Read central cache into txCache cloning only base concepts. Sets clones later
-        for (Type type : cachedOntologySnapshot.values()) {
-            cacheConcept((TypeImpl) type);
+        for (OntologyConcept type : cachedOntologySnapshot.values()) {
+            cacheConcept((ConceptImpl) type);
         }
 
         //Load Labels Separately. We do this because the TypeCache may have expired.
@@ -138,7 +138,7 @@ class TxCache {
         if (element.isEntity()) {
             modifiedEntities.add((EntityImpl) element);
         } else if (element.isRoleType()) {
-            modifiedRoleTypes.add((RoleTypeImpl) element);
+            modifiedRoles.add((RoleImpl) element);
         } else if (element.isRelationType()) {
             modifiedRelationTypes.add((RelationTypeImpl) element);
         } else if (element.isRelation()){
@@ -176,15 +176,15 @@ class TxCache {
      *
      * @return All the types currently cached in the transaction. Used for
      */
-    Map<TypeLabel, TypeImpl> getTypeCache(){
-        return typeCache;
+    Map<Label, OntologyConceptImpl> getOntologyConceptCache(){
+        return ontologyConceptCache;
     }
 
     /**
      *
      * @return All the types labels currently cached in the transaction.
      */
-    Map<TypeLabel, TypeId> getLabelCache(){
+    Map<Label, LabelId> getLabelCache(){
         return labelCache;
     }
 
@@ -203,16 +203,16 @@ class TxCache {
     @SuppressWarnings("SuspiciousMethodCalls")
     void remove(ConceptImpl concept){
         modifiedEntities.remove(concept);
-        modifiedRoleTypes.remove(concept);
+        modifiedRoles.remove(concept);
         modifiedRelationTypes.remove(concept);
         modifiedRelations.remove(concept);
         modifiedRules.remove(concept);
         modifiedResources.remove(concept);
 
         conceptCache.remove(concept.getId());
-        if (concept.isType()) {
-            TypeLabel label = ((TypeImpl) concept).getLabel();
-            typeCache.remove(label);
+        if (concept.isOntologyConcept()) {
+            Label label = ((OntologyConceptImpl) concept).getLabel();
+            ontologyConceptCache.remove(label);
             labelCache.remove(label);
         }
     }
@@ -233,10 +233,10 @@ class TxCache {
      */
     void cacheConcept(ConceptImpl concept){
         conceptCache.put(concept.getId(), concept);
-        if(concept.isType()){
-            TypeImpl type = (TypeImpl) concept;
-            typeCache.put(type.getLabel(), type);
-            labelCache.put(type.getLabel(), type.getTypeId());
+        if(concept.isOntologyConcept()){
+            OntologyConceptImpl ontologyElement = (OntologyConceptImpl) concept;
+            ontologyConceptCache.put(ontologyElement.getLabel(), ontologyElement);
+            labelCache.put(ontologyElement.getLabel(), ontologyElement.getTypeId());
         }
     }
 
@@ -247,7 +247,7 @@ class TxCache {
      * @param label The type label to cache
      * @param id Its equivalent id which can be looked up quickly in the graph
      */
-    private void cacheLabel(TypeLabel label, TypeId id){
+    private void cacheLabel(Label label, LabelId id){
         labelCache.put(label, id);
     }
 
@@ -266,8 +266,8 @@ class TxCache {
      * @param label The label of the type to cache
      * @return true if the concept is cached
      */
-    boolean isTypeCached(TypeLabel label){
-        return typeCache.containsKey(label);
+    boolean isTypeCached(Label label){
+        return ontologyConceptCache.containsKey(label);
     }
 
     /**
@@ -275,7 +275,7 @@ class TxCache {
      * @param label the type label which may be in the cache
      * @return true if the label is cached and has a valid mapping to a id
      */
-    boolean isLabelCached(TypeLabel label){
+    boolean isLabelCached(Label label){
         return labelCache.containsKey(label);
     }
 
@@ -298,12 +298,12 @@ class TxCache {
      * @param <X> The type of the type
      * @return The cached type
      */
-    <X extends Type> X getCachedType(TypeLabel label){
+    <X extends OntologyConcept> X getCachedOntologyElement(Label label){
         //noinspection unchecked
-        return (X) typeCache.get(label);
+        return (X) ontologyConceptCache.get(label);
     }
 
-    TypeId convertLabelToId(TypeLabel label){
+    LabelId convertLabelToId(Label label){
         return labelCache.get(label);
     }
 
@@ -353,8 +353,8 @@ class TxCache {
         return modifiedEntities;
     }
 
-    Set<RoleTypeImpl> getModifiedRoleTypes() {
-        return modifiedRoleTypes;
+    Set<RoleImpl> getModifiedRoles() {
+        return modifiedRoles;
     }
 
     Set<RelationTypeImpl> getModifiedRelationTypes() {
@@ -381,7 +381,7 @@ class TxCache {
         isTxOpen = false;
         this.closedReason = closedReason;
         modifiedEntities.clear();
-        modifiedRoleTypes.clear();
+        modifiedRoles.clear();
         modifiedRelationTypes.clear();
         modifiedRelations.clear();
         modifiedRules.clear();
@@ -390,7 +390,7 @@ class TxCache {
         relationIndexCache.clear();
         shardingCount.clear();
         conceptCache.clear();
-        typeCache.clear();
+        ontologyConceptCache.clear();
         labelCache.clear();
     }
     void openTx(GraknTxType txType){

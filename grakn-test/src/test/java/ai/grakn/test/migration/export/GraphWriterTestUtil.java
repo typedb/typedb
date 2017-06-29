@@ -24,7 +24,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
@@ -47,9 +47,11 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertDataEqual(GraknGraph one, GraknGraph two){
-        one.admin().getMetaConcept().instances().stream()
-                .map(Concept::asInstance)
-                .forEach(i -> assertInstanceCopied(i, two));
+        one.admin().getMetaConcept().subs().stream().
+                filter(Concept::isType).
+                map(Concept::asType).
+                flatMap(t -> t.instances().stream()).
+                forEach(i -> assertInstanceCopied(i, two));
     }
 
     public static void assertInstanceCopied(Thing thing, GraknGraph two){
@@ -103,8 +105,8 @@ public abstract class GraphWriterTestUtil {
         }
 
         RelationType relationType = two.getRelationType(relation1.type().getLabel().getValue());
-        Map<RoleType, Set<Thing>> rolemap = relation1.allRolePlayers().entrySet().stream().collect(toMap(
-                e -> two.getRoleType(e.getKey().asType().getLabel().getValue()),
+        Map<Role, Set<Thing>> rolemap = relation1.allRolePlayers().entrySet().stream().collect(toMap(
+                e -> two.getRole(e.getKey().getLabel().getValue()),
                 e -> e.getValue().stream().
                         map(instance -> getInstanceUniqueByResourcesFromGraph(two, instance)).
                         collect(Collectors.toSet())
@@ -135,15 +137,15 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertOntologiesEqual(GraknGraph one, GraknGraph two){
-        boolean ontologyCorrect = one.admin().getMetaConcept().subTypes().stream()
-                .allMatch(t -> typesEqual(t.asType(), two.getType(t.asType().getLabel())));
+        boolean ontologyCorrect = one.admin().getMetaConcept().subs().stream().filter(Concept::isType)
+                .allMatch(t -> typesEqual(t.asType(), two.getOntologyConcept(t.asType().getLabel())));
         assertEquals(true, ontologyCorrect);
     }
 
     public static boolean typesEqual(Type one, Type two){
         return one.getLabel().equals(two.getLabel())
                 && one.isAbstract().equals(two.isAbstract())
-                && (one.superType() == null || one.superType().getLabel().equals(two.superType().getLabel()))
+                && (one.sup() == null || one.sup().getLabel().equals(two.sup().getLabel()))
                 && (!one.isResourceType() || Objects.equals(one.asResourceType().getDataType(), two.asResourceType().getDataType()));
     }
 }

@@ -19,10 +19,11 @@
 package ai.grakn.exception;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
@@ -37,6 +38,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Set;
 
+import static ai.grakn.util.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_INSTANCE_WITH_NAME;
 import static ai.grakn.util.ErrorMessage.INSERT_ISA_AND_SUB;
 import static ai.grakn.util.ErrorMessage.INSERT_MULTIPLE_VALUES;
@@ -96,7 +98,7 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(message);
     }
 
-    public static GraqlQueryException labelNotFound(TypeLabel label) {
+    public static GraqlQueryException labelNotFound(Label label) {
         return new GraqlQueryException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
     }
 
@@ -106,19 +108,19 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.DELETE_UNSUPPORTED_PROPERTY.getMessage(builder.toString()));
     }
 
-    public static GraqlQueryException mustBeResourceType(TypeLabel resourceType) {
+    public static GraqlQueryException mustBeResourceType(Label resourceType) {
         return new GraqlQueryException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
     }
 
-    public static GraqlQueryException queryInstanceOfRoleType(TypeLabel typeLabel) {
-        return new GraqlQueryException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(typeLabel));
+    public static GraqlQueryException queryInstanceOfRoleType(Label label) {
+        return new GraqlQueryException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(label));
     }
 
-    public static GraqlQueryException notARelationType(TypeLabel label) {
+    public static GraqlQueryException notARelationType(Label label) {
         return new GraqlQueryException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(label));
     }
 
-    public static GraqlQueryException notARoleType(TypeLabel roleId) {
+    public static GraqlQueryException notARoleType(Label roleId) {
         return new GraqlQueryException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(roleId, roleId));
     }
 
@@ -142,7 +144,7 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(INSERT_RECURSIVE.getMessage(var.getPrintableName()));
     }
 
-    public static GraqlQueryException insertInstanceWithLabel(TypeLabel label) {
+    public static GraqlQueryException insertInstanceWithLabel(Label label) {
         return new GraqlQueryException(INSERT_INSTANCE_WITH_NAME.getMessage(label));
     }
 
@@ -158,8 +160,8 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(var + " cannot be an instance of meta-type " + type.getLabel());
     }
 
-    public static GraqlQueryException insertMetaType(TypeLabel label, Type superType) {
-        return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, superType.getLabel()));
+    public static GraqlQueryException insertMetaType(Label label, OntologyConcept ontologyConcept) {
+        return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, ontologyConcept.getLabel()));
     }
 
     public static GraqlQueryException insertMultipleValues(ValuePredicateAdmin predicate, Object value) {
@@ -231,11 +233,11 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.INSTANCE_DOES_NOT_EXIST.getMessage());
     }
 
-    public static GraqlQueryException resourceMustBeANumber(ResourceType.DataType dataType, TypeLabel resourceType) {
+    public static GraqlQueryException resourceMustBeANumber(ResourceType.DataType dataType, Label resourceType) {
         return new GraqlQueryException(resourceType + " must have data type of `long` or `double`, but was " + dataType.getName());
     }
 
-    public static GraqlQueryException resourcesWithDifferentDataTypes(Set<TypeLabel> resourceTypes) {
+    public static GraqlQueryException resourcesWithDifferentDataTypes(Set<Label> resourceTypes) {
         return new GraqlQueryException("resource types " + resourceTypes + " have different data types");
     }
 
@@ -297,6 +299,10 @@ public class GraqlQueryException extends GraknException{
 
     public static GraqlQueryException insertTypeWithoutLabel() {
         return new GraqlQueryException(INSERT_TYPE_WITHOUT_LABEL.getMessage());
+    }
+
+    public static GraqlQueryException insertAbstractOnNonType(OntologyConcept concept){
+        return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.getLabel()));
     }
 
     public static GraqlQueryException insertResourceTypeWithoutDataType(VarPatternAdmin var) {

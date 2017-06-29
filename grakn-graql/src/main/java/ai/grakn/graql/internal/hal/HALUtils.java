@@ -19,9 +19,9 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -89,21 +89,21 @@ public class HALUtils {
         }
     }
 
-    static Schema.BaseType getBaseType(Type type) {
-        if (type.isEntityType()) {
+    static Schema.BaseType getBaseType(OntologyConcept ontologyConcept) {
+        if (ontologyConcept.isEntityType()) {
             return Schema.BaseType.ENTITY_TYPE;
-        } else if (type.isRelationType()) {
+        } else if (ontologyConcept.isRelationType()) {
             return Schema.BaseType.RELATION_TYPE;
-        } else if (type.isResourceType()) {
+        } else if (ontologyConcept.isResourceType()) {
             return Schema.BaseType.RESOURCE_TYPE;
-        } else if (type.isRuleType()) {
+        } else if (ontologyConcept.isRuleType()) {
             return Schema.BaseType.RULE_TYPE;
-        } else if (type.isRoleType()) {
-            return Schema.BaseType.ROLE_TYPE;
-        } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
+        } else if (ontologyConcept.isRoleType()) {
+            return Schema.BaseType.ROLE;
+        } else if (ontologyConcept.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             return Schema.BaseType.TYPE;
         } else {
-            throw CommonUtil.unreachableStatement("Unrecognised base type of " + type);
+            throw CommonUtil.unreachableStatement("Unrecognised base type of " + ontologyConcept);
         }
     }
 
@@ -116,7 +116,7 @@ public class HALUtils {
             resource.withProperty(TYPE_PROPERTY, thing.type().getLabel().getValue())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(thing).name());
         } else {
-            resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asType()).name());
+            resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asOntologyConcept()).name());
         }
 
         if (concept.isResource()) {
@@ -181,7 +181,7 @@ public class HALUtils {
                 );
                 String relationType = null;
                 if (var.getProperty(IsaProperty.class).isPresent()) {
-                    Optional<TypeLabel> relOptional = var.getProperty(IsaProperty.class).get().getType().getTypeLabel();
+                    Optional<Label> relOptional = var.getProperty(IsaProperty.class).get().getType().getTypeLabel();
                     relationType = (relOptional.isPresent()) ? relOptional.get().getValue() : "";
                 } else {
                     relationType = "";
@@ -201,7 +201,7 @@ public class HALUtils {
         // Overrides the varNames that have roles in the previous map
         reasonerRel.getRoleVarMap().entries().stream().filter(entry -> !Schema.MetaSchema.isMetaLabel(entry.getKey().getLabel())).forEach(entry -> varNamesToRole.put(entry.getValue(), entry.getKey().getLabel().getValue()));
 
-        String relationType = (reasonerRel.getType() != null) ? reasonerRel.getType().getLabel().getValue() : "";
+        String relationType = (reasonerRel.getOntologyConcept() != null) ? reasonerRel.getOntologyConcept().getLabel().getValue() : "";
         return new Pair<>(varNamesToRole, relationType);
     }
 

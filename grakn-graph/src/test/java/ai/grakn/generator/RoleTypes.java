@@ -19,22 +19,22 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
 
-public class RoleTypes extends AbstractTypeGenerator<RoleType> {
+public class RoleTypes extends AbstractTypeGenerator<Role> {
 
     public RoleTypes() {
-        super(RoleType.class);
+        super(Role.class);
     }
 
     @Override
-    protected RoleType newType(TypeLabel label) {
-        return graph().putRoleType(label);
+    protected Role newType(Label label) {
+        return graph().putRole(label);
     }
 
     @Override
-    protected RoleType metaType() {
+    protected Role metaType() {
         return graph().admin().getMetaRoleType();
     }
 }

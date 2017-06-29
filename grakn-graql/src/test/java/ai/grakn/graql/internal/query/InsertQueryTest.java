@@ -25,7 +25,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
@@ -294,7 +294,7 @@ public class InsertQueryTest {
     public void testInsertSubRoleType() {
         qb.insert(
                 label("marriage").sub(Schema.MetaSchema.RELATION.getLabel().getValue()).relates("spouse1").relates("spouse2"),
-                label("spouse").sub(Schema.MetaSchema.ROLE.getLabel().getValue()).isAbstract(),
+                label("spouse").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 label("spouse1").sub("spouse"),
                 label("spouse2").sub("spouse")
         ).execute();
@@ -419,7 +419,7 @@ public class InsertQueryTest {
         //noinspection OptionalGetWithoutIsPresent
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
-        assertTrue(newType.plays().contains(movieGraph.graph().getRoleType(roleTypeLabel)));
+        assertTrue(newType.plays().contains(movieGraph.graph().getRole(roleTypeLabel)));
 
         assertTrue(qb.match(var().isa("new-type")).ask().execute());
     }
@@ -775,8 +775,8 @@ public class InsertQueryTest {
         Thing muppets = results.get(0).get("m").asInstance();
         Relation relation = results.get(0).get("r").asRelation();
 
-        RoleType clusterOfProduction = movieGraph.graph().getRoleType("cluster-of-production");
-        RoleType productionWithCluster = movieGraph.graph().getRoleType("production-with-cluster");
+        Role clusterOfProduction = movieGraph.graph().getRole("cluster-of-production");
+        Role productionWithCluster = movieGraph.graph().getRole("production-with-cluster");
 
         assertEquals(relation.rolePlayers(), ImmutableSet.of(cluster, godfather, muppets));
         assertEquals(relation.rolePlayers(clusterOfProduction), ImmutableSet.of(cluster));

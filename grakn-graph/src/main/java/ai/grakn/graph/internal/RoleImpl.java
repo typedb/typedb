@@ -18,11 +18,9 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -49,27 +47,34 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-class RoleTypeImpl extends TypeImpl<RoleType, Thing> implements RoleType{
+class RoleImpl extends OntologyConceptImpl<Role> implements Role {
     private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
     private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RoleTypeImpl(VertexElement vertexElement) {
+    RoleImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    RoleTypeImpl(VertexElement vertexElement, RoleType type) {
+    RoleImpl(VertexElement vertexElement, Role type) {
         super(vertexElement, type);
     }
 
-    RoleTypeImpl(VertexElement vertexElement, RoleType type, Boolean isImplicit) {
+    RoleImpl(VertexElement vertexElement, Role type, Boolean isImplicit) {
         super(vertexElement, type, isImplicit);
     }
 
     @Override
-    public void flushTxCache(){
-        super.flushTxCache();
+    public void txCacheFlush(){
+        super.txCacheFlush();
         cachedDirectPlayedByTypes.flush();
         cachedRelationTypes.flush();
+    }
+
+    @Override
+    public void txCacheClear(){
+        super.txCacheClear();
+        cachedDirectPlayedByTypes.clear();
+        cachedRelationTypes.clear();
     }
 
     /**
@@ -108,7 +113,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Thing> implements RoleType{
     @Override
     public Collection<Type> playedByTypes() {
         Set<Type> playedByTypes = new HashSet<>();
-        cachedDirectPlayedByTypes.get().forEach(type -> playedByTypes.addAll(type.subTypes()));
+        cachedDirectPlayedByTypes.get().forEach(type -> playedByTypes.addAll(type.subs()));
         return Collections.unmodifiableCollection(playedByTypes);
     }
 
@@ -122,15 +127,6 @@ class RoleTypeImpl extends TypeImpl<RoleType, Thing> implements RoleType{
 
     /**
      *
-     * @return All the instances of this type.
-     */
-    @Override
-    public Collection<Thing> instances(){
-        return Collections.emptyList();
-    }
-
-    /**
-     *
      * @return Get all the roleplayers of this role type
      */
     public Stream<Casting> rolePlayers(){
@@ -139,38 +135,17 @@ class RoleTypeImpl extends TypeImpl<RoleType, Thing> implements RoleType{
                 flatMap(relation -> ((RelationImpl)relation).castingsRelation(this));
     }
 
-    /**
-     *
-     * @param roleType The Role Type which the instances of this Type are allowed to play.
-     * @return The Type itself.
-     */
     @Override
-    public RoleType plays(RoleType roleType) {
-        if(equals(roleType)){
-            throw GraphOperationException.invalidPlays(roleType);
-        }
-        return super.plays(roleType, false);
+    boolean deletionAllowed(){
+        return super.deletionAllowed() &&
+                !neighbours(Direction.IN, Schema.EdgeLabel.RELATES).findAny().isPresent() && // This role is not linked t any relation type
+                !neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).findAny().isPresent() && // Nothing can play this role
+                !rolePlayers().findAny().isPresent(); // This role has no role players
     }
 
     @Override
-    public void delete(){
-        boolean hasRelates = neighbours(Direction.IN, Schema.EdgeLabel.RELATES).findAny().isPresent();
-        boolean hasPlays = neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).findAny().isPresent();
-
-        boolean deletionNotAllowed = hasRelates || hasPlays;
-
-        //This check is independent as it is slower than the ones above
-        if(!deletionNotAllowed) deletionNotAllowed = rolePlayers().findAny().isPresent();
-
-        if(deletionNotAllowed){
-            throw GraphOperationException.typeCannotBeDeleted(getLabel());
-        } else {
-            super.delete();
-
-            //Clear all internal caching
-            cachedRelationTypes.clear();
-            cachedDirectPlayedByTypes.clear();
-        }
+    void trackSuperChange() {
+        //TODO: track the super change when the role super changes
     }
 
 }

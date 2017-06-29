@@ -22,8 +22,9 @@ package ai.grakn.graph.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
@@ -247,22 +248,25 @@ public class VertexPropertyTest {
         // Confirm this concept is allowed to be deleted
         // TODO: A better way to handle these assumptions?
         Function<GraknGraph,Object> function = g -> {
-            if (concept.isType()) {
-                Type type = concept.asType();
-                assumeThat(type.subTypes(), contains(type));
-                assumeThat(type.instances(), empty());
-                assumeThat(type.getRulesOfHypothesis(), empty());
-                assumeThat(type.getRulesOfConclusion(), empty());
+            if (concept.isOntologyConcept()) {
+                OntologyConcept ontologyConcept = concept.asOntologyConcept();
+                assumeThat(ontologyConcept.subs(), contains(ontologyConcept));
+                if(ontologyConcept.isType()) {
+                    Type type = ontologyConcept.asType();
+                    assumeThat(type.instances(), empty());
+                    assumeThat(type.getRulesOfHypothesis(), empty());
+                    assumeThat(type.getRulesOfConclusion(), empty());
+                }
 
-                if (type.isRoleType()) {
-                    RoleType roleType = type.asRoleType();
-                    assumeThat(roleType.playedByTypes(), empty());
-                    assumeThat(roleType.relationTypes(), empty());
+                if (ontologyConcept.isRoleType()) {
+                    Role role = ontologyConcept.asRoleType();
+                    assumeThat(role.playedByTypes(), empty());
+                    assumeThat(role.relationTypes(), empty());
                     Collection<? extends Relation> allRelations = graph.admin().getMetaRelationType().instances();
-                    Set<RoleType> allRolesPlayed = allRelations.stream().flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
-                    assumeThat(allRolesPlayed, not(hasItem(roleType)));
-                } else if (type.isRelationType()) {
-                    assumeThat(type.asRelationType().relates(), empty());
+                    Set<Role> allRolesPlayed = allRelations.stream().flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
+                    assumeThat(allRolesPlayed, not(hasItem(role)));
+                } else if (ontologyConcept.isRelationType()) {
+                    assumeThat(ontologyConcept.asRelationType().relates(), empty());
                 }
             }
 

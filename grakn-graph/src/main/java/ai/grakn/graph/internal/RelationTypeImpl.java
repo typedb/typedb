@@ -21,7 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    private Cache<Set<RoleType>> cachedRelates = new Cache<>(() -> this.<RoleType>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private Cache<Set<Role>> cachedRelates = new Cache<>(() -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RelationTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
@@ -61,9 +61,15 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     }
 
     @Override
-    public void flushTxCache(){
-        super.flushTxCache();
+    public void txCacheFlush(){
+        super.txCacheFlush();
         cachedRelates.flush();
+    }
+
+    @Override
+    public void txCacheClear(){
+        super.txCacheFlush();
+        cachedRelates.clear();
     }
 
     /**
@@ -71,27 +77,27 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      * @return A list of the Role Types which make up this Relation Type.
      */
     @Override
-    public Collection<RoleType> relates() {
+    public Collection<Role> relates() {
         return Collections.unmodifiableCollection(cachedRelates.get());
     }
 
     /**
      *
-     * @param roleType A new role which is part of this relationship.
+     * @param role A new role which is part of this relationship.
      * @return The Relation Type itself.
      */
     @Override
-    public RelationType relates(RoleType roleType) {
-        checkTypeMutationAllowed();
-        putEdge(roleType, Schema.EdgeLabel.RELATES);
+    public RelationType relates(Role role) {
+        checkOntologyMutationAllowed();
+        putEdge(role, Schema.EdgeLabel.RELATES);
 
         //TODO: the following lines below this comment should only be executed if the edge is added
 
         //Cache the Role internally
-        cachedRelates.ifPresent(set -> set.add(roleType));
+        cachedRelates.ifPresent(set -> set.add(role));
 
         //Cache the relation type in the role
-        ((RoleTypeImpl) roleType).addCachedRelationType(this);
+        ((RoleImpl) role).addCachedRelationType(this);
 
         //Put all the instance back in for tracking because their unique hashes need to be regenerated
         instances().forEach(instance -> vertex().graph().txCache().trackForValidation((ConceptImpl) instance));
@@ -101,16 +107,16 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
 
     /**
      *
-     * @param roleType The role type to delete from this relationship.
+     * @param role The role type to delete from this relationship.
      * @return The Relation Type itself.
      */
     @Override
-    public RelationType deleteRelates(RoleType roleType) {
-        checkTypeMutationAllowed();
-        deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, (Concept) roleType);
+    public RelationType deleteRelates(Role role) {
+        checkOntologyMutationAllowed();
+        deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, (Concept) role);
 
-        RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
-        //Add roleplayers of roleType to make sure relations are still valid
+        RoleImpl roleTypeImpl = (RoleImpl) role;
+        //Add roleplayers of role to make sure relations are still valid
         roleTypeImpl.rolePlayers().forEach(rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
 
 
@@ -121,10 +127,10 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         vertex().graph().txCache().trackForValidation(roleTypeImpl);
 
         //Remove from internal cache
-        cachedRelates.ifPresent(set -> set.remove(roleType));
+        cachedRelates.ifPresent(set -> set.remove(role));
 
         //Remove from roleTypeCache
-        ((RoleTypeImpl) roleType).deleteCachedRelationType(this);
+        ((RoleImpl) role).deleteCachedRelationType(this);
 
         //Put all the instance back in for tracking because their unique hashes need to be regenerated
         instances().forEach(instance -> vertex().graph().txCache().trackForValidation((ConceptImpl) instance));
@@ -140,9 +146,6 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         super.delete();
 
         //Update the cache of the connected role types
-        cachedRelates.get().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedRelationType(this));
-
-        //Clear internal Cache
-        cachedRelates.clear();
+        cachedRelates.get().forEach(roleType -> ((RoleImpl) roleType).deleteCachedRelationType(this));
     }
 }

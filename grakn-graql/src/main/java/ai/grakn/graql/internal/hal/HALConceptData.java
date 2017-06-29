@@ -20,13 +20,13 @@ package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.theoryinpractise.halbuilder.api.Representation;
@@ -66,13 +66,13 @@ public class HALConceptData {
     private final String keyspace;
 
     private final boolean embedType;
-    private final Set<TypeLabel> typesInQuery;
+    private final Set<Label> typesInQuery;
 
     private final int offset;
     private final int limit;
 
 
-    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<TypeLabel> typesInQuery, String keyspace, int offset, int limit){
+    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<Label> typesInQuery, String keyspace, int offset, int limit){
 
         embedType = embedTypeParam;
         this.typesInQuery = typesInQuery;
@@ -108,13 +108,13 @@ public class HALConceptData {
         if (embedType && concept.isInstance()) {
             Thing thing = concept.asInstance();
             if (typesInQuery.contains(thing.type().getLabel())
-                    || (thing.type().superType() != null &&
-                    typesInQuery.contains(thing.type().superType().getLabel()))) {
+                    || (thing.type().sup() != null &&
+                    typesInQuery.contains(thing.type().sup().getLabel()))) {
                 embedType(halResource, thing);
             }
         }
 
-        if (concept.isType() && concept.asType().superType() != null) {
+        if (concept.isType() && concept.asType().sup() != null) {
             embedSuperType(halResource, concept.asType());
         }
 
@@ -172,7 +172,7 @@ public class HALConceptData {
     }
 
     private void generateOwnerInstances(Representation halResource, Resource<?> conceptResource, int separationDegree) {
-        final TypeLabel roleType = conceptResource.type().getLabel();
+        final Label roleType = conceptResource.type().getLabel();
         Stream<Thing> ownersStream = conceptResource.ownerInstances().stream().skip(offset);
         if (limit >= 0) ownersStream = ownersStream.limit(limit);
         ownersStream.forEach(instance -> {
@@ -184,9 +184,9 @@ public class HALConceptData {
     }
 
     private void embedSuperType(Representation halResource, Type type) {
-        Representation HALType = factory.newRepresentation(resourceLinkPrefix + type.superType().getId() + getURIParams(0))
+        Representation HALType = factory.newRepresentation(resourceLinkPrefix + type.sup().getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-        generateStateAndLinks(HALType, type.superType());
+        generateStateAndLinks(HALType, type.sup());
         halResource.withRepresentation(SUB_EDGE, HALType);
     }
 
@@ -220,7 +220,7 @@ public class HALConceptData {
         });
     }
 
-    private void attachRelation(Representation halResource, Concept rel, TypeLabel role, int separationDegree) {
+    private void attachRelation(Representation halResource, Concept rel, Label role, int separationDegree) {
         Representation relationResource = factory.newRepresentation(resourceLinkPrefix + rel.getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
         handleConcept(relationResource, rel, separationDegree - 1);
@@ -248,9 +248,9 @@ public class HALConceptData {
     }
 
     private void embedRelationsNotConnectedToResources(Representation halResource, Concept concept, Relation relation, int separationDegree) {
-        TypeLabel rolePlayedByCurrentConcept = null;
+        Label rolePlayedByCurrentConcept = null;
         boolean isResource = false;
-        for (Map.Entry<RoleType, Set<Thing>> entry : relation.allRolePlayers().entrySet()) {
+        for (Map.Entry<Role, Set<Thing>> entry : relation.allRolePlayers().entrySet()) {
             for (Thing thing : entry.getValue()) {
                 //Some role players can be null
                 if (thing != null) {
@@ -277,7 +277,7 @@ public class HALConceptData {
 
     private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
         if (!type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
-            Stream<? extends Thing> instancesStream = type.instances().stream().filter(instance -> (!instance.isType() || !instance.asType().isImplicit())).skip(offset);
+            Stream<? extends Thing> instancesStream = type.instances().stream().skip(offset);
             if (limit >= 0) instancesStream = instancesStream.limit(limit);
             instancesStream.forEach(instance -> {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
@@ -287,11 +287,12 @@ public class HALConceptData {
             });
         }
         // We only limit the number of instances and not subtypes.
-        type.subTypes().stream().filter(instance -> (!instance.getLabel().equals(type.getLabel()))).forEach(instance -> {
-            Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
+        // TODO: This `asOntologyElement` is a hack because `thing.subTypes()` will contain `Role`, which is not `Type`
+        type.asOntologyConcept().subs().stream().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
+            Representation subResource = factory.newRepresentation(resourceLinkPrefix + sub.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-            handleConcept(instanceResource, instance, separationDegree - 1);
-            halResource.withRepresentation(SUB_EDGE, instanceResource);
+            handleConcept(subResource, sub, separationDegree - 1);
+            halResource.withRepresentation(SUB_EDGE, subResource);
         });
     }
 

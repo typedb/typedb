@@ -18,6 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
@@ -41,7 +42,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesCompatible;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkCompatible;
 
 /**
  *
@@ -141,9 +142,9 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     private Set<Rule> getPotentialRules(){
-        Type type = getType();
-        return type != null ?
-                type.subTypes().stream().flatMap(t -> t.getRulesOfConclusion().stream()).collect(Collectors.toSet()) :
+        OntologyConcept ontologyConcept = getOntologyConcept();
+        return ontologyConcept != null ?
+                ontologyConcept.subs().stream().flatMap(t -> t.getRulesOfConclusion().stream()).collect(Collectors.toSet()) :
                 ReasonerUtils.getRules(graph());
     }
 
@@ -167,12 +168,12 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public boolean isRecursive(){
-        if (isResource() || getType() == null) return false;
-        Type type = getType();
+        if (isResource() || getOntologyConcept() == null) return false;
+        OntologyConcept ontologyConcept = getOntologyConcept();
         return getApplicableRules().stream()
                 .filter(rule -> rule.getBody().selectAtoms().stream()
-                        .filter(at -> Objects.nonNull(at.getType()))
-                        .filter(at -> checkTypesCompatible(type, at.getType())).findFirst().isPresent())
+                        .filter(at -> Objects.nonNull(at.getOntologyConcept()))
+                        .filter(at -> checkCompatible(ontologyConcept, at.getOntologyConcept())).findFirst().isPresent())
                 .filter(this::isRuleApplicable)
                 .findFirst().isPresent();
     }
@@ -190,7 +191,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return corresponding type if any
      */
-    public Type getType(){
+    public OntologyConcept getOntologyConcept(){
         if (type == null && typeId != null) {
             type = getParentQuery().graph().getConcept(typeId).asType();
         }

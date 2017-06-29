@@ -18,11 +18,11 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.LabelId;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeId;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
@@ -33,15 +33,15 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  *
  * <p>
  *    Wraps the shortcut {@link Edge} which contains the information unifying an {@link Thing},
- *    {@link Relation} and {@link RoleType}.
+ *    {@link Relation} and {@link Role}.
  * </p>
  *
  * @author fppt
  */
 class Casting {
     private final EdgeElement edgeElement;
-    private final Cache<RoleType> cachedRoleType = new Cache<>(() -> (RoleType) edge().graph().getType(TypeId.of(edge().property(Schema.EdgeProperty.ROLE_TYPE_ID))));
-    private final Cache<RelationType> cachedRelationType = new Cache<>(() -> (RelationType) edge().graph().getType(TypeId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_ID))));
+    private final Cache<Role> cachedRoleType = new Cache<>(() -> (Role) edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_TYPE_ID))));
+    private final Cache<RelationType> cachedRelationType = new Cache<>(() -> (RelationType) edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_ID))));
     private final Cache<Thing> cachedInstance = new Cache<>(() -> edge().graph().factory().buildConcept(edge().target()));
     private final Cache<Relation> cachedRelation = new Cache<>(() -> edge().graph().factory().buildConcept(edge().source()));
 
@@ -57,7 +57,7 @@ class Casting {
      *
      * @return The role the instance is playing
      */
-    public RoleType getRoleType(){
+    public Role getRoleType(){
         return cachedRoleType.get();
     }
 

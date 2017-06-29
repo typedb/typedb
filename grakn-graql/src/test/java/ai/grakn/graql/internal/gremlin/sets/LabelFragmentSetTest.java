@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -45,8 +45,8 @@ public class LabelFragmentSetTest {
     private static final Var generatedVar = Graql.var();
     private static final Var otherGeneratedVar = Graql.var();
     private static final Var userDefinedVar = Graql.var("x");
-    private static final TypeLabel existingTypeLabel = TypeLabel.of("something");
-    private static final TypeLabel nonExistentTypeLabel = TypeLabel.of("doesn't exist");
+    private static final Label EXISTING_LABEL = Label.of("something");
+    private static final Label NON_EXISTENT_LABEL = Label.of("doesn't exist");
 
     private GraknGraph graph;
 
@@ -54,13 +54,13 @@ public class LabelFragmentSetTest {
     public void setUp() {
         graph = mock(GraknGraph.class);
 
-        when(graph.getType(existingTypeLabel)).thenReturn(mock(Type.class));
-        when(graph.getType(nonExistentTypeLabel)).thenReturn(null);
+        when(graph.getOntologyConcept(EXISTING_LABEL)).thenReturn(mock(Type.class));
+        when(graph.getOntologyConcept(NON_EXISTENT_LABEL)).thenReturn(null);
     }
 
     @Test
     public void whenOptimisingQueryWithGeneratedVarLabel_EliminateLabelFragmentSet() {
-        EquivalentFragmentSet labelFragment = label(generatedVar, existingTypeLabel);
+        EquivalentFragmentSet labelFragment = label(generatedVar, EXISTING_LABEL);
 
         Set<EquivalentFragmentSet> originalFragmentSets = ImmutableSet.of(
                 labelFragment,
@@ -77,7 +77,7 @@ public class LabelFragmentSetTest {
     @Test
     public void whenOptimisingQueryContainingOnlyASingleFragment_DoNotEliminateLabelFragmentSet() {
         Collection<EquivalentFragmentSet> originalFragmentSets = ImmutableSet.of(
-                label(generatedVar, existingTypeLabel)
+                label(generatedVar, EXISTING_LABEL)
         );
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
@@ -90,7 +90,7 @@ public class LabelFragmentSetTest {
     @Test
     public void whenOptimisingQueryWithUserDefinedVarLabel_DoNotEliminateLabelFragmentSet() {
         Collection<EquivalentFragmentSet> originalFragmentSets = ImmutableSet.of(
-                label(userDefinedVar, existingTypeLabel)
+                label(userDefinedVar, EXISTING_LABEL)
         );
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
@@ -103,7 +103,7 @@ public class LabelFragmentSetTest {
     @Test
     public void whenOptimisingQueryWithLabelConnectedToAnyVar_DoNotEliminateLabelFragmentSet() {
         Set<EquivalentFragmentSet> originalFragmentSets = ImmutableSet.of(
-                label(generatedVar, existingTypeLabel),
+                label(generatedVar, EXISTING_LABEL),
                 sub(otherGeneratedVar, generatedVar)
         );
 
@@ -117,7 +117,7 @@ public class LabelFragmentSetTest {
     @Test
     public void whenOptimisingQueryWithLabelReferringToNonExistentType_DoNotEliminateLabelFragmentSet() {
         Collection<EquivalentFragmentSet> originalFragmentSets = ImmutableSet.of(
-                label(generatedVar, nonExistentTypeLabel)
+                label(generatedVar, NON_EXISTENT_LABEL)
         );
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);

@@ -20,8 +20,8 @@ package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -188,13 +188,13 @@ public class InferenceRule {
         Set<TypeAtom> allTypes = Sets.union(unifiedTypes, ruleTypes);
         Set<TypeAtom> types = allTypes.stream()
                 .filter(ta -> {
-                    Type type = ta.getType();
-                    Type subType = allTypes.stream()
-                            .map(Atom::getType)
+                    OntologyConcept ontologyConcept = ta.getOntologyConcept();
+                    OntologyConcept subType = allTypes.stream()
+                            .map(Atom::getOntologyConcept)
                             .filter(Objects::nonNull)
-                            .filter(t -> ReasonerUtils.getSuperTypes(t).contains(type))
+                            .filter(t -> ReasonerUtils.getSupers(t).contains(ontologyConcept))
                             .findFirst().orElse(null);
-                    return type == null || subType == null;
+                    return ontologyConcept == null || subType == null;
                 }).collect(toSet());
 
         ruleTypes.forEach(body::removeAtomic);
@@ -216,8 +216,8 @@ public class InferenceRule {
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .filter(Atom::isRelation)
                 .filter(at -> !at.isUserDefinedName())
-                .filter(at -> Objects.nonNull(at.getType()))
-                .filter(at -> at.getType().equals(head.getAtom().getType()))
+                .filter(at -> Objects.nonNull(at.getOntologyConcept()))
+                .filter(at -> at.getOntologyConcept().equals(head.getAtom().getOntologyConcept()))
                 .forEach(at -> {
                     Atom rewrite = at.rewriteToUserDefined();
                     body.removeAtomic(at);
@@ -242,14 +242,14 @@ public class InferenceRule {
     public Unifier getUnifier(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
         Unifier unifier = new UnifierImpl();
-        if (parentAtom.getType() != null){
+        if (parentAtom.getOntologyConcept() != null){
             unifier.merge(childAtom.getUnifier(parentAtom));
         }
         //case of match all relation atom
         else{
             Relation extendedParent = ((Relation) AtomicFactory
                     .create(parentAtom, parentAtom.getParentQuery()))
-                    .addType(childAtom.getType());
+                    .addType(childAtom.getOntologyConcept());
             unifier.merge(childAtom.getUnifier(extendedParent));
         }
         return unifier;

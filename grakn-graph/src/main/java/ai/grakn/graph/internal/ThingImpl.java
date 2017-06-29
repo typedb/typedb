@@ -20,14 +20,14 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -61,8 +61,8 @@ import java.util.stream.Stream;
  * @param <V> The type of the concept which extends {@link Type} of the concept.
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
-abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl<T> implements Thing {
-    private Cache<TypeLabel> cachedInternalType = new Cache<>(() -> {
+abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
+    private Cache<Label> cachedInternalType = new Cache<>(() -> {
         int typeId = vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID);
         Type type = vertex().graph().getConcept(Schema.VertexProperty.TYPE_ID, typeId);
         return type.getLabel();
@@ -159,19 +159,19 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl<T>
 
     /**
      *
-     * @param roleTypes An optional parameter which allows you to specify the role of the relations you wish to retrieve.
+     * @param roles An optional parameter which allows you to specify the role of the relations you wish to retrieve.
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
      */
     @Override
-    public Collection<Relation> relations(RoleType... roleTypes) {
+    public Collection<Relation> relations(Role... roles) {
         Set<Relation> relations = new HashSet<>();
         GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerTraversal().
                 has(Schema.VertexProperty.ID.name(), getId().getValue());
 
-        if(roleTypes.length == 0){
+        if(roles.length == 0){
             traversal.in(Schema.EdgeLabel.SHORTCUT.getLabel());
         } else {
-            Set<Integer> roleTypesIds = Arrays.stream(roleTypes).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
+            Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
             traversal.inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                     has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).outV();
         }
@@ -185,7 +185,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl<T>
      * @return A set of all the Role Types which this instance plays.
      */
     @Override
-    public Collection<RoleType> plays() {
+    public Collection<Role> plays() {
         return castingsInstance().map(Casting::getRoleType).collect(Collectors.toSet());
     }
 
@@ -211,10 +211,10 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl<T>
         }
 
 
-        TypeLabel label = resource.type().getLabel();
-        RelationType hasResource = vertex().graph().getType(has.getLabel(label));
-        RoleType hasResourceTarget = vertex().graph().getType(hasOwner.getLabel(label));
-        RoleType hasResourceValue = vertex().graph().getType(hasValue.getLabel(label));
+        Label label = resource.type().getLabel();
+        RelationType hasResource = vertex().graph().getOntologyConcept(has.getLabel(label));
+        Role hasResourceTarget = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
+        Role hasResourceValue = vertex().graph().getOntologyConcept(hasValue.getLabel(label));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
             throw GraphOperationException.hasNotAllowed(this, resource, type);
@@ -263,7 +263,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl<T>
      *
      * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
      */
-    public TypeLabel getInternalType(){
+    public Label getInternalType(){
         return cachedInternalType.get();
     }
 }

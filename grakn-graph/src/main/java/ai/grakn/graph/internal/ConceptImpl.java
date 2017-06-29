@@ -22,12 +22,13 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
@@ -56,12 +57,12 @@ import java.util.stream.Stream;
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
-abstract class ConceptImpl<T extends Concept> implements Concept {
+abstract class ConceptImpl implements Concept {
     private final VertexElement vertexElement;
 
     @SuppressWarnings("unchecked")
-    T getThis(){
-        return (T) this;
+    <X extends  Concept> X getThis(){
+        return (X) this;
     }
 
     ConceptImpl(VertexElement vertexElement){
@@ -243,6 +244,14 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     /**
      *
+     * @return An Ontology Element if the element is an Ontology Element
+     */
+    public OntologyConcept asOntologyConcept() {
+        return castConcept(OntologyConcept.class);
+    }
+
+    /**
+     *
      * @return A Type if the element is a Type
      */
     @Override
@@ -273,8 +282,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return A Role Type if the element is a Role Type
      */
     @Override
-    public RoleType asRoleType() {
-        return castConcept(RoleType.class);
+    public Role asRoleType() {
+        return castConcept(Role.class);
     }
 
     /**
@@ -344,6 +353,14 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     /**
      *
+     * @return true if the element is an Ontology Element
+     */
+    public boolean isOntologyConcept() {
+        return this instanceof OntologyConcept;
+    }
+
+    /**
+     *
      * @return true if the element is a Type
      */
     @Override
@@ -375,7 +392,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     @Override
     public boolean isRoleType() {
-        return this instanceof RoleType;
+        return this instanceof Role;
     }
 
     /**

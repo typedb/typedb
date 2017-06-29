@@ -18,19 +18,23 @@
 
 package ai.grakn.client;
 
+import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.TaskId;
 import ai.grakn.util.REST;
+import mjson.Json;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ResponseHandler;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import mjson.Json;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ResponseHandler;
+import java.util.Properties;
 
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static java.util.stream.Collectors.joining;
@@ -55,7 +59,35 @@ public class Client {
             return reader.lines().collect(joining("\n"));
         }
     };
-    
+
+    public static void main(String[] args) throws IOException {
+        int result = checkServerRunning();
+        System.exit(result);
+    }
+
+    private static int checkServerRunning() throws IOException {
+        String confPath = GraknSystemProperty.CONFIGURATION_FILE.value();
+
+        if (confPath == null) {
+            String msg = "System property `" + GraknSystemProperty.CONFIGURATION_FILE.key() + "` has not been set";
+            System.err.println(msg);
+            return 2;
+        }
+
+        Properties properties = new Properties();
+        try (FileInputStream stream = new FileInputStream(confPath)) {
+            properties.load(stream);
+        } catch (FileNotFoundException e) {
+            System.err.println("Could not find config file at `" + confPath + "`");
+            return 2;
+        }
+
+        if (serverIsRunning(properties.getProperty("server.host") + ":" + properties.getProperty("server.port"))) {
+            return 0;
+        } else {
+            return 1;
+        }
+    }
 
     /**
      * Check if Grakn Engine has been started
