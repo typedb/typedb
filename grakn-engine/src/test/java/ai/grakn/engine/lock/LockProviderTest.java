@@ -24,9 +24,12 @@ import ai.grakn.engine.lock.ZookeeperLock;
 import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.util.ErrorMessage;
 import java.util.concurrent.locks.Lock;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
@@ -54,6 +57,19 @@ public class LockProviderTest {
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    static BiFunction<String, Lock, Lock> currentProvider;
+    
+    @BeforeClass
+    public static void saveCurrent() {
+        currentProvider = LockProvider.provider();
+        LockProvider.clear();
+    }
+    
+    @AfterClass
+    public static void restoreProvider() {
+        LockProvider.instantiate(currentProvider);
+    }
+    
     @After
     public void clearLock(){
         LockProvider.clear();

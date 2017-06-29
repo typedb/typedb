@@ -9,6 +9,8 @@ import ai.grakn.engine.controller.AuthControllerTest;
 import ai.grakn.engine.controller.ConceptControllerTest;
 import ai.grakn.engine.controller.GraqlControllerDELETETest;
 import ai.grakn.engine.controller.GraqlControllerGETTest;
+import ai.grakn.engine.controller.GraqlControllerPOSTTest;
+import ai.grakn.engine.lock.LockProviderTest;
 
 /**
  * Run a selected set of classes/methods as a main program. Helps with debugging tests, especially
@@ -24,7 +26,9 @@ public class DebugTestsRunner {
                 GraknEngineConfigTest.class,
                 AuthControllerTest.class,
                 ConceptControllerTest.class,
-                GraqlControllerDELETETest.class};
+                GraqlControllerDELETETest.class,
+                LockProviderTest.class,
+                GraqlControllerPOSTTest.class};
         JUnitCore junit = new JUnitCore();
         Result result = null;
         do {
