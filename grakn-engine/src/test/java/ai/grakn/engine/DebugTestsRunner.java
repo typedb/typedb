@@ -7,6 +7,7 @@ import org.junit.runner.notification.Failure;
 import ai.grakn.engine.config.GraknEngineConfigTest;
 import ai.grakn.engine.controller.AuthControllerTest;
 import ai.grakn.engine.controller.ConceptControllerTest;
+import ai.grakn.engine.controller.GraqlControllerDELETETest;
 import ai.grakn.engine.controller.GraqlControllerGETTest;
 
 /**
@@ -20,10 +21,10 @@ public class DebugTestsRunner {
 
     public static void main(String[] argv) {
         Class<?> [] torun = new Class[] { 
-//                GraknEngineConfigTest.class,
+                GraknEngineConfigTest.class,
                 AuthControllerTest.class,
-//                ConceptControllerTest.class,
-                GraqlControllerGETTest.class};
+                ConceptControllerTest.class,
+                GraqlControllerDELETETest.class};
         JUnitCore junit = new JUnitCore();
         Result result = null;
         do {
