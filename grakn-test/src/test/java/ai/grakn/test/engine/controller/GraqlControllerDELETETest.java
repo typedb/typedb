@@ -33,11 +33,10 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
-import static ai.grakn.test.engine.controller.GraqlControllerGETTest.originalQuery;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -219,18 +218,10 @@ public class GraqlControllerDELETETest {
     }
 
     @Test
-    public void DELETEGraqlDelete_ResponseContentTypeIsJson(){
+    public void DELETEGraqlDelete_ResponseContentTypeIsText(){
         Response response = sendDELETE("match $x has name \"Harry\"; limit 1; delete $x;");
 
-        assertThat(response.contentType(), equalTo(APPLICATION_JSON));
-    }
-
-    @Test
-    public void DELETEGraqlDelete_ResponseContainsOriginalQuery(){
-        String query = "match $x has name \"Miranda Heart\"; limit 1; delete $x;";
-        Response response = sendDELETE(query);
-
-        assertThat(originalQuery(response), equalTo(query));
+        assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
     }
 
     private Response sendDELETE(String query){

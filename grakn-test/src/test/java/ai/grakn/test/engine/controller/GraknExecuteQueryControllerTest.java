@@ -13,12 +13,13 @@ import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static ai.grakn.test.engine.controller.GraqlControllerGETTest.jsonResponse;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
-import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
+import static org.junit.Assert.assertEquals;
 
 public class GraknExecuteQueryControllerTest {
     
@@ -33,7 +34,7 @@ public class GraknExecuteQueryControllerTest {
                                int limitEmbedded) {
         return RestAssured.with()
             .queryParam(KEYSPACE, graphContext.graph().getKeyspace())
-            .queryParam(QUERY, query)
+            .body(query)
             .queryParam(INFER, reasonser)
             .queryParam(MATERIALISE, materialise)
             .queryParam(LIMIT_EMBEDDED, limitEmbedded)
@@ -59,22 +60,23 @@ public class GraknExecuteQueryControllerTest {
     public void testMatchQuery() {
         Response resp = sendQuery("match $x isa movie;");
         resp.then().statusCode(200);        
-        Assert.assertFalse(resp.jsonPath().getList("response").isEmpty());
+        Assert.assertFalse(jsonResponse(resp).asJsonList().isEmpty());
     }
     
     @Test
     public void testInsertQuery() {
         Response resp = sendQuery("insert $x isa movie;");
-        resp.then().statusCode(200);        
-        Assert.assertFalse(resp.jsonPath().getList("response").isEmpty());
+        resp.then().statusCode(200);
+        Assert.assertFalse(jsonResponse(resp).asJsonList().isEmpty());
     }
     
     @Test
     public void testDeleteQuery() {
         Response resp = sendQuery("insert $x isa movie;");
         resp.then().statusCode(200);
-        String id = resp.jsonPath().getList("response").get(0).toString();
-        resp = sendQuery("match $x id \"" + id + "\"; delete $x; ");
+
+        String id =jsonResponse(resp).at(0).asJsonMap().get("x").asJsonMap().get("id").toString();
+        resp = sendQuery("match $x id " + id + "; delete $x; ");
         resp.then().statusCode(200);
     }
     
@@ -82,14 +84,15 @@ public class GraknExecuteQueryControllerTest {
     public void testAggregateQuery() {
         Response resp = sendQuery("match $x isa movie; aggregate count;");
         resp.then().statusCode(200);
-        Assert.assertEquals(7,resp.jsonPath().getInt("response"));
+        assertEquals(7, jsonResponse(resp).asInteger());
     }
     
     @Test
     public void testAskQuery() {
         Response resp = sendQuery("match $x isa movie; ask;");
         resp.then().statusCode(200);
-        Assert.assertEquals(true,resp.jsonPath().getBoolean("response"));
+
+        assertEquals(true, jsonResponse(resp).asBoolean());
     }
     
     @Test
