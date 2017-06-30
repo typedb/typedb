@@ -64,10 +64,9 @@ public class Resource extends Binary{
     private final Var resourceVariable;
     private final Set<ValuePredicate> multiPredicate = new HashSet<>();
 
-    public Resource(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, null, Collections.emptySet(), par);}
-    public Resource(VarPatternAdmin pattern, IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
+    public Resource(VarPatternAdmin pattern, IdPredicate idPred, Var resourceVar, Set<ValuePredicate> ps, ReasonerQuery par){
         super(pattern, idPred, par);
-        this.resourceVariable = extractResourceVariableName(pattern);
+        this.resourceVariable = resourceVar;
         this.multiPredicate.addAll(ps);
     }
     private Resource(Resource a) {
@@ -91,12 +90,6 @@ public class Resource extends Binary{
 
     @Override
     protected Var extractPredicateVariableName(VarPatternAdmin var){
-        HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
-        VarPatternAdmin resVar = prop.getResource();
-        return resVar.getVarName().isUserDefinedName()? resVar.getVarName() : Graql.var("");
-    }
-
-    private Var extractResourceVariableName(VarPatternAdmin var){
         HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         VarPatternAdmin resVar = prop.getResource();
         return resVar.getVarName().isUserDefinedName()? resVar.getVarName() : Graql.var("");

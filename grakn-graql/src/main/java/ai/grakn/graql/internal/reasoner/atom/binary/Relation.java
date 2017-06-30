@@ -107,7 +107,7 @@ public class Relation extends TypeAtom {
     @Override
     protected Var extractPredicateVariableName(VarPatternAdmin var) {
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
-        return isaProp != null ? isaProp.getType().getVarName() : Graql.var("");
+        return isaProp != null ? isaProp.getType().getVarName() : Graql.var().asUserDefined();
     }
 
     @Override
