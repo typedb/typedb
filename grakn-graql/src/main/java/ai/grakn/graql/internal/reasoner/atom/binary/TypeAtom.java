@@ -39,8 +39,11 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * Atom implementation defining type atoms of the general form: $varName {isa|sub|plays|relates|has|has-scope} $valueVariable).
- * These correspond to the following respective graql properties:
+ * Atom implementation defining type atoms of the general form:
+ *
+ * {isa|sub|plays|relates|has|has-scope}($varName, $predicateVariable)
+ *
+ * Type atoms correspond to the following respective graql properties:
  * {@link IsaProperty},
  * {@link ai.grakn.graql.internal.pattern.property.SubProperty},
  * {@link ai.grakn.graql.internal.pattern.property.PlaysProperty}

@@ -42,7 +42,10 @@ import java.util.Set;
 /**
  *
  * <p>
- * Base implementation for binary atoms with single id predicate for an ontology concept.
+ * Implementation for binary atoms with single id predicate for an ontology concept. Binary atoms take the form:
+ *
+ * <>($varName, $predicateVariable), type($predicateVariable)
+ *
  * </p>
  *
  * @author Kasper Piskorski
