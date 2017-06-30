@@ -205,11 +205,10 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         IsaProperty isaProp = resource.getProperties(IsaProperty.class).findFirst().orElse(null);
         VarPatternAdmin typeVar = isaProp != null? isaProp.getType() : null;
-        Var predicateVar = typeVar != null? typeVar.getVarName() : Graql.var().asUserDefined();
-        IdPredicate idPredicate = typeVar != null? getIdPredicate(typeVar.getVarName(), typeVar, vars, parent) : null;
+        IdPredicate idPredicate = typeVar != null? getIdPredicate(resourceVariable, typeVar, vars, parent) : null;
 
         //add resource atom
         VarPatternAdmin resVar = varName.has(type, resourceVariable).admin();
-        return new ai.grakn.graql.internal.reasoner.atom.binary.Resource(resVar, predicateVar, idPredicate, resourceVariable, predicates, parent);
+        return new ai.grakn.graql.internal.reasoner.atom.binary.Resource(resVar, resourceVariable, idPredicate, predicates, parent);
     }
 }

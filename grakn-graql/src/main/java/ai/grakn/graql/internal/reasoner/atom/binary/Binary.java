@@ -52,7 +52,7 @@ import java.util.Set;
  *
  */
 public abstract class Binary extends Atom {
-    private Var predicateVariable;
+    private final Var predicateVariable;
     private Type type = null;
     private ConceptId typeId = null;
     private IdPredicate predicate = null;
@@ -73,7 +73,6 @@ public abstract class Binary extends Atom {
     }
 
     public Var getPredicateVariable() { return predicateVariable;}
-
     public IdPredicate getPredicate() { return predicate;}
 
     @Override
