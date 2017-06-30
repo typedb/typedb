@@ -25,10 +25,10 @@ import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
-import com.google.common.collect.ImmutableSet;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import java.util.Arrays;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import spark.Request;
@@ -150,7 +150,7 @@ public class ConceptController {
     static void validateRequest(Request request, String... contentTypes){
         String acceptType = getAcceptType(request);
 
-        if(!ImmutableSet.of(contentTypes).contains(acceptType)){
+        if(!Arrays.asList(contentTypes).contains(acceptType)){
             throw GraknServerException.unsupportedContentType(acceptType);
         }
     }
