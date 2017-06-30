@@ -93,21 +93,16 @@ public class Relation extends TypeAtom {
     private Multimap<Role, String> roleConceptIdMap = null;
     private Set<RelationPlayer> relationPlayers = null;
 
-    public Relation(VarPatternAdmin pattern, IdPredicate predicate, ReasonerQuery par) { super(pattern, predicate, par);}
+    public Relation(VarPatternAdmin pattern, Var predicateVar, IdPredicate predicate, ReasonerQuery par) {
+        super(pattern, predicateVar, predicate, par);}
     public Relation(Var name, Var typeVariable, Map<Var, VarPattern> roleMap, IdPredicate pred, ReasonerQuery par) {
-        super(constructRelationVar(name, typeVariable, roleMap), pred, par);
+        this(constructRelationVar(name, typeVariable, roleMap), typeVariable, pred, par);
     }
 
     private Relation(Relation a) {
         super(a);
         this.relationPlayers = a.relationPlayers;
         this.roleVarMap = a.roleVarMap;
-    }
-
-    @Override
-    protected Var extractPredicateVariableName(VarPatternAdmin var) {
-        IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
-        return isaProp != null ? isaProp.getType().getVarName() : Graql.var().asUserDefined();
     }
 
     @Override
@@ -338,7 +333,7 @@ public class Relation extends TypeAtom {
         VarPatternAdmin newPattern = getPattern().asVar().isa(typeVariable).admin();
         IdPredicate newPredicate = new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery());
 
-        return new Relation(newPattern, newPredicate, this.getParentQuery());
+        return new Relation(newPattern, typeVariable, newPredicate, this.getParentQuery());
     }
 
     /**
@@ -567,7 +562,7 @@ public class Relation extends TypeAtom {
                 });
 
         PatternAdmin newPattern = constructRelationVar(getVarName(), getPredicateVariable(), rolePlayerMappings);
-        return new Relation(newPattern.asVar(), getPredicate(), getParentQuery());
+        return new Relation(newPattern.asVar(), getPredicateVariable(), getPredicate(), getParentQuery());
     }
 
     /**
@@ -745,6 +740,6 @@ public class Relation extends TypeAtom {
                 relVar = relVar.rel(c.getRolePlayer());
             }
         }
-        return new Relation(relVar.admin(), getPredicate(), getParentQuery());
+        return new Relation(relVar.admin(), getPredicateVariable(), getPredicate(), getParentQuery());
     }
 }

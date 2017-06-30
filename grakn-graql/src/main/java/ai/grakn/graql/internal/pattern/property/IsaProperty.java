@@ -138,6 +138,6 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
         //isa part
         VarPatternAdmin isaVar = varName.isa(typeVariable).admin();
-        return new TypeAtom(isaVar, predicate, parent);
+        return new TypeAtom(isaVar, typeVariable, predicate, parent);
     }
 }

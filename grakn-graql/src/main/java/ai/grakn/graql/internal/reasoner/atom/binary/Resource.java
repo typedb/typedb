@@ -18,7 +18,6 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -38,7 +37,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 import com.google.common.collect.ImmutableMap;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
@@ -64,8 +62,8 @@ public class Resource extends Binary{
     private final Var resourceVariable;
     private final Set<ValuePredicate> multiPredicate = new HashSet<>();
 
-    public Resource(VarPatternAdmin pattern, IdPredicate idPred, Var resourceVar, Set<ValuePredicate> ps, ReasonerQuery par){
-        super(pattern, idPred, par);
+    public Resource(VarPatternAdmin pattern, Var predicateVar, IdPredicate idPred, Var resourceVar, Set<ValuePredicate> ps, ReasonerQuery par){
+        super(pattern, predicateVar, idPred, par);
         this.resourceVariable = resourceVar;
         this.multiPredicate.addAll(ps);
     }
@@ -86,13 +84,6 @@ public class Resource extends Binary{
         return getVarName() + " has " + getOntologyConcept().getLabel() + " " +
                 multiPredicateString +
                 getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
-    }
-
-    @Override
-    protected Var extractPredicateVariableName(VarPatternAdmin var){
-        HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
-        VarPatternAdmin resVar = prop.getResource();
-        return resVar.getVarName().isUserDefinedName()? resVar.getVarName() : Graql.var("");
     }
 
     @Override
