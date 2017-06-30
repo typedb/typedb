@@ -23,7 +23,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
 
@@ -41,7 +41,7 @@ public class GeoGraph extends TestGraph {
     private static EntityType university, city, region, country, continent, geographicalObject;
     private static RelationType isLocatedIn;
 
-    private static RoleType geoEntity, entityLocation;
+    private static Role geoEntity, entityLocation;
 
     private static Thing Europe;
     private static Thing Warsaw, Wroclaw, London, Munich, Paris, Milan;
@@ -60,8 +60,8 @@ public class GeoGraph extends TestGraph {
     public void buildOntology(GraknGraph graph) {
         key = graph.putResourceType("name", ResourceType.DataType.STRING);
 
-        geoEntity = graph.putRoleType("geo-entity");
-        entityLocation = graph.putRoleType("entity-location");
+        geoEntity = graph.putRole("geo-entity");
+        entityLocation = graph.putRole("entity-location");
         isLocatedIn = graph.putRelationType("is-located-in")
                 .relates(geoEntity).relates(entityLocation);
 
@@ -71,18 +71,18 @@ public class GeoGraph extends TestGraph {
         geographicalObject.resource(key);
 
         continent = graph.putEntityType("continent")
-                .superType(geographicalObject)
+                .sup(geographicalObject)
                 .plays(entityLocation);
         country = graph.putEntityType("country")
-                .superType(geographicalObject)
+                .sup(geographicalObject)
                 .plays(geoEntity)
                 .plays(entityLocation);
         region = graph.putEntityType("region")
-                .superType(geographicalObject)
+                .sup(geographicalObject)
                 .plays(geoEntity)
                 .plays(entityLocation);
         city = graph.putEntityType("city")
-                .superType(geographicalObject)
+                .sup(geographicalObject)
                 .plays(geoEntity)
                 .plays(entityLocation);
         university = graph.putEntityType("university")

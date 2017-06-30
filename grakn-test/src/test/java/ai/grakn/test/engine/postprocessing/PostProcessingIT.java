@@ -155,7 +155,7 @@ public class PostProcessingIT {
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
     private boolean graphIsBroken(GraknSession session){
         try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
-            Collection<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subTypes();
+            Collection<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subs();
             for (ResourceType<?> resourceType : resourceTypes) {
                 if (!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {
                     Set<Integer> foundValues = new HashSet<>();

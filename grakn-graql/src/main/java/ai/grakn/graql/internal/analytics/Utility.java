@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeId;
+import ai.grakn.concept.LabelId;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -44,11 +44,11 @@ public class Utility {
      * @param vertex the Tinkerpop vertex
      * @return the type
      */
-    static TypeId getVertexTypeId(Vertex vertex) {
+    static LabelId getVertexTypeId(Vertex vertex) {
         if (vertex.property(Schema.VertexProperty.INSTANCE_TYPE_ID.name()).isPresent()) {
-            return TypeId.of(vertex.value(Schema.VertexProperty.INSTANCE_TYPE_ID.name()));
+            return LabelId.of(vertex.value(Schema.VertexProperty.INSTANCE_TYPE_ID.name()));
         }
-        return TypeId.invalid();
+        return LabelId.invalid();
     }
 
     /**

@@ -44,7 +44,7 @@ class JsonPrinter implements Printer<Json> {
 
         if (concept.isOntologyConcept()) {
             json.set("name", concept.asOntologyConcept().getLabel().getValue());
-            OntologyConcept superConcept = concept.asOntologyConcept().superType();
+            OntologyConcept superConcept = concept.asOntologyConcept().sup();
             if (superConcept != null) json.set("sub", superConcept.getLabel().getValue());
         } else if (concept.isInstance()) {
             json.set("isa", concept.asInstance().type().getLabel().getValue());

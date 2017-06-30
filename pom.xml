@@ -410,7 +410,7 @@
                 <!--
                 PMD prints warnings for a few files. This is because
                 it cannot parse method references with generic parameters, such
-                as `this::<RoleType>getType`.
+                as `this::<Role>getType`.
 
                 Any files containing these will not be checked for violations
                 by PMD.

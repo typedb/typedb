@@ -18,6 +18,7 @@
 
 package ai.grakn.test.migration.csv;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
@@ -27,6 +28,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.GraphLoader;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -60,14 +62,13 @@ public class CSVMigratorTest {
 
     @Before
     public void setup() {
-        factory = engine.factoryWithNewKeyspace();
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
-        migrator = Migrator.to(engine.uri(), graph.getKeyspace());
-        graph.close();
+        String keyspace = GraphLoader.randomKeyspace();
+        factory = Grakn.session(engine.uri(), keyspace);
+        migrator = Migrator.to(engine.uri(), keyspace);
     }
 
     @Test
-    public void multiFileMigrateGraphPersistenceTest(){
+    public void whenMigratorExecutedSequentiallyOverMultipleFiles_AllDataIsPersistedInGraph(){
         load(factory, getFile("csv", "multi-file/schema.gql"));
 
         String pokemonTemplate = "" +
@@ -92,23 +93,21 @@ public class CSVMigratorTest {
         declareAndLoad(pokemonTypeTemplate,  "multi-file/data/types.csv");
         declareAndLoad(edgeTemplate,  "multi-file/data/edges.csv");
 
-        GraknGraph graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
-        assertPokemonGraphCorrect(graph);
+        assertPokemonGraphCorrect(factory);
     }
 
     @Test
-    public void quotesWithoutContentTest() throws IOException {
+    public void whenDataContainsEmptyQuotes_PetDataIsMigratedCorrectly() throws IOException {
         load(factory, getFile("csv", "pets/schema.gql"));
         String template = getFileAsString("csv", "pets/template.gql");
 
         declareAndLoad(template,  "pets/data/pets.quotes");
 
-        GraknGraph graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
-        assertPetGraphCorrect(graph);
+        assertPetGraphCorrect(factory);
     }
 
     @Test
-    public void testMissingDataDoesNotThrowError() {
+    public void whenDataIsMissing_ErrorIsNotThrownAndThoseLinesAreSkipped() {
         load(factory, getFile("csv", "pets/schema.gql"));
         String template = getFileAsString("csv", "pets/template.gql");
 
@@ -133,7 +132,7 @@ public class CSVMigratorTest {
     }
 
     @Test
-    public void parsedLineIsEmpty_MigratorSkipsThatLine(){
+    public void whenParsedLineIsEmpty_ErrorIsNotThrownAndThoseLinesAreSkipped(){
         load(factory, getFile("csv", "pets/schema.gql"));
 
         // Only dont insert Puffball

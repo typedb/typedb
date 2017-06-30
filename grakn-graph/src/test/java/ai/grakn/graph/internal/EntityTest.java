@@ -21,13 +21,13 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
@@ -56,9 +56,9 @@ public class EntityTest extends GraphTestBase{
         //Ontology
         EntityType type = graknGraph.putEntityType("Concept Type");
         RelationType relationType = graknGraph.putRelationType("relationTypes");
-        RoleType role1 = graknGraph.putRoleType("role1");
-        RoleType role2 = graknGraph.putRoleType("role2");
-        RoleType role3 = graknGraph.putRoleType("role3");
+        Role role1 = graknGraph.putRole("role1");
+        Role role2 = graknGraph.putRole("role2");
+        Role role3 = graknGraph.putRole("role3");
 
         //Data
         ThingImpl<?, ?> rolePlayer1 = (ThingImpl) type.addEntity();
@@ -93,7 +93,7 @@ public class EntityTest extends GraphTestBase{
     public void whenDeletingLastRolePlayerInRelation_TheRelationIsDeleted() throws GraphOperationException {
         EntityType type = graknGraph.putEntityType("Concept Type");
         RelationType relationType = graknGraph.putRelationType("relationTypes");
-        RoleType role1 = graknGraph.putRoleType("role1");
+        Role role1 = graknGraph.putRole("role1");
         Thing rolePlayer1 = type.addEntity();
 
         Relation relation = relationType.addRelation().
@@ -108,9 +108,9 @@ public class EntityTest extends GraphTestBase{
 
     @Test
     public void whenAddingResourceToAnEntity_EnsureTheImplicitStructureIsCreated(){
-        TypeLabel resourceTypeLabel = TypeLabel.of("A Resource Thing");
+        Label resourceLabel = Label.of("A Resource Thing");
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeLabel, ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType(resourceLabel, ResourceType.DataType.STRING);
         entityType.resource(resourceType);
 
         Entity entity = entityType.addEntity();
@@ -160,9 +160,9 @@ public class EntityTest extends GraphTestBase{
 
     @Test
     public void checkKeyCreatesCorrectResourceStructure(){
-        TypeLabel resourceTypeLabel = TypeLabel.of("A Resource Thing");
+        Label resourceLabel = Label.of("A Resource Thing");
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeLabel, ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType(resourceLabel, ResourceType.DataType.STRING);
         entityType.key(resourceType);
 
         Entity entity = entityType.addEntity();
@@ -191,13 +191,13 @@ public class EntityTest extends GraphTestBase{
         assertEquals(2, relation.allRolePlayers().size());
         assertEquals(has.getLabel(resourceType.getLabel()), relation.type().getLabel());
         relation.allRolePlayers().entrySet().forEach(entry -> {
-            RoleType roleType = entry.getKey();
+            Role role = entry.getKey();
             assertEquals(1, entry.getValue().size());
             entry.getValue().forEach(instance -> {
                 if(instance.equals(entity)){
-                    assertEquals(hasOwner.getLabel(resourceType.getLabel()), roleType.getLabel());
+                    assertEquals(hasOwner.getLabel(resourceType.getLabel()), role.getLabel());
                 } else {
-                    assertEquals(hasValue.getLabel(resourceType.getLabel()), roleType.getLabel());
+                    assertEquals(hasValue.getLabel(resourceType.getLabel()), role.getLabel());
                 }
             });
         });
@@ -205,8 +205,8 @@ public class EntityTest extends GraphTestBase{
 
     @Test
     public void whenDeletingEntityInRelations_DeleteAllImplicitRelations(){
-        RoleType role1 = graknGraph.putRoleType("Role 1");
-        RoleType role2 = graknGraph.putRoleType("Role 2");
+        Role role1 = graknGraph.putRole("Role 1");
+        Role role2 = graknGraph.putRole("Role 2");
         RelationType relationType = graknGraph.putRelationType("A Relation Type Thing").relates(role1).relates(role2);
         EntityType entityType = graknGraph.putEntityType("A Thing").plays(role1).plays(role2);
         ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);

@@ -20,9 +20,9 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
@@ -138,11 +138,11 @@ public class AtomicTest {
         String patternString = "{($z, $y) isa owns; $z isa country; $y isa rocket;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
-        Multimap<RoleType, Var> roleMap = roleSetMap(atom.getRoleVarMap());
+        Multimap<Role, Var> roleMap = roleSetMap(atom.getRoleVarMap());
 
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("item-owner"), var("z"),
-                graph.getRoleType("owned-item"), var("y"));
+        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+                graph.getRole("item-owner"), var("z"),
+                graph.getRole("owned-item"), var("y"));
         assertEquals(correctRoleMap, roleMap);
     }
 
@@ -153,10 +153,10 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
         Relation atom = (Relation) query.getAtom();
 
-        Multimap<RoleType, Var> roleMap = roleSetMap(atom.getRoleVarMap());
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("item-owner"), var("z"),
-                graph.getRoleType("role"), var("y"));
+        Multimap<Role, Var> roleMap = roleSetMap(atom.getRoleVarMap());
+        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+                graph.getRole("item-owner"), var("z"),
+                graph.getRole("role"), var("y"));
         assertEquals(correctRoleMap, roleMap);
     }
 
@@ -166,12 +166,12 @@ public class AtomicTest {
         String patternString = "{($z, $y, seller: $x) isa transaction;$z isa country;$y isa rocket;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom2 = (Relation) query.getAtom();
-        Multimap<RoleType, Var> roleMap = roleSetMap(atom2.getRoleVarMap());
+        Multimap<Role, Var> roleMap = roleSetMap(atom2.getRoleVarMap());
 
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("seller"), var("x"),
-                graph.getRoleType("transaction-item"), var("y"),
-                graph.getRoleType("buyer"), var("z"));
+        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+                graph.getRole("seller"), var("x"),
+                graph.getRole("transaction-item"), var("y"),
+                graph.getRole("buyer"), var("z"));
         assertEquals(correctRoleMap, roleMap);
     }
 
@@ -181,12 +181,12 @@ public class AtomicTest {
         String patternString = "{($z, $y, $x) isa transaction;$z isa country;$x isa person;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
-        Multimap<RoleType, Var> roleMap = roleSetMap(atom.getRoleVarMap());
+        Multimap<Role, Var> roleMap = roleSetMap(atom.getRoleVarMap());
 
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("seller"), var("x"),
-                graph.getRoleType("role"), var("y"),
-                graph.getRoleType("buyer"), var("z"));
+        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+                graph.getRole("seller"), var("x"),
+                graph.getRole("role"), var("y"),
+                graph.getRole("buyer"), var("z"));
         assertEquals(correctRoleMap, roleMap);
     }
 
@@ -196,12 +196,12 @@ public class AtomicTest {
         String patternString = "{(buyer: $y, seller: $y, $x), isa transaction;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
-        Multimap<RoleType, Var> roleMap = roleSetMap(atom.getRoleVarMap());
+        Multimap<Role, Var> roleMap = roleSetMap(atom.getRoleVarMap());
 
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("role"), var("x"),
-                graph.getRoleType("seller"), var("y"),
-                graph.getRoleType("buyer"), var("y"));
+        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+                graph.getRole("role"), var("x"),
+                graph.getRole("seller"), var("y"),
+                graph.getRole("buyer"), var("y"));
         assertEquals(correctRoleMap, roleMap);
     }
 
@@ -211,12 +211,12 @@ public class AtomicTest {
         String patternString = "{(buyer: $y, $y, transaction-item: $x), isa transaction;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         Relation atom = (Relation) query.getAtom();
-        Multimap<RoleType, Var> roleMap = roleSetMap(atom.getRoleVarMap());
+        Multimap<Role, Var> roleMap = roleSetMap(atom.getRoleVarMap());
 
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("transaction-item"), var("x"),
-                graph.getRoleType("role"), var("y"),
-                graph.getRoleType("buyer"), var("y"));
+        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+                graph.getRole("transaction-item"), var("x"),
+                graph.getRole("role"), var("y"),
+                graph.getRole("buyer"), var("y"));
         assertEquals(correctRoleMap, roleMap);
     }
 
@@ -227,15 +227,15 @@ public class AtomicTest {
         String relationString2 = "{(superRole1: $gp, $p) isa relation1;}";
         Relation relation = (Relation) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         Relation relation2 = (Relation) ReasonerQueries.atomic(conjunction(relationString2, graph), graph).getAtom();
-        Multimap<RoleType, Var> roleMap = roleSetMap(relation.getRoleVarMap());
-        Multimap<RoleType, Var> roleMap2 = roleSetMap(relation2.getRoleVarMap());
+        Multimap<Role, Var> roleMap = roleSetMap(relation.getRoleVarMap());
+        Multimap<Role, Var> roleMap2 = roleSetMap(relation2.getRoleVarMap());
 
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("role"), var("p"),
-                graph.getRoleType("superRole2"), var("gc"));
-        ImmutableSetMultimap<RoleType, Var> correctRoleMap2 = ImmutableSetMultimap.of(
-                graph.getRoleType("role"), var("p"),
-                graph.getRoleType("superRole1"), var("gp"));
+        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+                graph.getRole("role"), var("p"),
+                graph.getRole("superRole2"), var("gc"));
+        ImmutableSetMultimap<Role, Var> correctRoleMap2 = ImmutableSetMultimap.of(
+                graph.getRole("role"), var("p"),
+                graph.getRole("superRole1"), var("gp"));
         assertEquals(correctRoleMap, roleMap);
         assertEquals(correctRoleMap2, roleMap2);
     }
@@ -245,10 +245,10 @@ public class AtomicTest {
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity;}";
         Relation relation = (Relation) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        ImmutableSetMultimap<RoleType, Var> roleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("role1"), var("x"),
-                graph.getRoleType("role"), var("y"),
-                graph.getRoleType("role"), var("z"));
+        ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
+                graph.getRole("role1"), var("x"),
+                graph.getRole("role"), var("y"),
+                graph.getRole("role"), var("z"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
     }
 
@@ -257,10 +257,10 @@ public class AtomicTest {
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity3;}";
         Relation relation = (Relation) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        ImmutableSetMultimap<RoleType, Var> roleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("role1"), var("x"),
-                graph.getRoleType("role"), var("y"),
-                graph.getRoleType("role"), var("z"));
+        ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
+                graph.getRole("role1"), var("x"),
+                graph.getRole("role"), var("y"),
+                graph.getRole("role"), var("z"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
     }
 
@@ -285,9 +285,9 @@ public class AtomicTest {
         GraknGraph graph = ruleApplicabilitySingleRoleSet.graph();
         String relationString = "{($x, $y) isa knows;}";
         Relation relation = (Relation) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        ImmutableSetMultimap<RoleType, Var> roleMap = ImmutableSetMultimap.of(
-                graph.getRoleType("friend"), var("x"),
-                graph.getRoleType("friend"), var("y"));
+        ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
+                graph.getRole("friend"), var("x"),
+                graph.getRole("friend"), var("y"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
     }
 
@@ -600,8 +600,8 @@ public class AtomicTest {
         Relation atom2 = (Relation) query2.getAtom();
 
         List<RelationType> possibleTypes = Lists.newArrayList(
-                graph.getOntologyConcept(TypeLabel.of("relation1")),
-                graph.getOntologyConcept(TypeLabel.of("relation3"))
+                graph.getOntologyConcept(Label.of("relation1")),
+                graph.getOntologyConcept(Label.of("relation3"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
@@ -624,15 +624,15 @@ public class AtomicTest {
         Relation atom2 = (Relation) query2.getAtom();
 
         List<RelationType> possibleTypes = Collections.singletonList(
-                graph.getOntologyConcept(TypeLabel.of("relation1"))
+                graph.getOntologyConcept(Label.of("relation1"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationTypes, possibleTypes);
         assertEquals(relationTypes2, possibleTypes);
-        assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(TypeLabel.of("relation1")));
-        assertEquals(atom2.getOntologyConcept(), graph.getOntologyConcept(TypeLabel.of("relation1")));
+        assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(Label.of("relation1")));
+        assertEquals(atom2.getOntologyConcept(), graph.getOntologyConcept(Label.of("relation1")));
     }
 
     @Test
@@ -643,9 +643,9 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
 
         List<RelationType> possibleTypes = Lists.newArrayList(
-                graph.getOntologyConcept(TypeLabel.of("relation1")),
-                graph.getOntologyConcept(TypeLabel.of("relation2")),
-                graph.getOntologyConcept(TypeLabel.of("relation3"))
+                graph.getOntologyConcept(Label.of("relation1")),
+                graph.getOntologyConcept(Label.of("relation2")),
+                graph.getOntologyConcept(Label.of("relation3"))
         );
 
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
@@ -661,12 +661,12 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
 
         List<RelationType> possibleTypes = Collections.singletonList(
-                graph.getOntologyConcept(TypeLabel.of("relation3"))
+                graph.getOntologyConcept(Label.of("relation3"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationTypes, possibleTypes);
-        assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(TypeLabel.of("relation3")));
+        assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(Label.of("relation3")));
     }
 
     @Test
@@ -680,8 +680,8 @@ public class AtomicTest {
         Relation atom2 = (Relation) query2.getAtom();
 
         List<RelationType> possibleTypes = Lists.newArrayList(
-                graph.getOntologyConcept(TypeLabel.of("relation1")),
-                graph.getOntologyConcept(TypeLabel.of("relation3"))
+                graph.getOntologyConcept(Label.of("relation1")),
+                graph.getOntologyConcept(Label.of("relation3"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
@@ -701,12 +701,12 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
 
         List<RelationType> possibleTypes = Collections.singletonList(
-                graph.getOntologyConcept(TypeLabel.of("relation3"))
+                graph.getOntologyConcept(Label.of("relation3"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationTypes, possibleTypes);
-        assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(TypeLabel.of("relation3")));
+        assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(Label.of("relation3")));
     }
 
     @Test
@@ -743,11 +743,11 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
 
         List<RelationType> possibleTypes = Collections.singletonList(
-                graph.getOntologyConcept(TypeLabel.of("relation1"))
+                graph.getOntologyConcept(Label.of("relation1"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         assertEquals(relationTypes, possibleTypes);
-        assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(TypeLabel.of("relation1")));
+        assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(Label.of("relation1")));
     }
 
     @Test
@@ -758,12 +758,12 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
 
         List<RelationType> possibleTypes = Collections.singletonList(
-                graph.getOntologyConcept(TypeLabel.of("relation1"))
+                graph.getOntologyConcept(Label.of("relation1"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationTypes, possibleTypes);
-        assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(TypeLabel.of("relation1")));
+        assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(Label.of("relation1")));
     }
 
     @Test
@@ -774,8 +774,8 @@ public class AtomicTest {
         Relation atom = (Relation) query.getAtom();
 
         List<RelationType> possibleTypes = Lists.newArrayList(
-                graph.getOntologyConcept(TypeLabel.of("relation3")),
-                graph.getOntologyConcept(TypeLabel.of("relation2"))
+                graph.getOntologyConcept(Label.of("relation3")),
+                graph.getOntologyConcept(Label.of("relation2"))
         );
         List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         assertEquals(relationTypes, possibleTypes);
@@ -954,8 +954,8 @@ public class AtomicTest {
 
         assertTrue(unifier.containsAll(correctUnifier));
 
-        Multimap<RoleType, Var> roleMap = roleSetMap(headAtom.getRoleVarMap());
-        Collection<Var> wifeEntry = roleMap.get(graph.getRoleType("superRole1"));
+        Multimap<Role, Var> roleMap = roleSetMap(headAtom.getRoleVarMap());
+        Collection<Var> wifeEntry = roleMap.get(graph.getRole("superRole1"));
         assertEquals(wifeEntry.size(), 1);
         assertEquals(wifeEntry.iterator().next(), var("x"));
     }
@@ -1041,8 +1041,8 @@ public class AtomicTest {
         return graph.graql().match(var("x").has(typeName, val).admin()).execute().iterator().next().get("x");
     }
 
-    private Multimap<RoleType, Var> roleSetMap(Multimap<RoleType, Var> roleVarMap) {
-        Multimap<RoleType, Var> roleMap = HashMultimap.create();
+    private Multimap<Role, Var> roleSetMap(Multimap<Role, Var> roleVarMap) {
+        Multimap<Role, Var> roleMap = HashMultimap.create();
         roleVarMap.entries().forEach(e -> roleMap.put(e.getKey(), e.getValue()));
         return roleMap;
     }

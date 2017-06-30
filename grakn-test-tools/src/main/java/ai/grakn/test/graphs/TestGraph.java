@@ -20,10 +20,10 @@ package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeLabel;
 
 import java.util.Set;
 import java.util.function.Consumer;
@@ -54,7 +54,7 @@ public abstract class TestGraph {
         };
     }
 
-    public static Thing putEntity(GraknGraph graph, String id, EntityType type, TypeLabel key) {
+    public static Thing putEntity(GraknGraph graph, String id, EntityType type, Label key) {
         Thing inst = type.addEntity();
         putResource(inst, graph.getOntologyConcept(key), id);
         return inst;

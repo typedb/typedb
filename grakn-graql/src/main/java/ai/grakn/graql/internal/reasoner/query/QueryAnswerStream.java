@@ -102,7 +102,7 @@ public class QueryAnswerStream {
         for (TypeAtom type : types){
             Var var = type.getVarName();
             OntologyConcept t = type.getOntologyConcept();
-            if(!t.subTypes().contains(answer.get(var).asInstance().type())){
+            if(!t.subs().contains(answer.get(var).asInstance().type())){
                 return false;
             }
         }

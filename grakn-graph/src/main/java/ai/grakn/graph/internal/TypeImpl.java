@@ -19,12 +19,12 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
@@ -69,13 +69,13 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
     private Cache<Set<T>> cachedShards = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
 
     //This cache is different in order to keep track of which plays are required
-    private Cache<Map<RoleType, Boolean>> cachedDirectPlays = new Cache<>(() -> {
-        Map<RoleType, Boolean> roleTypes = new HashMap<>();
+    private Cache<Map<Role, Boolean>> cachedDirectPlays = new Cache<>(() -> {
+        Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-            RoleType roleType = vertex().graph().factory().buildConcept(edge.target());
+            Role role = vertex().graph().factory().buildConcept(edge.target());
             Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
-            roleTypes.put(roleType, required);
+            roleTypes.put(role, required);
         });
 
         return roleTypes;
@@ -159,18 +159,18 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
      * @return A list of all the roles this Type is allowed to play.
      */
     @Override
-    public Collection<RoleType> plays() {
-        Set<RoleType> allRoleTypes = new HashSet<>();
+    public Collection<Role> plays() {
+        Set<Role> allRoles = new HashSet<>();
 
         //Get the immediate plays which may be cached
-        allRoleTypes.addAll(cachedDirectPlays.get().keySet());
+        allRoles.addAll(cachedDirectPlays.get().keySet());
 
         //Now get the super type plays (Which may also be cached locally within their own context
         Set<T> superSet = superSet();
         superSet.remove(this); //We already have the plays from ourselves
-        superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlays().keySet()));
+        superSet.forEach(superParent -> allRoles.addAll(((TypeImpl<?,?>) superParent).directPlays().keySet()));
 
-        return Collections.unmodifiableCollection(filterImplicitStructures(allRoleTypes));
+        return Collections.unmodifiableCollection(filterImplicitStructures(allRoles));
     }
 
     @Override
@@ -208,7 +208,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         });
     }
 
-    Map<RoleType, Boolean> directPlays(){
+    Map<Role, Boolean> directPlays(){
         return cachedDirectPlays.get();
     }
 
@@ -224,7 +224,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         super.delete();
 
         //Updated caches of linked types
-        cachedDirectPlays.get().keySet().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
+        cachedDirectPlays.get().keySet().forEach(roleType -> ((RoleImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
     }
     @Override
     boolean deletionAllowed(){
@@ -236,8 +236,8 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
      * @return All the subs of this concept including itself
      */
     @Override
-    public Collection<T> subTypes(){
-        return Collections.unmodifiableCollection(filterImplicitStructures(super.subTypes()));
+    public Collection<T> subs(){
+        return Collections.unmodifiableCollection(filterImplicitStructures(super.subs()));
     }
 
     /**
@@ -315,16 +315,16 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         });
     }
 
-    T plays(RoleType roleType, boolean required) {
+    T plays(Role role, boolean required) {
         checkOntologyMutationAllowed();
 
         //Update the internal cache of role types played
-        cachedDirectPlays.ifPresent(map -> map.put(roleType, required));
+        cachedDirectPlays.ifPresent(map -> map.put(role, required));
 
         //Update the cache of types played by the role
-        ((RoleTypeImpl) roleType).addCachedDirectPlaysByType(this);
+        ((RoleImpl) role).addCachedDirectPlaysByType(this);
 
-        EdgeElement edge = putEdge(roleType, Schema.EdgeLabel.PLAYS);
+        EdgeElement edge = putEdge(role, Schema.EdgeLabel.PLAYS);
 
         if (required) {
             edge.property(Schema.EdgeProperty.REQUIRED, true);
@@ -335,24 +335,24 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
 
     /**
      *
-     * @param roleType The Role Type which the instances of this Type are allowed to play.
+     * @param role The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      */
-    public T plays(RoleType roleType) {
-        return plays(roleType, false);
+    public T plays(Role role) {
+        return plays(role, false);
     }
 
     /**
      *
-     * @param roleType The Role Type which the instances of this Type should no longer be allowed to play.
+     * @param role The Role Type which the instances of this Type should no longer be allowed to play.
      * @return The Type itself.
      */
     @Override
-    public T deletePlays(RoleType roleType) {
+    public T deletePlays(Role role) {
         checkOntologyMutationAllowed();
-        deleteEdge(Direction.OUT, Schema.EdgeLabel.PLAYS, (Concept) roleType);
-        cachedDirectPlays.ifPresent(set -> set.remove(roleType));
-        ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(this);
+        deleteEdge(Direction.OUT, Schema.EdgeLabel.PLAYS, (Concept) role);
+        cachedDirectPlays.ifPresent(set -> set.remove(role));
+        ((RoleImpl) role).deleteCachedDirectPlaysByType(this);
 
         //Add roleplayers to tracking to make sure they can still be played.
         instances().forEach(concept -> {
@@ -405,26 +405,26 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
             throw GraphOperationException.metaTypeImmutable(resourceType.getLabel());
         }
 
-        TypeLabel resourceTypeLabel = resourceType.getLabel();
-        RoleType ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(resourceTypeLabel));
-        RoleType valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(resourceTypeLabel));
-        RelationType relationType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceTypeLabel)).
+        Label resourceLabel = resourceType.getLabel();
+        Role ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(resourceLabel));
+        Role valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(resourceLabel));
+        RelationType relationType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceLabel)).
                 relates(ownerRole).
                 relates(valueRole);
 
         //Linking with ako structure if present
-        ResourceType resourceTypeSuper = resourceType.superType();
-        TypeLabel superLabel = resourceTypeSuper.getLabel();
+        ResourceType resourceTypeSuper = resourceType.sup();
+        Label superLabel = resourceTypeSuper.getLabel();
         if(!Schema.MetaSchema.RESOURCE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
-            RoleType ownerRoleSuper = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
-            RoleType valueRoleSuper = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
+            Role ownerRoleSuper = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
+            Role valueRoleSuper = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
             RelationType relationTypeSuper = vertex().graph().putRelationTypeImplicit(has.getLabel(superLabel)).
                     relates(ownerRoleSuper).relates(valueRoleSuper);
 
             //Create the super type edges from sub role/relations to super roles/relation
-            ownerRole.superType(ownerRoleSuper);
-            valueRole.superType(valueRoleSuper);
-            relationType.superType(relationTypeSuper);
+            ownerRole.sup(ownerRoleSuper);
+            valueRole.sup(valueRoleSuper);
+            relationType.sup(relationTypeSuper);
 
             //Make sure the supertype resource is linked with the role as well
             ((ResourceTypeImpl) resourceTypeSuper).plays(valueRoleSuper);

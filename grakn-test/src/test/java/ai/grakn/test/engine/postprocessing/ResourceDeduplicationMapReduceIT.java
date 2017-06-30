@@ -9,7 +9,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.engine.postprocessing.ResourceDeduplicationTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.test.EngineContext;
@@ -46,8 +46,8 @@ public class ResourceDeduplicationMapReduceIT {
     
     static EntityType thingy, idea;
     static RelationType nearby, related;
-    static RoleType near1, near2, near3;
-    static RoleType related1, related2, related3, related4, related5;
+    static Role near1, near2, near3;
+    static Role related1, related2, related3, related4, related5;
     
     static void transact(Consumer<GraknGraph> action) {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
@@ -94,18 +94,18 @@ public class ResourceDeduplicationMapReduceIT {
         thingy = graph.putEntityType("thingy");
         idea = graph.putEntityType("idea");
         nearby = graph.putRelationType("nearby");
-        near1 = graph.putRoleType("near1");
-        near2 = graph.putRoleType("near2");
-        near3 = graph.putRoleType("near3");        
+        near1 = graph.putRole("near1");
+        near2 = graph.putRole("near2");
+        near3 = graph.putRole("near3");
         nearby.relates(near1).relates(near2).relates(near3);
         nearby.resource(stringResource).resource(longResource).resource(integerResource)
               .resource(booleanResource).resource(floatResource).resource(doubleResource);
         related = graph.putRelationType("related");
-        related1 = graph.putRoleType("related1");
-        related2 = graph.putRoleType("related2");
-        related3 = graph.putRoleType("related3");
-        related4 = graph.putRoleType("related4");
-        related5 = graph.putRoleType("related5");
+        related1 = graph.putRole("related1");
+        related2 = graph.putRole("related2");
+        related3 = graph.putRole("related3");
+        related4 = graph.putRole("related4");
+        related5 = graph.putRole("related5");
         related.relates(related1).relates(related2).relates(related3).relates(related4).relates(related5);
         thingy.resource(stringResource);
         thingy.resource(longResource);

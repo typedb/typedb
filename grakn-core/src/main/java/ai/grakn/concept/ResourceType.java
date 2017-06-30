@@ -66,7 +66,7 @@ public interface ResourceType<D> extends Type {
      * @param type The super type of this ResourceType.
      * @return The ResourceType itself.
      */
-    ResourceType<D> superType(ResourceType<D> type);
+    ResourceType<D> sup(ResourceType<D> type);
 
     /**
      * Adds another subtype to this type
@@ -74,25 +74,25 @@ public interface ResourceType<D> extends Type {
      * @param type The sub type of this resource type
      * @return The ResourceType itself
      */
-    ResourceType<D> subType(ResourceType<D> type);
+    ResourceType<D> sub(ResourceType<D> type);
 
     /**
-     * Sets the RoleType which instances of this ResourceType may play.
+     * Sets the Role which instances of this ResourceType may play.
      *
-     * @param roleType The Role Type which the instances of this ResourceType are allowed to play.
+     * @param role The Role Type which the instances of this ResourceType are allowed to play.
      * @return The ResourceType itself.
      */
     @Override
-    ResourceType<D> plays(RoleType roleType);
+    ResourceType<D> plays(Role role);
 
     /**
-     * Removes the RoleType to prevent instances of this ResourceType from playing it.
+     * Removes the Role to prevent instances of this ResourceType from playing it.
      *
-     * @param roleType The Role Type which the instances of this ResourceType should no longer be allowed to play.
+     * @param role The Role Type which the instances of this ResourceType should no longer be allowed to play.
      * @return The ResourceType itself.
      */
     @Override
-    ResourceType<D> deletePlays(RoleType roleType);
+    ResourceType<D> deletePlays(Role role);
 
     /**
      * Set the regular expression that instances of the ResourceType must conform to.
@@ -153,7 +153,7 @@ public interface ResourceType<D> extends Type {
      * @return The supertype of this ResourceType,
      */
     @Override
-    ResourceType<D> superType();
+    ResourceType<D> sup();
 
     /**
      * Get the Resource with the value provided, and its type, or return NULL
@@ -172,7 +172,7 @@ public interface ResourceType<D> extends Type {
      * @return The subtypes of this ResourceType
      */
     @Override
-    Collection<ResourceType<D>> subTypes();
+    Collection<ResourceType<D>> subs();
 
     /**
      * Returns a collection of all Resource Instances of this ResourceType.

@@ -19,10 +19,10 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
@@ -108,12 +108,12 @@ public class ReasonerTest {
     @Test
     public void testSubPropertyRuleCreation() {
         GraknGraph graph = testSnbGraph.graph();
-        Map<TypeLabel, TypeLabel> roleMap = new HashMap<>();
+        Map<Label, Label> roleMap = new HashMap<>();
         RelationType parent = graph.getRelationType("sublocate");
         RelationType child = graph.getRelationType("resides");
 
-        roleMap.put(graph.getRoleType("member-location").getLabel(), graph.getRoleType("subject-location").getLabel());
-        roleMap.put(graph.getRoleType("container-location").getLabel(), graph.getRoleType("located-subject").getLabel());
+        roleMap.put(graph.getRole("member-location").getLabel(), graph.getRole("subject-location").getLabel());
+        roleMap.put(graph.getRole("container-location").getLabel(), graph.getRole("located-subject").getLabel());
 
         Pattern body = and(graph.graql().parsePatterns("(subject-location: $x, located-subject: $x1) isa resides;"));
         Pattern head = and(graph.graql().parsePatterns("(member-location: $x, container-location: $x1) isa sublocate;"));
@@ -131,8 +131,8 @@ public class ReasonerTest {
         GraknGraph graph = testSnbGraph.graph();
         Rule rule = ReasonerUtils.createTransitiveRule(
                 graph.getRelationType("sublocate"),
-                graph.getRoleType("member-location").getLabel(),
-                graph.getRoleType("container-location").getLabel(),
+                graph.getRole("member-location").getLabel(),
+                graph.getRole("container-location").getLabel(),
                 graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
@@ -151,8 +151,8 @@ public class ReasonerTest {
         GraknGraph graph = testSnbGraph.graph();
         Rule rule = ReasonerUtils.createReflexiveRule(
                 graph.getRelationType("knows"),
-                graph.getRoleType("acquaintance1").getLabel(),
-                graph.getRoleType("acquaintance2").getLabel(),
+                graph.getRole("acquaintance1").getLabel(),
+                graph.getRole("acquaintance2").getLabel(),
                 graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
@@ -170,15 +170,15 @@ public class ReasonerTest {
         RelationType resides = graph.getRelationType("resides");
         RelationType sublocate = graph.getRelationType("sublocate");
 
-        LinkedHashMap<RelationType, Pair<TypeLabel, TypeLabel>> chain = new LinkedHashMap<>();
+        LinkedHashMap<RelationType, Pair<Label, Label>> chain = new LinkedHashMap<>();
 
-        chain.put(resides, new Pair<>(graph.getRoleType("located-subject").getLabel(), graph.getRoleType("subject-location").getLabel()));
-        chain.put(sublocate, new Pair<>(graph.getRoleType("member-location").getLabel(), graph.getRoleType("container-location").getLabel()));
+        chain.put(resides, new Pair<>(graph.getRole("located-subject").getLabel(), graph.getRole("subject-location").getLabel()));
+        chain.put(sublocate, new Pair<>(graph.getRole("member-location").getLabel(), graph.getRole("container-location").getLabel()));
 
         Rule rule = ReasonerUtils.createPropertyChainRule(
                 resides,
-                graph.getRoleType("located-subject").getLabel(),
-                graph.getRoleType("subject-location").getLabel(),
+                graph.getRole("located-subject").getLabel(),
+                graph.getRole("subject-location").getLabel(),
                 chain,
                 graph);
         InferenceRule R = new InferenceRule(rule, graph);

@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -80,7 +80,7 @@ public class HALBuilder {
             roleTypes = computeRoleTypesFromQuery(matchQuery, results.iterator().next());
         }
         //Collect all the types explicitly asked in the match query
-        Set<TypeLabel> typesAskedInQuery = matchQuery.admin().getOntologyConcepts().stream().map(OntologyConcept::getLabel).collect(toSet());
+        Set<Label> typesAskedInQuery = matchQuery.admin().getOntologyConcepts().stream().map(OntologyConcept::getLabel).collect(toSet());
 
         return buildHALRepresentations(results, typesAskedInQuery, roleTypes, keyspace, offset, limit, filterInstances);
     }
@@ -120,7 +120,7 @@ public class HALBuilder {
         return conceptsArray;
     }
 
-    private static Json buildHALRepresentations(Collection<Answer> graqlResultsList, Set<TypeLabel> typesAskedInQuery, Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, String keyspace, int offset, int limit, boolean filterInstances) {
+    private static Json buildHALRepresentations(Collection<Answer> graqlResultsList, Set<Label> typesAskedInQuery, Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, String keyspace, int offset, int limit, boolean filterInstances) {
         final Json lines = Json.array();
         graqlResultsList.forEach(answer -> {
             Map<VarPatternAdmin, Boolean> inferredRelations = buildInferredRelationsMap(answer);

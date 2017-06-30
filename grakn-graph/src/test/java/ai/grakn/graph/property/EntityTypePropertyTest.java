@@ -54,7 +54,7 @@ public class EntityTypePropertyTest {
     public void whenANonMetaEntityTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
             @Open GraknGraph graph, @FromGraph @Meta(false) EntityType type) {
         assumeThat(type.instances(), empty());
-        assumeThat(type.subTypes(), contains(type));
+        assumeThat(type.subs(), contains(type));
         assumeThat(type.getRulesOfHypothesis(), empty());
         assumeThat(type.getRulesOfConclusion(), empty());
 

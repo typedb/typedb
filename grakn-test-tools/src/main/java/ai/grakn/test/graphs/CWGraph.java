@@ -20,10 +20,10 @@ package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
 
@@ -49,10 +49,10 @@ public class CWGraph extends TestGraph {
     private static RelationType isPaidBy;
     private static RelationType owns;
 
-    private static RoleType enemySource, enemyTarget;
-    private static RoleType owner, ownedItem;
-    private static RoleType payee, payer;
-    private static RoleType seller, buyer, transactionItem;
+    private static Role enemySource, enemyTarget;
+    private static Role owner, ownedItem;
+    private static Role payee, payer;
+    private static Role seller, buyer, transactionItem;
 
     private static Thing colonelWest, Nono, America, Tomahawk;
 
@@ -70,15 +70,15 @@ public class CWGraph extends TestGraph {
         alignment = graph.putResourceType("alignment", ResourceType.DataType.STRING);
 
         //Roles
-        owner = graph.putRoleType("item-owner");
-        ownedItem = graph.putRoleType("owned-item");
-        seller = graph.putRoleType("seller");
-        buyer = graph.putRoleType("buyer");
-        payee = graph.putRoleType("payee");
-        payer = graph.putRoleType("payer");
-        enemySource = graph.putRoleType("enemy-source");
-        enemyTarget = graph.putRoleType("enemy-target");
-        transactionItem = graph.putRoleType("transaction-item");
+        owner = graph.putRole("item-owner");
+        ownedItem = graph.putRole("owned-item");
+        seller = graph.putRole("seller");
+        buyer = graph.putRole("buyer");
+        payee = graph.putRole("payee");
+        payer = graph.putRole("payer");
+        enemySource = graph.putRole("enemy-source");
+        enemyTarget = graph.putRole("enemy-target");
+        transactionItem = graph.putRole("transaction-item");
 
         //Entitites
         person = graph.putEntityType("person")
@@ -101,7 +101,7 @@ public class CWGraph extends TestGraph {
                 .resource(propulsion);
 
         graph.putEntityType("missile")
-                .superType(weapon)
+                .sup(weapon)
                 .plays(transactionItem)
                 .resource(key);
 

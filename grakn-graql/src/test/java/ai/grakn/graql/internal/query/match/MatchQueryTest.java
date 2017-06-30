@@ -23,13 +23,13 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
@@ -643,12 +643,12 @@ public class MatchQueryTest {
         GraknGraph graph = GraphContext.empty().graph(); // TODO: Try and remove this call if possible
         QueryBuilder qb = graph.graql();
 
-        TypeLabel a = TypeLabel.of("a");
-        TypeLabel b = TypeLabel.of("b");
-        TypeLabel c = TypeLabel.of("c");
-        TypeLabel d = TypeLabel.of("d");
-        TypeLabel e = TypeLabel.of("e");
-        TypeLabel f = TypeLabel.of("f");
+        Label a = Label.of("a");
+        Label b = Label.of("b");
+        Label c = Label.of("c");
+        Label d = Label.of("d");
+        Label e = Label.of("e");
+        Label f = Label.of("f");
 
         qb.insert(
                 Graql.label(c).sub(Graql.label(b).sub(Graql.label(a).sub("entity"))),
@@ -658,7 +658,7 @@ public class MatchQueryTest {
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
             Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(x)).get("x").collect(Collectors.toSet());
-            Collection<RoleType> graphAPIPlays;
+            Collection<Role> graphAPIPlays;
 
             OntologyConcept ontologyConcept = graph.getOntologyConcept(type);
             if(ontologyConcept.isType()){
@@ -672,7 +672,7 @@ public class MatchQueryTest {
 
         Stream.of(d, e, f).forEach(type -> {
             Set<Concept> graqlPlayedBy = qb.match(x.plays(Graql.label(type))).get("x").collect(toSet());
-            Collection<Type> graphAPIPlayedBy = new HashSet<>(graph.<RoleType>getOntologyConcept(type).playedByTypes());
+            Collection<Type> graphAPIPlayedBy = new HashSet<>(graph.<Role>getOntologyConcept(type).playedByTypes());
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });

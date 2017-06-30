@@ -27,8 +27,8 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidGraphException;
@@ -135,10 +135,10 @@ public class GraqlTest {
     @Test
     public void testStatisticsMethods() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            TypeLabel resourceTypeId = TypeLabel.of("my-resource");
+            Label resourceTypeId = Label.of("my-resource");
 
-            RoleType resourceOwner = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
-            RoleType resourceValue = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
+            Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
+            Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
             RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
                     .relates(resourceOwner)
                     .relates(resourceValue);
@@ -274,8 +274,8 @@ public class GraqlTest {
             entityId3 = entity3.getId().getValue();
             entityId4 = entity4.getId().getValue();
 
-            RoleType role1 = graph.putRoleType("role1");
-            RoleType role2 = graph.putRoleType("role2");
+            Role role1 = graph.putRole("role1");
+            Role role2 = graph.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
             RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);

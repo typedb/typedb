@@ -45,7 +45,7 @@ public class PropertyUtil {
     @SuppressWarnings("unchecked")
     public static <T extends OntologyConcept> Collection<T> directSubs(GraknGraph graph, T ontologyElement) {
         Function<GraknGraph,? extends List<? extends T>> function = g ->
-            ontologyElement.subTypes().stream().filter(subType -> ontologyElement.equals(subType.superType())).map(o -> (T) o).collect(toList());
+            ontologyElement.subs().stream().filter(subType -> ontologyElement.equals(subType.sup())).map(o -> (T) o).collect(toList());
         Object ret = CommonUtil.withImplicitConceptsVisible(graph, function);
         return (Collection<T>)ret;
     }
@@ -55,7 +55,7 @@ public class PropertyUtil {
 
         do {
             superTypes.add(type);
-            type = type.superType();
+            type = type.sup();
         } while (type != null);
 
         return superTypes;

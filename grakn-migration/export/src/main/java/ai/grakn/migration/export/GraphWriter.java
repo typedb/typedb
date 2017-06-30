@@ -80,7 +80,7 @@ public class GraphWriter {
      * @return a stream of all types with non-reserved IDs
      */
     private Stream<? extends OntologyConcept> types(){
-        return graph.admin().getMetaConcept().subTypes().stream()
+        return graph.admin().getMetaConcept().subs().stream()
                 .filter(t -> !Schema.MetaSchema.isMetaLabel(t.getLabel()));
     }
 }

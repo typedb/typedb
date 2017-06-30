@@ -21,8 +21,8 @@ package ai.grakn.test.graphs;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Label;
 import ai.grakn.test.GraphContext;
 import com.google.common.math.IntMath;
 
@@ -34,7 +34,7 @@ import java.util.function.Consumer;
  *
  */
 public abstract class AbstractPathGraph extends TestGraph {
-    private final static TypeLabel key = TypeLabel.of("index");
+    private final static Label key = Label.of("index");
     private final String gqlFile;
     private final int n;
     private final int m;
@@ -50,8 +50,8 @@ public abstract class AbstractPathGraph extends TestGraph {
 
         EntityType vertex = graph.getEntityType("vertex");
         EntityType startVertex = graph.getEntityType("start-vertex");
-        RoleType arcFrom = graph.getRoleType("arc-from");
-        RoleType arcTo = graph.getRoleType("arc-to");
+        Role arcFrom = graph.getRole("arc-from");
+        Role arcTo = graph.getRole("arc-to");
 
         RelationType arc = graph.getRelationType("arc");
         putEntity(graph, "a0", startVertex, key);
