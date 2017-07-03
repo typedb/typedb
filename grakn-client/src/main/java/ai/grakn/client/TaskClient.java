@@ -54,7 +54,7 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.utils.URIBuilder;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
 public class TaskClient extends Client {
     private final Logger LOG = LoggerFactory.getLogger(TaskClient.class);
 
-    private final HttpClient httpClient = new DefaultHttpClient();
+    private final HttpClient httpClient = HttpClientBuilder.create().build();
     private final String host;
     private final int port;
 

@@ -20,7 +20,7 @@ package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.lock.GenericLockProvider;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
@@ -83,7 +83,7 @@ public abstract class BackgroundTask {
         this.saveCheckpoint = saveCheckpoint;
         this.engineConfig = engineConfig;
         this.redis = redis;
-        this.lockProvider = new GenericLockProvider();
+        this.lockProvider = new ProcessWideLockProvider();
         this.metricRegistry = metricRegistry;
         this.factory = factory;
     }

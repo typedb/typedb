@@ -115,6 +115,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- Used to format metrics for Prometheus -->
         <dependency>
             <groupId>io.prometheus</groupId>
             <artifactId>simpleclient</artifactId>
@@ -157,34 +158,6 @@
                 <exclusion>
                     <groupId>com.fasterxml.jackson.datatype</groupId>
                     <artifactId>jackson-datatype-joda</artifactId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jackson-core</artifactId>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jackson-databind</artifactId>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jackson-dataformat-yaml</artifactId>
-                    <groupId>com.fasterxml.jackson.dataformat</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jackson-module-jaxb-annotations</artifactId>
-                    <groupId>com.fasterxml.jackson.module</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jackson-jaxrs-base</artifactId>
-                    <groupId>com.fasterxml.jackson.jaxrs</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jackson-dataformat-xml</artifactId>
-                    <groupId>com.fasterxml.jackson.dataformat</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>slf4j-api</artifactId>
-                    <groupId>org.slf4j</groupId>
                 </exclusion>
             </exclusions>
         </dependency>

@@ -26,7 +26,7 @@ import static org.apache.http.HttpStatus.SC_OK;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 
 /**
  * <p>
@@ -40,7 +40,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
  */
 public class QueryClient extends Client {
     
-    private final HttpClient httpClient = new DefaultHttpClient();
+    private final HttpClient httpClient = HttpClientBuilder.create().build();
     private String scheme = DEFAULT_SCHEME_NAME;
     private String host;
     private int port;

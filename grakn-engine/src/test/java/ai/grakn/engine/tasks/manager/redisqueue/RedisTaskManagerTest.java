@@ -4,7 +4,7 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.lock.GenericLockProvider;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -42,8 +42,7 @@ public class RedisTaskManagerTest {
     public static final GraknEngineConfig CONFIG = GraknEngineConfig.create();
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final EngineID engineID = EngineID.of("engineID");
-    public static final GenericLockProvider LOCK_PROVIDER = new GenericLockProvider(
-            GenericLockProvider.LOCAL_LOCK_FUNCTION);
+    public static final ProcessWideLockProvider LOCK_PROVIDER = new ProcessWideLockProvider();
 
     private static JedisPool jedisPool;
     private static EngineGraknGraphFactory engineGraknGraphFactory;
@@ -72,7 +71,7 @@ public class RedisTaskManagerTest {
         int nThreads = 3;
         executor = Executors.newFixedThreadPool(nThreads);
         taskManager = new RedisTaskManager(engineID, CONFIG, jedisPool, nThreads, engineGraknGraphFactory, LOCK_PROVIDER, metricRegistry);
-        taskManager.start();
+        taskManager.startBlocking();
     }
 
     @After
@@ -90,7 +89,7 @@ public class RedisTaskManagerTest {
                 .withStopStrategy(StopStrategies.stopAfterAttempt(10))
                 .retryIfResult(aBoolean -> false)
                 .retryIfExceptionOfType(ai.grakn.exception.GraknBackendException.class)
-                .withWaitStrategy(WaitStrategies.exponentialWait(10, 3, TimeUnit.SECONDS))
+                .withWaitStrategy(WaitStrategies.exponentialWait(10, 60, TimeUnit.SECONDS))
                 .build();
         retryStrategy.call(() -> taskManager.storage().getState(state.getId()) != null);
         assertEquals(TaskStatus.COMPLETED, taskManager.storage().getState(state.getId()).status());

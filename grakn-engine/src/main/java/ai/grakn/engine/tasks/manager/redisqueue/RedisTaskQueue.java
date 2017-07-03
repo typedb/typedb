@@ -109,7 +109,9 @@ class RedisTaskQueue {
                 (event, worker1, queue, job, runner, result, t) -> {
                     queueSize.update(queue.length());
                     if (runner instanceof RedisTaskQueueConsumer) {
-                        ((RedisTaskQueueConsumer) runner).setRunningState(redisTaskManager, engineId, config, jedisPool, factory, lockProvider, metricRegistry);
+                        ((RedisTaskQueueConsumer) runner)
+                                .setRunningState(redisTaskManager, engineId, config, jedisPool,
+                                        factory, lockProvider, metricRegistry);
                     }
                 }, WorkerEvent.JOB_EXECUTE);
         worker.setExceptionHandler((jobExecutor, exception, curQueue) -> {

@@ -19,8 +19,8 @@ import static org.mockito.Mockito.when;
  */
 public class MutatorTaskTest {
 
-    TaskConfiguration taskConfiguration;
-    String readOnlyQuery = Graql.match(Graql.var("x").isa("person")).toString();
+    private TaskConfiguration taskConfiguration;
+    private String readOnlyQuery = Graql.match(Graql.var("x").isa("person")).toString();
 
     @Rule
     public ExpectedException exception = ExpectedException.none();

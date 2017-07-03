@@ -29,8 +29,7 @@ import redis.clients.util.Pool;
  * </p>
  *
  * <p>
- *    A class which manages the connection to the central Redis cache.
- *    This serves as a cache for keeping track of the counts of concepts which may be in need of sharding.
+ *    Given a pool of connections to Redis, it manages the counting
  * </p>
  *
  * @author fppt

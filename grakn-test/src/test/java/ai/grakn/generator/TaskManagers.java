@@ -20,7 +20,7 @@ package ai.grakn.generator;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.lock.GenericLockProvider;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
@@ -85,7 +85,7 @@ public class TaskManagers extends Generator<TaskManager> {
                 // TODO this doesn't take a Redis connection. Make sure this is what we expect
                 taskManagers.put(taskManagerToReturn,
                         constructor.newInstance(EngineID.me(), config, redisCountStorage, null,
-                                new GenericLockProvider(), new MetricRegistry()));
+                                new ProcessWideLockProvider(), new MetricRegistry()));
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
                 LOG.error("Could not instantiate task manager", e);
                 throw new RuntimeException(e);

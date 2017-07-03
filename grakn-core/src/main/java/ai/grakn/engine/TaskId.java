@@ -42,9 +42,7 @@ public final class TaskId {
         return new TaskId(UUID.randomUUID().toString());
     }
 
-    // For Jackson
-    public TaskId() {
-    }
+    public TaskId() {}
 
     @JsonCreator
     public TaskId(@JsonProperty("value") String value) {

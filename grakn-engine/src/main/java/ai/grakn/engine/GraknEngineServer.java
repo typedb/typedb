@@ -30,7 +30,7 @@ import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.lock.GenericLockProvider;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.RedissonLockProvider;
 import ai.grakn.engine.session.RemoteSession;
@@ -104,7 +104,7 @@ public class GraknEngineServer implements AutoCloseable {
         this.metricRegistry = new MetricRegistry();
         String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
         this.inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
-        this.lockProvider = this.inMemoryQueue ? new GenericLockProvider()
+        this.lockProvider = this.inMemoryQueue ? new ProcessWideLockProvider()
                 : instantiateRedissonLockProvider(redisPort, redisUrl);
         this.taskManager = startTaskManager(inMemoryQueue, redisCountStorage, jedisPool, lockProvider);
     }
