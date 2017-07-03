@@ -26,6 +26,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -36,6 +37,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.Sets;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -57,8 +59,9 @@ public abstract class Atom extends AtomicBase {
 
     private Type type = null;
     protected ConceptId typeId = null;
+
     private int basePriority = Integer.MAX_VALUE;
-    protected Set<InferenceRule> applicableRules = null;
+    private Set<InferenceRule> applicableRules = null;
 
     protected Atom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
@@ -268,15 +271,22 @@ public abstract class Atom extends AtomicBase {
         return Sets.union(types, getPredicates());
     }
 
-    public Set<IdPredicate> getUnmappedIdPredicates(){ return new HashSet<>();}
-    public Set<TypeAtom> getUnmappedTypeConstraints(){ return new HashSet<>();}
-    public Set<TypeAtom> getMappedTypeConstraints() { return new HashSet<>();}
-    public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return new HashSet<>();}
+    /**
+     * @return set of type atoms that describe specific role players or resource owner
+     */
+    public Set<TypeAtom> getSpecificTypeConstraints() { return new HashSet<>();}
+
+    /**
+     * @param headAtom unification reference atom
+     * @return set of permutation unifiers that guarantee all variants of role assignments are performed and hence the results are complete
+     */
+    public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return Collections.singleton(new UnifierImpl());}
 
     /**
      * infers types (type, role types) fo the atom if applicable/possible
+     * @return either this atom if nothing could be inferred or a fresh atom with inferred types
      */
-    public void inferTypes(){}
+    public Atom inferTypes(){ return this; }
 
     /**
      * rewrites the atom to one with user defined name

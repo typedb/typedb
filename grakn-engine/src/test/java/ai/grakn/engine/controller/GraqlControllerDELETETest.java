@@ -16,14 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.controller;
+package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
-import ai.grakn.test.SparkContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
@@ -32,7 +30,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
+import static ai.grakn.engine.controller.GraqlControllerGETTest.exception;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.KEYSPACE;

@@ -17,16 +17,15 @@
  */
 package ai.grakn.test.engine.user;
 
+import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Test;
+
+import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.test.GraphContext;
 import mjson.Json;
-import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import static org.mockito.Mockito.mock;
 
 /**
  * Testing behavior of admin/super user.
@@ -34,16 +33,14 @@ import static org.mockito.Mockito.mock;
  * @author borislav
  *
  */
-//TODO: when unignoring this test the mocks need to be property integrated
-@Ignore
 public class SuperUserTest {
-    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
-
+    static EngineGraknGraphFactory graknFactory = EngineGraknGraphFactory.create(EngineTestHelper.config().getProperties());
+    
     @ClassRule
     public static final GraphContext graph = GraphContext.empty();
 
     private static final String adminPassword = "top secret";
-    private final UsersHandler users = UsersHandler.create(adminPassword, mockFactory);
+    private final UsersHandler users = UsersHandler.create(adminPassword, graknFactory);
 
     @Test
     public void testSuperuserPresent() {

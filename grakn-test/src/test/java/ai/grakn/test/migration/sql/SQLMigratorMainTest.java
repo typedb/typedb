@@ -18,11 +18,11 @@
 
 package ai.grakn.test.migration.sql;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTxType;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.GraphLoader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -51,20 +51,18 @@ public class SQLMigratorMainTest {
     private Connection connection;
     private GraknSession factory;
     private String keyspace;
-    private GraknGraph graph;
 
     @Rule
-    public final SystemErrRule sysOut = new SystemErrRule().enableLog();
+    public final SystemErrRule sysErr = new SystemErrRule().enableLog();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setup() throws SQLException {
-        factory = engine.factoryWithNewKeyspace();
+        keyspace = GraphLoader.randomKeyspace();
+        factory = Grakn.session(engine.uri(), keyspace);
         connection = setupExample(factory, "pets");
-        graph = factory.open(GraknTxType.WRITE);
-        keyspace = graph.getKeyspace();
     }
 
     @After
@@ -73,63 +71,69 @@ public class SQLMigratorMainTest {
     }
 
     @Test
-    public void sqlMainTest(){
-        graph.close();
+    public void runningSQLMigrationFromScript_PetDataMigratedCorrectly(){
         runAndAssertDataCorrect("sql", "-u", engine.uri(), "-t", templateFile,
                 "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-q", query, "-k", keyspace);
     }
 
     @Test
-    public void sqlMainNoKeyspace(){
+    public void sqlMigratorCalledWithoutKeyspace_ErrorIsPrintedToSystemErr(){
         run("sql", "-u", engine.uri(), "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-user", USER);
-        assertThat(sysOut.getLog(), containsString("Keyspace missing (-k)"));
+        assertThat(sysErr.getLog(), containsString("Keyspace missing (-k)"));
     }
 
     @Test
-    public void sqlMainNoUserTest(){
+    public void sqlMigratorCalledWithoutSQLConnectionUser_ErrorIsPrintedToSystemErr(){
         run("sql", "-u", engine.uri(), "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-k", keyspace);
-        assertThat(sysOut.getLog(), containsString("No username specified (-user)"));
+        assertThat(sysErr.getLog(), containsString("No username specified (-user)"));
     }
 
     @Test
-    public void sqlMainNoPassTest(){
+    public void sqlMigratorCalledWithoutSQLConnectionPassword_ErrorIsPrintedToSystemErr(){
         run("sql", "-u", engine.uri(), "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query, "-k", keyspace);
-        assertThat(sysOut.getLog(), containsString("No password specified (-pass)"));
+        assertThat(sysErr.getLog(), containsString("No password specified (-pass)"));
     }
 
     @Test
-    public void sqlMainNoURLTest(){
+    public void sqlMigratorCalledWithoutSQLConnectionURL_ErrorIsPrintedToSystemErr(){
         run("sql", "-u", engine.uri(), "-driver", DRIVER, "-q", query, "-t", templateFile);
-        assertThat(sysOut.getLog(), containsString("No db specified (-location)"));
+        assertThat(sysErr.getLog(), containsString("No db specified (-location)"));
     }
 
     @Test
-    public void sqlMainNoQueryTest(){
+    public void sqlMigratorCalledWithoutSQLQuery_ErrorIsPrintedToSystemErr(){
         run("sql", "-u", engine.uri(), "-t", templateFile, "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-k", keyspace);
-        assertThat(sysOut.getLog(), containsString("No SQL query specified (-query)"));
+        assertThat(sysErr.getLog(), containsString("No SQL query specified (-query)"));
 
     }
 
     @Test
-    public void sqlMainNoTemplateTest(){
+    public void sqlMigratorCalledWithoutTemplate_ErrorIsPrintedToSystemErr(){
         run("sql", "-u", engine.uri(), "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-q", query);
-        assertThat(sysOut.getLog(), containsString("Template file missing (-t)"));
+        assertThat(sysErr.getLog(), containsString("Template file missing (-t)"));
     }
 
     @Test
-    public void sqlMainTemplateNoExistTest(){
+    public void sqlMigratorCalledWithTemplateThatDoesntExist_ErrorIsPrintedToSystemErr(){
         run("sql", "-u", engine.uri(), "-t", templateFile + "wrong", "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-q", query);
-        assertThat(sysOut.getLog(), containsString("Cannot find file"));
+        assertThat(sysErr.getLog(), containsString("Cannot find file"));
     }
 
     @Test
-    public void sqlMainPropertiesTest() throws SQLException {
+    public void sqlMigratorCalledWithPropertiesThatDoesntExist_ErrorIsPrintedToSystemErr(){
+        run("sql", "-u", engine.uri(), "-driver", DRIVER, "-location", URL,
+                "-pass", PASS, "-user", USER, "-k", keyspace,
+                "-c", "randomDoesNotExistFile");
+        assertThat(sysErr.getLog(), containsString("Could not find configuration file randomDoesNotExistFile"));
+    }
+
+    @Test
+    public void sqlMigratorCalledWithPropertiesFile_PetDataMigratedCorrectly() throws SQLException {
         connection.close();
-        graph.close();
         connection = setupExample(factory, "pokemon");
 
         String configurationFile = getFile("sql", "pokemon/migration.yaml").getAbsolutePath();
@@ -138,8 +142,7 @@ public class SQLMigratorMainTest {
                 "-pass", PASS, "-user", USER, "-k", keyspace,
                 "-c", configurationFile);
 
-        graph = factory.open(GraknTxType.WRITE); //Reopen transaction
-        assertPokemonGraphCorrect(graph);
+        assertPokemonGraphCorrect(factory);
     }
 
     private void run(String... args){
@@ -148,8 +151,6 @@ public class SQLMigratorMainTest {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
-        graph = factory.open(GraknTxType.WRITE); //Reopen transaction
-        assertPetGraphCorrect(graph);
+        assertPetGraphCorrect(factory);
     }
-
 }

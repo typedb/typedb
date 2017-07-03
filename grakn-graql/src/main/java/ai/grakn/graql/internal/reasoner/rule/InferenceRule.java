@@ -29,10 +29,8 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -241,17 +239,15 @@ public class InferenceRule {
      */
     public Unifier getUnifier(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
-        Unifier unifier = new UnifierImpl();
         if (parentAtom.getOntologyConcept() != null){
-            unifier.merge(childAtom.getUnifier(parentAtom));
+            return childAtom.getUnifier(parentAtom);
         }
         //case of match all relation atom
         else{
-            Relation extendedParent = ((Relation) AtomicFactory
-                    .create(parentAtom, parentAtom.getParentQuery()))
-                    .addType(childAtom.getOntologyConcept());
-            unifier.merge(childAtom.getUnifier(extendedParent));
+            Atom extendedParent = ((Relation) parentAtom)
+                    .addType(childAtom.getOntologyConcept())
+                    .inferTypes();
+            return childAtom.getUnifier(extendedParent);
         }
-        return unifier;
     }
 }
