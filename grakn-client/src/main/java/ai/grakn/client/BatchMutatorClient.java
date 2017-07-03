@@ -238,53 +238,59 @@ public class BatchMutatorClient {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
+
+        Json configuration = Json.object()
+                .set(KEYSPACE_PARAM, keyspace)
+                .set(BATCH_NUMBER, batchNumber)
+                .set(TASK_LOADER_MUTATIONS,
+                        queries.stream().map(Query::toString).collect(toList()));
+
+        Callable<TaskId> callable = () -> taskClient
+                .sendTask("ai.grakn.engine.loader.MutatorTask",
+                        BatchMutatorClient.class.getName(),
+                        Instant.ofEpochMilli(new Date().getTime()), null, configuration, 10000);
+
+        Retryer<TaskId> retryer = RetryerBuilder.<TaskId>newBuilder()
+                .retryIfExceptionOfType(IOException.class)
+                .retryIfRuntimeException()
+                .withStopStrategy(StopStrategies.stopAfterAttempt(retry ? MAX_RETRIES : 1))
+                .build();
+
+        TaskId taskId;
         try {
-            Json configuration = Json.object()
-                    .set(KEYSPACE_PARAM, keyspace)
-                    .set(BATCH_NUMBER, batchNumber)
-                    .set(TASK_LOADER_MUTATIONS,
-                            queries.stream().map(Query::toString).collect(toList()));
-
-            Callable<TaskId> callable = () -> taskClient
-                    .sendTask("ai.grakn.engine.loader.MutatorTask",
-                            BatchMutatorClient.class.getName(),
-                            Instant.ofEpochMilli(new Date().getTime()), null, configuration, 10000);
-
-            Retryer<TaskId> retryer = RetryerBuilder.<TaskId>newBuilder()
-                    .retryIfExceptionOfType(IOException.class)
-                    .retryIfRuntimeException()
-                    .withStopStrategy(StopStrategies.stopAfterAttempt(retry ? MAX_RETRIES : 1))
-                    .build();
-
-            TaskId taskId =retryer.call(callable);
-            CompletableFuture<Json> status = makeTaskCompletionFuture(taskId);
-            // Add this status to the set of completable futures
-            // TODO: use an async client
-            futures.put(status.hashCode(), status);
-
-            status
-                    // Unblock and log errors when task completes
-                    .handle((result, error) -> {
-                        unblock(status);
-
-                        // Log any errors
-                        if(error != null){
-                            LOG.error("Error while executing mutator", error);
-                        }
-
-                        return result;
-                    })
-                    // Execute registered completion function
-                    .thenAcceptAsync(onCompletionOfTask)
-                    // Log errors in completion function
-                    .exceptionally(t -> {
-                        LOG.error("Error in callback for mutator", t);
-                        throw new RuntimeException(t);
-                    });
-        } catch (Throwable e) {
+            taskId = retryer.call(callable);
+        } catch (Exception e) {
             LOG.error("Error while executing queries:\n{}", queries);
-            blocker.release();
+            throw new RuntimeException(e);
         }
+
+        CompletableFuture<Json> status = makeTaskCompletionFuture(taskId);
+
+        // Add this status to the set of completable futures
+        // TODO: use an async client
+        futures.put(status.hashCode(), status);
+
+        status
+        // Unblock and log errors when task completes
+        .handle((result, error) -> {
+            unblock(status);
+
+            // Log any errors
+            if(error != null){
+                LOG.error("Error while executing mutator", error);
+            }
+
+            return result;
+        })
+        // Execute registered completion function
+        .thenAcceptAsync(onCompletionOfTask)
+        // Log errors in completion function
+        .exceptionally(t -> {
+            LOG.error("Error in callback for mutator", t);
+            throw new RuntimeException(t);
+        });
+
     }
 
     private void unblock(CompletableFuture<Json> status){
@@ -344,13 +350,12 @@ public class BatchMutatorClient {
                     // Means the task has not yet been stored: we want to log the error, but continue looping
                     LOG.warn(format("Task [%s] not found on server. Attempting to get status again.", id));
                 } catch (HttpRetryException e){
-                    LOG.warn(format("Could not communicate with host %s for task [%s]. Response code: %d, Reason: %s.", uri, id, e.responseCode(), e.getReason()));
+                    LOG.warn(format("Could not communicate with host %s for task [%s] ", uri, id));
                     if(retry){
                         LOG.warn(format("Attempting communication again with host %s for task [%s]", uri, id));
                     } else {
                         throw new RuntimeException(e);
                     }
-
                 } catch (Throwable t) {
                     throw new RuntimeException(t);
                 }

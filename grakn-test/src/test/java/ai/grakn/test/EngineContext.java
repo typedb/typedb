@@ -25,9 +25,9 @@ import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_URL;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
@@ -42,6 +42,8 @@ import org.junit.rules.ExternalResource;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 /**
  * <p>
@@ -90,7 +92,9 @@ public class EngineContext extends ExternalResource {
     }
 
     public RedisCountStorage redis() {
-        return RedisCountStorage.create(config.getProperty(REDIS_SERVER_URL), config.getPropertyAsInt(REDIS_SERVER_PORT));
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        JedisPool jedisPool = new JedisPool(poolConfig, config.getProperty(REDIS_SERVER_URL), config.getPropertyAsInt(REDIS_SERVER_PORT));
+        return RedisCountStorage.create(jedisPool);
     }
 
     public TaskManager getTaskManager(){

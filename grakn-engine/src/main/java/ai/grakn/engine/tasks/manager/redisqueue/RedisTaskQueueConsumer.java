@@ -174,12 +174,12 @@ public class RedisTaskQueueConsumer implements Runnable {
 
 
     public void setRunningState(RedisTaskManager redisTaskManager, EngineID engineId,
-            GraknEngineConfig config, Pool<Jedis> redisCountStorage, EngineGraknGraphFactory factory,
+            GraknEngineConfig config, Pool<Jedis> jedisPool, EngineGraknGraphFactory factory,
             LockProvider lockProvider, MetricRegistry metricRegistry) {
         this.redisTaskManager = redisTaskManager;
         this.engineId = engineId;
         this.config = config;
-        this.redisCountStorage = RedisCountStorage.create(redisCountStorage);
+        this.redisCountStorage = RedisCountStorage.create(jedisPool);
         this.lockProvider = lockProvider;
         this.metricRegistry = metricRegistry;
         this.factory = factory;

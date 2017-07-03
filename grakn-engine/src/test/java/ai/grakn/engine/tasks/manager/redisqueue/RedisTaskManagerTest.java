@@ -58,7 +58,7 @@ public class RedisTaskManagerTest {
         poolConfig.setMaxTotal(MAX_TOTAL);
         jedisPool = new JedisPool(poolConfig, "localhost", 9899);
         assertFalse(jedisPool.isClosed());
-        engineGraknGraphFactory = EngineGraknGraphFactory.create(CONFIG.getProperties(), true);
+        engineGraknGraphFactory = EngineGraknGraphFactory.create(CONFIG.getProperties());
     }
 
     @AfterClass

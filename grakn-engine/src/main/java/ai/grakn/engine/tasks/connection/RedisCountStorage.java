@@ -21,8 +21,6 @@ package ai.grakn.engine.tasks.connection;
 import ai.grakn.concept.ConceptId;
 import java.util.function.Function;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.util.Pool;
 
 /**
@@ -46,14 +44,6 @@ public class RedisCountStorage {
     }
 
     public static RedisCountStorage create(Pool<Jedis> jedisPool) {
-        return new RedisCountStorage(jedisPool);
-    }
-
-    public static RedisCountStorage create(String url, int port) {
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        poolConfig.setMaxTotal(128);
-        // TODO provide a constructor for sentinels
-        JedisPool jedisPool = new JedisPool(poolConfig, url, port);
         return new RedisCountStorage(jedisPool);
     }
 

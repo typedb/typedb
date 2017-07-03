@@ -22,8 +22,8 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.GenericLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.MetricRegistry;
@@ -36,13 +36,16 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 /**
  * TaskManagers
- * 
+ *
  * @author alexandraorth
  */
 public class TaskManagers extends Generator<TaskManager> {
+
     private static final Logger LOG = LoggerFactory.getLogger(TaskManagers.class);
 
     // TODO TEMP FOR TESTING
@@ -53,12 +56,12 @@ public class TaskManagers extends Generator<TaskManager> {
 
     private static Map<Class<? extends TaskManager>, TaskManager> taskManagers = new HashMap<>();
 
-    public static void closeAndClear(){
+    public static void closeAndClear() {
         taskManagers.values().forEach(TaskManager::close);
         taskManagers.clear();
     }
 
-    public TaskManagers(){
+    public TaskManagers() {
         super(TaskManager.class);
     }
 
@@ -68,17 +71,21 @@ public class TaskManagers extends Generator<TaskManager> {
         Class<? extends TaskManager> taskManagerToReturn = RedisTaskManager.class;
 
         GraknEngineConfig config = GraknEngineConfig.create();
-        RedisCountStorage redisCountStorage = RedisCountStorage
-                .create(config.getProperty(GraknEngineConfig.REDIS_SERVER_URL),
-                        Integer.parseInt(config.getProperty(GraknEngineConfig.REDIS_SERVER_PORT)));
-        if(!taskManagers.containsKey(taskManagerToReturn)){
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        JedisPool jedisPool = new JedisPool(poolConfig,
+                config.getProperty(GraknEngineConfig.REDIS_SERVER_URL),
+                Integer.parseInt(config.getProperty(GraknEngineConfig.REDIS_SERVER_PORT)));
+        RedisCountStorage redisCountStorage = RedisCountStorage.create(jedisPool);
+        if (!taskManagers.containsKey(taskManagerToReturn)) {
             try {
                 Constructor<? extends TaskManager> constructor =
-                        taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class, RedisCountStorage.class, EngineGraknGraphFactory.class,
+                        taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class,
+                                RedisCountStorage.class, EngineGraknGraphFactory.class,
                                 LockProvider.class, MetricRegistry.class);
                 // TODO this doesn't take a Redis connection. Make sure this is what we expect
-                taskManagers.put(taskManagerToReturn, constructor.newInstance(EngineID.me(), config, redisCountStorage, null,
-                        new GenericLockProvider(), new MetricRegistry()));
+                taskManagers.put(taskManagerToReturn,
+                        constructor.newInstance(EngineID.me(), config, redisCountStorage, null,
+                                new GenericLockProvider(), new MetricRegistry()));
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
                 LOG.error("Could not instantiate task manager", e);
                 throw new RuntimeException(e);

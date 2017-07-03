@@ -96,7 +96,7 @@ public class GraknEngineConfig {
         try (FileInputStream inputStream = new FileInputStream(path)){
             prop.load(inputStream);
         } catch (IOException e) {
-            LOG.error("Could not load engine properties from {}", path);
+            LOG.error("Could not load engine properties from {}", path, e);
         }
         computeThreadsNumber();
         LOG.info("Project directory in use: {}", projectPath);

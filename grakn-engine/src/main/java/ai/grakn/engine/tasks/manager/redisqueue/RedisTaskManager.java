@@ -23,7 +23,6 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -55,14 +54,6 @@ public class RedisTaskManager implements TaskManager {
     private final RedisTaskQueue redisTaskQueue;
     private final ExecutorService consumerExecutor;
     private final int threads;
-
-
-    public RedisTaskManager(EngineID engineId, GraknEngineConfig graknEngineConfig,
-            RedisCountStorage redisCountStorage, EngineGraknGraphFactory factory,
-            LockProvider distributedLockClient, MetricRegistry metricsRegistry) {
-        // TODO hacky way, the pool should be created in the main server class and passed here
-        this(engineId, graknEngineConfig, redisCountStorage.getJedisPool(), factory, distributedLockClient, metricsRegistry);
-    }
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
             EngineGraknGraphFactory factory, LockProvider distributedLockClient, MetricRegistry metricRegistry) {

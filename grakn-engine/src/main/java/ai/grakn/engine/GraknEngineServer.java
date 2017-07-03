@@ -106,7 +106,7 @@ public class GraknEngineServer implements AutoCloseable {
         this.inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
         this.lockProvider = this.inMemoryQueue ? new GenericLockProvider()
                 : instantiateRedissonLockProvider(redisPort, redisUrl);
-        this.taskManager = startTaskManager(inMemoryQueue, redisCountStorage, lockProvider);
+        this.taskManager = startTaskManager(inMemoryQueue, redisCountStorage, jedisPool, lockProvider);
     }
 
 
@@ -136,14 +136,15 @@ public class GraknEngineServer implements AutoCloseable {
      * Check in with the properties file to decide which type of task manager should be started
      * @param inMemoryQueue
      * @param redisCountStorage
+     * @param jedisPool
      */
     private TaskManager startTaskManager(
             boolean inMemoryQueue,
             RedisCountStorage redisCountStorage,
-            LockProvider lockProvider) {
+            Pool<Jedis> jedisPool, LockProvider lockProvider) {
         TaskManager taskManager;
         if (!inMemoryQueue) {
-            taskManager = new RedisTaskManager(engineId, prop, redisCountStorage, factory, lockProvider, metricRegistry);
+            taskManager = new RedisTaskManager(engineId, prop, jedisPool, factory, lockProvider, metricRegistry);
         } else  {
             taskManager = new StandaloneTaskManager(engineId, prop, redisCountStorage, factory, lockProvider, metricRegistry);
         }
@@ -302,16 +303,11 @@ public class GraknEngineServer implements AutoCloseable {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         // TODO Make this configurable in property file
         poolConfig.setMaxTotal(128);
-        poolConfig.setTestOnBorrow(true);
-        poolConfig.setTestOnReturn(true);
-        poolConfig.setMaxIdle(5);
-        poolConfig.setMinIdle(5);
-        poolConfig.setTestWhileIdle(true);
-        poolConfig.setNumTestsPerEvictionRun(10);
-        poolConfig.setTimeBetweenEvictionRunsMillis(10000);
         Optional<String> sentinelMaster = prop.tryProperty(REDIS_SENTINEL_MASTER);
-        return sentinelMaster.<Pool<Jedis>>map(s -> new JedisSentinelPool(s, ImmutableSet
-                .of(String.format("%s:%s", redisUrl, redisPort)), poolConfig))
+        // If sentinel is configured use a sentinel pool
+        // TODO Sentinel not fully supported yet
+        return sentinelMaster
+                .<Pool<Jedis>>map(s -> new JedisSentinelPool(s, ImmutableSet.of(String.format("%s:%s", redisUrl, redisPort)), poolConfig))
                 .orElseGet(() -> new JedisPool(poolConfig, redisUrl, redisPort));
     }
 

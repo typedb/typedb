@@ -48,18 +48,14 @@ public class EngineGraknGraphFactory {
     private final SystemKeyspace systemKeyspace;
 
     public static EngineGraknGraphFactory create(Properties properties) {
-        return new EngineGraknGraphFactory(properties, true);
+        return new EngineGraknGraphFactory(properties);
     }
 
-    public static EngineGraknGraphFactory create(Properties properties, boolean load) {
-        return new EngineGraknGraphFactory(properties, load);
-    }
-
-    private EngineGraknGraphFactory(Properties properties, boolean load) {
+    private EngineGraknGraphFactory(Properties properties) {
         this.properties = new Properties();
         this.properties.putAll(properties);
         this.engineURI = properties.getProperty(GraknEngineConfig.SERVER_HOST_NAME) + ":" + properties.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER);
-        this.systemKeyspace = new SystemKeyspace(this, load);
+        this.systemKeyspace = new SystemKeyspace(this);
     }
 
     public synchronized void refreshConnections(){
