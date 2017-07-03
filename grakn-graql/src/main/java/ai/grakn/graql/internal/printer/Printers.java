@@ -41,7 +41,7 @@ public class Printers {
         return new JsonPrinter();
     }
 
-    public static Printer hal() {
-        return new HALPrinter();
+    public static Printer hal(String keyspace) {
+        return new HALPrinter(keyspace);
     }
 }
