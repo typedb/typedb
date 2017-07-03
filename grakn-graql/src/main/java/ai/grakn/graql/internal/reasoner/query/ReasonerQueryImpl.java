@@ -35,7 +35,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.binary.BinaryBase;
+import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
@@ -50,12 +50,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -94,7 +92,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     ReasonerQueryImpl(ReasonerQueryImpl q) {
         this.graph = q.graph;
         q.getAtoms().forEach(at -> addAtomic(AtomicFactory.create(at, this)));
-        inferTypes();
     }
 
     ReasonerQueryImpl(Set<Atom> atoms, GraknGraph graph){
@@ -159,10 +156,16 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return priority;
     }
 
+    /**
+     * replace all atoms with inferrable types with their new instances with added types
+     */
     private void inferTypes() {
-        atomSet.stream()
+        Set<Atom> inferrableAtoms = atomSet.stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .forEach(Atom::inferTypes);
+                .collect(Collectors.toSet());
+        Set<Atom> inferredAtoms = inferrableAtoms.stream().map(Atom::inferTypes).collect(Collectors.toSet());
+        inferrableAtoms.forEach(this::removeAtomic);
+        inferredAtoms.forEach(this::addAtomic);
     }
 
     public GraknGraph graph() {
@@ -438,7 +441,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<Var> varNames = getVarNames();
 
         //skip predicates from types
-        getTypeConstraints().stream().map(BinaryBase::getValueVariable).forEach(varNames::remove);
+        getTypeConstraints().stream().map(Binary::getPredicateVariable).forEach(varNames::remove);
 
         Set<IdPredicate> predicates = sub.entrySet().stream()
                 .filter(e -> varNames.contains(e.getKey()))
@@ -545,7 +548,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             answerStream = join(answerStream, subAnswerStream, ImmutableSet.copyOf(joinVars));
             joinedVars.addAll(atomicQuery.getVarNames());
         }
-
 
         Set<Var> vars = this.getVarNames();
         return answerStream

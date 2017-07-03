@@ -70,6 +70,10 @@ public class LockProvider {
         return locks.compute(lockToObtain, (existingLockName, existingLock) -> lockProvider.apply(lockToObtain, existingLock));
     }
 
+    public static BiFunction<String, Lock, Lock> provider() {
+        return lockProvider;
+    }
+    
     public static void clear(){
         locks.clear();
         lockProvider = null;

@@ -17,6 +17,14 @@ public class EngineTestHelper {
     
     private static volatile GraknEngineConfig config = null;
     
+    public static int findAvailablePort() {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();            
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }        
+    }
+    
     /**
      * Create (once only, statically) the GraknEngineConfig as per configuration file and return it.
      */
@@ -24,12 +32,8 @@ public class EngineTestHelper {
         if (config != null) {
             return config;
         }
-        config = GraknEngineConfig.create();    
-        try (ServerSocket socket = new ServerSocket(0)) {
-            config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(socket.getLocalPort()));            
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        config = GraknEngineConfig.create();
+        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(findAvailablePort()));
         return config;
     }
     

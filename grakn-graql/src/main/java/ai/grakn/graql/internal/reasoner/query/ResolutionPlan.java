@@ -24,16 +24,13 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.pattern.property.IdProperty;
-import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.ImmutableList;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -63,7 +60,7 @@ public final class ResolutionPlan {
     /**
      * priority modifier if a given atom is a resource atom attached to a relation
      */
-    public static final int RESOURCE_REIFIYING_RELATION = 20;
+    public static final int RESOURCE_REIFYING_RELATION = 20;
 
     /**
      * priority modifier if a given atom is a type atom
@@ -125,6 +122,45 @@ public final class ResolutionPlan {
      */
     public static final int COMPARISON_VARIABLE_VALUE_PREDICATE = - 1000;
 
+
+    static LinkedList<ReasonerQueryImpl> getResolutionPlanFromTraversal(ReasonerQueryImpl query){
+        LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
+        GraknGraph graph = query.graph();
+
+        Map<VarProperty, Atom> propertyMap = query.selectAtoms().stream().collect(Collectors.toMap(Atom::getVarProperty, a -> a));
+        Set<VarProperty> properties = propertyMap.keySet();
+
+        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(query.getPattern(), graph);
+        ImmutableList<Fragment> fragments = graqlTraversal.fragments().iterator().next();
+
+        LinkedList<Atom> atoms = fragments.stream()
+                .map(Fragment::getVarProperty)
+                .filter(Objects::nonNull)
+                .filter(properties::contains)
+                .distinct()
+                .map(propertyMap::get)
+                .collect(Collectors.toCollection(LinkedList::new));
+
+        //return atoms.stream().map(ReasonerAtomicQuery::new).collect(Collectors.toCollection(LinkedList::new));
+
+        Set<Atom> nonResolvableAtoms = new HashSet<>();
+        while (!atoms.isEmpty()) {
+            Atom top = atoms.getFirst();
+            atoms.remove(top);
+            if (top.isRuleResolvable()) {
+                if (!nonResolvableAtoms.isEmpty()) {
+                    queries.add(ReasonerQueries.create(nonResolvableAtoms, graph));
+                    nonResolvableAtoms.clear();
+                }
+                queries.add(new ReasonerAtomicQuery(top));
+            } else {
+                nonResolvableAtoms.add(top);
+                if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, graph));
+            }
+        }
+        return queries;
+    }
+
     /**
      * compute the resolution plan - list of atomic queries ordered by their resolution priority
      * @return list of prioritised atomic queries
@@ -136,17 +172,6 @@ public final class ResolutionPlan {
         LinkedList<Atom> atoms = query.selectAtoms().stream()
                 .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
                 .collect(Collectors.toCollection(LinkedList::new));
-
-        //TODO
-        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(query.getPattern(), graph);
-        ImmutableList<Fragment> fragments = graqlTraversal.fragments().iterator().next();
-
-        LinkedHashSet<VarProperty> properties = fragments.stream()
-                .map(Fragment::getVarProperty)
-                .filter(Objects::nonNull)
-                .filter(p -> !(p instanceof IdProperty))
-                .filter(p -> !(p instanceof IsaProperty))
-                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         Atom top = atoms.getFirst();
         Set<Atom> nonResolvableAtoms = new HashSet<>();

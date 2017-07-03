@@ -20,13 +20,13 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.query.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
@@ -38,6 +38,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.Sets;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -58,10 +59,8 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkCompatib
 public abstract class Atom extends AtomicBase {
 
     private final VarProperty varProperty;
-    private Type type = null;
-    protected ConceptId typeId = null;
     private int basePriority = Integer.MAX_VALUE;
-    protected Set<InferenceRule> applicableRules = null;
+    private Set<InferenceRule> applicableRules = null;
 
     protected Atom(VarProperty property, VarPatternAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
@@ -70,8 +69,6 @@ public abstract class Atom extends AtomicBase {
     protected Atom(Atom a) {
         super(a);
         this.varProperty = a.varProperty;
-        this.type = a.type;
-        this.typeId = a.typeId;
         this.applicableRules = a.applicableRules;
     }
 
@@ -201,22 +198,17 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return corresponding type if any
      */
-    public OntologyConcept getOntologyConcept(){
-        if (type == null && typeId != null) {
-            type = getParentQuery().graph().getConcept(typeId).asType();
-        }
-        return type;
-    }
+    public abstract OntologyConcept getOntologyConcept();
 
     /**
      * @return type id of the corresponding type if any
      */
-    public ConceptId getTypeId(){ return typeId;}
+    public abstract ConceptId getTypeId();
 
     /**
      * @return value variable name
      */
-    public abstract Var getValueVariable();
+    public abstract Var getPredicateVariable();
 
     /**
      * @return set of predicates relevant to this atom
@@ -241,7 +233,7 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<ValuePredicate> getValuePredicates(){
         return ((ReasonerQueryImpl) getParentQuery()).getValuePredicates().stream()
-                .filter(atom -> atom.getVarName().equals(getValueVariable()))
+                .filter(atom -> atom.getVarName().equals(getPredicateVariable()))
                 .collect(Collectors.toSet());
     }
 
@@ -278,15 +270,22 @@ public abstract class Atom extends AtomicBase {
         return Sets.union(types, getPredicates());
     }
 
-    public Set<IdPredicate> getUnmappedIdPredicates(){ return new HashSet<>();}
-    public Set<TypeAtom> getUnmappedTypeConstraints(){ return new HashSet<>();}
-    public Set<TypeAtom> getMappedTypeConstraints() { return new HashSet<>();}
-    public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return new HashSet<>();}
+    /**
+     * @return set of type atoms that describe specific role players or resource owner
+     */
+    public Set<TypeAtom> getSpecificTypeConstraints() { return new HashSet<>();}
+
+    /**
+     * @param headAtom unification reference atom
+     * @return set of permutation unifiers that guarantee all variants of role assignments are performed and hence the results are complete
+     */
+    public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return Collections.singleton(new UnifierImpl());}
 
     /**
      * infers types (type, role types) fo the atom if applicable/possible
+     * @return either this atom if nothing could be inferred or a fresh atom with inferred types
      */
-    public void inferTypes(){}
+    public Atom inferTypes(){ return this; }
 
     /**
      * rewrites the atom to one with user defined name
