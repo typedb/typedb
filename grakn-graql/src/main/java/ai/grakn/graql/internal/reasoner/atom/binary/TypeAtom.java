@@ -18,6 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -57,17 +58,13 @@ import java.util.stream.Collectors;
  */
 public class TypeAtom extends Binary{
 
-    public TypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
-    public TypeAtom(VarPatternAdmin pattern, IdPredicate p, ReasonerQuery par) { super(pattern, p, par);}
-    public TypeAtom(Var var, Var valueVar, IdPredicate p, ReasonerQuery par){
-        this(var.isa(valueVar).admin(), p, par);
+    public TypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, Graql.var().asUserDefined(), null, par);}
+    public TypeAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
+        super(pattern, predicateVar, p, par);}
+    public TypeAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
+        this(var.isa(predicateVar).admin(), predicateVar, p, par);
     }
     protected TypeAtom(TypeAtom a) { super(a);}
-
-    @Override
-    protected Var extractPredicateVariableName(VarPatternAdmin var) {
-        return var.getProperties().findFirst().get().getInnerVars().findFirst().get().getVarName();
-    }
 
     @Override
     public int hashCode() {

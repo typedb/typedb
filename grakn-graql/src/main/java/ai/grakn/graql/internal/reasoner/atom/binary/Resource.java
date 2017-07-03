@@ -18,7 +18,6 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -38,7 +37,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 import com.google.common.collect.ImmutableMap;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
@@ -53,7 +51,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint
  * Atom implementation defining a resource atom corresponding to a {@link HasResourceProperty}.
  * The resource structure is the following:
  *
- * has($varName, $resourceVariable), isa($resourceVariable, $predicateVariable), type($predicateVariable)
+ * has($varName, $predicateVariable = resource variable), type($predicateVariable)
  *
  * </p>
  *
@@ -61,18 +59,14 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint
  *
  */
 public class Resource extends Binary{
-    private final Var resourceVariable;
     private final Set<ValuePredicate> multiPredicate = new HashSet<>();
 
-    public Resource(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, null, Collections.emptySet(), par);}
-    public Resource(VarPatternAdmin pattern, IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
-        super(pattern, idPred, par);
-        this.resourceVariable = extractResourceVariableName(pattern);
+    public Resource(VarPatternAdmin pattern, Var predicateVar, IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
+        super(pattern, predicateVar, idPred, par);
         this.multiPredicate.addAll(ps);
     }
     private Resource(Resource a) {
         super(a);
-        this.resourceVariable = a.getResourceVariable();
         Set<ValuePredicate> multiPredicate = getMultiPredicate();
         a.getMultiPredicate().stream()
                 .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
@@ -82,7 +76,7 @@ public class Resource extends Binary{
     @Override
     public String toString(){
         String multiPredicateString = getMultiPredicate().isEmpty()?
-                getResourceVariable().toString() :
+                getPredicateVariable().toString() :
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
         return getVarName() + " has " + getOntologyConcept().getLabel() + " " +
                 multiPredicateString +
@@ -90,24 +84,11 @@ public class Resource extends Binary{
     }
 
     @Override
-    protected Var extractPredicateVariableName(VarPatternAdmin var){
-        HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
-        VarPatternAdmin resVar = prop.getResource();
-        return resVar.getVarName().isUserDefinedName()? resVar.getVarName() : Graql.var("");
-    }
-
-    private Var extractResourceVariableName(VarPatternAdmin var){
-        HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
-        VarPatternAdmin resVar = prop.getResource();
-        return resVar.getVarName().isUserDefinedName()? resVar.getVarName() : Graql.var("");
-    }
-
-    @Override
     public int hashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + this.getVarName().hashCode();
-        hashCode = hashCode * 37 + this.getResourceVariable().hashCode();
+        hashCode = hashCode * 37 + this.getPredicateVariable().hashCode();
         return hashCode;
     }
 
@@ -118,7 +99,7 @@ public class Resource extends Binary{
         Binary a2 = (Binary) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarName().equals(a2.getVarName())
-                && this.getResourceVariable().equals(a2.getPredicateVariable());
+                && this.getPredicateVariable().equals(a2.getPredicateVariable());
     }
 
     @Override
@@ -157,7 +138,6 @@ public class Resource extends Binary{
         multiPredicate.forEach(pred -> pred.setParentQuery(q));
     }
 
-    public Var getResourceVariable(){ return resourceVariable;}
     public Set<ValuePredicate> getMultiPredicate() { return multiPredicate;}
 
     @Override
@@ -197,13 +177,6 @@ public class Resource extends Binary{
             if (!predicateCompatible) return false;
         }
         return true;
-    }
-
-    @Override
-    public Set<Var> getVarNames() {
-        Set<Var> vars = super.getVarNames();
-        vars.add(getResourceVariable());
-        return vars;
     }
 
     @Override
@@ -282,18 +255,18 @@ public class Resource extends Binary{
     @Override
     public Unifier getUnifier(Atom parentAtom) {
         if (!(parentAtom instanceof Resource)){
-            return new UnifierImpl(ImmutableMap.of(this.getResourceVariable(), parentAtom.getVarName()));
+            return new UnifierImpl(ImmutableMap.of(this.getPredicateVariable(), parentAtom.getVarName()));
         }
         Unifier unifier = super.getUnifier(parentAtom);
 
         Resource parent = (Resource) parentAtom;
-        Var childValueVarName = this.getResourceVariable();
-        Var parentValueVarName = parent.getResourceVariable();
+        Var childResourceVarName = this.getPredicateVariable();
+        Var parentResourceVarName = parent.getPredicateVariable();
 
-        if (!childValueVarName.getValue().isEmpty()
-                && !parentValueVarName.getValue().isEmpty()
-                && !childValueVarName.equals(parentValueVarName)) {
-            unifier.addMapping(childValueVarName, parentValueVarName);
+        if (!childResourceVarName.getValue().isEmpty()
+                && !parentResourceVarName.getValue().isEmpty()
+                && !childResourceVarName.equals(parentResourceVarName)) {
+            unifier.addMapping(childResourceVarName, parentResourceVarName);
         }
 
         return unifier;

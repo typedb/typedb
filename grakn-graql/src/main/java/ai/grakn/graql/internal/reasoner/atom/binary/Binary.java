@@ -52,32 +52,27 @@ import java.util.Set;
  *
  */
 public abstract class Binary extends Atom {
-    private Var predicateVariable;
+    private final Var predicateVariable;
     private Type type = null;
     private ConceptId typeId = null;
     private IdPredicate predicate = null;
 
-    Binary(VarPatternAdmin pattern, IdPredicate p, ReasonerQuery par) {
+    Binary(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
         super(pattern, par);
+        this.predicateVariable = predicateVar;
         this.predicate = p;
-
-        //TODO pass predicate var as parameter?
         this.typeId = getPredicate() != null? getPredicate().getPredicate() : null;
-        this.predicateVariable = extractPredicateVariableName(pattern);
     }
 
     Binary(Binary a) {
         super(a);
-        this.type = a.type;
-        this.typeId = a.typeId;
         this.predicateVariable = a.predicateVariable;
         this.predicate = a.getPredicate() != null ? (IdPredicate) AtomicFactory.create(a.getPredicate(), getParentQuery()) : null;
+        this.type = a.type;
+        this.typeId = a.typeId;
     }
 
-    protected abstract Var extractPredicateVariableName(VarPatternAdmin var);
-
     public Var getPredicateVariable() { return predicateVariable;}
-
     public IdPredicate getPredicate() { return predicate;}
 
     @Override

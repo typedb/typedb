@@ -129,6 +129,6 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarPatternAdmin resVar = varName.sub(typeVariable).admin();
-        return new TypeAtom(resVar, predicate, parent);
+        return new TypeAtom(resVar, typeVariable, predicate, parent);
     }
 }
