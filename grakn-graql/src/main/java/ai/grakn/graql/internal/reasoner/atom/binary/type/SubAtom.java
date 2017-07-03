@@ -33,6 +33,15 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ *
+ * <p>
+ * TypeAtom corresponding to graql a {@link ai.grakn.graql.internal.pattern.property.SubProperty} property.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class SubAtom extends TypeAtom {
     public SubAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
         super(pattern, predicateVar, p, par);}

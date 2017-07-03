@@ -33,7 +33,15 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-
+/**
+ *
+ * <p>
+ * TypeAtom corresponding to graql a {@link ai.grakn.graql.internal.pattern.property.IsaProperty} property.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class IsaAtom extends TypeAtom {
 
     public IsaAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {

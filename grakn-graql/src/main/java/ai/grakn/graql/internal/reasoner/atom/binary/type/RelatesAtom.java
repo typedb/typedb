@@ -30,6 +30,15 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import java.util.Set;
 
 
+/**
+ *
+ * <p>
+ * TypeAtom corresponding to a graql {@link ai.grakn.graql.internal.pattern.property.RelatesProperty} property.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class RelatesAtom extends TypeAtom {
     public RelatesAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
         super(pattern, predicateVar, p, par);}

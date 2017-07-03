@@ -28,6 +28,15 @@ import ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import java.util.Set;
 
+/**
+ *
+ * <p>
+ * TypeAtom corresponding to graql a {@link ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty} property.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class HasResourceTypeAtom extends TypeAtom {
 
     public HasResourceTypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, Graql.var().asUserDefined(), null, par);}

@@ -29,6 +29,15 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import java.util.Set;
 
+/**
+ *
+ * <p>
+ * TypeAtom corresponding to a graql {@link ai.grakn.graql.internal.pattern.property.HasScopeProperty} property.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class ScopeAtom extends TypeAtom {
     public ScopeAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
         super(pattern, predicateVar, p, par);}
