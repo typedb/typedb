@@ -1,5 +1,6 @@
 package ai.grakn.test.engine.controller;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
@@ -20,9 +21,15 @@ import org.junit.Test;
 
 import java.util.function.Function;
 
-import static ai.grakn.util.REST.Request.Graql.*;
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.REST.Request.Graql.INFER;
+import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
+import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
+import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.REST.Response.ContentType.*;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -55,18 +62,13 @@ public class GraknExecuteQueryControllerTest {
             .post(REST.WebPath.Graph.ANY_GRAQL);
     }
 
-    //TODO: Cleanup this hack. The problem is that <code>EngineGraknGraphFactory</code> is called before the graph context. This means that cassandra has not yet started when we try to create the engine graph.
-    private static GraphContext graphContextTemp = GraphContext.preLoad(MovieGraph.get());
-
-    private static EngineGraknGraphFactory engineGraknGraphFactory =
-            EngineGraknGraphFactory.create(GraknEngineConfig.create().getProperties());
-
     @ClassRule
-    public static GraphContext graphContext = graphContextTemp;
+    public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(engineGraknGraphFactory, spark);
+        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(GraknEngineConfig.create().getProperties());
+        new GraqlController(factory, spark);
     });
 
     @Before
@@ -94,8 +96,14 @@ public class GraknExecuteQueryControllerTest {
     @Test
     public void testInsertQuery() {
         Response resp = sendQuery("insert $x isa movie;");
-        resp.then().statusCode(200);
-        Assert.assertFalse(resp.jsonPath().getList("response").isEmpty());
+        try {
+            resp.then().statusCode(200);
+            Assert.assertFalse(resp.jsonPath().getList("response").isEmpty());
+        } finally {
+            ConceptId id = ConceptId.of(resp.jsonPath().getList("response.x.id").get(0));
+            graphContext.rollback();
+            graphContext.graph().graql().match(var("x").id(id)).delete("x").execute();
+        }
     }
 
     @Test
@@ -117,7 +125,7 @@ public class GraknExecuteQueryControllerTest {
     public void testDeleteQuery() {
         Response resp = sendQuery("insert $x isa movie;");
         resp.then().statusCode(200);
-        String id = resp.jsonPath().getList("response").get(0).toString();
+        String id = resp.jsonPath().getList("response.x.id").get(0).toString();
         resp = sendQuery("match $x id \"" + id + "\"; delete $x; ");
         resp.then().statusCode(200);
         assertNull(resp.jsonPath().get("response"));
@@ -181,6 +189,7 @@ public class GraknExecuteQueryControllerTest {
         String response = Json.read(resp.body().asString()).at("response").toString();
         resp.then().statusCode(200);
 
+        graphContext.rollback();
         Query<?> query = graphContext.graph().graql().parse(queryString);
 
         String expectedString = printer.graqlString(query.execute());
