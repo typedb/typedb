@@ -154,6 +154,15 @@ public class GraknExecuteQueryControllerTest {
     }
 
     @Test
+    public void whenRunningQueryWithLimitEmbedded_HalResponseIsTheSameAsJava() {
+        String queryString = "match $x isa movie;";
+        int limitEmbedded = 42;
+        Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded);
+        Printer printer = Printers.hal(graphContext.graph().getKeyspace(), limitEmbedded);
+        assertResponseSameAsJavaGraql(resp, queryString, printer, APPLICATION_HAL);
+    }
+
+    @Test
     public void testBadQuery() {
         sendQuery(" gibberish ads a;49 agfdgdsf").then().statusCode(400);
     }
@@ -165,9 +174,12 @@ public class GraknExecuteQueryControllerTest {
 
     private void assertResponseSameAsJavaGraql(String queryString, Printer<?> printer, String acceptType) {
         Response resp = sendQuery(queryString, acceptType);
-        resp.then().statusCode(200);
+        assertResponseSameAsJavaGraql(resp, queryString, printer, acceptType);
+    }
 
+    private void assertResponseSameAsJavaGraql(Response resp, String queryString, Printer<?> printer, String acceptType) {
         String response = Json.read(resp.body().asString()).at("response").toString();
+        resp.then().statusCode(200);
 
         Query<?> query = graphContext.graph().graql().parse(queryString);
 
@@ -177,5 +189,4 @@ public class GraknExecuteQueryControllerTest {
 
         assertEquals(Json.make(expected).toString(), response);
     }
-
 }
