@@ -26,7 +26,9 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import ai.grakn.graql.internal.reasoner.query.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -55,14 +57,19 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkCompatib
  */
 public abstract class Atom extends AtomicBase {
 
+    private final VarProperty varProperty;
     private Type type = null;
     protected ConceptId typeId = null;
     private int basePriority = Integer.MAX_VALUE;
     protected Set<InferenceRule> applicableRules = null;
 
-    protected Atom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
+    protected Atom(VarProperty property, VarPatternAdmin pattern, ReasonerQuery par) {
+        super(pattern, par);
+        this.varProperty = property;
+    }
     protected Atom(Atom a) {
         super(a);
+        this.varProperty = a.varProperty;
         this.type = a.type;
         this.typeId = a.typeId;
         this.applicableRules = a.applicableRules;
@@ -86,6 +93,9 @@ public abstract class Atom extends AtomicBase {
      * */
     public boolean isResource(){ return false;}
 
+
+    public VarProperty getVarProperty(){ return varProperty;}
+
     /**
      * @return partial substitutions for this atom (NB: instances)
      */
@@ -106,23 +116,23 @@ public abstract class Atom extends AtomicBase {
      */
     public int computePriority(Set<Var> subbedVars){
         int priority = 0;
-        priority += Sets.intersection(getVarNames(), subbedVars).size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
-        priority += isRuleResolvable()? ResolutionStrategy.RULE_RESOLVABLE_ATOM : 0;
-        priority += isRecursive()? ResolutionStrategy.RECURSIVE_ATOM : 0;
+        priority += Sets.intersection(getVarNames(), subbedVars).size() * ResolutionPlan.PARTIAL_SUBSTITUTION;
+        priority += isRuleResolvable()? ResolutionPlan.RULE_RESOLVABLE_ATOM : 0;
+        priority += isRecursive()? ResolutionPlan.RECURSIVE_ATOM : 0;
 
-        priority += getTypeConstraints().size() * ResolutionStrategy.GUARD;
+        priority += getTypeConstraints().size() * ResolutionPlan.GUARD;
         Set<Var> otherVars = getParentQuery().getAtoms().stream()
                 .filter(a -> a != this)
                 .flatMap(at -> at.getVarNames().stream())
                 .collect(Collectors.toSet());
-        priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
+        priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionPlan.BOUND_VARIABLE;
 
         //inequality predicates with unmapped variable
         priority += getPredicates().stream()
                 .filter(Predicate::isNeqPredicate)
                 .map(p -> (NeqPredicate) p)
                 .map(Predicate::getPredicate)
-                .filter(v -> !subbedVars.contains(v)).count() * ResolutionStrategy.INEQUALITY_PREDICATE;
+                .filter(v -> !subbedVars.contains(v)).count() * ResolutionPlan.INEQUALITY_PREDICATE;
         return priority;
     }
 

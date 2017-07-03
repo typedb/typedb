@@ -208,53 +208,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public Set<Atomic> getAtoms() { return atomSet;}
 
     /**
-     * compute the resolution plan - list of atomic queries ordered by their resolution priority
-     * @return list of prioritised atomic queries
-     */
-    LinkedList<ReasonerQueryImpl> getResolutionPlan(){
-        LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
-
-        LinkedList<Atom> atoms = selectAtoms().stream()
-                .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
-                .collect(Collectors.toCollection(LinkedList::new));
-
-        Atom top = atoms.getFirst();
-        Set<Atom> nonResolvableAtoms = new HashSet<>();
-        Set<Var> subbedVars = getIdPredicates().stream().map(IdPredicate::getVarName).collect(Collectors.toSet());
-        while (!atoms.isEmpty()) {
-
-            subbedVars.addAll(top.getVarNames());
-            atoms.remove(top);
-
-            if (top.isRuleResolvable()) {
-                if (!nonResolvableAtoms.isEmpty()){
-                    queries.add(ReasonerQueries.create(nonResolvableAtoms, graph()));
-                    nonResolvableAtoms.clear();
-                }
-                queries.add(new ReasonerAtomicQuery(top));
-            } else {
-                nonResolvableAtoms.add(top);
-                if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, graph()));
-            }
-
-            //look at neighbours up to two hops away
-            top = top.getNeighbours().filter(atoms::contains)
-                    .flatMap(at -> Stream.concat(Stream.of(at), at.getNeighbours().filter(atoms::contains)))
-                    .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                    .findFirst().orElse(null);
-
-            //top is disconnected atom
-            if (top == null) {
-                top = atoms.stream()
-                        .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                        .findFirst().orElse(null);
-            }
-        }
-
-        return queries;
-    }
-
-    /**
      * @return set of predicates contained in this query
      */
     public Set<Predicate> getPredicates() {
