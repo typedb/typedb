@@ -32,8 +32,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -54,8 +52,6 @@ import org.junit.rules.ExpectedException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.subFilter;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -145,6 +141,7 @@ public class AtomicQueryTest {
         assertTrue(qb.<MatchQuery>parse(explicitQuery).ask().execute());
     }
 
+
     @Test
     public void testWhenRoleTypesAreAmbiguous_answersArePermutedCorrectly(){
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
@@ -159,21 +156,13 @@ public class AtomicQueryTest {
         Atom unmappedAtom = ReasonerQueries.atomic(conjunction(query2.admin().getPattern()), graph).getAtom();
 
         Set<Unifier> permutationUnifiers = mappedAtom.getPermutationUnifiers(mappedAtom);
-        Set<IdPredicate> unmappedIdPredicates = mappedAtom.getUnmappedIdPredicates();
-        Set<TypeAtom> unmappedTypeConstraints = mappedAtom.getUnmappedTypeConstraints();
         Set<Answer> permutedAnswers = answers.stream()
                 .flatMap(a -> a.permute(permutationUnifiers))
-                .filter(a -> subFilter(a, unmappedIdPredicates))
-                .filter(a -> entityTypeFilter(a, unmappedTypeConstraints))
                 .collect(Collectors.toSet());
 
         Set<Unifier> permutationUnifiers2 = unmappedAtom.getPermutationUnifiers(mappedAtom);
-        Set<IdPredicate> unmappedIdPredicates2 = unmappedAtom.getUnmappedIdPredicates();
-        Set<TypeAtom> unmappedTypeConstraints2 = unmappedAtom.getUnmappedTypeConstraints();
         Set<Answer> permutedAnswers2 = answers.stream()
                 .flatMap(a -> a.permute(permutationUnifiers2))
-                .filter(a -> subFilter(a, unmappedIdPredicates2))
-                .filter(a -> entityTypeFilter(a, unmappedTypeConstraints2))
                 .collect(Collectors.toSet());
 
         assertEquals(fullAnswers, permutedAnswers2);

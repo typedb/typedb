@@ -233,7 +233,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
-    public Set<TypeAtom> getMappedTypeConstraints() {
+    public Set<TypeAtom> getSpecificTypeConstraints() {
         return getTypeConstraints().stream()
                 .filter(t -> t.getVarName().equals(getVarName()))
                 .filter(t -> Objects.nonNull(t.getOntologyConcept()))

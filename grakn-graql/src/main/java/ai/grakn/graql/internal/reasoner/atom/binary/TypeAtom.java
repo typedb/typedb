@@ -96,12 +96,6 @@ public class TypeAtom extends Binary{
     }
 
     @Override
-    protected void setValueVariable(Var var) {
-        super.setValueVariable(var);
-        atomPattern = atomPattern.asVar().mapProperty(IsaProperty.class, prop -> new IsaProperty(prop.getType().setVarName(var)));
-    }
-
-    @Override
     public Atomic copy(){
         return new TypeAtom(this);
     }
