@@ -58,7 +58,9 @@ import java.util.stream.Collectors;
 import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.util.REST.Request.Graql.INFER;
+import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
@@ -111,11 +113,12 @@ public class GraqlController {
         String queryString = mandatoryQueryParameter(request, QUERY);
         boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
         boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
+        int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = getAcceptType(request);
 
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
-            Json resp = respond(response, query, acceptType, executeQuery(keyspace, query, acceptType));
+            Json resp = respond(response, query, acceptType, executeQuery(keyspace, limitEmbedded, query, acceptType));
             graph.commit();
             return resp;
         }
@@ -137,6 +140,7 @@ public class GraqlController {
         String queryString = mandatoryQueryParameter(request, QUERY);
         boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
         boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
+        int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = getAcceptType(request);
 
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
@@ -146,7 +150,7 @@ public class GraqlController {
 
             if(!validContentType(acceptType, query)) throw GraknServerException.contentTypeQueryMismatch(acceptType, query);
 
-            Json responseBody = executeQuery(keyspace, query, acceptType);
+            Json responseBody = executeQuery(keyspace, limitEmbedded, query, acceptType);
             return respond(response, query, acceptType, responseBody);
         }
     }
@@ -278,7 +282,7 @@ public class GraqlController {
      * @param query read query to be executed
      * @param acceptType response format that the client will accept
      */
-    private Json executeQuery(String keyspace, Query<?> query, String acceptType){
+    private Json executeQuery(String keyspace, int limitEmbedded, Query<?> query, String acceptType){
         Printer<?> printer;
 
         switch (acceptType) {
@@ -289,7 +293,7 @@ public class GraqlController {
                 printer = Printers.json();
                 break;
             case APPLICATION_HAL:
-                printer = Printers.hal(keyspace, -1);
+                printer = Printers.hal(keyspace, limitEmbedded);
                 break;
             default:
                 throw GraknServerException.unsupportedContentType(acceptType);
