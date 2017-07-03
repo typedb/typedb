@@ -40,7 +40,7 @@ import org.junit.runner.RunWith;
 import org.redisson.RedissonLock;
 
 @RunWith(Theories.class)
-public class LockTest {
+public class LockTestIT {
 
     private static final String LOCK_PATH = "/lock";
 

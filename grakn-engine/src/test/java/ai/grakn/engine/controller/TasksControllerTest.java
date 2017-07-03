@@ -16,12 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.controller;
+package ai.grakn.engine.controller;
 
 import ai.grakn.engine.TaskId;
 import static ai.grakn.engine.TaskStatus.FAILED;
-
-import ai.grakn.engine.controller.TasksController;
+import static ai.grakn.engine.controller.Utilities.createTask;
+import static ai.grakn.engine.controller.Utilities.exception;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -29,10 +29,6 @@ import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.test.SparkContext;
-
-import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
 import static ai.grakn.util.REST.Request.CONFIGURATION_PARAM;
@@ -52,9 +48,6 @@ import com.google.common.collect.ImmutableMap;
 import static com.jayway.restassured.RestAssured.with;
 import com.jayway.restassured.config.ObjectMapperConfig;
 import com.jayway.restassured.config.RestAssuredConfig;
-import com.jayway.restassured.mapper.ObjectMapper;
-import com.jayway.restassured.mapper.ObjectMapperDeserializationContext;
-import com.jayway.restassured.mapper.ObjectMapperSerializationContext;
 import com.jayway.restassured.response.Response;
 import com.jayway.restassured.specification.RequestSpecification;
 import java.time.Duration;
@@ -74,7 +67,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import org.mockito.Mockito;
@@ -207,14 +199,14 @@ public class TasksControllerTest {
 
     @Test
     public void afterSendingTaskWithLowPriority_TaskSubmittedWithLowPriority(){
-        send(TaskState.Priority.LOW);
+        send(ImmutableList.of(TaskState.Priority.LOW));
 
         verify(manager).addTask(argThat(argument -> argument.priority().equals(TaskState.Priority.LOW)), any());
     }
 
     @Test
     public void afterSendingTaskWithHighPriority_TaskSubmittedWithHighPriority(){
-        send(TaskState.Priority.HIGH);
+        send(ImmutableList.of(TaskState.Priority.HIGH));
 
         verify(manager).addTask(argThat(argument -> argument.priority().equals(TaskState.Priority.HIGH)), any());
     }
@@ -431,12 +423,6 @@ public class TasksControllerTest {
         return send(Collections.emptyMap(), defaultParams());
     }
 
-    private Response send(TaskState.Priority priority){
-        Map<String, String> params = defaultParams();
-        params.put(TASK_PRIORITY_PARAMETER, priority.name());
-        return send(Collections.emptyMap(), params);
-    }
-
     private Response sendDefaultMinus(String property){
         Map<String, String> params = new HashMap<>(defaultParams());
         params.remove(property);
@@ -475,18 +461,5 @@ public class TasksControllerTest {
 
     private Json makeJsonTask(Map<String, String> configuration, Map<String, String> params) {
         return Json.make(params).set(CONFIGURATION_PARAM, Json.make(configuration));
-    }
-
-    public static class JsonMapper implements ObjectMapper{
-
-        @Override
-        public Object deserialize(ObjectMapperDeserializationContext objectMapperDeserializationContext) {
-            return Json.read(objectMapperDeserializationContext.getDataToDeserialize().asString());
-        }
-
-        @Override
-        public Object serialize(ObjectMapperSerializationContext objectMapperSerializationContext) {
-            return objectMapperSerializationContext.getObjectToSerialize().toString();
-        }
     }
 }

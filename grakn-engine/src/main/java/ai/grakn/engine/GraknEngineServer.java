@@ -183,21 +183,34 @@ public class GraknEngineServer implements AutoCloseable {
         spark.awaitInitialization();
     }
 
-
-    public static void configureSpark(Service spark, GraknEngineConfig prop, @Nullable JWTHandler jwtHandler){
+    public static void configureSpark(Service spark, GraknEngineConfig prop, @Nullable JWTHandler jwtHandler) {
+        configureSpark(spark, 
+                       prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
+                       Integer.parseInt(prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER)),
+                       prop.getPath(GraknEngineConfig.STATIC_FILES_PATH),
+                       prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false),
+                       jwtHandler);
+    }
+    
+    public static void configureSpark(Service spark, 
+                                      String hostName, 
+                                      int port, 
+                                      String staticFolder,
+                                      boolean passwordProtected,
+                                      @Nullable JWTHandler jwtHandler){
         // Set host name
-        spark.ipAddress(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME));
+        spark.ipAddress(hostName);
 
         // Set port
-        spark.port(Integer.parseInt(prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER)));
+        spark.port(port);
 
         // Set the external static files folder
-        spark.staticFiles.externalLocation(prop.getPath(GraknEngineConfig.STATIC_FILES_PATH));
+        spark.staticFiles.externalLocation(staticFolder);
 
         spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
         //Register filter to check authentication token in each request
-        boolean isPasswordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
+        boolean isPasswordProtected = passwordProtected;
 
         if (isPasswordProtected) {
             spark.before((req, res) -> checkAuthorization(spark, req, jwtHandler));

@@ -176,6 +176,13 @@
 
 
        <dependency>
+            <groupId>com.github.stefanbirkner</groupId>
+            <artifactId>system-rules</artifactId>
+            <version>${systen-rules.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
           <groupId>io.dropwizard.metrics</groupId>
           <artifactId>metrics-core</artifactId>
           <version>${metrics.version}</version>

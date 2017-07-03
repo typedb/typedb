@@ -16,38 +16,23 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.controller;
+package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.engine.controller.GraqlController;
-import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.QueryBuilder;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
-import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.SparkContext;
-import ai.grakn.test.engine.controller.TasksControllerTest.JsonMapper;
-import ai.grakn.test.graphs.MovieGraph;
-import ai.grakn.util.REST;
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.response.Response;
-import mjson.Json;
-import static org.junit.Assert.assertTrue;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
-import java.util.Collections;
 import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.ID_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
+import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.graphs.MovieGraph;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
+import ai.grakn.util.REST;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
@@ -60,6 +45,11 @@ import static ai.grakn.util.REST.Response.EXCEPTION;
 import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
 import static ai.grakn.util.REST.Response.Graql.RESPONSE;
 import com.codahale.metrics.MetricRegistry;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.response.Response;
+import java.util.Collections;
+import static junit.framework.TestCase.assertTrue;
+import mjson.Json;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -69,14 +59,17 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.junit.Assume.assumeTrue;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.FixMethodOrder;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runners.MethodSorters;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.booleanThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -101,7 +94,7 @@ public class GraqlControllerGETTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         new SystemController(mockFactory, spark, metricRegistry);
         new GraqlController(mockFactory, spark, metricRegistry);
-    }).port(4567); // TODO: Don't use the default port when bug #15130 is fixed
+    });//.port(4567); // TODO: Don't use the default port when bug #15130 is fixed
 
     @Before
     public void setupMock() {
@@ -121,7 +114,7 @@ public class GraqlControllerGETTest {
 
         when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
         when(mockFactory.systemKeyspace()).thenReturn(mockSystemKeyspace);
-        when(mockFactory.properties()).thenReturn(GraknEngineConfig.create().getProperties());
+        when(mockFactory.properties()).thenReturn(sparkContext.config().getProperties());
     }
 
     @Test
@@ -398,6 +391,7 @@ public class GraqlControllerGETTest {
         assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
     }
 
+    @Ignore
     @Test
     public void GETGraqlCompute_ResponseContainsOriginalQuery() {
         String query = "compute count in movie;";
@@ -406,6 +400,7 @@ public class GraqlControllerGETTest {
         assertThat(originalQuery(response), equalTo(query));
     }
 
+    @Ignore
     @Test
     public void GETGraqlComputeWithTextType_ResponseContentTypeIsText() {
         String query = "compute count in movie;";
@@ -414,6 +409,7 @@ public class GraqlControllerGETTest {
         assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
     }
 
+    @Ignore
     @Test
     public void GETGraqlComputeWithTextType_ResponseStatusIs200() {
         String query = "compute count in movie;";
@@ -422,6 +418,7 @@ public class GraqlControllerGETTest {
         assertThat(response.statusCode(), equalTo(200));
     }
 
+    @Ignore
     @Test
     public void GETGraqlComputeWithTextType_ResponseIsCorrect() {
         String query = "compute count in movie;";

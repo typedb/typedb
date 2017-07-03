@@ -153,7 +153,7 @@ public class GraknEngineConfig {
      * @return The requested property as a full path. If it is specified as a relative path,
      * this method will return the path prepended with the project path.
      */
-    String getPath(String path) {
+    public String getPath(String path) {
         String propertyPath = prop.getProperty(path);
         if (Paths.get(propertyPath).isAbsolute()) {
             return propertyPath;
