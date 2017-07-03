@@ -20,8 +20,9 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarProperty;
@@ -36,8 +37,10 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.util.Schema.ConceptProperty.INSTANCE_TYPE_ID;
+import static ai.grakn.util.Schema.VertexProperty.INSTANCE_TYPE_ID;
+import static ai.grakn.util.Schema.VertexProperty.TYPE_ID;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
+import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -52,15 +55,15 @@ public class Fragments {
     }
 
     public static Fragment inShortcut(VarProperty varProperty,
-                                      Var rolePlayer, Var edge, Var relation,
-                                      Optional<Set<TypeLabel>> roleTypes, Optional<Set<TypeLabel>> relationTypes) {
-        return new InShortcutFragment(varProperty, rolePlayer, edge, relation, roleTypes, relationTypes);
+            Var rolePlayer, Var edge, Var relation, Optional<Var> roleType,
+            Optional<Set<Label>> roleTypeLabels, Optional<Set<Label>> relationTypeLabels) {
+        return new InShortcutFragment(varProperty, rolePlayer, edge, relation, roleType, roleTypeLabels, relationTypeLabels);
     }
 
     public static Fragment outShortcut(VarProperty varProperty,
-                                       Var relation, Var edge, Var rolePlayer,
-                                       Optional<Set<TypeLabel>> roleTypes, Optional<Set<TypeLabel>> relationTypes) {
-        return new OutShortcutFragment(varProperty, relation, edge, rolePlayer, roleTypes, relationTypes);
+            Var relation, Var edge, Var rolePlayer, Optional<Var> roleType,
+            Optional<Set<Label>> roleTypeLabels, Optional<Set<Label>> relationTypeLabels) {
+        return new OutShortcutFragment(varProperty, relation, edge, rolePlayer, roleType, roleTypeLabels, relationTypeLabels);
     }
 
     public static Fragment inSub(VarProperty varProperty, Var start, Var end) {
@@ -80,21 +83,11 @@ public class Fragments {
     }
 
     public static Fragment inIsa(VarProperty varProperty, Var start, Var end) {
-        return new InIsaFragment(varProperty, start, end, false);
+        return new InIsaFragment(varProperty, start, end);
     }
 
     public static Fragment outIsa(VarProperty varProperty, Var start, Var end) {
-        return new OutIsaFragment(varProperty, start, end, false);
-    }
-
-    // This method is a special case that allows getting the instances of role-types (castings)
-    public static Fragment inIsaCastings(VarProperty varProperty, Var start, Var end) {
-        return new InIsaFragment(varProperty, start, end, true);
-    }
-
-    // This method is a special case that allows getting the instances of role-types (castings)
-    public static Fragment outIsaCastings(VarProperty varProperty, Var start, Var end) {
-        return new OutIsaFragment(varProperty, start, end, true);
+        return new OutIsaFragment(varProperty, start, end);
     }
 
     public static Fragment inHasScope(VarProperty varProperty, Var start, Var end) {
@@ -117,28 +110,12 @@ public class Fragments {
         return new OutPlaysFragment(varProperty, start, end, required);
     }
 
-    public static Fragment inCasting(VarProperty varProperty, Var start, Var end) {
-        return new InCastingFragment(varProperty, start, end);
-    }
-
-    public static Fragment outCasting(VarProperty varProperty, Var start, Var end) {
-        return new OutCastingFragment(varProperty, start, end);
-    }
-
-    public static Fragment inRolePlayer(VarProperty varProperty, Var start, Var end) {
-        return new InRolePlayerFragment(varProperty, start, end);
-    }
-
-    public static Fragment outRolePlayer(VarProperty varProperty, Var start, Var end) {
-        return new OutRolePlayerFragment(varProperty, start, end);
-    }
-
     public static Fragment id(VarProperty varProperty, Var start, ConceptId id) {
         return new IdFragment(varProperty, start, id);
     }
 
-    public static Fragment label(VarProperty varProperty, Var start, TypeLabel label) {
-        return new LabelFragment(varProperty, start, label);
+    public static Fragment label(VarProperty varProperty, Var start, Label label) {
+        return new LabelFragment(varProperty,  start, label);
     }
 
     public static Fragment value(VarProperty varProperty, Var start, ValuePredicateAdmin predicate) {
@@ -164,33 +141,58 @@ public class Fragments {
     /**
      * A {@link Fragment} that uses an index stored on each resource. Resources are indexed by direct type and value.
      */
-    public static Fragment resourceIndex(VarProperty varProperty, Var start, TypeLabel typeLabel, Object resourceValue) {
-        return new ResourceIndexFragment(varProperty, start, typeLabel, resourceValue);
+    public static Fragment resourceIndex(VarProperty varProperty, Var start, Label label, Object resourceValue) {
+        return new ResourceIndexFragment(varProperty, start, label, resourceValue);
     }
 
     @SuppressWarnings("unchecked")
     static GraphTraversal<Vertex, Vertex> outSubs(GraphTraversal<Vertex, Vertex> traversal) {
         // These traversals make sure to only navigate types by checking they do not have a `INSTANCE_TYPE_ID` property
-        return traversal.union(__.not(__.has(INSTANCE_TYPE_ID.name())), __.repeat(__.out(SUB.getLabel())).emit()).unfold();
+        return traversal.union(__.<Vertex>not(__.has(INSTANCE_TYPE_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.repeat(__.out(SUB.getLabel())).emit()).unfold();
     }
 
     @SuppressWarnings("unchecked")
     static GraphTraversal<Vertex, Vertex> inSubs(GraphTraversal<Vertex, Vertex> traversal) {
         // These traversals make sure to only navigate types by checking they do not have a `INSTANCE_TYPE_ID` property
-        return traversal.union(__.not(__.has(INSTANCE_TYPE_ID.name())), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
+        return traversal.union(__.<Vertex>not(__.has(INSTANCE_TYPE_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
     }
 
-    static String displayOptionalTypeLabels(Optional<Set<TypeLabel>> typeLabels) {
+    static String displayOptionalTypeLabels(String name, Optional<Set<Label>> typeLabels) {
         return typeLabels.map(labels ->
-                " " + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
+            " " + name + ":" + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
         ).orElse("");
     }
 
     static void applyTypeLabelsToTraversal(
-            GraphTraversal<Vertex, Edge> traversal, Schema.EdgeProperty property, Optional<Set<TypeLabel>> typeLabels, GraknGraph graph) {
+            GraphTraversal<Vertex, Edge> traversal, Schema.EdgeProperty property, Optional<Set<Label>> typeLabels, GraknGraph graph) {
         typeLabels.ifPresent(labels -> {
             Set<Integer> typeIds = labels.stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
             traversal.has(property.name(), P.within(typeIds));
         });
     }
+
+    /**
+     * Optionally traverse from a shortcut edge to the role-type it mentions, plus any super-types.
+     *
+     * @param traversal the traversal, starting from the shortcut edge
+     * @param roleType the variable to assign to the role-type. If not present, do nothing
+     */
+    static void traverseRoleTypeFromShortcutEdge(GraphTraversal<Vertex, Edge> traversal, Optional<Var> roleType) {
+        roleType.ifPresent(var -> {
+            // Access role-type ID from edge
+            Var roleTypeIdProperty = Graql.var();
+            Var edge = Graql.var();
+            traversal.as(edge.getValue()).values(ROLE_TYPE_ID.name()).as(roleTypeIdProperty.getValue());
+
+            // Look up direct role-type using ID
+            GraphTraversal<Vertex, Vertex> vertexTraversal =
+                    traversal.V().has(TYPE_ID.name(), __.where(P.eq(roleTypeIdProperty.getValue())));
+
+            // Navigate up type hierarchy
+            Fragments.outSubs(vertexTraversal).as(var.getValue());
+
+            traversal.select(edge.getValue());
+        });
+    }
+
 }

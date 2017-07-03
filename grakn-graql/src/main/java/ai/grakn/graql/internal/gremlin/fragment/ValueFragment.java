@@ -28,7 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
 
-import static ai.grakn.graql.internal.util.CommonUtil.optionalToStream;
+import static ai.grakn.util.CommonUtil.optionalToStream;
 import static java.util.stream.Collectors.toSet;
 
 class ValueFragment extends AbstractFragment {

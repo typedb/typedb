@@ -18,13 +18,16 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
@@ -32,7 +35,8 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.reasoner.ReasonerUtils;
+import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
@@ -40,8 +44,10 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
+import ai.grakn.graql.internal.reasoner.utils.conversion.OntologyConceptConverterImpl;
+import ai.grakn.graql.internal.reasoner.utils.conversion.RoleTypeConverter;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
@@ -51,6 +57,7 @@ import javafx.util.Pair;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,15 +67,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getCompatibleRelationTypes;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getListPermutations;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUnifiersFromPermutations;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.roleToRelationTypes;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.typeToRelationTypes;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getCompatibleRelationTypesWithRoles;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getListPermutations;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getSupers;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getUnifiersFromPermutations;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -84,11 +89,9 @@ import static java.util.stream.Collectors.toSet;
 public class Relation extends TypeAtom {
 
     private int hashCode = 0;
-    private Multimap<RoleType, Var> roleVarMap = null;
-    private Multimap<RoleType, String> roleConceptIdMap = null;
+    private Multimap<Role, Var> roleVarMap = null;
+    private Multimap<Role, String> roleConceptIdMap = null;
     private Set<RelationPlayer> relationPlayers = null;
-
-    private static final Logger LOG = LoggerFactory.getLogger(Relation.class);
 
     public Relation(VarPatternAdmin pattern, IdPredicate predicate, ReasonerQuery par) { super(pattern, predicate, par);}
     public Relation(Var name, Var typeVariable, Map<Var, VarPattern> roleMap, IdPredicate pred, ReasonerQuery par) {
@@ -104,7 +107,7 @@ public class Relation extends TypeAtom {
     @Override
     public String toString(){
         String relationString = (isUserDefinedName()? getVarName() + " ": "") +
-                (getType() != null? getType().getLabel() : "") +
+                (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") +
                 getRelationPlayers().toString();
         return relationString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
     }
@@ -121,7 +124,7 @@ public class Relation extends TypeAtom {
     @Override
     protected Var extractValueVariableName(VarPatternAdmin var) {
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
-        return isaProp != null ? isaProp.getType().getVarName() : Var.of("");
+        return isaProp != null ? isaProp.getType().getVarName() : Graql.var("");
     }
 
     @Override
@@ -152,14 +155,14 @@ public class Relation extends TypeAtom {
      * @return corresponding {@link VarPatternAdmin}
      */
     private static VarPatternAdmin constructRelationVar(Var varName, Var typeVariable, List<Pair<Var, VarPattern>> rolePlayerMappings) {
-        VarPattern var = !varName.getValue().isEmpty()? Graql.var(varName) : Graql.var();
+        VarPattern var = !varName.getValue().isEmpty()? varName : Graql.var();
         for (Pair<Var, VarPattern> mapping : rolePlayerMappings) {
             Var rp = mapping.getKey();
             VarPattern role = mapping.getValue();
-            var = role == null? var.rel(Graql.var(rp)) : var.rel(role, Graql.var(rp));
+            var = role == null? var.rel(rp) : var.rel(role, rp);
         }
-        var = var.isa(Graql.var(typeVariable));
-        return var.admin().asVar();
+        var = var.isa(typeVariable);
+        return var.admin();
     }
 
     @Override
@@ -215,7 +218,7 @@ public class Relation extends TypeAtom {
 
     @Override
     public boolean isType() {
-        return getType() != null;
+        return getOntologyConcept() != null;
     }
 
     @Override
@@ -231,11 +234,9 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public int resolutionPriority() {
-        if (priority == Integer.MAX_VALUE) {
-            priority = super.resolutionPriority();
-            priority += ResolutionStrategy.IS_RELATION_ATOM;
-        }
+    public int computePriority(Set<Var> subbedVars) {
+        int priority = super.computePriority(subbedVars);
+        priority += ResolutionStrategy.IS_RELATION_ATOM;
         return priority;
     }
 
@@ -250,16 +251,16 @@ public class Relation extends TypeAtom {
     /**
      * @return map of pairs role type - Id predicate describing the role player playing this role (substitution)
      */
-    private Multimap<RoleType, String> getRoleConceptIdMap() {
+    private Multimap<Role, String> getRoleConceptIdMap() {
         if (roleConceptIdMap == null) {
             roleConceptIdMap = ArrayListMultimap.create();
 
             Map<Var, IdPredicate> varSubMap = getPartialSubstitutions().stream()
                     .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
-            Multimap<RoleType, Var> roleMap = getRoleVarMap();
+            Multimap<Role, Var> roleMap = getRoleVarMap();
 
             roleMap.entries().forEach(e -> {
-                RoleType role = e.getKey();
+                Role role = e.getKey();
                 Var var = e.getValue();
                 roleConceptIdMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : "");
             });
@@ -267,10 +268,10 @@ public class Relation extends TypeAtom {
         return roleConceptIdMap;
     }
 
-    private Multimap<RoleType, Type> getRoleTypeMap() {
-        Multimap<RoleType, Type> roleTypeMap = ArrayListMultimap.create();
-        Multimap<RoleType, Var> roleMap = getRoleVarMap();
-        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
+    private Multimap<Role, OntologyConcept> getRoleTypeMap() {
+        Multimap<Role, OntologyConcept> roleTypeMap = ArrayListMultimap.create();
+        Multimap<Role, Var> roleMap = getRoleVarMap();
+        Map<Var, OntologyConcept> varTypeMap = getParentQuery().getVarOntologyConceptMap();
 
         roleMap.entries().stream()
                 .filter(e -> varTypeMap.containsKey(e.getValue()))
@@ -290,10 +291,10 @@ public class Relation extends TypeAtom {
         if (!(ruleAtom.isRelation())) return false;
 
         Relation headAtom = (Relation) ruleAtom;
-        Type type = getType();
+        OntologyConcept type = getOntologyConcept();
 
         Relation atomWithType = type == null?
-                ((Relation) AtomicFactory.create(this, this.getParentQuery())).addType(headAtom.getType()) : this;
+                ((Relation) AtomicFactory.create(this, this.getParentQuery())).addType(headAtom.getOntologyConcept()) : this;
         return atomWithType.isRuleApplicableViaAtom(headAtom);
     }
 
@@ -301,15 +302,15 @@ public class Relation extends TypeAtom {
      * @return true if any of the relation's role types are meta role types
      */
     private boolean hasMetaRoles(){
-        Set<RoleType> parentRoles = getRoleVarMap().keySet();
-        for(RoleType role : parentRoles) {
+        Set<Role> parentRoles = getRoleVarMap().keySet();
+        for(Role role : parentRoles) {
             if (Schema.MetaSchema.isMetaLabel(role.getLabel())) return true;
         }
         return false;
     }
 
-    private Set<RoleType> getExplicitRoleTypes() {
-        Set<RoleType> roleTypes = new HashSet<>();
+    private Set<Role> getExplicitRoleTypes() {
+        Set<Role> roles = new HashSet<>();
         ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
         GraknGraph graph = parent.graph();
 
@@ -321,66 +322,104 @@ public class Relation extends TypeAtom {
         roleVars.stream()
                 .map(VarPatternAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(graph::<RoleType>getType)
-                .forEach(roleTypes::add);
+                .map(graph::<Role>getOntologyConcept)
+                .forEach(roles::add);
 
         //try indirectly
         roleVars.stream()
-                .filter(VarPatternAdmin::isUserDefinedName)
+                .filter(v -> v.getVarName().isUserDefinedName())
                 .map(VarPatternAdmin::getVarName)
                 .map(parent::getIdPredicate)
                 .filter(Objects::nonNull)
                 .map(Predicate::getPredicate)
-                .map(graph::<RoleType>getConcept)
-                .forEach(roleTypes::add);
-        return roleTypes;
+                .map(graph::<Role>getConcept)
+                .forEach(roles::add);
+        return roles;
     }
 
-    public Relation addType(Type type) {
-        typeId = type.getId();
+    public Relation addType(OntologyConcept ontologyConcept) {
+        typeId = ontologyConcept.getId();
         Var typeVariable = getValueVariable().getValue().isEmpty() ?
-                Var.of("rel-" + UUID.randomUUID().toString()) : getValueVariable();
-        setPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin(), getParentQuery()));
-        atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
+                Graql.var("rel-" + UUID.randomUUID().toString()) : getValueVariable();
+        setPredicate(new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery()));
+        atomPattern = atomPattern.asVar().isa(typeVariable).admin();
         setValueVariable(typeVariable);
+
+        //reset applicable rules
+        applicableRules = null;
         return this;
     }
 
-    private void inferRelationTypeFromTypes() {
+    /**
+     * @param sub answer
+     * @return entity types inferred from answer entity information
+     */
+    private Set<Type> inferEntityTypes(Answer sub) {
+        if (sub.isEmpty()) return Collections.emptySet();
+
+        Set<Var> subbedVars = Sets.intersection(getRolePlayers(), sub.keySet());
+        Set<Var> untypedVars = Sets.difference(subbedVars, getParentQuery().getVarOntologyConceptMap().keySet());
+        return untypedVars.stream()
+                .map(v -> new Pair<>(v, sub.get(v)))
+                .filter(p -> p.getValue().isEntity())
+                .map(e -> {
+                    Concept c = e.getValue();
+                    return c.asInstance().type();
+                })
+                .collect(toSet());
+    }
+
+    /**
+     * infer relation types that this relation atom can potentially have
+     * NB: entity types and role types are treated separately as they behave differently:
+     * entity types only play the explicitly defined roles (not the relevant part of the hierarchy of the specified role)
+     * @return list of relation types this atom can have ordered by the number of compatible role types
+     */
+    public List<RelationType> inferPossibleRelationTypes(Answer sub) {
         //look at available role types
-        Type type = null;
-        Set<Type> compatibleTypes = ReasonerUtils.getTopTypes(
-                getCompatibleRelationTypes(getExplicitRoleTypes(), roleToRelationTypes)
-        );
-        if (compatibleTypes.size() == 1) type = compatibleTypes.iterator().next();
+        Multimap<RelationType, Role> compatibleTypesFromRoles = getCompatibleRelationTypesWithRoles(getExplicitRoleTypes(), new RoleTypeConverter());
 
-        //look at types
-        if (type == null) {
-            Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
-            Set<Type> types = getRolePlayers().stream()
-                    .filter(varTypeMap::containsKey)
-                    .map(varTypeMap::get)
-                    .collect(toSet());
+        //look at entity types
+        Map<Var, OntologyConcept> varTypeMap = getParentQuery().getVarOntologyConceptMap();
 
-            Set<RelationType> compatibleTypesFromTypes = getCompatibleRelationTypes(types, typeToRelationTypes);
+        //explicit types
+        Set<OntologyConcept> types = getRolePlayers().stream()
+                .filter(varTypeMap::containsKey)
+                .map(varTypeMap::get)
+                .collect(toSet());
 
-            LOG.debug("Inferring relation type of atom: " + this + getTypeConstraints());
-            LOG.debug("Compatible relation types: " + compatibleTypesFromTypes.stream().map(Type::getLabel).collect(Collectors.toSet()));
+        //types deduced from substitution
+        inferEntityTypes(sub).forEach(types::add);
 
-            if (compatibleTypesFromTypes.size() == 1) type = compatibleTypesFromTypes.iterator().next();
-            else {
-                //do intersection with types recovered from role types
-                compatibleTypesFromTypes.retainAll(compatibleTypes);
-                if (compatibleTypesFromTypes.size() == 1) type = compatibleTypesFromTypes.iterator().next();
-            }
+        Multimap<RelationType, Role> compatibleTypesFromTypes = getCompatibleRelationTypesWithRoles(types, new OntologyConceptConverterImpl());
+
+        Multimap<RelationType, Role> compatibleTypes;
+        //intersect relation types from roles and types
+        if (compatibleTypesFromRoles.isEmpty()){
+            compatibleTypes = compatibleTypesFromTypes;
+        } else if (!compatibleTypesFromTypes.isEmpty()){
+            compatibleTypes = multimapIntersection(compatibleTypesFromTypes, compatibleTypesFromRoles);
+        } else {
+            compatibleTypes = compatibleTypesFromRoles;
         }
-        if (type != null) addType(type);
+
+        return compatibleTypes.asMap().entrySet().stream()
+                .sorted(Comparator.comparing(e -> -e.getValue().size()))
+                .map(Map.Entry::getKey)
+                .filter(t -> Sets.intersection(getSupers(t), compatibleTypes.keySet()).isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    private Relation inferRelationType(Answer sub){
+        List<RelationType> relationTypes = inferPossibleRelationTypes(sub);
+        if (relationTypes.size() == 1) addType(relationTypes.iterator().next());
+        return this;
     }
 
     @Override
     public void inferTypes() {
-        if (getPredicate() == null) inferRelationTypeFromTypes();
-        if (getExplicitRoleTypes().size() < getRelationPlayers().size() && getType() != null) computeRoleVarTypeMap();
+        if (getPredicate() == null) inferRelationType(new QueryAnswer());
+        if (getExplicitRoleTypes().size() < getRelationPlayers().size() && getOntologyConcept() != null) computeRoleVarTypeMap();
     }
 
     @Override
@@ -391,7 +430,7 @@ public class Relation extends TypeAtom {
         getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
                 .flatMap(CommonUtil::optionalToStream)
-                .filter(VarPatternAdmin::isUserDefinedName)
+                .filter(v -> v.getVarName().isUserDefinedName())
                 .forEach(r -> vars.add(r.getVarName()));
         return vars;
     }
@@ -435,7 +474,7 @@ public class Relation extends TypeAtom {
         Set<Var> mappedVars = getMappedRolePlayers();
         return getTypeConstraints().stream()
                 .filter(t -> mappedVars.contains(t.getVarName()))
-                .filter(t -> Objects.nonNull(t.getType()))
+                .filter(t -> Objects.nonNull(t.getOntologyConcept()))
                 .collect(toSet());
     }
 
@@ -444,7 +483,7 @@ public class Relation extends TypeAtom {
         Set<Var> unmappedVars = getUnmappedRolePlayers();
         return getTypeConstraints().stream()
                 .filter(t -> unmappedVars.contains(t.getVarName()))
-                .filter(t -> Objects.nonNull(t.getType()))
+                .filter(t -> Objects.nonNull(t.getOntologyConcept()))
                 .collect(toSet());
     }
 
@@ -454,7 +493,7 @@ public class Relation extends TypeAtom {
         List<Var> permuteVars = new ArrayList<>();
         //if atom is match all atom, add type from rule head and find unmapped roles
         Relation relAtom = getValueVariable().getValue().isEmpty() ?
-                ((Relation) AtomicFactory.create(this, getParentQuery())).addType(headAtom.getType()) : this;
+                ((Relation) AtomicFactory.create(this, getParentQuery())).addType(headAtom.getOntologyConcept()) : this;
         relAtom.getUnmappedRolePlayers().forEach(permuteVars::add);
 
         List<List<Var>> varPermutations = getListPermutations(new ArrayList<>(permuteVars));
@@ -466,13 +505,13 @@ public class Relation extends TypeAtom {
      *
      * @return map containing roleType - (rolePlayer var - rolePlayer type) pairs
      */
-    private Multimap<RoleType, Var> computeRoleVarTypeMap() {
+    private Multimap<Role, Var> computeRoleVarTypeMap() {
         this.roleVarMap = ArrayListMultimap.create();
-        if (getParentQuery() == null || getType() == null) return roleVarMap;
+        if (getParentQuery() == null || getOntologyConcept() == null) return roleVarMap;
 
         GraknGraph graph = getParentQuery().graph();
-        RelationType relType = (RelationType) getType();
-        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
+        RelationType relType = (RelationType) getOntologyConcept();
+        Map<Var, OntologyConcept> varOntologyConceptMap = getParentQuery().getVarOntologyConceptMap();
 
         Set<RelationPlayer> allocatedRelationPlayers = new HashSet<>();
 
@@ -484,10 +523,10 @@ public class Relation extends TypeAtom {
             if (role != null) {
                 rolePlayerMappings.add(new Pair<>(varName, role));
                 //try directly
-                TypeLabel typeLabel = role.getTypeLabel().orElse(null);
-                RoleType roleType = typeLabel != null ? graph.getType(typeLabel) : null;
+                Label label = role.getTypeLabel().orElse(null);
+                Role roleType = label != null ? graph.getOntologyConcept(label) : null;
                 //try indirectly
-                if (roleType == null && role.isUserDefinedName()) {
+                if (roleType == null && role.getVarName().isUserDefinedName()) {
                     IdPredicate rolePredicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(role.getVarName());
                     if (rolePredicate != null) roleType = graph.getConcept(rolePredicate.getPredicate());
                 }
@@ -499,43 +538,43 @@ public class Relation extends TypeAtom {
         //remaining roles
         //role types can repeat so no mather what has been allocated still the full spectrum of possibilities is present
         //TODO make restrictions based on cardinality constraints
-        Set<RoleType> possibleRoles = Sets.newHashSet(relType.relates());
+        Set<Role> possibleRoles = Sets.newHashSet(relType.relates());
 
         //possible role types for each casting based on its type
-        Map<RelationPlayer, Set<RoleType>> mappings = new HashMap<>();
+        Map<RelationPlayer, Set<Role>> mappings = new HashMap<>();
         Sets.difference(getRelationPlayers(), allocatedRelationPlayers)
                 .forEach(casting -> {
                     Var varName = casting.getRolePlayer().getVarName();
-                    Type type = varTypeMap.get(varName);
-                    if (type != null && !Schema.MetaSchema.isMetaLabel(type.getLabel())) {
-                        mappings.put(casting, ReasonerUtils.getCompatibleRoleTypes(type, possibleRoles));
+                    OntologyConcept ontologyConcept = varOntologyConceptMap.get(varName);
+                    if (ontologyConcept != null && !Schema.MetaSchema.isMetaLabel(ontologyConcept.getLabel()) && ontologyConcept.isType()) {
+                        mappings.put(casting, ReasonerUtils.getCompatibleRoleTypes(ontologyConcept.asType(), possibleRoles));
                     } else {
-                        mappings.put(casting, ReasonerUtils.getTopTypes(possibleRoles).stream().map(t -> (RoleType) t).collect(toSet()));
+                        mappings.put(casting, ReasonerUtils.getOntologyConcepts(possibleRoles));
                     }
                 });
 
 
         //resolve ambiguities until no unambiguous mapping exist
         while( mappings.values().stream().filter(s -> s.size() == 1).count() != 0) {
-            Map.Entry<RelationPlayer, Set<RoleType>> entry = mappings.entrySet().stream()
+            Map.Entry<RelationPlayer, Set<Role>> entry = mappings.entrySet().stream()
                     .filter(e -> e.getValue().size() == 1)
                     .findFirst().orElse(null);
 
             RelationPlayer casting = entry.getKey();
             Var varName = casting.getRolePlayer().getVarName();
-            RoleType roleType = entry.getValue().iterator().next();
-            VarPatternAdmin roleVar = Graql.var().label(roleType.getLabel()).admin();
+            Role role = entry.getValue().iterator().next();
+            VarPatternAdmin roleVar = Graql.var().label(role.getLabel()).admin();
 
             //TODO remove from all mappings if it follows from cardinality constraints
-            mappings.get(casting).remove(roleType);
+            mappings.get(casting).remove(role);
 
             rolePlayerMappings.add(new Pair<>(varName, roleVar));
-            roleVarMap.put(roleType, varName);
+            roleVarMap.put(role, varName);
             allocatedRelationPlayers.add(casting);
         }
 
         //fill in unallocated roles with metarole
-        RoleType metaRole = graph.admin().getMetaRoleType();
+        Role metaRole = graph.admin().getMetaRoleType();
         VarPatternAdmin metaRoleVar = Graql.var().label(metaRole.getLabel()).admin();
         Sets.difference(getRelationPlayers(), allocatedRelationPlayers)
                 .forEach(casting -> {
@@ -545,29 +584,29 @@ public class Relation extends TypeAtom {
                 });
 
         //pattern mutation!
-        atomPattern = constructRelationVar(isUserDefinedName() ? getVarName() : Var.of(""), getValueVariable(), rolePlayerMappings);
+        atomPattern = constructRelationVar(isUserDefinedName() ? getVarName() : Graql.var(""), getValueVariable(), rolePlayerMappings);
         relationPlayers = null;
         return roleVarMap;
     }
 
-    public Multimap<RoleType, Var> getRoleVarMap() {
+    public Multimap<Role, Var> getRoleVarMap() {
         if (roleVarMap == null) computeRoleVarTypeMap();
         return roleVarMap;
     }
 
-    private Multimap<RoleType, RelationPlayer> getRoleRelationPlayerMap(){
-        Multimap<RoleType, RelationPlayer> roleRelationPlayerMap = HashMultimap.create();
-        Multimap<RoleType, Var> roleVarTypeMap = getRoleVarMap();
+    private Multimap<Role, RelationPlayer> getRoleRelationPlayerMap(){
+        Multimap<Role, RelationPlayer> roleRelationPlayerMap = HashMultimap.create();
+        Multimap<Role, Var> roleVarTypeMap = getRoleVarMap();
         Set<RelationPlayer> relationPlayers = getRelationPlayers();
         roleVarTypeMap.asMap().entrySet()
                 .forEach(e -> {
-                    RoleType role = e.getKey();
-                    TypeLabel roleLabel = role.getLabel();
+                    Role role = e.getKey();
+                    Label roleLabel = role.getLabel();
                     relationPlayers.stream()
                             .filter(rp -> rp.getRoleType().isPresent())
                             .forEach(rp -> {
                                 VarPatternAdmin roleTypeVar = rp.getRoleType().orElse(null);
-                                TypeLabel rl = roleTypeVar != null ? roleTypeVar.getTypeLabel().orElse(null) : null;
+                                Label rl = roleTypeVar != null ? roleTypeVar.getTypeLabel().orElse(null) : null;
                                 if (roleLabel != null && roleLabel.equals(rl)) {
                                     roleRelationPlayerMap.put(role, rp);
                                 }
@@ -582,32 +621,32 @@ public class Relation extends TypeAtom {
         //establish compatible castings for each parent casting
         Multimap<RelationPlayer, RelationPlayer> compatibleMappings = HashMultimap.create();
         parentAtom.getRoleRelationPlayerMap();
-        Multimap<RoleType, RelationPlayer> childRoleRPMap = getRoleRelationPlayerMap();
-        Map<Var, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap();
-        Map<Var, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap();
+        Multimap<Role, RelationPlayer> childRoleRPMap = getRoleRelationPlayerMap();
+        Map<Var, OntologyConcept> parentVarOntologyConceptMap = parentAtom.getParentQuery().getVarOntologyConceptMap();
+        Map<Var, OntologyConcept> childVarOntologyConceptMap = this.getParentQuery().getVarOntologyConceptMap();
 
-        Set<RoleType> relationRoles = new HashSet<>(getType().asRelationType().relates());
-        Set<RoleType> childRoles = new HashSet<>(childRoleRPMap.keySet());
+        Set<Role> relationRoles = new HashSet<>(getOntologyConcept().asRelationType().relates());
+        Set<Role> childRoles = new HashSet<>(childRoleRPMap.keySet());
 
         parentAtom.getRelationPlayers().stream()
                 .filter(prp -> prp.getRoleType().isPresent())
                 .forEach(prp -> {
                     VarPatternAdmin parentRoleTypeVar = prp.getRoleType().orElse(null);
-                    TypeLabel parentRoleTypeLabel = parentRoleTypeVar.getTypeLabel().orElse(null);
+                    Label parentRoleLabel = parentRoleTypeVar.getTypeLabel().orElse(null);
 
                     //TODO take into account indirect roles
-                    RoleType parentRole = parentRoleTypeLabel != null ? graph().getType(parentRoleTypeLabel) : null;
+                    Role parentRole = parentRoleLabel != null ? graph().getOntologyConcept(parentRoleLabel) : null;
 
                     if (parentRole != null) {
                         boolean isMetaRole = Schema.MetaSchema.isMetaLabel(parentRole.getLabel());
                         Var parentRolePlayer = prp.getRolePlayer().getVarName();
-                        Type parentType = parentVarTypeMap.get(parentRolePlayer);
+                        OntologyConcept parent = parentVarOntologyConceptMap.get(parentRolePlayer);
 
-                        Set<RoleType> compatibleChildRoles = isMetaRole? childRoles : Sets.intersection(new HashSet<>(parentRole.subTypes()), childRoles);
+                        Set<Role> compatibleChildRoles = isMetaRole? childRoles : Sets.intersection(new HashSet<>(parentRole.subs()), childRoles);
 
-                        if (parentType != null){
-                            boolean isMetaType = Schema.MetaSchema.isMetaLabel(parentType.getLabel());
-                            Set<RoleType> typeRoles = isMetaType? childRoles : new HashSet<>(parentType.plays());
+                        if (parent != null && parent.isType()){
+                            boolean isMetaType = Schema.MetaSchema.isMetaLabel(parent.getLabel());
+                            Set<Role> typeRoles = isMetaType? childRoles : new HashSet<>(parent.asType().plays());
 
                             //incompatible type
                             if (Sets.intersection(relationRoles, typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
@@ -621,12 +660,12 @@ public class Relation extends TypeAtom {
                         compatibleChildRoles.stream()
                                 .filter(childRoleRPMap::containsKey)
                                 .forEach(r -> {
-                                    Collection<RelationPlayer> childRPs = parentType != null ?
+                                    Collection<RelationPlayer> childRPs = parent != null ?
                                             childRoleRPMap.get(r).stream()
                                                     .filter(rp -> {
                                                         Var childRolePlayer = rp.getRolePlayer().getVarName();
-                                                        Type childType = childVarTypeMap.get(childRolePlayer);
-                                                        return childType == null || !checkTypesDisjoint(parentType, childType);
+                                                        OntologyConcept childType = childVarOntologyConceptMap.get(childRolePlayer);
+                                                        return childType == null || !checkDisjoint(parent, childType);
                                                     }).collect(toSet()) :
                                             childRoleRPMap.get(r);
 
@@ -637,12 +676,22 @@ public class Relation extends TypeAtom {
 
         //self-consistent procedure until no non-empty mappings present
         while( compatibleMappings.asMap().values().stream().filter(s -> !s.isEmpty()).count() > 0) {
-            //prioritise mappings with equivalent types and unambiguous mappings
             Map.Entry<RelationPlayer, RelationPlayer> entry = compatibleMappings.entries().stream()
+                    //prioritise mappings with equivalent types and unambiguous mappings
                     .sorted(Comparator.comparing(e -> {
-                        Type parentType = parentVarTypeMap.get(e.getKey().getRolePlayer().getVarName());
-                        Type childType = childVarTypeMap.get(e.getValue().getRolePlayer().getVarName());
+                        OntologyConcept parentType = parentVarOntologyConceptMap.get(e.getKey().getRolePlayer().getVarName());
+                        OntologyConcept childType = childVarOntologyConceptMap.get(e.getValue().getRolePlayer().getVarName());
                         return !(parentType != null && childType != null && parentType.equals(childType));
+                    }))
+                    //prioritise mappings with sam var substitution (idpredicates)
+                    .sorted(Comparator.comparing(e -> {
+                        IdPredicate parentId = parentAtom.getIdPredicates().stream()
+                                .filter(p -> p.getVarName().equals(e.getKey().getRolePlayer().getVarName()))
+                                .findFirst().orElse(null);
+                        IdPredicate childId = getIdPredicates().stream()
+                                .filter(p -> p.getVarName().equals(e.getValue().getRolePlayer().getVarName()))
+                                .findFirst().orElse(null);
+                        return !(parentId != null && childId != null && parentId.getPredicate().equals(childId.getPredicate()));
                     }))
                     .sorted(Comparator.comparing(e -> compatibleMappings.get(e.getKey()).size()))
                     .findFirst().orElse(null);
@@ -659,13 +708,11 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public Unifier getUnifier(Atomic pAtom) {
-        if (!(pAtom instanceof TypeAtom)) {
-            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
-        }
+    public Unifier getUnifier(Atom pAtom) {
+        if (this.equals(pAtom)) return new UnifierImpl();
 
         Unifier unifier = super.getUnifier(pAtom);
-        if (((Atom) pAtom).isRelation()) {
+        if (pAtom.isRelation()) {
             Relation parentAtom = (Relation) pAtom;
 
             getRelationPlayerMappings(parentAtom)
@@ -676,7 +723,7 @@ public class Relation extends TypeAtom {
 
     @Override
     public Atom rewriteToUserDefined(){
-        VarPattern newVar = Graql.var(Var.anon());
+        VarPattern newVar = Graql.var().asUserDefined();
         VarPattern relVar = getPattern().asVar().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.getType()))
                 .orElse(newVar);

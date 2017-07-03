@@ -19,9 +19,11 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -29,23 +31,23 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getIdPredicate;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
- * Represents the {@code isa} property on a {@link Instance}.
+ * Represents the {@code isa} property on a {@link Thing}.
  *
  * This property can be queried and inserted.
  *
- * THe property is defined as a relationship between an {@link Instance} and a {@link Type}.
+ * THe property is defined as a relationship between an {@link Thing} and a {@link Type}.
  *
  * When matching, any subtyping is respected. For example, if we have {@code $bob isa man}, {@code man sub person},
  * {@code person sub entity} then it follows that {@code $bob isa person} and {@code bob isa entity}.
@@ -90,11 +92,20 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
-    public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
+        Type type = insertQueryExecutor.getConcept(this.type).asType();
+        Thing thing = concept.asInstance();
+        if (!thing.type().equals(type)) {
+            throw GraqlQueryException.insertNewType(thing, type);
+        }
+    }
+
+    @Override
+    public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
         type.getTypeLabel().ifPresent(typeLabel -> {
-            Type theType = graph.getType(typeLabel);
-            if (theType != null && theType.isRoleType()) {
-                throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(typeLabel));
+            OntologyConcept theOntologyConcept = graph.getOntologyConcept(typeLabel);
+            if (theOntologyConcept != null && theOntologyConcept.isRoleType()) {
+                throw GraqlQueryException.queryInstanceOfRoleType(typeLabel);
             }
         });
     }
@@ -120,13 +131,13 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
         //IsaProperty is unique within a var, so skip if this is a relation
         if (var.hasProperty(RelationProperty.class)) return null;
 
-        Var varName = var.getVarName();
+        Var varName = var.getVarName().asUserDefined();
         VarPatternAdmin typeVar = this.getType();
-        Var typeVariable = typeVar.getVarName();
+        Var typeVariable = typeVar.getVarName().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         //isa part
-        VarPatternAdmin resVar = Graql.var(varName).isa(Graql.var(typeVariable)).admin();
+        VarPatternAdmin resVar = varName.isa(typeVariable).admin();
         return new TypeAtom(resVar, predicate, parent);
     }
 }

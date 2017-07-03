@@ -21,9 +21,9 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
-import ai.grakn.graql.Graql;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -39,14 +39,14 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasScope;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getIdPredicate;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
  * Represents the {@code has-scope} property on a {@link Relation}.
  *
  * This property can be queried, inserted or deleted.
  *
- * This property relates a {@link Relation} and an {@link Instance}, where the instance behaves as the "scope".
+ * This property relates a {@link Relation} and an {@link Thing}, where the instance behaves as the "scope".
  *
  * @author Felix Chapman
  */
@@ -83,14 +83,14 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
-        Instance scopeInstance = insertQueryExecutor.getConcept(scope).asInstance();
-        concept.asType().scope(scopeInstance);
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
+        Thing scopeThing = insertQueryExecutor.getConcept(scope).asInstance();
+        concept.asType().scope(scopeThing);
     }
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        ConceptId scopeId = scope.getId().orElseThrow(() -> failDelete(this));
+        ConceptId scopeId = scope.getId().orElseThrow(() -> GraqlQueryException.failDelete(this));
         concept.asType().deleteScope(graph.getConcept(scopeId));
     }
 
@@ -112,13 +112,13 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName();
+        Var varName = var.getVarName().asUserDefined();
         VarPatternAdmin scopeVar = this.getScope();
-        Var scopeVariable = scopeVar.getVarName();
+        Var scopeVariable = scopeVar.getVarName().asUserDefined();
         IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent);
 
         //isa part
-        VarPatternAdmin scVar = Graql.var(varName).hasScope(Graql.var(scopeVariable)).admin();
+        VarPatternAdmin scVar = varName.hasScope(scopeVariable).admin();
         return new TypeAtom(scVar, predicate, parent);
     }
 }

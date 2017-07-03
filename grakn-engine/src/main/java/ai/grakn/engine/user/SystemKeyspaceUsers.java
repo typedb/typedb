@@ -21,22 +21,23 @@ package ai.grakn.engine.user;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.TypeLabel;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import static ai.grakn.engine.util.ExceptionWrapper.rethrow;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+
+import static ai.grakn.engine.util.ExceptionWrapper.rethrow;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.Schema.MetaSchema.RESOURCE;
 
@@ -49,6 +50,12 @@ import static ai.grakn.util.Schema.MetaSchema.RESOURCE;
  */
 public class SystemKeyspaceUsers extends UsersHandler {
     private final Logger LOG = LoggerFactory.getLogger(SystemKeyspaceUsers.class);
+    private final EngineGraknGraphFactory factory;
+
+    SystemKeyspaceUsers(String adminPassword, EngineGraknGraphFactory factory) {
+        super(adminPassword);
+        this.factory = factory;
+    }
 
     /**
      * Add a new user. To make sure a user doesn't already exist, please
@@ -58,11 +65,11 @@ public class SystemKeyspaceUsers extends UsersHandler {
      */
     @Override
     public boolean addUser(Json userJson) {
-        final String username = userJson.at(USER_NAME).asString();        
+        final String username = userJson.at(USER_NAME).asString();
         if (userExists(username)) {
             return false;
-        }            
-        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        }
+        try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             VarPattern user = var().isa(USER_ENTITY);
             for (Map.Entry<String, Json> entry : userJson.asJsonMap().entrySet()) {
                 String property = entry.getKey();
@@ -99,7 +106,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
         if (superUsername().equals(username)) {
             return true;
         }
-        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
+        try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
             VarPattern lookup = var().isa(USER_ENTITY).has(USER_NAME, username);
             AskQuery query = graph.graql().match(lookup).ask();
             return query.execute();
@@ -120,9 +127,10 @@ public class SystemKeyspaceUsers extends UsersHandler {
         if (superUsername().equals(username)) {
             return Json.object(USER_NAME, username);
         }
-        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
+        try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
             VarPattern lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
-            VarPattern resource = var("property");
+            Var resource = var("property");
+
             MatchQuery query = graph.graql().match(lookup.has(RESOURCE.getLabel(), resource));
             List<Answer> L = query.execute();
             if (L.isEmpty()) {
@@ -130,8 +138,8 @@ public class SystemKeyspaceUsers extends UsersHandler {
             }
             Json user = Json.object();
             L.forEach(property -> {
-                TypeLabel label = property.get("property").asInstance().type().getLabel();
-                Object value = property.get("property").asResource().getValue();
+                Label label = property.get(resource).asInstance().type().getLabel();
+                Object value = property.get(resource).asResource().getValue();
                 user.set(label.getValue(), value);
             });
             return user;
@@ -152,10 +160,9 @@ public class SystemKeyspaceUsers extends UsersHandler {
     @Override
     public boolean validateUser(String username, String passwordClient) {
         if (superUsername().equals(username)) {
-            return passwordClient.equals(GraknEngineConfig.getInstance().getProperty(
-                    GraknEngineConfig.ADMIN_PASSWORD_PROPERTY));
+            return passwordClient.equals(adminPassword);
         }
-        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
+        try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
             List<Answer> results = graph.graql().match(
                     var("salt").isa(USER_SALT),
                     var("stored-password").isa(USER_PASSWORD),
@@ -187,7 +194,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
      */
     @Override
     public Json allUsers(int offset, int limit) {
-        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
+        try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
             VarPattern lookup = var("entity").isa(USER_ENTITY);
             MatchQuery query = graph.graql().match(lookup.has(USER_NAME, var("username"))).limit(limit).offset(offset);
             List<Answer> L = query.execute();
@@ -213,7 +220,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
     @Override
     public boolean removeUser(String username) {
         VarPattern lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
-        try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             MatchQuery query = graph.graql().match(lookup);
             List<Answer> results = query.execute();
             boolean exists = !results.isEmpty();
@@ -244,5 +251,5 @@ public class SystemKeyspaceUsers extends UsersHandler {
      */
     public boolean updateUser(Json user) {
         throw new UnsupportedOperationException();
-    }    
+    }
 }

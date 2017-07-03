@@ -28,10 +28,11 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.exception.ConceptNotUniqueException;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.SchemaViolationException;
 import org.junit.ClassRule;
@@ -45,10 +46,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
@@ -60,8 +58,8 @@ public class PostProcessingIT {
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Test
-    public void checkThatDuplicateResourcesAtLargerScaleAreMerged() throws GraknValidationException, ExecutionException, InterruptedException {
-        assumeFalse(usingTinker());
+    public void checkThatDuplicateResourcesAtLargerScaleAreMerged() throws InvalidGraphException, ExecutionException, InterruptedException {
+        assumeFalse(GraknTestSetup.usingTinker());
 
         GraknSession session = engine.factoryWithNewKeyspace();
 
@@ -114,7 +112,7 @@ public class PostProcessingIT {
                     Thread.sleep((long) Math.floor(Math.random() * 1000));
 
                     graph.commit();
-                } catch (InterruptedException | SchemaViolationException | ConceptNotUniqueException | GraknValidationException e ) {
+                } catch (InterruptedException | SchemaViolationException | PropertyNotUniqueException | InvalidGraphException e ) {
                     //IGNORED
                 }
             }));
@@ -149,7 +147,7 @@ public class PostProcessingIT {
             for (Object object : graph.admin().getMetaResourceType().instances()) {
                 Resource resource = (Resource) object;
                 String index = Schema.generateResourceIndex(resource.type().getLabel(), resource.getValue().toString());
-                assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.ConceptProperty.INDEX, index));
+                assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.VertexProperty.INDEX, index));
             }
         }
     }
@@ -157,7 +155,7 @@ public class PostProcessingIT {
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
     private boolean graphIsBroken(GraknSession session){
         try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
-            Collection<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subTypes();
+            Collection<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subs();
             for (ResourceType<?> resourceType : resourceTypes) {
                 if (!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {
                     Set<Integer> foundValues = new HashSet<>();

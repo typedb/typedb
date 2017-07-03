@@ -18,11 +18,13 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import com.google.common.collect.ImmutableList;
-import java.util.Collections;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.Collections;
 
 import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -38,7 +40,7 @@ public class LongMacroTest {
 
     @Test
     public void applyLongMacroToNoArguments_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         longMacro.apply(Collections.emptyList());
@@ -46,7 +48,7 @@ public class LongMacroTest {
 
     @Test
     public void applyLongMacroToMoreThanOneArgument_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         longMacro.apply(ImmutableList.of("1.0", "2.0"));
@@ -59,7 +61,7 @@ public class LongMacroTest {
 
     @Test
     public void applyLongMacroToInvalidValue_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("is not a long"));
 
         longMacro.apply(ImmutableList.of("invalid"));
@@ -77,7 +79,7 @@ public class LongMacroTest {
 
     @Test
     public void applyLongMacroToDoubleValue_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("is not a long"));
 
         longMacro.apply(ImmutableList.of("15.0"));
@@ -85,7 +87,7 @@ public class LongMacroTest {
 
     @Test
     public void applyLongMacroToLongValueWithUnderscores_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("is not a long"));
 
         longMacro.apply(ImmutableList.of("15_000"));

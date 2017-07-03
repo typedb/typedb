@@ -21,9 +21,9 @@ package ai.grakn.graph.internal;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -58,20 +58,24 @@ class TxCache {
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
-    private final Map<TypeLabel, TypeImpl> typeCache = new HashMap<>();
-    private final Map<TypeLabel, TypeId> labelCache = new HashMap<>();
+    private final Map<Label, OntologyConceptImpl> ontologyConceptCache = new HashMap<>();
+    private final Map<Label, LabelId> labelCache = new HashMap<>();
 
-    //We Track Modified Concepts For Validation
-    private final Set<ConceptImpl> modifiedConcepts = new HashSet<>();
+    //Elements Tracked For Validation
+    private final Set<EntityImpl> modifiedEntities = new HashSet<>();
 
-    //We Track Casting Explicitly For Post Processing
-    private final Set<CastingImpl> modifiedCastings = new HashSet<>();
+    private final Set<RoleImpl> modifiedRoles = new HashSet<>();
+    private final Set<Casting> modifiedCastings = new HashSet<>();
 
-    //We Track Resource Explicitly for Post Processing
+    private final Set<RelationTypeImpl> modifiedRelationTypes = new HashSet<>();
+    private final Set<RelationImpl> modifiedRelations = new HashSet<>();
+
+    private final Set<RuleImpl> modifiedRules = new HashSet<>();
+
     private final Set<ResourceImpl> modifiedResources = new HashSet<>();
 
     //We Track Relations so that we can look them up before they are completely defined and indexed on commit
-    private final Map<String, RelationImpl> modifiedRelations = new HashMap<>();
+    private final Map<String, RelationImpl> relationIndexCache = new HashMap<>();
 
     //We Track the number of concept connections which have been made which may result in a new shard
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
@@ -114,12 +118,12 @@ class TxCache {
      *
      */
     void refreshOntologyCache(){
-        Map<TypeLabel, Type> cachedOntologySnapshot = graphCache.getCachedTypes();
-        Map<TypeLabel, TypeId> cachedLabelsSnapshot = graphCache.getCachedLabels();
+        Map<Label, OntologyConcept> cachedOntologySnapshot = graphCache.getCachedTypes();
+        Map<Label, LabelId> cachedLabelsSnapshot = graphCache.getCachedLabels();
 
         //Read central cache into txCache cloning only base concepts. Sets clones later
-        for (Type type : cachedOntologySnapshot.values()) {
-            cacheConcept((TypeImpl) type);
+        for (OntologyConcept type : cachedOntologySnapshot.values()) {
+            cacheConcept((ConceptImpl) type);
         }
 
         //Load Labels Separately. We do this because the TypeCache may have expired.
@@ -128,57 +132,36 @@ class TxCache {
 
     /**
      *
-     * @param concept The concept to be later validated
+     * @param element The element to be later validated
      */
-    void trackConceptForValidation(ConceptImpl concept) {
-        if (!modifiedConcepts.contains(concept)) {
-            modifiedConcepts.add(concept);
-
-            if (concept.isCasting()) {
-                modifiedCastings.add(concept.asCasting());
-            }
-            if (concept.isResource()) {
-                modifiedResources.add((ResourceImpl) concept);
-            }
+    void trackForValidation(ConceptImpl element) {
+        if (element.isEntity()) {
+            modifiedEntities.add((EntityImpl) element);
+        } else if (element.isRoleType()) {
+            modifiedRoles.add((RoleImpl) element);
+        } else if (element.isRelationType()) {
+            modifiedRelationTypes.add((RelationTypeImpl) element);
+        } else if (element.isRelation()){
+            RelationImpl relation = (RelationImpl) element;
+            modifiedRelations.add(relation);
+            //Caching of relations in memory so they can be retrieved without needing a commit
+            relationIndexCache.put(RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
+        } else if (element.isRule()){
+            modifiedRules.add((RuleImpl) element);
+        } else if (element.isResource()){
+            modifiedResources.add((ResourceImpl) element);
         }
-
-        //Caching of relations in memory so they can be retrieved without needing a commit
-        if (concept.isRelation()) {
-            RelationImpl relation = (RelationImpl) concept;
-            modifiedRelations.put(RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
-        }
     }
-
-    /**
-     *
-     * @return All the concepts which have been affected within the transaction in some way
-     */
-    Set<ConceptImpl> getModifiedConcepts() {
-        return modifiedConcepts;
-    }
-
-    /**
-     *
-     * @return All the castings which have been affected within the transaction in some way
-     */
-    Set<CastingImpl> getModifiedCastings() {
-        return modifiedCastings;
-    }
-
-    /**
-     *
-     * @return All the castings which have been affected within the transaction in some way
-     */
-    Set<ResourceImpl> getModifiedResources() {
-        return modifiedResources;
+    void trackForValidation(Casting casting) {
+        modifiedCastings.add(casting);
     }
 
     /**
      *
      * @return All the relations which have been affected in the transaction
      */
-    Map<String, RelationImpl> getModifiedRelations(){
-        return modifiedRelations;
+    Map<String, RelationImpl> getRelationIndexCache(){
+        return relationIndexCache;
     }
 
     /**
@@ -193,15 +176,15 @@ class TxCache {
      *
      * @return All the types currently cached in the transaction. Used for
      */
-    Map<TypeLabel, TypeImpl> getTypeCache(){
-        return typeCache;
+    Map<Label, OntologyConceptImpl> getOntologyConceptCache(){
+        return ontologyConceptCache;
     }
 
     /**
      *
      * @return All the types labels currently cached in the transaction.
      */
-    Map<TypeLabel, TypeId> getLabelCache(){
+    Map<Label, LabelId> getLabelCache(){
         return labelCache;
     }
 
@@ -218,14 +201,18 @@ class TxCache {
      * @param concept The concept to nio longer track
      */
     @SuppressWarnings("SuspiciousMethodCalls")
-    void removeConcept(ConceptImpl concept){
-        modifiedConcepts.remove(concept);
-        modifiedCastings.remove(concept);
+    void remove(ConceptImpl concept){
+        modifiedEntities.remove(concept);
+        modifiedRoles.remove(concept);
+        modifiedRelationTypes.remove(concept);
+        modifiedRelations.remove(concept);
+        modifiedRules.remove(concept);
         modifiedResources.remove(concept);
+
         conceptCache.remove(concept.getId());
-        if(concept.isType()){
-            TypeLabel label = ((TypeImpl) concept).getLabel();
-            typeCache.remove(label);
+        if (concept.isOntologyConcept()) {
+            Label label = ((OntologyConceptImpl) concept).getLabel();
+            ontologyConceptCache.remove(label);
             labelCache.remove(label);
         }
     }
@@ -236,7 +223,7 @@ class TxCache {
      * @param index The current index of the relation
      */
     RelationImpl getCachedRelation(String index){
-        return modifiedRelations.get(index);
+        return relationIndexCache.get(index);
     }
 
     /**
@@ -246,10 +233,10 @@ class TxCache {
      */
     void cacheConcept(ConceptImpl concept){
         conceptCache.put(concept.getId(), concept);
-        if(concept.isType()){
-            TypeImpl type = (TypeImpl) concept;
-            typeCache.put(type.getLabel(), type);
-            if(!type.isShard()) labelCache.put(type.getLabel(), type.getTypeId());
+        if(concept.isOntologyConcept()){
+            OntologyConceptImpl ontologyElement = (OntologyConceptImpl) concept;
+            ontologyConceptCache.put(ontologyElement.getLabel(), ontologyElement);
+            labelCache.put(ontologyElement.getLabel(), ontologyElement.getTypeId());
         }
     }
 
@@ -260,7 +247,7 @@ class TxCache {
      * @param label The type label to cache
      * @param id Its equivalent id which can be looked up quickly in the graph
      */
-    private void cacheLabel(TypeLabel label, TypeId id){
+    private void cacheLabel(Label label, LabelId id){
         labelCache.put(label, id);
     }
 
@@ -279,8 +266,8 @@ class TxCache {
      * @param label The label of the type to cache
      * @return true if the concept is cached
      */
-    boolean isTypeCached(TypeLabel label){
-        return typeCache.containsKey(label);
+    boolean isTypeCached(Label label){
+        return ontologyConceptCache.containsKey(label);
     }
 
     /**
@@ -288,7 +275,7 @@ class TxCache {
      * @param label the type label which may be in the cache
      * @return true if the label is cached and has a valid mapping to a id
      */
-    boolean isLabelCached(TypeLabel label){
+    boolean isLabelCached(Label label){
         return labelCache.containsKey(label);
     }
 
@@ -311,12 +298,12 @@ class TxCache {
      * @param <X> The type of the type
      * @return The cached type
      */
-    <X extends Type> X getCachedType(TypeLabel label){
+    <X extends OntologyConcept> X getCachedOntologyElement(Label label){
         //noinspection unchecked
-        return (X) typeCache.get(label);
+        return (X) ontologyConceptCache.get(label);
     }
 
-    TypeId convertLabelToId(TypeLabel label){
+    LabelId convertLabelToId(Label label){
         return labelCache.get(label);
     }
 
@@ -335,8 +322,6 @@ class TxCache {
     Json getFormattedLog(){
         //Concepts In Need of Inspection
         Json conceptsForInspection = Json.object();
-        conceptsForInspection.set(Schema.BaseType.CASTING.name(), loadConceptsForFixing(getModifiedCastings()));
-
         conceptsForInspection.set(Schema.BaseType.RESOURCE.name(), loadConceptsForFixing(getModifiedResources()));
 
         //Types with instance changes
@@ -356,24 +341,56 @@ class TxCache {
 
         return formattedLog;
     }
-    private  <X extends InstanceImpl> Json loadConceptsForFixing(Set<X> instances){
+    private  <X extends ThingImpl> Json loadConceptsForFixing(Set<X> instances){
         Map<String, Set<String>> conceptByIndex = new HashMap<>();
         instances.forEach(concept ->
                 conceptByIndex.computeIfAbsent(concept.getIndex(), (e) -> new HashSet<>()).add(concept.getId().getValue()));
         return Json.make(conceptByIndex);
     }
 
+    //--------------------------------------- Concepts Needed For Validation -------------------------------------------
+    Set<EntityImpl> getModifiedEntities() {
+        return modifiedEntities;
+    }
+
+    Set<RoleImpl> getModifiedRoles() {
+        return modifiedRoles;
+    }
+
+    Set<RelationTypeImpl> getModifiedRelationTypes() {
+        return modifiedRelationTypes;
+    }
+    Set<RelationImpl> getModifiedRelations() {
+        return modifiedRelations;
+    }
+
+    Set<RuleImpl> getModifiedRules() {
+        return modifiedRules;
+    }
+
+    Set<ResourceImpl> getModifiedResources() {
+        return modifiedResources;
+    }
+
+    Set<Casting> getModifiedCastings() {
+        return modifiedCastings;
+    }
+
     //--------------------------------------- Transaction Specific Meta Data -------------------------------------------
     void closeTx(String closedReason){
         isTxOpen = false;
         this.closedReason = closedReason;
-        modifiedConcepts.clear();
-        modifiedCastings.clear();
-        modifiedResources.clear();
+        modifiedEntities.clear();
+        modifiedRoles.clear();
+        modifiedRelationTypes.clear();
         modifiedRelations.clear();
+        modifiedRules.clear();
+        modifiedResources.clear();
+        modifiedCastings.clear();
+        relationIndexCache.clear();
         shardingCount.clear();
         conceptCache.clear();
-        typeCache.clear();
+        ontologyConceptCache.clear();
         labelCache.clear();
     }
     void openTx(GraknTxType txType){

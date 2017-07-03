@@ -24,10 +24,10 @@ import ai.grakn.GraknTxType;
 import ai.grakn.client.BatchMutatorClient;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.concept.Role;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.QueryBuilderImplMock;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.internal.query.ComputeQueryBuilderImplMock;
@@ -131,7 +131,7 @@ public class ScalingTestIT {
 
     @Ignore
     @Test
-    public void countIT() throws InterruptedException, ExecutionException, GraknValidationException, IOException {
+    public void countIT() throws InterruptedException, ExecutionException, InvalidGraphException, IOException {
         CSVPrinter printer = createCSVPrinter("countIT.txt");
 
         // Insert super nodes into graph
@@ -235,7 +235,7 @@ public class ScalingTestIT {
      */
     @Ignore
     @Test
-    public void testStatisticsWithConstantDegree() throws IOException, GraknValidationException {
+    public void testStatisticsWithConstantDegree() throws IOException, InvalidGraphException {
         int totalSteps = NUM_DIVS;
         int nodesPerStep = MAX_SIZE/NUM_DIVS/2;
         int v_m = totalSteps*nodesPerStep;
@@ -246,17 +246,17 @@ public class ScalingTestIT {
         Map<String,Function<ComputeQueryBuilderImplMock,Optional>> statisticsMethods = new HashMap<>();
         Map<String,Consumer<Number>> statisticsAssertions = new HashMap<>();
         methods.add("testStatisticsWithConstantDegreeSum.txt");
-        statisticsMethods.put(methods.get(0), queryBuilder -> getSumQuery(queryBuilder).of(Collections.singleton(TypeLabel.of("degree"))).execute());
+        statisticsMethods.put(methods.get(0), queryBuilder -> getSumQuery(queryBuilder).of(Collections.singleton(Label.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeMin.txt");
-        statisticsMethods.put(methods.get(1), queryBuilder -> getMinQuery(queryBuilder).of(Collections.singleton(TypeLabel.of("degree"))).execute());
+        statisticsMethods.put(methods.get(1), queryBuilder -> getMinQuery(queryBuilder).of(Collections.singleton(Label.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeMax.txt");
-        statisticsMethods.put(methods.get(2), queryBuilder -> getMaxQuery(queryBuilder).of(Collections.singleton(TypeLabel.of("degree"))).execute());
+        statisticsMethods.put(methods.get(2), queryBuilder -> getMaxQuery(queryBuilder).of(Collections.singleton(Label.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeMean.txt");
-        statisticsMethods.put(methods.get(3), queryBuilder -> getMeanQuery(queryBuilder).of(Collections.singleton(TypeLabel.of("degree"))).execute());
+        statisticsMethods.put(methods.get(3), queryBuilder -> getMeanQuery(queryBuilder).of(Collections.singleton(Label.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeStd.txt");
-        statisticsMethods.put(methods.get(4), queryBuilder -> getStdQuery(queryBuilder).of(Collections.singleton(TypeLabel.of("degree"))).execute());
+        statisticsMethods.put(methods.get(4), queryBuilder -> getStdQuery(queryBuilder).of(Collections.singleton(Label.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeMedian.txt");
-        statisticsMethods.put(methods.get(5), queryBuilder -> getMedianQuery(queryBuilder).of(Collections.singleton(TypeLabel.of("degree"))).execute());
+        statisticsMethods.put(methods.get(5), queryBuilder -> getMedianQuery(queryBuilder).of(Collections.singleton(Label.of("degree"))).execute());
 
         // load up the result files
         Map<String,CSVPrinter> printers = new HashMap<>();
@@ -374,11 +374,11 @@ public class ScalingTestIT {
 
     }
 
-    private void simpleOntology(String keyspace) throws GraknValidationException {
+    private void simpleOntology(String keyspace) throws InvalidGraphException {
         GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
         EntityType thing = graph.putEntityType("thing");
-        RoleType relation1 = graph.putRoleType("relation1");
-        RoleType relation2 = graph.putRoleType("relation2");
+        Role relation1 = graph.putRole("relation1");
+        Role relation2 = graph.putRole("relation2");
         thing.plays(relation1).plays(relation2);
         graph.putRelationType("related").relates(relation1).relates(relation2);
         ResourceType<String> id = graph.putResourceType("node-id", ResourceType.DataType.STRING);
@@ -388,7 +388,7 @@ public class ScalingTestIT {
         graph.commit();
     }
 
-    private Set<String> makeSuperNodes(String keyspace) throws GraknValidationException {
+    private Set<String> makeSuperNodes(String keyspace) throws InvalidGraphException {
         GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
         EntityType thing = graph.getEntityType("thing");
         Set<String> superNodes = new HashSet<>();

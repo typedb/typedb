@@ -18,13 +18,12 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.regex.Pattern;
@@ -38,7 +37,7 @@ import static ai.grakn.util.Schema.generateResourceIndex;
  * </p>
  *
  * <p>
- *     Acts as an {@link Instance} when relating to other instances except it has the added functionality of:
+ *     Acts as an {@link Thing} when relating to other instances except it has the added functionality of:
  *     1. It is unique to its {@link ResourceType} based on it's value.
  *     2. It has a {@link ai.grakn.concept.ResourceType.DataType} associated with it which constrains the allowed values.
  * </p>
@@ -48,13 +47,13 @@ import static ai.grakn.util.Schema.generateResourceIndex;
  * @param <D> The data type of this resource type.
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
-class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
-    ResourceImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+class ResourceImpl<D> extends ThingImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
+    ResourceImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    ResourceImpl(AbstractGraknGraph graknGraph, Vertex v, ResourceType<D> type, D value) {
-        super(graknGraph, v, type);
+    ResourceImpl(VertexElement vertexElement, ResourceType<D> type, D value) {
+        super(vertexElement, type);
         setValue(value);
     }
 
@@ -71,15 +70,15 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
      * @return The list of all Instances which posses this resource
      */
     @Override
-    public Collection<Instance> ownerInstances() {
+    public Collection<Thing> ownerInstances() {
         return getShortcutNeighbours().stream().
                 filter(concept -> !concept.isResource()).
                 collect(Collectors.toSet());
     }
 
     @Override
-    public Instance owner() {
-        Collection<Instance> owners = ownerInstances();
+    public Thing owner() {
+        Collection<Thing> owners = ownerInstances();
         if(owners.isEmpty()) {
             return null;
         } else {
@@ -97,28 +96,29 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
             checkConformsToRegexes(value);
 
             ResourceTypeImpl<D> resourceType = (ResourceTypeImpl<D>) type();
-            Schema.ConceptProperty property = dataType().getConceptProperty();
+            Schema.VertexProperty property = dataType().getVertexProperty();
             //noinspection unchecked
-            setImmutableProperty(property, castValue(value), getProperty(property), (v) -> resourceType.getDataType().getPersistenceValue((D) v));
+            vertex().propertyImmutable(property, castValue(value), vertex().property(property), (v) -> resourceType.getDataType().getPersistenceValue((D) v));
+            vertex().propertyUnique(Schema.VertexProperty.INDEX, generateResourceIndex(type().getLabel(), value.toString()));
 
-            return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type().getLabel(), value.toString()));
+            return getThis();
         } catch (ClassCastException e) {
-            throw new InvalidConceptValueException(ErrorMessage.INVALID_DATATYPE.getMessage(value, dataType().getName()));
+            throw GraphOperationException.invalidResourceValue(value, dataType());
         }
     }
 
     /**
      * Checks if all the regex's of the types of this resource conforms to the value provided.
      *
-     * @throws InvalidConceptValueException when the value does not conform to the regex of its types
+     * @throws GraphOperationException when the value does not conform to the regex of its types
      * @param value The value to check the regexes against.
      */
     private void checkConformsToRegexes(D value){
         //Not checking the datatype because the regex will always be null for non strings.
-        for (ResourceType rt : ((ResourceTypeImpl<D>) type()).superTypeSet()) {
+        for (ResourceType rt : ((ResourceTypeImpl<D>) type()).superSet()) {
             String regex = rt.getRegex();
             if (regex != null && !Pattern.matches(regex, (String) value)) {
-                throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, getId(), value, rt.getLabel()));
+                throw GraphOperationException.regexFailure(this, (String) value, regex);
             }
         }
     }
@@ -152,7 +152,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
      */
     @Override
     public D getValue(){
-        return dataType().getValue(getProperty(dataType().getConceptProperty()));
+        return dataType().getValue(vertex().property(dataType().getVertexProperty()));
     }
 
     @Override

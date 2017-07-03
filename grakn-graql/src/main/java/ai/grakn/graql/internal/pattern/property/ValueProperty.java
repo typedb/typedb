@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -26,8 +27,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -73,7 +73,7 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty 
     @Override
     public void checkInsertable(VarPatternAdmin var) {
         if (!predicate.equalsValue().isPresent()) {
-            throw new IllegalStateException(ErrorMessage.INSERT_PREDICATE.getMessage());
+            throw GraqlQueryException.insertPredicate();
         }
     }
 

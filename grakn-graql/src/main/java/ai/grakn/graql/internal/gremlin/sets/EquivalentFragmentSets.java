@@ -23,20 +23,23 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.collect.ImmutableList;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.gremlin.sets.LabelFragmentSet.applyRedundantLabelEliminationOptimisation;
 import static ai.grakn.graql.internal.gremlin.sets.ResourceIndexFragmentSet.applyResourceIndexOptimisation;
-import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutOptimisation;
+import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutRelationTypeOptimisation;
+import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutRoleTypeOptimisation;
 
 /**
  * Factory class for producing instances of {@link EquivalentFragmentSet}.
@@ -57,31 +60,10 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is a relation with a casting.
-     */
-    public static EquivalentFragmentSet casting(VarProperty varProperty, Var relation, Var casting) {
-        return new CastingFragmentSet(varProperty, relation, casting);
-    }
-
-    /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is a casting connected to a role-player.
-     */
-    public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Var casting, Var rolePlayer) {
-        return new RolePlayerFragmentSet(varProperty, casting, rolePlayer);
-    }
-
-    /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is an instance of a role-type.
-     */
-    public static EquivalentFragmentSet isaCastings(VarProperty varProperty, Var casting, Var roleType) {
-        return new IsaCastingsFragmentSet(varProperty, casting, roleType);
-    }
-
-    /**
      * An {@link EquivalentFragmentSet} that indicates a shortcut edge between two role-players.
      */
-    public static EquivalentFragmentSet shortcut(VarProperty varProperty, Var relation, Var edge, Var rolePlayer) {
-        return new ShortcutFragmentSet(varProperty, relation, edge, rolePlayer, Optional.empty(), Optional.empty());
+    public static EquivalentFragmentSet shortcut(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, Optional<Var> roleType) {
+        return new ShortcutFragmentSet(varProperty, relation, edge, rolePlayer, roleType, Optional.empty(), Optional.empty());
     }
 
     /**
@@ -150,7 +132,7 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable representing a type with a particular label.
      */
-    public static EquivalentFragmentSet label(VarProperty varProperty, Var type, TypeLabel label) {
+    public static EquivalentFragmentSet label(VarProperty varProperty, Var type, Label label) {
         return new LabelFragmentSet(varProperty, type, label);
     }
 
@@ -182,7 +164,9 @@ public class EquivalentFragmentSets {
         // TODO: Create a real interface for these when there are more of them
         ImmutableList<Supplier<Boolean>> optimisations = ImmutableList.of(
                 () -> applyResourceIndexOptimisation(fragmentSets, graph),
-                () -> applyShortcutOptimisation(fragmentSets, graph)
+                () -> applyShortcutRoleTypeOptimisation(fragmentSets, graph),
+                () -> applyShortcutRelationTypeOptimisation(fragmentSets, graph),
+                () -> applyRedundantLabelEliminationOptimisation(fragmentSets, graph)
         );
 
         // Repeatedly apply optimisations until they don't alter the query
@@ -201,8 +185,23 @@ public class EquivalentFragmentSets {
         return fragmentSets.stream().filter(clazz::isInstance).map(clazz::cast);
     }
 
-    static boolean hasDirectSubTypes(GraknGraph graph, TypeLabel label) {
-        Type type = graph.getType(label);
-        return type != null && type.subTypes().size() != 1;
+    static boolean hasDirectSubTypes(GraknGraph graph, Label label) {
+        Type type = graph.getOntologyConcept(label);
+        return type != null && type.subs().size() != 1;
+    }
+
+    static @Nullable LabelFragmentSet typeLabelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {
+        return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
+                .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
+                .findAny()
+                .orElse(null);
+    }
+
+    @Nullable
+    static IsaFragmentSet typeInformationOf(Var instance, Collection<EquivalentFragmentSet> fragmentSets) {
+        return fragmentSetOfType(IsaFragmentSet.class, fragmentSets)
+                .filter(isaFragmentSet -> isaFragmentSet.instance().equals(instance))
+                .findAny()
+                .orElse(null);
     }
 }

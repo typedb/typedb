@@ -23,7 +23,7 @@ import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknComputerImpl;
 import ai.grakn.util.ErrorMessage;
@@ -36,7 +36,8 @@ import java.util.Properties;
 
 import static ai.grakn.util.EngineCommunicator.contactEngine;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
-import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.WebPath.System.INITIALISE;
 import static mjson.Json.read;
 
 /**
@@ -70,21 +71,22 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     @Override
-    public GraknGraph open(GraknTxType transactionType){
+    public GraknGraph open(GraknTxType transactionType) {
+        final InternalFactory<?> factory = getConfiguredFactory();
         switch (transactionType){
             case READ:
             case WRITE:
-                graph = getConfiguredFactory().open(transactionType);
+                graph = factory.open(transactionType);
                 return graph;
             case BATCH:
-                graphBatch = getConfiguredFactory().open(transactionType);
+                graphBatch = factory.open(transactionType);
                 return graphBatch;
             default:
-                throw new GraphRuntimeException("Unknown type of transaction [" + transactionType.name() + "]");
+                throw GraphOperationException.transactionInvalid(transactionType);
         }
     }
 
-    private InternalFactory getConfiguredFactory(){
+    private InternalFactory<?> getConfiguredFactory(){
         return configureGraphFactory(keyspace, location, REST.GraphConfig.DEFAULT);
     }
 
@@ -93,25 +95,21 @@ public class GraknSessionImpl implements GraknSession {
      */
     @Override
     public GraknComputer getGraphComputer() {
-        InternalFactory configuredFactory = configureGraphFactory(keyspace, location, REST.GraphConfig.COMPUTER);
+        InternalFactory<?> configuredFactory = configureGraphFactory(keyspace, location, REST.GraphConfig.COMPUTER);
         Graph graph = configuredFactory.getTinkerPopGraph(false);
         return new GraknComputerImpl(graph);
     }
 
     @Override
-    public void close() throws GraphRuntimeException {
+    public void close() throws GraphOperationException {
         int openTransactions = openTransactions(graph) + openTransactions(graphBatch);
         if(openTransactions > 0){
             LOG.warn(ErrorMessage.TRANSACTIONS_OPEN.getMessage(this.keyspace, openTransactions));
         }
 
         //Close the main graph connections
-        try {
-            if(graph != null) graph.admin().closeSession();
-            if(graphBatch != null) graphBatch.admin().closeSession();
-        } catch (Exception e) {
-            throw new GraphRuntimeException("Could not close graph.", e);
-        }
+        if(graph != null) graph.admin().closeSession();
+        if(graphBatch != null) graphBatch.admin().closeSession();
     }
 
     private int openTransactions(AbstractGraknGraph<?> graph){
@@ -125,7 +123,7 @@ public class GraknSessionImpl implements GraknSession {
      * @param graphType The type of graph to produce, default, batch, or compute
      * @return A new or existing grakn graph factory with the defined name connecting to the specified remote location
      */
-    static InternalFactory configureGraphFactory(String keyspace, String location, String graphType){
+    static InternalFactory<?> configureGraphFactory(String keyspace, String location, String graphType){
         if(Grakn.IN_MEMORY.equals(location)){
             return configureGraphFactoryInMemory(keyspace);
         } else {
@@ -140,8 +138,8 @@ public class GraknSessionImpl implements GraknSession {
      * @param graphType The type of graph to produce, default, batch, or compute
      * @return A new or existing grakn graph factory with the defined name connecting to the specified remote location
      */
-    private static InternalFactory configureGraphFactoryRemote(String keyspace, String engineUrl, String graphType){
-        String restFactoryUri = engineUrl + CONFIGURATION + "?" + GRAPH_CONFIG_PARAM + "=" + graphType;
+    private static InternalFactory<?> configureGraphFactoryRemote(String keyspace, String engineUrl, String graphType){
+        String restFactoryUri = engineUrl + INITIALISE + "?" + GRAPH_CONFIG_PARAM + "=" + graphType + "&" + KEYSPACE_PARAM + "=" + keyspace;
 
         Properties properties = new Properties();
         properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());
@@ -154,11 +152,12 @@ public class GraknSessionImpl implements GraknSession {
      * @param keyspace The keyspace of the graph
      * @return  A new or existing grakn graph factory with the defined name holding the graph in memory
      */
-    private static InternalFactory configureGraphFactoryInMemory(String keyspace){
+    private static InternalFactory<?> configureGraphFactoryInMemory(String keyspace){
         Properties inMemoryProperties = new Properties();
         inMemoryProperties.put(AbstractGraknGraph.SHARDING_THRESHOLD, 100_000);
         inMemoryProperties.put(AbstractGraknGraph.NORMAL_CACHE_TIMEOUT_MS, 30_000);
+        inMemoryProperties.put(FactoryBuilder.FACTORY_TYPE, TinkerInternalFactory.class.getName());
 
-        return FactoryBuilder.getGraknGraphFactory(TinkerInternalFactory.class.getName(), keyspace, Grakn.IN_MEMORY, inMemoryProperties);
+        return FactoryBuilder.getFactory(TinkerInternalFactory.class.getName(), keyspace, Grakn.IN_MEMORY, inMemoryProperties);
     }
 }

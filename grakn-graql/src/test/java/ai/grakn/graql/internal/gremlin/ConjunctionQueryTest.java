@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
@@ -39,7 +39,6 @@ import org.junit.Test;
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.gt;
-import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.gremlin.GraqlMatchers.feature;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
@@ -51,14 +50,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ConjunctionQueryTest {
-    private TypeLabel resourceTypeWithoutSubTypesLabel = TypeLabel.of("name");
-    private TypeLabel resourceTypeWithSubTypesLabel = TypeLabel.of("resource");
+    private Label resourceTypeWithoutSubTypesLabel = Label.of("name");
+    private Label resourceTypeWithSubTypesLabel = Label.of("resource");
     private VarPattern resourceTypeWithoutSubTypes = Graql.label(resourceTypeWithoutSubTypesLabel);
     private VarPattern resourceTypeWithSubTypes = Graql.label(resourceTypeWithSubTypesLabel);
     private String literalValue = "Bob";
     private GraknGraph graph;
-    private Var x = Var.of("x");
-    private Var y = Var.of("y");
+    private Var x = Graql.var("x");
+    private Var y = Graql.var("y");
 
     @SuppressWarnings("ResultOfMethodCallIgnored") // Mockito confuses IntelliJ
     @Before
@@ -66,26 +65,26 @@ public class ConjunctionQueryTest {
         graph = mock(GraknGraph.class);
 
         Type resourceTypeWithoutSubTypesMock = mock(Type.class);
-        doReturn(ImmutableList.of(resourceTypeWithoutSubTypesMock)).when(resourceTypeWithoutSubTypesMock).subTypes();
+        doReturn(ImmutableList.of(resourceTypeWithoutSubTypesMock)).when(resourceTypeWithoutSubTypesMock).subs();
 
         Type resourceTypeWithSubTypesMock = mock(Type.class);
         doReturn(ImmutableList.of(resourceTypeWithoutSubTypesMock, resourceTypeWithSubTypesMock))
-                .when(resourceTypeWithSubTypesMock).subTypes();
+                .when(resourceTypeWithSubTypesMock).subs();
 
-        when(graph.getType(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
-        when(graph.getType(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);
+        when(graph.getOntologyConcept(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
+        when(graph.getOntologyConcept(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);
     }
 
     @Test
     public void whenVarRefersToATypeWithoutSubTypesAndALiteralValue_UseResourceIndex() {
-        assertThat(var(x).isa(resourceTypeWithoutSubTypes).val(literalValue), usesResourceIndex());
+        assertThat(x.isa(resourceTypeWithoutSubTypes).val(literalValue), usesResourceIndex());
     }
 
     @Test
     public void whenVarHasTwoResources_UseResourceIndexForBoth() {
         Pattern pattern = and(
-                var(x).isa(resourceTypeWithoutSubTypes).val("Foo"),
-                var(y).isa(resourceTypeWithoutSubTypes).val("Bar")
+                x.isa(resourceTypeWithoutSubTypes).val("Foo"),
+                y.isa(resourceTypeWithoutSubTypes).val("Bar")
         );
 
         assertThat(pattern, allOf(usesResourceIndex(x, "Foo"), usesResourceIndex(y, "Bar")));
@@ -93,13 +92,13 @@ public class ConjunctionQueryTest {
 
     @Test
     public void whenVarRefersToATypeWithAnExplicitVarName_UseResourceIndex() {
-        assertThat(var(x).isa(var(y).label(resourceTypeWithoutSubTypesLabel)).val(literalValue), usesResourceIndex());
+        assertThat(x.isa(y.label(resourceTypeWithoutSubTypesLabel)).val(literalValue), usesResourceIndex());
     }
 
     @Test
     public void whenQueryUsesHasSyntax_UseResourceIndex() {
         assertThat(
-                var(x).has(resourceTypeWithoutSubTypesLabel, var(y).val(literalValue)),
+                x.has(resourceTypeWithoutSubTypesLabel, y.val(literalValue)),
                 usesResourceIndex(y, literalValue)
         );
     }
@@ -107,7 +106,7 @@ public class ConjunctionQueryTest {
     @Test
     public void whenVarCanUseResourceIndexAndHasOtherProperties_UseResourceIndex() {
         assertThat(
-                var(x).isa(resourceTypeWithoutSubTypes).val(literalValue).id(ConceptId.of("123")),
+                x.isa(resourceTypeWithoutSubTypes).val(literalValue).id(ConceptId.of("123")),
                 usesResourceIndex()
         );
     }
@@ -115,39 +114,39 @@ public class ConjunctionQueryTest {
     @Test
     public void whenVarCanUseResourceIndexAndThereIsAnotherVarThatCannot_UseResourceIndex() {
         assertThat(
-                and(var(x).isa(resourceTypeWithoutSubTypes).val(literalValue), var(y).val(literalValue)),
+                and(x.isa(resourceTypeWithoutSubTypes).val(literalValue), y.val(literalValue)),
                 usesResourceIndex()
         );
 
         assertThat(
-                and(var(y).isa(resourceTypeWithoutSubTypes).val(literalValue), var(x).val(literalValue)),
+                and(y.isa(resourceTypeWithoutSubTypes).val(literalValue), x.val(literalValue)),
                 usesResourceIndex(y, literalValue)
         );
     }
 
     @Test
     public void whenVarRefersToATypeWithSubtypes_DoNotUseResourceIndex() {
-        assertThat(var(x).isa(resourceTypeWithSubTypes).val(literalValue), not(usesResourceIndex()));
+        assertThat(x.isa(resourceTypeWithSubTypes).val(literalValue), not(usesResourceIndex()));
     }
 
     @Test
     public void whenVarHasAValueComparator_DoNotUseResourceIndex() {
-        assertThat(var(x).isa(resourceTypeWithoutSubTypes).val(gt(literalValue)), not(usesResourceIndex()));
+        assertThat(x.isa(resourceTypeWithoutSubTypes).val(gt(literalValue)), not(usesResourceIndex()));
     }
 
     @Test
     public void whenVarDoesNotHaveAType_DoNotUseResourceIndex() {
-        assertThat(var(x).val(literalValue), not(usesResourceIndex()));
+        assertThat(x.val(literalValue), not(usesResourceIndex()));
     }
 
     @Test
     public void whenVarDoesNotHaveAValue_DoNotUseResourceIndex() {
-        assertThat(var(x).val(resourceTypeWithoutSubTypes), not(usesResourceIndex()));
+        assertThat(x.val(resourceTypeWithoutSubTypes), not(usesResourceIndex()));
     }
 
     @Test
     public void whenVarHasAValuePredicateThatRefersToAVar_DoNotUseResourceIndex() {
-        assertThat(var(x).isa(resourceTypeWithoutSubTypes).val(eq(var(y))), not(usesResourceIndex(x, y)));
+        assertThat(x.isa(resourceTypeWithoutSubTypes).val(eq(y)), not(usesResourceIndex(x, y)));
     }
 
     private Matcher<Pattern> usesResourceIndex() {

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.template;
 
-import ai.grakn.exception.GraqlParsingException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.internal.antlr.GraqlTemplateLexer;
 import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
 import ai.grakn.graql.internal.parser.GraqlErrorListener;
@@ -30,11 +30,11 @@ import ai.grakn.graql.internal.template.macro.EqualsMacro;
 import ai.grakn.graql.internal.template.macro.IntMacro;
 import ai.grakn.graql.internal.template.macro.LongMacro;
 import ai.grakn.graql.internal.template.macro.LowerMacro;
+import ai.grakn.graql.internal.template.macro.NoescpMacro;
 import ai.grakn.graql.internal.template.macro.SplitMacro;
+import ai.grakn.graql.internal.template.macro.StringMacro;
 import ai.grakn.graql.internal.template.macro.UpperMacro;
 import ai.grakn.graql.macro.Macro;
-import ai.grakn.graql.internal.template.macro.NoescpMacro;
-import ai.grakn.graql.internal.template.macro.StringMacro;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -68,11 +68,10 @@ public class TemplateParser {
 
     /**
      * Register a macro that can be used in any template parsed by this class.
-     * @param name identifier of the macro that will be used in templates
      * @param macro macro that can be called in templates
      */
-    public void registerMacro(String name, Macro macro){
-        macros.put(name, macro);
+    public void registerMacro(Macro macro){
+        macros.put(macro.name(), macro);
     }
 
     /**
@@ -111,7 +110,7 @@ public class TemplateParser {
         ParseTree tree = parser.template();
 
         if(errorListener.hasErrors()){
-            throw new GraqlParsingException(errorListener.toString());
+            throw GraqlSyntaxException.parsingError(errorListener.toString());
         }
 
         return tree;
@@ -121,17 +120,17 @@ public class TemplateParser {
      * Register the default macros that can be used by the visitor
      */
     private void registerDefaultMacros(){
-        registerMacro("noescp", new NoescpMacro());
-        registerMacro("int", new IntMacro());
-        registerMacro("double", new DoubleMacro());
-        registerMacro("equals", new EqualsMacro());
-        registerMacro("string", new StringMacro());
-        registerMacro("long", new LongMacro());
-        registerMacro("date", new DateMacro());
-        registerMacro("lower", new LowerMacro());
-        registerMacro("upper", new UpperMacro());
-        registerMacro("boolean", new BooleanMacro());
-        registerMacro("split", new SplitMacro());
-        registerMacro("concat", new ConcatMacro());
+        registerMacro(new NoescpMacro());
+        registerMacro(new IntMacro());
+        registerMacro(new DoubleMacro());
+        registerMacro(new EqualsMacro());
+        registerMacro(new StringMacro());
+        registerMacro(new LongMacro());
+        registerMacro(new DateMacro());
+        registerMacro(new LowerMacro());
+        registerMacro(new UpperMacro());
+        registerMacro(new BooleanMacro());
+        registerMacro(new SplitMacro());
+        registerMacro(new ConcatMacro());
     }
 }

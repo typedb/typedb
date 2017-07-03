@@ -27,9 +27,11 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Label;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.MaxQuery;
@@ -39,6 +41,7 @@ import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import org.junit.Before;
@@ -55,8 +58,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestEnv.usingOrientDB;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -66,7 +67,7 @@ public class GraqlTest {
 
     public GraknSession factory;
 
-    private static final String thing = "thing";
+    private static final String thingy = "thingy";
     private static final String anotherThing = "anotherThing";
     private static final String related = "related";
 
@@ -78,32 +79,30 @@ public class GraqlTest {
     private String relationId24;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startInMemoryServer();
+    // TODO: Don't set port once bug #15130 is fixed
+    public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
 
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
-        assumeFalse(usingOrientDB());
+        assumeFalse(GraknTestSetup.usingOrientDB());
 
         factory = context.factoryWithNewKeyspace();
     }
 
     @Test
-    public void testGraqlCount() throws GraknValidationException, InterruptedException, ExecutionException {
+    public void testGraqlCount() throws InvalidGraphException, InterruptedException, ExecutionException {
         addOntologyAndEntities();
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             assertEquals(6L,
                     ((Long) graph.graql().parse("compute count;").execute()).longValue());
             assertEquals(3L,
-                    ((Long) graph.graql().parse("compute count in thing, thing;").execute()).longValue());
+                    ((Long) graph.graql().parse("compute count in thingy, thingy;").execute()).longValue());
         }
     }
 
     @Test
     public void testDegrees() throws Exception {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-
         addOntologyAndEntities();
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             Map<Long, Set<String>> degrees = graph.graql().<DegreeQuery>parse("compute degrees;").execute();
@@ -126,31 +125,28 @@ public class GraqlTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = GraqlQueryException.class)
     public void testInvalidIdWithAnalytics() {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            graph.graql().parse("compute sum of thing;").execute();
+            graph.graql().parse("compute sum of thingy;").execute();
         }
     }
 
     @Test
-    public void testStatisticsMethods() throws GraknValidationException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-
+    public void testStatisticsMethods() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            TypeLabel resourceTypeId = TypeLabel.of("my-resource");
+            Label resourceTypeId = Label.of("my-resource");
 
-            RoleType resourceOwner = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
-            RoleType resourceValue = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
+            Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
+            Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
             RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
                     .relates(resourceOwner)
                     .relates(resourceValue);
 
             ResourceType<Long> resource = graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG)
                     .plays(resourceValue);
-            EntityType thing = graph.putEntityType("thing").plays(resourceOwner);
-            Entity theResourceOwner = thing.addEntity();
+            EntityType thingy = graph.putEntityType("thingy").plays(resourceOwner);
+            Entity theResourceOwner = thingy.addEntity();
 
             relationType.addRelation()
                     .addRolePlayer(resourceOwner, theResourceOwner)
@@ -183,10 +179,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testConnectedComponents() throws GraknValidationException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-
+    public void testConnectedComponents() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             Map<String, Long> sizeMap =
                     graph.graql().<ClusterQuery<Map<String, Long>>>parse("compute cluster;").execute();
@@ -198,10 +191,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testPath() throws GraknValidationException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-
+    public void testPath() throws InvalidGraphException {
         addOntologyAndEntities();
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
@@ -219,20 +209,20 @@ public class GraqlTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testNonResourceTypeAsSubgraphForAnalytics() throws GraknValidationException {
+    @Test(expected = GraqlQueryException.class)
+    public void testNonResourceTypeAsSubgraphForAnalytics() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            graph.putEntityType(thing);
+            graph.putEntityType(thingy);
             graph.commit();
         }
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            graph.graql().parse("compute sum in thing;").execute();
+            graph.graql().parse("compute sum of thingy;").execute();
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testErrorWhenNoSubgrapForAnalytics() throws GraknValidationException {
+    @Test(expected = GraqlSyntaxException.class)
+    public void testErrorWhenNoSubgrapForAnalytics() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum;").execute();
             graph.graql().parse("compute min;").execute();
@@ -243,9 +233,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testAnalyticsDoesNotCommitByMistake() throws GraknValidationException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+    public void testAnalyticsDoesNotCommitByMistake() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.putResourceType("number", ResourceType.DataType.LONG);
             graph.commit();
@@ -259,21 +247,21 @@ public class GraqlTest {
         analyticsCommands.forEach(command -> {
             try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
                 // insert a node but do not commit it
-                graph.graql().parse("insert thing sub entity;").execute();
+                graph.graql().parse("insert thingy sub entity;").execute();
                 // use analytics
                 graph.graql().parse(command).execute();
             }
 
             try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
                 // see if the node was commited
-                assertNull(graph.getEntityType("thing"));
+                assertNull(graph.getEntityType("thingy"));
             }
         });
     }
 
-    private void addOntologyAndEntities() throws GraknValidationException {
+    private void addOntologyAndEntities() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            EntityType entityType1 = graph.putEntityType(thing);
+            EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
             Entity entity1 = entityType1.addEntity();
@@ -286,8 +274,8 @@ public class GraqlTest {
             entityId3 = entity3.getId().getValue();
             entityId4 = entity4.getId().getValue();
 
-            RoleType role1 = graph.putRoleType("role1");
-            RoleType role2 = graph.putRoleType("role2");
+            Role role1 = graph.putRole("role1");
+            Role role2 = graph.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
             RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);

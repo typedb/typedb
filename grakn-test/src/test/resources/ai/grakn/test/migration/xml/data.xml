@@ -1,0 +1,7 @@
+<THINGS>
+    <THINGY NAME="Bob">
+        innerText
+        <NAME>Charlie</NAME>
+        <NAME NAME="Alice"/>
+    </THINGY>
+</THINGS>

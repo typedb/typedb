@@ -22,14 +22,14 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
-import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.concept.LabelId;
+import ai.grakn.concept.Label;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -78,7 +78,7 @@ public interface GraknAdmin {
      * @return The meta type -> type.
      */
     @CheckReturnValue
-    Type getMetaConcept();
+    OntologyConcept getMetaConcept();
 
     /**
      * Get the root of all Relation Types.
@@ -94,7 +94,7 @@ public interface GraknAdmin {
      * @return The meta role type -> role-type.
      */
     @CheckReturnValue
-    RoleType getMetaRoleType();
+    Role getMetaRoleType();
 
     /**
      * Get the root of all the Resource Types.
@@ -146,30 +146,14 @@ public interface GraknAdmin {
      * @return The matching type id
      */
     @CheckReturnValue
-    TypeId convertToId(TypeLabel label);
+    LabelId convertToId(Label label);
 
     /**
      * Commits to the graph without submitting any commit logs.
      * @return the commit log that would have been submitted if it is needed.
-     * @throws GraknValidationException when the graph does not conform to the object concept
+     * @throws InvalidGraphException when the graph does not conform to the object concept
      */
-    Optional<String> commitNoLogs() throws GraknValidationException;
-
-    /**
-     * Check if there are duplicates castings in the provided set of vertex IDs
-     * @param index index of the casting to find duplicates of
-     * @param castingVertexIds vertex Ids containing potential duplicates
-     * @return true if there are duplicate castings and PostProcessing can proceed
-     */
-    boolean duplicateCastingsExist(String index, Set<ConceptId> castingVertexIds);
-
-    /**
-     * Merges the provided duplicate castings.
-     *
-     * @param castingVertexIds The vertex Ids of the duplicate castings
-     * @return if castings were merged and a commit is required.
-     */
-    boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds);
+    Optional<String> commitNoLogs() throws InvalidGraphException;
 
     /**
      * Check if there are duplicate resources in the provided set of vertex IDs
@@ -207,7 +191,7 @@ public interface GraknAdmin {
      * @return A concept with the matching key and value
      */
     @CheckReturnValue
-    <T extends Concept> T getConcept(Schema.ConceptProperty key, Object value);
+    <T extends Concept> T getConcept(Schema.VertexProperty key, Object value);
 
     /**
      * Closes the root session this graph stems from. This will automatically rollback any pending transactions.

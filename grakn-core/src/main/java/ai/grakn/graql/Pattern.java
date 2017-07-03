@@ -42,5 +42,4 @@ public interface Pattern {
      */
     @CheckReturnValue
     PatternAdmin admin();
-
 }

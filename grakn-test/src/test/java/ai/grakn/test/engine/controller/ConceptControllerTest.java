@@ -24,9 +24,9 @@ import ai.grakn.concept.Concept;
 import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.SparkContext;
+import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
 import com.jayway.restassured.response.Response;
 import org.junit.Before;
@@ -62,7 +62,7 @@ public class ConceptControllerTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(spark);
+        new SystemController(mockFactory, spark);
         new ConceptController(mockFactory, spark);
     });
 

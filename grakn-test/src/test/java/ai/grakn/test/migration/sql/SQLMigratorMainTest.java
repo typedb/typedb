@@ -18,17 +18,17 @@
 
 package ai.grakn.test.migration.sql;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTxType;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.GraphLoader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.contrib.java.lang.system.SystemErrRule;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -41,6 +41,8 @@ import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.PASS;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.URL;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.USER;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.setupExample;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 public class SQLMigratorMainTest {
 
@@ -49,19 +51,18 @@ public class SQLMigratorMainTest {
     private Connection connection;
     private GraknSession factory;
     private String keyspace;
-    private GraknGraph graph;
 
     @Rule
-    public final ExpectedException exception = ExpectedException.none();
+    public final SystemErrRule sysErr = new SystemErrRule().enableLog();
+
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setup() throws SQLException {
-        factory = engine.factoryWithNewKeyspace();
+        keyspace = GraphLoader.randomKeyspace();
+        factory = Grakn.session(engine.uri(), keyspace);
         connection = setupExample(factory, "pets");
-        graph = factory.open(GraknTxType.WRITE);
-        keyspace = graph.getKeyspace();
     }
 
     @After
@@ -70,78 +71,78 @@ public class SQLMigratorMainTest {
     }
 
     @Test
-    public void sqlMainTest(){
-        graph.close();
-        runAndAssertDataCorrect("sql", "-t", templateFile,
+    public void runningSQLMigrationFromScript_PetDataMigratedCorrectly(){
+        runAndAssertDataCorrect("sql", "-u", engine.uri(), "-t", templateFile,
                 "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-q", query, "-k", keyspace);
     }
 
     @Test
-    public void sqlMainNoKeyspace(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Keyspace missing (-k)");
-        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile);
+    public void sqlMigratorCalledWithoutKeyspace_ErrorIsPrintedToSystemErr(){
+        run("sql", "-u", engine.uri(), "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-user", USER);
+        assertThat(sysErr.getLog(), containsString("Keyspace missing (-k)"));
     }
 
     @Test
-    public void sqlMainNoUserTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("No username specified (-user)");
-        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-k", keyspace);
+    public void sqlMigratorCalledWithoutSQLConnectionUser_ErrorIsPrintedToSystemErr(){
+        run("sql", "-u", engine.uri(), "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-k", keyspace);
+        assertThat(sysErr.getLog(), containsString("No username specified (-user)"));
     }
 
     @Test
-    public void sqlMainNoPassTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("No password specified (-pass)");
-        run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query, "-k", keyspace);
+    public void sqlMigratorCalledWithoutSQLConnectionPassword_ErrorIsPrintedToSystemErr(){
+        run("sql", "-u", engine.uri(), "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query, "-k", keyspace);
+        assertThat(sysErr.getLog(), containsString("No password specified (-pass)"));
     }
 
     @Test
-    public void sqlMainNoURLTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("No db specified (-location)");
-        run("sql", "-driver", DRIVER, "-q", query, "-t", templateFile);
+    public void sqlMigratorCalledWithoutSQLConnectionURL_ErrorIsPrintedToSystemErr(){
+        run("sql", "-u", engine.uri(), "-driver", DRIVER, "-q", query, "-t", templateFile);
+        assertThat(sysErr.getLog(), containsString("No db specified (-location)"));
     }
 
     @Test
-    public void sqlMainNoQueryTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("No SQL query specified (-query)");
-        run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL,
+    public void sqlMigratorCalledWithoutSQLQuery_ErrorIsPrintedToSystemErr(){
+        run("sql", "-u", engine.uri(), "-t", templateFile, "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-k", keyspace);
+        assertThat(sysErr.getLog(), containsString("No SQL query specified (-query)"));
+
     }
 
     @Test
-    public void sqlMainNoTemplateTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Template file missing (-t)");
-        run("sql", "-driver", DRIVER, "-location", URL,
+    public void sqlMigratorCalledWithoutTemplate_ErrorIsPrintedToSystemErr(){
+        run("sql", "-u", engine.uri(), "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-q", query);
+        assertThat(sysErr.getLog(), containsString("Template file missing (-t)"));
     }
 
     @Test
-    public void sqlMainTemplateNoExistTest(){
-        exception.expect(RuntimeException.class);
-        run("sql", "-t", templateFile + "wrong", "-driver", DRIVER, "-location", URL,
+    public void sqlMigratorCalledWithTemplateThatDoesntExist_ErrorIsPrintedToSystemErr(){
+        run("sql", "-u", engine.uri(), "-t", templateFile + "wrong", "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-q", query);
+        assertThat(sysErr.getLog(), containsString("Cannot find file"));
     }
 
     @Test
-    public void sqlMainPropertiesTest() throws SQLException {
+    public void sqlMigratorCalledWithPropertiesThatDoesntExist_ErrorIsPrintedToSystemErr(){
+        run("sql", "-u", engine.uri(), "-driver", DRIVER, "-location", URL,
+                "-pass", PASS, "-user", USER, "-k", keyspace,
+                "-c", "randomDoesNotExistFile");
+        assertThat(sysErr.getLog(), containsString("Could not find configuration file randomDoesNotExistFile"));
+    }
+
+    @Test
+    public void sqlMigratorCalledWithPropertiesFile_PetDataMigratedCorrectly() throws SQLException {
         connection.close();
-        graph.close();
         connection = setupExample(factory, "pokemon");
 
         String configurationFile = getFile("sql", "pokemon/migration.yaml").getAbsolutePath();
 
-        run("sql", "-driver", DRIVER, "-location", URL,
+        run("sql", "-u", engine.uri(), "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-k", keyspace,
                 "-c", configurationFile);
 
-        graph = factory.open(GraknTxType.WRITE); //Reopen transaction
-        assertPokemonGraphCorrect(graph);
+        assertPokemonGraphCorrect(factory);
     }
 
     private void run(String... args){
@@ -150,8 +151,6 @@ public class SQLMigratorMainTest {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
-        graph = factory.open(GraknTxType.WRITE); //Reopen transaction
-        assertPetGraphCorrect(graph);
+        assertPetGraphCorrect(factory);
     }
-
 }

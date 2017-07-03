@@ -20,7 +20,7 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -32,6 +32,7 @@ import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelsToTraversal;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabels;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.traverseRoleTypeFromShortcutEdge;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_ID;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
@@ -47,36 +48,45 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
 class OutShortcutFragment extends AbstractFragment {
 
     private final Var edge;
-    private final Optional<Set<TypeLabel>> roleTypes;
-    private final Optional<Set<TypeLabel>> relationTypes;
+
+    private final Optional<Var> roleType;
+    private final Optional<Set<Label>> roleTypeLabels;
+    private final Optional<Set<Label>> relationTypeLabels;
 
     OutShortcutFragment(VarProperty varProperty,
-                        Var relation, Var edge, Var rolePlayer, Optional<Set<TypeLabel>> roleTypes,
-                        Optional<Set<TypeLabel>> relationTypes) {
-        super(varProperty, relation, rolePlayer, edge);
-        this.edge = edge;
-        this.roleTypes = roleTypes;
-        this.relationTypes = relationTypes;
+            Var relation, Var edge, Var rolePlayer, Optional<Var> roleType, Optional<Set<Label>> roleTypeLabels,
+            Optional<Set<Label>> relationTypeLabels) {
+            super(varProperty, relation, rolePlayer, edge, optionalVarToArray(roleType));
+            this.edge = edge;
+            this.roleType = roleType;
+            this.roleTypeLabels = roleTypeLabels;
+            this.relationTypeLabels = relationTypeLabels;
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
         GraphTraversal<Vertex, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel()).as(edge.getValue());
-        applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleTypes, graph);
-        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_ID, relationTypes, graph);
+
+        // Filter by any provided type labels
+        applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleTypeLabels, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_ID, relationTypeLabels, graph);
+
+        traverseRoleTypeFromShortcutEdge(edgeTraversal, roleType);
+
         edgeTraversal.inV();
     }
 
     @Override
     public String getName() {
-        String rel = displayOptionalTypeLabels(relationTypes);
-        String role = displayOptionalTypeLabels(roleTypes);
-        return "-[shortcut:" + edge.shortName() + rel + role + "]->";
+        String role = roleType.map(rt -> " role:" + rt.shortName()).orElse("");
+        String rels = displayOptionalTypeLabels("rels", relationTypeLabels);
+        String roles = displayOptionalTypeLabels("roles", roleTypeLabels);
+        return "-[shortcut:" + edge.shortName() + role + rels + roles + "]->";
     }
 
     @Override
     public double fragmentCost(double previousCost) {
-        long numRolePlayers = roleTypes.isPresent() ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
+        long numRolePlayers = roleTypeLabels.isPresent() ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
         return previousCost * numRolePlayers;
     }
 
@@ -89,16 +99,16 @@ class OutShortcutFragment extends AbstractFragment {
         OutShortcutFragment that = (OutShortcutFragment) o;
 
         if (!edge.equals(that.edge)) return false;
-        if (!roleTypes.equals(that.roleTypes)) return false;
-        return relationTypes.equals(that.relationTypes);
+        if (!roleTypeLabels.equals(that.roleTypeLabels)) return false;
+        return relationTypeLabels.equals(that.relationTypeLabels);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + edge.hashCode();
-        result = 31 * result + roleTypes.hashCode();
-        result = 31 * result + relationTypes.hashCode();
+        result = 31 * result + roleTypeLabels.hashCode();
+        result = 31 * result + relationTypeLabels.hashCode();
         return result;
     }
 }

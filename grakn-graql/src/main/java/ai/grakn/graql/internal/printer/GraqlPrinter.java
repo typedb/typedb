@@ -19,14 +19,16 @@
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.util.ANSI;
-import ai.grakn.graql.internal.util.CommonUtil;
+import ai.grakn.util.CommonUtil;
+import ai.grakn.util.StringUtil;
 
 import java.util.Collection;
 import java.util.Map;
@@ -37,7 +39,6 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
-import static ai.grakn.graql.internal.util.StringConverter.valueToString;
 
 /**
  * Default printer that prints results in Graql syntax
@@ -62,12 +63,12 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
         return sb -> {
             // Display values for resources and ids for everything else
             if (concept.isResource()) {
-                sb.append(colorKeyword("val ")).append(valueToString(concept.asResource().getValue()));
+                sb.append(colorKeyword("val ")).append(StringUtil.valueToString(concept.asResource().getValue()));
             } else if (concept.isType()) {
                 Type type = concept.asType();
                 sb.append(colorKeyword("label ")).append(colorType(type));
 
-                Type superType = type.superType();
+                Type superType = type.sup();
 
                 if (superType != null) {
                     sb.append(colorKeyword(" sub ")).append(colorType(superType));
@@ -78,11 +79,11 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
 
             if (concept.isRelation()) {
                 String relationString = concept.asRelation().allRolePlayers().entrySet().stream().flatMap(entry -> {
-                    RoleType roleType = entry.getKey();
-                    Set<Instance> instances = entry.getValue();
+                    Role role = entry.getKey();
+                    Set<Thing> things = entry.getValue();
 
-                    return instances.stream().map(instance ->
-                        Optional.of(colorType(roleType) + ": id " + idToString(instance.getId()))
+                    return things.stream().map(instance ->
+                        Optional.of(colorType(role) + ": id " + idToString(instance.getId()))
                     );
                 }).flatMap(CommonUtil::optionalToStream).collect(Collectors.joining(", "));
 
@@ -105,7 +106,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             if (concept.isInstance() && resourceTypes.length > 0) {
                 concept.asInstance().resources(resourceTypes).forEach(resource -> {
                     String resourceType = colorType(resource.type());
-                    String value = valueToString(resource.getValue());
+                    String value = StringUtil.valueToString(resource.getValue());
                     sb.append(colorKeyword(" has ")).append(resourceType).append(" ").append(value);
                 });
             }
@@ -195,14 +196,14 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
 
     /**
      * Color-codes the given type if colorization enabled
-     * @param type a type to color-code using ANSI colors
+     * @param ontologyConcept a type to color-code using ANSI colors
      * @return the type, color-coded
      */
-    private String colorType(Type type) {
+    private String colorType(OntologyConcept ontologyConcept) {
         if(colorize) {
-            return ANSI.color(typeLabelToString(type.getLabel()), ANSI.PURPLE);
+            return ANSI.color(typeLabelToString(ontologyConcept.getLabel()), ANSI.PURPLE);
         } else {
-            return typeLabelToString(type.getLabel());
+            return typeLabelToString(ontologyConcept.getLabel());
         }
     }
 }

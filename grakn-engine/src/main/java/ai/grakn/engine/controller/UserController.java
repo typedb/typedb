@@ -19,7 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -48,13 +48,15 @@ import javax.ws.rs.Produces;
 @Produces({"application/json", "text/plain"})
 public class UserController {
     private final Logger LOG = LoggerFactory.getLogger(UserController.class);
-    private final UsersHandler users = UsersHandler.getInstance();
+    private final UsersHandler users;
 
-    public UserController(Service spark) {
+    public UserController(Service spark, UsersHandler usersHandler) {
+        this.users = usersHandler;
+
         spark.get(REST.WebPath.ALL_USERS, this::findUsers);
-        spark.get(REST.WebPath.ONE_USER, this::getUser);
+        spark.get(REST.WebPath.ONE_USER + "/:user-name", this::getUser);
         spark.post(REST.WebPath.ONE_USER, this::createUser);
-        spark.delete(REST.WebPath.ONE_USER, this::removeUser);
+        spark.delete(REST.WebPath.ONE_USER + "/:user-name", this::removeUser);
         spark.put(REST.WebPath.ONE_USER, this::updateUser);
     }
 
@@ -83,7 +85,11 @@ public class UserController {
     @ApiOperation(value = "Get one user.")
     @ApiImplicitParam(name = "user-name", value = "Username of user.", required = true, dataType = "string", paramType = "path")
     private Json getUser(Request request, Response response) {
-        return users.getUser(request.queryParams(UsersHandler.USER_NAME));
+        Json result = users.getUser(request.params("user-name"));
+        if (result.isNull()) {
+            response.status(404);
+        }
+        return result;
     }
     
     @POST
@@ -100,7 +106,7 @@ public class UserController {
             return true;
         } catch(Exception e){
             LOG.error("Error during creating new user", e);
-            throw new GraknEngineServerException(500,e);
+            throw GraknServerException.serverException(500, e);
         }
     }
     
@@ -109,7 +115,7 @@ public class UserController {
     @ApiOperation(value = "Delete a user.")
     @ApiImplicitParam(name = "user-name", value = "Username of user.", required = true, dataType = "string", paramType = "path")
     private boolean removeUser(Request request, Response response) {
-        return users.removeUser(request.queryParams(UsersHandler.USER_NAME));
+        return users.removeUser(request.params(UsersHandler.USER_NAME));
     }
     
     @PUT
@@ -118,9 +124,7 @@ public class UserController {
     @ApiImplicitParam(name = "user", value = "A JSON object representing the user.", dataType = "String", paramType = "body")
     private boolean updateUser(Request request, Response response) {
         Json user = Json.read(request.body());
-        if (!users.userExists(user.at(UsersHandler.USER_NAME).asString())) {
-            return false;
-        }
-        return users.updateUser(user);
+        return users.userExists(user.at(UsersHandler.USER_NAME).asString()) && users
+                .updateUser(user);
     }
 }

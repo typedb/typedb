@@ -38,6 +38,28 @@ for jar in "${GRAKN_HOME}"/lib/*.jar; do
     fi
 done
 
+# Add path containing logback.xml
+CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf/main/
+
+wait_for_engine() {
+    local now_s=`date '+%s'`
+    local stop_s=$(( $now_s + $ENGINE_STARTUP_TIMEOUT_S ))
+
+    while [ $now_s -le $stop_s ]; do
+        echo -n .
+        java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.client.Client
+        if [ $? -eq 0 ]; then
+            echo
+            return 0
+        fi
+        sleep $SLEEP_INTERVAL_S
+        now_s=`date '+%s'`
+    done
+
+    echo " timeout exceeded ($ENGINE_STARTUP_TIMEOUT_S seconds)" >&2
+    return 1
+}
+
 case "$1" in
 
 start)
@@ -54,6 +76,8 @@ start)
             java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.engine.GraknEngineServer &
             echo $!>$ENGINE_PS
         fi
+
+        if ! wait_for_engine ; then exit 1 ; fi
     fi
     ;;
 

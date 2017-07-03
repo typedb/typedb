@@ -17,24 +17,24 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Label;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 import java.util.Collections;
@@ -43,7 +43,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint;
 
 /**
  *
@@ -71,7 +71,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
         String multiPredicateString = getMultiPredicate().isEmpty()?
                 getValueVariable().toString() :
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
-        return getVarName() + " has " + getType().getLabel() + " " +
+        return getVarName() + " has " + getOntologyConcept().getLabel() + " " +
                 multiPredicateString +
                 getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
     }
@@ -103,9 +103,9 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
         TypeAtom parentTypeConstraint = this.getTypeConstraints().stream().findFirst().orElse(null);
         TypeAtom childTypeConstraint = childAtom.getTypeConstraints().stream().findFirst().orElse(null);
 
-        Type parentType = parentTypeConstraint != null? parentTypeConstraint.getType() : null;
-        Type childType = childTypeConstraint != null? childTypeConstraint.getType() : null;
-        if (parentType != null && childType != null && checkTypesDisjoint(parentType, childType)) return false;
+        OntologyConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getOntologyConcept() : null;
+        OntologyConcept childType = childTypeConstraint != null? childTypeConstraint.getOntologyConcept() : null;
+        if (parentType != null && childType != null && checkDisjoint(parentType, childType)) return false;
 
         //check predicates
         if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
@@ -131,15 +131,15 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     @Override
     protected ConceptId extractTypeId(VarPatternAdmin var) {
         HasResourceProperty resProp = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
-        TypeLabel typeLabel = resProp != null? resProp.getType() : null;
-        return typeLabel != null ? getParentQuery().graph().getType(typeLabel).getId() : null;
+        Label label = resProp != null? resProp.getType() : null;
+        return label != null ? getParentQuery().graph().getOntologyConcept(label).getId() : null;
     }
 
     @Override
     protected Var extractValueVariableName(VarPatternAdmin var){
         HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         VarPatternAdmin resVar = prop.getResource();
-        return resVar.isUserDefinedName()? resVar.getVarName() : Var.of("");
+        return resVar.getVarName().isUserDefinedName()? resVar.getVarName() : Graql.var("");
     }
 
     @Override
@@ -153,7 +153,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
     @Override
     public boolean isAllowedToFormRuleHead(){
-        if (getType() == null || getMultiPredicate().size() > 1) return false;
+        if (getOntologyConcept() == null || getMultiPredicate().size() > 1) return false;
         if (getMultiPredicate().isEmpty()) return true;
 
         ValuePredicate predicate = getMultiPredicate().iterator().next();
@@ -164,48 +164,64 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     public boolean requiresMaterialisation(){ return true;}
 
     @Override
-    public int resolutionPriority(){
-        if (priority == Integer.MAX_VALUE) {
-            priority = super.resolutionPriority();
-            ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-            Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(Collectors.toSet());
+    public int computePriority(Set<Var> subbedVars){
+        int priority = super.computePriority(subbedVars);
+        Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(Collectors.toSet());
+        priority += ResolutionStrategy.IS_RESOURCE_ATOM;
 
-            priority += ResolutionStrategy.IS_RESOURCE_ATOM;
-
-            if (vps.isEmpty()) {
-                if (parent.getIdPredicate(getValueVariable()) != null) {
+        if (vps.isEmpty()) {
+            if (subbedVars.contains(getVarName())
+                    || subbedVars.contains(getValueVariable())) {
                     priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
-                } else{
+            } else{
                     priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
-                }
-            } else {
-                for (ValuePredicateAdmin vp : vps) {
-                    if (vp.isSpecific()) {
-                        priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
-                    } else if (vp.getInnerVar().isPresent()) {
-                        VarPatternAdmin innerVar = vp.getInnerVar().orElse(null);
-                        if (parent.getIdPredicate(innerVar.getVarName()) != null) {
-                            priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
-                        } else {
-                            priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
-                        }
-                    } else {
-                        priority += ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
+            }
+        } else {
+            int vpsPriority = 0;
+            for (ValuePredicateAdmin vp : vps) {
+                //vp with a value
+                if (vp.isSpecific()) {
+                    vpsPriority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+                } //vp with a variable
+                else if (vp.getInnerVar().isPresent()) {
+                    VarPatternAdmin inner = vp.getInnerVar().orElse(null);
+                    //variable mapped inside the query
+                    if (subbedVars.contains(getVarName())
+                        || subbedVars.contains(inner.getVarName())) {
+                        vpsPriority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+                    } //variable equality
+                    else if (vp.equalsValue().isPresent()){
+                        vpsPriority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
+                    } //variable inequality
+                    else {
+                        vpsPriority += ResolutionStrategy.COMPARISON_VARIABLE_VALUE_PREDICATE;
                     }
+                } else {
+                    vpsPriority += ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
                 }
             }
+            //normalise
+            vpsPriority = vpsPriority/vps.size();
+            priority += vpsPriority;
         }
+
+        boolean reifiesRelation =  getNeighbours()
+                .filter(Atom::isRelation)
+                .filter(at -> at.getVarName().equals(this.getVarName()))
+                .findFirst().isPresent();
+
+        priority += reifiesRelation ? ResolutionStrategy.RESOURCE_REIFIYING_RELATION : 0;
 
         return priority;
     }
 
     @Override
-    public Unifier getUnifier(Atomic parentAtom) {
+    public Unifier getUnifier(Atom parentAtom) {
         if (!(parentAtom instanceof TypeAtom)) return super.getUnifier(parentAtom);
 
+        //case when parent is a type atom
         Unifier unifier = new UnifierImpl();
         unifier.addMapping(this.getValueVariable(), parentAtom.getVarName());
-        if (parentAtom.containsVar(this.getVarName())) unifier.addMapping(this.getVarName(), Var.anon());
         return unifier;
     }
 
@@ -220,7 +236,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     public Set<TypeAtom> getMappedTypeConstraints() {
         return getTypeConstraints().stream()
                 .filter(t -> t.getVarName().equals(getVarName()))
-                .filter(t -> Objects.nonNull(t.getType()))
+                .filter(t -> Objects.nonNull(t.getOntologyConcept()))
                 .collect(Collectors.toSet());
     }
 

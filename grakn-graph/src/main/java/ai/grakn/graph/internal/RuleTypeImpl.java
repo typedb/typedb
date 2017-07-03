@@ -20,12 +20,10 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.Pattern;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * <p>
@@ -40,31 +38,25 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * @author fppt
  */
 class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
-    RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+    RuleTypeImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RuleType type) {
-        super(graknGraph, v, type);
+    RuleTypeImpl(VertexElement vertexElement, RuleType type) {
+        super(vertexElement, type);
     }
 
     @Override
     public Rule putRule(Pattern lhs, Pattern rhs) {
-        if(lhs == null) {
-            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_LHS.name()));
-        }
-
-        if(rhs == null) {
-            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_RHS.name()));
-        }
+        if(lhs == null) throw GraphOperationException.settingNullProperty(Schema.VertexProperty.RULE_LHS);
+        if(rhs == null) throw GraphOperationException.settingNullProperty(Schema.VertexProperty.RULE_RHS);
 
         return putInstance(Schema.BaseType.RULE,
-                () -> getRule(lhs, rhs), (vertex, type) ->
-                getGraknGraph().getElementFactory().buildRule(vertex, type, lhs, rhs));
+                () -> getRule(lhs, rhs), (vertex, type) -> vertex().graph().factory().buildRule(vertex, type, lhs, rhs));
     }
 
     private Rule getRule(Pattern lhs, Pattern rhs) {
         String index = RuleImpl.generateRuleIndex(this, lhs, rhs);
-        return getGraknGraph().getConcept(Schema.ConceptProperty.INDEX, index);
+        return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);
     }
 }

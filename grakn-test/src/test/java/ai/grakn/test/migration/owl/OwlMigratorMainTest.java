@@ -19,19 +19,24 @@
 package ai.grakn.test.migration.owl;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.internal.reasoner.ReasonerUtils;
+import ai.grakn.concept.Label;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.migration.owl.Main;
 import ai.grakn.migration.owl.OwlModel;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.SystemErrRule;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertRelationBetweenInstancesExists;
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -41,6 +46,9 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
 
     private String keyspace;
 
+    @Rule
+    public final SystemErrRule sysErr = new SystemErrRule().enableLog();
+
     @Before
     public void setup(){
         keyspace = graph.getKeyspace();
@@ -48,54 +56,53 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
     }
 
     @Test
-    public void owlMainFileTest(){
+    public void owlMigratorCalledWithCorrectArgs_DataMigratedCorrectly(){
         String owlFile = getFile("owl", "shakespeare.owl").getAbsolutePath();
-        runAndAssertDataCorrect("owl", "-input", owlFile, "-keyspace", keyspace);
+        runAndAssertDataCorrect("owl", "-u", engine.uri(), "-input", owlFile, "-keyspace", keyspace);
     }
 
     @Test
-    public void owlMainNoFileSpecifiedTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Data file missing (-i)");
-        run("owl", "-keyspace", keyspace);
+    public void owlMigratorCalledWithNoData_ErrorIsPrintedToSystemErr(){
+        run("owl", "-keyspace", keyspace, "-u", engine.uri());
+        assertThat(sysErr.getLog(), containsString("Data file missing (-i)"));
     }
 
     @Test
-    public void owlMainCannotOpenFileTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Cannot find file:");
-        run("owl", "-input", "grah/?*", "-keyspace", keyspace);
+    public void owlMigratorCalledInvalidInputFile_ErrorIsPrintedToSystemErr(){
+        run("owl", "-input", "grah/?*", "-keyspace", keyspace, "-u", engine.uri());
+        assertThat(sysErr.getLog(), containsString("Cannot find file:"));
     }
 
     public void run(String... args){
         Main.main(args);
     }
 
-    public void runAndAssertDataCorrect(String... args){
+    private void runAndAssertDataCorrect(String... args){
         run(args);
 
-        graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
-        EntityType top = graph.getEntityType("tThing");
-        EntityType type = graph.getEntityType("tAuthor");
-        assertNotNull(type);
-        assertNull(graph.getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
-        assertNotNull(type.superType());
-        assertEquals("tPerson", type.superType().getLabel().getValue());
-        assertEquals(top, type.superType().superType());
-        assertTrue(top.subTypes().contains(graph.getEntityType("tPlace")));
-        assertNotEquals(0, type.instances().size());
+        try(GraknGraph graph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)) {
+            EntityType top = graph.getEntityType("tThing");
+            EntityType type = graph.getEntityType("tAuthor");
+            assertNotNull(type);
+            assertNull(graph.getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
+            assertNotNull(type.sup());
+            assertEquals("tPerson", type.sup().getLabel().getValue());
+            assertEquals(top, type.sup().sup());
+            assertTrue(top.subs().contains(graph.getEntityType("tPlace")));
+            assertNotEquals(0, type.instances().size());
 
-        assertTrue(
-                type.instances().stream()
-                        .flatMap(inst -> inst.asEntity()
-                                .resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
-                        .anyMatch(s -> s.getValue().equals("eShakespeare"))
-        );
-        final Entity author = getEntity("eShakespeare");
-        assertNotNull(author);
-        final Entity work = getEntity("eHamlet");
-        assertNotNull(work);
-        assertRelationBetweenInstancesExists(graph, work, author, TypeLabel.of("op-wrote"));
-        assertTrue(!ReasonerUtils.getRules(graph).isEmpty());
+            assertTrue(
+                    type.instances().stream()
+                            .flatMap(inst -> inst.asEntity()
+                                    .resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
+                            .anyMatch(s -> s.getValue().equals("eShakespeare"))
+            );
+            final Entity author = getEntity("eShakespeare");
+            assertNotNull(author);
+            final Entity work = getEntity("eHamlet");
+            assertNotNull(work);
+            assertRelationBetweenInstancesExists(graph, work, author, Label.of("op-wrote"));
+            assertTrue(!ReasonerUtils.getRules(graph).isEmpty());
+        }
     }
 }

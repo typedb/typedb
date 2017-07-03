@@ -18,12 +18,15 @@
 
 package ai.grakn.test.engine.postprocessing;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -48,9 +51,7 @@ public class PostProcessingTaskTest {
     @ClassRule
     public static EngineContext engine = EngineContext.startInMemoryServer();
 
-    private String mockCastingIndex;
     private String mockResourceIndex;
-    private Set<ConceptId> mockCastingSet;
     private Set<ConceptId> mockResourceSet;
     private TaskConfiguration mockConfiguration;
     private Consumer<TaskCheckpoint> mockConsumer;
@@ -59,36 +60,38 @@ public class PostProcessingTaskTest {
     @Before
     public void mockPostProcessing(){
         mockConsumer = mock(Consumer.class);
-        mockCastingIndex = UUID.randomUUID().toString();
         mockResourceIndex = UUID.randomUUID().toString();
         mockTaskSubmitter = mock(StandaloneTaskManager.class);
-        mockCastingSet = Sets.newHashSet();
         mockResourceSet = Sets.newHashSet();
         mockConfiguration = mock(TaskConfiguration.class);
         when(mockConfiguration.json()).thenReturn(Json.object(
                 KEYSPACE, "testing",
                 REST.Request.COMMIT_LOG_FIXING, Json.object(
-                        Schema.BaseType.CASTING.name(), Json.object(mockCastingIndex, mockCastingSet),
                         Schema.BaseType.RESOURCE.name(), Json.object(mockResourceIndex, mockResourceSet)
                 )));
+
+        //Initialise system keyspace
+        Grakn.session(engine.uri(), SystemKeyspace.SYSTEM_GRAPH_NAME).open(GraknTxType.WRITE).close();
     }
 
     @Test
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.start(mockConsumer, mockConfiguration, mockTaskSubmitter);
+        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory());
+        task.start();
 
-        verify(mockConfiguration, times(4)).json();
+        verify(mockConfiguration, times(2)).json();
     }
 
     @Test
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.start(mockConsumer, mockConfiguration, mockTaskSubmitter);
+        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory());
+        task.start();
 
-        verify(mockConfiguration, times(4)).json();
+        verify(mockConfiguration, times(2)).json();
     }
 
     @Test
@@ -96,9 +99,11 @@ public class PostProcessingTaskTest {
         // Add a bunch of jobs to the cache
         PostProcessingTask task1 = new PostProcessingTask();
         PostProcessingTask task2 = new PostProcessingTask();
+        task1.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory());
+        task2.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory());
 
-        Thread pp1 = new Thread(() -> task1.start(mockConsumer, mockConfiguration, mockTaskSubmitter));
-        Thread pp2 = new Thread(() -> task2.start(mockConsumer, mockConfiguration, mockTaskSubmitter));
+        Thread pp1 = new Thread(task1::start);
+        Thread pp2 = new Thread(task2::start);
 
         pp1.start();
         pp2.start();
@@ -106,6 +111,6 @@ public class PostProcessingTaskTest {
         pp1.join();
         pp2.join();
 
-        verify(mockConfiguration, times(8)).json();
+        verify(mockConfiguration, times(4)).json();
     }
 }

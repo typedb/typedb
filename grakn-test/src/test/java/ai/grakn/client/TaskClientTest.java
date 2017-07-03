@@ -19,26 +19,6 @@
 
 package ai.grakn.client;
 
-import ai.grakn.engine.TaskId;
-import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.controller.TasksController;
-import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.exception.EngineStorageException;
-import ai.grakn.exception.EngineUnavailableException;
-import ai.grakn.test.SparkContext;
-import mjson.Json;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-import java.time.Duration;
-import java.time.Instant;
-
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static java.time.Instant.now;
@@ -54,6 +34,25 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ai.grakn.engine.TaskId;
+import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.controller.TasksController;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
+import ai.grakn.exception.GraknBackendException;
+import ai.grakn.test.SparkContext;
+import java.time.Duration;
+import java.time.Instant;
+import mjson.Json;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 public class TaskClientTest {
 
     private static TaskClient client;
@@ -67,8 +66,8 @@ public class TaskClientTest {
         new TasksController(spark, manager);
     });
 
-    @BeforeClass
-    public static void setUp() {
+    @Before
+    public void setUp() {
         client = TaskClient.of("localhost", ctx.port());
         when(manager.storage()).thenReturn(mock(TaskStateStorage.class));
     }
@@ -88,7 +87,8 @@ public class TaskClientTest {
                 && argument.taskClass().equals(taskClass)
                 && argument.schedule().runAt().equals(runAt)
                 && argument.schedule().interval().get().equals(interval)
-                && argument.creator().equals(creator)), argThat(argument -> argument.json().toString().equals(configuration.toString())));
+                && argument.creator().equals(creator)),
+                argThat(argument -> argument.json().toString().equals(configuration.toString())));
     }
 
     @Test
@@ -101,7 +101,7 @@ public class TaskClientTest {
             Instant runAt = now();
             Json configuration = Json.nil();
 
-            exception.expect(EngineUnavailableException.class);
+            exception.expect(GraknBackendException.class);
             client.sendTask(taskClass, creator, runAt, null, configuration);
         } finally {
             ctx.start();
@@ -115,7 +115,7 @@ public class TaskClientTest {
         try {
             TaskState task = createTask();
 
-            exception.expect(EngineUnavailableException.class);
+            exception.expect(GraknBackendException.class);
             client.getStatus(task.getId());
         } finally {
             ctx.start();
@@ -126,10 +126,9 @@ public class TaskClientTest {
     public void whenGettingStatusOfATaskAndSeverHasNotStoredTask_TheClientThrowsStorageException(){
         TaskState task = createTask();
         when(manager.storage().getState(task.getId()))
-                .thenThrow(new EngineStorageException(task.getId().getValue()));
+                .thenThrow(GraknBackendException.stateStorage());
 
-        exception.expect(EngineStorageException.class);
-        exception.expectMessage(containsString(task.getId().getValue()));
+        exception.expect(GraknBackendException.class);
 
         client.getStatus(task.getId());
     }

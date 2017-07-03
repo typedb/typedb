@@ -24,11 +24,9 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
-import static ai.grakn.util.Schema.BaseType.CASTING;
 
 class IdFragment extends AbstractFragment {
 
@@ -41,8 +39,7 @@ class IdFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        // Whenever looking up by ID, we have to confirm this is not a casting
-        traversal.has(Schema.ConceptProperty.ID.name(), id.getValue()).not(__.hasLabel(CASTING.name()));
+        traversal.has(Schema.VertexProperty.ID.name(), id.getValue());
     }
 
     @Override

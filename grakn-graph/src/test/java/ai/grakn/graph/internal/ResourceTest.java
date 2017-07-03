@@ -19,11 +19,12 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.exception.GraphOperationException;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
@@ -48,12 +49,12 @@ public class ResourceTest extends GraphTestBase{
         EntityType randomThing = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
         RelationType hasResource = graknGraph.putRelationType("Has Resource");
-        RoleType resourceRole = graknGraph.putRoleType("Resource Role");
-        RoleType actorRole = graknGraph.putRoleType("Actor");
-        Instance pacino = randomThing.addEntity();
-        Instance jennifer = randomThing.addEntity();
-        Instance bob = randomThing.addEntity();
-        Instance alice = randomThing.addEntity();
+        Role resourceRole = graknGraph.putRole("Resource Role");
+        Role actorRole = graknGraph.putRole("Actor");
+        Thing pacino = randomThing.addEntity();
+        Thing jennifer = randomThing.addEntity();
+        Thing bob = randomThing.addEntity();
+        Thing alice = randomThing.addEntity();
         Resource<String> birthDate = resourceType.putResource("10/10/10");
         hasResource.relates(resourceRole).relates(actorRole);
 
@@ -106,7 +107,7 @@ public class ResourceTest extends GraphTestBase{
     @Test
     public void whenCreatingResourceWithAnInvalidDataType_Throw(){
         ResourceType longResourceType = graknGraph.putResourceType("long", ResourceType.DataType.LONG);
-        expectedException.expect(RuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(INVALID_DATATYPE.getMessage("Invalid Thing", Long.class.getName()));
         longResourceType.putResource("Invalid Thing");
     }

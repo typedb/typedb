@@ -24,7 +24,6 @@ import ai.grakn.engine.tasks.TaskConfigurationSerializer;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateDeserializer;
 import ai.grakn.engine.tasks.TaskStateSerializer;
-import ai.grakn.engine.GraknEngineConfig;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -43,30 +42,30 @@ import java.util.Properties;
  */
 public class ConfigHelper {
 
-    public static Consumer<TaskState, TaskConfiguration> kafkaConsumer(String groupId) {
-        Properties properties = new Properties();
-        properties.putAll(GraknEngineConfig.getInstance().getProperties());
+    public static Consumer<TaskState, TaskConfiguration> kafkaConsumer(String groupId, Properties properties) {
+        Properties newProperties = new Properties();
+        newProperties.putAll(properties);
 
-        properties.put("group.id", groupId);
-        properties.put("enable.auto.commit", "false");
-        properties.put("auto.offset.reset", "earliest");
-        properties.put("metadata.max.age.ms", "1000");
+        newProperties.put("group.id", groupId);
+        newProperties.put("enable.auto.commit", "false");
+        newProperties.put("auto.offset.reset", "earliest");
+        newProperties.put("metadata.max.age.ms", "1000");
 
         // The max poll time should be set to its largest value
         // Our task runners will only poll again after the tasks have completed
         //TODO Make this number more reasonable
-        properties.put("max.poll.interval.ms", Integer.MAX_VALUE);
+        newProperties.put("max.poll.interval.ms", Integer.MAX_VALUE);
 
         // Max poll records should be set to one: each TaskRunner should only handle one record at a time
-        properties.put("max.poll.records", "1");
+        newProperties.put("max.poll.records", "1");
 
-        return new KafkaConsumer<>(properties, new TaskStateDeserializer(), new TaskConfigurationDeserializer());
+        return new KafkaConsumer<>(newProperties, new TaskStateDeserializer(), new TaskConfigurationDeserializer());
     }
 
-    public static Producer<TaskState, TaskConfiguration> kafkaProducer() {
-        Properties properties = new Properties();
-        properties.putAll(GraknEngineConfig.getInstance().getProperties());
+    public static Producer<TaskState, TaskConfiguration> kafkaProducer(Properties properties) {
+        Properties newProperties = new Properties();
+        newProperties.putAll(properties);
 
-        return new KafkaProducer<>(properties, new TaskStateSerializer(), new TaskConfigurationSerializer());
+        return new KafkaProducer<>(newProperties, new TaskStateSerializer(), new TaskConfigurationSerializer());
     }
 }

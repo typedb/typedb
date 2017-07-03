@@ -20,11 +20,9 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,13 +46,13 @@ import java.util.regex.Pattern;
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> implements ResourceType<D> {
-    ResourceTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+    ResourceTypeImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    ResourceTypeImpl(AbstractGraknGraph graknGraph, Vertex v, ResourceType<D> type, DataType<D> dataType) {
-        super(graknGraph, v, type);
-        setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
+    ResourceTypeImpl(VertexElement vertexElement, ResourceType<D> type, DataType<D> dataType) {
+        super(vertexElement, type);
+        vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
     }
 
     /**
@@ -62,9 +60,9 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      * can be applied to all the existing instances.
      */
     @Override
-    public ResourceType<D> superType(ResourceType<D> superType){
-        ((ResourceTypeImpl<D>) superType).superTypeSet().forEach(st -> checkInstancesMatchRegex(st.getLabel(), st.getRegex()));
-        return super.superType(superType);
+    public ResourceType<D> sup(ResourceType<D> superType){
+        ((ResourceTypeImpl<D>) superType).superSet().forEach(st -> checkInstancesMatchRegex(st.getRegex()));
+        return super.sup(superType);
     }
 
     /**
@@ -77,19 +75,18 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
             throw new UnsupportedOperationException(ErrorMessage.REGEX_NOT_STRING.getMessage(getLabel()));
         }
 
-        checkInstancesMatchRegex(getLabel(), regex);
+        checkInstancesMatchRegex(regex);
 
-        return setProperty(Schema.ConceptProperty.REGEX, regex);
+        return property(Schema.VertexProperty.REGEX, regex);
     }
 
     /**
      * Checks that existing instances match the provided regex.
      *
-     * @throws InvalidConceptValueException when an instance does not match the provided regex
-     * @param label The label of the resource type which either contains or will contain this regex
+     * @throws GraphOperationException when an instance does not match the provided regex
      * @param regex The regex to check against
      */
-    private void checkInstancesMatchRegex(TypeLabel label, String regex){
+    private void checkInstancesMatchRegex(String regex){
         if(regex != null) {
             Pattern pattern = Pattern.compile(regex);
             Matcher matcher;
@@ -97,7 +94,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
                 String value = (String) resource.getValue();
                 matcher = pattern.matcher(value);
                 if(!matcher.matches()){
-                    throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resource.getId(), value, label));
+                    throw GraphOperationException.regexFailure(resource, value, regex);
                 }
             }
         }
@@ -106,16 +103,15 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @SuppressWarnings("unchecked")
     @Override
     public Resource<D> putResource(D value) {
-        if(value == null) throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage("resource value"));
+        if(value == null) throw GraphOperationException.settingNullProperty(getDataType().getVertexProperty());
         return putInstance(Schema.BaseType.RESOURCE,
-                () -> getResource(value), (vertex, type) ->
-                getGraknGraph().getElementFactory().buildResource(vertex, type, value));
+                () -> getResource(value), (vertex, type) -> vertex().graph().factory().buildResource(vertex, type, value));
     }
 
     @Override
     public <V> Resource<V> getResource(V value) {
         String index = Schema.generateResourceIndex(getLabel(), value.toString());
-        return getGraknGraph().getConcept(Schema.ConceptProperty.INDEX, index);
+        return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);
     }
 
     /**
@@ -125,7 +121,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
     @Override
     public DataType<D> getDataType() {
-        return (DataType<D>) DataType.SUPPORTED_TYPES.get(getProperty(Schema.ConceptProperty.DATA_TYPE));
+        return (DataType<D>) DataType.SUPPORTED_TYPES.get(vertex().property(Schema.VertexProperty.DATA_TYPE));
     }
 
     /**
@@ -133,7 +129,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      */
     @Override
     public String getRegex() {
-        return getProperty(Schema.ConceptProperty.REGEX);
+        return vertex().property(Schema.VertexProperty.REGEX);
     }
 
 }

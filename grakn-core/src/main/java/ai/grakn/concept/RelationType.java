@@ -18,14 +18,14 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraphOperationException;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
 /**
  * <p>
- *     An ontological element which categorises how {@link Instance}s may relate to each other.
+ *     An ontological element which categorises how {@link Thing}s may relate to each other.
  * </p>
  *
  * <p>
@@ -44,7 +44,7 @@ public interface RelationType extends Type {
      *
      * @return a new empty relation.
      *
-     * @throws ConceptException if this is a meta type
+     * @throws GraphOperationException if this is a meta type
      */
     Relation addRelation();
 
@@ -54,7 +54,7 @@ public interface RelationType extends Type {
      * @param type The supertype of this RelationType
      * @return  The RelationType itself.
      */
-    RelationType superType(RelationType type);
+    RelationType sup(RelationType type);
 
     /**
      * Adds another subtype to this type
@@ -62,7 +62,7 @@ public interface RelationType extends Type {
      * @param type The sub type of this relation type
      * @return The RelationType itself
      */
-    RelationType subType(RelationType type);
+    RelationType sub(RelationType type);
 
     /**
      * Classifies the type to a specific scope. This allows you to optionally categorise types.
@@ -71,7 +71,7 @@ public interface RelationType extends Type {
      * @return The Type itself.
      */
     @Override
-    RelationType scope(Instance scope);
+    RelationType scope(Thing scope);
 
     /**
      * Delete the scope specified.
@@ -80,7 +80,7 @@ public interface RelationType extends Type {
      * @return The Type itself
      */
     @Override
-    RelationType deleteScope(Instance scope);
+    RelationType deleteScope(Thing scope);
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
@@ -103,34 +103,34 @@ public interface RelationType extends Type {
     //------------------------------------- Accessors ----------------------------------
     /**
      * Retrieves a list of the RoleTypes that make up this RelationType.
-     * @see RoleType
+     * @see Role
      *
      * @return A list of the RoleTypes which make up this RelationType.
      */
     @CheckReturnValue
-    Collection<RoleType> relates();
+    Collection<Role> relates();
 
     //------------------------------------- Edge Handling ----------------------------------
 
     /**
-     * Sets a new RoleType for this RelationType.
-     * @see RoleType
+     * Sets a new Role for this RelationType.
+     * @see Role
      *
-     * @param roleType A new role which is part of this relationship.
+     * @param role A new role which is part of this relationship.
      * @return The RelationType itself.
      */
-    RelationType relates(RoleType roleType);
+    RelationType relates(Role role);
 
     //------------------------------------- Other ----------------------------------
 
     /**
-     * Delete a RoleType from this RelationType
-     * @see RoleType
+     * Delete a Role from this RelationType
+     * @see Role
      *
-     * @param roleType The RoleType to delete from the RelationType.
+     * @param role The Role to delete from the RelationType.
      * @return The RelationType itself.
      */
-    RelationType deleteRelates(RoleType roleType);
+    RelationType deleteRelates(Role role);
 
     //---- Inherited Methods
     /**
@@ -147,7 +147,7 @@ public interface RelationType extends Type {
      * @return The direct supertype of this RelationType
      */
     @Override
-    RelationType superType();
+    RelationType sup();
 
     /**
      * Returns a collection of subtypes of this RelationType.
@@ -155,25 +155,25 @@ public interface RelationType extends Type {
      * @return All the sub types of this RelationType
      */
     @Override
-    Collection<RelationType> subTypes();
+    Collection<RelationType> subs();
 
     /**
-     * Sets the RoleType which instances of this RelationType may play.
+     * Sets the Role which instances of this RelationType may play.
      *
-     * @param roleType The RoleType which the instances of this Type are allowed to play.
+     * @param role The Role which the instances of this Type are allowed to play.
      * @return  The RelationType itself.
      */
     @Override
-    RelationType plays(RoleType roleType);
+    RelationType plays(Role role);
 
     /**
-     * Removes the RoleType to prevent instances of this RelationType from playing it.
+     * Removes the Role to prevent instances of this RelationType from playing it.
      *
-     * @param roleType The RoleType which the instances of this Type should no longer be allowed to play.
+     * @param role The Role which the instances of this Type should no longer be allowed to play.
      * @return The RelationType itself.
      */
     @Override
-    RelationType deletePlays(RoleType roleType);
+    RelationType deletePlays(Role role);
 
     /**
      * Retrieve all the Relation instances of this RelationType

@@ -21,10 +21,9 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTinkerGraph;
-import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -54,7 +53,7 @@ public class GraknTinkerGraphFactoryTest {
         try (InputStream in = new FileInputStream(TEST_CONFIG)){
             TEST_PROPERTIES.load(in);
         } catch (IOException e) {
-            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(TEST_CONFIG), e);
+            throw GraphOperationException.invalidGraphConfig(TEST_CONFIG);
         }
     }
 
@@ -100,7 +99,7 @@ public class GraknTinkerGraphFactoryTest {
 
     @Test
     public void whenCreatingFactoryWithNullKeyspace_Throw(){
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(NULL_VALUE.getMessage("keyspace"));
         tinkerGraphFactory = new TinkerInternalFactory(null, null, null);
     }
@@ -109,7 +108,7 @@ public class GraknTinkerGraphFactoryTest {
     public void whenGettingGraphFromFactoryWithAlreadyOpenGraph_Throw(){
         TinkerInternalFactory factory = new TinkerInternalFactory("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES);
         factory.open(GraknTxType.WRITE);
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(TRANSACTION_ALREADY_OPEN.getMessage("mytest"));
         factory.open(GraknTxType.WRITE);
     }

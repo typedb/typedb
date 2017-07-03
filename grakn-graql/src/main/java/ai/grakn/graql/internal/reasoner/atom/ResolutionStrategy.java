@@ -40,6 +40,11 @@ public final class ResolutionStrategy {
     public static final int IS_RESOURCE_ATOM = 0;
 
     /**
+     * priority modifier if a given atom is a resource atom attached to a relation
+     */
+    public static final int RESOURCE_REIFIYING_RELATION = 20;
+
+    /**
      * priority modifier if a given atom is a type atom
      */
     public static final int IS_TYPE_ATOM = 0;
@@ -56,7 +61,7 @@ public final class ResolutionStrategy {
     public static final int NON_SPECIFIC_TYPE_ATOM = -1000;
 
 
-    public static final int RULE_RESOLVABLE_ATOM = -15;
+    public static final int RULE_RESOLVABLE_ATOM = -10;
 
     /**
      * priority modifier if a given atom is recursive atom
@@ -69,9 +74,14 @@ public final class ResolutionStrategy {
     public static final int GUARD = 1;
 
     /**
-     * priority modifier for guard (type atom) the atom has
+     * priority modifier for guard (type atom) the atom has - favour boundary rather than bulk atoms
      */
-    public static final int BOUND_VARIABLE = 2;
+    public static final int BOUND_VARIABLE = -2;
+
+    /**
+     * priority modifier if an atom has an inequality predicate
+     */
+    public static final int INEQUALITY_PREDICATE = -1000;
 
     /**
      * priority modifier for each specific value predicate a given atom (resource) has
@@ -85,8 +95,13 @@ public final class ResolutionStrategy {
 
     /**
      * priority modifier for each value predicate with variable
+     */
+    public static final int VARIABLE_VALUE_PREDICATE = -100;
+
+    /**
+     * priority modifier for each value predicate with variable requiring comparison
      * NB: atom satisfying this criterion should be resolved last
      */
-    public static final int VARIABLE_VALUE_PREDICATE = -1000;
+    public static final int COMPARISON_VARIABLE_VALUE_PREDICATE = - 1000;
 }
 

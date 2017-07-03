@@ -24,12 +24,13 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.GraphLoader;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -58,14 +59,13 @@ public class JsonMigratorTest {
 
     @Before
     public void setup(){
-        factory = engine.factoryWithNewKeyspace();
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
-        migrator = Migrator.to(Grakn.DEFAULT_URI, graph.getKeyspace());
-        graph.close();
+        String keyspace = GraphLoader.randomKeyspace();
+        factory = Grakn.session(engine.uri(), keyspace);
+        migrator = Migrator.to(engine.uri(), keyspace);
     }
 
     @Test
-    public void testMigrateSimpleSchemaData() {
+    public void whenMigratorExecutedOverSimpleJson_DataIsPersistedInGraph() {
         load(factory, getFile("json", "simple-schema/schema.gql"));
 
         String template = "  \n" +
@@ -94,43 +94,44 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "simple-schema/data.json");
 
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
-        EntityType personType = graph.getEntityType("person");
-        assertEquals(1, personType.instances().size());
+        try(GraknGraph graph = factory.open(GraknTxType.READ)) {
+            EntityType personType = graph.getEntityType("person");
+            assertEquals(1, personType.instances().size());
 
-        Entity person = personType.instances().iterator().next();
+            Entity person = personType.instances().iterator().next();
 
-        Entity address = getProperty(graph, person, "has-address").asEntity();
+            Entity address = getProperty(graph, person, "has-address").asEntity();
 
-        Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
+            Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
 
-        Resource number = getResource(graph, streetAddress, TypeLabel.of("number")).asResource();
-        assertEquals(21L, number.getValue());
+            Resource number = getResource(graph, streetAddress, Label.of("number")).asResource();
+            assertEquals(21L, number.getValue());
 
-        Resource street = getResource(graph, streetAddress, TypeLabel.of("street")).asResource();
-        assertEquals("2nd Street", street.getValue());
+            Resource street = getResource(graph, streetAddress, Label.of("street")).asResource();
+            assertEquals("2nd Street", street.getValue());
 
-        Resource city = getResource(graph, address, TypeLabel.of("city")).asResource();
-        assertEquals("New York", city.getValue());
+            Resource city = getResource(graph, address, Label.of("city")).asResource();
+            assertEquals("New York", city.getValue());
 
-        Collection<Instance> phoneNumbers = getProperties(graph, person, "has-phone");
-        assertEquals(2, phoneNumbers.size());
+            Collection<Thing> phoneNumbers = getProperties(graph, person, "has-phone");
+            assertEquals(2, phoneNumbers.size());
 
-        boolean phoneNumbersCorrect = phoneNumbers.stream().allMatch(phoneNumber -> {
-            Object location = getResource(graph, phoneNumber, TypeLabel.of("location")).getValue();
-            Object code = getResource(graph, phoneNumber, TypeLabel.of("code")).getValue();
-            return ((location.equals("home") && code.equals(44L)) || (location.equals("work") && code.equals(45L)));
-        });
+            boolean phoneNumbersCorrect = phoneNumbers.stream().allMatch(phoneNumber -> {
+                Object location = getResource(graph, phoneNumber, Label.of("location")).getValue();
+                Object code = getResource(graph, phoneNumber, Label.of("code")).getValue();
+                return ((location.equals("home") && code.equals(44L)) || (location.equals("work") && code.equals(45L)));
+            });
 
-        assertTrue(phoneNumbersCorrect);
+            assertTrue(phoneNumbersCorrect);
+        }
     }
 
     @Test
-    public void testMigrateAllTypesData() throws FileNotFoundException {
+    public void whenMigratorExecutedOverDataWithAllDataTypes_AllDataIsPersistedInGraph() throws FileNotFoundException {
         load(factory, getFile("json", "all-types/schema.gql"));
 
         String template = "" +
-                "insert $x isa thing\n" +
+                "insert $x isa thingy\n" +
                 "  has a-boolean <a-boolean>\n" +
                 "  has a-number  <a-number>\n" +
                 "  for (int in <array-of-ints> ) do {\n" +
@@ -141,30 +142,31 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "all-types/data.json");
 
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
-        EntityType rootType = graph.getEntityType("thing");
-        Collection<Entity> things = rootType.instances();
-        assertEquals(1, things.size());
+        try(GraknGraph graph = factory.open(GraknTxType.READ)) {
+            EntityType rootType = graph.getEntityType("thingy");
+            Collection<Entity> things = rootType.instances();
+            assertEquals(1, things.size());
 
-        Entity thing = things.iterator().next();
+            Entity thing = things.iterator().next();
 
-        Collection<Object> integers = getResources(graph, thing, TypeLabel.of("a-int")).map(r -> r.asResource().getValue()).collect(toSet());
-        assertEquals(Sets.newHashSet(1L, 2L, 3L), integers);
+            Collection<Object> integers = getResources(graph, thing, Label.of("a-int")).map(r -> r.asResource().getValue()).collect(toSet());
+            assertEquals(Sets.newHashSet(1L, 2L, 3L), integers);
 
-        Resource aBoolean = getResource(graph, thing, TypeLabel.of("a-boolean"));
-        assertEquals(true, aBoolean.getValue());
+            Resource aBoolean = getResource(graph, thing, Label.of("a-boolean"));
+            assertEquals(true, aBoolean.getValue());
 
-        Resource aNumber = getResource(graph, thing, TypeLabel.of("a-number"));
-        assertEquals(42.1, aNumber.getValue());
+            Resource aNumber = getResource(graph, thing, Label.of("a-number"));
+            assertEquals(42.1, aNumber.getValue());
 
-        Resource aString = getResource(graph, thing, TypeLabel.of("a-string"));
-        assertEquals("hi", aString.getValue());
+            Resource aString = getResource(graph, thing, Label.of("a-string"));
+            assertEquals("hi", aString.getValue());
 
-        assertEquals(0, graph.getResourceType("a-null").instances().size());
+            assertEquals(0, graph.getResourceType("a-null").instances().size());
+        }
     }
 
     @Test
-    public void testMigrateDirectory(){
+    public void whenMigratorExecutedOverJsonDirectory_AllDataIsPersistedInGraph(){
         load(factory, getFile("json", "string-or-object/schema.gql"));
 
         String template = "\n" +
@@ -174,21 +176,22 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "string-or-object/data");
 
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
-        EntityType theThing = graph.getEntityType("the-thing");
-        assertEquals(2, theThing.instances().size());
+        try(GraknGraph graph = factory.open(GraknTxType.READ)) {
+            EntityType theThing = graph.getEntityType("the-thing");
+            assertEquals(2, theThing.instances().size());
 
-        Collection<Entity> things = theThing.instances();
-        boolean thingsCorrect = things.stream().allMatch(thing -> {
-            Object string = getResource(graph, thing, TypeLabel.of("a-string")).getValue();
-            return string.equals("hello") || string.equals("goodbye");
-        });
+            Collection<Entity> things = theThing.instances();
+            boolean thingsCorrect = things.stream().allMatch(thing -> {
+                Object string = getResource(graph, thing, Label.of("a-string")).getValue();
+                return string.equals("hello") || string.equals("goodbye");
+            });
 
-        assertTrue(thingsCorrect);
+            assertTrue(thingsCorrect);
+        }
     }
 
     @Test
-    public void testStringOrObject(){
+    public void whenMigratorExecutedWithConditionalTemplate_DataIsPersistedInGraph(){
         load(factory, getFile("json", "string-or-object/schema.gql"));
 
         String template = "\n" +
@@ -198,20 +201,22 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "string-or-object/data");
 
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
-        EntityType theThing = graph.getEntityType("the-thing");
-        assertEquals(2, theThing.instances().size());
+        try(GraknGraph graph = factory.open(GraknTxType.READ)) {
+            EntityType theThing = graph.getEntityType("the-thing");
+            assertEquals(2, theThing.instances().size());
+        }
     }
 
     @Test
-    public void testMissingDataDoesNotThrowError(){
+    public void whenMigratorExecutedOverMissingData_ErrorIsNotThrownAndMissingObjectsAreSkipped(){
         load(factory, getFile("json", "string-or-object/schema.gql"));
         String template = "insert $thing isa the-thing has a-string <the-thing.a-string>;";
         declareAndLoad(template, "string-or-object/data");
 
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
-        EntityType theThing = graph.getEntityType("the-thing");
-        assertEquals(1, theThing.instances().size());
+        try(GraknGraph graph = factory.open(GraknTxType.READ)) {
+            EntityType theThing = graph.getEntityType("the-thing");
+            assertEquals(1, theThing.instances().size());
+        }
     }
 
     private void declareAndLoad(String template, String file){

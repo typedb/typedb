@@ -25,12 +25,11 @@
     <groupId>ai.grakn</groupId>
     <artifactId>grakn</artifactId>
     <packaging>pom</packaging>
-    <version>0.13.0-SNAPSHOT</version>
+    <version>0.14.0-SNAPSHOT</version>
     <name>Grakn</name>
     <description>A distributed semantic graph database.</description>
     <url>https://grakn.ai/pages/platform/index.html</url>
     <modules>
-        <module>test-tools</module>
         <module>grakn-graph</module>
         <module>grakn-graql</module>
         <module>grakn-graql-shell</module>
@@ -43,12 +42,13 @@
         <module>grakn-test-profiles</module>
         <module>grakn-factory</module>
         <module>grakn-client</module>
+        <module>grakn-test-tools</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
-        <tinkerpop.version>3.1.1-incubating</tinkerpop.version>
+        <tinkerpop.version>3.1.1-grakn-SNAPSHOT</tinkerpop.version>
         <junit.version>4.12</junit.version>
         <titan.version>1.1.0.grakn-SNAPSHOT</titan.version>
         <guava.version>19.0</guava.version>
@@ -73,6 +73,7 @@
         <orientdb.version>3.2.3.0</orientdb.version>
         <orientdb-gremlin-core.version>3.2.1</orientdb-gremlin-core.version>
         <logback.version>1.1.7</logback.version>
+        <janino.version>2.7.8</janino.version>
         <slf4j.version>1.7.20</slf4j.version>
         <csv.version>1.4</csv.version>
         <jool.version>3.8.5</jool.version>
@@ -92,8 +93,10 @@
         <quickcheck.version>0.7</quickcheck.version>
         <httpclient.version>4.5.3</httpclient.version>
         <findbugs.version>3.0.1</findbugs.version>
-        <redis.version>2.6.0</redis.version>
+        <redis.version>2.9.0</redis.version>
         <redis-test.version>0.6</redis-test.version>
+        <guava-retrying.version>2.0.0</guava-retrying.version>
+        <cassandra-driver-core.version>3.1.2</cassandra-driver-core.version>
         <main.basedir>${project.parent.basedir}</main.basedir>
     </properties>
 
@@ -232,24 +235,12 @@
             <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
+        <!--Jaino used for conditionals in log files-->
         <dependency>
-            <!--JCL-over-SLF4J to migrate from java logger to slf4j (redis) -->
-            <groupId>org.slf4j</groupId>
-            <artifactId>jcl-over-slf4j</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>org.codehaus.janino</groupId>
+            <artifactId>janino</artifactId>
+            <version>${janino.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <!--log4J-over-SLF4J to migrate from log4j logger to slf4j (kafka) -->
-            <groupId>org.slf4j</groupId>
-            <artifactId>log4j-over-slf4j</artifactId>
-            <version>${slf4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>test-tools</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 
@@ -323,7 +314,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.9.1</version>
+                <version>2.10.4</version>
                 <configuration>
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <header><![CDATA[<a href="https://grakn.ai" target="_top">Grakn</a>]]></header>
@@ -376,12 +367,6 @@
                         <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
                         <grakn.test.timerecord.file>test-timings.csv</grakn.test.timerecord.file>
                     </systemProperties>
-                    <properties>
-                        <property>
-                            <name>listener</name>
-                            <value>ai.grakn.test.listener.TimingListener</value>
-                        </property>
-                    </properties>                    
                 </configuration>
             </plugin>
             <plugin>
@@ -424,7 +409,7 @@
                 <!--
                 PMD prints warnings for a few files. This is because
                 it cannot parse method references with generic parameters, such
-                as `this::<RoleType>getType`.
+                as `this::<Role>getType`.
 
                 Any files containing these will not be checked for violations
                 by PMD.
@@ -473,6 +458,7 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <version>2.9.1</version>
                         <configuration>
+                            <javadocExecutable>${java.home}/../bin/javadoc</javadocExecutable>
                             <additionalparam>-Xdoclint:none</additionalparam>
                             <header><![CDATA[<a href="https://grakn.ai" target="_top">Grakn</a>]]></header>
                             <bottom><![CDATA[Copyright &#169; {currentYear} <a href="https://grakn.ai" target="_top">Grakn Labs Ltd</a>. All rights reserved.]]></bottom>

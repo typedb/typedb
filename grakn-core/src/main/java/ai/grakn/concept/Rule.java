@@ -29,7 +29,7 @@ import java.util.Collection;
  * </p>
  *
  * <p>
- *     It can behave like any other {@link Instance} but primarily serves as a way of extracting
+ *     It can behave like any other {@link Thing} but primarily serves as a way of extracting
  *     implicit data from the graph. By defining the LHS (if statment) and RHS (then conclusion) it is possible to
  *     automatically materialise new concepts based on these rules.
  * </p>
@@ -37,7 +37,7 @@ import java.util.Collection;
  * @author fppt
  *
  */
-public interface Rule extends Instance{
+public interface Rule extends Thing {
     //------------------------------------- Modifiers ----------------------------------
     /**
      * Creates a relation from this instance to the provided resource.

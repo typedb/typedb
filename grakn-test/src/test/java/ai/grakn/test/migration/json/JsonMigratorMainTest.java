@@ -18,21 +18,24 @@
 
 package ai.grakn.test.migration.json;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.GraphLoader;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.contrib.java.lang.system.SystemErrRule;
+import org.junit.contrib.java.lang.system.SystemOutRule;
 
 import java.util.Collection;
 
@@ -42,82 +45,67 @@ import static ai.grakn.test.migration.MigratorTestUtils.getProperty;
 import static ai.grakn.test.migration.MigratorTestUtils.getResource;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 public class JsonMigratorMainTest {
 
     private final String dataFile = getFile("json", "simple-schema/data.json").getAbsolutePath();
     private final String templateFile = getFile("json", "simple-schema/template.gql").getAbsolutePath();
 
-    private GraknGraph graph;
+    private String keyspace;
+    private GraknSession session;
 
     @Rule
-    public final ExpectedException exception = ExpectedException.none();
+    public final SystemOutRule sysOut = new SystemOutRule().enableLog();
+
+    @Rule
+    public final SystemErrRule sysErr = new SystemErrRule().enableLog();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setup() {
-        GraknSession factory = engine.factoryWithNewKeyspace();
-        load(factory, getFile("json", "simple-schema/schema.gql"));
-        graph = factory.open(GraknTxType.WRITE);
+        keyspace = GraphLoader.randomKeyspace();
+        session = Grakn.session(engine.uri(), keyspace);
+
+        load(session, getFile("json", "simple-schema/schema.gql"));
     }
 
     @Test
-    public void jsonMigratorMainTest(){
-        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace());
+    public void jsonMigratorCalledWithCorrectArgs_DataMigratedCorrectly(){
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", keyspace);
     }
 
     @Test
-    public void jsonMainDistributedLoaderTest(){
-        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace(), "-uri", "localhost:4567");
-    }
-
-    @Test
-    public void jsonMainNoArgsTest() {
+    public void jsonMigratorCalledWithNoArgs_HelpMessagePrintedToSystemOut() {
         run("json");
+        assertThat(sysOut.getLog(), containsString("usage: migration.sh"));
     }
 
     @Test
-    public void jsonMainNoTemplateFileNameTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Template file missing (-t)");
-        run("-input", "");
+    public void jsonMigratorCalledWithNoTemplate_ErrorIsPrintedToSystemErr(){
+        run("-input", "", "-u", engine.uri());
+        assertThat(sysErr.getLog(), containsString("Template file missing (-t)"));
     }
 
     @Test
-    public void jsonMainUnknownArgumentTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Unrecognized option: -whale");
+    public void jsonMigratorCalledWithUnknownArgument_ErrorIsPrintedToSystemErr(){
         run("-whale", "");
+        assertThat(sysErr.getLog(), containsString("Unrecognized option: -whale"));
     }
 
     @Test
-    public void jsonMainNoDataFileExistsTest(){
-        exception.expect(RuntimeException.class);
-        run("-input", dataFile + "wrong", "-template", templateFile + "wrong");
+    public void jsonMigratorCalledInvalidInputFile_ErrorIsPrintedToSystemErr(){
+        run("-input", dataFile + "wrong", "-template", templateFile + "wrong", "-u", engine.uri());
+        assertThat(sysErr.getLog(), containsString("Cannot find file:"));
     }
 
     @Test
-    public void jsonMainNoTemplateFileExistsTest(){
-        exception.expect(RuntimeException.class);
-        run("-input", dataFile, "-template", templateFile + "wrong");
-    }
-
-    @Test
-    public void jsonMainBatchSizeArgumentTest(){
-        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace());
-    }
-
-    @Test
-    public void jsonMainActiveTasksArgumentTest(){
-        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-a", "2", "-keyspace", graph.getKeyspace());
-    }
-
-    @Test
-    public void jsonMainThrowableTest(){
-        exception.expect(RuntimeException.class);
-        run("-input", dataFile, "-template", templateFile, "-batch", "hello");
+    public void jsonMigratorCalledInvalidTemplateFile_ErrorIsPrintedToSystemErr(){
+        run("-input", dataFile, "-template", templateFile + "wrong", "-u", engine.uri());
+        assertThat(sysErr.getLog(), containsString("Cannot find file:"));
     }
 
     private void run(String... args){
@@ -127,17 +115,19 @@ public class JsonMigratorMainTest {
     private void runAndAssertDataCorrect(String... args){
         run(args);
 
-        EntityType personType = graph.getEntityType("person");
-        assertEquals(1, personType.instances().size());
+        try(GraknGraph graph = session.open(GraknTxType.READ)) {
+            EntityType personType = graph.getEntityType("person");
+            assertEquals(1, personType.instances().size());
 
-        Entity person = personType.instances().iterator().next();
-        Entity address = getProperty(graph, person, "has-address").asEntity();
-        Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
+            Entity person = personType.instances().iterator().next();
+            Entity address = getProperty(graph, person, "has-address").asEntity();
+            Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
 
-        Resource number = getResource(graph, streetAddress, TypeLabel.of("number")).asResource();
-        assertEquals(21L, number.getValue());
+            Resource number = getResource(graph, streetAddress, Label.of("number")).asResource();
+            assertEquals(21L, number.getValue());
 
-        Collection<Instance> phoneNumbers = getProperties(graph, person, "has-phone");
-        assertEquals(2, phoneNumbers.size());
+            Collection<Thing> phoneNumbers = getProperties(graph, person, "has-phone");
+            assertEquals(2, phoneNumbers.size());
+        }
     }
 }

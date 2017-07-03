@@ -4,13 +4,13 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTinkerGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.test.GraknTestSetup;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -21,7 +21,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -35,10 +35,10 @@ public class GraphTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void isClosedTest() throws Exception {
+    public void whencCommitting_EnsureGraphTransactionIsClosed() throws Exception {
         GraknGraph graph = engine.factoryWithNewKeyspace().open(GraknTxType.WRITE);
         String keyspace = graph.getKeyspace();
-        graph.putEntityType("thing");
+        graph.putEntityType("thingy");
         graph.commit();
         assertTrue(graph.isClosed());
 
@@ -53,8 +53,8 @@ public class GraphTest {
     }
 
     private void addThingToBatch(String keyspace){
-        try(GraknGraph graphBatchLoading = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)) {
-            graphBatchLoading.getEntityType("thing").addEntity();
+        try(GraknGraph graphBatchLoading = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)) {
+            graphBatchLoading.getEntityType("thingy").addEntity();
             graphBatchLoading.commit();
         } catch (Exception e){
             throw new RuntimeException(e);
@@ -62,11 +62,11 @@ public class GraphTest {
     }
 
     @Test
-    public void testSameGraphs() throws GraknValidationException {
+    public void whenFetchingGraphsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureGraphsAreTheSame() throws InvalidGraphException {
         String key = "mykeyspace";
-        GraknGraph graph1 = Grakn.session(Grakn.DEFAULT_URI, key).open(GraknTxType.WRITE);
+        GraknGraph graph1 = Grakn.session(engine.uri(), key).open(GraknTxType.WRITE);
         graph1.close();
-        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(key, GraknTxType.WRITE);
+        GraknGraph graph2 = engine.server().factory().getGraph(key, GraknTxType.WRITE);
         assertEquals(graph1, graph2);
         graph1.close();
         graph2.close();
@@ -99,7 +99,7 @@ public class GraphTest {
 
     @Test
     public void afterCommitting_NumberOfOpenTransactionsDecrementsOnce() {
-        assumeFalse(usingTinker()); // Tinker graph only ever has one open transaction
+        assumeFalse(GraknTestSetup.usingTinker()); // Tinker graph only ever has one open transaction
 
         GraknSession session = engine.factoryWithNewKeyspace();
 
@@ -119,15 +119,38 @@ public class GraphTest {
 
     @Test
     public void closeGraphWhenOnlyOneTransactionIsOpen(){
-        assumeFalse(usingTinker()); //Tinker does not have any connections to close
+        assumeFalse(GraknTestSetup.usingTinker()); //Tinker does not have any connections to close
 
         GraknSession factory = engine.factoryWithNewKeyspace();
         GraknGraph graph = factory.open(GraknTxType.WRITE);
         factory.close();
 
-        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(graph.getKeyspace()));
 
-        graph.putEntityType("A Thing");
+        graph.putEntityType("A thingy");
+    }
+
+    @Test
+    public void whenAddingEntitiesToAbstractTypeCreatedInDifferentTransaction_Throw(){
+        assumeFalse(GraknTestSetup.usingTinker());
+
+        String label = "An Abstract thingy";
+
+        try(GraknSession session = Grakn.session(engine.uri(), "abstractTest")){
+            try(GraknGraph graph = session.open(GraknTxType.WRITE)){
+                graph.putEntityType(label).setAbstract(true);
+                graph.commit();
+            }
+        }
+
+        expectedException.expect(GraphOperationException.class);
+        expectedException.expectMessage(IS_ABSTRACT.getMessage(label));
+
+        try(GraknSession session = Grakn.session(engine.uri(), "abstractTest")){
+            try(GraknGraph graph = session.open(GraknTxType.WRITE)){
+                graph.getEntityType(label).addEntity();
+            }
+        }
     }
 }

@@ -29,7 +29,7 @@ import java.util.Collection;
  * </p>
  *
  * <p>
- *     Acts as an {@link Instance} when relating to other instances except it has the added functionality of:
+ *     Acts as an {@link Thing} when relating to other instances except it has the added functionality of:
  *     1. It is unique to its {@link ResourceType} based on it's value.
  *     2. It has a {@link ai.grakn.concept.ResourceType.DataType} associated with it which constrains the allowed values.
  * </p>
@@ -39,7 +39,7 @@ import java.util.Collection;
  * @param <D> The data type of this resource type.
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
-public interface Resource<D> extends Instance{
+public interface Resource<D> extends Thing {
     //------------------------------------- Accessors ----------------------------------
     /**
      * Retrieves the value of the Resource.
@@ -50,9 +50,9 @@ public interface Resource<D> extends Instance{
     D getValue();
 
     /**
-     * Retrieves the type of the Resource, that is, the ResourceType of which this resource is an Instance.
+     * Retrieves the type of the Resource, that is, the ResourceType of which this resource is an Thing.
      *
-     * @return The ResourceType of which this resource is an Instance.
+     * @return The ResourceType of which this resource is an Thing.
      */
     @Override
     ResourceType<D> type();
@@ -71,15 +71,15 @@ public interface Resource<D> extends Instance{
      * @return The list of all Instances that possess this Resource.
      */
     @CheckReturnValue
-    Collection<Instance> ownerInstances();
+    Collection<Thing> ownerInstances();
 
     /**
-     * If the Resource is unique, this method retrieves the Instance that possesses it.
+     * If the Resource is unique, this method retrieves the Thing that possesses it.
      *
-     * @return The Instance which is connected to a unique Resource.
+     * @return The Thing which is connected to a unique Resource.
      */
     @CheckReturnValue
-    Instance owner();
+    Thing owner();
 
     /**
      * Creates a relation from this instance to the provided resource.

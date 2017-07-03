@@ -18,26 +18,30 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
- *     Encapsulates relationships between {@link Instance}
+ *     Encapsulates relationships between {@link Thing}
  * </p>
  *
  * <p>
@@ -47,30 +51,42 @@ import java.util.TreeSet;
  * @author fppt
  *
  */
-class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relation {
-    RelationImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation {
+    RelationImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    RelationImpl(AbstractGraknGraph graknGraph, Vertex v, RelationType type) {
-        super(graknGraph, v, type);
-    }
-
-    /**
-     *
-     * @return All the castings this relation is connected with
-     */
-    Set<CastingImpl> getMappingCasting() {
-        Set<CastingImpl> castings = new HashSet<>();
-        getOutgoingNeighbours(Schema.EdgeLabel.CASTING).forEach(casting -> castings.add(((CastingImpl) casting)));
-        return castings;
+    RelationImpl(VertexElement vertexElement, RelationType type) {
+        super(vertexElement, type);
     }
 
     /**
      * Sets the internal hash in order to perform a faster lookup
      */
     void setHash(){
-        setUniqueProperty(Schema.ConceptProperty.INDEX, generateNewHash(type(), allRolePlayers()));
+        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateNewHash(type(), allRolePlayers()));
+    }
+
+    /**
+     * Castings are retrieved from the perspective of the {@link Relation}
+     *
+     * @param roles The role which the instances are playing
+     * @return The {@link Casting} which unify a {@link Role} and {@link Thing} with this {@link Relation}
+     */
+    Stream<Casting> castingsRelation(Role... roles){
+        if(roles.length == 0){
+            return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
+                    map(edge -> vertex().graph().factory().buildRolePlayer(edge));
+        }
+
+        //Traversal is used so we can potentially optimise on the index
+        Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
+        return vertex().graph().getTinkerTraversal().
+                has(Schema.VertexProperty.ID.name(), getId().getValue()).
+                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), type().getTypeId().getValue()).
+                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).
+                toStream().map(edge -> vertex().graph().factory().buildRolePlayer(edge));
     }
 
     /**
@@ -79,12 +95,12 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @param roleMap The roles and their corresponding role players
      * @return A unique hash identifying this relation
      */
-    static String generateNewHash(RelationType relationType, Map<RoleType, Set<Instance>> roleMap){
-        SortedSet<RoleType> sortedRoleIds = new TreeSet<>(roleMap.keySet());
+    static String generateNewHash(RelationType relationType, Map<Role, Set<Thing>> roleMap){
+        SortedSet<Role> sortedRoleIds = new TreeSet<>(roleMap.keySet());
         StringBuilder hash = new StringBuilder();
         hash.append("RelationType_").append(relationType.getId().getValue().replace("_", "\\_")).append("_Relation");
 
-        for(RoleType role: sortedRoleIds){
+        for(Role role: sortedRoleIds){
             hash.append("_").append(role.getId().getValue().replace("_", "\\_"));
 
             roleMap.get(role).forEach(instance -> {
@@ -98,63 +114,52 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
     /**
      * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
-     * @see RoleType
+     * @see Role
      *
      * @return A list of all the role types and the instances playing them in this relation.
      */
-    public Map<RoleType, Set<Instance>> allRolePlayers(){
-        Set<CastingImpl> castings = getMappingCasting();
-        HashMap<RoleType, Set<Instance>> roleMap = new HashMap<>();
+    @Override
+    public Map<Role, Set<Thing>> allRolePlayers(){
+        HashMap<Role, Set<Thing>> roleMap = new HashMap<>();
 
-        //Gets roles based on all roles of the relation type
+        //We add the role types explicitly so we can return them when there are no roleplayers
         type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
-
-        //Now iterate over castings
-        castings.forEach(c -> roleMap.computeIfAbsent(c.getRole(), (k) -> new HashSet<>()).add(c.getRolePlayer()));
+        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRoleType(), (k) -> new HashSet<>()).add(rp.getInstance()));
 
         return roleMap;
     }
 
     @Override
-    public Collection<Instance> rolePlayers(RoleType... roleTypes) {
-        Set<Instance> rolePlayers = new HashSet<>();
-        Set<RoleType> validRoleTypes = new HashSet<>(Arrays.asList(roleTypes));
-
-        getMappingCasting().forEach(casting -> {
-            if(validRoleTypes.isEmpty() || validRoleTypes.contains(casting.getRole())){
-                rolePlayers.add(casting.getRolePlayer());
-            }
-        });
-
-        return rolePlayers;
+    public Collection<Thing> rolePlayers(Role... roles) {
+        return castingsRelation(roles).map(Casting::getInstance).collect(Collectors.toSet());
     }
+
 
     /**
      * Expands this Relation to include a new role player which is playing a specific role.
-     * @param roleType The role of the new role player.
-     * @param instance The new role player.
+     * @param role The role of the new role player.
+     * @param thing The new role player.
      * @return The Relation itself
      */
     @Override
-    public Relation addRolePlayer(RoleType roleType, Instance instance) {
-        if(roleType == null){
-            throw new IllegalArgumentException(ErrorMessage.ROLE_IS_NULL.getMessage(instance));
-        }
+    public Relation addRolePlayer(Role role, Thing thing) {
+        Objects.requireNonNull(role);
+        Objects.requireNonNull(thing);
+
+        if(Schema.MetaSchema.isMetaLabel(role.getLabel())) throw GraphOperationException.metaTypeImmutable(role.getLabel());
 
         //Do the actual put of the role and role player
-        return addNewRolePlayer(roleType, instance);
+        return addNewRolePlayer(role, thing);
     }
 
     /**
      * Adds a new role player to this relation
-     * @param roleType The role of the new role player.
-     * @param instance The new role player.
+     * @param role The role of the new role player.
+     * @param thing The new role player.
      * @return The Relation itself
      */
-    private Relation addNewRolePlayer(RoleType roleType, Instance instance){
-        if(instance != null) {
-            getGraknGraph().addCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
-        }
+    private Relation addNewRolePlayer(Role role, Thing thing){
+        vertex().graph().putShortcutEdge((ThingImpl) thing, this, (RoleImpl) role);
         return this;
     }
 
@@ -163,10 +168,10 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     void cleanUp() {
         boolean performDeletion = true;
-        Collection<Instance> rolePlayers = rolePlayers();
+        Collection<Thing> rolePlayers = rolePlayers();
 
-        for(Instance instance : rolePlayers){
-            if(instance != null && (instance.getId() != null )){
+        for(Thing thing : rolePlayers){
+            if(thing != null && (thing.getId() != null )){
                 performDeletion = false;
             }
         }
@@ -180,13 +185,13 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     public String innerToString(){
         StringBuilder description = new StringBuilder();
         description.append("ID [").append(getId()).append("] Type [").append(type().getLabel()).append("] Roles and Role Players: \n");
-        for (Map.Entry<RoleType, Set<Instance>> entry : allRolePlayers().entrySet()) {
+        for (Map.Entry<Role, Set<Thing>> entry : allRolePlayers().entrySet()) {
             if(entry.getValue().isEmpty()){
                 description.append("    Role [").append(entry.getKey().getLabel()).append("] not played by any instance \n");
             } else {
                 StringBuilder instancesString = new StringBuilder();
-                for (Instance instance : entry.getValue()) {
-                    instancesString.append(instance.getId()).append(",");
+                for (Thing thing : entry.getValue()) {
+                    instancesString.append(thing.getId()).append(",");
                 }
                 description.append("    Role [").append(entry.getKey().getLabel()).append("] played by [").
                         append(instancesString.toString()).append("] \n");

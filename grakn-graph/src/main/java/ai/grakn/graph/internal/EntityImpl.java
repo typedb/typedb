@@ -20,7 +20,6 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * <p>
@@ -35,12 +34,12 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  *
  * @author fppt
  */
-class EntityImpl extends InstanceImpl<Entity, EntityType> implements Entity {
-    EntityImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity {
+    EntityImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    EntityImpl(AbstractGraknGraph graknGraph, Vertex v, EntityType type) {
-        super(graknGraph, v, type);
+    EntityImpl(VertexElement vertexElement, EntityType type) {
+        super(vertexElement, type);
     }
 }

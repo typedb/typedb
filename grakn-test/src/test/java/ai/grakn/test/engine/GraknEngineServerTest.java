@@ -23,12 +23,14 @@ import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.engine.GraknEngineConfig.ZK_CONNECTION_TIMEOUT;
+import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -44,9 +46,11 @@ public class GraknEngineServerTest {
     @Test
     public void whenEnginePropertiesIndicatesStandaloneTM_StandaloneTmIsStarted() {
         // Should start engine with in-memory server
-        GraknEngineConfig.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, StandaloneTaskManager.class.getName());
+        GraknEngineConfig conf = GraknEngineConfig.create();
+        conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, StandaloneTaskManager.class.getName());
 
-        try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
+        // Start Engine
+        try (GraknEngineServer server = GraknEngineServer.start(conf)) {
             assertTrue(server.getTaskManager() instanceof StandaloneTaskManager);
         }
     }
@@ -55,11 +59,29 @@ public class GraknEngineServerTest {
     public void whenEnginePropertiesIndicatesSingleQueueTM_SingleQueueTmIsStarted() {
         // Should start engine with distributed server, which means we will get a cannot
         // connect to Zookeeper exception (that has not been started)
-        GraknEngineConfig.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
-        GraknEngineConfig.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
+        GraknEngineConfig conf = GraknEngineConfig.create();
+        conf.setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
+        conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
 
-        try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
+        // Start Engine
+        try (GraknEngineServer server = GraknEngineServer.start(conf)) {
             assertThat(server.getTaskManager(), instanceOf(SingleQueueTaskManager.class));
+        }
+    }
+
+    @Test
+    public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded(){
+        GraknTestSetup.startCassandraIfNeeded();
+
+        GraknEngineConfig conf = GraknEngineConfig.create();
+        try (GraknEngineServer server = GraknEngineServer.start(conf)) {
+            assertNotNull(server.factory().systemKeyspace());
+
+            // init a random keyspace
+            String keyspaceName = "thisisarandomwhalekeyspace";
+            server.factory().systemKeyspace().ensureKeyspaceInitialised(keyspaceName);
+
+            assertTrue(server.factory().systemKeyspace().containsKeyspace(keyspaceName));
         }
     }
 }

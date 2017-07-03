@@ -18,8 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -29,13 +28,13 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Set;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -59,7 +58,7 @@ public class TypeAtom extends Binary{
     public TypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
     public TypeAtom(VarPatternAdmin pattern, IdPredicate p, ReasonerQuery par) { super(pattern, p, par);}
     public TypeAtom(Var var, Var valueVar, IdPredicate p, ReasonerQuery par){
-        this(Graql.var(var).isa(Graql.var(valueVar)).admin(), p, par);
+        this(var.isa(valueVar).admin(), p, par);
     }
     protected TypeAtom(TypeAtom a) { super(a);}
 
@@ -82,8 +81,8 @@ public class TypeAtom extends Binary{
 
     @Override
     public String toString(){
-        String typeString = (getType() != null? getType().getLabel() : "") + "(" + getVarName() + ")";
-        return typeString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
+        String typeString = (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") + "(" + getVarName() + ")";
+        return typeString + getPredicates().stream().map(Predicate::toString).collect(Collectors.joining(""));
     }
 
     @Override
@@ -121,45 +120,42 @@ public class TypeAtom extends Binary{
     @Override
     public boolean isRuleApplicable(InferenceRule child) {
         Atom ruleAtom = child.getHead().getAtom();
-        return this.getType() != null
+        return this.getOntologyConcept() != null
                 //ensure not ontological atom query
                 && getPattern().asVar().hasProperty(IsaProperty.class)
-                && this.getType().subTypes().contains(ruleAtom.getType());
+                && this.getOntologyConcept().subs().contains(ruleAtom.getOntologyConcept());
     }
 
     @Override
     public boolean isSelectable() {
-        ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
         return getPredicate() == null
                 //type atom corresponding to relation or resource
-                || getType() != null && (getType().isResourceType() ||getType().isRelationType())
+                || getOntologyConcept() != null && (getOntologyConcept().isResourceType() || getOntologyConcept().isRelationType())
                 //disjoint atom
-                || (!(parent instanceof ReasonerAtomicQuery) && parent.findNextJoinable(this) == null)
+                || !this.getNeighbours().findFirst().isPresent()
                 || isRuleResolvable();
     }
 
     @Override
     public boolean isAllowedToFormRuleHead(){
-        return getType() != null;
+        return getOntologyConcept() != null;
     }
 
     @Override
     public boolean requiresMaterialisation() {
-        return isUserDefinedName() && getType() != null && getType().isRelationType();
+        return isUserDefinedName() && getOntologyConcept() != null && getOntologyConcept().isRelationType();
     }
 
     @Override
-    public int resolutionPriority(){
-        if (priority == Integer.MAX_VALUE) {
-            priority = super.resolutionPriority();
-            priority += ResolutionStrategy.IS_TYPE_ATOM;
-            priority += getType() == null && !isRelation()? ResolutionStrategy.NON_SPECIFIC_TYPE_ATOM : 0;
-        }
+    public int computePriority(Set<Var> subbedVars){
+        int priority = super.computePriority(subbedVars);
+        priority += ResolutionStrategy.IS_TYPE_ATOM;
+        priority += getOntologyConcept() == null && !isRelation()? ResolutionStrategy.NON_SPECIFIC_TYPE_ATOM : 0;
         return priority;
     }
 
     @Override
-    public Type getType() {
+    public OntologyConcept getOntologyConcept() {
         return getPredicate() != null ?
                 getParentQuery().graph().getConcept(getPredicate().getPredicate()) : null;
     }

@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeId;
-import ai.grakn.util.Schema;
+import ai.grakn.concept.LabelId;
+import ai.grakn.util.CommonUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -43,9 +43,9 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     // element key
     public static final String DEGREE = "degreeVertexProgram.degree";
-    private static final String OF_TYPE_LABELS = "degreeVertexProgram.ofTypeIds";
+    private static final String OF_LABELS = "degreeVertexProgram.ofLabelIds";
 
-    Set<TypeId> ofTypeIds = new HashSet<>();
+    Set<LabelId> ofLabelIds = new HashSet<>();
 
     String degreePropertyKey;
 
@@ -53,24 +53,24 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     public DegreeVertexProgram() {
     }
 
-    public DegreeVertexProgram(Set<TypeId> types, Set<TypeId> ofTypeIds, String randomId) {
+    public DegreeVertexProgram(Set<LabelId> types, Set<LabelId> ofLabelIds, String randomId) {
         selectedTypes = types;
         degreePropertyKey = DEGREE + randomId;
-        this.ofTypeIds = ofTypeIds;
+        this.ofLabelIds = ofLabelIds;
         this.persistentProperties.put(DEGREE, degreePropertyKey);
     }
 
     @Override
     public void storeState(final Configuration configuration) {
         super.storeState(configuration);
-        ofTypeIds.forEach(type -> configuration.addProperty(OF_TYPE_LABELS + "." + type, type));
+        ofLabelIds.forEach(type -> configuration.addProperty(OF_LABELS + "." + type, type));
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
-        configuration.subset(OF_TYPE_LABELS).getKeys().forEachRemaining(key ->
-                ofTypeIds.add(TypeId.of(configuration.getInt(OF_TYPE_LABELS + "." + key))));
+        configuration.subset(OF_LABELS).getKeys().forEachRemaining(key ->
+                ofLabelIds.add(LabelId.of(configuration.getInt(OF_LABELS + "." + key))));
         degreePropertyKey = (String) this.persistentProperties.get(DEGREE);
     }
 
@@ -81,48 +81,40 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        switch (memory.getIteration()) {
-            case 0:
-                return messageScopeSetInstance;
-            case 1:
-                return messageScopeSetCasting;
-            default:
-                return Collections.emptySet();
-        }
+        return memory.isInitialIteration() ? messageScopeSetShortcut : Collections.emptySet();
     }
 
     @Override
     public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
-
             case 0:
-                if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                    degreeStepInstance(vertex, messenger);
-                }
+                degreeMessagePassing(vertex, messenger);
                 break;
-
             case 1:
-                if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
-                    degreeStepCasting(messenger);
-                }
+                degreeMessageCounting(vertex, messenger);
                 break;
-
-            case 2:
-                TypeId typeId = Utility.getVertexTypeId(vertex);
-                if (selectedTypes.contains(typeId) && ofTypeIds.contains(typeId)) {
-                    vertex.property(degreePropertyKey, getMessageCount(messenger));
-                }
-                break;
-
             default:
-                throw new RuntimeException("unreachable");
+                throw CommonUtil.unreachableStatement("Exceeded expected maximum number of iterations");
         }
     }
 
     @Override
     public boolean terminate(final Memory memory) {
         LOGGER.debug("Finished Degree Iteration " + memory.getIteration());
-        return memory.getIteration() == 2;
+        return memory.getIteration() == 1;
     }
 
+    void degreeMessagePassing(Vertex vertex, Messenger<Long> messenger) {
+        if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
+            messenger.sendMessage(messageScopeShortcutIn, 1L);
+            messenger.sendMessage(messageScopeShortcutOut, 1L);
+        }
+    }
+
+    void degreeMessageCounting(Vertex vertex, Messenger<Long> messenger) {
+        LabelId labelId = Utility.getVertexTypeId(vertex);
+        if (selectedTypes.contains(labelId) && ofLabelIds.contains(labelId)) {
+            vertex.property(degreePropertyKey, getMessageCount(messenger));
+        }
+    }
 }

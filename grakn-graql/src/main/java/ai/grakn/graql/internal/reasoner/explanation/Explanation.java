@@ -40,16 +40,16 @@ public class Explanation implements AnswerExplanation {
 
     public Explanation(){ answers = new HashSet<>();}
     Explanation(ReasonerQuery q){
-        this.query = q.copy();
+        this.query = q;
         answers = new HashSet<>();
     }
     Explanation(ReasonerQuery q, Set<Answer> ans){
-        this.query = q.copy();
-        this.answers = new HashSet<>(ans);
+        this.query = q;
+        this.answers = ans;
     }
     Explanation(Explanation e){
-        this.answers = new HashSet<>(e.answers);
-        this.query = e.getQuery().copy();
+        this.answers = e.answers;
+        this.query = e.getQuery();
     }
 
     @Override
@@ -68,10 +68,10 @@ public class Explanation implements AnswerExplanation {
     public boolean isRuleExplanation(){ return false;}
 
     @Override
-    public boolean isJoinExplanation(){ return !isLookupExplanation() && !isRuleExplanation();}
+    public boolean isJoinExplanation(){ return false;}
 
     @Override
-    public boolean isEmpty() { return !isLookupExplanation() && !isRuleExplanation() && getAnswers().isEmpty();}
+    public boolean isEmpty() { return isJoinExplanation() && getAnswers().isEmpty();}
 
     @Override
     public ReasonerQuery getQuery(){ return query;}
@@ -83,7 +83,7 @@ public class Explanation implements AnswerExplanation {
 
     @Override
     public AnswerExplanation merge(AnswerExplanation a2) {
-        AnswerExplanation exp = new Explanation();
+        AnswerExplanation exp = new JoinExplanation();
         if (this.isJoinExplanation()) this.getAnswers().forEach(exp::addAnswer);
         if (a2.isJoinExplanation()) a2.getAnswers().forEach(exp::addAnswer);
         return exp;

@@ -19,7 +19,6 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
-import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.GraknOrientDBGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -125,7 +124,7 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
 
             for (String propertyConfig : configs) {
                 String[] propertyConfigs = propertyConfig.split(":");
-                Schema.ConceptProperty property = Schema.ConceptProperty.valueOf(propertyConfigs[0]);
+                Schema.VertexProperty property = Schema.VertexProperty.valueOf(propertyConfigs[0]);
                 boolean isUnique = Boolean.parseBoolean(propertyConfigs[1]);
 
                 OType orientDataType = getOrientDataType(property);
@@ -147,7 +146,7 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
         return graph;
     }
 
-    private OType getOrientDataType(Schema.ConceptProperty property){
+    private OType getOrientDataType(Schema.VertexProperty property){
         Class propertyDataType = property.getDataType();
 
         if(propertyDataType.equals(String.class)){
@@ -161,7 +160,7 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
         } else {
             String options = String.class.getName() + ", " + Long.class.getName() + ", " +
                     Double.class.getName() + ", or " + Boolean.class.getName();
-            throw new GraphRuntimeException(INVALID_DATATYPE.getMessage(propertyDataType.getName(), options));
+            throw new RuntimeException(INVALID_DATATYPE.getMessage(propertyDataType.getName(), options));
         }
     }
 

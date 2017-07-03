@@ -20,7 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.GraknTitanGraph;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.TitanGraph;
@@ -62,12 +62,12 @@ public class TitanInternalFactoryTest extends TitanTestBase{
         TitanManagement management = sharedGraph.openManagement();
 
         //Test Composite Indices
-        String byId = "by" + Schema.ConceptProperty.ID.name();
-        String byIndex = "by" + Schema.ConceptProperty.INDEX.name();
-        String byValueString = "by" + Schema.ConceptProperty.VALUE_STRING.name();
-        String byValueLong = "by" + Schema.ConceptProperty.VALUE_LONG.name();
-        String byValueDouble = "by" + Schema.ConceptProperty.VALUE_DOUBLE.name();
-        String byValueBoolean = "by" + Schema.ConceptProperty.VALUE_BOOLEAN.name();
+        String byId = "by" + Schema.VertexProperty.ID.name();
+        String byIndex = "by" + Schema.VertexProperty.INDEX.name();
+        String byValueString = "by" + Schema.VertexProperty.VALUE_STRING.name();
+        String byValueLong = "by" + Schema.VertexProperty.VALUE_LONG.name();
+        String byValueDouble = "by" + Schema.VertexProperty.VALUE_DOUBLE.name();
+        String byValueBoolean = "by" + Schema.VertexProperty.VALUE_BOOLEAN.name();
 
         assertEquals(byId, management.getGraphIndex(byId).toString());
         assertEquals(byIndex, management.getGraphIndex(byIndex).toString());
@@ -84,7 +84,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
         }
 
         //Test Properties
-        Arrays.stream(Schema.ConceptProperty.values()).forEach(property ->
+        Arrays.stream(Schema.VertexProperty.values()).forEach(property ->
                 assertNotNull(management.getPropertyKey(property.name())));
         Arrays.stream(Schema.EdgeProperty.values()).forEach(property ->
                 assertNotNull(management.getPropertyKey(property.name())));
@@ -149,7 +149,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
                 graph.putEntityType("A Thing");
                 try {
                     graph.close();
-                } catch (GraknValidationException e) {
+                } catch (InvalidGraphException e) {
                     e.printStackTrace();
                 }
             }));
@@ -171,7 +171,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
     }
 
     @Test
-    public void testGraphNotClosed() throws GraknValidationException {
+    public void testGraphNotClosed() throws InvalidGraphException {
         TitanInternalFactory factory = new TitanInternalFactory("stuff", Grakn.IN_MEMORY, TEST_PROPERTIES);
         GraknTitanGraph graph = factory.open(GraknTxType.WRITE);
         assertFalse(graph.getTinkerPopGraph().isClosed());
@@ -195,14 +195,14 @@ public class TitanInternalFactoryTest extends TitanTestBase{
     private void addConcepts(Graph graph) {
         Vertex vertex1 = graph.addVertex();
         vertex1.property("ITEM_IDENTIFIER", "www.grakn.com/action-movie/");
-        vertex1.property(Schema.ConceptProperty.VALUE_STRING.name(), "hi there");
+        vertex1.property(Schema.VertexProperty.VALUE_STRING.name(), "hi there");
 
         Vertex vertex2 = graph.addVertex();
-        vertex2.property(Schema.ConceptProperty.VALUE_STRING.name(), "hi there");
+        vertex2.property(Schema.VertexProperty.VALUE_STRING.name(), "hi there");
     }
 
     private void assertIndexCorrect(Graph graph) {
-        assertEquals(2, graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), "hi there").count().next().longValue());
-        assertFalse(graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), "hi").hasNext());
+        assertEquals(2, graph.traversal().V().has(Schema.VertexProperty.VALUE_STRING.name(), "hi there").count().next().longValue());
+        assertFalse(graph.traversal().V().has(Schema.VertexProperty.VALUE_STRING.name(), "hi").hasNext());
     }
 }

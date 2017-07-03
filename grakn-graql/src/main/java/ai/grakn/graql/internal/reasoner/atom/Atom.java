@@ -18,6 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
@@ -25,7 +26,8 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.reasoner.ReasonerUtils;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -38,8 +40,9 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesCompatible;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkCompatible;
 
 /**
  *
@@ -54,8 +57,8 @@ public abstract class Atom extends AtomicBase {
 
     private Type type = null;
     protected ConceptId typeId = null;
-    protected int priority = Integer.MAX_VALUE;
-    private Set<InferenceRule> applicableRules = null;
+    private int basePriority = Integer.MAX_VALUE;
+    protected Set<InferenceRule> applicableRules = null;
 
     protected Atom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
@@ -89,24 +92,48 @@ public abstract class Atom extends AtomicBase {
     public Set<IdPredicate> getPartialSubstitutions(){ return new HashSet<>();}
 
     /**
+     * compute base resolution priority of this atom
+     * @return priority value
+     */
+    private int computePriority(){
+        return computePriority(getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet()));
+    }
+
+    /**
+     * compute resolution priority based on provided substitution variables
+     * @param subbedVars variables having a substitution
+     * @return resolution priority value
+     */
+    public int computePriority(Set<Var> subbedVars){
+        int priority = 0;
+        priority += Sets.intersection(getVarNames(), subbedVars).size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
+        priority += isRuleResolvable()? ResolutionStrategy.RULE_RESOLVABLE_ATOM : 0;
+        priority += isRecursive()? ResolutionStrategy.RECURSIVE_ATOM : 0;
+
+        priority += getTypeConstraints().size() * ResolutionStrategy.GUARD;
+        Set<Var> otherVars = getParentQuery().getAtoms().stream()
+                .filter(a -> a != this)
+                .flatMap(at -> at.getVarNames().stream())
+                .collect(Collectors.toSet());
+        priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
+
+        //inequality predicates with unmapped variable
+        priority += getPredicates().stream()
+                .filter(Predicate::isNeqPredicate)
+                .map(p -> (NeqPredicate) p)
+                .map(Predicate::getPredicate)
+                .filter(v -> !subbedVars.contains(v)).count() * ResolutionStrategy.INEQUALITY_PREDICATE;
+        return priority;
+    }
+
+    /**
      * @return measure of priority with which this atom should be resolved
      */
-    public int resolutionPriority(){
-        if (priority == Integer.MAX_VALUE) {
-            priority = 0;
-            priority += getPartialSubstitutions().size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
-            priority += isRuleResolvable()? ResolutionStrategy.RULE_RESOLVABLE_ATOM : 0;
-            priority += isRecursive()? ResolutionStrategy.RECURSIVE_ATOM : 0;
-
-            priority += getTypeConstraints().size() * ResolutionStrategy.GUARD;
-            Set<Var> otherVars = getParentQuery().getAtoms().stream()
-                    .filter(a -> a != this)
-                    .flatMap(at -> at.getVarNames().stream())
-                    .collect(Collectors.toSet());
-            priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
-
+    public int baseResolutionPriority(){
+        if (basePriority == Integer.MAX_VALUE) {
+            basePriority = computePriority();
         }
-        return priority;
+        return basePriority;
     }
 
     public abstract boolean isRuleApplicable(InferenceRule child);
@@ -115,9 +142,9 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     private Set<Rule> getPotentialRules(){
-        Type type = getType();
-        return type != null ?
-                type.subTypes().stream().flatMap(t -> t.getRulesOfConclusion().stream()).collect(Collectors.toSet()) :
+        OntologyConcept ontologyConcept = getOntologyConcept();
+        return ontologyConcept != null ?
+                ontologyConcept.subs().stream().flatMap(t -> t.getRulesOfConclusion().stream()).collect(Collectors.toSet()) :
                 ReasonerUtils.getRules(graph());
     }
 
@@ -136,18 +163,17 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public boolean isRuleResolvable() {
-        return !this.getApplicableRules().isEmpty();
+        return !getApplicableRules().isEmpty();
     }
 
     @Override
     public boolean isRecursive(){
-        if (isResource() || getType() == null) return false;
-        Type type = getType();
-        return getPotentialRules().stream()
-                .map(rule -> new InferenceRule(rule, graph()))
+        if (isResource() || getOntologyConcept() == null) return false;
+        OntologyConcept ontologyConcept = getOntologyConcept();
+        return getApplicableRules().stream()
                 .filter(rule -> rule.getBody().selectAtoms().stream()
-                        .filter(at -> Objects.nonNull(at.getType()))
-                        .filter(at -> checkTypesCompatible(type, at.getType())).findFirst().isPresent())
+                        .filter(at -> Objects.nonNull(at.getOntologyConcept()))
+                        .filter(at -> checkCompatible(ontologyConcept, at.getOntologyConcept())).findFirst().isPresent())
                 .filter(this::isRuleApplicable)
                 .findFirst().isPresent();
     }
@@ -165,7 +191,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return corresponding type if any
      */
-    public Type getType(){
+    public OntologyConcept getOntologyConcept(){
         if (type == null && typeId != null) {
             type = getParentQuery().graph().getConcept(typeId).asType();
         }
@@ -180,18 +206,15 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return value variable name
      */
-    public Var getValueVariable() {
-        throw new IllegalArgumentException("getValueVariable called on Atom object " + getPattern());
-    }
+    public abstract Var getValueVariable();
 
     /**
      * @return set of predicates relevant to this atom
      */
     public Set<Predicate> getPredicates() {
-        Set<Predicate> predicates = new HashSet<>();
-        predicates.addAll(getValuePredicates());
-        predicates.addAll(getIdPredicates());
-        return predicates;
+        return ((ReasonerQueryImpl) getParentQuery()).getPredicates().stream()
+                .filter(atom -> this.containsVar(atom.getVarName()))
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -199,7 +222,7 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<IdPredicate> getIdPredicates() {
         return ((ReasonerQueryImpl) getParentQuery()).getIdPredicates().stream()
-                .filter(atom -> containsVar(atom.getVarName()))
+                .filter(atom -> this.containsVar(atom.getVarName()))
                 .collect(Collectors.toSet());
     }
 
@@ -223,6 +246,16 @@ public abstract class Atom extends AtomicBase {
                 .filter(atom -> containsVar(atom.getVarName()))
                 .forEach(relevantTypes::add);
         return relevantTypes;
+    }
+
+    /**
+     * @return neighbours of this atoms, i.e. atoms connected to this atom via shared variable
+     */
+    public Stream<Atom> getNeighbours(){
+        return getParentQuery().getAtoms().stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(at -> at != this)
+                .filter(at -> !Sets.intersection(this.getVarNames(), at.getVarNames()).isEmpty());
     }
 
     /**
@@ -256,5 +289,5 @@ public abstract class Atom extends AtomicBase {
      * @param parentAtom atom to be unified with
      * @return unifier
      */
-    public abstract Unifier getUnifier(Atomic parentAtom);
+    public abstract Unifier getUnifier(Atom parentAtom);
 }

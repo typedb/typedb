@@ -23,7 +23,7 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.13.0-SNAPSHOT</version>
+        <version>0.14.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -40,5 +40,10 @@
             <artifactId>httpclient</artifactId>
             <version>${httpclient.version}</version>
         </dependency>
+      <dependency>
+        <groupId>com.github.rholder</groupId>
+        <artifactId>guava-retrying</artifactId>
+        <version>${guava-retrying.version}</version>
+      </dependency>
     </dependencies>
 </project>

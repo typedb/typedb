@@ -19,13 +19,13 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 
 import java.util.Collection;
 
-public abstract class AbstractInstanceGenerator<T extends Instance, S extends Type> extends FromGraphGenerator<T> {
+public abstract class AbstractInstanceGenerator<T extends Thing, S extends Type> extends FromGraphGenerator<T> {
 
     private final Class<? extends AbstractTypeGenerator<S>> generatorClass;
 
@@ -36,7 +36,7 @@ public abstract class AbstractInstanceGenerator<T extends Instance, S extends Ty
 
     @Override
     protected final T generateFromGraph() {
-        S type = genFromGraph(generatorClass).excludeMeta().generate(random, status);
+        S type = genFromGraph(generatorClass).excludeMeta().excludeAbstract().generate(random, status);
 
         Collection<T> instances = (Collection<T>) type.instances();
         if (instances.isEmpty()) {

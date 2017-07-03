@@ -18,13 +18,10 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.util.Schema;
+import ai.grakn.util.CommonUtil;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * <p>
@@ -40,7 +37,7 @@ import java.util.Set;
  *
  */
 class Validator {
-    private final AbstractGraknGraph graknGraph;
+    private final AbstractGraknGraph<?> graknGraph;
     private final List<String> errorsFound = new ArrayList<>();
 
     public Validator(AbstractGraknGraph graknGraph){
@@ -60,30 +57,34 @@ class Validator {
      * @return True if the data and schema conforms to our concept.
      */
     public boolean validate(){
-        boolean originalValue = graknGraph.implicitConceptsVisible();
-        graknGraph.showImplicitConcepts(true);
-        Set<ConceptImpl> validationList = new HashSet<>(graknGraph.getTxCache().getModifiedConcepts());
-        for(ConceptImpl nextToValidate: validationList){
-            if (nextToValidate.isInstance() && !nextToValidate.isCasting()) {
-                validateInstance((InstanceImpl) nextToValidate);
-                if (nextToValidate.isRelation()) {
-                    validateRelation((RelationImpl) nextToValidate);
-                } else if(nextToValidate.isRule()){
-                    validateRule(graknGraph, (RuleImpl) nextToValidate);
-                }
-            } else if (nextToValidate.isCasting()) {
-                validateCasting((CastingImpl) nextToValidate);
-            } else if (nextToValidate.isType() && !Schema.MetaSchema.isMetaLabel(nextToValidate.asType().getLabel())) {
-                validateType((TypeImpl) nextToValidate);
+        CommonUtil.withImplicitConceptsVisible(graknGraph, () -> {
+            //Validate Entity Types
+            //Not Needed
+            //Validate Entities
+            graknGraph.txCache().getModifiedEntities().forEach(this::validateInstance);
 
-                if (nextToValidate.isRoleType()) {
-                    validateRoleType((RoleTypeImpl) nextToValidate);
-                } else if (nextToValidate.isRelationType()) {
-                    validateRelationType((RelationTypeImpl) nextToValidate);
-                }
-            }
-        }
-        graknGraph.showImplicitConcepts(originalValue);
+            //Validate RoleTypes
+            graknGraph.txCache().getModifiedRoles().forEach(this::validateRoleType);
+            //Validate Role Players
+            graknGraph.txCache().getModifiedCastings().forEach(this::validateCasting);
+
+            //Validate Relation Types
+            graknGraph.txCache().getModifiedRelationTypes().forEach(this::validateRelationType);
+            //Validate Relations
+            graknGraph.txCache().getModifiedRelations().forEach(relation -> validateRelation(graknGraph, relation));
+
+            //Validate Rule Types
+            //Not Needed
+            //Validate Rules
+            graknGraph.txCache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
+
+            //Validate Resource Types
+            //Not Needed
+            //Validate Resource
+            graknGraph.txCache().getModifiedResources().forEach(this::validateInstance);
+
+        });
+
         return errorsFound.size() == 0;
     }
 
@@ -92,7 +93,7 @@ class Validator {
      * @param graph the graph to query against
      * @param rule the rule which needs to be validated
      */
-    private void validateRule(GraknGraph graph, RuleImpl rule){
+    private void validateRule(AbstractGraknGraph<?> graph, RuleImpl rule){
         errorsFound.addAll(ValidateGlobalRules.validateRuleOntologyElementsExist(graph, rule));
     }
 
@@ -100,32 +101,25 @@ class Validator {
      * Validation rules exclusive to relations
      * @param relation The relation to validate
      */
-    private void validateRelation(RelationImpl relation){
+    private void validateRelation(AbstractGraknGraph<?> graph, RelationImpl relation){
+        validateInstance(relation);
         ValidateGlobalRules.validateRelationshipStructure(relation).ifPresent(errorsFound::add);
-        ValidateGlobalRules.validateRelationIsUnique(relation).ifPresent(errorsFound::add);
+        ValidateGlobalRules.validateRelationIsUnique(graph, relation).ifPresent(errorsFound::add);
     }
 
     /**
-     * Validation rules exclusive to castings
-     * @param casting The casting to validate
+     * Validation rules exclusive to role players
+     * @param casting The Role player to validate
      */
-    private void validateCasting(CastingImpl casting){
+    private void validateCasting(Casting casting){
         ValidateGlobalRules.validatePlaysStructure(casting).ifPresent(errorsFound::add);
-    }
-
-    /**
-     * Validation rules exclusive to types
-     * @param conceptType The type to validate
-     */
-    private void validateType(TypeImpl conceptType){
-        ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(conceptType).ifPresent(errorsFound::add);
     }
 
     /**
      * Validation rules exclusive to role types
      * @param roleType The roleType to validate
      */
-    private void validateRoleType(RoleTypeImpl roleType){
+    private void validateRoleType(RoleImpl roleType){
         ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(roleType).ifPresent(errorsFound::add);
     }
 
@@ -142,7 +136,7 @@ class Validator {
      * Validation rules exclusive to instances
      * @param instance The instance to validate
      */
-    private void validateInstance(InstanceImpl instance) {
+    private void validateInstance(ThingImpl instance) {
         ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(instance).ifPresent(errorsFound::add);
     }
 }

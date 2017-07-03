@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 /**

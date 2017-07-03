@@ -20,14 +20,13 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.stream.Stream;
 
@@ -50,8 +49,8 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDir
  */
 class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
-    private ResourceIndexFragmentSet(VarProperty varProperty, Var start, TypeLabel typeLabel, Object value) {
-        super(Fragments.resourceIndex(varProperty, start, typeLabel, value));
+    private ResourceIndexFragmentSet(VarProperty varProperty, Var start, Label label, Object value) {
+        super(Fragments.resourceIndex(varProperty, start, label, value));
     }
 
     static boolean applyResourceIndexOptimisation(
@@ -62,17 +61,17 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         for (ValueFragmentSet valueSet : valueSets) {
             Var resource = valueSet.resource();
 
-            IsaFragmentSet isaSet = typeInformationOf(resource, fragmentSets);
+            IsaFragmentSet isaSet = EquivalentFragmentSets.typeInformationOf(resource, fragmentSets);
             if (isaSet == null) continue;
 
             Var type = isaSet.type();
 
-            LabelFragmentSet nameSet = typeLabelOf(type, fragmentSets);
+            LabelFragmentSet nameSet = EquivalentFragmentSets.typeLabelOf(type, fragmentSets);
             if (nameSet == null) continue;
 
-            TypeLabel typeLabel = nameSet.label();
+            Label label = nameSet.label();
 
-            if (!hasDirectSubTypes(graph, typeLabel)) {
+            if (!hasDirectSubTypes(graph, label)) {
                 optimise(fragmentSets, valueSet, isaSet, nameSet.label());
                 return true;
             }
@@ -83,7 +82,7 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
     private static void optimise(
             Collection<EquivalentFragmentSet> fragmentSets, ValueFragmentSet valueSet, IsaFragmentSet isaSet,
-            TypeLabel typeLabel
+            Label label
     ) {
         // Remove fragment sets we are going to replace
         fragmentSets.remove(valueSet);
@@ -95,7 +94,7 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
         // Use isa property as the property of the fragment
         VarProperty varProperty = isaSet.fragments().iterator().next().getVarProperty();
-        ResourceIndexFragmentSet indexFragmentSet = new ResourceIndexFragmentSet(varProperty, resource, typeLabel, value);
+        ResourceIndexFragmentSet indexFragmentSet = new ResourceIndexFragmentSet(varProperty, resource, label, value);
 
         fragmentSets.add(indexFragmentSet);
     }
@@ -108,18 +107,4 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
                 });
     }
 
-    @Nullable
-    private static IsaFragmentSet typeInformationOf(Var resource, Collection<EquivalentFragmentSet> fragmentSets) {
-        return fragmentSetOfType(IsaFragmentSet.class, fragmentSets)
-                .filter(isaFragmentSet -> isaFragmentSet.instance().equals(resource))
-                .findAny()
-                .orElse(null);
-    }
-
-    private static LabelFragmentSet typeLabelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {
-        return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
-                .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
-                .findAny()
-                .orElse(null);
-    }
 }

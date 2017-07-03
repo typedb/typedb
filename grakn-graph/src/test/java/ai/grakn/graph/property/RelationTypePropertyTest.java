@@ -22,8 +22,9 @@ package ai.grakn.graph.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.exception.ConceptException;
+import ai.grakn.concept.Role;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.generator.AbstractTypeGenerator.Abstract;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
@@ -62,46 +63,46 @@ public class RelationTypePropertyTest {
     public void whenANonMetaRelationTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
             @Open GraknGraph graph, @FromGraph @Meta(false) RelationType type) {
         assumeThat(type.instances(), empty());
-        assumeThat(type.subTypes(), contains(type));
+        assumeThat(type.subs(), contains(type));
         assumeThat(type.getRulesOfHypothesis(), empty());
         assumeThat(type.getRulesOfConclusion(), empty());
 
         type.delete();
 
-        assertNull(graph.getType(type.getLabel()));
+        assertNull(graph.getOntologyConcept(type.getLabel()));
     }
 
     @Property
     public void whenAddingARelationOfAMetaType_Throw(@Meta RelationType type) {
-        exception.expect(ConceptException.class);
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.addRelation();
     }
 
     @Property
     public void whenAddingARelation_TheDirectTypeOfTheRelationIsTheTypeItWasCreatedFrom(
-            @Meta(false) RelationType type) {
+            @Meta(false) @Abstract(false) RelationType type) {
         Relation relation = type.addRelation();
 
         assertEquals(type, relation.type());
     }
 
     @Property
-    public void whenAddingARelation_TheRelationIsInNoRelations(@Meta(false) RelationType type) {
+    public void whenAddingARelation_TheRelationIsInNoRelations(@Meta(false) @Abstract(false) RelationType type) {
         Relation relation = type.addRelation();
 
         assertThat(relation.relations(), empty());
     }
 
     @Property
-    public void whenAddingARelation_TheRelationHasNoResources(@Meta(false) RelationType type) {
+    public void whenAddingARelation_TheRelationHasNoResources(@Meta(false) @Abstract(false) RelationType type) {
         Relation relation = type.addRelation();
 
         assertThat(relation.resources(), empty());
     }
 
     @Property
-    public void whenAddingARelation_TheRelationHasNoRolePlayers(@Meta(false) RelationType type) {
+    public void whenAddingARelation_TheRelationHasNoRolePlayers(@Meta(false) @Abstract(false) RelationType type) {
         Relation relation = type.addRelation();
 
         assertThat(relation.rolePlayers(), empty());
@@ -109,92 +110,92 @@ public class RelationTypePropertyTest {
 
     @Property
     public void ARelationTypeRelatingARoleIsEquivalentToARoleHavingARelationType(
-            RelationType relationType, @FromGraph RoleType roleType) {
-        assertEquals(relationType.relates().contains(roleType), roleType.relationTypes().contains(relationType));
+            RelationType relationType, @FromGraph Role role) {
+        assertEquals(relationType.relates().contains(role), role.relationTypes().contains(relationType));
     }
 
     @Property
     public void whenMakingTheMetaRelationTypeRelateARole_Throw(
-            @Meta RelationType relationType, @FromGraph RoleType roleType) {
-        exception.expect(ConceptException.class);
+            @Meta RelationType relationType, @FromGraph Role role) {
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relationType.getLabel()));
-        relationType.relates(roleType);
+        relationType.relates(role);
     }
 
     @Property
     public void whenRelatingARole_TheTypeRelatesThatRoleAndNoOtherNewRoles(
-            @Meta(false) RelationType relationType, @FromGraph RoleType roleType) {
-        Set<RoleType> previousHasRoles = Sets.newHashSet(relationType.relates());
-        relationType.relates(roleType);
-        Set<RoleType> newHasRoles = Sets.newHashSet(relationType.relates());
+            @Meta(false) RelationType relationType, @FromGraph Role role) {
+        Set<Role> previousHasRoles = Sets.newHashSet(relationType.relates());
+        relationType.relates(role);
+        Set<Role> newHasRoles = Sets.newHashSet(relationType.relates());
 
-        assertEquals(Sets.union(previousHasRoles, ImmutableSet.of(roleType)), newHasRoles);
+        assertEquals(Sets.union(previousHasRoles, ImmutableSet.of(role)), newHasRoles);
     }
 
     @Property
     public void whenRelatingARole_TheDirectSuperTypeRelatedRolesAreUnchanged(
-            @Meta(false) RelationType subType, @FromGraph RoleType roleType) {
-        RelationType superType = subType.superType();
+            @Meta(false) RelationType subType, @FromGraph Role role) {
+        RelationType superType = subType.sup();
 
-        Set<RoleType> previousHasRoles = Sets.newHashSet(superType.relates());
-        subType.relates(roleType);
-        Set<RoleType> newHasRoles = Sets.newHashSet(superType.relates());
+        Set<Role> previousHasRoles = Sets.newHashSet(superType.relates());
+        subType.relates(role);
+        Set<Role> newHasRoles = Sets.newHashSet(superType.relates());
 
         assertEquals(previousHasRoles, newHasRoles);
     }
 
     @Property
     public void whenRelatingARole_TheDirectSubTypeRelatedRolesAreUnchanged(
-            @Meta(false) RelationType subType, @FromGraph RoleType roleType) {
-        RelationType superType = subType.superType();
+            @Meta(false) RelationType subType, @FromGraph Role role) {
+        RelationType superType = subType.sup();
         assumeFalse(isMetaLabel(superType.getLabel()));
 
-        Set<RoleType> previousHasRoles = Sets.newHashSet(subType.relates());
-        superType.relates(roleType);
-        Set<RoleType> newHasRoles = Sets.newHashSet(subType.relates());
+        Set<Role> previousHasRoles = Sets.newHashSet(subType.relates());
+        superType.relates(role);
+        Set<Role> newHasRoles = Sets.newHashSet(subType.relates());
 
         assertEquals(previousHasRoles, newHasRoles);
     }
 
     @Property
     public void whenDeletingARelatedRoleFromTheMetaRelationType_Throw(
-            @Meta RelationType relationType, @FromGraph RoleType roleType) {
-        exception.expect(ConceptException.class);
+            @Meta RelationType relationType, @FromGraph Role role) {
+        exception.expect(GraphOperationException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relationType.getLabel()));
-        relationType.deleteRelates(roleType);
+        relationType.deleteRelates(role);
     }
 
     @Property
     public void whenDeletingARelatedRole_TheTypeLosesThatRoleAndNoOtherRoles(
-            @Meta(false) RelationType relationType, @FromGraph RoleType roleType) {
-        Set<RoleType> previousHasRoles = Sets.newHashSet(relationType.relates());
-        relationType.deleteRelates(roleType);
-        Set<RoleType> newHasRoles = Sets.newHashSet(relationType.relates());
+            @Meta(false) RelationType relationType, @FromGraph Role role) {
+        Set<Role> previousHasRoles = Sets.newHashSet(relationType.relates());
+        relationType.deleteRelates(role);
+        Set<Role> newHasRoles = Sets.newHashSet(relationType.relates());
 
-        assertEquals(Sets.difference(previousHasRoles, ImmutableSet.of(roleType)), newHasRoles);
+        assertEquals(Sets.difference(previousHasRoles, ImmutableSet.of(role)), newHasRoles);
     }
 
     @Property
     public void whenDeletingARelatedRole_TheDirectSuperTypeRelatedRolesAreUnchanged(
-            @Meta(false) RelationType subType, @FromGraph RoleType roleType) {
-        RelationType superType = subType.superType();
+            @Meta(false) RelationType subType, @FromGraph Role role) {
+        RelationType superType = subType.sup();
 
-        Set<RoleType> previousHasRoles = Sets.newHashSet(superType.relates());
-        subType.deleteRelates(roleType);
-        Set<RoleType> newHasRoles = Sets.newHashSet(superType.relates());
+        Set<Role> previousHasRoles = Sets.newHashSet(superType.relates());
+        subType.deleteRelates(role);
+        Set<Role> newHasRoles = Sets.newHashSet(superType.relates());
 
         assertEquals(previousHasRoles, newHasRoles);
     }
 
     @Property
     public void whenDeletingARelatedRole_TheDirectSubTypeRelatedRolesAreUnchanged(
-            @Meta(false) RelationType subType, @FromGraph RoleType roleType) {
-        RelationType superType = subType.superType();
+            @Meta(false) RelationType subType, @FromGraph Role role) {
+        RelationType superType = subType.sup();
         assumeFalse(isMetaLabel(superType.getLabel()));
 
-        Set<RoleType> previousHasRoles = Sets.newHashSet(subType.relates());
-        superType.deleteRelates(roleType);
-        Set<RoleType> newHasRoles = Sets.newHashSet(subType.relates());
+        Set<Role> previousHasRoles = Sets.newHashSet(subType.relates());
+        superType.deleteRelates(role);
+        Set<Role> newHasRoles = Sets.newHashSet(subType.relates());
 
         assertEquals(previousHasRoles, newHasRoles);
     }

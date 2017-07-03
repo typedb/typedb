@@ -1,0 +1,70 @@
+insert
+
+#Roles
+
+role1 sub role;
+role2 sub role;
+
+#Entities
+
+entity1 sub entity
+    plays role1;
+
+entity2 sub entity
+    plays role2
+    has res1;
+
+relation1 sub relation
+    relates role1
+    relates role2
+    has res2;
+
+relation2 sub relation
+    relates role1
+    relates role2;
+
+relation3 sub relation
+    relates role1
+    relates role2;
+
+res1 sub resource datatype string;
+res2 sub resource datatype string;
+
+#Rules
+
+$rule isa inference-rule
+    lhs{
+        $b isa entity2;
+        $b has res1 'value';
+        $rel1 has res2 'value1';
+        $rel1 (role1: $p, role2: $b) isa relation1;
+        $rel2 has res2 'value2';
+        $rel2 (role1: $c, role2: $b) isa relation1;
+    }
+    rhs {
+        (role1: $p, role2: $c) isa relation2;
+    };
+
+$dummyRule isa inference-rule
+    lhs{
+        (role1: $p, role2: $c) isa relation3;
+    }
+    rhs {
+        (role1: $p, role2: $c) isa relation1;
+    };
+
+
+#Data
+
+$b1 isa entity2, has res1 "value";
+$b2 isa entity2, has res1 "value";
+$p1 isa entity1;
+$c1 isa entity1;
+$p2 isa entity1;
+$c2 isa entity1;
+
+(role1:$c1, role2: $b1) isa relation1, has res2 "value2";
+(role1:$p1, role2: $b1) isa relation1, has res2 "value1";
+
+(role1:$c2, role2: $b2) isa relation1, has res2 "value2";
+(role1:$p2, role2: $b2) isa relation1, has res2 "value1";

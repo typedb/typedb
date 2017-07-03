@@ -19,17 +19,15 @@
 package ai.grakn.migration.base;
 
 import ai.grakn.client.BatchMutatorClient;
-import ai.grakn.exception.GraqlTemplateParsingException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.macro.Macro;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -54,7 +52,7 @@ public class Migrator {
     private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
     public static final int BATCH_SIZE = 25;
     public static final int ACTIVE_TASKS = 25;
-    public static final boolean RETRY = false;
+    private static final boolean RETRY = false;
 
     private final String uri;
     private final String keyspace;
@@ -102,7 +100,7 @@ public class Migrator {
      * @param converter
      */
     public void print(String template, Stream<Map<String, Object>> converter){
-        converter.flatMap(d -> template(template, d).stream())
+        converter.flatMap(d -> template(template, d))
                  .forEach(System.out::println);
     }
 
@@ -128,7 +126,7 @@ public class Migrator {
         loader.setRetryPolicy(retry);
 
         converter
-                .flatMap(d -> template(template, d).stream())
+                .flatMap(d -> template(template, d))
                 .forEach(q -> {
                     numberQueriesSubmitted.incrementAndGet();
                     loader.add(q);
@@ -141,17 +139,16 @@ public class Migrator {
      * @param data data used in the template
      * @return an insert query
      */
-    protected List<InsertQuery> template(String template, Map<String, Object> data){
+    protected Stream<Query> template(String template, Map<String, Object> data){
         try {
             return queryBuilder.parseTemplate(template, data);
 
             //TODO Graql should throw a GraqlParsingException so we do not need to catch IllegalArgumentException
-        } catch (GraqlTemplateParsingException | IllegalArgumentException e){
-            LOG.warn("Query was not sent to loader- " + e.getMessage());
-            LOG.warn("See the Grakn engine logs for more detail about loading status and any resulting stacktraces");
+        } catch (GraqlSyntaxException | IllegalArgumentException e){
+            LOG.warn("Query not sent to server: " + e.getMessage());
         }
 
-        return Collections.emptyList();
+        return Stream.empty();
     }
 
     /**

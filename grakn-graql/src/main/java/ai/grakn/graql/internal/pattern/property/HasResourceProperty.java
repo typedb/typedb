@@ -20,15 +20,15 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
@@ -36,7 +36,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 
@@ -49,16 +48,16 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
-import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getValuePredicates;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Represents the {@code has} property on an {@link Instance}.
+ * Represents the {@code has} property on an {@link Thing}.
  *
  * This property can be queried, inserted or deleted.
  *
- * The property is defined as a relationship between an {@link Instance} and a {@link Resource}, where the
+ * The property is defined as a relationship between an {@link Thing} and a {@link Resource}, where the
  * {@link Resource} is of a particular type.
  *
  * When matching, shortcut edges are used to speed up the traversal. The type of the relationship does not matter.
@@ -70,20 +69,20 @@ import static java.util.stream.Collectors.joining;
  */
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final TypeLabel resourceType;
+    private final Label resourceType;
     private final VarPatternAdmin resource;
 
-    private HasResourceProperty(TypeLabel resourceType, VarPatternAdmin resource) {
+    private HasResourceProperty(Label resourceType, VarPatternAdmin resource) {
         this.resourceType = resourceType;
         this.resource = resource;
     }
 
-    public static HasResourceProperty of(TypeLabel resourceType, VarPatternAdmin resource) {
+    public static HasResourceProperty of(Label resourceType, VarPatternAdmin resource) {
         resource = resource.isa(label(resourceType)).admin();
         return new HasResourceProperty(resourceType, resource);
     }
 
-    public TypeLabel getType() {
+    public Label getType() {
         return resourceType;
     }
 
@@ -108,7 +107,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         repr.add(typeLabelToString(resourceType));
 
-        if (resource.isUserDefinedName()) {
+        if (resource.getVarName().isUserDefinedName()) {
             repr.add(resource.getPrintableName());
         } else {
             resource.getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.getPredicate().toString()));
@@ -118,13 +117,13 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        Var relation = Var.anon();
-        Var edge1 = Var.anon();
-        Var edge2 = Var.anon();
+        Var relation = Graql.var();
+        Var edge1 = Graql.var();
+        Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                shortcut(this, relation, edge1, start),
-                shortcut(this, relation, edge2, resource.getVarName()),
+                shortcut(this, relation, edge1, start, Optional.empty()),
+                shortcut(this, relation, edge2, resource.getVarName(), Optional.empty()),
                 neq(this, edge1, edge2)
         );
     }
@@ -136,17 +135,17 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     void checkValidProperty(GraknGraph graph, VarPatternAdmin var) {
-        Type type = graph.getType(resourceType);
+        Type type = graph.getOntologyConcept(resourceType);
         if(type == null || !type.isResourceType()) {
-            throw new IllegalStateException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
+            throw GraqlQueryException.mustBeResourceType(resourceType);
         }
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Resource resourceConcept = insertQueryExecutor.getConcept(resource).asResource();
-        Instance instance = concept.asInstance();
-        instance.resource(resourceConcept);
+        Thing thing = concept.asInstance();
+        thing.resource(resourceConcept);
     }
 
     @Override
@@ -154,15 +153,15 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Optional<ValuePredicateAdmin> predicate =
                 resource.getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
 
-        RoleType owner = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
-        RoleType value = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
+        Role owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
+        Role value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
 
         concept.asInstance().relations(owner).stream()
                 .filter(relation -> testPredicate(predicate, relation, value))
                 .forEach(Concept::delete);
     }
 
-    private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relation relation, RoleType resourceRole) {
+    private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relation relation, Role resourceRole) {
         Object value = relation.rolePlayers(resourceRole).iterator().next().asResource().getValue();
 
         return optPredicate
@@ -196,15 +195,14 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName();
-        TypeLabel type = this.getType();
+        Var varName = var.getVarName().asUserDefined();
+        Label type = this.getType();
         VarPatternAdmin valueVar = this.getResource();
-        Var valueVariable = valueVar.getVarName();
+        Var valueVariable = valueVar.getVarName().asUserDefined();
         Set<ValuePredicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);
 
         //add resource atom
-        VarPattern resource = Graql.var(valueVariable);
-        VarPatternAdmin resVar = Graql.var(varName).has(type, resource).admin();
+        VarPatternAdmin resVar = varName.has(type, valueVariable).admin();
         return new ai.grakn.graql.internal.reasoner.atom.binary.Resource(resVar, predicates, parent);
     }
 }

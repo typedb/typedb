@@ -22,9 +22,11 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.GraknServerException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.REST;
 import ai.grakn.util.REST.GraphConfig;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -32,10 +34,14 @@ import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
 import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
+import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.get;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -46,12 +52,12 @@ public class SystemControllerTest {
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
 	@Test
-	public void testKeyspaceList() throws GraknValidationException {
-		Grakn.session(Grakn.DEFAULT_URI, "grakntest1").open(GraknTxType.WRITE).close();
-        Grakn.session(Grakn.DEFAULT_URI, "grakntest2").open(GraknTxType.WRITE).close();
+	public void testKeyspaceList() throws InvalidGraphException {
+		Grakn.session(engine.uri(), "grakntest1").open(GraknTxType.WRITE).close();
+        Grakn.session(engine.uri(), "grakntest2").open(GraknTxType.WRITE).close();
         Response response = get(KEYSPACES).then().statusCode(200).extract().response();
         Json result = Json.read(response.body().asString());
-        Assert.assertTrue(result.asJsonList().contains(Json.make("grakntest")));
+        Assert.assertTrue(result.asJsonList().contains(Json.make("grakntest1")));
         Assert.assertTrue(result.asJsonList().contains(Json.make("grakntest2")));
 	}
 	
@@ -79,25 +85,64 @@ public class SystemControllerTest {
 
     @Test
     public void testGraknClientBatch() {
-        GraknGraph batch = Grakn.session(Grakn.DEFAULT_URI, "grakntestagain").open(GraknTxType.BATCH);
+        GraknGraph batch = Grakn.session(engine.uri(), "grakntestagain").open(GraknTxType.BATCH);
         assertTrue(((AbstractGraknGraph) batch).isBatchGraph());
     }
 
     @Test
-    public void testGrakn() throws GraknValidationException {
-        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.session(Grakn.DEFAULT_URI, "grakntest").open(GraknTxType.WRITE);
-        AbstractGraknGraph graph2 = (AbstractGraknGraph) Grakn.session(Grakn.DEFAULT_URI, "grakntest2").open(GraknTxType.WRITE);
+    public void testGrakn() throws InvalidGraphException {
+        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.session(engine.uri(), "grakntest").open(GraknTxType.WRITE);
+        AbstractGraknGraph graph2 = (AbstractGraknGraph) Grakn.session(engine.uri(), "grakntest2").open(GraknTxType.WRITE);
         assertNotEquals(0, graph.getTinkerPopGraph().traversal().V().toList().size());
         assertFalse(graph.isBatchGraph());
         assertNotEquals(graph, graph2);
         graph.close();
 
-        AbstractGraknGraph batch = (AbstractGraknGraph) Grakn.session(Grakn.DEFAULT_URI, "grakntest").open(GraknTxType.BATCH);
+        AbstractGraknGraph batch = (AbstractGraknGraph) Grakn.session(engine.uri(), "grakntest").open(GraknTxType.BATCH);
         assertTrue(batch.isBatchGraph());
         assertNotEquals(graph, batch);
 
         graph.close();
         batch.close();
         graph2.close();
+    }
+
+    @Test
+    public void whenCallingInitialise_KeyspaceIsAddedToSystemKeyspace(){
+	    String keyspaceName = "randomKeyspaceWithAStarfish";
+        String initialiseReq = REST.WebPath.System.INITIALISE + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspaceName;
+
+        get(initialiseReq).then().statusCode(200).extract().response().andReturn();
+
+        assertTrue("System keyspace contains " + keyspaceName,
+                engine.server().factory().systemKeyspace().containsKeyspace(keyspaceName));
+    }
+
+    @Test
+    public void whenCallingDeleteKeyspace_KeyspaceIsDeletedFromSystemKeyspace(){
+        String keyspace = "randomKeyspaceWithAJellyfish";
+
+        // add keyspace to system graph
+        engine.server().factory().systemKeyspace().ensureKeyspaceInitialised(keyspace);
+
+        // delete keyspace over REST
+        String initialiseReq = REST.WebPath.System.DELETE_KEYSPACE + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
+        delete(initialiseReq).then().statusCode(200).extract().response().andReturn();
+
+        // assert deleted
+        assertFalse("System keyspace contains " + keyspace,
+                engine.server().factory().systemKeyspace().containsKeyspace(keyspace));
+    }
+
+    @Test
+    public void whenCallingDeleteKeyspaceAndKeyspaceDoesNotExist_ErrorIsThrown(){
+        String keyspace = "randomKeyspaceWithAPufferfish";
+
+        // delete keyspace over REST
+        String initialiseReq = REST.WebPath.System.DELETE_KEYSPACE + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
+        Response response = delete(initialiseReq).then().statusCode(500).extract().response().andReturn();
+
+        // assert exception correct
+        assertThat(exception(response), containsString(GraknServerException.couldNotDelete(keyspace).getMessage()));
     }
 }

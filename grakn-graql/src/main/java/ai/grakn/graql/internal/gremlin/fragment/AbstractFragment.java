@@ -21,12 +21,15 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Optional;
 import java.util.Set;
 
-abstract class AbstractFragment implements Fragment {
+import static ai.grakn.util.CommonUtil.optionalToStream;
+
+abstract class AbstractFragment implements Fragment{
 
     // TODO: Find a better way to represent these values (either abstractly, or better estimates)
     static final long NUM_INSTANCES_PER_TYPE = 100;
@@ -56,13 +59,6 @@ abstract class AbstractFragment implements Fragment {
         this.varNames = ImmutableSet.of(start);
     }
 
-    AbstractFragment(VarProperty varProperty, Var start, Var end) {
-        this.varProperty = varProperty;
-        this.start = start;
-        this.end = Optional.of(end);
-        this.varNames = ImmutableSet.of(start, end);
-    }
-
     AbstractFragment(VarProperty varProperty, Var start, Var end, Var... others) {
         this.varProperty = varProperty;
         this.start = start;
@@ -70,13 +66,21 @@ abstract class AbstractFragment implements Fragment {
         this.varNames = ImmutableSet.<Var>builder().add(start).add(end).add(others).build();
     }
 
+    AbstractFragment(VarProperty varProperty, Var start, Var end, Var other, Var... others) {
+        this.varProperty = varProperty;
+        this.start = start;
+        this.end = Optional.of(end);
+        this.varNames = ImmutableSet.<Var>builder().add(start).add(end).add(other).add(others).build();
+    }
+
+    static Var[] optionalVarToArray(Optional<Var> var) {
+        return optionalToStream(var).toArray(Var[]::new);
+    }
+
     @Override
     public final EquivalentFragmentSet getEquivalentFragmentSet() {
-        if (equivalentFragmentSet != null) {
-            return equivalentFragmentSet;
-        } else {
-            throw new IllegalStateException("Should not call getEquivalentFragmentSet before setEquivalentFragmentSet");
-        }
+        Preconditions.checkNotNull(equivalentFragmentSet, "Should not call getEquivalentFragmentSet before setEquivalentFragmentSet");
+        return equivalentFragmentSet;
     }
 
     @Override

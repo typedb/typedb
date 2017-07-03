@@ -19,8 +19,10 @@
 
 package ai.grakn.generator;
 
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
@@ -37,9 +39,10 @@ import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.stream.Collectors.toSet;
 
-public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGenerator<T> {
+public abstract class AbstractTypeGenerator<T extends OntologyConcept> extends FromGraphGenerator<T> {
 
     private Optional<Boolean> meta = Optional.empty();
+    private Optional<Boolean> includeAbstract = Optional.empty();
 
     AbstractTypeGenerator(Class<T> type) {
         super(type);
@@ -53,7 +56,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
             types = Sets.newHashSet(otherMetaTypes());
             types.add(metaType());
         } else {
-            types = (Collection<T>) metaType().subTypes();
+            types = (Collection<T>) metaType().subs();
         }
 
         types = types.stream().filter(this::filter).collect(toSet());
@@ -62,17 +65,21 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
             types.remove(metaType());
             types.removeAll(otherMetaTypes());
         }
-        
+
+        if(!includeAbstract()){
+            types = types.stream().filter(type -> Schema.MetaSchema.isMetaLabel(type.getLabel()) || type instanceof Type && !((Type) type).isAbstract()).collect(toSet());
+        }
+
         if (types.isEmpty() && includeNonMeta()) {
-            TypeLabel label = genFromGraph(TypeLabels.class).mustBeUnused().generate(random, status);
-            assert graph().getType(label) == null;
+            Label label = genFromGraph(TypeLabels.class).mustBeUnused().generate(random, status);
+            assert graph().getOntologyConcept(label) == null;
             return newType(label);
         } else {
             return random.choose(types);
         }
     }
 
-    protected abstract T newType(TypeLabel label);
+    protected abstract T newType(Label label);
 
     protected abstract T metaType();
 
@@ -92,8 +99,17 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
         return !meta.orElse(false);
     }
 
+    private final boolean includeAbstract(){
+        return includeAbstract.orElse(true);
+    }
+
     final AbstractTypeGenerator<T> excludeMeta() {
         meta = Optional.of(false);
+        return this;
+    }
+
+    final AbstractTypeGenerator<T> excludeAbstract() {
+        includeAbstract = Optional.of(false);
         return this;
     }
 
@@ -101,10 +117,21 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
         this.meta = Optional.of(meta.value());
     }
 
+    public final void configure(Abstract includeAbstract) {
+        this.includeAbstract = Optional.of(includeAbstract.value());
+    }
+
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
     public @interface Meta {
+        boolean value() default true;
+    }
+
+    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
+    @Retention(RUNTIME)
+    @GeneratorConfiguration
+    public @interface Abstract {
         boolean value() default true;
     }
 }

@@ -18,19 +18,80 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.engine.TaskId;
+import org.apache.commons.lang.exception.ExceptionUtils;
+
+import java.io.IOException;
+
+import static ai.grakn.util.ErrorMessage.BACKEND_EXCEPTION;
+import static ai.grakn.util.ErrorMessage.ENGINE_UNAVAILABLE;
+import static ai.grakn.util.ErrorMessage.MISSING_TASK_ID;
+import static ai.grakn.util.ErrorMessage.STATE_STORAGE_ERROR;
+import static ai.grakn.util.ErrorMessage.TASK_STATE_RETRIEVAL_FAILURE;
 
 /**
- * An exception which encapsulates a vendor backend error
+ * <p>
+ *     Backend Grakn Exception
+ * </p>
  *
- * @author Filipe Teixeira
+ * <p>
+ *     Failures which occur server side are wrapped in this exception. This can include but is not limited to:
+ *     - Kafka timeouts
+ *     - Cassandra Timeouts
+ *     - Malformed Requests
+ * </p>
+ *
+ * @author fppt
  */
-public class GraknBackendException extends GraphRuntimeException {
-    public GraknBackendException(Exception e) {
-        super(ErrorMessage.BACKEND_EXCEPTION.getMessage(), e);
+public class GraknBackendException extends GraknException {
+    protected GraknBackendException(String error, Exception e) {
+        super(error, e);
     }
 
-    public GraknBackendException(String message, Exception e) {
-        super(message, e);
+    protected GraknBackendException(String error){
+        super(error);
+    }
+
+    /**
+     * Thrown when the persistence layer throws an unexpected exception.
+     * This can include timeouts
+     */
+    public static GraknBackendException unknown(Exception e){
+        return new GraknBackendException(BACKEND_EXCEPTION.getMessage(), e);
+    }
+
+    /**
+     * Thrown when the task state storage cannot be accessed.
+     */
+    public static GraknBackendException stateStorage(Exception error){
+        return new GraknBackendException(STATE_STORAGE_ERROR.getMessage(), error);
+    }
+
+    /**
+     * Thrown when the task state storage cannot be accessed.
+     */
+    public static GraknBackendException stateStorage(){
+        return new GraknBackendException(STATE_STORAGE_ERROR.getMessage());
+    }
+
+    /**
+     * Thrown when a task id is missing from the task state storage
+     */
+    public static GraknBackendException stateStorageMissingId(TaskId id){
+        return new GraknBackendException(MISSING_TASK_ID.getMessage(id));
+    }
+
+    /**
+     * Thrown when a task id is missing from the task state storage
+     */
+    public static GraknBackendException stateStorageTaskRetrievalFailure(Exception e){
+        return new GraknBackendException(TASK_STATE_RETRIEVAL_FAILURE.getMessage(ExceptionUtils.getFullStackTrace(e)));
+    }
+
+    /**
+     * Thrown when the task client cannot reach engine
+     */
+    public static GraknBackendException engineUnavailable(String host, int port, IOException e){
+        return new GraknBackendException(ENGINE_UNAVAILABLE.getMessage(host, port), e);
     }
 }

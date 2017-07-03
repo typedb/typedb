@@ -21,8 +21,8 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.concept.Role;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknOrientDBGraph;
 import ai.grakn.util.Schema;
@@ -50,7 +50,7 @@ public class GraknOrientDBGraphFactoryTest {
     }
 
     @After
-    public void clear() throws GraknValidationException {
+    public void clear() throws InvalidGraphException {
         GraknOrientDBGraph graph = orientGraphFactory.open(GraknTxType.WRITE);
         graph.admin().delete();
     }
@@ -77,7 +77,7 @@ public class GraknOrientDBGraphFactoryTest {
     }
 
     @Test
-    public void testBuildGraph() throws GraknValidationException {
+    public void testBuildGraph() throws InvalidGraphException {
         GraknOrientDBGraph graknGraph = orientGraphFactory.open(GraknTxType.WRITE);
 
         assertEquals(8, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
@@ -90,8 +90,8 @@ public class GraknOrientDBGraphFactoryTest {
         graknGraph.commit();
         assertEquals(12, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
 
-        RoleType role1 = graknGraph.putRoleType("Role 1");
-        RoleType role2 = graknGraph.putRoleType("Role 2");
+        Role role1 = graknGraph.putRole("Role 1");
+        Role role2 = graknGraph.putRole("Role 2");
         graknGraph.putRelationType("My Relation Type").relates(role1).relates(role2);
         graknGraph.commit();
         assertEquals(15, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
@@ -105,13 +105,12 @@ public class GraknOrientDBGraphFactoryTest {
         assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.ENTITY_TYPE.name()).size());
         assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RELATION_TYPE.name()).size());
         assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RESOURCE_TYPE.name()).size());
-        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.ROLE_TYPE.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.ROLE.name()).size());
         assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RULE_TYPE.name()).size());
 
         assertEquals(1, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.ENTITY.name()).size());
         assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RELATION.name()).size());
         assertEquals(6, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RESOURCE.name()).size());
-        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.CASTING.name()).size());
         assertEquals(1, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RULE.name()).size());
     }
 }

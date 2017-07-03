@@ -18,9 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeId;
-import ai.grakn.util.Schema;
-import com.google.common.collect.Sets;
+import ai.grakn.concept.LabelId;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -42,17 +40,9 @@ public abstract class CommonOLAP {
     private static final String PREFIX_PERSISTENT_PROPERTIES = "PERSISTENT";
 
     /**
-     * The concepts that can be "seen" by analytics by default.
-     */
-    final Set<String> baseTypes = Sets.newHashSet(
-            Schema.BaseType.ENTITY.name(),
-            Schema.BaseType.RELATION.name(),
-            Schema.BaseType.RESOURCE.name());
-
-    /**
      * The types that define a subgraph.
      */
-    Set<TypeId> selectedTypes = new HashSet<>();
+    Set<LabelId> selectedTypes = new HashSet<>();
 
     /**
      * Properties that will be reloaded whenever the class is instantiated in a spark executor.
@@ -92,7 +82,7 @@ public abstract class CommonOLAP {
     public void loadState(final Graph graph, final Configuration configuration) {
         // load selected types
         configuration.subset(PREFIX_SELECTED_TYPE_KEY).getKeys().forEachRemaining(key ->
-                selectedTypes.add(TypeId.of(configuration.getInt(PREFIX_SELECTED_TYPE_KEY + "." + key))));
+                selectedTypes.add(LabelId.of(configuration.getInt(PREFIX_SELECTED_TYPE_KEY + "." + key))));
 
         // load user specified properties
         configuration.subset(PREFIX_PERSISTENT_PROPERTIES).getKeys().forEachRemaining(key ->

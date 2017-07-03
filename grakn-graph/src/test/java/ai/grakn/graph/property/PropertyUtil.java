@@ -20,15 +20,18 @@
 package ai.grakn.graph.property;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.util.CommonUtil;
 import com.google.common.collect.Lists;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.Function;
 
-import static ai.grakn.generator.GraknGraphs.withImplicitConceptsVisible;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
@@ -40,11 +43,11 @@ import static org.junit.Assume.assumeThat;
 public class PropertyUtil {
 
     @SuppressWarnings("unchecked")
-    public static Collection<Type> directSubTypes(GraknGraph graph, Type type) {
-        Object ret = withImplicitConceptsVisible(graph, g ->
-            type.subTypes().stream().filter(subType -> type.equals(subType.superType())).collect(toList())
-        );
-        return (Collection<Type>)ret;
+    public static <T extends OntologyConcept> Collection<T> directSubs(GraknGraph graph, T ontologyElement) {
+        Function<GraknGraph,? extends List<? extends T>> function = g ->
+            ontologyElement.subs().stream().filter(subType -> ontologyElement.equals(subType.sup())).map(o -> (T) o).collect(toList());
+        Object ret = CommonUtil.withImplicitConceptsVisible(graph, function);
+        return (Collection<T>)ret;
     }
 
     public static Collection<Type> indirectSuperTypes(Type type) {
@@ -52,14 +55,14 @@ public class PropertyUtil {
 
         do {
             superTypes.add(type);
-            type = type.superType();
+            type = type.sup();
         } while (type != null);
 
         return superTypes;
     }
 
-    public static Collection<Instance> directInstances(Type type) {
-        Collection<? extends Instance> indirectInstances = type.instances();
+    public static Collection<Thing> directInstances(Type type) {
+        Collection<? extends Thing> indirectInstances = type.instances();
         return indirectInstances.stream().filter(instance -> type.equals(instance.type())).collect(toList());
     }
 

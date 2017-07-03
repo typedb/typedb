@@ -22,6 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.factory.FactoryBuilder;
 
 import java.util.Properties;
@@ -43,19 +44,18 @@ import java.util.Properties;
  */
 public class EngineGraknGraphFactory {
     private final Properties properties;
-    private static EngineGraknGraphFactory instance = null;
+    private final String engineURI;
+    private final SystemKeyspace systemKeyspace;
 
-
-    public static synchronized EngineGraknGraphFactory getInstance() {
-        if (instance == null) {
-            instance = new EngineGraknGraphFactory();
-        }
-        return instance;
+    public static EngineGraknGraphFactory create(Properties properties) {
+        return new EngineGraknGraphFactory(properties);
     }
 
-    private EngineGraknGraphFactory() {
-        properties = new Properties();
-        properties.putAll(GraknEngineConfig.getInstance().getProperties());
+    private EngineGraknGraphFactory(Properties properties) {
+        this.properties = new Properties();
+        this.properties.putAll(properties);
+        this.engineURI = properties.getProperty(GraknEngineConfig.SERVER_HOST_NAME) + ":" + properties.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER);
+        this.systemKeyspace = new SystemKeyspace(this);
     }
 
     public synchronized void refreshConnections(){
@@ -63,7 +63,19 @@ public class EngineGraknGraphFactory {
     }
 
     public GraknGraph getGraph(String keyspace, GraknTxType type){
-        return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).open(type);
+        if(!keyspace.equals(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+            systemKeyspace.ensureKeyspaceInitialised(keyspace);
+        }
+
+        return FactoryBuilder.getFactory(keyspace, engineURI, properties).open(type);
+    }
+
+    public Properties properties() {
+        return properties;
+    }
+
+    public SystemKeyspace systemKeyspace(){
+        return systemKeyspace;
     }
 }
 

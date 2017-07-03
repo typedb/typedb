@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeId;
+import ai.grakn.concept.LabelId;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -41,8 +41,8 @@ abstract class StatisticsMapReduce<T> extends GraknMapReduce<T> {
 
     }
 
-    StatisticsMapReduce(Set<TypeId> selectedTypeIds, ResourceType.DataType resourceDataType, String degreePropertyKey) {
-        super(selectedTypeIds, resourceDataType);
+    StatisticsMapReduce(Set<LabelId> selectedLabelIds, ResourceType.DataType resourceDataType, String degreePropertyKey) {
+        super(selectedLabelIds, resourceDataType);
         this.degreePropertyKey = degreePropertyKey;
         this.persistentProperties.put(DegreeVertexProgram.DEGREE, degreePropertyKey);
     }

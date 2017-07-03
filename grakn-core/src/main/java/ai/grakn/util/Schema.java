@@ -20,17 +20,18 @@ package ai.grakn.util;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
 
@@ -53,13 +54,10 @@ public final class Schema {
         RELATES("relates"),
         PLAYS("plays"),
         HAS_SCOPE("has-scope"),
-        CASTING("casting"),
-        ROLE_PLAYER("role-player"),
         HYPOTHESIS("hypothesis"),
         CONCLUSION("conclusion"),
         SHORTCUT("shortcut"),
         SHARD("shard");
-
 
         private final String label;
 
@@ -71,23 +69,13 @@ public final class Schema {
         public String getLabel() {
             return label;
         }
-
-        @CheckReturnValue
-        public static EdgeLabel getEdgeLabel(String label) {
-            for (EdgeLabel edgeLabel : EdgeLabel.values()) {
-                if (edgeLabel.getLabel().equals(label)) {
-                    return edgeLabel;
-                }
-            }
-            return null;
-        }
     }
 
     /**
      * The concepts which represent our internal schema
      */
     public enum MetaSchema {
-        CONCEPT("concept", 1),
+        THING("thing", 1),
         ENTITY("entity", 2),
         ROLE("role", 3),
         RESOURCE("resource", 4),
@@ -97,26 +85,26 @@ public final class Schema {
         CONSTRAINT_RULE("constraint-rule", 8);
 
 
-        private final TypeLabel label;
-        private final TypeId id;
+        private final Label label;
+        private final LabelId id;
 
         MetaSchema(String s, int i) {
-            label = TypeLabel.of(s);
-            id = TypeId.of(i);
+            label = Label.of(s);
+            id = LabelId.of(i);
         }
 
         @CheckReturnValue
-        public TypeLabel getLabel() {
+        public Label getLabel() {
             return label;
         }
 
         @CheckReturnValue
-        public TypeId getId(){
+        public LabelId getId(){
             return id;
         }
 
         @CheckReturnValue
-        public static boolean isMetaLabel(TypeLabel label) {
+        public static boolean isMetaLabel(Label label) {
             for (MetaSchema metaSchema : MetaSchema.values()) {
                 if (metaSchema.getLabel().equals(label)) return true;
             }
@@ -128,9 +116,10 @@ public final class Schema {
      * Base Types reflecting the possible objects in the concept
      */
     public enum BaseType {
-        //Types
+        //Ontology Elements
+        ONTOLOGY_ELEMENT(OntologyConcept.class),
         TYPE(Type.class),
-        ROLE_TYPE(RoleType.class),
+        ROLE(Role.class),
         RELATION_TYPE(RelationType.class),
         RESOURCE_TYPE(ResourceType.class),
         ENTITY_TYPE(EntityType.class),
@@ -138,10 +127,12 @@ public final class Schema {
 
         //Instances
         RELATION(Relation.class),
-        CASTING(Instance.class),
         ENTITY(Entity.class),
         RESOURCE(Resource.class),
-        RULE(Rule.class);
+        RULE(Rule.class),
+
+        //Internal
+        SHARD(Vertex.class);
 
         private final Class classType;
 
@@ -158,12 +149,12 @@ public final class Schema {
     /**
      * An enum which defines the non-unique mutable properties of the concept.
      */
-    public enum ConceptProperty {
+    public enum VertexProperty {
         //Unique Properties
         TYPE_LABEL(String.class), INDEX(String.class), ID(String.class), TYPE_ID(Integer.class),
 
         //Other Properties
-        INSTANCE_TYPE_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_SHARD(Boolean.class),
+        INSTANCE_TYPE_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),
         REGEX(String.class), DATA_TYPE(String.class), SHARD_COUNT(Long.class), CURRENT_TYPE_ID(Integer.class),
         RULE_LHS(String.class), RULE_RHS(String.class), CURRENT_SHARD(String.class),
 
@@ -175,7 +166,7 @@ public final class Schema {
 
         private final Class dataType;
 
-        ConceptProperty(Class dataType) {
+        VertexProperty(Class dataType) {
             this.dataType = dataType;
         }
 
@@ -246,13 +237,13 @@ public final class Schema {
         }
 
         @CheckReturnValue
-        public TypeLabel getLabel(TypeLabel resourceType) {
+        public Label getLabel(Label resourceType) {
             return resourceType.map(resource -> String.format(label, resource));
         }
 
         @CheckReturnValue
-        public TypeLabel getLabel(String resourceType) {
-            return TypeLabel.of(String.format(label, resourceType));
+        public Label getLabel(String resourceType) {
+            return Label.of(String.format(label, resourceType));
         }
     }
 
@@ -271,19 +262,19 @@ public final class Schema {
         }
 
         @CheckReturnValue
-        public TypeLabel getLabel() {
-            return TypeLabel.of(label);
+        public Label getLabel() {
+            return Label.of(label);
         }
     }
 
     /**
      *
-     * @param typeLabel The resource type label
+     * @param label The resource type label
      * @param value The value of the resource
      * @return A unique id for the resource
      */
     @CheckReturnValue
-    public static String generateResourceIndex(TypeLabel typeLabel, String value){
-        return Schema.BaseType.RESOURCE.name() + "-" + typeLabel + "-" + value;
+    public static String generateResourceIndex(Label label, String value){
+        return Schema.BaseType.RESOURCE.name() + "-" + label + "-" + value;
     }
 }

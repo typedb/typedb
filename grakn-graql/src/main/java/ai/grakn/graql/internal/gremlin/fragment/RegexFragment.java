@@ -21,11 +21,11 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.graql.internal.util.StringConverter.valueToString;
-import static ai.grakn.util.Schema.ConceptProperty.REGEX;
+import static ai.grakn.util.Schema.VertexProperty.REGEX;
 
 class RegexFragment extends AbstractFragment {
 
@@ -43,7 +43,7 @@ class RegexFragment extends AbstractFragment {
 
     @Override
     public String getName() {
-        return "[regex:" + valueToString(regex) + "]";
+        return "[regex:" + StringUtil.valueToString(regex) + "]";
     }
 
     @Override

@@ -20,12 +20,11 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.controller.GraqlController;
-import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.SparkContext;
+import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
@@ -64,7 +63,6 @@ public class GraqlControllerDELETETest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(spark);
         new GraqlController(mockFactory, spark);
     });
 

@@ -24,8 +24,6 @@ import ai.grakn.migration.base.MigrationCLI;
 
 import java.util.Optional;
 
-import static ai.grakn.migration.base.MigrationCLI.die;
-
 /**
  * Export data from a Grakn graph to Graql statements - prints to System.out
  * @author alexandraorth
@@ -33,22 +31,22 @@ import static ai.grakn.migration.base.MigrationCLI.die;
 public class Main {
 
     public static void main(String[] args){
-        MigrationCLI.init(args, GraphWriterOptions::new).stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(Main::runExport);
+        try{
+            MigrationCLI.init(args, GraphWriterOptions::new).stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach(Main::runExport);
+        } catch (Throwable throwable){
+            System.err.println(throwable.getMessage());
+        }
     }
 
-    public static void runExport(GraphWriterOptions options) {
+    private static void runExport(GraphWriterOptions options) {
         if(!options.exportOntology() && !options.exportData()) {
-            System.out.println("Missing arguments -ontology and/or -data");
-            die("");
+            throw new IllegalArgumentException("Missing arguments -ontology and/or -data");
         }
 
-        System.out.println("Writing graph " + options.getKeyspace() + " using Grakn Engine " +
-                options.getUri() + " to System.out");
-
-        try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE)) {
+        try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.READ)) {
             GraphWriter graphWriter = new GraphWriter(graph);
 
             if (options.exportOntology()) {

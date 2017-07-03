@@ -22,6 +22,7 @@ package ai.grakn.engine.tasks.manager;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -31,6 +32,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import org.slf4j.Logger;
@@ -38,7 +40,9 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -63,6 +67,7 @@ import java.util.function.Consumer;
 public class StandaloneTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(StandaloneTaskManager.class);
 
+    private final Set<TaskId> stoppedTasks;
     private final Map<TaskId, ScheduledFuture> scheduledTasks;
     private final Map<TaskId, BackgroundTask> runningTasks;
 
@@ -72,19 +77,25 @@ public class StandaloneTaskManager implements TaskManager {
     private final ExecutorService executorService;
     private final ScheduledExecutorService schedulingService;
     private final EngineID engineID;
+    private final GraknEngineConfig config;
+    private final RedisConnection redis;
+    private final EngineGraknGraphFactory factory;
 
-    public StandaloneTaskManager(EngineID engineId) {
+    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis, EngineGraknGraphFactory factory) {
         this.engineID = engineId;
+        this.config = config;
+        this.redis = redis;
+        this.factory = factory;
 
+        stoppedTasks = new HashSet<>();
         runningTasks = new ConcurrentHashMap<>();
         scheduledTasks = new ConcurrentHashMap<>();
 
         storage = new TaskStateInMemoryStore();
         stateUpdateLock = new NonReentrantLock();
 
-        GraknEngineConfig properties = GraknEngineConfig.getInstance();
         schedulingService = Executors.newScheduledThreadPool(1);
-        executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
+        executorService = Executors.newFixedThreadPool(config.getAvailableThreads());
 
         LockProvider.instantiate((lockName, existingLock) -> {
             if(existingLock != null){
@@ -133,8 +144,12 @@ public class StandaloneTaskManager implements TaskManager {
     }
 
     public void stopTask(TaskId id) {
-        TaskState state = storage.getState(id);
+        if(!storage.containsTask(id)){
+            stoppedTasks.add(id);
+            return;
+        }
 
+        TaskState state = storage.getState(id);
         try {
 
             if (taskShouldRun(state)) {
@@ -169,19 +184,21 @@ public class StandaloneTaskManager implements TaskManager {
         return () -> {
             try {
                 BackgroundTask runningTask = task.taskClass().newInstance();
+                runningTask.initialize(saveCheckpoint(task), configuration, this, config, redis, factory);
+
                 runningTasks.put(task.getId(), runningTask);
 
                 boolean completed;
 
                 if(taskShouldResume(task)){
-                    completed = runningTask.resume(saveCheckpoint(task), task.checkpoint());
+                    completed = runningTask.resume(task.checkpoint());
                 } else {
                     //Mark as running
                     task.markRunning(engineID);
 
                     saveState(task);
 
-                    completed = runningTask.start(saveCheckpoint(task), configuration, this);
+                    completed = runningTask.start();
                 }
 
                 if (completed) {
@@ -204,7 +221,9 @@ public class StandaloneTaskManager implements TaskManager {
     private Runnable submitTaskForExecution(TaskState taskState, TaskConfiguration configuration) {
         return () -> {
             TaskState stateFromStorage = storage.getState(taskState.getId());
-            if (taskShouldRun(stateFromStorage) || taskShouldResume(taskState)) {
+            if(taskIsStopped(taskState)){
+                saveState(taskState.markStopped());
+            } else if (taskShouldRun(stateFromStorage) || taskShouldResume(taskState)) {
                 executorService.submit(executeTask(taskState, configuration));
             }
         };
@@ -218,6 +237,15 @@ public class StandaloneTaskManager implements TaskManager {
      */
     private boolean taskShouldRun(TaskState task){
         return task.status() == TaskStatus.CREATED || task.schedule().isRecurring() && task.status() == TaskStatus.COMPLETED;
+    }
+
+    /**
+     * Determine if the task has previously been stopped.
+     * @param task Task that should be checked
+     * @return If the gievn task has been stopped.
+     */
+    private boolean taskIsStopped(TaskState task){
+        return stoppedTasks.contains(task.getId());
     }
 
     /**

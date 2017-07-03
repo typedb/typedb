@@ -25,6 +25,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -35,27 +36,27 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static org.junit.Assume.assumeFalse;
 
 public class CountTest {
 
     @ClassRule
-    public static final EngineContext rule = EngineContext.startInMemoryServer();
+    // TODO: Don't set port once bug #15130 is fixed
+    public static final EngineContext rule = EngineContext.startInMemoryServer().port(4567);
 
     private GraknSession factory;
 
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
-        assumeFalse(usingOrientDB());
+        assumeFalse(GraknTestSetup.usingOrientDB());
 
         factory = rule.factoryWithNewKeyspace();
     }
 
     @Test
     public void testCountAfterCommit() throws Exception {
-        String nameThing = "thing";
+        String nameThing = "thingy";
         String nameAnotherThing = "another";
 
         // assert the graph is empty
@@ -66,9 +67,9 @@ public class CountTest {
 
         // add 2 instances
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            EntityType thing = graph.putEntityType(nameThing);
-            thing.addEntity().getId();
-            thing.addEntity().getId();
+            EntityType thingy = graph.putEntityType(nameThing);
+            thingy.addEntity().getId();
+            thingy.addEntity().getId();
             graph.commit();
         }
 

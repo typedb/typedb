@@ -23,7 +23,7 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.13.0-SNAPSHOT</version>
+        <version>0.14.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -36,11 +36,10 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-graql</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
+            <groupId>org.sharegov</groupId>
+            <artifactId>mjson</artifactId>
+            <version>${mjson.version}</version>
+        </dependency>        
         <!--Spark Computer Dependencies-->
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>

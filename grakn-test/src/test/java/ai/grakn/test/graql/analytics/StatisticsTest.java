@@ -26,12 +26,14 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Label;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.junit.Before;
@@ -46,8 +48,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestEnv.usingOrientDB;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -57,7 +57,7 @@ import static org.junit.Assume.assumeFalse;
 // TODO We can extend AbstractGraphTest instead when we remove persisting in analytics
 public class StatisticsTest {
 
-    private static final String thing = "thing";
+    private static final String thing = "thingy";
     private static final String anotherThing = "anotherThing";
 
     private static final String resourceType1 = "resourceType1";
@@ -76,14 +76,15 @@ public class StatisticsTest {
     private ConceptId entityId4;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startInMemoryServer();
+    // TODO: Don't set port once bug #15130 is fixed
+    public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
 
     private GraknSession factory;
 
     @Before
     public void setUp() {
         // TODO: Fix tests in orientdb
-        assumeFalse(usingOrientDB());
+        assumeFalse(GraknTestSetup.usingOrientDB());
 
         factory = context.factoryWithNewKeyspace();
     }
@@ -96,20 +97,20 @@ public class StatisticsTest {
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             //TODO: add more detailed error messages
             // resources-type is not set
-            assertIllegalStateExceptionThrown(graph.graql().compute().max().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().min().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().mean().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().sum().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().std().in(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().median().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().max().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().min().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().mean().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().sum().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().std().in(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().median().in(thing)::execute);
 
             // if it's not a resource-type
-            assertIllegalStateExceptionThrown(graph.graql().compute().max().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().min().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().mean().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().sum().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().std().of(thing)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().median().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().max().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().min().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().mean().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().sum().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().std().of(thing)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().median().of(thing)::execute);
 
             // resource-type has no instance
             assertFalse(graph.graql().compute().max().of(resourceType7).execute().isPresent());
@@ -128,29 +129,29 @@ public class StatisticsTest {
             assertFalse(graph.graql().compute().mean().of(resourceType3).execute().isPresent());
 
             // resource-type has incorrect data type
-            assertIllegalStateExceptionThrown(graph.graql().compute().max().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().min().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().mean().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().sum().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().std().of(resourceType4)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().median().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().max().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().min().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().mean().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().sum().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().std().of(resourceType4)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().median().of(resourceType4)::execute);
 
             // resource-types have different data types
-            Set<TypeLabel> resourceTypes = Sets.newHashSet(TypeLabel.of(resourceType1), TypeLabel.of(resourceType2));
-            assertIllegalStateExceptionThrown(graph.graql().compute().max().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().min().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().mean().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().sum().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().std().of(resourceTypes)::execute);
-            assertIllegalStateExceptionThrown(graph.graql().compute().median().of(resourceTypes)::execute);
+            Set<Label> resourceTypes = Sets.newHashSet(Label.of(resourceType1), Label.of(resourceType2));
+            assertGraqlQueryExceptionThrown(graph.graql().compute().max().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().min().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().mean().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().sum().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().std().of(resourceTypes)::execute);
+            assertGraqlQueryExceptionThrown(graph.graql().compute().median().of(resourceTypes)::execute);
         }
     }
 
-    private void assertIllegalStateExceptionThrown(Supplier<Optional> method) {
+    private void assertGraqlQueryExceptionThrown(Supplier<Optional> method) {
         boolean exceptionThrown = false;
         try {
             method.get();
-        } catch (IllegalStateException e) {
+        } catch (GraqlQueryException e) {
             exceptionThrown = true;
         }
         assertTrue(exceptionThrown);
@@ -158,9 +159,6 @@ public class StatisticsTest {
 
     @Test
     public void testMinAndMax() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
-
         Optional<Number> result;
 
         // resource-type has no instance
@@ -253,9 +251,6 @@ public class StatisticsTest {
 
     @Test
     public void testSum() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
-
         Optional<Number> result;
 
         // resource-type has no instance
@@ -313,9 +308,6 @@ public class StatisticsTest {
 
     @Test
     public void testMean() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
-
         Optional<Double> result;
 
         // resource-type has no instance
@@ -372,9 +364,6 @@ public class StatisticsTest {
 
     @Test
     public void testStd() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
-
         Optional<Double> result;
 
         // resource-type has no instance
@@ -430,7 +419,9 @@ public class StatisticsTest {
         }
 
         List<Long> list = new ArrayList<>();
-        for (long i = 0L; i < 3L; i++) {
+        long workerNumber = 3L;
+        if (GraknTestSetup.usingTinker()) workerNumber = 1;
+        for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
         GraknSparkComputer.clear();
@@ -445,9 +436,6 @@ public class StatisticsTest {
 
     @Test
     public void testMedian() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
-
         Optional<Number> result;
 
         // resource-type has no instance
@@ -507,7 +495,9 @@ public class StatisticsTest {
         }
 
         List<Long> list = new ArrayList<>();
-        for (long i = 0L; i < 3L; i++) {
+        long workerNumber = 3L;
+        if (GraknTestSetup.usingTinker()) workerNumber = 1;
+        for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
         GraknSparkComputer.clear();
@@ -519,7 +509,7 @@ public class StatisticsTest {
         numberList.forEach(value -> assertEquals(1.5D, value.doubleValue(), delta));
     }
 
-    private void addOntologyAndEntities() throws GraknValidationException {
+    private void addOntologyAndEntities() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
@@ -533,8 +523,8 @@ public class StatisticsTest {
             entityId3 = entity3.getId();
             entityId4 = entity4.getId();
 
-            RoleType relation1 = graph.putRoleType("relation1");
-            RoleType relation2 = graph.putRoleType("relation2");
+            Role relation1 = graph.putRole("relation1");
+            Role relation2 = graph.putRole("relation2");
             entityType1.plays(relation1).plays(relation2);
             entityType2.plays(relation1).plays(relation2);
             RelationType related = graph.putRelationType("related").relates(relation1).relates(relation2);
@@ -558,35 +548,35 @@ public class StatisticsTest {
             resourceTypeList.add(graph.putResourceType(resourceType6, ResourceType.DataType.DOUBLE));
             resourceTypeList.add(graph.putResourceType(resourceType7, ResourceType.DataType.DOUBLE));
 
-            RoleType resourceOwner1 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType1)));
-            RoleType resourceOwner2 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType2)));
-            RoleType resourceOwner3 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType3)));
-            RoleType resourceOwner4 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType4)));
-            RoleType resourceOwner5 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType5)));
-            RoleType resourceOwner6 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType6)));
-            RoleType resourceOwner7 = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType7)));
+            Role resourceOwner1 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType1)));
+            Role resourceOwner2 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType2)));
+            Role resourceOwner3 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType3)));
+            Role resourceOwner4 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType4)));
+            Role resourceOwner5 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType5)));
+            Role resourceOwner6 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType6)));
+            Role resourceOwner7 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType7)));
 
-            RoleType resourceValue1 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType1)));
-            RoleType resourceValue2 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType2)));
-            RoleType resourceValue3 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType3)));
-            RoleType resourceValue4 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType4)));
-            RoleType resourceValue5 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType5)));
-            RoleType resourceValue6 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType6)));
-            RoleType resourceValue7 = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType7)));
+            Role resourceValue1 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType1)));
+            Role resourceValue2 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType2)));
+            Role resourceValue3 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType3)));
+            Role resourceValue4 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType4)));
+            Role resourceValue5 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType5)));
+            Role resourceValue6 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)));
+            Role resourceValue7 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType7)));
 
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType1)))
+            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)))
                     .relates(resourceOwner1).relates(resourceValue1);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType2)))
+            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)))
                     .relates(resourceOwner2).relates(resourceValue2);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType3)))
+            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType3)))
                     .relates(resourceOwner3).relates(resourceValue3);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType4)))
+            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType4)))
                     .relates(resourceOwner4).relates(resourceValue4);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType5)))
+            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)))
                     .relates(resourceOwner5).relates(resourceValue5);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType6)))
+            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)))
                     .relates(resourceOwner6).relates(resourceValue6);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType7)))
+            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType7)))
                     .relates(resourceOwner7).relates(resourceValue7);
 
             entityType1.plays(resourceOwner1)
@@ -617,7 +607,7 @@ public class StatisticsTest {
         }
     }
 
-    private void addResourcesInstances() throws GraknValidationException {
+    private void addResourcesInstances() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.<Double>getResourceType(resourceType1).putResource(1.2);
             graph.<Double>getResourceType(resourceType1).putResource(1.5);
@@ -643,28 +633,28 @@ public class StatisticsTest {
         }
     }
 
-    private void addResourceRelations() throws GraknValidationException {
+    private void addResourceRelations() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             Entity entity1 = graph.getConcept(entityId1);
             Entity entity2 = graph.getConcept(entityId2);
             Entity entity3 = graph.getConcept(entityId3);
             Entity entity4 = graph.getConcept(entityId4);
 
-            RoleType resourceOwner1 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType1)));
-            RoleType resourceOwner2 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType2)));
-            RoleType resourceOwner3 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType3)));
-            RoleType resourceOwner4 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType4)));
-            RoleType resourceOwner5 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType5)));
-            RoleType resourceOwner6 = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(TypeLabel.of(resourceType6)));
+            Role resourceOwner1 = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType1)));
+            Role resourceOwner2 = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType2)));
+            Role resourceOwner3 = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType3)));
+            Role resourceOwner4 = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType4)));
+            Role resourceOwner5 = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType5)));
+            Role resourceOwner6 = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType6)));
 
-            RoleType resourceValue1 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType1)));
-            RoleType resourceValue2 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType2)));
-            RoleType resourceValue3 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType3)));
-            RoleType resourceValue4 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType4)));
-            RoleType resourceValue5 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType5)));
-            RoleType resourceValue6 = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(TypeLabel.of(resourceType6)));
+            Role resourceValue1 = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType1)));
+            Role resourceValue2 = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType2)));
+            Role resourceValue3 = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType3)));
+            Role resourceValue4 = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType4)));
+            Role resourceValue5 = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType5)));
+            Role resourceValue6 = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)));
 
-            RelationType relationType1 = graph.getType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType1)));
+            RelationType relationType1 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)));
             relationType1.addRelation()
                     .addRolePlayer(resourceOwner1, entity1)
                     .addRolePlayer(resourceValue1, graph.<Double>getResourceType(resourceType1).putResource(1.2));
@@ -675,7 +665,7 @@ public class StatisticsTest {
                     .addRolePlayer(resourceOwner1, entity3)
                     .addRolePlayer(resourceValue1, graph.<Double>getResourceType(resourceType1).putResource(1.8));
 
-            RelationType relationType2 = graph.getType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType2)));
+            RelationType relationType2 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)));
             relationType2.addRelation()
                     .addRolePlayer(resourceOwner2, entity1)
                     .addRolePlayer(resourceValue2, graph.<Long>getResourceType(resourceType2).putResource(4L));
@@ -688,7 +678,7 @@ public class StatisticsTest {
 
             graph.<Long>getResourceType(resourceType3).putResource(100L);
 
-            RelationType relationType5 = graph.getType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType5)));
+            RelationType relationType5 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)));
             relationType5.addRelation()
                     .addRolePlayer(resourceOwner5, entity1)
                     .addRolePlayer(resourceValue5, graph.<Long>getResourceType(resourceType5).putResource(-7L));
@@ -699,7 +689,7 @@ public class StatisticsTest {
                     .addRolePlayer(resourceOwner5, entity4)
                     .addRolePlayer(resourceValue5, graph.<Long>getResourceType(resourceType5).putResource(-7L));
 
-            RelationType relationType6 = graph.getType(Schema.ImplicitType.HAS.getLabel(TypeLabel.of(resourceType6)));
+            RelationType relationType6 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)));
             relationType6.addRelation()
                     .addRolePlayer(resourceOwner6, entity1)
                     .addRolePlayer(resourceValue6, graph.<Double>getResourceType(resourceType6).putResource(7.5));

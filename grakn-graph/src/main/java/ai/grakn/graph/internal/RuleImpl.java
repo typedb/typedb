@@ -18,12 +18,14 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -34,7 +36,7 @@ import java.util.HashSet;
  * </p>
  *
  * <p>
- *     It can behave like any other {@link ai.grakn.concept.Instance} but primarily serves as a way of extracting
+ *     It can behave like any other {@link Thing} but primarily serves as a way of extracting
  *     implicit data from the graph. By defining the LHS (if statment) and RHS (then conclusion) it is possible to
  *     automatically materialise new concepts based on these rules.
  * </p>
@@ -42,16 +44,16 @@ import java.util.HashSet;
  * @author fppt
  *
  */
-class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
-    RuleImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
+class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
+    RuleImpl(VertexElement vertexElement) {
+        super(vertexElement);
     }
 
-    RuleImpl(AbstractGraknGraph graknGraph, Vertex v, RuleType type, Pattern lhs, Pattern rhs) {
-        super(graknGraph, v, type);
-        setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
-        setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
-        setUniqueProperty(Schema.ConceptProperty.INDEX, generateRuleIndex(type(), lhs, rhs));
+    RuleImpl(VertexElement vertexElement, RuleType type, Pattern lhs, Pattern rhs) {
+        super(vertexElement, type);
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
+        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateRuleIndex(type(), lhs, rhs));
     }
 
     /**
@@ -60,7 +62,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public Pattern getLHS() {
-        return parsePattern(getProperty(Schema.ConceptProperty.RULE_LHS));
+        return parsePattern(vertex().property(Schema.VertexProperty.RULE_LHS));
     }
 
     /**
@@ -69,34 +71,34 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public Pattern getRHS() {
-        return parsePattern(getProperty(Schema.ConceptProperty.RULE_RHS));
+        return parsePattern(vertex().property(Schema.VertexProperty.RULE_RHS));
     }
 
     private Pattern parsePattern(String value){
         if(value == null) {
             return null;
         } else {
-            return getGraknGraph().graql().parsePattern(value);
+            return vertex().graph().graql().parsePattern(value);
         }
     }
 
     /**
      *
-     * @param type The concept type which this rules applies to.
-     * @return The Rule itself
+     * @param ontologyConcept The {@link OntologyConcept} which this {@link Rule} applies to.
+     * @return The {@link Rule} itself
      */
-    Rule addHypothesis(Type type) {
-        putEdge(type, Schema.EdgeLabel.HYPOTHESIS);
+    Rule addHypothesis(OntologyConcept ontologyConcept) {
+        putEdge(ontologyConcept, Schema.EdgeLabel.HYPOTHESIS);
         return getThis();
     }
 
     /**
      *
-     * @param type The concept type which is the conclusion of this Rule.
-     * @return The Rule itself
+     * @param ontologyConcept The {@link OntologyConcept} which is the conclusion of this {@link Rule}.
+     * @return The {@link Rule} itself
      */
-    Rule addConclusion(Type type) {
-        putEdge(type, Schema.EdgeLabel.CONCLUSION);
+    Rule addConclusion(OntologyConcept ontologyConcept) {
+        putEdge(ontologyConcept, Schema.EdgeLabel.CONCLUSION);
         return getThis();
     }
 
@@ -107,7 +109,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
     @Override
     public Collection<Type> getHypothesisTypes() {
         Collection<Type> types = new HashSet<>();
-        getOutgoingNeighbours(Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> types.add(concept.asType()));
+        neighbours(Direction.OUT, Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> types.add(concept.asType()));
         return types;
     }
 
@@ -118,7 +120,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
     @Override
     public Collection<Type> getConclusionTypes() {
         Collection<Type> types = new HashSet<>();
-        getOutgoingNeighbours(Schema.EdgeLabel.CONCLUSION).forEach(concept -> types.add(concept.asType()));
+        neighbours(Direction.OUT, Schema.EdgeLabel.CONCLUSION).forEach(concept -> types.add(concept.asType()));
         return types;
     }
 

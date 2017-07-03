@@ -19,9 +19,9 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Thing;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -32,13 +32,17 @@ import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 import com.theoryinpractise.halbuilder.api.Representation;
 import javafx.util.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Utils class used by HALBuilders
@@ -51,55 +55,55 @@ public class HALUtils {
 
     // - Edges names
 
-    final static String ISA_EDGE = "isa";
-    final static String SUB_EDGE = "sub";
+    final static String ISA_EDGE = Schema.EdgeLabel.ISA.getLabel();
+    final static String SUB_EDGE = Schema.EdgeLabel.SUB.getLabel();
     final static String OUTBOUND_EDGE = "OUT";
     final static String INBOUND_EDGE = "IN";
-    final static String HAS_ROLE_EDGE = "has-role";
-    final static String HAS_RESOURCE_EDGE = "has-resource";
-    final static String PLAYS_ROLE_EDGE = "plays-role";
+    final static String RELATES_EDGE = Schema.EdgeLabel.RELATES.getLabel();
+    final static String HAS_EDGE = "has";
+    final static String PLAYS_EDGE = Schema.EdgeLabel.PLAYS.getLabel();
     final static String HAS_EMPTY_ROLE_EDGE = "EMPTY-GRAKN-ROLE";
 
 
     // - State properties
 
-    final static String ID_PROPERTY = "_id";
-    final static String TYPE_PROPERTY = "_type";
-    final static String BASETYPE_PROPERTY = "_baseType";
-    final static String DIRECTION_PROPERTY = "_direction";
-    final static String VALUE_PROPERTY = "_value";
-    final static String NAME_PROPERTY = "_name";
+    public final static String ID_PROPERTY = "_id";
+    public final static String TYPE_PROPERTY = "_type";
+    public final static String BASETYPE_PROPERTY = "_baseType";
+    public final static String DIRECTION_PROPERTY = "_direction";
+    public final static String VALUE_PROPERTY = "_value";
+    public final static String NAME_PROPERTY = "_name";
 
 
-    static Schema.BaseType getBaseType(Instance instance) {
-        if (instance.isEntity()) {
+    static Schema.BaseType getBaseType(Thing thing) {
+        if (thing.isEntity()) {
             return Schema.BaseType.ENTITY;
-        } else if (instance.isRelation()) {
+        } else if (thing.isRelation()) {
             return Schema.BaseType.RELATION;
-        } else if (instance.isResource()) {
+        } else if (thing.isResource()) {
             return Schema.BaseType.RESOURCE;
-        } else if (instance.isRule()) {
+        } else if (thing.isRule()) {
             return Schema.BaseType.RULE;
         } else {
-            throw new RuntimeException("Unrecognized base type of " + instance);
+            throw CommonUtil.unreachableStatement("Unrecognised base type of " + thing);
         }
     }
 
-    static Schema.BaseType getBaseType(Type type) {
-        if (type.isEntityType()) {
+    static Schema.BaseType getBaseType(OntologyConcept ontologyConcept) {
+        if (ontologyConcept.isEntityType()) {
             return Schema.BaseType.ENTITY_TYPE;
-        } else if (type.isRelationType()) {
+        } else if (ontologyConcept.isRelationType()) {
             return Schema.BaseType.RELATION_TYPE;
-        } else if (type.isResourceType()) {
+        } else if (ontologyConcept.isResourceType()) {
             return Schema.BaseType.RESOURCE_TYPE;
-        } else if (type.isRuleType()) {
+        } else if (ontologyConcept.isRuleType()) {
             return Schema.BaseType.RULE_TYPE;
-        } else if (type.isRoleType()) {
-            return Schema.BaseType.ROLE_TYPE;
-        } else if (type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
+        } else if (ontologyConcept.isRoleType()) {
+            return Schema.BaseType.ROLE;
+        } else if (ontologyConcept.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             return Schema.BaseType.TYPE;
         } else {
-            throw new RuntimeException("Unrecognized base type of " + type);
+            throw CommonUtil.unreachableStatement("Unrecognised base type of " + ontologyConcept);
         }
     }
 
@@ -108,11 +112,11 @@ public class HALUtils {
         resource.withProperty(ID_PROPERTY, concept.getId().getValue());
 
         if (concept.isInstance()) {
-            Instance instance = concept.asInstance();
-            resource.withProperty(TYPE_PROPERTY, instance.type().getLabel().getValue())
-                    .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
+            Thing thing = concept.asInstance();
+            resource.withProperty(TYPE_PROPERTY, thing.type().getLabel().getValue())
+                    .withProperty(BASETYPE_PROPERTY, getBaseType(thing).name());
         } else {
-            resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asType()).name());
+            resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asOntologyConcept()).name());
         }
 
         if (concept.isResource()) {
@@ -130,29 +134,44 @@ public class HALUtils {
             return computeRoleTypesFromQueryNoReasoner(matchQuery);
         } else {
             if (firstExplanation.isRuleExplanation() || firstExplanation.isLookupExplanation()) {
-                updateRoleTypesFromAnswer(roleTypes, firstAnswer);
+                updateRoleTypesFromAnswer(roleTypes, firstAnswer, matchQuery);
             } else {
-                firstAnswer.getExplanation().getAnswers().forEach(answer -> updateRoleTypesFromAnswer(roleTypes, answer));
+                firstAnswer.getExplanation().getAnswers().forEach(answer -> updateRoleTypesFromAnswer(roleTypes, answer, matchQuery));
             }
             return roleTypes;
         }
     }
 
-    private static void updateRoleTypesFromAnswer(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Answer answer) {
+    private static void updateRoleTypesFromAnswer(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Answer answer, MatchQuery matchQuery) {
         Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
         if (atom.isRelation()) {
             Optional<VarPatternAdmin> var = atom.getPattern().getVars().stream().filter(x -> x.hasProperty(RelationProperty.class)).findFirst();
             VarPatternAdmin varAdmin = atom.getPattern().asVar();
-            if (var.isPresent() && !var.get().isUserDefinedName()) {
+            if (var.isPresent() && !var.get().getVarName().isUserDefinedName() && bothRolePlayersAreSelected(atom, matchQuery)) {
                 roleTypes.put(varAdmin, pairVarNamesRelationType(atom));
             }
         }
     }
 
+    private static boolean bothRolePlayersAreSelected(Atom atom, MatchQuery matchQuery) {
+        Relation reasonerRel = ((Relation) atom);
+        Set<Var> rolePlayersInAtom = reasonerRel.getRolePlayers().stream().collect(Collectors.toSet());
+        Set<Var> selectedVars = matchQuery.admin().getSelectedNames();
+        //If all the role players contained in the current relation are also selected in the user query
+        return Sets.intersection(rolePlayersInAtom, selectedVars).equals(rolePlayersInAtom);
+    }
+
+    private static boolean bothRolePlayersAreSelectedNoReasoner(VarPatternAdmin var, MatchQuery matchQuery) {
+        Set<Var> rolePlayersInVar =  var.getProperty(RelationProperty.class).get().getRelationPlayers().map(x->x.getRolePlayer().getVarName()).collect(Collectors.toSet());
+        Set<Var> selectedVars = matchQuery.admin().getSelectedNames();
+        //If all the role players contained in the current relation are also selected in the user query
+        return Sets.intersection(rolePlayersInVar, selectedVars).equals(rolePlayersInVar);
+    }
+
     private static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQueryNoReasoner(MatchQuery matchQuery) {
         final Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
         matchQuery.admin().getPattern().getVars().forEach(var -> {
-            if (var.getProperty(RelationProperty.class).isPresent() && !var.isUserDefinedName()) {
+            if (var.getProperty(RelationProperty.class).isPresent() && !var.getVarName().isUserDefinedName() && bothRolePlayersAreSelectedNoReasoner(var,matchQuery)) {
                 Map<Var, String> tempMap = new HashMap<>();
                 var.getProperty(RelationProperty.class).get()
                         .getRelationPlayers().forEach(x -> {
@@ -162,7 +181,7 @@ public class HALUtils {
                 );
                 String relationType = null;
                 if (var.getProperty(IsaProperty.class).isPresent()) {
-                    Optional<TypeLabel> relOptional = var.getProperty(IsaProperty.class).get().getType().getTypeLabel();
+                    Optional<Label> relOptional = var.getProperty(IsaProperty.class).get().getType().getTypeLabel();
                     relationType = (relOptional.isPresent()) ? relOptional.get().getValue() : "";
                 } else {
                     relationType = "";
@@ -182,7 +201,7 @@ public class HALUtils {
         // Overrides the varNames that have roles in the previous map
         reasonerRel.getRoleVarMap().entries().stream().filter(entry -> !Schema.MetaSchema.isMetaLabel(entry.getKey().getLabel())).forEach(entry -> varNamesToRole.put(entry.getValue(), entry.getKey().getLabel().getValue()));
 
-        String relationType = (reasonerRel.getType() != null) ? reasonerRel.getType().getLabel().getValue() : "";
+        String relationType = (reasonerRel.getOntologyConcept() != null) ? reasonerRel.getOntologyConcept().getLabel().getValue() : "";
         return new Pair<>(varNamesToRole, relationType);
     }
 
