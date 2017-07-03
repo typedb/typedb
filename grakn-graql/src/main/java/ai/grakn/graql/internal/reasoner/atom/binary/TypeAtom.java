@@ -26,6 +26,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
+import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -61,9 +62,7 @@ public class TypeAtom extends Binary{
 
     public TypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, Graql.var().asUserDefined(), null, par);}
     public TypeAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
-        super(pattern.getProperty(IsaProperty.class).orElse(null), pattern, predicateVar, p, par);}
-    public TypeAtom(VarProperty varProperty, VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
-        super(varProperty, pattern, predicateVar, p, par);}
+        super(pattern, predicateVar, p, par);}
     public TypeAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
         this(constructIsaVarPattern(var, predicateVar), predicateVar, p, par);
     }
@@ -95,6 +94,13 @@ public class TypeAtom extends Binary{
     @Override
     public Atomic copy(){
         return new TypeAtom(this);
+    }
+
+    @Override
+    public VarProperty getVarProperty() {
+        return isRelation()?
+                getPattern().asVar().getProperty(RelationProperty.class).orElse(null) :
+                getPattern().asVar().getProperty(IsaProperty.class).orElse(null);
     }
 
     private static VarPatternAdmin constructIsaVarPattern(Var var, Var predicateVar) {

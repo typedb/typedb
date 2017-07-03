@@ -94,7 +94,7 @@ public class Relation extends TypeAtom {
     private Set<RelationPlayer> relationPlayers = null;
 
     public Relation(VarPatternAdmin pattern, Var predicateVar, IdPredicate predicate, ReasonerQuery par) {
-        super(pattern.getProperty(RelationProperty.class).orElse(null), pattern, predicateVar, predicate, par);}
+        super(pattern, predicateVar, predicate, par);}
     public Relation(Var name, Var typeVariable, Map<Var, VarPattern> roleMap, IdPredicate pred, ReasonerQuery par) {
         this(
                 constructRelationVarPattern(name, typeVariable, roleMap),

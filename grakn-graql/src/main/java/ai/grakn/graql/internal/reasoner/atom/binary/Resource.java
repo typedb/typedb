@@ -25,6 +25,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
@@ -62,7 +63,7 @@ public class Resource extends Binary{
     private final Set<ValuePredicate> multiPredicate = new HashSet<>();
 
     public Resource(VarPatternAdmin pattern, Var predicateVar, IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
-        super(pattern.getProperties().filter(p -> p instanceof HasResourceProperty).findFirst().orElse(null), pattern, predicateVar, idPred, par);
+        super(pattern, predicateVar, idPred, par);
         this.multiPredicate.addAll(ps);
     }
     private Resource(Resource a) {
@@ -108,6 +109,11 @@ public class Resource extends Binary{
         hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + multiPredicateEquivalenceHashCode();
         return hashCode;
+    }
+
+    @Override
+    public VarProperty getVarProperty() {
+        return getPattern().asVar().getProperties().filter(p -> p instanceof HasResourceProperty).findFirst().orElse(null);
     }
 
     private int multiPredicateEquivalenceHashCode(){

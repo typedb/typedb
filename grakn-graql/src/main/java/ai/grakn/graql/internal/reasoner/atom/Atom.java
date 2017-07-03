@@ -58,17 +58,14 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkCompatib
  */
 public abstract class Atom extends AtomicBase {
 
-    private final VarProperty varProperty;
     private int basePriority = Integer.MAX_VALUE;
     private Set<InferenceRule> applicableRules = null;
 
-    protected Atom(VarProperty property, VarPatternAdmin pattern, ReasonerQuery par) {
+    protected Atom(VarPatternAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
-        this.varProperty = property;
     }
     protected Atom(Atom a) {
         super(a);
-        this.varProperty = a.varProperty;
         this.applicableRules = a.applicableRules;
     }
 
@@ -90,8 +87,11 @@ public abstract class Atom extends AtomicBase {
      * */
     public boolean isResource(){ return false;}
 
-
-    public VarProperty getVarProperty(){ return varProperty;}
+    /**
+     *
+     * @return
+     */
+    public abstract VarProperty getVarProperty();
 
     /**
      * @return partial substitutions for this atom (NB: instances)

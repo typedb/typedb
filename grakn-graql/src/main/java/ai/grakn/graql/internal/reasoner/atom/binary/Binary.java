@@ -58,8 +58,8 @@ public abstract class Binary extends Atom {
     private ConceptId typeId = null;
     private IdPredicate predicate = null;
 
-    Binary(VarProperty property, VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
-        super(property, pattern, par);
+    Binary(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
+        super(pattern, par);
         this.predicateVariable = predicateVar;
         this.predicate = p;
         this.typeId = getPredicate() != null? getPredicate().getPredicate() : null;

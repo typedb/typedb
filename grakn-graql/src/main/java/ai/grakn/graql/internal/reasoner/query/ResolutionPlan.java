@@ -123,6 +123,10 @@ public final class ResolutionPlan {
     public static final int COMPARISON_VARIABLE_VALUE_PREDICATE = - 1000;
 
 
+    /**
+     * compute the resolution plan - list of atomic queries ordered by their cost as computed by the graql traversal planner
+     * @return list of prioritised queries
+     */
     static LinkedList<ReasonerQueryImpl> getResolutionPlanFromTraversal(ReasonerQueryImpl query){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
         GraknGraph graph = query.graph();
@@ -140,8 +144,6 @@ public final class ResolutionPlan {
                 .distinct()
                 .map(propertyMap::get)
                 .collect(Collectors.toCollection(LinkedList::new));
-
-        //return atoms.stream().map(ReasonerAtomicQuery::new).collect(Collectors.toCollection(LinkedList::new));
 
         Set<Atom> nonResolvableAtoms = new HashSet<>();
         while (!atoms.isEmpty()) {
@@ -163,7 +165,7 @@ public final class ResolutionPlan {
 
     /**
      * compute the resolution plan - list of atomic queries ordered by their resolution priority
-     * @return list of prioritised atomic queries
+     * @return list of prioritised queries
      */
     static LinkedList<ReasonerQueryImpl> getResolutionPlan(ReasonerQueryImpl query){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
