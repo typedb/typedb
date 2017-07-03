@@ -24,6 +24,8 @@ import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.graql.Printer;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraknTestSetup;
@@ -43,7 +45,6 @@ import org.junit.runners.MethodSorters;
 
 import java.util.Collections;
 
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.ID_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
@@ -245,7 +246,10 @@ public class GraqlControllerGETTest {
                 sendGET("match $x isa movie;", APPLICATION_HAL, false, true, 1);
 
         jsonResponse(response).asJsonList().forEach(e -> {
-            assertThat(e.asJsonMap().get("_embedded").asJsonMap().size(), lessThanOrEqualTo(1));
+            Json embedded = e.at("x").at("_embedded");
+            if (embedded != null) {
+                assertThat(embedded.asJsonMap().size(), lessThanOrEqualTo(1));
+            }
         });
     }
 
@@ -254,8 +258,10 @@ public class GraqlControllerGETTest {
         String queryString = "match $x isa movie;";
         Response response = sendGET(queryString, APPLICATION_HAL);
 
-        Json expectedResponse = renderHALArrayData(
-                graphContext.graph().graql().parse(queryString), 0, -1);
+        Printer halPrinter = Printers.hal(mockGraph.getKeyspace(), -1);
+        Query<?> query = graphContext.graph().graql().parse(queryString);
+        Json expectedResponse = Json.read(halPrinter.graqlString(query.execute()));
+
         assertThat(jsonResponse(response), equalTo(expectedResponse));
     }
 
@@ -522,7 +528,7 @@ public class GraqlControllerGETTest {
         Response response = sendGET(query, APPLICATION_HAL);
 
         assertThat(response.statusCode(), equalTo(200));
-        assertThat(jsonResponse(response), equalTo(Json.array()));
+        assertThat(jsonResponse(response), equalTo(Json.nil()));
     }
 
     private Response sendGET(String acceptType) {
