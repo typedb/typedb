@@ -33,7 +33,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.type.HasResourceTypeAtom;
 import ai.grakn.util.Schema;
 
 import java.util.Collection;
@@ -174,6 +174,6 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         Label label = this.getResourceType().getTypeLabel().orElse(null);
         //isa part
         VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();
-        return new TypeAtom(resVar, parent);
+        return new HasResourceTypeAtom(resVar, parent);
     }
 }

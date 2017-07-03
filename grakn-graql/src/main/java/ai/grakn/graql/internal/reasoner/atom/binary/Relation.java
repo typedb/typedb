@@ -35,11 +35,13 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.query.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -86,7 +88,7 @@ import static java.util.stream.Collectors.toSet;
  * @author Kasper Piskorski
  *
  */
-public class Relation extends TypeAtom {
+public class Relation extends IsaAtom {
 
     private int hashCode = 0;
     private Multimap<Role, Var> roleVarMap = null;
@@ -116,6 +118,11 @@ public class Relation extends TypeAtom {
                 (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") +
                 getRelationPlayers().toString();
         return relationString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
+    }
+
+    @Override
+    public VarProperty getVarProperty() {
+        return getPattern().asVar().getProperty(RelationProperty.class).orElse(null);
     }
 
     private Set<RelationPlayer> getRelationPlayers() {

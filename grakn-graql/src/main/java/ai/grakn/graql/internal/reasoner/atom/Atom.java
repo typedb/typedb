@@ -27,6 +27,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.query.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
@@ -88,8 +89,7 @@ public abstract class Atom extends AtomicBase {
     public boolean isResource(){ return false;}
 
     /**
-     *
-     * @return
+     * @return the var property this atom was mapped from
      */
     public abstract VarProperty getVarProperty();
 
