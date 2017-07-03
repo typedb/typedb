@@ -40,7 +40,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(Theories.class)
-public class LockTest {
+public class LockTestIT {
 
     private static final String LOCK_PATH = "/lock";
     private static ZookeeperConnection zookeeperConnection;

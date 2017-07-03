@@ -35,7 +35,7 @@ public class UserControllerTest  {
     public static ControllerFixture fixture = ControllerFixture.INSTANCE;
     
     @Test
-    public void testAddNewUser() {        
+    public void testAddAndGetNewUser() {        
         String userName = "person";
         String password = "password";
 

@@ -24,7 +24,6 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static java.time.Instant.now;
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -34,6 +33,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ai.grakn.client.TaskClient;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.controller.TasksController;
@@ -43,11 +43,11 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.test.SparkContext;
+
 import java.time.Duration;
 import java.time.Instant;
 import mjson.Json;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -74,7 +74,7 @@ public class TaskClientTest {
 
     @Test
     public void whenSendingATask_TheTaskManagerReceivedTheTask(){
-        Class taskClass = ShortExecutionMockTask.class;
+        Class<?> taskClass = ShortExecutionMockTask.class;
         String creator = this.getClass().getName();
         Instant runAt = now();
         Duration interval = Duration.ofSeconds(1);
@@ -96,7 +96,7 @@ public class TaskClientTest {
         ctx.stop();
 
         try {
-            Class taskClass = ShortExecutionMockTask.class;
+            Class<?> taskClass = ShortExecutionMockTask.class;
             String creator = this.getClass().getName();
             Instant runAt = now();
             Json configuration = Json.nil();

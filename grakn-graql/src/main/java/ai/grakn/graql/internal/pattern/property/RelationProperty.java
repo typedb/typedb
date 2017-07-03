@@ -216,7 +216,6 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         return relationPlayers.hashCode();
     }
 
-
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //keep varName if reified, reified if contains more properties than the RelationProperty itself and potential IsaProperty

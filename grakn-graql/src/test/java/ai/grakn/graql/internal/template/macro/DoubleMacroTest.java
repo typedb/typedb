@@ -77,6 +77,16 @@ public class DoubleMacroTest {
     }
 
     @Test
+    public void applyDoubleMacroToScientificNotation_ReturnsCorrectDouble(){
+        assertEquals(new Double(180000000000.0), doubleMacro.apply(ImmutableList.of("1.8E+11")));
+    }
+
+    @Test
+    public void applyDoubleMacroToLargeDouble_ReturnsCorrectDouble(){
+        assertEquals(new Double(191588629.5), doubleMacro.apply(ImmutableList.of("191588629.5")));
+    }
+
+    @Test
     public void whenUsingDoubleMacroInTemplate_ResultIsAsExpected(){
         String template = "insert $x val @double(<value>);";
         String expected = "insert $x0 val 4.0;";
