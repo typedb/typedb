@@ -145,9 +145,8 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @param keyspace The graph containing the type to shard
      * @param conceptId The id of the concept to shard
      */
-    private void shardConcept(
-            RedisCountStorage redis, EngineGraknGraphFactory factory, String keyspace, ConceptId conceptId, int maxRetry,
-            long shardingThreshold){
+    private void shardConcept(RedisCountStorage redis, EngineGraknGraphFactory factory,
+            String keyspace, ConceptId conceptId, int maxRetry, long shardingThreshold){
         Preconditions.checkNotNull(this.getLockProvider(), Preconditions.checkNotNull(this.getLockProvider(), "Lock provider was null, possible race condition in initialisation"));
         Lock engineLock = this.getLockProvider().getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
