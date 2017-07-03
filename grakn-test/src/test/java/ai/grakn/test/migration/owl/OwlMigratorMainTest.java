@@ -19,6 +19,7 @@
 package ai.grakn.test.migration.owl;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -55,20 +56,20 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
     }
 
     @Test
-    public void owlMainFileTest(){
+    public void owlMigratorCalledWithCorrectArgs_DataMigratedCorrectly(){
         String owlFile = getFile("owl", "shakespeare.owl").getAbsolutePath();
         runAndAssertDataCorrect("owl", "-u", engine.uri(), "-input", owlFile, "-keyspace", keyspace);
     }
 
     @Test
-    public void owlMainNoFileSpecifiedTest(){
-        run("owl", "-keyspace", keyspace);
+    public void owlMigratorCalledWithNoData_ErrorIsPrintedToSystemErr(){
+        run("owl", "-keyspace", keyspace, "-u", engine.uri());
         assertThat(sysErr.getLog(), containsString("Data file missing (-i)"));
     }
 
     @Test
-    public void owlMainCannotOpenFileTest(){
-        run("owl", "-input", "grah/?*", "-keyspace", keyspace);
+    public void owlMigratorCalledInvalidInputFile_ErrorIsPrintedToSystemErr(){
+        run("owl", "-input", "grah/?*", "-keyspace", keyspace, "-u", engine.uri());
         assertThat(sysErr.getLog(), containsString("Cannot find file:"));
     }
 
@@ -76,31 +77,32 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
         Main.main(args);
     }
 
-    public void runAndAssertDataCorrect(String... args){
+    private void runAndAssertDataCorrect(String... args){
         run(args);
 
-        graph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE);
-        EntityType top = graph.getEntityType("tThing");
-        EntityType type = graph.getEntityType("tAuthor");
-        assertNotNull(type);
-        assertNull(graph.getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
-        assertNotNull(type.sup());
-        assertEquals("tPerson", type.sup().getLabel().getValue());
-        assertEquals(top, type.sup().sup());
-        assertTrue(top.subs().contains(graph.getEntityType("tPlace")));
-        assertNotEquals(0, type.instances().size());
+        try(GraknGraph graph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)) {
+            EntityType top = graph.getEntityType("tThing");
+            EntityType type = graph.getEntityType("tAuthor");
+            assertNotNull(type);
+            assertNull(graph.getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
+            assertNotNull(type.sup());
+            assertEquals("tPerson", type.sup().getLabel().getValue());
+            assertEquals(top, type.sup().sup());
+            assertTrue(top.subs().contains(graph.getEntityType("tPlace")));
+            assertNotEquals(0, type.instances().size());
 
-        assertTrue(
-                type.instances().stream()
-                        .flatMap(inst -> inst.asEntity()
-                                .resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
-                        .anyMatch(s -> s.getValue().equals("eShakespeare"))
-        );
-        final Entity author = getEntity("eShakespeare");
-        assertNotNull(author);
-        final Entity work = getEntity("eHamlet");
-        assertNotNull(work);
-        assertRelationBetweenInstancesExists(graph, work, author, Label.of("op-wrote"));
-        assertTrue(!ReasonerUtils.getRules(graph).isEmpty());
+            assertTrue(
+                    type.instances().stream()
+                            .flatMap(inst -> inst.asEntity()
+                                    .resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
+                            .anyMatch(s -> s.getValue().equals("eShakespeare"))
+            );
+            final Entity author = getEntity("eShakespeare");
+            assertNotNull(author);
+            final Entity work = getEntity("eHamlet");
+            assertNotNull(work);
+            assertRelationBetweenInstancesExists(graph, work, author, Label.of("op-wrote"));
+            assertTrue(!ReasonerUtils.getRules(graph).isEmpty());
+        }
     }
 }

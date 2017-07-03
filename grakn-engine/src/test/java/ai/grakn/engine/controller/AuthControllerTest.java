@@ -41,6 +41,7 @@ public class AuthControllerTest  {
         dataResponse.then().statusCode(401);
     }
 
+    @Ignore
     @Test
     public void newSessionWithWrongUser() {
         usersHandler.addUser(Json.object(UsersHandler.USER_NAME, "marco",
@@ -53,6 +54,7 @@ public class AuthControllerTest  {
         dataResponseWrongUser.then().statusCode(401);
     }
 
+    @Ignore
     @Test
     public void newSessionWithWrongPassword() {
         usersHandler.addUser(Json.object(UsersHandler.USER_NAME, "marco",
@@ -98,6 +100,7 @@ public class AuthControllerTest  {
 
     }
 
+    @Ignore
     @Test
     public void requestWithoutToken(){
         Json body = Json.object("username", "giulio", "password", "ciao");

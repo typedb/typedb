@@ -59,7 +59,6 @@ public abstract class BinaryBase extends Atom {
     public Var getValueVariable() {
         return valueVariable;
     }
-    void setValueVariable(Var var) { valueVariable = var;}
 
     @Override
     public int hashCode() {

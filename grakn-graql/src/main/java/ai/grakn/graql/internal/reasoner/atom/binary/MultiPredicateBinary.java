@@ -47,7 +47,7 @@ public abstract class MultiPredicateBinary<T extends Predicate> extends BinaryBa
     MultiPredicateBinary(VarPatternAdmin pattern, Set<T> preds, ReasonerQuery par) {
         super(pattern, par);
         this.multiPredicate.addAll(preds);
-        this.typeId = extractTypeId(atomPattern.asVar());
+        this.typeId = extractTypeId(getPattern().asVar());
     }
 
     MultiPredicateBinary(MultiPredicateBinary<T> a) {super(a);}

@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.controller;
+package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
@@ -25,18 +25,21 @@ import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.test.GraphContext;
-import ai.grakn.test.SparkContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
+
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.builder.RequestSpecBuilder;
 import com.jayway.restassured.response.Response;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
-import static ai.grakn.test.engine.controller.GraqlControllerGETTest.exception;
-import static ai.grakn.test.engine.controller.GraqlControllerGETTest.stringResponse;
+import static ai.grakn.engine.controller.Utilities.exception;
+import static ai.grakn.engine.controller.Utilities.stringResponse;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.KEYSPACE;
@@ -77,23 +80,24 @@ public class ConceptControllerTest {
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
     }
 
+
     @Test
     public void gettingConceptById_ResponseStatusIs200(){
         Response response = sendRequest(graphContext.graph().getEntityType("movie"), 0);
 
         assertThat(response.statusCode(), equalTo(200));
     }
-
+    
     @Test
-    public void gettingConceptByIdWithNoAcceptType_ResponseContentTypeIsHAL() {
+    public void gettingConceptByIdWithNoAcceptType_ResponseStatusIs406(){
         Concept concept = graphContext.graph().getEntityType("movie");
-
-        Response response = with()
-                .queryParam(KEYSPACE, mockGraph.getKeyspace())
+        
+        Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
                 .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
-        assertThat(response.contentType(), equalTo(APPLICATION_HAL));
+        assertThat(response.statusCode(), equalTo(406));
+        assertThat(exception(response), containsString(UNSUPPORTED_CONTENT_TYPE.getMessage("*/*")));
     }
 
     @Test
@@ -155,13 +159,13 @@ public class ConceptControllerTest {
     }
 
     @Test
-    public void gettingNonExistingElementById_ResponseStatusIs404(){
+    public void gettingNonExistingElementById_ResponseStatusIs500(){
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, "invalid")
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Concept.CONCEPT + "blah");
 
-        assertThat(response.statusCode(), equalTo(404));
+        assertThat(response.statusCode(), equalTo(500));
     }
 
     private Response sendRequest(Concept concept, int numberEmbeddedComponents){
