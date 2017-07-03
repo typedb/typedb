@@ -1,19 +1,17 @@
-package ai.grakn.test.engine.controller;
+package ai.grakn.engine.controller;
 
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.test.GraphContext;
-import ai.grakn.test.SparkContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
+import mjson.Json;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static ai.grakn.test.engine.controller.GraqlControllerGETTest.jsonResponse;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
@@ -103,6 +101,10 @@ public class GraknExecuteQueryControllerTest {
     @Test
     public void testBadAccept() {
         sendQuery("match $x isa movie; ask;", "application/msword", true, false, -1).then().statusCode(406);        
+    }
+
+    protected static Json jsonResponse(Response response) {
+        return response.getBody().as(Json.class, new JsonMapper());
     }
     
 }
