@@ -289,7 +289,7 @@ public class GraqlController {
                 printer = Printers.json();
                 break;
             case APPLICATION_HAL:
-                printer = Printers.hal(keyspace);
+                printer = Printers.hal(keyspace, -1);
                 break;
             default:
                 throw GraknServerException.unsupportedContentType(acceptType);

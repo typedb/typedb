@@ -73,7 +73,7 @@ public class GraknExecuteQueryControllerTest {
     public void setUp() {
         jsonPrinter = Printers.json();
         graqlPrinter = Printers.graql(false);
-        halPrinter = Printers.hal(graphContext.graph().getKeyspace());
+        halPrinter = Printers.hal(graphContext.graph().getKeyspace(), -1);
     }
 
     @Test

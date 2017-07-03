@@ -27,14 +27,16 @@ import mjson.Json;
 class HALPrinter extends JsonPrinter {
 
     private final String keyspace;
+    private final int limitEmbedded;
 
-    HALPrinter(String keyspace) {
+    HALPrinter(String keyspace, int limitEmbedded) {
         this.keyspace = keyspace;
+        this.limitEmbedded = limitEmbedded;
     }
 
     @Override
     public Json graqlString(boolean inner, Concept concept) {
-        String json = HALBuilder.renderHALConceptData(concept, 1,keyspace,0,100);
+        String json = HALBuilder.renderHALConceptData(concept, 1,keyspace,0, limitEmbedded);
         return Json.read(json);
     }
 

@@ -370,7 +370,8 @@ class GraqlSession {
             case "json":
                 return Printers.json();
             case "hal":
-                return Printers.hal(graph.getKeyspace());
+                // TODO: Make this parameter configurable
+                return Printers.hal(graph.getKeyspace(), 100);
             case "graql":
             default:
                 return Printers.graql(true, resources);
