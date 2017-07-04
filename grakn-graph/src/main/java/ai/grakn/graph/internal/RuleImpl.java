@@ -51,8 +51,8 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
 
     RuleImpl(VertexElement vertexElement, RuleType type, Pattern lhs, Pattern rhs) {
         super(vertexElement, type);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, lhs, getWhen(), Pattern::toString);
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, rhs, getThen(), Pattern::toString);
         vertex().propertyUnique(Schema.VertexProperty.INDEX, generateRuleIndex(type(), lhs, rhs));
     }
 
@@ -61,8 +61,8 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
      * @return A string representing the left hand side GraQL query.
      */
     @Override
-    public Pattern getLHS() {
-        return parsePattern(vertex().property(Schema.VertexProperty.RULE_LHS));
+    public Pattern getWhen() {
+        return parsePattern(vertex().property(Schema.VertexProperty.RULE_WHEN));
     }
 
     /**
@@ -70,8 +70,8 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
      * @return A string representing the right hand side GraQL query.
      */
     @Override
-    public Pattern getRHS() {
-        return parsePattern(vertex().property(Schema.VertexProperty.RULE_RHS));
+    public Pattern getThen() {
+        return parsePattern(vertex().property(Schema.VertexProperty.RULE_THEN));
     }
 
     private Pattern parsePattern(String value){

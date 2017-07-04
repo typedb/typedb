@@ -48,8 +48,8 @@ class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
 
     @Override
     public Rule putRule(Pattern lhs, Pattern rhs) {
-        if(lhs == null) throw GraphOperationException.settingNullProperty(Schema.VertexProperty.RULE_LHS);
-        if(rhs == null) throw GraphOperationException.settingNullProperty(Schema.VertexProperty.RULE_RHS);
+        if(lhs == null) throw GraphOperationException.settingNullProperty(Schema.VertexProperty.RULE_WHEN);
+        if(rhs == null) throw GraphOperationException.settingNullProperty(Schema.VertexProperty.RULE_THEN);
 
         return putInstance(Schema.BaseType.RULE,
                 () -> getRule(lhs, rhs), (vertex, type) -> vertex().graph().factory().buildRule(vertex, type, lhs, rhs));

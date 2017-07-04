@@ -36,7 +36,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static ai.grakn.util.ErrorMessage.NULL_VALUE;
-import static ai.grakn.util.Schema.VertexProperty.RULE_LHS;
+import static ai.grakn.util.Schema.VertexProperty.RULE_WHEN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -70,11 +70,11 @@ public class RuleTest {
     public void whenCreatingRulesWithNullValues_Throw() throws Exception {
         RuleType conceptType = graknGraph.putRuleType("A Thing");
         Rule rule = conceptType.putRule(lhs, rhs);
-        assertEquals(lhs, rule.getLHS());
-        assertEquals(rhs, rule.getRHS());
+        assertEquals(lhs, rule.getWhen());
+        assertEquals(rhs, rule.getThen());
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(NULL_VALUE.getMessage(RULE_LHS));
+        expectedException.expectMessage(NULL_VALUE.getMessage(RULE_WHEN));
 
         conceptType.putRule(null, null);
     }

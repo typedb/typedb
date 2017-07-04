@@ -440,7 +440,7 @@ public class InsertQueryTest {
         RuleType ruleType = movieGraph.graph().getRuleType(ruleTypeId);
         boolean found = false;
         for (ai.grakn.concept.Rule rule : ruleType.instances()) {
-            if(lhsPattern.equals(rule.getLHS()) && rhsPattern.equals(rule.getRHS())){
+            if(lhsPattern.equals(rule.getWhen()) && rhsPattern.equals(rule.getThen())){
                 found = true;
                 break;
             }
