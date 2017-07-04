@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -57,17 +56,12 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkCompatib
  */
 public abstract class Atom extends AtomicBase {
 
-    private Type type = null;
-    protected ConceptId typeId = null;
-
     private int basePriority = Integer.MAX_VALUE;
     private Set<InferenceRule> applicableRules = null;
 
     protected Atom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
         super(a);
-        this.type = a.type;
-        this.typeId = a.typeId;
         this.applicableRules = a.applicableRules;
     }
 
@@ -194,22 +188,17 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return corresponding type if any
      */
-    public OntologyConcept getOntologyConcept(){
-        if (type == null && typeId != null) {
-            type = getParentQuery().graph().getConcept(typeId).asType();
-        }
-        return type;
-    }
+    public abstract OntologyConcept getOntologyConcept();
 
     /**
      * @return type id of the corresponding type if any
      */
-    public ConceptId getTypeId(){ return typeId;}
+    public abstract ConceptId getTypeId();
 
     /**
      * @return value variable name
      */
-    public abstract Var getValueVariable();
+    public abstract Var getPredicateVariable();
 
     /**
      * @return set of predicates relevant to this atom
@@ -234,7 +223,7 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<ValuePredicate> getValuePredicates(){
         return ((ReasonerQueryImpl) getParentQuery()).getValuePredicates().stream()
-                .filter(atom -> atom.getVarName().equals(getValueVariable()))
+                .filter(atom -> atom.getVarName().equals(getPredicateVariable()))
                 .collect(Collectors.toSet());
     }
 
