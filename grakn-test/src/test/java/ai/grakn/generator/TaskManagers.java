@@ -36,8 +36,10 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.util.Pool;
 
 /**
  * TaskManagers
@@ -54,7 +56,6 @@ public class TaskManagers extends Generator<TaskManager> {
     };
 
     private static Map<Class<? extends TaskManager>, TaskManager> taskManagers = new HashMap<>();
-
     public static void closeAndClear() {
         for (TaskManager taskManager : taskManagers.values()) {
             try {
@@ -77,14 +78,14 @@ public class TaskManagers extends Generator<TaskManager> {
 
         GraknEngineConfig config = GraknEngineConfig.create();
         JedisPoolConfig poolConfig = new JedisPoolConfig();
-        JedisPool jedisPool = new JedisPool(poolConfig,
+        Pool<Jedis> jedisPool = new JedisPool(poolConfig,
                 config.getProperty(GraknEngineConfig.REDIS_SERVER_URL),
                 Integer.parseInt(config.getProperty(GraknEngineConfig.REDIS_SERVER_PORT)));
         if (!taskManagers.containsKey(taskManagerToReturn)) {
             try {
                 Constructor<? extends TaskManager> constructor =
                         taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class,
-                                JedisPool.class, EngineGraknGraphFactory.class,
+                                Pool.class, EngineGraknGraphFactory.class,
                                 LockProvider.class, MetricRegistry.class);
                 // TODO this doesn't take a Redis connection. Make sure this is what we expect
                 taskManagers.put(taskManagerToReturn,

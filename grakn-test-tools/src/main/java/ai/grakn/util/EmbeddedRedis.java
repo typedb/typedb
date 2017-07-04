@@ -38,7 +38,17 @@ import redis.embedded.RedisServer;
 public class EmbeddedRedis {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedRedis.class);
     private static AtomicInteger REDIS_COUNTER = new AtomicInteger(0);
-    private static RedisServer redisServer;
+    private static volatile RedisServer redisServer;
+
+    static {
+        Runtime.getRuntime().addShutdownHook(
+                new Thread(() -> {
+                    if (redisServer != null && redisServer.isActive()) {
+                        LOG.warn("Redis still running, stopping it on shutdown hook");
+                        redisServer.stop();
+                    }
+                }));
+    }
 
     /**
      * Starts an embedded redis on the provided port
@@ -48,16 +58,15 @@ public class EmbeddedRedis {
     public static void start(int port){
         if(REDIS_COUNTER.getAndIncrement() == 0) {
             LOG.info("Starting redis...");
-            RedisServer redisServer = RedisServer.builder()
+            redisServer = RedisServer.builder()
                     .port(port)
-                    .setting("daemonize no")
-                    .setting("appendonly no")
                     .build();
             if (!redisServer.isActive()) {
                 redisServer.start();
+                LOG.info("Redis started.");
+            } else {
+                LOG.warn("Redis already running.");
             }
-            LOG.warn("Redis already running.");
-            LOG.info("Redis started.");
         }
     }
 
