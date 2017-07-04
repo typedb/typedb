@@ -25,10 +25,13 @@ import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_ALL;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -50,7 +53,6 @@ import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
-import static ai.grakn.util.REST.Response.Graql.RESPONSE;
 import static ai.grakn.util.REST.Response.Json.ENTITIES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.RELATIONS_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.RESOURCES_JSON_FIELD;
@@ -100,7 +102,7 @@ public class ConceptController {
             @ApiImplicitParam(name = LIMIT_EMBEDDED,  value = "Limit on the number of embedded HAL concepts", required = true, dataType = "boolean", paramType = "query")
     })
     private Json conceptByIdentifier(Request request, Response response){
-        validateRequest(request);
+        validateRequest(request, APPLICATION_ALL, APPLICATION_HAL);
 
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID_PARAMETER));
@@ -113,11 +115,9 @@ public class ConceptController {
             Concept concept = retrieveExistingConcept(graph, conceptId);
 
             response.type(APPLICATION_HAL);
-            response.status(200);
+            response.status(HttpStatus.SC_OK);
 
-            body.set(RESPONSE,Json.read(renderHALConceptData(concept, separationDegree, keyspace, offset, limit)));
-
-            return body;
+            return Json.read(renderHALConceptData(concept, separationDegree, keyspace, offset, limit));
         } finally {
             context.stop();
         }
@@ -132,7 +132,7 @@ public class ConceptController {
     @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
     private String ontology(Request request, Response response) {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-
+        validateRequest(request, APPLICATION_ALL, APPLICATION_JSON);
         Context context = ontologyGetTimer.time();
         try(GraknGraph graph = factory.getGraph(keyspace, READ)){
             Json responseObj = Json.object();
@@ -140,6 +140,9 @@ public class ConceptController {
             responseObj.set(ENTITIES_JSON_FIELD, subLabels(graph.admin().getMetaEntityType()));
             responseObj.set(RELATIONS_JSON_FIELD, subLabels(graph.admin().getMetaRelationType()));
             responseObj.set(RESOURCES_JSON_FIELD, subLabels(graph.admin().getMetaResourceType()));
+
+            response.type(APPLICATION_JSON);
+            response.status(HttpStatus.SC_OK);
             return responseObj.toString();
         } catch (Exception e) {
             throw GraknServerException.serverException(500, e);
@@ -152,15 +155,18 @@ public class ConceptController {
         Concept concept = graph.getConcept(conceptId);
 
         if (notPresent(concept)) {
-            throw GraknServerException.internalError(NO_CONCEPT_IN_KEYSPACE.getMessage(conceptId, graph.getKeyspace()));
+            throw GraknServerException.noConceptFound(conceptId, graph.getKeyspace());
         }
 
         return concept;
     }
 
-    static void validateRequest(Request request){
+    static void validateRequest(Request request, String... contentTypes){
         String acceptType = getAcceptType(request);
-        if(!acceptType.equals(APPLICATION_HAL)) throw GraknServerException.unsupportedContentType(acceptType);
+
+        if(!Arrays.asList(contentTypes).contains(acceptType)){
+            throw GraknServerException.unsupportedContentType(acceptType);
+        }
     }
 
     private List<String> subLabels(OntologyConcept ontologyConcept) {

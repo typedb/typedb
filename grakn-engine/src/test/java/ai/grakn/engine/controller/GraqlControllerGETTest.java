@@ -22,17 +22,29 @@ import ai.grakn.GraknGraph;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.QueryBuilder;
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
-import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
-import static ai.grakn.graql.internal.hal.HALUtils.ID_PROPERTY;
-import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.util.REST;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.response.Response;
+import mjson.Json;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.FixMethodOrder;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runners.MethodSorters;
+
+import java.util.Collections;
+
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
+import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
+import static ai.grakn.graql.internal.hal.HALUtils.ID_PROPERTY;
+import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
-import ai.grakn.util.REST;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
@@ -42,29 +54,16 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static ai.grakn.util.REST.Response.EXCEPTION;
-import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
-import static ai.grakn.util.REST.Response.Graql.RESPONSE;
 import com.codahale.metrics.MetricRegistry;
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.response.Response;
-import java.util.Collections;
 import static junit.framework.TestCase.assertTrue;
-import mjson.Json;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.junit.Assume.assumeTrue;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.FixMethodOrder;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -270,14 +269,6 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchWithHALType_ResponseContainsOriginalQuery() {
-        String query = "match $x isa movie;";
-        Response response = sendGET(query, APPLICATION_HAL);
-
-        assertThat(originalQuery(response), equalTo(query));
-    }
-
-    @Test
     public void GETGraqlMatchWithTextType_ResponseContentTypeIsGraql() {
         Response response = sendGET(APPLICATION_TEXT);
 
@@ -290,21 +281,6 @@ public class GraqlControllerGETTest {
 
         assertThat(stringResponse(response).length(), greaterThan(0));
         assertThat(stringResponse(response), stringContainsInOrder(Collections.nCopies(10, "isa movie")));
-    }
-
-    @Test
-    public void GETGraqlMatchWithTextType_ResponseContainsOriginalQuery() {
-        String query = "match $x isa movie;";
-        Response response = sendGET(APPLICATION_TEXT);
-
-        assertThat(originalQuery(response), equalTo(query));
-    }
-
-    @Test
-    public void GETGraqlMatchWithTextTypeAndEmptyResponse_ResponseIsEmptyString() {
-        Response response = sendGET("match $x isa \"runtime\";", APPLICATION_TEXT);
-
-        assertThat(stringResponse(response), isEmptyString());
     }
 
     @Test
@@ -322,14 +298,6 @@ public class GraqlControllerGETTest {
         Json expectedResponse = Json.read(
                 Printers.json().graqlString(graphContext.graph().graql().parse(query).execute()));
         assertThat(jsonResponse(response), equalTo(expectedResponse));
-    }
-
-    @Test
-    public void GETGraqlMatchWithGraqlJsonType_ResponseContainsOriginalQuery() {
-        String query = "match $x isa movie;";
-        Response response = sendGET(APPLICATION_JSON_GRAQL);
-
-        assertThat(originalQuery(response), equalTo(query));
     }
 
     @Test
@@ -389,15 +357,6 @@ public class GraqlControllerGETTest {
         Response response = sendGET(query, APPLICATION_TEXT);
 
         assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
-    }
-
-    @Ignore
-    @Test
-    public void GETGraqlCompute_ResponseContainsOriginalQuery() {
-        String query = "compute count in movie;";
-        Response response = sendGET(query, APPLICATION_TEXT);
-
-        assertThat(originalQuery(response), equalTo(query));
     }
 
     @Ignore
@@ -518,8 +477,8 @@ public class GraqlControllerGETTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
+    @Ignore
     @Test
-    @Ignore("TODO find out why it fails")
     public void ZGETGraqlComputePathWithHALTypeAndNoPath_ResponseIsEmptyJson() {
         String fromId = graphContext.graph().getResourcesByValue("Apocalypse Now").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -556,14 +515,10 @@ public class GraqlControllerGETTest {
     }
 
     protected static String stringResponse(Response response) {
-        return response.getBody().as(Json.class, jsonMapper).at(RESPONSE).asString();
+        return response.getBody().asString();
     }
 
     protected static Json jsonResponse(Response response) {
-        return response.getBody().as(Json.class, jsonMapper).at(RESPONSE);
-    }
-
-    protected static String originalQuery(Response response) {
-        return response.getBody().as(Json.class, jsonMapper).at(ORIGINAL_QUERY).asString();
+        return response.getBody().as(Json.class, jsonMapper);
     }
 }

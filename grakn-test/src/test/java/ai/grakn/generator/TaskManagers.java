@@ -20,9 +20,8 @@ package ai.grakn.generator;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.tasks.connection.RedisCountStorage;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.EngineID;
@@ -49,7 +48,6 @@ public class TaskManagers extends Generator<TaskManager> {
 
     private static final Logger LOG = LoggerFactory.getLogger(TaskManagers.class);
 
-    // TODO TEMP FOR TESTING
     @SuppressWarnings("unchecked")
     private Class<? extends TaskManager>[] taskManagerClasses = new Class[]{
             RedisTaskManager.class, RedisTaskManager.class
@@ -82,16 +80,15 @@ public class TaskManagers extends Generator<TaskManager> {
         JedisPool jedisPool = new JedisPool(poolConfig,
                 config.getProperty(GraknEngineConfig.REDIS_SERVER_URL),
                 Integer.parseInt(config.getProperty(GraknEngineConfig.REDIS_SERVER_PORT)));
-        RedisCountStorage redisCountStorage = RedisCountStorage.create(jedisPool);
         if (!taskManagers.containsKey(taskManagerToReturn)) {
             try {
                 Constructor<? extends TaskManager> constructor =
                         taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class,
-                                RedisCountStorage.class, EngineGraknGraphFactory.class,
+                                JedisPool.class, EngineGraknGraphFactory.class,
                                 LockProvider.class, MetricRegistry.class);
                 // TODO this doesn't take a Redis connection. Make sure this is what we expect
                 taskManagers.put(taskManagerToReturn,
-                        constructor.newInstance(EngineID.me(), config, redisCountStorage, null,
+                        constructor.newInstance(EngineID.me(), config, jedisPool, null,
                                 new ProcessWideLockProvider(), new MetricRegistry()));
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
                 LOG.error("Could not instantiate task manager", e);

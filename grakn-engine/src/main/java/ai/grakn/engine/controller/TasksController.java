@@ -19,9 +19,17 @@
 package ai.grakn.engine.controller;
 
 
+import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.WebPath.Tasks.GET;
+import static ai.grakn.util.REST.WebPath.Tasks.STOP;
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
+import static java.lang.Long.parseLong;
+import static java.time.Instant.ofEpochMilli;
+import static java.util.stream.Collectors.toList;
+
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
-import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
@@ -31,9 +39,6 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
-import static ai.grakn.util.REST.WebPath.Tasks.GET;
-import static ai.grakn.util.REST.WebPath.Tasks.STOP;
-import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
@@ -152,8 +157,8 @@ public class TasksController {
                     .map(this::serialiseStateSubset)
                     .forEach(result::add);
 
-            response.status(200);
-            response.type(ContentType.APPLICATION_JSON.getMimeType());
+            response.status(HttpStatus.SC_OK);
+            response.type(APPLICATION_JSON);
             return result;
         } finally {
             context.stop();
@@ -169,7 +174,7 @@ public class TasksController {
         Context context = getTaskTimer.time();
         try {
             response.status(200);
-            response.type("application/json");
+            response.type(APPLICATION_JSON);
             return serialiseStateFull(manager.storage().getState(TaskId.of(id)));
         } finally {
             context.stop();
@@ -182,11 +187,10 @@ public class TasksController {
     @ApiImplicitParam(name = REST.Request.UUID_PARAMETER, value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private Json stopTask(Request request, Response response) {
         String id = request.params(REST.Request.ID_PARAMETER);
-        Context context = stopTaskTimer.time();
-        try {
-            manager.stopTask(TaskId.of(id));
-            return Json.object();
-        } finally {
+Context context = stopTaskTimer.time();
+        try {        manager.stopTask(TaskId.of(id));response.status(HttpStatus.SC_OK);
+        response.type(APPLICATION_JSON);
+        return Json.object();} finally {
             context.stop();
         }
     }

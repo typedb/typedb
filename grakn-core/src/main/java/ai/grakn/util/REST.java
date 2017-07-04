@@ -174,6 +174,7 @@ public class REST {
             public static final String APPLICATION_JSON = "application/json";
             public static final String APPLICATION_TEXT = "application/text";
             public static final String APPLICATION_HAL ="application/hal+json";
+            public static final String APPLICATION_ALL ="*/*";
         }
 
         /**
