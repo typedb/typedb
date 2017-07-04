@@ -56,6 +56,11 @@ public class SubAtom extends TypeAtom {
     }
 
     @Override
+    public VarProperty getVarProperty() {
+        return getPattern().asVar().getProperty(SubProperty.class).orElse(null);
+    }
+
+    @Override
     public String toString(){
         String typeString = "sub"+ "(" + getVarName() + ", " + getPredicateVariable() +")";
         return typeString + getPredicates().stream().map(Predicate::toString).collect(Collectors.joining(""));
@@ -64,11 +69,6 @@ public class SubAtom extends TypeAtom {
     @Override
     public Atomic copy(){
         return new SubAtom(this);
-    }
-
-    @Override
-    public VarProperty getVarProperty() {
-        return getPattern().asVar().getProperty(SubProperty.class).orElse(null);
     }
 
     @Override

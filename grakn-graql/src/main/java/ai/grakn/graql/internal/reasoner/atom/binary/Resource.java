@@ -75,6 +75,11 @@ public class Resource extends Binary{
     }
 
     @Override
+    public VarProperty getVarProperty() {
+        return getPattern().asVar().getProperties(HasResourceProperty.class).findFirst().orElse(null);
+    }
+
+    @Override
     public String toString(){
         String multiPredicateString = getMultiPredicate().isEmpty()?
                 getPredicateVariable().toString() :
@@ -109,11 +114,6 @@ public class Resource extends Binary{
         hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + multiPredicateEquivalenceHashCode();
         return hashCode;
-    }
-
-    @Override
-    public VarProperty getVarProperty() {
-        return getPattern().asVar().getProperties().filter(p -> p instanceof HasResourceProperty).findFirst().orElse(null);
     }
 
     private int multiPredicateEquivalenceHashCode(){

@@ -56,13 +56,13 @@ public class RelatesAtom extends TypeAtom {
     private RelatesAtom(RelatesAtom a) { super(a);}
 
     @Override
-    public Atomic copy(){
-        return new RelatesAtom(this);
+    public VarProperty getVarProperty() {
+        return getPattern().asVar().getProperties(RelatesProperty.class).findFirst().orElse(null);
     }
 
     @Override
-    public VarProperty getVarProperty() {
-        return getPattern().asVar().getProperties(RelatesProperty.class).findFirst().orElse(null);
+    public Atomic copy(){
+        return new RelatesAtom(this);
     }
 
     @Override

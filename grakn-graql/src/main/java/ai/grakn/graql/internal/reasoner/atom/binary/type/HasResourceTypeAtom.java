@@ -56,13 +56,13 @@ public class HasResourceTypeAtom extends TypeAtom {
     private HasResourceTypeAtom(TypeAtom a) { super(a);}
 
     @Override
-    public Atomic copy(){
-        return new HasResourceTypeAtom(this);
+    public VarProperty getVarProperty() {
+        return getPattern().asVar().getProperties(HasResourceTypeProperty.class).findFirst().orElse(null);
     }
 
     @Override
-    public VarProperty getVarProperty() {
-        return getPattern().asVar().getProperties().filter(p -> p instanceof HasResourceTypeProperty).findFirst().orElse(null);
+    public Atomic copy(){
+        return new HasResourceTypeAtom(this);
     }
 
     @Override

@@ -55,13 +55,13 @@ public class ScopeAtom extends TypeAtom {
     private ScopeAtom(ScopeAtom a) { super(a);}
 
     @Override
-    public Atomic copy(){
-        return new ScopeAtom(this);
+    public VarProperty getVarProperty() {
+        return getPattern().asVar().getProperties(HasScopeProperty.class).findFirst().orElse(null);
     }
 
     @Override
-    public VarProperty getVarProperty() {
-        return getPattern().asVar().getProperties().filter(p -> p instanceof HasScopeProperty).findFirst().orElse(null);
+    public Atomic copy(){
+        return new ScopeAtom(this);
     }
 
     @Override

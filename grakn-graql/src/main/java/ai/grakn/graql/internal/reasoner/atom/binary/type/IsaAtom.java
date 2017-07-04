@@ -57,6 +57,11 @@ public class IsaAtom extends TypeAtom {
     protected IsaAtom(TypeAtom a) { super(a);}
 
     @Override
+    public VarProperty getVarProperty() {
+        return getPattern().asVar().getProperty(IsaProperty.class).orElse(null);
+    }
+
+    @Override
     public String toString(){
         String typeString = (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") + "(" + getVarName() + ")";
         return typeString + getPredicates().stream().map(Predicate::toString).collect(Collectors.joining(""));
@@ -65,11 +70,6 @@ public class IsaAtom extends TypeAtom {
     @Override
     public Atomic copy(){
         return new IsaAtom(this);
-    }
-
-    @Override
-    public VarProperty getVarProperty() {
-        return getPattern().asVar().getProperty(IsaProperty.class).orElse(null);
     }
 
     @Override

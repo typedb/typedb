@@ -113,16 +113,16 @@ public class Relation extends IsaAtom {
     }
 
     @Override
+    public VarProperty getVarProperty() {
+        return getPattern().asVar().getProperty(RelationProperty.class).orElse(null);
+    }
+
+    @Override
     public String toString(){
         String relationString = (isUserDefinedName()? getVarName() + " ": "") +
                 (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") +
                 getRelationPlayers().toString();
         return relationString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
-    }
-
-    @Override
-    public VarProperty getVarProperty() {
-        return getPattern().asVar().getProperty(RelationProperty.class).orElse(null);
     }
 
     private Set<RelationPlayer> getRelationPlayers() {

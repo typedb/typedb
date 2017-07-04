@@ -55,13 +55,13 @@ public class PlaysAtom extends TypeAtom {
     private PlaysAtom(PlaysAtom a) { super(a);}
 
     @Override
-    public Atomic copy(){
-        return new PlaysAtom(this);
+    public VarProperty getVarProperty() {
+        return getPattern().asVar().getProperties(PlaysProperty.class).findFirst().orElse(null);
     }
 
     @Override
-    public VarProperty getVarProperty() {
-        return getPattern().asVar().getProperties(PlaysProperty.class).findFirst().orElse(null);
+    public Atomic copy(){
+        return new PlaysAtom(this);
     }
 
     @Override
