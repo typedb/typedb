@@ -298,14 +298,14 @@ public interface VarPattern extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    VarPattern lhs(Pattern lhs);
+    VarPattern when(Pattern lhs);
 
     /**
      * @param rhs the right-hand side of this rule
      * @return this
      */
     @CheckReturnValue
-    VarPattern rhs(Pattern rhs);
+    VarPattern then(Pattern rhs);
 
     /**
      * Specify that the variable is different to another variable

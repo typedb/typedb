@@ -456,7 +456,7 @@ public class QueryParserTest {
         Pattern rhsPattern = and(parsePatterns(rhs));
 
         InsertQuery expected = insert(
-                label("my-rule-thing").sub("rule"), var().isa("my-rule-thing").lhs(lhsPattern).rhs(rhsPattern)
+                label("my-rule-thing").sub("rule"), var().isa("my-rule-thing").when(lhsPattern).then(rhsPattern)
         );
 
         InsertQuery parsed = parse(

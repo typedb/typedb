@@ -30,9 +30,9 @@ import ai.grakn.graql.Pattern;
  *
  * @author Felix Chapman
  */
-public class LhsProperty extends RuleProperty {
+public class WhenProperty extends RuleProperty {
 
-    public LhsProperty(Pattern pattern) {
+    public WhenProperty(Pattern pattern) {
         super(pattern);
     }
 

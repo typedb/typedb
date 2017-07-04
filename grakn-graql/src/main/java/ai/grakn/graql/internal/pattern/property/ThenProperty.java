@@ -31,9 +31,9 @@ import ai.grakn.graql.Pattern;
  *
  * @author Felix Chapman
  */
-public class RhsProperty extends RuleProperty {
+public class ThenProperty extends RuleProperty {
 
-    public RhsProperty(Pattern rhs) {
+    public ThenProperty(Pattern rhs) {
         super(rhs);
     }
 

@@ -39,7 +39,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.pattern.property.LhsProperty;
+import ai.grakn.graql.internal.pattern.property.WhenProperty;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
@@ -604,10 +604,10 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchRuleRightHandSide() {
-        MatchQuery query = qb.match(x.lhs(qb.parsePattern("$x id 'expect-lhs'")).rhs(qb.parsePattern("$x id 'expect-rhs'")));
+        MatchQuery query = qb.match(x.when(qb.parsePattern("$x id 'expect-lhs'")).then(qb.parsePattern("$x id 'expect-rhs'")));
 
         expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage(MATCH_INVALID.getMessage(LhsProperty.class.getName()));
+        expectedException.expectMessage(MATCH_INVALID.getMessage(WhenProperty.class.getName()));
 
         query.forEach(r -> {});
     }

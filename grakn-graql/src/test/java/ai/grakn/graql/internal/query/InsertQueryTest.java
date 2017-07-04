@@ -434,7 +434,7 @@ public class InsertQueryTest {
         String ruleTypeId = "a-rule-type";
         Pattern lhsPattern = qb.parsePattern("$x sub entity");
         Pattern rhsPattern = qb.parsePattern("$x sub entity");
-        VarPattern vars = var("x").isa(ruleTypeId).lhs(lhsPattern).rhs(rhsPattern);
+        VarPattern vars = var("x").isa(ruleTypeId).when(lhsPattern).then(rhsPattern);
         qb.insert(vars).execute();
 
         RuleType ruleType = movieGraph.graph().getRuleType(ruleTypeId);
@@ -722,28 +722,28 @@ public class InsertQueryTest {
     public void testInsertRuleWithoutLhs() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("lhs")));
-        qb.insert(var().isa("inference-rule").rhs(var("x").isa("movie"))).execute();
+        qb.insert(var().isa("inference-rule").then(var("x").isa("movie"))).execute();
     }
 
     @Test
     public void testInsertRuleWithoutRhs() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("rhs")));
-        qb.insert(var().isa("inference-rule").lhs(var("x").isa("movie"))).execute();
+        qb.insert(var().isa("inference-rule").when(var("x").isa("movie"))).execute();
     }
 
     @Test
     public void testInsertNonRuleWithLhs() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("lhs", RULE.getLabel()));
-        qb.insert(var().isa("movie").lhs(var("x"))).execute();
+        qb.insert(var().isa("movie").when(var("x"))).execute();
     }
 
     @Test
     public void testInsertNonRuleWithRHS() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("rhs", RULE.getLabel()));
-        qb.insert(label("thingy").sub("movie").rhs(var("x"))).execute();
+        qb.insert(label("thingy").sub("movie").then(var("x"))).execute();
     }
 
     @Test
