@@ -39,10 +39,6 @@ import org.junit.runners.MethodSorters;
 
 import java.util.Collections;
 
-import static ai.grakn.engine.controller.Utilities.exception;
-import static ai.grakn.engine.controller.Utilities.jsonResponse;
-import static ai.grakn.engine.controller.Utilities.originalQuery;
-import static ai.grakn.engine.controller.Utilities.stringResponse;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.ID_PROPERTY;
@@ -57,12 +53,12 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
+import static ai.grakn.util.REST.Response.EXCEPTION;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
@@ -269,14 +265,6 @@ public class GraqlControllerGETTest {
     }
 
     @Test
-    public void GETGraqlMatchWithHALType_ResponseContainsOriginalQuery() {
-        String query = "match $x isa movie;";
-        Response response = sendGET(query, APPLICATION_HAL);
-
-        assertThat(originalQuery(response), equalTo(query));
-    }
-
-    @Test
     public void GETGraqlMatchWithTextType_ResponseContentTypeIsGraql() {
         Response response = sendGET(APPLICATION_TEXT);
 
@@ -289,21 +277,6 @@ public class GraqlControllerGETTest {
 
         assertThat(stringResponse(response).length(), greaterThan(0));
         assertThat(stringResponse(response), stringContainsInOrder(Collections.nCopies(10, "isa movie")));
-    }
-
-    @Test
-    public void GETGraqlMatchWithTextType_ResponseContainsOriginalQuery() {
-        String query = "match $x isa movie;";
-        Response response = sendGET(APPLICATION_TEXT);
-
-        assertThat(originalQuery(response), equalTo(query));
-    }
-
-    @Test
-    public void GETGraqlMatchWithTextTypeAndEmptyResponse_ResponseIsEmptyString() {
-        Response response = sendGET("match $x isa \"runtime\";", APPLICATION_TEXT);
-
-        assertThat(stringResponse(response), isEmptyString());
     }
 
     @Test
@@ -321,14 +294,6 @@ public class GraqlControllerGETTest {
         Json expectedResponse = Json.read(
                 Printers.json().graqlString(graphContext.graph().graql().parse(query).execute()));
         assertThat(jsonResponse(response), equalTo(expectedResponse));
-    }
-
-    @Test
-    public void GETGraqlMatchWithGraqlJsonType_ResponseContainsOriginalQuery() {
-        String query = "match $x isa movie;";
-        Response response = sendGET(APPLICATION_JSON_GRAQL);
-
-        assertThat(originalQuery(response), equalTo(query));
     }
 
     @Test
@@ -388,15 +353,6 @@ public class GraqlControllerGETTest {
         Response response = sendGET(query, APPLICATION_TEXT);
 
         assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
-    }
-
-    @Ignore
-    @Test
-    public void GETGraqlCompute_ResponseContainsOriginalQuery() {
-        String query = "compute count in movie;";
-        Response response = sendGET(query, APPLICATION_TEXT);
-
-        assertThat(originalQuery(response), equalTo(query));
     }
 
     @Ignore
@@ -548,5 +504,17 @@ public class GraqlControllerGETTest {
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .accept(acceptType)
                 .get(REST.WebPath.Graph.GRAQL);
+    }
+
+    protected static String exception(Response response) {
+        return response.getBody().as(Json.class, new JsonMapper()).at(EXCEPTION).asString();
+    }
+
+    protected static String stringResponse(Response response) {
+        return response.getBody().asString();
+    }
+
+    protected static Json jsonResponse(Response response) {
+        return response.getBody().as(Json.class, new JsonMapper());
     }
 }

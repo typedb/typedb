@@ -144,12 +144,14 @@ export default {
   getMetaTypes() {
     return this.request({
       url: `/graph/ontology?keyspace=${User.getCurrentKeySpace()}`,
+      accepts: 'application/json',
     });
   },
 
   getConceptTypes(id:string) {
     return this.request({
       url: `/dashboard/types/${id}?keyspace=${User.getCurrentKeySpace()}&limitEmbedded=${User.getQueryLimit()}`,
+      accepts: 'application/json',
     });
   },
 

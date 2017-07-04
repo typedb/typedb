@@ -87,17 +87,17 @@ public class ConceptControllerTest {
 
         assertThat(response.statusCode(), equalTo(200));
     }
-    
+
     @Test
-    public void gettingConceptByIdWithNoAcceptType_ResponseStatusIs406(){
+    public void gettingConceptByIdWithNoAcceptType_ResponseContentTypeIsHAL() {
         Concept concept = graphContext.graph().getEntityType("movie");
-        
-        Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
+
+        Response response = with()
+                .queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
                 .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
-        assertThat(response.statusCode(), equalTo(406));
-        assertThat(exception(response), containsString(UNSUPPORTED_CONTENT_TYPE.getMessage("*/*")));
+        assertThat(response.contentType(), equalTo(APPLICATION_HAL));
     }
 
     @Test
@@ -159,13 +159,13 @@ public class ConceptControllerTest {
     }
 
     @Test
-    public void gettingNonExistingElementById_ResponseStatusIs500(){
+    public void gettingNonExistingElementById_ResponseStatusIs404(){
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, "invalid")
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Concept.CONCEPT + "blah");
 
-        assertThat(response.statusCode(), equalTo(500));
+        assertThat(response.statusCode(), equalTo(404));
     }
 
     private Response sendRequest(Concept concept, int numberEmbeddedComponents){
