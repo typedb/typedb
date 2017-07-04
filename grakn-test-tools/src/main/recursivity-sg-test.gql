@@ -49,13 +49,13 @@ $h isa entity2, has name "h";
 ####################################################
 
 isa inference-rule,
-lhs {
+when {
 $x isa Human;},
 then {
 ($x, $x) isa SameGen;};
 
 isa inference-rule,
-lhs {
+when {
 (parent: $x, child: $u) isa Parent;
 ($u, $v) isa SameGen;
 (parent: $y, child: $v) isa Parent;},

@@ -49,11 +49,11 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
         super(vertexElement);
     }
 
-    RuleImpl(VertexElement vertexElement, RuleType type, Pattern lhs, Pattern rhs) {
+    RuleImpl(VertexElement vertexElement, RuleType type, Pattern when, Pattern then) {
         super(vertexElement, type);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, lhs, getWhen(), Pattern::toString);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, rhs, getThen(), Pattern::toString);
-        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateRuleIndex(type(), lhs, rhs));
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, getWhen(), Pattern::toString);
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, getThen(), Pattern::toString);
+        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateRuleIndex(type(), when, then));
     }
 
     /**
@@ -127,7 +127,7 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
     /**
      * Generate the internal hash in order to perform a faster lookups and ensure rules are unique
      */
-    public static String generateRuleIndex(RuleType type, Pattern lhs, Pattern rhs){
-        return "RuleType_" + type.getLabel().getValue() + "_LHS:" + lhs.hashCode() + "_RHS:" + rhs.hashCode();
+    public static String generateRuleIndex(RuleType type, Pattern when, Pattern then){
+        return "RuleType_" + type.getLabel().getValue() + "_LHS:" + when.hashCode() + "_RHS:" + then.hashCode();
     }
 }

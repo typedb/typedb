@@ -96,10 +96,10 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                 sb.append(colorKeyword(" isa ")).append(colorType(type));
             }
 
-            // Display lhs and rhs for rules
+            // Display when and then for rules
             if (concept.isRule()) {
-                sb.append(colorKeyword(" lhs ")).append("{ ").append(concept.asRule().getWhen()).append(" }");
-                sb.append(colorKeyword(" rhs ")).append("{ ").append(concept.asRule().getThen()).append(" }");
+                sb.append(colorKeyword(" when ")).append("{ ").append(concept.asRule().getWhen()).append(" }");
+                sb.append(colorKeyword(" then ")).append("{ ").append(concept.asRule().getThen()).append(" }");
             }
 
             // Display any requested resources

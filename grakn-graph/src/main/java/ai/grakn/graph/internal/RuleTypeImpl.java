@@ -55,8 +55,8 @@ class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
                 () -> getRule(when, then), (vertex, type) -> vertex().graph().factory().buildRule(vertex, type, when, then));
     }
 
-    private Rule getRule(Pattern lhs, Pattern rhs) {
-        String index = RuleImpl.generateRuleIndex(this, lhs, rhs);
+    private Rule getRule(Pattern when, Pattern then) {
+        String index = RuleImpl.generateRuleIndex(this, when, then);
         return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);
     }
 }

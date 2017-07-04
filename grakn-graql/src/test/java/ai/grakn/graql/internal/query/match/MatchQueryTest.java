@@ -604,7 +604,7 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchRuleRightHandSide() {
-        MatchQuery query = qb.match(x.when(qb.parsePattern("$x id 'expect-lhs'")).then(qb.parsePattern("$x id 'expect-rhs'")));
+        MatchQuery query = qb.match(x.when(qb.parsePattern("$x id 'expect-when'")).then(qb.parsePattern("$x id 'expect-then'")));
 
         expectedException.expect(UnsupportedOperationException.class);
         expectedException.expectMessage(MATCH_INVALID.getMessage(WhenProperty.class.getName()));

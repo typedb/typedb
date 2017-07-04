@@ -432,20 +432,20 @@ public class InsertQueryTest {
     @Test
     public void testInsertRule() {
         String ruleTypeId = "a-rule-type";
-        Pattern lhsPattern = qb.parsePattern("$x sub entity");
-        Pattern rhsPattern = qb.parsePattern("$x sub entity");
-        VarPattern vars = var("x").isa(ruleTypeId).when(lhsPattern).then(rhsPattern);
+        Pattern when = qb.parsePattern("$x sub entity");
+        Pattern then = qb.parsePattern("$x sub entity");
+        VarPattern vars = var("x").isa(ruleTypeId).when(when).then(then);
         qb.insert(vars).execute();
 
         RuleType ruleType = movieGraph.graph().getRuleType(ruleTypeId);
         boolean found = false;
         for (ai.grakn.concept.Rule rule : ruleType.instances()) {
-            if(lhsPattern.equals(rule.getWhen()) && rhsPattern.equals(rule.getThen())){
+            if(when.equals(rule.getWhen()) && then.equals(rule.getThen())){
                 found = true;
                 break;
             }
         }
-        assertTrue("Unable to find rule with lhs [" + lhsPattern + "] and rhs [" + rhsPattern + "]", found);
+        assertTrue("Unable to find rule with when [" + when + "] and then [" + then + "]", found);
     }
 
     @Test
@@ -721,14 +721,14 @@ public class InsertQueryTest {
     @Test
     public void testInsertRuleWithoutLhs() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("lhs")));
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("when")));
         qb.insert(var().isa("inference-rule").then(var("x").isa("movie"))).execute();
     }
 
     @Test
     public void testInsertRuleWithoutRhs() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("rhs")));
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("then")));
         qb.insert(var().isa("inference-rule").when(var("x").isa("movie"))).execute();
     }
 

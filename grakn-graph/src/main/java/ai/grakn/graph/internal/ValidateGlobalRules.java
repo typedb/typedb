@@ -277,7 +277,7 @@ class ValidateGlobalRules {
     /**
      *
      * @param rule The rule to be validated
-     * @return Error messages if the lhs or rhs of a rule refers to a non existent type
+     * @return Error messages if the when or then of a rule refers to a non existent type
      */
     static Set<String> validateRuleOntologyElementsExist(GraknGraph graph, RuleImpl rule){
         Set<String> errors = new HashSet<>();

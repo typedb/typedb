@@ -249,11 +249,11 @@ public class InsertQueryExecutor {
             );
         } else if (type.isRuleType()) {
             return addOrGetInstance(id, () -> {
-                WhenProperty lhs = var.getProperty(WhenProperty.class)
+                WhenProperty when = var.getProperty(WhenProperty.class)
                         .orElseThrow(() -> GraqlQueryException.insertRuleWithoutLhs(var));
-                ThenProperty rhs = var.getProperty(ThenProperty.class)
+                ThenProperty then = var.getProperty(ThenProperty.class)
                         .orElseThrow(() -> GraqlQueryException.insertRuleWithoutRhs(var));
-                return type.asRuleType().putRule(lhs.getPattern(), rhs.getPattern());
+                return type.asRuleType().putRule(when.getPattern(), then.getPattern());
             });
         } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
