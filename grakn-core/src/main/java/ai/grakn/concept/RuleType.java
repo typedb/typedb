@@ -42,11 +42,11 @@ public interface RuleType extends Type {
      * Adds a new Rule if it does not exist otherwise returns the existing rule.
      * @see Pattern
      *
-     * @param lhs A string representing the left hand side Graql query.
-     * @param rhs A string representing the right hand side Graql query.
+     * @param when A string representing the when part of the {@link Rule}
+     * @param then A string representing the then part of the {@link Rule}
      * @return a new Rule
      */
-    Rule putRule(Pattern lhs, Pattern rhs);
+    Rule putRule(Pattern when, Pattern then);
 
     /**
      * Classifies the type to a specific scope. This allows you to optionally categorise types.

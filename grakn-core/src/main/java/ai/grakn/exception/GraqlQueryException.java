@@ -46,8 +46,8 @@ import static ai.grakn.util.ErrorMessage.INSERT_NEW_TYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_NO_DATATYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
 import static ai.grakn.util.ErrorMessage.INSERT_RESOURCE_WITHOUT_VALUE;
-import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_LHS;
-import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_RHS;
+import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_WHEN;
+import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_THEN;
 import static ai.grakn.util.ErrorMessage.INSERT_TYPE_WITHOUT_LABEL;
 import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
 import static ai.grakn.util.ErrorMessage.INSERT_UNSUPPORTED_PROPERTY;
@@ -290,11 +290,11 @@ public class GraqlQueryException extends GraknException{
     }
 
     public static GraqlQueryException insertRuleWithoutLhs(VarPatternAdmin var) {
-        return new GraqlQueryException(INSERT_RULE_WITHOUT_LHS.getMessage(var));
+        return new GraqlQueryException(INSERT_RULE_WITHOUT_WHEN.getMessage(var));
     }
 
     public static GraqlQueryException insertRuleWithoutRhs(VarPatternAdmin var) {
-        return new GraqlQueryException(INSERT_RULE_WITHOUT_RHS.getMessage(var));
+        return new GraqlQueryException(INSERT_RULE_WITHOUT_THEN.getMessage(var));
     }
 
     public static GraqlQueryException insertTypeWithoutLabel() {

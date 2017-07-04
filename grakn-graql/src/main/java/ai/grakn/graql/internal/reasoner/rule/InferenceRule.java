@@ -66,8 +66,8 @@ public class InferenceRule {
     public InferenceRule(Rule rule, GraknGraph graph){
         ruleId = rule.getId();
         //TODO simplify once changes propagated to rule objects
-        body = ReasonerQueries.create(conjunction(rule.getLHS().admin()), graph);
-        head = ReasonerQueries.atomic(conjunction(rule.getRHS().admin()), graph);
+        body = ReasonerQueries.create(conjunction(rule.getWhen().admin()), graph);
+        head = ReasonerQueries.atomic(conjunction(rule.getThen().admin()), graph);
 
         //run time check for head atom validity
         if (!getHead().getAtom().isAllowedToFormRuleHead()){

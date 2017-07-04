@@ -132,8 +132,8 @@ public enum ErrorMessage {
     MULTIPLE_GRAPH("a graph has been specified twice for this query"),
     MULTIPLE_ORDER("an ordering has been specified twice for this query"),
 
-    INSERT_RULE_WITHOUT_LHS("the rule '%s' doesn't have a lhs specified"),
-    INSERT_RULE_WITHOUT_RHS("the rule '%s' doesn't have a rhs specified"),
+    INSERT_RULE_WITHOUT_WHEN("the rule '%s' doesn't have a when specified"),
+    INSERT_RULE_WITHOUT_THEN("the rule '%s' doesn't have a then specified"),
     INSERT_UNSUPPORTED_PROPERTY("the property '%s' can only be inserted on a '%s'"),
     INSERT_WITHOUT_TYPE("'%s' doesn't have an 'isa' or a 'sub'"),
     INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', a 'sub' or an 'id'"),
