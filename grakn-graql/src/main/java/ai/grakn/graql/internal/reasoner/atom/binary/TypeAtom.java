@@ -17,8 +17,8 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -40,11 +40,8 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * Atom implementation defining type atoms of the general form:
- *
- * {isa|sub|plays|relates|has|has-scope}($varName, $predicateVariable)
- *
- * Type atoms correspond to the following respective graql properties:
+ * Atom implementation defining type atoms of the general form: $varName {isa|sub|plays|relates|has|has-scope} $valueVariable).
+ * These correspond to the following respective graql properties:
  * {@link IsaProperty},
  * {@link ai.grakn.graql.internal.pattern.property.SubProperty},
  * {@link ai.grakn.graql.internal.pattern.property.PlaysProperty}
@@ -58,11 +55,10 @@ import java.util.stream.Collectors;
  */
 public class TypeAtom extends Binary{
 
-    public TypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, Graql.var().asUserDefined(), null, par);}
-    public TypeAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
-        super(pattern, predicateVar, p, par);}
-    public TypeAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
-        this(var.isa(predicateVar).admin(), predicateVar, p, par);
+    public TypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
+    public TypeAtom(VarPatternAdmin pattern, IdPredicate p, ReasonerQuery par) { super(pattern, p, par);}
+    public TypeAtom(Var var, Var valueVar, IdPredicate p, ReasonerQuery par){
+        this(var.isa(valueVar).admin(), p, par);
     }
     protected TypeAtom(TypeAtom a) { super(a);}
 
@@ -78,7 +74,7 @@ public class TypeAtom extends Binary{
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        Binary a2 = (Binary) obj;
+        BinaryBase a2 = (BinaryBase) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarName().equals(a2.getVarName());
     }
@@ -90,13 +86,23 @@ public class TypeAtom extends Binary{
     }
 
     @Override
+    protected ConceptId extractTypeId() {
+        return getPredicate() != null? getPredicate().getPredicate() : null;
+    }
+
+    @Override
+    protected Var extractValueVariableName(VarPatternAdmin var) {
+        return var.getProperties().findFirst().get().getInnerVars().findFirst().get().getVarName();
+    }
+
+    @Override
     public Atomic copy(){
         return new TypeAtom(this);
     }
 
     public Set<TypeAtom> unify(Unifier u){
         Collection<Var> vars = u.get(getVarName());
-        Var valueVar = getPredicateVariable();
+        Var valueVar = getValueVariable();
         return vars.isEmpty()?
                 Collections.singleton(this) :
                 vars.stream().map(v -> new TypeAtom(v, valueVar, getPredicate(), this.getParentQuery())).collect(Collectors.toSet());
