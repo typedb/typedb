@@ -429,12 +429,12 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<VarPattern> visitPropLhs(GraqlParser.PropLhsContext ctx) {
+    public UnaryOperator<VarPattern> visitPropWhen(GraqlParser.PropWhenContext ctx) {
         return var -> var.when(and(visitPatterns(ctx.patterns())));
     }
 
     @Override
-    public UnaryOperator<VarPattern> visitPropRhs(GraqlParser.PropRhsContext ctx) {
+    public UnaryOperator<VarPattern> visitPropThen(GraqlParser.PropThenContext ctx) {
         return var -> var.then(and(visitVarPatterns(ctx.varPatterns())));
     }
 
