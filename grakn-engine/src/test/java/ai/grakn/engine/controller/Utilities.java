@@ -4,6 +4,7 @@ import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import static ai.grakn.engine.tasks.manager.TaskSchedule.now;
 import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskState.Priority;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import static ai.grakn.util.REST.Response.EXCEPTION;
 import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
@@ -38,7 +39,7 @@ public class Utilities {
     }
 
     public static TaskState createTask(Class<? extends BackgroundTask> clazz, TaskSchedule schedule) {
-        return TaskState.of(clazz, Utilities.class.getName(), schedule, TaskState.Priority.LOW);
+        return TaskState.of(clazz, Utilities.class.getName(), schedule, Priority.LOW);
     }
     
 }
