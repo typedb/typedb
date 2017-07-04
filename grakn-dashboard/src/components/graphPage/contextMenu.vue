@@ -164,7 +164,7 @@ export default {
       }
     },
     populateRelationFiltersList(resp) {
-      const respObj = JSON.parse(resp).response;
+      const respObj = JSON.parse(resp);
       this.filterTypes = respObj.entities;
     },
     positionContextMenu() {

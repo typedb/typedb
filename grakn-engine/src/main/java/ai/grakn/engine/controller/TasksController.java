@@ -21,6 +21,7 @@ package ai.grakn.engine.controller;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
@@ -137,8 +138,8 @@ public class TasksController {
                 .map(this::serialiseStateSubset)
                 .forEach(result::add);
 
-        response.status(200);
-        response.type(ContentType.APPLICATION_JSON.getMimeType());
+        response.status(HttpStatus.SC_OK);
+        response.type(APPLICATION_JSON);
 
         return result;
     }
@@ -151,7 +152,7 @@ public class TasksController {
         String id = request.params("id");
 
         response.status(200);
-        response.type("application/json");
+        response.type(APPLICATION_JSON);
 
         return serialiseStateFull(manager.storage().getState(TaskId.of(id)));
     }
@@ -162,7 +163,12 @@ public class TasksController {
     @ApiImplicitParam(name = REST.Request.UUID_PARAMETER, value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private Json stopTask(Request request, Response response) {
         String id = request.params(REST.Request.ID_PARAMETER);
+
         manager.stopTask(TaskId.of(id));
+
+        response.status(HttpStatus.SC_OK);
+        response.type(APPLICATION_JSON);
+
         return Json.object();
     }
 

@@ -1,14 +1,12 @@
-package ai.grakn.test.engine.controller;
+package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
-import ai.grakn.test.SparkContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
@@ -25,7 +23,6 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
-import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
@@ -54,7 +51,7 @@ public class GraknExecuteQueryControllerTest {
                                int limitEmbedded) {
         return RestAssured.with()
             .queryParam(KEYSPACE, graphContext.graph().getKeyspace())
-            .queryParam(QUERY, query)
+            .body(query)
             .queryParam(INFER, reasonser)
             .queryParam(MATERIALISE, materialise)
             .queryParam(LIMIT_EMBEDDED, limitEmbedded)

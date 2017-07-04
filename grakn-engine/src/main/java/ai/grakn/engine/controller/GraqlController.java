@@ -19,8 +19,6 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraphOperationException;
@@ -52,8 +50,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import java.util.Collection;
-import java.util.stream.Collectors;
 
 import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
@@ -65,10 +61,8 @@ import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
-import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
 import static ai.grakn.util.REST.Response.Graql.RESPONSE;
 import static java.lang.Boolean.parseBoolean;
 
@@ -107,10 +101,10 @@ public class GraqlController {
 
     @POST
     @Path("/execute")
-    @ApiOperation(value = "Execute an arbitrary Gralql queryEndpoints used to query the graph by ID or Graql match query and build HAL objects.")
-    private Json executeGraql(Request request, Response response) {
+    @ApiOperation(value = "Execute an arbitrary Graql queryEndpoints used to query the graph by ID or Graql match query and build HAL objects.")
+    private Object executeGraql(Request request, Response response) {
+        String queryString = mandatoryBody(request);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        String queryString = mandatoryQueryParameter(request, QUERY);
         boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
         boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
@@ -118,7 +112,7 @@ public class GraqlController {
 
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
-            Json resp = respond(response, query, acceptType, executeQuery(keyspace, limitEmbedded, query, acceptType));
+            Object resp = respond(response, acceptType, executeQuery(keyspace, limitEmbedded, query, acceptType));
             graph.commit();
             return resp;
         }
@@ -135,7 +129,7 @@ public class GraqlController {
             @ApiImplicitParam(name = INFER,       value = "Should reasoner with the current query.", required = true, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = MATERIALISE, value = "Should reasoner materialise results with the current query.", required = true, dataType = "boolean", paramType = "query")
     })
-    private Json executeGraqlGET(Request request, Response response) {
+    private Object executeGraqlGET(Request request, Response response) {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         String queryString = mandatoryQueryParameter(request, QUERY);
         boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
@@ -151,7 +145,7 @@ public class GraqlController {
             if(!validContentType(acceptType, query)) throw GraknServerException.contentTypeQueryMismatch(acceptType, query);
 
             Json responseBody = executeQuery(keyspace, limitEmbedded, query, acceptType);
-            return respond(response, query, acceptType, responseBody);
+            return respond(response, acceptType, responseBody);
         }
     }
 
@@ -163,21 +157,23 @@ public class GraqlController {
             @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QUERY,       value = "Insert query to execute", required = true, dataType = "string", paramType = "body"),
     })
-    private Json executeGraqlPOST(Request request, Response response){
+    private Object executeGraqlPOST(Request request, Response response){
         String queryString = mandatoryBody(request);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        String acceptType = getAcceptType(request);
+        int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
 
             if(!(query instanceof InsertQuery)) throw GraknServerException.invalidQuery("INSERT");
 
-            Json responseBody = executeInsertQuery((InsertQuery) query);
+            Object responseBody = executeQuery(keyspace, limitEmbedded, query, acceptType);
 
             // Persist the transaction results TODO This should use a within-engine commit
             graph.commit();
 
-            return respond(response, query, APPLICATION_JSON, responseBody);
+            return respond(response, acceptType, responseBody);
         }
     }
 
@@ -188,7 +184,7 @@ public class GraqlController {
             @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QUERY,       value = "Insert query to execute", required = true, dataType = "string", paramType = "body"),
     })
-    private Json executeGraqlDELETE(Request request, Response response){
+    private Object executeGraqlDELETE(Request request, Response response){
         String queryString = mandatoryBody(request);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
 
@@ -203,7 +199,7 @@ public class GraqlController {
             // Persist the transaction results TODO This should use a within-engine commit
             graph.commit();
 
-            return respond(response, query, APPLICATION_JSON, Json.object());
+            return respond(response, APPLICATION_TEXT, Json.object());
         }
     }
 
@@ -245,34 +241,16 @@ public class GraqlController {
     /**
      * Format the response with the correct content type based on the request.
      *
-     * @param query query to be executed
      * @param contentType content type being provided in the response
      * @param response response to the client
      * @return formatted result of the executed query
      */
-    private Json respond(Response response, Query<?> query, String contentType, Json responseBody){
-        responseBody.set(ORIGINAL_QUERY, query.toString());
-
+    private Object respond(Response response, String contentType, Object responseBody){
         response.type(contentType);
         response.body(responseBody.toString());
         response.status(200);
 
         return responseBody;
-    }
-
-    /**
-     * Execute an insert query on the server and return a Json object with the Ids of the inserted elements.
-     *
-     * @param query insert query to be executed
-     */
-    private Json executeInsertQuery(InsertQuery query){
-        Collection<String> concepts = query.execute().stream()
-                .flatMap(answer -> answer.values().stream())
-                .map(Concept::getId)
-                .map(ConceptId::getValue)
-                .collect(Collectors.toList());
-
-        return Json.object(RESPONSE, concepts);
     }
 
     /**
