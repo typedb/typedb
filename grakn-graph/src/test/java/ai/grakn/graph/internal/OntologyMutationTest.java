@@ -269,5 +269,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(Matchers.containsString(ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.getLabel())));
+
+        graknGraph.commit();
     }
 }
