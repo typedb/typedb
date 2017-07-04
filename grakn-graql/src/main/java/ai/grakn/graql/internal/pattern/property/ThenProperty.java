@@ -39,7 +39,7 @@ public class ThenProperty extends RuleProperty {
 
     @Override
     public String getName() {
-        return "rhs";
+        return "then";
     }
 
 }

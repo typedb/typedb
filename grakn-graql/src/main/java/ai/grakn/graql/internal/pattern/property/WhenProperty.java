@@ -37,7 +37,7 @@ public class WhenProperty extends RuleProperty {
     }
 
     @Override
-    public String getName() {
-        return "lhs";
+    public String getName(){
+        return "when";
     }
 }

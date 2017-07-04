@@ -294,18 +294,18 @@ public interface VarPattern extends Pattern {
     VarPattern regex(String regex);
 
     /**
-     * @param lhs the left-hand side of this rule
+     * @param when the left-hand side of this rule
      * @return this
      */
     @CheckReturnValue
-    VarPattern when(Pattern lhs);
+    VarPattern when(Pattern when);
 
     /**
-     * @param rhs the right-hand side of this rule
+     * @param then the right-hand side of this rule
      * @return this
      */
     @CheckReturnValue
-    VarPattern then(Pattern rhs);
+    VarPattern then(Pattern then);
 
     /**
      * Specify that the variable is different to another variable
