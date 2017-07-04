@@ -88,8 +88,6 @@ public abstract class TypeAtom extends Binary{
     @Override
     public boolean isSelectable() {
         return getPredicate() == null
-                //type atom corresponding to relation or resource
-                || getOntologyConcept() != null && (getOntologyConcept().isResourceType() || getOntologyConcept().isRelationType())
                 //disjoint atom
                 || !this.getNeighbours().findFirst().isPresent()
                 || isRuleResolvable();

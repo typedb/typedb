@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary.type;
 
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -26,7 +27,11 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -40,6 +45,14 @@ import java.util.Set;
 public class HasResourceTypeAtom extends TypeAtom {
 
     public HasResourceTypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, Graql.var().asUserDefined(), null, par);}
+    private HasResourceTypeAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
+        super(
+                var.has(predicateVar).admin(),
+                predicateVar,
+                p,
+                par
+        );
+    }
     private HasResourceTypeAtom(TypeAtom a) { super(a);}
 
     @Override
@@ -53,7 +66,10 @@ public class HasResourceTypeAtom extends TypeAtom {
     }
 
     @Override
-    public Set<TypeAtom> unify(Unifier u) {
-        return null;
+    public Set<TypeAtom> unify(Unifier u){
+        Collection<Var> vars = u.get(getVarName());
+        return vars.isEmpty()?
+                Collections.singleton(this) :
+                vars.stream().map(v -> new HasResourceTypeAtom(v, getPredicateVariable(), getPredicate(), this.getParentQuery())).collect(Collectors.toSet());
     }
 }

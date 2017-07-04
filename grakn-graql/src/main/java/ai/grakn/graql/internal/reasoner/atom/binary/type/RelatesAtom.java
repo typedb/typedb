@@ -27,7 +27,10 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.RelatesProperty;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 /**
@@ -42,6 +45,14 @@ import java.util.Set;
 public class RelatesAtom extends TypeAtom {
     public RelatesAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
         super(pattern, predicateVar, p, par);}
+    private RelatesAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
+        this(
+                var.relates(predicateVar).admin(),
+                predicateVar,
+                p,
+                par
+        );
+    }
     private RelatesAtom(RelatesAtom a) { super(a);}
 
     @Override
@@ -55,7 +66,10 @@ public class RelatesAtom extends TypeAtom {
     }
 
     @Override
-    public Set<TypeAtom> unify(Unifier u) {
-        return null;
+    public Set<TypeAtom> unify(Unifier u){
+        Collection<Var> vars = u.get(getVarName());
+        return vars.isEmpty()?
+                Collections.singleton(this) :
+                vars.stream().map(v -> new RelatesAtom(v, getPredicateVariable(), getPredicate(), this.getParentQuery())).collect(Collectors.toSet());
     }
 }
