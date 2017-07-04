@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.macro.Macro;
 
 import java.util.Arrays;
@@ -42,7 +43,7 @@ public class SplitMacro implements Macro<List<String>> {
     @Override
     public List<String> apply(List<Object> values) {
         if(values.size() != numberArguments){
-            throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
+            throw GraqlQueryException.wrongNumberOfMacroArguments(this, values);
         }
 
         String valueToSplit = values.get(0).toString();

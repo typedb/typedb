@@ -24,7 +24,7 @@
         <artifactId>grakn-test-profiles</artifactId>
         <relativePath>../grakn-test-profiles</relativePath>
         <groupId>ai.grakn</groupId>
-        <version>0.14.0-SNAPSHOT</version>
+        <version>0.15.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -95,11 +95,6 @@
             <version>${commons-csv.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.github.kstyrc</groupId>
-            <artifactId>embedded-redis</artifactId>
-            <version>${redis-test.version}</version>
-        </dependency>
 
         <!-- migration -->
         <dependency>
@@ -155,6 +150,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>migration-xml</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>net.sourceforge.owlapi</groupId>
             <artifactId>org.semanticweb.hermit</artifactId>
             <version>${hermit.version}</version>
@@ -173,22 +174,6 @@
             <scope>test</scope>
             <version>${curator.version}</version>
         </dependency>
-        <dependency>
-            <groupId>info.batey.kafka</groupId>
-            <artifactId>kafka-unit</artifactId>
-            <version>${kafka-unit.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-io</groupId>
-                    <artifactId>commons-io</artifactId>
-                </exclusion>
-                <exclusion>
-                    <!--Cannot be present with log4j-over-slf4j-->
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
 
         <dependency>
             <groupId>ai.grakn</groupId>
@@ -203,25 +188,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>org.cassandraunit</groupId>
-            <artifactId>cassandra-unit</artifactId>
-            <version>${cassandra-unit.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.datastax.cassandra</groupId>
-            <artifactId>cassandra-driver-core</artifactId>
-            <version>3.1.2</version>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
     <build>

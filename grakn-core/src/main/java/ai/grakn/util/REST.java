@@ -39,6 +39,7 @@ public class REST {
          */
         public static class Graph {
             public static final String GRAQL = "/graph/graql";
+            public static final String ANY_GRAQL = "/graph/graql/execute";
         }
 
         /**
@@ -54,6 +55,8 @@ public class REST {
          * URIs to System Controller endpoints
          */
         public static class System {
+            public static final String DELETE_KEYSPACE = "/deleteKeyspace";
+            public static final String INITIALISE = "/initialise";
             public static final String CONFIGURATION = "/configuration";
             public static final String KEYSPACES = "/keyspaces";
         }
@@ -101,9 +104,13 @@ public class REST {
         public static final String TASK_PRIORITY_PARAMETER = "priority";
         public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
         public static final String TASK_LOADER_MUTATIONS = "mutations";
+        public static final String BATCH_NUMBER = "batchNumber";
         public static final String LIMIT_PARAM = "limit";
         public static final String OFFSET_PARAM = "offset";
+        public static final String TASKS_PARAM = "tasks";
+        public static final String CONFIGURATION_PARAM = "configuration";
         public static final String KEYSPACE = "keyspace";
+        public static final String UUID_PARAMETER = "uuid";
 
         //Commit Logs
         public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
@@ -149,7 +156,6 @@ public class REST {
         public static final String POST_METHOD = "POST";
         public static final String DELETE_METHOD = "DELETE";
         public static final String GET_METHOD = "GET";
-        public static final String APPLICATION_POST_TYPE = "application/POST";
     }
 
     /**

@@ -19,9 +19,9 @@
 
 package ai.grakn.graph.property;
 
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
-import ai.grakn.concept.RoleType;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import com.pholser.junit.quickcheck.Property;
@@ -49,55 +49,55 @@ public class RelationPropertyTest {
 
     @Property
     public void whenAddingARolePlayer_ItIsAddedToTheCollectionOfRolePlayers(
-        Relation relation, @FromGraph @Meta(false) RoleType roleType, @FromGraph Instance rolePlayer) {
+            Relation relation, @Meta(false) @FromGraph Role role, @FromGraph Thing rolePlayer) {
 
-        relation.addRolePlayer(roleType, rolePlayer);
+        relation.addRolePlayer(role, rolePlayer);
 
         assertThat(relation.rolePlayers(), hasItem(rolePlayer));
     }
 
     @Property
     public void whenAddingARolePlayerPlayingARole_TheRolePlayerIsAddedToTheCollectionOfRolePlayersForThatRole(
-            Relation relation, @FromGraph @Meta(false) RoleType roleType, @FromGraph Instance rolePlayer) {
+            Relation relation, @Meta(false) @FromGraph Role role, @FromGraph Thing rolePlayer) {
 
-        relation.addRolePlayer(roleType, rolePlayer);
+        relation.addRolePlayer(role, rolePlayer);
 
-        assertThat(relation.rolePlayers(roleType), hasItem(rolePlayer));
+        assertThat(relation.rolePlayers(role), hasItem(rolePlayer));
     }
 
     @Property
     public void whenAddingARolePlayer_NoRolePlayersAreRemoved(
-        Relation relation, @FromGraph @Meta(false) RoleType roleType, @FromGraph Instance rolePlayer) {
+            Relation relation, @Meta(false) @FromGraph Role role, @FromGraph Thing rolePlayer) {
 
-        Instance[] rolePlayers = relation.rolePlayers(roleType).toArray(new Instance[0]);
+        Thing[] rolePlayers = relation.rolePlayers(role).toArray(new Thing[0]);
 
-        relation.addRolePlayer(roleType, rolePlayer);
+        relation.addRolePlayer(role, rolePlayer);
 
-        assertThat(relation.rolePlayers(roleType), hasItems(rolePlayers));
+        assertThat(relation.rolePlayers(role), hasItems(rolePlayers));
     }
 
     @Property
-    public void whenCallingRolePlayers_TheResultIsASet(Relation relation, @FromGraph RoleType[] roles) {
-        Collection<Instance> rolePlayers = relation.rolePlayers(roles);
-        Set<Instance> rolePlayersSet = newHashSet(rolePlayers);
+    public void whenCallingRolePlayers_TheResultIsASet(Relation relation, @FromGraph Role[] roles) {
+        Collection<Thing> rolePlayers = relation.rolePlayers(roles);
+        Set<Thing> rolePlayersSet = newHashSet(rolePlayers);
         assertEquals(rolePlayers.size(), rolePlayersSet.size());
     }
 
     @Property
     public void whenCallingRolePlayersWithoutArgs_ReturnRolePlayersOfAllRoleTypes(Relation relation) {
-        RoleType[] allRoleTypes = new RoleType[relation.allRolePlayers().size()];
-        relation.allRolePlayers().keySet().toArray(allRoleTypes);
+        Role[] allRoles = new Role[relation.allRolePlayers().size()];
+        relation.allRolePlayers().keySet().toArray(allRoles);
 
-        assertEquals(relation.rolePlayers(), relation.rolePlayers(allRoleTypes));
+        assertEquals(relation.rolePlayers(), relation.rolePlayers(allRoles));
     }
 
     @Property
     public void whenCallingRolePlayersWithXandY_IsTheSameAsCallingRolePlayersXAndRolePlayersY(
-            Relation relation, @FromGraph RoleType[] rolesX, @FromGraph RoleType[] rolesY) {
+            Relation relation, @FromGraph Role[] rolesX, @FromGraph Role[] rolesY) {
 
-        RoleType[] rolesXY = (RoleType[]) addAll(rolesX, rolesY);
+        Role[] rolesXY = (Role[]) addAll(rolesX, rolesY);
 
-        Set<Instance> expected =
+        Set<Thing> expected =
                 union(newHashSet(relation.rolePlayers(rolesX)), newHashSet(relation.rolePlayers(rolesY)));
 
         assertEquals(expected, newHashSet(relation.rolePlayers(rolesXY)));

@@ -28,6 +28,7 @@ import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
@@ -43,6 +44,7 @@ import spark.Response;
 import spark.Service;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -71,9 +73,14 @@ public class GraknEngineServer implements AutoCloseable {
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
     private final EngineGraknGraphFactory factory;
+    private final RedisConnection redis;
 
     private GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
+
+        String redisUrl = prop.getProperty(GraknEngineConfig.REDIS_SERVER_URL);
+        int redisPort = prop.getPropertyAsInt(GraknEngineConfig.REDIS_SERVER_PORT);
+        redis = RedisConnection.create(redisUrl, redisPort);
 
         factory = EngineGraknGraphFactory.create(prop.getProperties());
         taskManager = startTaskManager();
@@ -83,7 +90,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public static void main(String[] args) {
-        GraknEngineConfig prop = GraknEngineConfig.getInstance();
+        GraknEngineConfig prop = GraknEngineConfig.create();
         // Start Engine
         GraknEngineServer server = start(prop);
 
@@ -110,7 +117,9 @@ public class GraknEngineServer implements AutoCloseable {
 
         try {
             Class<TaskManager> taskManagerClass = (Class<TaskManager>) Class.forName(taskManagerClassName);
-            return taskManagerClass.getConstructor(EngineID.class, GraknEngineConfig.class).newInstance(engineId, prop);
+            Constructor<TaskManager> constructor =
+                    taskManagerClass.getConstructor(EngineID.class, GraknEngineConfig.class, RedisConnection.class, EngineGraknGraphFactory.class);
+            return constructor.newInstance(engineId, prop, redis, factory);
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException e) {
             throw new IllegalArgumentException("Invalid or unavailable TaskManager class", e);
         } catch (InvocationTargetException e) {
@@ -133,6 +142,9 @@ public class GraknEngineServer implements AutoCloseable {
         RemoteSession graqlWebSocket = passwordProtected ? RemoteSession.passwordProtected(usersHandler) : RemoteSession.create();
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
+        String defaultKeyspace = prop.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY);
+        int postProcessingDelay = prop.getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
+
         // Start all the controllers
         new GraqlController(factory, spark);
         new ConceptController(factory, spark);
@@ -140,28 +152,41 @@ public class GraknEngineServer implements AutoCloseable {
         new SystemController(factory, spark);
         new AuthController(spark, passwordProtected, jwtHandler, usersHandler);
         new UserController(spark, usersHandler);
-        new CommitLogController(spark, prop.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY), taskManager);
+        new CommitLogController(spark, defaultKeyspace, postProcessingDelay, taskManager);
         new TasksController(spark, taskManager);
 
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();
     }
 
-
-    public static void configureSpark(Service spark, GraknEngineConfig prop, @Nullable JWTHandler jwtHandler){
+    public static void configureSpark(Service spark, GraknEngineConfig prop, @Nullable JWTHandler jwtHandler) {
+        configureSpark(spark, 
+                       prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
+                       Integer.parseInt(prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER)),
+                       prop.getPath(GraknEngineConfig.STATIC_FILES_PATH),
+                       prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false),
+                       jwtHandler);
+    }
+    
+    public static void configureSpark(Service spark, 
+                                      String hostName, 
+                                      int port, 
+                                      String staticFolder,
+                                      boolean passwordProtected,
+                                      @Nullable JWTHandler jwtHandler){
         // Set host name
-        spark.ipAddress(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME));
+        spark.ipAddress(hostName);
 
         // Set port
-        spark.port(prop.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER));
+        spark.port(port);
 
         // Set the external static files folder
-        spark.staticFiles.externalLocation(prop.getPath(GraknEngineConfig.STATIC_FILES_PATH));
+        spark.staticFiles.externalLocation(staticFolder);
 
         spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
         //Register filter to check authentication token in each request
-        boolean isPasswordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
+        boolean isPasswordProtected = passwordProtected;
 
         if (isPasswordProtected) {
             spark.before((req, res) -> checkAuthorization(spark, req, jwtHandler));

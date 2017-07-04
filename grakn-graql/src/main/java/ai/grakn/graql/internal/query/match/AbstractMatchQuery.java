@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.AskQuery;
@@ -47,7 +48,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Order.asc;
-import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -113,7 +113,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final MatchQuery select(String... names) {
-        return select(Stream.of(names).map(Var::of).collect(toSet()));
+        return select(Stream.of(names).map(Graql::var).collect(toSet()));
     }
 
     @Override
@@ -123,10 +123,10 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final Stream<Concept> get(String name) {
-        Var var = Var.of(name);
+        Var var = Graql.var(name);
         return stream().map(result -> {
             if (!result.containsKey(var)) {
-                throw new IllegalArgumentException(VARIABLE_NOT_IN_QUERY.getMessage(Var.of(name)));
+                throw GraqlQueryException.varNotInQuery(Graql.var(name));
             }
             return result.get(var);
         });
@@ -176,7 +176,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final MatchQuery orderBy(String varName, Order order) {
-        return orderBy(Var.of(varName), order);
+        return orderBy(Graql.var(varName), order);
     }
 
     @Override

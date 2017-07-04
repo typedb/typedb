@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
@@ -28,6 +29,7 @@ import ai.grakn.graql.internal.reasoner.explanation.Explanation;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -97,7 +99,7 @@ public class QueryAnswer implements Answer {
 
     @Override
     public Concept get(String var) {
-        return map.get(Var.of(var));
+        return map.get(Graql.var(var));
     }
 
     @Override
@@ -139,7 +141,7 @@ public class QueryAnswer implements Answer {
     public Answer merge(Answer a2, boolean mergeExplanation){
         if(a2.isEmpty()) return this;
         AnswerExplanation exp = this.getExplanation();
-        QueryAnswer merged = new QueryAnswer(a2);
+        Answer merged = new QueryAnswer(a2);
         merged.putAll(this);
 
         if(mergeExplanation) {
@@ -147,6 +149,7 @@ public class QueryAnswer implements Answer {
             if(!this.getExplanation().isJoinExplanation()) exp.addAnswer(this);
             if(!a2.getExplanation().isJoinExplanation()) exp.addAnswer(a2);
         }
+
         return merged.setExplanation(exp);
     }
 
@@ -180,7 +183,7 @@ public class QueryAnswer implements Answer {
                 .forEach(e -> {
                     Var var = e.getKey();
                     Collection<Var> uvars = unifier.get(var);
-                    if (uvars.isEmpty()) {
+                    if (uvars.isEmpty() && !unifier.values().contains(var)) {
                         answerMultimap.put(var, e.getValue());
                     } else {
                         uvars.forEach(uv -> answerMultimap.put(uv, e.getValue()));

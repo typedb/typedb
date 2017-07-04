@@ -20,10 +20,11 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
@@ -34,6 +35,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
+import static ai.grakn.util.CommonUtil.withImplicitConceptsVisible;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -49,12 +51,12 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
     private final Var edge;
     private final Var rolePlayer;
     private final Optional<Var> roleType;
-    private final Optional<Set<TypeLabel>> roleTypeLabels;
-    private final Optional<Set<TypeLabel>> relationTypeLabels;
+    private final Optional<Set<Label>> roleTypeLabels;
+    private final Optional<Set<Label>> relationTypeLabels;
 
     ShortcutFragmentSet(
             Var relation, Var edge, Var rolePlayer, Optional<Var> roleType,
-            Optional<Set<TypeLabel>> roleTypeLabels, Optional<Set<TypeLabel>> relationTypeLabels) {
+            Optional<Set<Label>> roleTypeLabels, Optional<Set<Label>> relationTypeLabels) {
         super(
                 Fragments.inShortcut(rolePlayer, edge, relation, roleType, roleTypeLabels, relationTypeLabels),
                 Fragments.outShortcut(relation, edge, rolePlayer, roleType, roleTypeLabels, relationTypeLabels)
@@ -94,10 +96,10 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
             @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.typeLabelOf(roleVar.get(), fragmentSets);
 
             if (roleLabel != null) {
-                RoleType roleType = graph.getType(roleLabel.label());
+                Role role = graph.getOntologyConcept(roleLabel.label());
 
                 fragmentSets.remove(shortcut);
-                fragmentSets.add(shortcut.substituteRoleTypeLabel(roleType));
+                fragmentSets.add(shortcut.substituteRoleTypeLabel(graph, role));
 
                 return true;
             }
@@ -142,10 +144,10 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
             @Nullable LabelFragmentSet relationLabel = EquivalentFragmentSets.typeLabelOf(isa.type(), fragmentSets);
 
             if (relationLabel != null) {
-                RelationType relationType = graph.getType(relationLabel.label());
+                RelationType relationType = graph.getOntologyConcept(relationLabel.label());
 
                 fragmentSets.remove(shortcut);
-                fragmentSets.add(shortcut.addRelationTypeLabel(relationType));
+                fragmentSets.add(shortcut.addRelationTypeLabel(graph, relationType));
 
                 return true;
             }
@@ -156,17 +158,19 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
     /**
      * Apply an optimisation where we check the role-type property instead of navigating to the role-type directly.
-     * @param roleType the role-type that this shortcut fragment must link to
+     * @param role the role-type that this shortcut fragment must link to
      * @return a new {@link ShortcutFragmentSet} with the same properties excepting role-types
      */
-    private ShortcutFragmentSet substituteRoleTypeLabel(RoleType roleType) {
+    private ShortcutFragmentSet substituteRoleTypeLabel(GraknGraph graph, Role role) {
         Preconditions.checkState(this.roleType.isPresent());
         Preconditions.checkState(!roleTypeLabels.isPresent());
 
-        Set<TypeLabel> newRoleTypeLabels = roleType.subTypes().stream().map(Type::getLabel).collect(toSet());
+        Collection<Role> subTypes = withImplicitConceptsVisible(graph, role::subs);
+
+        Set<Label> newRoleLabels = subTypes.stream().map(OntologyConcept::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(
-                relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleTypeLabels), relationTypeLabels
+                relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleLabels), relationTypeLabels
         );
     }
 
@@ -175,13 +179,15 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * @param relationType the relation-type that this shortcut fragment must link to
      * @return a new {@link ShortcutFragmentSet} with the same properties excepting relation-type labels
      */
-    private ShortcutFragmentSet addRelationTypeLabel(RelationType relationType) {
+    private ShortcutFragmentSet addRelationTypeLabel(GraknGraph graph, RelationType relationType) {
         Preconditions.checkState(!relationTypeLabels.isPresent());
 
-        Set<TypeLabel> newRelationTypeLabels = relationType.subTypes().stream().map(Type::getLabel).collect(toSet());
+        Collection<RelationType> subTypes = withImplicitConceptsVisible(graph, relationType::subs);
+
+        Set<Label> newRelationLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(
-                relation, edge, rolePlayer, roleType, roleTypeLabels, Optional.of(newRelationTypeLabels)
+                relation, edge, rolePlayer, roleType, roleTypeLabels, Optional.of(newRelationLabels)
         );
     }
 }

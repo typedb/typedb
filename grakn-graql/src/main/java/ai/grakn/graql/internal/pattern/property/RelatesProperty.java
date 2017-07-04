@@ -22,9 +22,9 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.Graql;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Label;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -47,8 +47,8 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  *
  * This property can be queried, inserted or deleted.
  *
- * This property relates a {@link RelationType} and a {@link RoleType}. It indicates that a {@link Relation} whose
- * type is this {@link RelationType} may have a role-player playing the given {@link RoleType}.
+ * This property relates a {@link RelationType} and a {@link Role}. It indicates that a {@link Relation} whose
+ * type is this {@link RelationType} may have a role-player playing the given {@link Role}.
  *
  * @author Felix Chapman
  */
@@ -90,15 +90,15 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
-        RoleType roleType = insertQueryExecutor.getConcept(role).asRoleType();
-        concept.asRelationType().relates(roleType);
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
+        Role role = insertQueryExecutor.getConcept(this.role).asRoleType();
+        concept.asRelationType().relates(role);
     }
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        TypeLabel roleLabel = role.getTypeLabel().orElseThrow(() -> failDelete(this));
-        concept.asRelationType().deleteRelates(graph.getType(roleLabel));
+        Label roleLabel = role.getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
+        concept.asRelationType().deleteRelates(graph.getOntologyConcept(roleLabel));
     }
 
     @Override
@@ -119,12 +119,12 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName();
+        Var varName = var.getVarName().asUserDefined();
         VarPatternAdmin roleVar = this.getRole();
-        Var roleVariable = roleVar.getVarName();
+        Var roleVariable = roleVar.getVarName().asUserDefined();
         IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent);
 
-        VarPatternAdmin hrVar = Graql.var(varName).relates(Graql.var(roleVariable)).admin();
+        VarPatternAdmin hrVar = varName.relates(roleVariable).admin();
         return new TypeAtom(hrVar, rolePredicate, parent);
     }
 }

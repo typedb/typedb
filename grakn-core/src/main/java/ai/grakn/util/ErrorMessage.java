@@ -31,11 +31,11 @@ import javax.annotation.CheckReturnValue;
 public enum ErrorMessage {
     //--------------------------------------------- Core Errors -----------------------------------------------
     CANNOT_DELETE("Type [%s] cannot be deleted as it still has incoming edges"),
-    SUPER_TYPE_LOOP_DETECTED("By setting the super type of concept [%s] to [%s]. You will be creating a loop. This is prohibited"),
+    SUPER_LOOP_DETECTED("By setting the super of concept [%s] to [%s]. You will be creating a loop. This is prohibited"),
     INVALID_UNIQUE_PROPERTY_MUTATION("Property [%s] of Concept [%s] cannot be changed to [%s] as it is already taken by Concept [%s]"),
     UNIQUE_PROPERTY_TAKEN("Property [%s] with value [%s] is already taken by concept [%s]"),
     TOO_MANY_CONCEPTS("Too many concepts found for key [%s] and value [%s]"),
-    TOO_MANY_CASTINGS("More than one casting found between Role [%s] and Instance [%s]"),
+    TOO_MANY_CASTINGS("More than one casting found between Role [%s] and Thing [%s]"),
     INVALID_DATATYPE("The value [%s] must be of datatype [%s]"),
     INVALID_RESOURCE_CAST("The value of [%s] cannot be cast to [%s]"),
     INVALID_OBJECT_TYPE("The concept [%s] is not of type [%s]"),
@@ -44,7 +44,7 @@ public enum ErrorMessage {
     REGEX_NOT_STRING("The Resource Type [%s] is not of type String so it cannot support regular expressions"),
     CLOSED_CLEAR("The session for graph has been closed due to deleting the graph"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The transaction was not %s. The graph was actually effected directly"),
-    IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
+    IMMUTABLE_VALUE("The value [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
@@ -63,6 +63,10 @@ public enum ErrorMessage {
     CONCEPT_HAS_NO_SHARD("Concept [%s] does not have any shard"),
     IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),
     CLOSE_GRAPH_FAILURE("Unable to close graph [%s]"),
+    VERSION_MISMATCH("You are attempting to use Grakn Version [%s] with a graph build using version [%s], this is not supported."),
+    NO_TYPE("Concept [%s] does not have a type"),
+    INVALID_DIRECTION("Cannot traverse an edge in direction [%s]"),
+    RESERVED_WORD("The word [%s] is reserved internally and cannot be used"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -71,10 +75,10 @@ public enum ErrorMessage {
     VALIDATION_RELATION_CASTING_LOOP_FAIL("The relation [%s] has a role player playing the role [%s] " +
             "which it's type [%s] is not connecting to via a relates connection \n"),
 
-    VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play RoleType [%s] \n"),
-    VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("RoleType [%s] does not have a relates connection to any Relation Type. \n"),
+    VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play Role [%s] \n"),
+    VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relation Type. \n"),
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
-    VALIDATION_INSTANCE("Instance [%s] of type [%s] does not play the required role [%s] \n"),
+    VALIDATION_INSTANCE("Thing [%s] of type [%s] does not play the required role [%s] \n"),
 
     VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role Type [%s] which is connected to Relation Type [%s] " +
             "does not have a %s Role Type which is connected to the %s Relation Type [%s] \n"),
@@ -143,10 +147,12 @@ public enum ErrorMessage {
     INSERT_METATYPE("'%s' cannot be a subtype of '%s'"),
     INSERT_RECURSIVE("%s should not refer to itself"),
     INSERT_TYPE_WITHOUT_LABEL("attempted to insert a type without a label"),
+    INSERT_ABSTRACT_NOT_TYPE("the concept [%s] is not a type and cannot be set to abstract"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
     INSERT_RESOURCE_WITHOUT_VALUE("cannot insert a resource without specifying a value"),
     INSERT_INSTANCE_WITH_NAME("cannot insert an instance with a name: %s"),
     INSERT_NON_RESOURCE_WITH_VALUE("cannot set value on an instance of %s because it is not a resource-type"),
+    INSERT_NEW_TYPE("instance '%s' already has a type. cannot set new type '%s'"),
 
     DELETE_VALUE("deleting values is not supported"),
     DELETE_RESOURCE_TYPE_NO_ID("resource type to delete from concept %s has no id specified"),
@@ -155,8 +161,7 @@ public enum ErrorMessage {
     FAILED_TO_BUILD_TRAVERSAL("failed to build a traversal from the graql query"),
 
     NO_ANALYTICS_METHOD("No compute method exists with the name [%s]"),
-
-    INVALID_STATMENT("Invalid %s statement: %s for data %s"),
+    INVALID_STATMENT("Value [%s] not of type [%s] in data [%s]"),
 
     //Templating
     TEMPLATE_MISSING_KEY("Key [%s] not present in data: [%s]"),
@@ -178,6 +183,7 @@ public enum ErrorMessage {
     UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
     UNAVAILABLE_PROPERTY("Property requested [%s] has not been defined. See configuration file [%s] for configured properties."),
     MISSING_MANDATORY_REQUEST_PARAMETERS("Missing mandatory query parameter [%s]"),
+    MISSING_MANDATORY_BODY_REQUEST_PARAMETERS("Missing mandatory parameter in body [%s]"),
     MISSING_REQUEST_BODY("Empty body- it should contain the Graql query to be executed."),
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
     INVALID_CONTENT_TYPE("Invalid combination of query [%s] and content type [%s]"),
@@ -188,6 +194,7 @@ public enum ErrorMessage {
     TASK_STATE_RETRIEVAL_FAILURE("Could not get state from storage %s"),
     ENGINE_UNAVAILABLE("Cannot reach Grakn engine on [%s:%s]"),
     AUTHENTICATION_FAILURE("Authentication parameters are incorrect or invalid"),
+    CANNOT_DELETE_KEYSPACE("Could not delete keyspace [%s]"),
 
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),
@@ -227,7 +234,7 @@ public enum ErrorMessage {
     NO_SOURCE("No valid source id provided"),
     NO_DESTINATION("No valid destination id provided"),
     RESOURCE_TYPE_NOT_SPECIFIED("no resource type provided for compute query."),
-    INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
+    INSTANCE_DOES_NOT_EXIST("Thing does not exist in the subgraph."),
     NO_PATH_EXIST("There is no path between the two instances."),
     ONTOLOGY_MUTATION("The mutations to the ontology have not been successfully committed. Validation Errors: [%s]"),
     BULK_PERSIST("The bulk persist operation on instances of concept type [%s] has failed with validation error: [%s]"),

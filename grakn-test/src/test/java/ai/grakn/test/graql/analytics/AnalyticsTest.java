@@ -23,13 +23,14 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -41,8 +42,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestEnv.usingOrientDB;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -50,10 +49,11 @@ import static org.junit.Assume.assumeFalse;
 public class AnalyticsTest {
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startInMemoryServer();
+    // TODO: Don't set port once bug #15130 is fixed
+    public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
     private GraknSession factory;
 
-    private static final String thing = "thing";
+    private static final String thingy = "thingy";
     private static final String anotherThing = "anotherThing";
     private static final String related = "related";
 
@@ -67,23 +67,20 @@ public class AnalyticsTest {
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
-        assumeFalse(usingOrientDB());
+        assumeFalse(GraknTestSetup.usingOrientDB());
 
         factory = context.factoryWithNewKeyspace();
     }
 
     @Test
     public void testInferredResourceRelation() throws InvalidGraphException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            TypeLabel resourceTypeLabel = TypeLabel.of("degree");
-            ResourceType<Long> degree = graph.putResourceType(resourceTypeLabel, ResourceType.DataType.LONG);
-            EntityType thing = graph.putEntityType("thing");
-            thing.resource(degree);
+            Label resourceLabel = Label.of("degree");
+            ResourceType<Long> degree = graph.putResourceType(resourceLabel, ResourceType.DataType.LONG);
+            EntityType thingy = graph.putEntityType("thingy");
+            thingy.resource(degree);
 
-            Entity thisThing = thing.addEntity();
+            Entity thisThing = thingy.addEntity();
             Resource thisResource = degree.putResource(1L);
             thisThing.resource(thisResource);
             graph.commit();
@@ -91,11 +88,11 @@ public class AnalyticsTest {
 
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees;
-            degrees = graph.graql().compute().degree().of("thing").in("thing", "degree").execute();
+            degrees = graph.graql().compute().degree().of("thingy").in("thingy", "degree").execute();
             assertEquals(1, degrees.size());
             assertEquals(1, degrees.get(1L).size());
 
-            degrees = graph.graql().compute().degree().in("thing", "degree").execute();
+            degrees = graph.graql().compute().degree().in("thingy", "degree").execute();
             assertEquals(1, degrees.size());
             assertEquals(2, degrees.get(1L).size());
         }
@@ -103,23 +100,20 @@ public class AnalyticsTest {
 
     @Test
     public void testNullResourceDoesntBreakAnalytics() throws InvalidGraphException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // make slightly odd graph
-            TypeLabel resourceTypeId = TypeLabel.of("degree");
-            EntityType thing = graph.putEntityType("thing");
+            Label resourceTypeId = Label.of("degree");
+            EntityType thingy = graph.putEntityType("thingy");
 
             graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
-            RoleType degreeOwner = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
-            RoleType degreeValue = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
+            Role degreeOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
+            Role degreeValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
             RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
                     .relates(degreeOwner)
                     .relates(degreeValue);
-            thing.plays(degreeOwner);
+            thingy.plays(degreeOwner);
 
-            Entity thisThing = thing.addEntity();
+            Entity thisThing = thingy.addEntity();
             relationType.addRelation().addRolePlayer(degreeOwner, thisThing);
 
             graph.commit();
@@ -136,8 +130,8 @@ public class AnalyticsTest {
 
     @Test
     public void testConcurrentAnalyticsJobsBySubmittingGraqlComputeQueries() {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
+        // TODO: move parallel tests to integration tests
+        assumeFalse(GraknTestSetup.usingTinker());
 
         addOntologyAndEntities();
 
@@ -157,7 +151,7 @@ public class AnalyticsTest {
 
     private void addOntologyAndEntities() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            EntityType entityType1 = graph.putEntityType(thing);
+            EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
             Entity entity1 = entityType1.addEntity();
@@ -170,8 +164,8 @@ public class AnalyticsTest {
             entityId3 = entity3.getId().getValue();
             entityId4 = entity4.getId().getValue();
 
-            RoleType role1 = graph.putRoleType("role1");
-            RoleType role2 = graph.putRoleType("role2");
+            Role role1 = graph.putRole("role1");
+            Role role2 = graph.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
             RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);

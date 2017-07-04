@@ -19,7 +19,7 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 
@@ -88,15 +88,14 @@ public interface ReasonerQuery{
     /**
      * resolves the query
      * @param materialise materialisation flag
-     * @param explanation whether to provide explanation
      * @return stream of answers
      */
     @CheckReturnValue
-    Stream<Answer> resolve(boolean materialise, boolean explanation);
+    Stream<Answer> resolve(boolean materialise);
 
     /**
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    Map<Var, Type> getVarTypeMap();
+    Map<Var, OntologyConcept> getVarOntologyConceptMap();
 }

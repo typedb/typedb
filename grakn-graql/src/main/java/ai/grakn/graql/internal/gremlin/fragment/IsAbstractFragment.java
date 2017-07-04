@@ -32,7 +32,7 @@ class IsAbstractFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.has(Schema.ConceptProperty.IS_ABSTRACT.name(), true);
+        traversal.has(Schema.VertexProperty.IS_ABSTRACT.name(), true);
     }
 
     @Override

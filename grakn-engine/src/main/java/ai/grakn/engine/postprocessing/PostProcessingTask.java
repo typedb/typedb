@@ -21,18 +21,14 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import mjson.Json;
-import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +37,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -55,10 +50,7 @@ import java.util.stream.Collectors;
  *
  * @author alexandraorth, fppt
  */
-public class PostProcessingTask implements BackgroundTask {
-    private static final GraknEngineConfig CONFIG = GraknEngineConfig.getInstance();
-    private static final int PP_TASK_DELAY_MS = CONFIG.getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
-    private static final EngineGraknGraphFactory FACTORY = EngineGraknGraphFactory.create(CONFIG.getProperties());
+public class PostProcessingTask extends BackgroundTask {
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
     private static final String JOB_FINISHED = "Post processing Job [{}] completed for indeces and ids: [{}]";
     private static final String LOCK_KEY = "/post-processing-lock";
@@ -66,59 +58,26 @@ public class PostProcessingTask implements BackgroundTask {
     /**
      * Apply CASTING and RESOURCE post processing jobs the concept ids in the provided configuration
      *
-     * @param saveCheckpoint Checkpointing is not implemented in this task, so this parameter is not used.
-     * @param configuration Configuration containing the IDs to be post processed.
      * @return True if successful.
      */
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
-        runPostProcessingMethod(configuration, Schema.BaseType.CASTING, this::duplicateCastingsExist, this::runCastingFix);
-        runPostProcessingMethod(configuration, Schema.BaseType.RESOURCE, this::duplicateResourcesExist, this::runResourceFix);
-
-        return true;
-    }
-
-    @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException("Delayed task cannot be stopped while in progress");
-    }
-
-    @Override
-    public void pause() {
-        throw new UnsupportedOperationException("Delayed task cannot be paused");
-    }
-
-    @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
-        throw new UnsupportedOperationException("Delayed task cannot be resumed");
-    }
-
-    /**
-     * Main method which attempts to run all post processing jobs.
-     *
-     * @param duplicatesExistMethod Method to determine if there are duplicates to be post processed.
-     *                      Either {@link ai.grakn.engine.postprocessing.PostProcessingTask#duplicateCastingsExist(GraknGraph, String, Set)} or
-     *                      {@link ai.grakn.engine.postprocessing.PostProcessingTask#duplicateResourcesExist(GraknGraph, String, Set)}
-     * @param postProcessingMethod The post processing job to be executed if duplicates exist
-     *                      Either {@link ai.grakn.engine.postprocessing.PostProcessingTask#runResourceFix(GraknGraph, String, Set)} or
-     *                      {@link ai.grakn.engine.postprocessing.PostProcessingTask#runCastingFix(GraknGraph, String, Set)}.
-     */
-    private void runPostProcessingMethod(TaskConfiguration configuration, Schema.BaseType baseType,
-                                         TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> duplicatesExistMethod,
-                                         TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> postProcessingMethod){
-
-        Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(baseType, configuration);
+    public boolean start() {
+        Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.RESOURCE, configuration());
 
         allToPostProcess.entrySet().forEach(e -> {
             String conceptIndex = e.getKey();
             Set<ConceptId> conceptIds = e.getValue();
 
-            GraphMutators.runGraphMutationWithRetry(FACTORY, configuration.json().at(REST.Request.KEYSPACE).asString(),
-                    (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds, duplicatesExistMethod, postProcessingMethod));
+            String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
+            int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
+            GraphMutators.runGraphMutationWithRetry(factory(), keyspace, maxRetry,
+                    (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
         });
 
-        LOG.debug(JOB_FINISHED, baseType.name(), allToPostProcess);
+        LOG.debug(JOB_FINISHED, Schema.BaseType.RESOURCE.name(), allToPostProcess);
+
+        return true;
     }
 
     /**
@@ -141,14 +100,10 @@ public class PostProcessingTask implements BackgroundTask {
      * @param graph
      * @param conceptIndex
      * @param conceptIds
-     * @param duplicatesExistMethod
-     * @param postProcessingMethod
      */
-    private void runPostProcessingMethod(GraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds,
-                                         TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> duplicatesExistMethod,
-                                         TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> postProcessingMethod){
+    private void runPostProcessingMethod(GraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds){
 
-        if(duplicatesExistMethod.apply(graph, conceptIndex, conceptIds)){
+        if(graph.admin().duplicateResourcesExist(conceptIndex, conceptIds)){
 
             // Acquire a lock when you post process on an index to prevent race conditions
             // Lock is acquired after checking for duplicates to reduce runtime
@@ -157,7 +112,7 @@ public class PostProcessingTask implements BackgroundTask {
 
             try {
                 // execute the provided post processing method
-                postProcessingMethod.apply(graph, conceptIndex, conceptIds);
+                graph.admin().fixDuplicateResources(conceptIndex, conceptIds);
 
                 // ensure post processing was correctly executed
                 validateMerged(graph, conceptIndex, conceptIds).
@@ -199,54 +154,11 @@ public class PostProcessingTask implements BackgroundTask {
         }
 
         //Check index
-        if(graph.admin().getConcept(Schema.ConceptProperty.INDEX, conceptIndex) == null){
+        if(graph.admin().getConcept(Schema.VertexProperty.INDEX, conceptIndex) == null){
             return Optional.of("The concept index [" + conceptIndex + "] did not return any concept");
         }
 
         return Optional.empty();
-    }
-
-    /**
-     * Run a a resource duplication merge on the provided concepts
-     * @param graph Graph on which to apply the fixes
-     * @param index The unique index of the concept which must exist at the end
-     * @param conceptIds The conceptIds which effectively need to be merged.
-     */
-    private boolean runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
-        return graph.admin().fixDuplicateResources(index, conceptIds);
-    }
-
-
-    /**
-     * Run a casting duplication merge job on the provided concepts
-     * @param graph Graph on which to apply the fixes
-     * @param index The unique index of the concept which must exist at the end
-     * @param conceptIds The conceptIds which effectively need to be merged.
-     */
-    private boolean runCastingFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
-        return graph.admin().fixDuplicateCastings(index, conceptIds);
-    }
-
-    /**
-     * Check if there are duplicate castings for the given index
-     * @param graph Graph on which to apply the fixes
-     * @param index The unique index of the concept that may have duplicates
-     * @param conceptIds The conceptIds which may be the duplicates
-     */
-    private boolean duplicateCastingsExist(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
-        return graph.admin().duplicateCastingsExist(index, conceptIds);
-    }
-
-
-    /**
-     * Check if there are duplicate resources for the given index
-
-     * @param graph Graph on which to apply the fixes
-     * @param index The unique index of the concept that may have duplicates
-     * @param conceptIds The conceptIds which may be the duplicates
-     */
-    private boolean duplicateResourcesExist(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
-        return graph.admin().duplicateResourcesExist(index, conceptIds);
     }
 
     /**
@@ -255,10 +167,10 @@ public class PostProcessingTask implements BackgroundTask {
      * @param creator The class which is creating the task
      * @return The executable postprocessing task state
      */
-    public static TaskState createTask(Class creator){
+    public static TaskState createTask(Class creator, int delay) {
         return TaskState.of(PostProcessingTask.class,
                 creator.getName(),
-                TaskSchedule.at(Instant.now().plusMillis(PP_TASK_DELAY_MS)),
+                TaskSchedule.at(Instant.now().plusMillis(delay)),
                 TaskState.Priority.LOW);
     }
 

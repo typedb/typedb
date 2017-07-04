@@ -20,8 +20,10 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -30,10 +32,10 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
+import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -48,7 +50,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
+import static ai.grakn.util.CommonUtil.optionalToStream;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -62,28 +65,26 @@ public class MatchQueryBase extends AbstractMatchQuery {
     protected final Logger LOG = LoggerFactory.getLogger(MatchQueryBase.class);
 
     private final Conjunction<PatternAdmin> pattern;
-    private final ImmutableSet<TypeLabel> typeLabels;
+    private ImmutableSet<Label> labels;
 
     /**
      * @param pattern a pattern to match in the graph
      */
     public MatchQueryBase(Conjunction<PatternAdmin> pattern) {
         if (pattern.getPatterns().size() == 0) {
-            throw new IllegalArgumentException(ErrorMessage.NO_PATTERNS.getMessage());
+            throw GraqlQueryException.noPatterns();
         }
 
         this.pattern = pattern;
-
-        this.typeLabels = getAllTypeLabels();
     }
 
 
 
     @Override
     public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
-        GraknGraph graph = optionalGraph.orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
-        );
+        GraknGraph graph = optionalGraph.orElseThrow(GraqlQueryException::noGraph);
+
+        this.labels = getAllTypeLabels(graph);
 
         for (VarPatternAdmin var : pattern.getVars()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
@@ -109,18 +110,18 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Set<Type> getTypes(GraknGraph graph) {
+    public Set<OntologyConcept> getOntologyConcepts(GraknGraph graph) {
         return pattern.getVars().stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
-                .map(graph::<Type>getType)
+                .map(graph::<OntologyConcept>getOntologyConcept)
                 .filter(Objects::nonNull)
                 .collect(toSet());
     }
 
     @Override
-    public Set<Type> getTypes() {
-        throw new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage());
+    public Set<OntologyConcept> getOntologyConcepts() {
+        throw GraqlQueryException.noGraph();
     }
 
     @Override
@@ -147,12 +148,23 @@ public class MatchQueryBase extends AbstractMatchQuery {
         return new MatchQueryInfer(this, materialise);
     }
 
-    private ImmutableSet<TypeLabel> getAllTypeLabels() {
-        return pattern.getVars().stream()
+    private ImmutableSet<Label> getAllTypeLabels(GraknGraph graph) {
+        Stream<Label> explicitTypeLabels = pattern.getVars().stream()
                 .flatMap(var -> var.getInnerVars().stream())
                 .map(VarPatternAdmin::getTypeLabel)
+                .flatMap(CommonUtil::optionalToStream);
+
+        Stream<Label> typeLabelsFromIds = pattern.getVars().stream()
+                .flatMap(var -> var.getInnerVars().stream())
+                .map(var -> var.getProperty(IdProperty.class))
                 .flatMap(CommonUtil::optionalToStream)
-                .collect(toImmutableSet());
+                .map(IdProperty::getId)
+                .flatMap(id -> optionalToStream(Optional.ofNullable(graph.<Concept>getConcept(id))))
+                .filter(Concept::isType)
+                .map(Concept::asType)
+                .map(Type::getLabel);
+
+        return Stream.concat(explicitTypeLabels, typeLabelsFromIds).collect(toImmutableSet());
     }
 
     /**
@@ -182,7 +194,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
         Type type = concept.asType();
 
-        return !type.isImplicit() || typeLabels.contains(type.getLabel());
+        return !type.isImplicit() || labels.contains(type.getLabel());
     }
 
     @Override

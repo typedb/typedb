@@ -18,6 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
@@ -25,6 +26,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -35,13 +37,14 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.Sets;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesCompatible;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkCompatible;
 
 /**
  *
@@ -56,8 +59,9 @@ public abstract class Atom extends AtomicBase {
 
     private Type type = null;
     protected ConceptId typeId = null;
+
     private int basePriority = Integer.MAX_VALUE;
-    protected Set<InferenceRule> applicableRules = null;
+    private Set<InferenceRule> applicableRules = null;
 
     protected Atom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
@@ -94,7 +98,7 @@ public abstract class Atom extends AtomicBase {
      * compute base resolution priority of this atom
      * @return priority value
      */
-    public int computePriority(){
+    private int computePriority(){
         return computePriority(getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet()));
     }
 
@@ -141,9 +145,9 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     private Set<Rule> getPotentialRules(){
-        Type type = getType();
-        return type != null ?
-                type.subTypes().stream().flatMap(t -> t.getRulesOfConclusion().stream()).collect(Collectors.toSet()) :
+        OntologyConcept ontologyConcept = getOntologyConcept();
+        return ontologyConcept != null ?
+                ontologyConcept.subs().stream().flatMap(t -> t.getRulesOfConclusion().stream()).collect(Collectors.toSet()) :
                 ReasonerUtils.getRules(graph());
     }
 
@@ -167,12 +171,12 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public boolean isRecursive(){
-        if (isResource() || getType() == null) return false;
-        Type type = getType();
+        if (isResource() || getOntologyConcept() == null) return false;
+        OntologyConcept ontologyConcept = getOntologyConcept();
         return getApplicableRules().stream()
                 .filter(rule -> rule.getBody().selectAtoms().stream()
-                        .filter(at -> Objects.nonNull(at.getType()))
-                        .filter(at -> checkTypesCompatible(type, at.getType())).findFirst().isPresent())
+                        .filter(at -> Objects.nonNull(at.getOntologyConcept()))
+                        .filter(at -> checkCompatible(ontologyConcept, at.getOntologyConcept())).findFirst().isPresent())
                 .filter(this::isRuleApplicable)
                 .findFirst().isPresent();
     }
@@ -190,7 +194,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return corresponding type if any
      */
-    public Type getType(){
+    public OntologyConcept getOntologyConcept(){
         if (type == null && typeId != null) {
             type = getParentQuery().graph().getConcept(typeId).asType();
         }
@@ -205,9 +209,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return value variable name
      */
-    public Var getValueVariable() {
-        throw new IllegalArgumentException("getValueVariable called on Atom object " + getPattern());
-    }
+    public abstract Var getValueVariable();
 
     /**
      * @return set of predicates relevant to this atom
@@ -269,15 +271,22 @@ public abstract class Atom extends AtomicBase {
         return Sets.union(types, getPredicates());
     }
 
-    public Set<IdPredicate> getUnmappedIdPredicates(){ return new HashSet<>();}
-    public Set<TypeAtom> getUnmappedTypeConstraints(){ return new HashSet<>();}
-    public Set<TypeAtom> getMappedTypeConstraints() { return new HashSet<>();}
-    public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return new HashSet<>();}
+    /**
+     * @return set of type atoms that describe specific role players or resource owner
+     */
+    public Set<TypeAtom> getSpecificTypeConstraints() { return new HashSet<>();}
+
+    /**
+     * @param headAtom unification reference atom
+     * @return set of permutation unifiers that guarantee all variants of role assignments are performed and hence the results are complete
+     */
+    public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return Collections.singleton(new UnifierImpl());}
 
     /**
      * infers types (type, role types) fo the atom if applicable/possible
+     * @return either this atom if nothing could be inferred or a fresh atom with inferred types
      */
-    public void inferTypes(){}
+    public Atom inferTypes(){ return this; }
 
     /**
      * rewrites the atom to one with user defined name

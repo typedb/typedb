@@ -18,17 +18,19 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.graql.Query;
-
 import static ai.grakn.util.ErrorMessage.AUTHENTICATION_FAILURE;
+import static ai.grakn.util.ErrorMessage.CANNOT_DELETE_KEYSPACE;
 import static ai.grakn.util.ErrorMessage.ENGINE_ERROR;
 import static ai.grakn.util.ErrorMessage.EXPLAIN_ONLY_MATCH;
 import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
 import static ai.grakn.util.ErrorMessage.INVALID_QUERY_USAGE;
+import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_BODY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
+
+import ai.grakn.graql.Query;
 
 /**
  * <p>
@@ -84,6 +86,13 @@ public class GraknServerException extends GraknBackendException {
     }
 
     /**
+     * Thrown when a request is missing mandatory parameters in the body
+     */
+    public static GraknServerException requestMissingBodyParameters(String parameter){
+        return new GraknServerException(MISSING_MANDATORY_BODY_REQUEST_PARAMETERS.getMessage(parameter), 400);
+    }
+
+    /**
      * Thrown when a request is missing the body
      */
     public static GraknServerException requestMissingBody(){
@@ -123,6 +132,13 @@ public class GraknServerException extends GraknBackendException {
      */
     public static GraknServerException authenticationFailure(){
         return new GraknServerException(AUTHENTICATION_FAILURE.getMessage(), 401);
+    }
+
+    /**
+     * Thrown when engine cannot delete a keyspace as expected
+     */
+    public static GraknServerException couldNotDelete(String keyspace){
+        return new GraknServerException(CANNOT_DELETE_KEYSPACE.getMessage(keyspace), 500);
     }
 
     /**

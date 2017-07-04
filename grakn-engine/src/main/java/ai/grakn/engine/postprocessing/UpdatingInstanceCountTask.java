@@ -23,11 +23,9 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.REST;
@@ -37,7 +35,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -51,16 +48,15 @@ import java.util.stream.Collectors;
  *
  * @author fppt
  */
-public class UpdatingInstanceCountTask implements BackgroundTask {
-    public static final RedisConnection redis = RedisConnection.getConnection();
-    public static final GraknEngineConfig CONFIG = GraknEngineConfig.getInstance();
-    private static final long SHARDING_THRESHOLD = CONFIG.getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
-    private static final EngineGraknGraphFactory FACTORY = EngineGraknGraphFactory.create(CONFIG.getProperties());
+public class UpdatingInstanceCountTask extends BackgroundTask {
 
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
-        Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration);
-        String keyspace = configuration.json().at(REST.Request.KEYSPACE).asString();
+    public boolean start() {
+        long shardingThreshold = engineConfiguration().getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
+        int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+
+        Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
+        String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
 
         //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
         //The graph cannot be used because each engine can have it's own snapshot of the graph with caching which makes
@@ -69,11 +65,11 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
 
         //Update counts
         jobs.forEach((key, value) -> {
-            if(updateShardCounts(keyspace, key, value)) conceptToShard.add(key);
+            if(updateShardCounts(redis(), keyspace, key, value, shardingThreshold)) conceptToShard.add(key);
         });
 
         //Shard anything which requires sharding
-        conceptToShard.forEach(type -> shardConcept(keyspace, type));
+        conceptToShard.forEach(type -> shardConcept(redis(), factory(), keyspace, type, maxRetry, shardingThreshold));
 
         return true;
     }
@@ -98,11 +94,12 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
      * @param value The number of instances which the type has gained/lost
      * @return true if sharding is needed.
      */
-    private static boolean updateShardCounts(String keyspace, ConceptId conceptId, long value){
+    private static boolean updateShardCounts(
+            RedisConnection redis, String keyspace, ConceptId conceptId, long value, long shardingThreshold){
         long numShards = redis.getCount(RedisConnection.getKeyNumShards(keyspace, conceptId));
         if(numShards == 0) numShards = 1;
         long numInstances = redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace, conceptId), value);
-        return numInstances > SHARDING_THRESHOLD * numShards;
+        return numInstances > shardingThreshold * numShards;
     }
 
     /**
@@ -115,16 +112,18 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
      * @param keyspace The graph containing the type to shard
      * @param conceptId The id of the concept to shard
      */
-    private static void shardConcept(String keyspace, ConceptId conceptId){
+    private static void shardConcept(
+            RedisConnection redis, EngineGraknGraphFactory factory, String keyspace, ConceptId conceptId, int maxRetry,
+            long shardingThreshold){
         Lock engineLock = LockProvider.getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
 
         try {
             //Check if sharding is still needed. Another engine could have sharded whilst waiting for lock
-            if (updateShardCounts(keyspace, conceptId, 0)) {
+            if (updateShardCounts(redis, keyspace, conceptId, 0, shardingThreshold)) {
 
                 //Shard
-                GraphMutators.runGraphMutationWithRetry(FACTORY, keyspace, graph -> {
+                GraphMutators.runGraphMutationWithRetry(factory, keyspace, maxRetry, graph -> {
                     graph.admin().shard(conceptId);
                     graph.admin().commitNoLogs();
                 });
@@ -139,21 +138,6 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
 
     private static String getLockingKey(String keyspace, ConceptId conceptId){
         return "/updating-instance-count-lock/" + keyspace + "/" + conceptId.getValue();
-    }
-
-    @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be stopped while in progress");
-    }
-
-    @Override
-    public void pause() {
-        throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be paused while in progress");
-    }
-
-    @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
-        throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be resumed");
     }
 
     /**

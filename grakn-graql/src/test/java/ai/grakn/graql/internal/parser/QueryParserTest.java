@@ -21,6 +21,8 @@ package ai.grakn.graql.internal.parser;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.DeleteQuery;
@@ -42,6 +44,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -78,6 +81,7 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Graql.withoutGraph;
 import static ai.grakn.graql.Order.desc;
 import static com.google.common.collect.Lists.newArrayList;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.AllOf.allOf;
@@ -508,7 +512,7 @@ public class QueryParserTest {
 
         qb.registerAggregate("get-any", args -> new GetAny((Var) args.get(0)));
 
-        AggregateQuery<Concept> expected = qb.match(var("x").isa("movie")).aggregate(new GetAny(Var.of("x")));
+        AggregateQuery<Concept> expected = qb.match(var("x").isa("movie")).aggregate(new GetAny(Graql.var("x")));
         AggregateQuery<Concept> parsed = qb.parse("match $x isa movie; aggregate get-any $x;");
 
         assertEquals(expected, parsed);
@@ -596,8 +600,8 @@ public class QueryParserTest {
     }
 
     @Test
-    public void whenParseIncorrectSyntax_ThrowIllegalArgumentExceptionWithHelpfulError() {
-        exception.expect(IllegalArgumentException.class);
+    public void whenParseIncorrectSyntax_ThrowGraqlSyntaxExceptionWithHelpfulError() {
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage(allOf(
                 containsString("syntax error"), containsString("line 1"),
                 containsString("\nmatch $x isa "),
@@ -609,7 +613,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParseIncorrectSyntax_ErrorMessageShouldRetainWhitespace() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage(not(containsString("match$xisa")));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa ");
@@ -617,7 +621,7 @@ public class QueryParserTest {
 
     @Test
     public void testSyntaxErrorPointer() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage(allOf(
                 containsString("\nmatch $x is"),
                 containsString("\n         ^")
@@ -669,7 +673,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseListEmpty() {
-        List<Query<?>> queries = parseList("");
+        List<Query<?>> queries = parseList("").collect(toList());
         assertEquals(0, queries.size());
     }
 
@@ -677,7 +681,7 @@ public class QueryParserTest {
     public void testParseListOneMatch() {
         String matchString = "match $y isa movie; limit 1;";
 
-        List<Query<?>> queries = parseList(matchString);
+        List<Query<?>> queries = parseList(matchString).collect(toList());
 
         assertEquals(ImmutableList.of(match(var("y").isa("movie")).limit(1)), queries);
     }
@@ -686,7 +690,25 @@ public class QueryParserTest {
     public void testParseListOneInsert() {
         String insertString = "insert $x isa movie;";
 
-        List<Query<?>> queries = parseList(insertString);
+        List<Query<?>> queries = parseList(insertString).collect(toList());
+
+        assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
+    }
+
+    @Test
+    public void testParseListOneInsertWithWhitespacePrefix() {
+        String insertString = " insert $x isa movie;";
+
+        List<Query<?>> queries = parseList(insertString).collect(toList());
+
+        assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
+    }
+
+    @Test
+    public void testParseListOneInsertWithPrefixComment() {
+        String insertString = "#hola\ninsert $x isa movie;";
+
+        List<Query<?>> queries = parseList(insertString).collect(toList());
 
         assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
     }
@@ -696,7 +718,7 @@ public class QueryParserTest {
         String insertString = "insert $x isa movie;";
         String matchString = "match $y isa movie; limit 1;";
 
-        List<Query<?>> queries = parseList(insertString + matchString);
+        List<Query<?>> queries = parseList(insertString + matchString).collect(toList());
 
         assertEquals(ImmutableList.of(
                 insert(var("x").isa("movie")),
@@ -709,7 +731,7 @@ public class QueryParserTest {
         String matchString = "match $y isa movie; limit 1;";
         String insertString = "insert $x isa movie;";
 
-        List<Query<?>> queries = parseList(matchString + insertString);
+        List<Query<?>> queries = parseList(matchString + insertString).collect(toList());
 
         assertEquals(ImmutableList.of(
                 match(var("y").isa("movie")).limit(1).insert(var("x").isa("movie"))
@@ -730,7 +752,7 @@ public class QueryParserTest {
         );
 
         options.forEach(option -> {
-            List<Query<?>> queries = parseList(option);
+            List<Query<?>> queries = parseList(option).collect(toList());
             assertEquals(option, 2, queries.size());
         });
     }
@@ -742,20 +764,40 @@ public class QueryParserTest {
         String longQueryString = Strings.repeat(matchInsertString, numQueries);
         Query<?> matchInsert = match(var("x")).insert(var("y"));
 
-        List<Query<?>> queries = parseList(longQueryString);
+        List<Query<?>> queries = parseList(longQueryString).collect(toList());
 
         assertEquals(Collections.nCopies(numQueries, matchInsert), queries);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testMultipleQueriesThrowsIllegalArgumentException() {
+    // TODO: This takes a long time to run and is dependent on heap size. It should run separately from other tests.
+    @Ignore
+    @Test
+    public void whenParsingAVeryLargeQuery_DontRunOutOfMemory() {
+        int bigNumber = 1 << 20;
+        String queryText = "match $x isa movie; insert ($x, $x) isa has-genre;";
+        Query query = Graql.parse(queryText);
+
+        String massiveQuery = Strings.repeat(queryText, bigNumber);
+
+        final int[] count = {0};
+
+        Graql.parseList(massiveQuery).forEach(q -> {
+            assertEquals(query, q);
+            count[0]++;
+        });
+
+        assertEquals(bigNumber, count[0]);
+    }
+
+    @Test(expected = GraqlSyntaxException.class)
+    public void testMultipleQueriesThrowsSyntaxException() {
         //noinspection ResultOfMethodCallIgnored
         parse("insert $x isa movie; insert $y isa movie");
     }
 
     @Test
     public void testMissingColon() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage("':'");
         //noinspection ResultOfMethodCallIgnored
         parse("match (actor $x, $y) isa has-cast;");
@@ -763,7 +805,7 @@ public class QueryParserTest {
 
     @Test
     public void testMissingComma() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage("','");
         //noinspection ResultOfMethodCallIgnored
         parse("match ($x $y) isa has-cast;");
@@ -771,7 +813,7 @@ public class QueryParserTest {
 
     @Test
     public void testLimitMistake() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage("limit1");
         //noinspection ResultOfMethodCallIgnored
         parse("match ($x, $y); limit1;");
@@ -779,7 +821,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingAggregateWithWrongArgumentNumber_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("count", 0, 1));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate count $x;");
@@ -787,7 +829,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingAggregateWithWrongVariableArgumentNumber_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("group", "1-2", 0));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate group;");
@@ -795,7 +837,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingAggregateWithWrongName_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.UNKNOWN_AGGREGATE.getMessage("hello"));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate hello $x;");

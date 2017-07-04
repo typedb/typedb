@@ -18,7 +18,6 @@
 
 package ai.grakn.client;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
@@ -28,13 +27,10 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.test.EngineContext;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.junit.rules.ExpectedException;
 
 import java.util.UUID;
@@ -43,23 +39,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static ai.grakn.graql.Graql.insert;
 import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
-import static org.hamcrest.Matchers.containsString;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static java.util.stream.Stream.generate;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
-import static java.util.stream.Stream.generate;
-import static org.mockito.Mockito.*;
-import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class BatchMutatorClientTest {
 
     private GraknSession session;
-
-    @Rule
-    public final SystemOutRule systemOut = new SystemOutRule().enableLog();
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -70,34 +63,6 @@ public class BatchMutatorClientTest {
     @Before
     public void setupSession(){
         this.session = engine.factoryWithNewKeyspace();
-    }
-
-    @Test
-    public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged() throws InterruptedException {
-        CountDownLatch callbackCompleted = new CountDownLatch(1);
-
-        // Create a BatchMutatorClient with a callback that will fail
-        BatchMutatorClient loader = loader();
-        loader.setTaskCompletionConsumer((json) -> {
-            try {
-                throw new RuntimeException("deliberate failure");
-            } finally {
-                callbackCompleted.countDown();
-            }
-        });
-
-        // Load some queries
-        generate(this::query).limit(1).forEach(loader::add);
-
-        // Wait for queries to finish
-        loader.waitToFinish();
-
-        // Wait for callback function to execute - Callbacks are run asynchronously
-        boolean callbackSuccessfullyCompleted = callbackCompleted.await(1, TimeUnit.MINUTES);
-        assertTrue("callback completed withing timeout", callbackSuccessfullyCompleted);
-
-        // Verify that the logger received the failed log message
-        assertThat(systemOut.getLog(), containsString("error in callback"));
     }
 
     @Test
@@ -204,7 +169,8 @@ public class BatchMutatorClientTest {
 
         BatchMutatorClient loader = loader();
         loader.setRetryPolicy(false);
-        loader.setBatchSize(5);
+        int batchSize = 5;
+        loader.setBatchSize(batchSize);
         loader.setTaskCompletionConsumer((json) -> {
             if (json != null) {
                 tasksCompletedWithoutError.incrementAndGet();
@@ -213,9 +179,13 @@ public class BatchMutatorClientTest {
             }
         });
 
-
-        for(int i = 0; i < 20; i++){
-            loader.add(query());
+        int queries = 20;
+        for(int i = 0; i < queries; i++){
+            try {
+                loader.add(query());
+            } catch(RuntimeException e) {
+                // Swallowing exceptions, there's a count of successful tasks anyway
+            }
 
             if(i%10 == 0) {
                 engine.server().stopHTTP();
@@ -225,8 +195,9 @@ public class BatchMutatorClientTest {
 
         loader.waitToFinish();
 
-        assertThat(tasksCompletedWithoutError.get(), lessThanOrEqualTo(4));
-        assertThat(tasksCompletedWithoutError.get() + tasksCompletedWithError.get(), equalTo(4));
+        int expectedTotal = queries/batchSize;
+        assertThat(tasksCompletedWithoutError.get(), lessThanOrEqualTo(expectedTotal));
+        assertThat(tasksCompletedWithoutError.get() + tasksCompletedWithError.get(), equalTo(expectedTotal));
     }
 
     @Test
@@ -259,7 +230,7 @@ public class BatchMutatorClientTest {
             nameTag.resource(nameTagId);
             graph.admin().commitNoLogs();
 
-            return spy(new BatchMutatorClient(graph.getKeyspace(), Grakn.DEFAULT_URI));
+            return spy(new BatchMutatorClient(graph.getKeyspace(), engine.uri()));
         }
     }
 

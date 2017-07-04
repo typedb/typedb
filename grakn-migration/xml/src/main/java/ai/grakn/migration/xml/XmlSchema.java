@@ -60,7 +60,7 @@ public class XmlSchema {
      */
     public TypeInfo typeOf(String elementName) {
         TypeInfo ti = types.get(elementName);
-        return ti == null ? new TypeInfo("xs:complexType", 1) : ti;
+        return ti == null ? new TypeInfo("xs:complexType", 2) : ti;
     }
     
     public XmlSchema read(File schemaFile) {

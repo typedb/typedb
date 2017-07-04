@@ -21,8 +21,8 @@ package ai.grakn.engine.controller;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
 import io.swagger.annotations.ApiImplicitParam;
@@ -40,8 +40,8 @@ import java.util.Optional;
 
 import static ai.grakn.GraknTxType.READ;
 import static ai.grakn.engine.controller.GraqlController.getAcceptType;
-import static ai.grakn.engine.controller.GraqlController.mandatoryQueryParameter;
-import static ai.grakn.engine.controller.GraqlController.queryParameter;
+import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.util.ErrorMessage.NO_CONCEPT_IN_KEYSPACE;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
@@ -123,10 +123,10 @@ public class ConceptController {
 
         try(GraknGraph graph = factory.getGraph(keyspace, READ)){
             Json responseObj = Json.object();
-            responseObj.set(ROLES_JSON_FIELD, instances(graph.admin().getMetaRoleType()));
-            responseObj.set(ENTITIES_JSON_FIELD, instances(graph.admin().getMetaEntityType()));
-            responseObj.set(RELATIONS_JSON_FIELD, instances(graph.admin().getMetaRelationType()));
-            responseObj.set(RESOURCES_JSON_FIELD, instances(graph.admin().getMetaResourceType()));
+            responseObj.set(ROLES_JSON_FIELD, subLabels(graph.admin().getMetaRoleType()));
+            responseObj.set(ENTITIES_JSON_FIELD, subLabels(graph.admin().getMetaEntityType()));
+            responseObj.set(RELATIONS_JSON_FIELD, subLabels(graph.admin().getMetaRelationType()));
+            responseObj.set(RESOURCES_JSON_FIELD, subLabels(graph.admin().getMetaResourceType()));
             return responseObj.toString();
         } catch (Exception e) {
             throw GraknServerException.serverException(500, e);
@@ -148,8 +148,10 @@ public class ConceptController {
         if(!acceptType.equals(APPLICATION_HAL)) throw GraknServerException.unsupportedContentType(acceptType);
     }
 
-    private List<String> instances(Type type) {
-        return type.subTypes().stream().map(Type::getLabel).map(TypeLabel::getValue).collect(toList());
+    private List<String> subLabels(OntologyConcept ontologyConcept) {
+        return ontologyConcept.subs().stream().
+                map(OntologyConcept::getLabel).
+                map(Label::getValue).collect(toList());
     }
 
     /**

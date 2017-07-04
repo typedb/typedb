@@ -14,74 +14,57 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package ai.grakn.graql;
 
-import org.apache.commons.lang.StringUtils;
-
-import java.util.UUID;
 import java.util.function.Function;
 
 /**
- * A variable name in a Graql query
+ * A variable in a Graql query
  *
  * @author Felix Chapman
  */
-public final class Var {
-    private final String value;
-
-    public static Var of(String value) {
-        return new Var(value);
-    }
-
-    public static Var anon() {
-        return new Var(UUID.randomUUID().toString());
-    }
-
-    private Var(String value) {
-        this.value = value;
-    }
+public interface Var extends VarPattern {
 
     /**
      * Get the string name of the variable (without prefixed "$")
      */
-    public String getValue() {
-        return value;
-    }
+    String getValue();
 
     /**
      * Rename a variable (does not modify the original {@link Var})
      * @param mapper a function to apply to the underlying variable name
      * @return the new variable name
      */
-    public Var map(Function<String, String> mapper) {
-        return Var.of(mapper.apply(value));
-    }
+    Var map(Function<String, String> mapper);
+
+    /**
+     * Whether the variable has been manually defined or automatically generated.
+     * @return whether the variable has been manually defined or automatically generated.
+     */
+    boolean isUserDefinedName();
+
+    /**
+     * Transform the variable into a user-defined one, retaining the generated name.
+     *
+     * This is useful for "reifying" an existing variable.
+     *
+     * @return a new variable with the same name as the previous, but set as user-defined.
+     */
+    Var asUserDefined();
 
     /**
      * Get a shorter representation of the variable (with prefixed "$")
      */
-    public String shortName() {
-        return "$" + StringUtils.left(value, 3);
-    }
+    String shortName();
 
-    public String toString() {
-        return "$" + value;
-    }
+    String toString();
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Var varName = (Var) o;
-
-        return value.equals(varName.value);
-    }
+    boolean equals(Object o);
 
     @Override
-    public int hashCode() {
-        return value.hashCode();
-    }
+    int hashCode();
 }

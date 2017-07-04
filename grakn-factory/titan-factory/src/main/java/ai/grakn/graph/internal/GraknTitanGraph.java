@@ -21,7 +21,6 @@ package ai.grakn.graph.internal;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.TemporaryWriteException;
-import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanGraph;
@@ -62,7 +61,7 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
      */
     @Override
     public boolean isConceptModified(ConceptImpl concept) {
-        TitanVertex vertex = (TitanVertex) concept.getVertex();
+        TitanVertex vertex = (TitanVertex) concept.vertex().element();
         return vertex.isModified() || vertex.isNew();
     }
 
@@ -70,16 +69,6 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     public void openTransaction(GraknTxType txType){
         super.openTransaction(txType);
         if(getTinkerPopGraph().isOpen() && !getTinkerPopGraph().tx().isOpen()) getTinkerPopGraph().tx().open();
-    }
-
-    @Override
-    public void closeSession(){
-        super.closeSession();
-
-        //Close the system graph if possible
-        if(!getKeyspace().equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
-            SystemKeyspace.close();
-        }
     }
 
     @Override
@@ -106,7 +95,7 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    Vertex addVertex(Schema.BaseType baseType){
+    VertexElement addVertex(Schema.BaseType baseType){
         return executeLockingMethod(() -> super.addVertex(baseType));
     }
 

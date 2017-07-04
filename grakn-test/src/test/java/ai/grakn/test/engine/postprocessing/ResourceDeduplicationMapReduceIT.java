@@ -9,10 +9,11 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.engine.postprocessing.ResourceDeduplicationTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import mjson.Json;
 import org.junit.After;
@@ -26,7 +27,6 @@ import org.junit.Test;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.checkUnique;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.indexOf;
@@ -45,10 +45,10 @@ public class ResourceDeduplicationMapReduceIT {
     static ResourceType<Boolean> booleanResource = null;
     static ResourceType<Float> floatResource = null;
     
-    static EntityType thing, idea;
+    static EntityType thingy, idea;
     static RelationType nearby, related;
-    static RoleType near1, near2, near3;
-    static RoleType related1, related2, related3, related4, related5;
+    static Role near1, near2, near3;
+    static Role related1, related2, related3, related4, related5;
     
     static void transact(Consumer<GraknGraph> action) {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
@@ -67,7 +67,7 @@ public class ResourceDeduplicationMapReduceIT {
     
     @BeforeClass
     public static void onlyRunOnTinker(){
-        assumeTrue(usingTinker());
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     private String keyspace() {
@@ -75,7 +75,15 @@ public class ResourceDeduplicationMapReduceIT {
             return graph.getKeyspace();
         }        
     }
-    
+
+    public TaskConfiguration configuration() {
+        return TaskConfiguration.of(Json.object(ResourceDeduplicationTask.KEYSPACE_CONFIG, keyspace()));
+    }
+
+    private void initTask(ResourceDeduplicationTask task) {
+        task.initialize(checkpoint -> { throw new RuntimeException("No checkpoint expected.");}, configuration(), (x, y) -> {}, engine.config(), null, engine.server().factory());
+    }
+
     private void miniOntology(GraknGraph graph) {
         stringResource = graph.putResourceType("StringResource", ResourceType.DataType.STRING);
         longResource = graph.putResourceType("LongResource", ResourceType.DataType.LONG);
@@ -84,28 +92,28 @@ public class ResourceDeduplicationMapReduceIT {
         booleanResource = graph.putResourceType("BooleanResource", ResourceType.DataType.BOOLEAN);
         floatResource = graph.putResourceType("FloatResource", ResourceType.DataType.FLOAT);
         
-        thing = graph.putEntityType("thing");
+        thingy = graph.putEntityType("thingy");
         idea = graph.putEntityType("idea");
         nearby = graph.putRelationType("nearby");
-        near1 = graph.putRoleType("near1");
-        near2 = graph.putRoleType("near2");
-        near3 = graph.putRoleType("near3");        
+        near1 = graph.putRole("near1");
+        near2 = graph.putRole("near2");
+        near3 = graph.putRole("near3");
         nearby.relates(near1).relates(near2).relates(near3);
         nearby.resource(stringResource).resource(longResource).resource(integerResource)
               .resource(booleanResource).resource(floatResource).resource(doubleResource);
         related = graph.putRelationType("related");
-        related1 = graph.putRoleType("related1");
-        related2 = graph.putRoleType("related2");
-        related3 = graph.putRoleType("related3");
-        related4 = graph.putRoleType("related4");
-        related5 = graph.putRoleType("related5");
+        related1 = graph.putRole("related1");
+        related2 = graph.putRole("related2");
+        related3 = graph.putRole("related3");
+        related4 = graph.putRole("related4");
+        related5 = graph.putRole("related5");
         related.relates(related1).relates(related2).relates(related3).relates(related4).relates(related5);
-        thing.resource(stringResource);
-        thing.resource(longResource);
-        thing.resource(integerResource);
-        thing.resource(booleanResource);
-        thing.resource(floatResource);
-        thing.resource(doubleResource);
+        thingy.resource(stringResource);
+        thingy.resource(longResource);
+        thingy.resource(integerResource);
+        thingy.resource(booleanResource);
+        thingy.resource(floatResource);
+        thingy.resource(doubleResource);
         idea.resource(stringResource);
         idea.resource(longResource);
         idea.resource(integerResource);
@@ -118,7 +126,7 @@ public class ResourceDeduplicationMapReduceIT {
         related.resource(booleanResource);
         related.resource(floatResource);
         related.resource(doubleResource);
-        thing.plays(near1).plays(near2).plays(near3).plays(related1)
+        thingy.plays(near1).plays(near2).plays(near3).plays(related1)
             .plays(related2).plays(related3).plays(related4).plays(related5);
         idea.plays(related1).plays(related2).plays(related3).plays(related4).plays(related5);
         stringResource.plays(related1).plays(related2).plays(related3)
@@ -150,9 +158,9 @@ public class ResourceDeduplicationMapReduceIT {
     @Test
     //@Ignore
     public void testNoResources() {
-        ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 
-        task.start(checkpoint -> { throw new RuntimeException("No checkpoint expected."); },
-                TaskConfiguration.of(Json.object(ResourceDeduplicationTask.KEYSPACE_CONFIG, keyspace())), (x, y) -> {});
+        ResourceDeduplicationTask task = new ResourceDeduplicationTask();
+        initTask(task);
+        task.start();
         Assert.assertEquals(new Long(0), task.totalElimintated());
     }
     
@@ -162,8 +170,8 @@ public class ResourceDeduplicationMapReduceIT {
     @Test
     public void testNoDuplicates() {
         transact(graph ->  {
-            Entity e1 = thing.addEntity();
-            Entity e2 = thing.addEntity();
+            Entity e1 = thingy.addEntity();
+            Entity e2 = thingy.addEntity();
             Relation r1 = related.addRelation().addRolePlayer(related1, e1).addRolePlayer(related2, e2);
             e1.resource(stringResource.putResource("value_1"));            
             e1.resource(longResource.putResource(24234l));
@@ -173,12 +181,12 @@ public class ResourceDeduplicationMapReduceIT {
             r1.resource(doubleResource.putResource(2342.546));
             graph.admin().commitNoLogs();
         });
-        ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 
-        task.start(checkpoint -> { throw new RuntimeException("No checkpoint expected."); },
-                TaskConfiguration.of(Json.object(ResourceDeduplicationTask.KEYSPACE_CONFIG, keyspace())), (x, y) -> {});
-        Assert.assertEquals(new Long(0), task.totalElimintated());        
+        ResourceDeduplicationTask task = new ResourceDeduplicationTask();
+        initTask(task);
+        task.start();
+        Assert.assertEquals(new Long(0), task.totalElimintated());
     }
-    
+
     /**
      * Test resource duplicates that are not attached to any entities or part of any
      * relationships.
@@ -211,9 +219,9 @@ public class ResourceDeduplicationMapReduceIT {
             Assert.assertFalse(checkUnique(graph, booleanIndex));
             Assert.assertFalse(checkUnique(graph, doubleIndex));
         });
-        ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 
-        task.start(checkpoint -> { throw new RuntimeException("No checkpoint expected."); },
-                TaskConfiguration.of(Json.object(ResourceDeduplicationTask.KEYSPACE_CONFIG, keyspace())), (x, y) -> {});
+        ResourceDeduplicationTask task = new ResourceDeduplicationTask();
+        initTask(task);
+        task.start();
         Assert.assertEquals(new Long(9), task.totalElimintated());
         transact(graph -> {
             Assert.assertTrue(checkUnique(graph, stringIndex));
@@ -228,7 +236,7 @@ public class ResourceDeduplicationMapReduceIT {
     @Test
     public void testDuplicatesOnSameEntity() {
         String resourceIndex = transact(graph -> {
-           Entity something = thing.addEntity();
+           Entity something = thingy.addEntity();
            Resource<String> res = stringResource.putResource("This is something!");
            something.resource(res);
            something.resource(createDuplicateResource(graph, res));
@@ -237,9 +245,9 @@ public class ResourceDeduplicationMapReduceIT {
         transact(graph -> {
             Assert.assertFalse(checkUnique(graph, resourceIndex));
         });        
-        ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 
-        task.start(checkpoint -> { throw new RuntimeException("No checkpoint expected."); },
-                TaskConfiguration.of(Json.object(ResourceDeduplicationTask.KEYSPACE_CONFIG, keyspace())), (x, y) -> {});
+        ResourceDeduplicationTask task = new ResourceDeduplicationTask();
+        initTask(task);
+        task.start();
         Assert.assertEquals(new Long(1), task.totalElimintated());
         transact(graph -> {
             Assert.assertTrue(checkUnique(graph, resourceIndex));
@@ -249,9 +257,9 @@ public class ResourceDeduplicationMapReduceIT {
     @Test
     public void testDuplicatesOnDifferentEntity() {
         String resourceIndex = transact(graph -> {
-           Entity something = thing.addEntity();
-           Entity anotherthing = thing.addEntity();
-           Entity onemorething = thing.addEntity();
+           Entity something = thingy.addEntity();
+           Entity anotherthing = thingy.addEntity();
+           Entity onemorething = thingy.addEntity();
            Resource<String> res = stringResource.putResource("This is something!");
            something.resource(res);
            something.resource(createDuplicateResource(graph, res));
@@ -262,13 +270,13 @@ public class ResourceDeduplicationMapReduceIT {
         transact(graph -> {
             Assert.assertFalse(checkUnique(graph, resourceIndex));
         });        
-        ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 
-        task.start(checkpoint -> { throw new RuntimeException("No checkpoint expected."); },
-                TaskConfiguration.of(Json.object(ResourceDeduplicationTask.KEYSPACE_CONFIG, keyspace())), (x, y) -> {});
+        ResourceDeduplicationTask task = new ResourceDeduplicationTask();
+        initTask(task);
+        task.start();
         Assert.assertEquals(new Long(3), task.totalElimintated());
         transact(graph -> {
             Assert.assertTrue(checkUnique(graph, resourceIndex));
-            Resource<String> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, resourceIndex);
+            Resource<String> res = graph.admin().getConcept(Schema.VertexProperty.INDEX, resourceIndex);
             Assert.assertEquals(3, res.ownerInstances().size());
         });        
     }
@@ -286,20 +294,20 @@ public class ResourceDeduplicationMapReduceIT {
             res = createDuplicateResource(graph, res);
             relation.addRolePlayer(related2, res);
             return indexOf(graph, res);
-         });        
-         transact(graph -> {
-             Assert.assertFalse(checkUnique(graph, resourceIndex));
-         });        
-         ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 
-         task.start(checkpoint -> { throw new RuntimeException("No checkpoint expected."); },
-                 TaskConfiguration.of(Json.object(ResourceDeduplicationTask.KEYSPACE_CONFIG, keyspace())), (x, y) -> {});
+        });
+        transact(graph -> {
+            Assert.assertFalse(checkUnique(graph, resourceIndex));
+        });
+        ResourceDeduplicationTask task = new ResourceDeduplicationTask();
+        initTask(task);
+        task.start();
         Assert.assertEquals(new Long(1), task.totalElimintated());
-         transact(graph -> {
-             Assert.assertTrue(checkUnique(graph, resourceIndex));
-             Resource<String> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, resourceIndex);
-             Assert.assertEquals(1, res.relations(related1).size());
-             Assert.assertEquals(1, res.relations(related2).size());
-         });        
+        transact(graph -> {
+            Assert.assertTrue(checkUnique(graph, resourceIndex));
+            Resource<String> res = graph.admin().getConcept(Schema.VertexProperty.INDEX, resourceIndex);
+            Assert.assertEquals(1, res.relations(related1).size());
+            Assert.assertEquals(1, res.relations(related2).size());
+        });
     }
 
     /**
@@ -310,9 +318,9 @@ public class ResourceDeduplicationMapReduceIT {
     @Ignore
     public void testDuplicatesAcrossTheBoard() {
         String [] resourceKeys = transact(graph -> {
-           Entity t1 = thing.addEntity(), 
-                  t2 = thing.addEntity(),
-                  t3 = thing.addEntity();
+           Entity t1 = thingy.addEntity(), 
+                  t2 = thingy.addEntity(),
+                  t3 = thingy.addEntity();
            Relation r1 = related.addRelation(),
                     r2 = related.addRelation();
            
@@ -337,17 +345,17 @@ public class ResourceDeduplicationMapReduceIT {
            r1.addRolePlayer(related1, createDuplicateResource(graph, fres));
            return new String[] { indexOf(graph, sres), indexOf(graph, fres) };
         });
-        ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 
-        task.start(checkpoint -> { throw new RuntimeException("No checkpoint expected."); },
-                TaskConfiguration.of(Json.object(ResourceDeduplicationTask.KEYSPACE_CONFIG, keyspace())), (x, y) -> {});
+        ResourceDeduplicationTask task = new ResourceDeduplicationTask();
+        initTask(task);
+        task.start();
         Assert.assertEquals(new Long(7), task.totalElimintated());
         transact(graph -> {
             for (String key : resourceKeys)
                 Assert.assertTrue(checkUnique(graph, key));
-            Resource<String> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, resourceKeys[0]);
+            Resource<String> res = graph.admin().getConcept(Schema.VertexProperty.INDEX, resourceKeys[0]);
             Assert.assertEquals(1, res.relations(related1).size());
             Assert.assertEquals(1, res.relations(related2).size());
-            Resource<Float> fres = graph.admin().getConcept(Schema.ConceptProperty.INDEX, resourceKeys[1]);
+            Resource<Float> fres = graph.admin().getConcept(Schema.VertexProperty.INDEX, resourceKeys[1]);
             Assert.assertEquals(1, fres.relations(related1).size());
             Assert.assertEquals(1, fres.relations(related2).size());
         });
@@ -361,7 +369,7 @@ public class ResourceDeduplicationMapReduceIT {
     @Ignore
     public void testDeleteUnattached() {
         final Entity [] entities = transact(graph -> {
-            return new Entity[] { thing.addEntity(), thing.addEntity(), thing.addEntity() };            
+            return new Entity[] { thingy.addEntity(), thingy.addEntity(), thingy.addEntity() };            
         });
         
         String [] resourceKeys = transact(graph -> {
@@ -381,14 +389,20 @@ public class ResourceDeduplicationMapReduceIT {
             for (Entity e : entities)
                 e.delete();
         });
-        ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 
-        task.start(checkpoint -> { throw new RuntimeException("No checkpoint expected."); }, 
-                    TaskConfiguration.of(Json.object(ResourceDeduplicationTask.KEYSPACE_CONFIG, keyspace(),
-                            ResourceDeduplicationTask.DELETE_UNATTACHED_CONFIG, true)), (x, y) -> {});
+        ResourceDeduplicationTask task = new ResourceDeduplicationTask();
+        task.initialize(
+                checkpoint -> { throw new RuntimeException("No checkpoint expected."); },
+                TaskConfiguration.of(Json.object(ResourceDeduplicationTask.KEYSPACE_CONFIG, keyspace(),
+                ResourceDeduplicationTask.DELETE_UNATTACHED_CONFIG, true)), (x, y) -> {},
+                null,
+                null,
+                engine.server().factory()
+        );
+        task.start();
         Assert.assertEquals(new Long(3), task.totalElimintated());        
         transact(graph -> {
             for (String key : resourceKeys)
-                Assert.assertNull(graph.admin().getConcept(Schema.ConceptProperty.INDEX, key)); 
+                Assert.assertNull(graph.admin().getConcept(Schema.VertexProperty.INDEX, key));
         });
     }
 }

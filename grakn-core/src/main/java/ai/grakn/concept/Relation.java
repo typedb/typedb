@@ -28,7 +28,7 @@ import java.util.Set;
 
 /**
  * <p>
- *     Encapsulates relationships between {@link Instance}
+ *     Encapsulates relationships between {@link Thing}
  * </p>
  *
  * <p>
@@ -40,7 +40,7 @@ import java.util.Set;
  * @author fppt
  *
  */
-public interface Relation extends Instance {
+public interface Relation extends Thing {
     //------------------------------------- Modifiers ----------------------------------
     /**
      * Creates a relation from this instance to the provided resource.
@@ -64,30 +64,30 @@ public interface Relation extends Instance {
 
     /**
      * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
-     * @see RoleType
+     * @see Role
      *
      * @return A list of all the role types and the instances playing them in this relation.
      */
     @CheckReturnValue
-    Map<RoleType, Set<Instance>> allRolePlayers();
+    Map<Role, Set<Thing>> allRolePlayers();
 
     /**
-     * Retrieves a list of every {@link Instance} involved in the {@link Relation}, filtered by {@link RoleType} played.
-     * @param roleTypes used to filter the returned instances only to ones that play any of the role types.
+     * Retrieves a list of every {@link Thing} involved in the {@link Relation}, filtered by {@link Role} played.
+     * @param roles used to filter the returned instances only to ones that play any of the role types.
      *                  If blank, returns all role players.
-     * @return a list of every {@link Instance} involved in the {@link Relation}.
+     * @return a list of every {@link Thing} involved in the {@link Relation}.
      */
     @CheckReturnValue
-    Collection<Instance> rolePlayers(RoleType... roleTypes);
+    Collection<Thing> rolePlayers(Role... roles);
 
     /**
      * Expands this Relation to include a new role player which is playing a specific role.
      *
-     * @param roleType The Role Type of the new role player.
-     * @param instance The new role player.
+     * @param role The Role Type of the new role player.
+     * @param thing The new role player.
      * @return The Relation itself.
      *
      * @throws PropertyNotUniqueException if the concept is only allowed to play this role once.
      */
-    Relation addRolePlayer(RoleType roleType, Instance instance);
+    Relation addRolePlayer(Role role, Thing thing);
 }

@@ -25,10 +25,9 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+
 import java.util.Set;
 import java.util.stream.Stream;
-
-import static ai.grakn.graql.Graql.var;
 
 /**
  *
@@ -42,7 +41,7 @@ import static ai.grakn.graql.Graql.var;
 public class NeqPredicate extends Predicate<Var> {
 
     public NeqPredicate(Var varName, NeqProperty prop, ReasonerQuery parent){
-        super(var(varName).neq(var(prop.getVar().getVarName())).admin(), parent);
+        super(varName.neq(prop.getVar().getVarName()).admin(), parent);
     }
     public NeqPredicate(NeqPredicate a){
         super(a);

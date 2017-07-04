@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -43,13 +43,13 @@ import java.util.Set;
  */
 public class LabelProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
-    private final TypeLabel label;
+    private final Label label;
 
-    public LabelProperty(TypeLabel label) {
+    public LabelProperty(Label label) {
         this.label = label;
     }
 
-    public TypeLabel getLabelValue() {
+    public Label getLabelValue() {
         return label;
     }
 

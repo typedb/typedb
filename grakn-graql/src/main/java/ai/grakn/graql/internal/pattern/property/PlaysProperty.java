@@ -20,9 +20,10 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.Graql;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
+import ai.grakn.concept.Label;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -43,9 +44,9 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
 /**
  * Reperesents the {@code plays} property on a {@link ai.grakn.concept.Type}.
  *
- * This property relates a {@link ai.grakn.concept.Type} and a {@link RoleType}. It indicates that an
- * {@link ai.grakn.concept.Instance} whose type is this {@link ai.grakn.concept.Type} is permitted to be a role-player
- * playing the role of the given {@link RoleType}.
+ * This property relates a {@link ai.grakn.concept.Type} and a {@link Role}. It indicates that an
+ * {@link Thing} whose type is this {@link ai.grakn.concept.Type} is permitted to be a role-player
+ * playing the role of the given {@link Role}.
  *
  * @author Felix Chapman
  */
@@ -89,15 +90,15 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
-        RoleType roleType = insertQueryExecutor.getConcept(role).asRoleType();
-        concept.asType().plays(roleType);
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
+        Role role = insertQueryExecutor.getConcept(this.role).asRoleType();
+        concept.asType().plays(role);
     }
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        TypeLabel roleLabel = role.getTypeLabel().orElseThrow(() -> failDelete(this));
-        concept.asType().deletePlays(graph.getType(roleLabel));
+        Label roleLabel = role.getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
+        concept.asType().deletePlays(graph.getOntologyConcept(roleLabel));
     }
 
     @Override
@@ -120,12 +121,12 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName();
+        Var varName = var.getVarName().asUserDefined();
         VarPatternAdmin typeVar = this.getRole();
-        Var typeVariable = typeVar.getVarName();
+        Var typeVariable = typeVar.getVarName().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
-        VarPatternAdmin resVar = Graql.var(varName).plays(Graql.var(typeVariable)).admin();
+        VarPatternAdmin resVar = varName.plays(typeVariable).admin();
         return new TypeAtom(resVar, predicate, parent);
     }
 }

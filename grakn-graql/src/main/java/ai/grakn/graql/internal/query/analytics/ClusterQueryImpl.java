@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
@@ -52,26 +52,26 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         if (!selectedTypesHaveInstance()) return (T) Collections.emptyMap();
 
         ComputerResult result;
-        Set<TypeLabel> withResourceRelationTypes = getHasResourceRelationTypes();
-        withResourceRelationTypes.addAll(subTypeLabels);
+        Set<Label> withResourceRelationTypes = getHasResourceRelationTypes();
+        withResourceRelationTypes.addAll(subLabels);
 
         String randomId = getRandomJobId();
 
-        Set<TypeId> withResourceRelationTypeIds =
+        Set<LabelId> withResourceRelationLabelIds =
                 withResourceRelationTypes.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
-        Set<TypeId> subTypeIds =
-                subTypeLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+        Set<LabelId> subLabelIds =
+                subLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
 
         if (members) {
             if (anySize) {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationTypeIds, randomId),
-                        new ClusterMemberMapReduce(subTypeIds,
+                        new ConnectedComponentVertexProgram(withResourceRelationLabelIds, randomId),
+                        new ClusterMemberMapReduce(subLabelIds,
                                 ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId));
             } else {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationTypeIds, randomId),
-                        new ClusterMemberMapReduce(subTypeIds,
+                        new ConnectedComponentVertexProgram(withResourceRelationLabelIds, randomId),
+                        new ClusterMemberMapReduce(subLabelIds,
                                 ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize));
             }
             LOGGER.info("ConnectedComponentsVertexProgram is done in "
@@ -80,13 +80,13 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         } else {
             if (anySize) {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationTypeIds, randomId),
-                        new ClusterSizeMapReduce(subTypeIds,
+                        new ConnectedComponentVertexProgram(withResourceRelationLabelIds, randomId),
+                        new ClusterSizeMapReduce(subLabelIds,
                                 ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId));
             } else {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationTypeIds, randomId),
-                        new ClusterSizeMapReduce(subTypeIds,
+                        new ConnectedComponentVertexProgram(withResourceRelationLabelIds, randomId),
+                        new ClusterSizeMapReduce(subLabelIds,
                                 ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize));
             }
             LOGGER.info("ConnectedComponentsVertexProgram is done in "
@@ -119,8 +119,8 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     }
 
     @Override
-    public ClusterQuery<T> in(Collection<TypeLabel> subTypeLabels) {
-        return (ClusterQuery<T>) super.in(subTypeLabels);
+    public ClusterQuery<T> in(Collection<Label> subLabels) {
+        return (ClusterQuery<T>) super.in(subLabels);
     }
 
     @Override
@@ -148,9 +148,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
 
         ClusterQueryImpl<?> that = (ClusterQueryImpl<?>) o;
 
-        if (members != that.members) return false;
-        if (anySize != that.anySize) return false;
-        return clusterSize == that.clusterSize;
+        return members == that.members && anySize == that.anySize && clusterSize == that.clusterSize;
     }
 
     @Override

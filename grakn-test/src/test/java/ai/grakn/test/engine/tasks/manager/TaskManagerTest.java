@@ -125,7 +125,6 @@ public class TaskManagerTest {
         );
     }
 
-    @Ignore// Failing randomly - may be a race condition
     @Property(trials=10)
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(TaskState task, TaskManager manager) {
         manager.stopTask(task.getId());
@@ -137,7 +136,6 @@ public class TaskManagerTest {
         assertThat(completedTasks(), empty());
     }
 
-    @Ignore// Failing randomly - may be a race condition
     @Property(trials=10)
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(TaskState task, TaskManager manager) {
         manager.stopTask(task.getId());

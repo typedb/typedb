@@ -4,16 +4,16 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
@@ -30,7 +30,6 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -82,19 +81,19 @@ public class GraknGraphTest extends GraphTestBase {
 
         assertNull(graknGraph.getEntityType(entityTypeLabel));
         assertNull(graknGraph.getRelationType(relationTypeLabel));
-        assertNull(graknGraph.getRoleType(roleTypeLabel));
+        assertNull(graknGraph.getRole(roleTypeLabel));
         assertNull(graknGraph.getResourceType(resourceTypeLabel));
         assertNull(graknGraph.getRuleType(ruleTypeLabel));
 
         EntityType entityType = graknGraph.putEntityType(entityTypeLabel);
         RelationType relationType = graknGraph.putRelationType(relationTypeLabel);
-        RoleType roleType = graknGraph.putRoleType(roleTypeLabel);
+        Role role = graknGraph.putRole(roleTypeLabel);
         ResourceType resourceType = graknGraph.putResourceType(resourceTypeLabel, ResourceType.DataType.STRING);
         RuleType ruleType = graknGraph.putRuleType(ruleTypeLabel);
 
         assertEquals(entityType, graknGraph.getEntityType(entityTypeLabel));
         assertEquals(relationType, graknGraph.getRelationType(relationTypeLabel));
-        assertEquals(roleType, graknGraph.getRoleType(roleTypeLabel));
+        assertEquals(role, graknGraph.getRole(roleTypeLabel));
         assertEquals(resourceType, graknGraph.getResourceType(resourceTypeLabel));
         assertEquals(ruleType, graknGraph.getRuleType(ruleTypeLabel));
     }
@@ -103,9 +102,9 @@ public class GraknGraphTest extends GraphTestBase {
     public void whenGettingSubTypesFromRootMeta_IncludeAllTypes(){
         EntityType sampleEntityType = graknGraph.putEntityType("Sample Entity Type");
         RelationType sampleRelationType = graknGraph.putRelationType("Sample Relation Type");
-        RoleType sampleRoleType = graknGraph.putRoleType("Sample Role Type");
+        Role sampleRole = graknGraph.putRole("Sample Role Type");
 
-        assertThat(graknGraph.admin().getMetaConcept().subTypes(), containsInAnyOrder(
+        assertThat(graknGraph.admin().getMetaConcept().subs(), containsInAnyOrder(
                 graknGraph.admin().getMetaConcept(),
                 graknGraph.admin().getMetaRoleType(),
                 graknGraph.admin().getMetaRelationType(),
@@ -116,7 +115,7 @@ public class GraknGraphTest extends GraphTestBase {
                 graknGraph.admin().getMetaRuleInference(),
                 sampleEntityType,
                 sampleRelationType,
-                sampleRoleType
+                sampleRole
         ));
     }
 
@@ -124,20 +123,20 @@ public class GraknGraphTest extends GraphTestBase {
     public void whenClosingReadOnlyGraph_EnsureTypesAreCached(){
         assertCacheOnlyContainsMetaTypes();
         //noinspection ResultOfMethodCallIgnored
-        graknGraph.getMetaConcept().subTypes(); //This loads some types into transaction cache
+        graknGraph.getMetaConcept().subs(); //This loads some types into transaction cache
         graknGraph.abort();
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.READ);
-        Collection<? extends Type> types = graknGraph.getMetaConcept().subTypes();
+        Collection<? extends OntologyConcept> types = graknGraph.getMetaConcept().subs();
         graknGraph.abort();
 
-        for (Type type : graknGraph.getGraphCache().getCachedTypes().values()) {
+        for (OntologyConcept type : graknGraph.getGraphCache().getCachedTypes().values()) {
             assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", types.contains(type));
         }
     }
     private void assertCacheOnlyContainsMetaTypes(){
-        Set<TypeLabel> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(Collectors.toSet());
+        Set<Label> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(Collectors.toSet());
         graknGraph.getGraphCache().getCachedTypes().keySet().forEach(cachedLabel -> {
             assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel));
         });
@@ -146,18 +145,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void whenBuildingAConceptFromAVertex_ReturnConcept(){
         EntityTypeImpl et = (EntityTypeImpl) graknGraph.putEntityType("Sample Entity Type");
-        assertEquals(et, graknGraph.admin().buildConcept(et.getVertex()));
-    }
-
-    @Test
-    public void whenExecutingGraqlTraversalFromGraph_ReturnExpectedResults(){
-        EntityType type = graknGraph.putEntityType("Concept Type");
-        Entity entity = type.addEntity();
-
-        Collection<Concept> results = graknGraph.graql().match(var("x").isa(type.getLabel().getValue())).
-                execute().iterator().next().values();
-
-        assertThat(results, containsInAnyOrder(entity));
+        assertEquals(et, graknGraph.factory().buildConcept(et.vertex()));
     }
 
     @Test
@@ -171,18 +159,18 @@ public class GraknGraphTest extends GraphTestBase {
 
         //Meta Types
         RelationType relationType = graknGraph.admin().getMetaRelationType();
-        RoleType roleType = graknGraph.admin().getMetaRoleType();
+        Role role = graknGraph.admin().getMetaRoleType();
 
         //Check nothing is revealed when returning result sets
         assertThat(type.plays(), is(empty()));
         assertThat(resourceType.plays(), is(empty()));
-        assertThat(graknGraph.getMetaRelationType().subTypes(), containsInAnyOrder(relationType));
-        assertThat(graknGraph.getMetaRoleType().subTypes(), containsInAnyOrder(roleType));
+        assertThat(graknGraph.getMetaRelationType().subs(), containsInAnyOrder(relationType));
+        assertThat(graknGraph.getMetaRoleType().subs(), containsInAnyOrder(role));
 
         //Check things are still returned when explicitly asking for them
         RelationType has = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
-        RoleType hasOwner = graknGraph.getRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType.getLabel()).getValue());
-        RoleType hasValue = graknGraph.getRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType.getLabel()).getValue());
+        Role hasOwner = graknGraph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType.getLabel()).getValue());
+        Role hasValue = graknGraph.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType.getLabel()).getValue());
         assertNotNull(hasOwner);
         assertNotNull(hasValue);
         assertNotNull(has);
@@ -192,8 +180,8 @@ public class GraknGraphTest extends GraphTestBase {
         assertTrue(graknGraph.implicitConceptsVisible());
 
         //Now check the result sets again
-        assertThat(graknGraph.getMetaRelationType().subTypes(), containsInAnyOrder(relationType, has));
-        assertThat(graknGraph.getMetaRoleType().subTypes(), containsInAnyOrder(roleType, hasOwner, hasValue));
+        assertThat(graknGraph.getMetaRelationType().subs(), containsInAnyOrder(relationType, has));
+        assertThat(graknGraph.getMetaRoleType().subs(), containsInAnyOrder(role, hasOwner, hasValue));
         assertThat(type.plays(), containsInAnyOrder(hasOwner));
         assertThat(resourceType.plays(), containsInAnyOrder(hasValue));
     }
@@ -242,8 +230,8 @@ public class GraknGraphTest extends GraphTestBase {
         //Check Central cache is empty
         assertCacheOnlyContainsMetaTypes();
 
-        RoleType r1 = graknGraph.putRoleType("r1");
-        RoleType r2 = graknGraph.putRoleType("r2");
+        Role r1 = graknGraph.putRole("r1");
+        Role r2 = graknGraph.putRole("r2");
         EntityType e1 = graknGraph.putEntityType("e1").plays(r1).plays(r2);
         RelationType rel1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
 
@@ -252,7 +240,7 @@ public class GraknGraphTest extends GraphTestBase {
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         //Check cache is in good order
-        Collection<Type> cachedValues = graknGraph.getGraphCache().getCachedTypes().values();
+        Collection<OntologyConcept> cachedValues = graknGraph.getGraphCache().getCachedTypes().values();
         assertTrue("Type [" + r1 + "] was not cached", cachedValues.contains(r1));
         assertTrue("Type [" + r2 + "] was not cached", cachedValues.contains(r2));
         assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
@@ -265,13 +253,13 @@ public class GraknGraphTest extends GraphTestBase {
         pool.submit(() -> {
             GraknGraph innerGraph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
             EntityType entityType = innerGraph.getEntityType("e1");
-            RoleType role = innerGraph.getRoleType("r1");
+            Role role = innerGraph.getRole("r1");
             entityType.deletePlays(role);
         }).get();
 
         //Check the above mutation did not affect central repo
-        Type foundE1 = graknGraph.getGraphCache().getCachedTypes().get(e1.getLabel());
-        assertTrue("Main cache was affected by transaction", foundE1.plays().contains(r1));
+        OntologyConcept foundE1 = graknGraph.getGraphCache().getCachedTypes().get(e1.getLabel());
+        assertTrue("Main cache was affected by transaction", ((Type) foundE1).plays().contains(r1));
     }
 
     @Test
@@ -303,7 +291,7 @@ public class GraknGraphTest extends GraphTestBase {
         //Fail Some Mutations
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
         failMutation(graknGraph, () -> graknGraph.putEntityType(entityType));
-        failMutation(graknGraph, () -> graknGraph.putRoleType(roleType1));
+        failMutation(graknGraph, () -> graknGraph.putRole(roleType1));
         failMutation(graknGraph, () -> graknGraph.putRelationType(relationType1));
 
         //Pass some mutations
@@ -311,8 +299,8 @@ public class GraknGraphTest extends GraphTestBase {
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
         EntityType entityT = graknGraph.putEntityType(entityType);
         entityT.addEntity();
-        RoleType roleT1 = graknGraph.putRoleType(roleType1);
-        RoleType roleT2 = graknGraph.putRoleType(roleType2);
+        Role roleT1 = graknGraph.putRole(roleType1);
+        Role roleT2 = graknGraph.putRole(roleType2);
         RelationType relationT1 = graknGraph.putRelationType(relationType1).relates(roleT1);
         RelationType relationT2 = graknGraph.putRelationType(relationType2).relates(roleT2);
         ResourceType<String> resourceT = graknGraph.putResourceType(resourceType, ResourceType.DataType.STRING);
@@ -360,6 +348,7 @@ public class GraknGraphTest extends GraphTestBase {
         failAtOpeningGraph(session, GraknTxType.WRITE, keyspace);
         failAtOpeningGraph(session, GraknTxType.READ, keyspace);
     }
+
     private void failAtOpeningGraph(GraknSession session, GraknTxType txType, String keyspace){
         Exception exception = null;
         try{
@@ -376,7 +365,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void whenShardingSuperNode_EnsureNewInstancesGoToNewShard(){
         EntityTypeImpl entityType = (EntityTypeImpl) graknGraph.putEntityType("The Special Type");
-        EntityType s1 = entityType.currentShard();
+        Shard s1 = entityType.currentShard();
 
         //Add 3 instances to first shard
         Entity s1_e1 = entityType.addEntity();
@@ -384,7 +373,7 @@ public class GraknGraphTest extends GraphTestBase {
         Entity s1_e3 = entityType.addEntity();
         graknGraph.admin().shard(entityType.getId());
 
-        EntityType s2 = entityType.currentShard();
+        Shard s2 = entityType.currentShard();
 
         //Add 5 instances to second shard
         Entity s2_e1 = entityType.addEntity();
@@ -394,7 +383,7 @@ public class GraknGraphTest extends GraphTestBase {
         Entity s2_e5 = entityType.addEntity();
 
         graknGraph.admin().shard(entityType.getId());
-        EntityType s3 = entityType.currentShard();
+        Shard s3 = entityType.currentShard();
 
         //Add 2 instances to 3rd shard
         Entity s3_e1 = entityType.addEntity();
@@ -404,121 +393,8 @@ public class GraknGraphTest extends GraphTestBase {
         assertThat(entityType.shards(), containsInAnyOrder(s1, s2, s3));
 
         //Check shards have correct instances
-        assertThat(s1.instances(), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
-        assertThat(s2.instances(), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
-        assertThat(s3.instances(), containsInAnyOrder(s3_e1, s3_e2));
-    }
-
-    @Test
-    public void checkComplexSampleOntologyCanLoad() throws InvalidGraphException {
-        graknGraph.graql().parse("insert\n" +
-                "user-interaction sub relation is-abstract;\n" +
-                "qa sub user-interaction\n" +
-                "    has helpful-votes\n" +
-                "    has unhelpful-votes\n" +
-                "    relates asked-question\n" +
-                "    relates given-answer\n" +
-                "    relates item;\n" +
-                "product-review sub user-interaction\n" +
-                "    has rating\n" +
-                "    relates reviewer\n" +
-                "    relates feedback\n" +
-                "    relates item;\n" +
-                "comment sub entity\n" +
-                "    has text\n" +
-                "    has time;\n" +
-                "time sub resource datatype long;\n" +
-                "question sub comment\n" +
-                "    plays asked-question; \n" +
-                "yes-no sub question;\n" +
-                "open sub question;\n" +
-                "answer sub comment\n" +
-                "    plays given-answer\n" +
-                "    has answer-type;\n" +
-                "answer-type sub resource datatype string;\n" +
-                "review sub comment\n" +
-                "    plays feedback\n" +
-                "    has summary;\n" +
-                "summary sub text;\n" +
-                "text sub resource datatype string;\n" +
-                "rating sub resource datatype double;\n" +
-                "helpful-votes sub resource datatype long;\n" +
-                "unhelpful-votes sub resource datatype long;\n" +
-                "ID sub resource is-abstract datatype string;\n" +
-                "product sub entity\n" +
-                "    has asin\n" +
-                "    has price\n" +
-                "    has image-url\n" +
-                "    has brand\n" +
-                "    has name\n" +
-                "    has text\n" +
-                "    plays item\n" +
-                "    plays recommended;\n" +
-                "asin sub ID;\n" +
-                "image-url sub resource datatype string;\n" +
-                "brand sub name;\n" +
-                "price sub resource datatype double;\n" +
-                "category sub entity\n" +
-                "    has name\n" +
-                "    plays subcategory\n" +
-                "    plays supercategory\n" +
-                "    plays 'label'\n" +
-                "    plays item\n" +
-                "    plays recommended;\n" +
-                "name sub resource datatype string;\n" +
-                "hierarchy sub relation\n" +
-                "    relates subcategory\n" +
-                "    relates supercategory;\n" +
-                "category-assignment sub relation\n" +
-                "    has rank\n" +
-                "    relates item #product\n" +
-                "    relates 'label'; #category \n" +
-                "rank sub resource datatype long;\n" +
-                "user sub entity\n" +
-                "    has uid\n" +
-                "    has username\n" +
-                "    plays reviewer\n" +
-                "    plays buyer;\n" +
-                "uid sub ID;\n" +
-                "username sub name;\n" +
-                "completed-recommendation sub relation\n" +
-                "    relates successful-recommendation\n" +
-                "    relates buyer;\n" +
-                "implied-recommendation sub relation\n" +
-                "    relates category-recommendation\n" +
-                "    relates product-recommendation;\n" +
-                "recommendation sub relation is-abstract\n" +
-                "    plays successful-recommendation\n" +
-                "    plays product-recommendation;\n" +
-                "co-categories sub relation\n" +
-                "    plays category-recommendation\n" +
-                "    relates item\n" +
-                "    relates recommended;\n" +
-                "also-viewed sub recommendation\n" +
-                "    relates item\n" +
-                "    relates recommended;\n" +
-                "also-bought sub recommendation\n" +
-                "    relates item\n" +
-                "    relates recommended;\n" +
-                "bought-together sub recommendation\n" +
-                "    relates item\n" +
-                "    relates recommended;\n" +
-                "transaction sub relation\n" +
-                "    relates buyer\n" +
-                "    relates item;\n" +
-                "asked-question sub role;\n" +
-                "given-answer sub role;\n" +
-                "item sub role;\n" +
-                "feedback sub role;\n" +
-                "reviewer sub role;\n" +
-                "buyer sub role;\n" +
-                "recommended sub role;\n" +
-                "subcategory sub role;\n" +
-                "supercategory sub role;\n" +
-                "'label' sub role;\n" +
-                "successful-recommendation sub role;\n" +
-                "category-recommendation sub role;\n" +
-                "product-recommendation sub role;").execute();
-        graknGraph.commit();
+        assertThat(s1.links().collect(Collectors.toSet()), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
+        assertThat(s2.links().collect(Collectors.toSet()), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
+        assertThat(s3.links().collect(Collectors.toSet()), containsInAnyOrder(s3_e1, s3_e2));
     }
 }

@@ -18,8 +18,10 @@
 
 package ai.grakn.engine;
 
+import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
+import com.google.common.base.StandardSystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,9 +63,6 @@ public class GraknEngineConfig {
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
 
-    private static final String SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY = "grakn.dir";
-    private static final String SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE = "grakn.conf";
-
     // Engine Config
     public static final String TASK_MANAGER_IMPLEMENTATION = "taskmanager.implementation";
 
@@ -83,13 +82,7 @@ public class GraknEngineConfig {
 
     private final int MAX_NUMBER_OF_THREADS = 120;
     private final Properties prop;
-    private static GraknEngineConfig instance = null;
     private int numOfThreads = -1;
-
-    public synchronized static GraknEngineConfig getInstance() {
-        if (instance == null) instance = GraknEngineConfig.create();
-        return instance;
-    }
 
     public static GraknEngineConfig create() {
         return GraknEngineConfig.read(getConfigFilePath());
@@ -127,7 +120,7 @@ public class GraknEngineConfig {
      * If it is not set, it sets it to the default one.
      */
     private static void setConfigFilePath() {
-        configFilePath = (System.getProperty(SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE) != null) ? System.getProperty(SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE) : GraknEngineConfig.DEFAULT_CONFIG_FILE;
+        configFilePath = (GraknSystemProperty.CONFIGURATION_FILE.value() != null) ? GraknSystemProperty.CONFIGURATION_FILE.value() : GraknEngineConfig.DEFAULT_CONFIG_FILE;
         if (!Paths.get(configFilePath).isAbsolute()) {
             configFilePath = getProjectPath() + configFilePath;
         }
@@ -171,7 +164,7 @@ public class GraknEngineConfig {
      * @return The requested property as a full path. If it is specified as a relative path,
      * this method will return the path prepended with the project path.
      */
-    String getPath(String path) {
+    public String getPath(String path) {
         String propertyPath = prop.getProperty(path);
         if (Paths.get(propertyPath).isAbsolute()) {
             return propertyPath;
@@ -185,17 +178,17 @@ public class GraknEngineConfig {
      * user.dir folder.
      */
     private static String getProjectPath() {
-        if (System.getProperty(SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY) == null) {
-            System.setProperty(SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY, System.getProperty("user.dir"));
+        if (GraknSystemProperty.CURRENT_DIRECTORY.value() == null) {
+            GraknSystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
         }
 
-        return System.getProperty(SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY) + "/";
+        return GraknSystemProperty.CURRENT_DIRECTORY.value() + "/";
     }
 
     /**
      * @return The path to the config file currently in use. Default: /conf/main/grakn.properties
      */
-    static String getConfigFilePath() {
+    public static String getConfigFilePath() {
         if (configFilePath == null) setConfigFilePath();
         return configFilePath;
     }
@@ -223,24 +216,18 @@ public class GraknEngineConfig {
     public int getPropertyAsInt(String property) {
         return Integer.parseInt(getProperty(property));
     }
-
-    public int getPropertyAsInt(String property, int defaultValue) {
-        return prop.containsKey(property) ? Integer.parseInt(prop.getProperty(property))
-                                          : defaultValue;
-    }
     
     public long getPropertyAsLong(String property) {
         return Long.parseLong(getProperty(property));
     }
-    
-    public long getPropertyAsLong(String property, long defaultValue) {
-        return prop.containsKey(property) ? Long.parseLong(prop.getProperty(property))
+
+    public boolean getPropertyAsBool(String property, boolean defaultValue) {
+        return prop.containsKey(property) ? Boolean.parseBoolean(prop.getProperty(property))
                                           : defaultValue;
     }
 
-    boolean getPropertyAsBool(String property, boolean defaultValue) {
-        return prop.containsKey(property) ? Boolean.parseBoolean(prop.getProperty(property))
-                                          : defaultValue;
+    public String uri() {
+        return getProperty(SERVER_HOST_NAME) + ":" + getProperty(SERVER_PORT_NUMBER);
     }
 
     static final String GRAKN_ASCII =

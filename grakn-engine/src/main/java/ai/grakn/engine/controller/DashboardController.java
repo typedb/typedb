@@ -18,35 +18,12 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.RoleType;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.exception.GraknServerException;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.Query;
-import ai.grakn.util.REST;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import mjson.Json;
-import spark.Request;
-import spark.Response;
-import spark.Service;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import static ai.grakn.GraknTxType.READ;
 import static ai.grakn.engine.controller.ConceptController.mandatoryRequestParameter;
 import static ai.grakn.engine.controller.ConceptController.retrieveExistingConcept;
 import static ai.grakn.engine.controller.ConceptController.validateRequest;
-import static ai.grakn.engine.controller.GraqlController.mandatoryQueryParameter;
-import static ai.grakn.engine.controller.GraqlController.queryParameter;
+import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.graql.internal.hal.HALBuilder.HALExploreConcept;
 import static ai.grakn.graql.internal.hal.HALBuilder.explanationAnswersToHAL;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
@@ -59,6 +36,28 @@ import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
 import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
 import static ai.grakn.util.REST.Response.Graql.RESPONSE;
 import static java.util.stream.Collectors.toList;
+
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Role;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.exception.GraknServerException;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Query;
+import ai.grakn.util.REST;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import mjson.Json;
+import spark.Request;
+import spark.Response;
+import spark.Service;
 
 /**
  * <p>
@@ -142,7 +141,7 @@ public class DashboardController {
             Json body = Json.object();
             Json responseField = Json.object();
             if (concept.isEntity()) {
-                Collection<RoleType> rolesOfType = concept.asEntity().type().plays();
+                Collection<Role> rolesOfType = concept.asEntity().type().plays();
 
                 responseField = Json.object(
                         "roles", getRoleTypes(rolesOfType, concept, limit, keyspace),
@@ -190,14 +189,14 @@ public class DashboardController {
         return body;
     }
 
-    private static List<Json> getRelationTypes(Collection<RoleType> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
+    private static List<Json> getRelationTypes(Collection<Role> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
         return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes().stream())
                 .map(relationType -> relationType.getLabel().getValue()).sorted()
                 .map(relationName -> Json.object("value", relationName, "href", String.format(RELATION_TYPES, concept.asInstance().type().getLabel().getValue(), concept.getId().getValue(), relationName, limit, keyspace, limit)))
                 .collect(toList());
     }
 
-    private static List<Json> getEntityTypes(Collection<RoleType> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
+    private static List<Json> getEntityTypes(Collection<Role> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
         return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes().stream())
                 .flatMap(relationType -> relationType.relates().stream().filter(roleType1 -> !roleTypesPlayerByConcept.contains(roleType1)))
                 .flatMap(roleType -> roleType.playedByTypes().stream().map(entityType -> entityType.getLabel().getValue()))
@@ -207,7 +206,7 @@ public class DashboardController {
                 .collect(toList());
     }
 
-    private static List<Json> getRoleTypes(Collection<RoleType> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
+    private static List<Json> getRoleTypes(Collection<Role> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
         return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes().stream())
                 .flatMap(relationType -> relationType.relates().stream().filter(roleType1 -> !roleTypesPlayerByConcept.contains(roleType1)))
                 .map(roleType -> roleType.getLabel().getValue())

@@ -33,8 +33,8 @@ import javax.annotation.CheckReturnValue;
  *     A concept which can represent anything in the graph which wraps a tinkerpop {@link Vertex}.
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
- *     ({@link EntityType}, {@link RoleType}, {@link RelationType}, {@link RuleType} or {@link ResourceType})
- *     or an {@link Instance} ({@link Entity}, {@link Relation} , {@link Resource}, {@link Rule}).
+ *     ({@link EntityType}, {@link Role}, {@link RelationType}, {@link RuleType} or {@link ResourceType})
+ *     or an {@link Thing} ({@link Entity}, {@link Relation} , {@link Resource}, {@link Rule}).
  * </p>
  *
  * @author fppt
@@ -53,176 +53,192 @@ public interface Concept extends Comparable<Concept>{
     //------------------------------------- Other ---------------------------------
 
     /**
-     * Return as a Type if the Concept is a Type.
+     * Return as a {@link OntologyConcept} if the {@link Concept} is a {@link OntologyConcept}.
      *
-     * @return A Type if the concept is a Type
+     * @return A {@link OntologyConcept} if the {@link Concept} is a {@link OntologyConcept}
+     */
+    @CheckReturnValue
+    OntologyConcept asOntologyConcept();
+
+    /**
+     * Return as a {@link Type} if the {@link Concept} is a {@link Type}.
+     *
+     * @return A {@link Type} if the {@link Concept} is a {@link Type}
      */
     @CheckReturnValue
     Type asType();
 
     /**
-     * Return as an Instance if the Concept is an Instance.
+     * Return as an {@link Thing} if the {@link Concept} is an {@link Thing}.
      *
-     * @return An Instance if the concept is an Instance
+     * @return An {@link Thing} if the {@link Concept} is an {@link Thing}
      */
     @CheckReturnValue
-    Instance asInstance();
+    Thing asInstance();
 
     /**
-     * Return as an EntityType if the Concept is an Entity Type.
+     * Return as an {@link EntityType} if the {@link Concept} is an {@link EntityType}.
      *
-     * @return A Entity Type if the concept is an Entity Type
+     * @return A {@link EntityType} if the {@link Concept} is an {@link EntityType}
      */
     @CheckReturnValue
     EntityType asEntityType();
 
     /**
-     * Return as a RoleType if the Concept is a Role Type.
+     * Return as a {@link Role} if the {@link Concept} is a {@link Role}.
      *
-     * @return A Role Type if the concept is a Role Type
+     * @return A {@link Role} if the {@link Concept} is a {@link Role}
      */
     @CheckReturnValue
-    RoleType asRoleType();
+    Role asRoleType();
 
     /**
-     * Return as a Relation Type if the concept is a Relation Type.
+     * Return as a {@link RelationType} if the {@link Concept} is a {@link RelationType}.
      *
-     * @return A Relation Type if the concept is a Relation Type
+     * @return A {@link RelationType} if the {@link Concept} is a {@link RelationType}
      */
     @CheckReturnValue
     RelationType asRelationType();
 
     /**
-     * Return as a Resource Type if the Concept is a Resource Type.
+     * Return as a {@link RelationType} if the {@link Concept} is a {@link RelationType}
      *
-     * @return A Resource Type if the concept is a Resource Type
+     * @return A {@link RelationType} if the {@link Concept} is a {@link RelationType}
      */
     @CheckReturnValue
     <D> ResourceType<D> asResourceType();
 
     /**
-     * Return as a Rule Type if the Concept is a Rule Type.
+     * Return as a {@link RuleType} if the {@link Concept} is a {@link RuleType}.
      *
-     * @return A Rule Type if the concept is a Rule Type
+     * @return A {@link RuleType} if the {@link Concept} is a {@link RuleType}
      */
     @CheckReturnValue
     RuleType asRuleType();
 
     /**
-     * Return as an Entity, if the Concept is an Entity Instance.
-     * @return An Entity if the concept is an Instance
+     * Return as an {@link Entity}, if the {@link Concept} is an {@link Entity} {@link Thing}.
+     * @return An {@link Entity} if the {@link Concept} is a {@link Thing}
      */
     @CheckReturnValue
     Entity asEntity();
 
     /**
-     * Return as a Relation if the Concept is a Relation Instance.
+     * Return as a {@link Relation} if the {@link Concept} is a {@link Relation} {@link Thing}.
      *
-     * @return A Relation if the concept is a Relation
+     * @return A {@link Relation}  if the {@link Concept} is a {@link Relation}
      */
     @CheckReturnValue
     Relation asRelation();
 
     /**
-     * Return as a Resource if the Concept is a Resource Instance.
+     * Return as a {@link Resource}  if the {@link Concept} is a {@link Resource} {@link Thing}.
      *
-     * @return A Resource if the concept is a Resource
+     * @return A {@link Resource} if the {@link Concept} is a {@link Resource}
      */
     @CheckReturnValue
     <D> Resource<D> asResource();
 
     /**
-     * Return as a Rule if the Concept is a Rule Instance.
+     * Return as a {@link Rule} if the {@link Concept} is a {@link Rule} {@link Thing}.
      *
-     * @return A Rule if the concept is a Rule
+     * @return A {@link Rule} if the {@link Concept} is a {@link Rule}
      */
     @CheckReturnValue
     Rule asRule();
 
     /**
-     * Determine if the Concept is a Type.
+     * Determine if the {@link Concept} is a {@link OntologyConcept}
      *
-     * @return true if the concept is a Type
+     * @return true if the{@link Concept} concept is a {@link OntologyConcept}
+     */
+    @CheckReturnValue
+    boolean isOntologyConcept();
+
+    /**
+     * Determine if the {@link Concept} is a {@link Type}.
+     *
+     * @return true if the{@link Concept} concept is a {@link Type}
      */
     @CheckReturnValue
     boolean isType();
 
     /**
-     * Determine if the Concept is an Instance.
+     * Determine if the {@link Concept} is an {@link Thing}.
      *
-     * @return true if the concept is an Instance
+     * @return true if the {@link Concept} is an {@link Thing}
      */
     @CheckReturnValue
     boolean isInstance();
 
     /**
-     * Determine if the Concept is an Entity Type.
+     * Determine if the {@link Concept} is an {@link EntityType}.
      *
-     * @return true if the concept is an Entity Type
+     * @return true if the {@link Concept} is an {@link EntityType}.
      */
     @CheckReturnValue
     boolean isEntityType();
 
     /**
-     * Determine if the Concept is a Role Type.
+     * Determine if the {@link Concept} is a {@link Role}.
      *
-     * @return true if the concept is a Role Type
+     * @return true if the {@link Concept} is a {@link Role}
      */
     @CheckReturnValue
     boolean isRoleType();
 
     /**
-     * Determine if the Concept is a Relation Type.
+     * Determine if the {@link Concept} is a {@link RelationType}.
      *
-     * @return true if the concept is a Relation Type
+     * @return true if the {@link Concept} is a {@link RelationType}
      */
     @CheckReturnValue
     boolean isRelationType();
 
     /**
-     * Determine if the Concept is a Resource Type.
+     * Determine if the {@link Concept} is a {@link ResourceType}.
      *
-     * @return true if the concept is a Resource Type
+     * @return true if the{@link Concept} concept is a {@link ResourceType}
      */
     @CheckReturnValue
     boolean isResourceType();
 
     /**
-     * Determine if the Concept is a Rule Type.
+     * Determine if the {@link Concept} is a {@link RuleType}.
      *
-     * @return true if the concept is a Rule Type
+     * @return true if the {@link Concept} is a {@link RuleType}
      */
     @CheckReturnValue
     boolean isRuleType();
 
     /**
-     * Determine if the Concept is an Entity.
+     * Determine if the {@link Concept} is an {@link Entity}.
      *
-     * @return true if the concept is a Entity
+     * @return true if the {@link Concept} is a {@link Entity}
      */
     @CheckReturnValue
     boolean isEntity();
 
     /**
-     * Determine if the Concept is a Relation.
+     * Determine if the {@link Concept} is a {@link Relation}.
      *
-     * @return true if the concept is a Relation
+     * @return true if the {@link Concept} is a {@link Relation}
      */
     @CheckReturnValue
     boolean isRelation();
 
     /**
-     * Determine if the Concept is a Resource.
+     * Determine if the {@link Concept} is a {@link Resource}.
      *
-     * @return true if the concept is a Resource
+     * @return true if the {@link Concept} is a {@link Resource}
      */
     @CheckReturnValue
     boolean isResource();
 
     /**
-     * Determine if the Concept is a Rule.
+     * Determine if the {@link Concept} is a {@link Rule}.
      *
-     * @return true if the concept is a Rule
+     * @return true if the {@link Concept} is a {@link Rule}
      */
     @CheckReturnValue
     boolean isRule();

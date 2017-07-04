@@ -20,21 +20,21 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.util.Schema.ConceptProperty.INDEX;
+import static ai.grakn.util.Schema.VertexProperty.INDEX;
 
 class ResourceIndexFragment extends AbstractFragment {
 
     private final String resourceIndex;
 
-    ResourceIndexFragment(Var start, TypeLabel typeLabel, Object value) {
+    ResourceIndexFragment(Var start, Label label, Object value) {
         super(start);
-        this.resourceIndex = Schema.generateResourceIndex(typeLabel, value.toString());
+        this.resourceIndex = Schema.generateResourceIndex(label, value.toString());
     }
 
     @Override

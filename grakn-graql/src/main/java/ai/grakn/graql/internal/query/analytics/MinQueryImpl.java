@@ -20,8 +20,8 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.LabelId;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -47,16 +47,16 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceTypeLabels);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
-        Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
+        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
+        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
+        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
 
         String randomId = getRandomJobId();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds, randomId),
-                new MinMapReduce(statisticsResourceTypeIds, dataType, DegreeVertexProgram.DEGREE + randomId));
+                new DegreeStatisticsVertexProgram(allSubLabelIds, statisticsResourceLabelIds, randomId),
+                new MinMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE + randomId));
         Map<Serializable, Number> min = result.memory().get(MinMapReduce.class.getName());
 
         LOGGER.debug("Min = " + min.get(MapReduce.NullObject.instance()));
@@ -70,8 +70,8 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MinQuery of(Collection<TypeLabel> resourceTypeLabels) {
-        return (MinQuery) setStatisticsResourceType(resourceTypeLabels);
+    public MinQuery of(Collection<Label> resourceLabels) {
+        return (MinQuery) setStatisticsResourceType(resourceLabels);
     }
 
     @Override
@@ -80,8 +80,8 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MinQuery in(Collection<TypeLabel> subTypeLabels) {
-        return (MinQuery) super.in(subTypeLabels);
+    public MinQuery in(Collection<Label> subLabels) {
+        return (MinQuery) super.in(subLabels);
     }
 
     @Override

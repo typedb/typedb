@@ -20,14 +20,11 @@ package ai.grakn.engine.loader;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.postprocessing.GraphMutators;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskSubmitter;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -36,7 +33,6 @@ import mjson.Json;
 
 import java.util.Collection;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
@@ -51,46 +47,31 @@ import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
  *
  * @author Alexandra Orth
  */
-public class MutatorTask implements BackgroundTask {
-
-    private static final GraknEngineConfig CONFIG = GraknEngineConfig.getInstance();
-    private static final EngineGraknGraphFactory FACTORY = EngineGraknGraphFactory.create(CONFIG.getProperties());
+public class MutatorTask extends BackgroundTask {
 
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter) {
-        Collection<Query> inserts = getInserts(configuration);
-        GraphMutators.runBatchMutationWithRetry(FACTORY, configuration.json().at(REST.Request.KEYSPACE).asString(), (graph) ->
-                insertQueriesInOneTransaction(graph, inserts, taskSubmitter)
+    public boolean start() {
+        Collection<Query> inserts = getInserts(configuration());
+
+        String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
+        int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+
+        GraphMutators.runBatchMutationWithRetry(factory(), keyspace, maxRetry, (graph) ->
+                insertQueriesInOneTransaction(graph, inserts)
         );
 
         return true;
-    }
-
-    @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException("Loader task cannot be stopped while in progress");
-    }
-
-    @Override
-    public void pause() {
-        throw new UnsupportedOperationException("Loader task cannot be paused");
-    }
-
-    @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
-        throw new UnsupportedOperationException("Loader task cannot be resumed");
     }
 
     /**
      * Execute the given queries against the given graph. Return if the operation was successfully completed.
      * @param graph grakn graph in which to insert the data
      * @param inserts graql queries to insert into the graph
-     * @param taskSubmitter allows new commit logs to be submitted for post processing
      * @return true if the data was inserted, false otherwise
      */
-    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts, TaskSubmitter taskSubmitter) {
+    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts) {
         graph.showImplicitConcepts(true);
 
         inserts.forEach(q -> q.withGraph(graph).execute());
@@ -98,9 +79,9 @@ public class MutatorTask implements BackgroundTask {
         Optional<String> result = graph.admin().commitNoLogs();
         if(result.isPresent()){ //Submit more tasks if commit resulted in created commit logs
             String logs = result.get();
-            taskSubmitter.addTask(PostProcessingTask.createTask(this.getClass()),
+            addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration().getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY)),
                     PostProcessingTask.createConfig(graph.getKeyspace(), logs));
-            taskSubmitter.addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
+            addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
                     UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));
         }
 

@@ -18,12 +18,14 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import com.google.common.collect.ImmutableList;
-import java.util.Collections;
-import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.Collections;
+import java.util.Map;
 
 import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
 import static junit.framework.TestCase.assertNotNull;
@@ -38,7 +40,7 @@ public class UpperMacroTest {
 
     @Test
     public void applyLowerMacroToNoArguments_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         upperMacro.apply(Collections.emptyList());
@@ -46,7 +48,7 @@ public class UpperMacroTest {
 
     @Test
     public void applyLowerMacroToMoreThanOneArgument_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         upperMacro.apply(ImmutableList.of("1.0", "2.0"));

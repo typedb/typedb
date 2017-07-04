@@ -18,13 +18,13 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.util.ErrorMessage;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -59,7 +59,6 @@ public abstract class BinaryBase extends Atom {
     public Var getValueVariable() {
         return valueVariable;
     }
-    void setValueVariable(Var var) { valueVariable = var;}
 
     @Override
     public int hashCode() {
@@ -100,7 +99,7 @@ public abstract class BinaryBase extends Atom {
     @Override
     public Unifier getUnifier(Atom parentAtom) {
         if (!(parentAtom instanceof BinaryBase)) {
-            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
+            throw GraqlQueryException.unificationAtomIncompatibility();
         }
 
         Unifier unifier = new UnifierImpl();
@@ -121,4 +120,5 @@ public abstract class BinaryBase extends Atom {
         }
         return unifier;
     }
+
 }

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import com.google.common.collect.ImmutableList;
 import org.junit.AfterClass;
@@ -30,7 +31,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.Locale;
 
@@ -46,7 +46,6 @@ public class DateMacroTest {
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-
     @BeforeClass
     public static void setLocale() {
         defaultLocale = Locale.getDefault();
@@ -60,7 +59,7 @@ public class DateMacroTest {
 
     @Test
     public void applyDateMacroToNoArguments_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         dateMacro.apply(Collections.emptyList());
@@ -68,7 +67,7 @@ public class DateMacroTest {
 
     @Test
     public void applyDateMacroToOneArgument_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         dateMacro.apply(ImmutableList.of("10/05/2017"));
@@ -76,7 +75,7 @@ public class DateMacroTest {
 
     @Test
     public void applyDateMacroToMoreThanTwoArguments_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         dateMacro.apply(ImmutableList.of("1", "2", "3"));
@@ -84,7 +83,7 @@ public class DateMacroTest {
 
     @Test
     public void applyDateMacroToInvalidFormat_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Cannot parse date format");
 
         dateMacro.apply(ImmutableList.of("10/05/2017", "invalid"));
@@ -92,7 +91,7 @@ public class DateMacroTest {
 
     @Test
     public void applyDateMacroToDateNotParseableByFormat_ExceptionIsThrown(){
-        exception.expect(DateTimeParseException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Cannot parse date value");
 
         dateMacro.apply(ImmutableList.of("invalid", "MM/dd/yyyy"));
@@ -136,7 +135,7 @@ public class DateMacroTest {
     public void whenDateMacroCalledWithMoreThanTwoArguments_ExceptionIsThrown(){
         String template = "insert $x val @date(<date>, \"mm/dd/yyyy\", \"dd/mm/yyyy\");";
 
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
 
         Graql.parseTemplate(template, Collections.singletonMap("date", "10/09/1993"));
     }
@@ -181,7 +180,7 @@ public class DateMacroTest {
 
         String template = "insert $x val @date(<date>, \"" + dateTimePattern + "\");";
 
-        exception.expect(DateTimeParseException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Cannot parse date value");
 
         assertParseEquals(template, Collections.singletonMap("date", dateAsString), null);
@@ -191,7 +190,7 @@ public class DateMacroTest {
     public void whenDateMacroCalledWithInvalidDateFormat_ExceptionIsThrown(){
         String template = "insert $x val @date(<date>, \"this is not a format\");";
 
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Cannot parse date format");
 
         assertParseEquals(template, Collections.singletonMap("date", "10/09/1993"), null);

@@ -8,11 +8,13 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -27,14 +29,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestEnv.usingOrientDB;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 
 public class ShortestPathTest {
-    private static final String thing = "thing";
+    private static final String thing = "thingy";
     private static final String anotherThing = "anotherThing";
     private static final String related = "related";
     private static final String veryRelated = "veryRelated";
@@ -53,32 +53,27 @@ public class ShortestPathTest {
     public GraknSession factory;
 
     @ClassRule
-    public static EngineContext rule = EngineContext.startInMemoryServer();
+    // TODO: Don't set port once bug #15130 is fixed
+    public static EngineContext rule = EngineContext.startInMemoryServer().port(4567);
 
     @Before
     public void setUp() {
         // TODO: Fix tests in orientdb
-        assumeFalse(usingOrientDB());
+        assumeFalse(GraknTestSetup.usingOrientDB());
 
         factory = rule.factoryWithNewKeyspace();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFound() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
-
         // test on an empty graph
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().path().from(entityId1).to(entityId2).execute();
         }
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFoundSubgraph() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
-
         addOntologyAndEntities();
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().path().from(entityId1).to(entityId4).in(thing, related).execute();
@@ -87,9 +82,6 @@ public class ShortestPathTest {
 
     @Test
     public void testShortestPathExceptionPathNotFound() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
-
         addOntologyAndEntities();
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             assertFalse(graph.graql().compute().path().from(entityId1).to(entityId5).execute().isPresent());
@@ -98,9 +90,6 @@ public class ShortestPathTest {
 
     @Test
     public void testShortestPath() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
-
         List<String> correctPath;
         List<String> computedPath;
         addOntologyAndEntities();
@@ -154,9 +143,6 @@ public class ShortestPathTest {
 
     @Test
     public void testShortestPathConcurrency() {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
-
         List<String> correctPath;
         addOntologyAndEntities();
         GraknSparkComputer.clear();
@@ -164,7 +150,9 @@ public class ShortestPathTest {
         correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(), entityId1.getValue());
 
         List<Long> list = new ArrayList<>(2);
-        for (long i = 0L; i < 2L; i++) {
+        long workerNumber = 2L;
+        if (GraknTestSetup.usingTinker()) workerNumber = 1L;
+        for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
         Set<List<String>> result = list.parallelStream().map(i -> {
@@ -179,9 +167,6 @@ public class ShortestPathTest {
 
     @Test
     public void testShortestPathCastingWithThreeMessages() throws Exception {
-        // TODO: Fix in TinkerGraphComputer
-        assumeFalse(usingTinker());
-
         List<String> correctPath;
         List<String> computedPath;
         addOntologyAndEntities2();
@@ -213,7 +198,6 @@ public class ShortestPathTest {
 
     @Test
     public void testMultipleIndependentShortestPaths() throws InvalidGraphException {
-        assumeFalse(usingTinker());
         Set<List<ConceptId>> validPaths = new HashSet<>();
         ConceptId startId;
         ConceptId endId;
@@ -221,8 +205,8 @@ public class ShortestPathTest {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 
-            RoleType role1 = graph.putRoleType("role1");
-            RoleType role2 = graph.putRoleType("role2");
+            Role role1 = graph.putRole("role1");
+            Role role2 = graph.putRole("role2");
             entityType.plays(role1).plays(role2);
             RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);
 
@@ -309,8 +293,8 @@ public class ShortestPathTest {
             entityId4 = entity4.getId();
             entityId5 = entity5.getId();
 
-            RoleType role1 = graph.putRoleType("role1");
-            RoleType role2 = graph.putRoleType("role2");
+            Role role1 = graph.putRole("role1");
+            Role role2 = graph.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
             RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);
@@ -344,13 +328,13 @@ public class ShortestPathTest {
             entityId2 = entity2.getId();
             entityId3 = entity3.getId();
 
-            RoleType role1 = graph.putRoleType("role1");
-            RoleType role2 = graph.putRoleType("role2");
+            Role role1 = graph.putRole("role1");
+            Role role2 = graph.putRole("role2");
             entityType.plays(role1).plays(role2);
             RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);
 
-            RoleType role3 = graph.putRoleType("role3");
-            RoleType role4 = graph.putRoleType("role4");
+            Role role3 = graph.putRole("role3");
+            Role role4 = graph.putRole("role4");
             entityType.plays(role3).plays(role4);
             relationType.plays(role3).plays(role4);
             RelationType relationType2 = graph.putRelationType(veryRelated).relates(role3).relates(role4);

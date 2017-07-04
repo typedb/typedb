@@ -29,12 +29,12 @@ import java.util.Collection;
  * </p>
  *
  * <p>
- *     Types are used to model the behaviour of {@link Instance} and how they relate to each other.
- *     They also aid in categorising {@link Instance} to different types.
+ *     Types are used to model the behaviour of {@link Thing} and how they relate to each other.
+ *     They also aid in categorising {@link Thing} to different types.
  * </p>
  *
  * @see EntityType
- * @see RoleType
+ * @see Role
  * @see RelationType
  * @see ResourceType
  * @see RuleType
@@ -42,7 +42,7 @@ import java.util.Collection;
  * @author fppt
  *
  */
-public interface Type extends Concept {
+public interface Type extends OntologyConcept {
     //------------------------------------- Modifiers ----------------------------------
     // TODO: Describe behaviour when setting a type with direct instances as abstract
     /**
@@ -57,12 +57,12 @@ public interface Type extends Concept {
 
     /**
      *
-     * @param roleType The Role Type which the instances of this Type are allowed to play.
+     * @param role The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      *
      * @throws GraphOperationException if this is a meta-type
      */
-    Type plays(RoleType roleType) throws GraphOperationException;
+    Type plays(Role role) throws GraphOperationException;
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
@@ -90,7 +90,7 @@ public interface Type extends Concept {
      * @param scope The category of this Type
      * @return The Type itself.
      */
-    Type scope(Instance scope);
+    Type scope(Thing scope);
 
     /**
      * Delete the scope specified.
@@ -98,30 +98,15 @@ public interface Type extends Concept {
      * @param scope The Instances that is currently scoping this Type.
      * @return The Type itself
      */
-    Type deleteScope(Instance scope);
+    Type deleteScope(Thing scope);
 
     //------------------------------------- Accessors ---------------------------------
-    /**
-     * Returns the unique id of this Type.
-     *
-     * @return The unique id of this type
-     */
-    @CheckReturnValue
-    TypeId getTypeId();
-
-    /**
-     * Returns the unique label of this Type.
-     *
-     * @return The unique label of this type
-     */
-    @CheckReturnValue
-    TypeLabel getLabel();
 
     /**
      *
      * @return A list of Role Types which instances of this Type can indirectly play.
      */
-    Collection<RoleType> plays();
+    Collection<Role> plays();
 
     /**
      *
@@ -142,7 +127,7 @@ public interface Type extends Concept {
      * @return The direct super of this Type
      */
     @CheckReturnValue
-    Type superType();
+    Type sup();
 
     /**
      * Get all indirect sub-types of this type.
@@ -152,7 +137,7 @@ public interface Type extends Concept {
      * @return All the indirect sub-types of this Type
      */
     @CheckReturnValue
-    Collection<? extends Type> subTypes();
+    Collection<? extends Type> subs();
 
     /**
      * Get all indirect instances of this type.
@@ -162,7 +147,7 @@ public interface Type extends Concept {
      * @return All the indirect instances of this type.
      */
     @CheckReturnValue
-    Collection<? extends Instance> instances();
+    Collection<? extends Thing> instances();
 
     /**
      * Return if the type is set to abstract.
@@ -175,46 +160,18 @@ public interface Type extends Concept {
     Boolean isAbstract();
 
     /**
-     * Return whether the Type was created implicitly.
-     *
-     * By default, types are not implicit.
-     *
-     * @return returns true if the type was created implicitly through {@link #resource}
-     */
-    @CheckReturnValue
-    Boolean isImplicit();
-
-    /**
-     * Return the collection of Rules for which this Type serves as a hypothesis.
-     * @see Rule
-     *
-     * @return A collection of Rules for which this Type serves as a hypothesis
-     */
-    @CheckReturnValue
-    Collection<Rule> getRulesOfHypothesis();
-
-    /**
-     * Return the collection of Rules for which this Type serves as a conclusion.
-     * @see Rule
-     *
-     * @return A collection of Rules for which this Type serves as a conclusion
-     */
-    @CheckReturnValue
-    Collection<Rule> getRulesOfConclusion();
-
-    /**
      * Retrieve a list of the Instances that scope this Type.
      *
      * @return A list of the Instances that scope this Type.
      */
     @CheckReturnValue
-    Collection<Instance> scopes();
+    Collection<Thing> scopes();
 
     //------------------------------------- Other ----------------------------------
     /**
      *
-     * @param roleType The Role Type which the instances of this Type should no longer be allowed to play.
+     * @param role The Role Type which the instances of this Type should no longer be allowed to play.
      * @return The Type itself.
      */
-    Type deletePlays(RoleType roleType);
+    Type deletePlays(Role role);
 }

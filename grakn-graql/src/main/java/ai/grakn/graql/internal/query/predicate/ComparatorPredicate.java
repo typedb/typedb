@@ -19,12 +19,13 @@
 package ai.grakn.graql.internal.query.predicate;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
+import ai.grakn.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -36,7 +37,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static ai.grakn.concept.ResourceType.DataType.SUPPORTED_TYPES;
-import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
 
 abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
@@ -46,7 +46,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
     private static final String[] VALUE_PROPERTIES =
             SUPPORTED_TYPES.values().stream()
-                    .map(ResourceType.DataType::getConceptProperty)
+                    .map(ResourceType.DataType::getVertexProperty)
                     .distinct()
                     .map(Enum::name)
                     .toArray(String[]::new);
@@ -55,10 +55,10 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
      * @param value the value that this predicate is testing against
      */
     ComparatorPredicate(Object value) {
-        if (value instanceof VarPatternAdmin) {
+        if (value instanceof VarPattern) {
             this.originalValue = Optional.empty();
             this.value = Optional.empty();
-            this.var = Optional.of((VarPatternAdmin) value);
+            this.var = Optional.of(((VarPattern) value).admin());
         } else {
             // Convert integers to longs for consistency
             if (value instanceof Integer) {
@@ -71,7 +71,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
             ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getName());
 
             if (dataType == null) {
-                throw new IllegalArgumentException(INVALID_VALUE.getMessage(value.getClass()));
+                throw GraqlQueryException.invalidValueClass(value);
             }
 
             // We can trust the `SUPPORTED_TYPES` map to store things with the right type
@@ -99,7 +99,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
     public String toString() {
         // If there is no value, then there must be a var
         //noinspection OptionalGetWithoutIsPresent
-        String argument = value.map(StringConverter::valueToString).orElseGet(() -> var.get().getPrintableName());
+        String argument = value.map(StringUtil::valueToString).orElseGet(() -> var.get().getPrintableName());
 
         return getSymbol() + " " + argument;
     }
@@ -159,7 +159,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
         value.ifPresent(theValue -> {
             // Compare to a given value
             ResourceType.DataType<?> dataType = SUPPORTED_TYPES.get(originalValue.get().getClass().getTypeName());
-            Schema.ConceptProperty property = dataType.getConceptProperty();
+            Schema.VertexProperty property = dataType.getVertexProperty();
             traversal.has(property.name(), gremlinPredicate(theValue));
         });
     }

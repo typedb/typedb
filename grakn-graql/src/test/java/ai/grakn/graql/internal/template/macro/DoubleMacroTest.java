@@ -18,18 +18,18 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import com.google.common.collect.ImmutableList;
-import java.util.Collections;
-import java.util.Locale;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collections;
+import java.util.Locale;
+
 import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class DoubleMacroTest {
 
@@ -40,7 +40,7 @@ public class DoubleMacroTest {
 
     @Test
     public void applyDoubleMacroToNoArguments_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         doubleMacro.apply(Collections.emptyList());
@@ -48,7 +48,7 @@ public class DoubleMacroTest {
 
     @Test
     public void applyDoubleMacroToMoreThanOneArgument_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         doubleMacro.apply(ImmutableList.of("1.0", "2.0"));
@@ -77,6 +77,16 @@ public class DoubleMacroTest {
     }
 
     @Test
+    public void applyDoubleMacroToScientificNotation_ReturnsCorrectDouble(){
+        assertEquals(new Double(180000000000.0), doubleMacro.apply(ImmutableList.of("1.8E+11")));
+    }
+
+    @Test
+    public void applyDoubleMacroToLargeDouble_ReturnsCorrectDouble(){
+        assertEquals(new Double(191588629.5), doubleMacro.apply(ImmutableList.of("191588629.5")));
+    }
+
+    @Test
     public void whenUsingDoubleMacroInTemplate_ResultIsAsExpected(){
         String template = "insert $x val @double(<value>);";
         String expected = "insert $x0 val 4.0;";
@@ -87,11 +97,18 @@ public class DoubleMacroTest {
 
     @Test
     public void whenParsingDoubleInFrenchLocale_DontUseComma(){
-        Locale.setDefault(Locale.FRANCE);
-        String template = "insert $x val @double(<value>);";
-        String expected = "insert $x0 val 4.0;";
+        Locale defaultLocale = Locale.getDefault();
 
-        assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
-        assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
+        try {
+            Locale.setDefault(Locale.FRANCE);
+
+            String template = "insert $x val @double(<value>);";
+            String expected = "insert $x0 val 4.0;";
+
+            assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
+            assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
+        } finally {
+            Locale.setDefault(defaultLocale);
+        }
     }
 }

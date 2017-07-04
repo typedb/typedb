@@ -19,7 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Main class containing static methods for creating Graql queries.
@@ -79,21 +80,21 @@ public class Graql {
     }
 
     /**
-     * @param vars an array of variables to insert into the graph
-     * @return an insert query that will insert the given variables into the graph
+     * @param varPatterns an array of variable patterns to insert into the graph
+     * @return an insert query that will insert the given variable patterns into the graph
      */
     @CheckReturnValue
-    public static InsertQuery insert(VarPattern... vars) {
-        return withoutGraph().insert(vars);
+    public static InsertQuery insert(VarPattern... varPatterns) {
+        return withoutGraph().insert(varPatterns);
     }
 
     /**
-     * @param vars a collection of variables to insert into the graph
-     * @return an insert query that will insert the given variables into the graph
+     * @param varPatterns a collection of variable patterns to insert into the graph
+     * @return an insert query that will insert the given variable patterns into the graph
      */
     @CheckReturnValue
-    public static InsertQuery insert(Collection<? extends VarPattern> vars) {
-        return withoutGraph().insert(vars);
+    public static InsertQuery insert(Collection<? extends VarPattern> varPatterns) {
+        return withoutGraph().insert(varPatterns);
     }
 
     /**
@@ -127,7 +128,7 @@ public class Graql {
      * @return a list of queries
      */
     @CheckReturnValue
-    public static List<Query<?>> parseList(String queryString) {
+    public static Stream<Query<?>> parseList(String queryString) {
         return withoutGraph().parseList(queryString);
     }
 
@@ -139,7 +140,7 @@ public class Graql {
      * @return a query, the type will depend on the type indicated in the template
      */
     @CheckReturnValue
-    public static <T extends Query<?>> List<T> parseTemplate(String template, Map<String, Object> data){
+    public static <T extends Query<?>> Stream<T> parseTemplate(String template, Map<String, Object> data){
         return withoutGraph().parseTemplate(template, data);
     }
 
@@ -150,39 +151,30 @@ public class Graql {
      * @return a new query variable
      */
     @CheckReturnValue
-    public static VarPattern var(String name) {
-        return var(Var.of(name));
-    }
-
-    /**
-     * @param name the name of the variable
-     * @return a new query variable
-     */
-    @CheckReturnValue
-    public static VarPattern var(Var name) {
-        return Patterns.var(Objects.requireNonNull(name));
+    public static Var var(String name) {
+        return Patterns.var(name);
     }
 
     /**
      * @return a new, anonymous query variable
      */
     @CheckReturnValue
-    public static VarPattern var() {
+    public static Var var() {
         return Patterns.var();
     }
 
     /**
      * @param label the label of a concept
-     * @return a query variable that identifies a concept by label
+     * @return a variable pattern that identifies a concept by label
      */
     @CheckReturnValue
-    public static VarPattern label(TypeLabel label) {
+    public static VarPattern label(Label label) {
         return var().label(label);
     }
 
     /**
      * @param label the label of a concept
-     * @return a query variable that identifies a concept by label
+     * @return a variable pattern that identifies a concept by label
      */
     @CheckReturnValue
     public static VarPattern label(String label) {
@@ -242,74 +234,74 @@ public class Graql {
      * Create an aggregate that will sum the values of a variable.
      */
     @CheckReturnValue
-    public static Aggregate<Answer, Number> sum(String name) {
-        return Aggregates.sum(Var.of(name));
+    public static Aggregate<Answer, Number> sum(String var) {
+        return Aggregates.sum(Graql.var(var));
     }
 
     /**
      * Create an aggregate that will find the maximum of a variable's values.
-     * @param name the variable to find the maximum of
+     * @param var the variable to find the maximum of
      */
     @CheckReturnValue
-    public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> max(String name) {
-        return Aggregates.max(Var.of(name));
+    public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> max(String var) {
+        return Aggregates.max(Graql.var(var));
     }
 
     /**
      * Create an aggregate that will find the minimum of a variable's values.
-     * @param name the variable to find the maximum of
+     * @param var the variable to find the maximum of
      */
     @CheckReturnValue
-    public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> min(String name) {
-        return Aggregates.min(Var.of(name));
+    public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> min(String var) {
+        return Aggregates.min(Graql.var(var));
     }
 
     /**
      * Create an aggregate that will find the mean of a variable's values.
-     * @param name the variable to find the mean of
+     * @param var the variable to find the mean of
      */
     @CheckReturnValue
-    public static Aggregate<Answer, Optional<Double>> mean(String name) {
-        return Aggregates.mean(Var.of(name));
+    public static Aggregate<Answer, Optional<Double>> mean(String var) {
+        return Aggregates.mean(Graql.var(var));
     }
 
     /**
      * Create an aggregate that will find the median of a variable's values.
-     * @param name the variable to find the median of
+     * @param var the variable to find the median of
      */
     @CheckReturnValue
-    public static Aggregate<Answer, Optional<Number>> median(String name) {
-        return Aggregates.median(Var.of(name));
+    public static Aggregate<Answer, Optional<Number>> median(String var) {
+        return Aggregates.median(Graql.var(var));
     }
 
     /**
      * Create an aggregate that will find the unbiased sample standard deviation of a variable's values.
-     * @param name the variable to find the standard deviation of
+     * @param var the variable to find the standard deviation of
      */
     @CheckReturnValue
-    public static Aggregate<Answer, Optional<Double>> std(String name) {
-        return Aggregates.std(Var.of(name));
+    public static Aggregate<Answer, Optional<Double>> std(String var) {
+        return Aggregates.std(Graql.var(var));
     }
 
     /**
-     * Create an aggregate that will group a query by a variable name.
-     * @param varName the variable name to group results by
+     * Create an aggregate that will group a query by a variable.
+     * @param var the variable to group results by
      */
     @CheckReturnValue
-    public static Aggregate<Answer, Map<Concept, List<Answer>>> group(String varName) {
-        return group(varName, Aggregates.list());
+    public static Aggregate<Answer, Map<Concept, List<Answer>>> group(String var) {
+        return group(var, Aggregates.list());
     }
 
     /**
-     * Create an aggregate that will group a query by a variable name and apply the given aggregate to each group
-     * @param varName the variable name to group results by
+     * Create an aggregate that will group a query by a variable and apply the given aggregate to each group
+     * @param var the variable to group results by
      * @param aggregate the aggregate to apply to each group
      * @param <T> the type the aggregate returns
      */
     @CheckReturnValue
     public static <T> Aggregate<Answer, Map<Concept, T>> group(
-            String varName, Aggregate<? super Answer, T> aggregate) {
-        return Aggregates.group(Var.of(varName), aggregate);
+            String var, Aggregate<? super Answer, T> aggregate) {
+        return Aggregates.group(Graql.var(var), aggregate);
     }
 
     /**
@@ -349,13 +341,13 @@ public class Graql {
     }
 
     /**
-     * @param var the variable representing a resource
+     * @param varPattern the variable pattern representing a resource
      * @return a predicate that is true when a value equals the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate eq(VarPattern var) {
-        Objects.requireNonNull(var);
-        return Predicates.eq(var.admin());
+    public static ValuePredicate eq(VarPattern varPattern) {
+        Objects.requireNonNull(varPattern);
+        return Predicates.eq(varPattern);
     }
 
     /**
@@ -369,13 +361,13 @@ public class Graql {
     }
 
     /**
-     * @param var the variable representing a resource
+     * @param varPattern the variable pattern representing a resource
      * @return a predicate that is true when a value does not equal the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate neq(VarPattern var) {
-        Objects.requireNonNull(var);
-        return Predicates.neq(var.admin());
+    public static ValuePredicate neq(VarPattern varPattern) {
+        Objects.requireNonNull(varPattern);
+        return Predicates.neq(varPattern);
     }
 
     /**
@@ -389,13 +381,13 @@ public class Graql {
     }
 
     /**
-     * @param var the variable representing a resource
+     * @param varPattern the variable pattern representing a resource
      * @return a predicate that is true when a value is strictly greater than the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate gt(VarPattern var) {
-        Objects.requireNonNull(var);
-        return Predicates.gt(var.admin());
+    public static ValuePredicate gt(VarPattern varPattern) {
+        Objects.requireNonNull(varPattern);
+        return Predicates.gt(varPattern);
     }
 
     /**
@@ -409,13 +401,13 @@ public class Graql {
     }
 
     /**
-     * @param var the variable representing a resource
+     * @param varPattern the variable pattern representing a resource
      * @return a predicate that is true when a value is greater or equal to the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate gte(VarPattern var) {
-        Objects.requireNonNull(var);
-        return Predicates.gte(var.admin());
+    public static ValuePredicate gte(VarPattern varPattern) {
+        Objects.requireNonNull(varPattern);
+        return Predicates.gte(varPattern);
     }
 
     /**
@@ -429,13 +421,13 @@ public class Graql {
     }
 
     /**
-     * @param var the variable representing a resource
+     * @param varPattern the variable pattern representing a resource
      * @return a predicate that is true when a value is strictly less than the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate lt(VarPattern var) {
-        Objects.requireNonNull(var);
-        return Predicates.lt(var.admin());
+    public static ValuePredicate lt(VarPattern varPattern) {
+        Objects.requireNonNull(varPattern);
+        return Predicates.lt(varPattern);
     }
 
     /**
@@ -449,13 +441,13 @@ public class Graql {
     }
 
     /**
-     * @param var the variable representing a resource
+     * @param varPattern the variable pattern representing a resource
      * @return a predicate that is true when a value is less or equal to the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate lte(VarPattern var) {
-        Objects.requireNonNull(var);
-        return Predicates.lte(var.admin());
+    public static ValuePredicate lte(VarPattern varPattern) {
+        Objects.requireNonNull(varPattern);
+        return Predicates.lte(varPattern);
     }
 
     /**
@@ -479,12 +471,12 @@ public class Graql {
     }
 
     /**
-     * @param var the variable representing a resource
+     * @param varPattern the variable pattern representing a resource
      * @return a predicate that returns true when a value contains the given substring
      */
     @CheckReturnValue
-    public static ValuePredicate contains(VarPattern var) {
-        Objects.requireNonNull(var);
-        return Predicates.contains(var.admin());
+    public static ValuePredicate contains(VarPattern varPattern) {
+        Objects.requireNonNull(varPattern);
+        return Predicates.contains(varPattern.admin());
     }
 }

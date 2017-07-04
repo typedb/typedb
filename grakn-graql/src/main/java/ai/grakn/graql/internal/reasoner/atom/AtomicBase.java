@@ -41,7 +41,7 @@ import java.util.Set;
 public abstract class AtomicBase implements Atomic {
 
     private final Var varName;
-    protected PatternAdmin atomPattern;
+    private PatternAdmin atomPattern;
     private ReasonerQuery parent = null;
 
     protected AtomicBase(VarPatternAdmin pattern, ReasonerQuery par) {
@@ -66,7 +66,7 @@ public abstract class AtomicBase implements Atomic {
     public boolean containsVar(Var name){ return getVarNames().contains(name);}
 
     @Override
-    public boolean isUserDefinedName(){ return atomPattern.asVar().isUserDefinedName();}
+    public boolean isUserDefinedName(){ return atomPattern.asVar().getVarName().isUserDefinedName();}
     
     @Override
     public Var getVarName(){ return varName;}

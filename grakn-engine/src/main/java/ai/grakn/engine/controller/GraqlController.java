@@ -24,6 +24,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
@@ -53,10 +55,12 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static ai.grakn.GraknTxType.WRITE;
+import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
+import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.util.REST.Request.Graql.INFER;
@@ -90,21 +94,51 @@ public class GraqlController {
     public GraqlController(EngineGraknGraphFactory factory, Service spark) {
         this.factory = factory;
 
+        spark.post(REST.WebPath.Graph.ANY_GRAQL, this::executeGraql);
         spark.get(REST.WebPath.Graph.GRAQL,    this::executeGraqlGET);
         spark.post(REST.WebPath.Graph.GRAQL,   this::executeGraqlPOST);
         spark.delete(REST.WebPath.Graph.GRAQL, this::executeGraqlDELETE);
 
         //TODO The below exceptions are very broad. They should be revised after we improve exception
         //TODO hierarchies in Graql and Graph
-        // Handle graql syntax exceptions
-        spark.exception(IllegalStateException.class, (e, req, res) -> handleError(400, e, res));
-        spark.exception(IllegalArgumentException.class, (e, req, res) -> handleError(400, e, res));
+        spark.exception(GraqlQueryException.class, (e, req, res) -> handleError(400, e, res));
+        spark.exception(GraqlSyntaxException.class, (e, req, res) -> handleError(400, e, res));
 
         // Handle invalid type castings and invalid insertions
         spark.exception(GraphOperationException.class, (e, req, res) -> handleError(422, e, res));
         spark.exception(InvalidGraphException.class, (e, req, res) -> handleError(422, e, res));
     }
 
+    @POST
+    @Path("/execute")
+    @ApiOperation(value = "Execute an arbitrary Gralql queryEndpoints used to query the graph by ID or Graql match query and build HAL objects.")
+    private Json executeGraql(Request request, Response response) {
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        String queryString = mandatoryQueryParameter(request, QUERY);
+        boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
+        boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
+        String acceptType = getAcceptType(request);
+        try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
+            Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
+            if(!validContentType(acceptType, query)) {
+                throw GraknServerException.contentTypeQueryMismatch(acceptType, query);
+            }            
+            if (query instanceof DeleteQuery) {
+                query.execute();
+                graph.commit();
+                return respond(response, query, APPLICATION_JSON, Json.object());
+            }
+            else if (query instanceof InsertQuery) {
+                Json resp = respond(response, query, APPLICATION_JSON, executeInsertQuery((InsertQuery) query));
+                graph.commit();
+                return resp;
+            }
+            else {
+                return respond(response, query, acceptType, executeReadQuery(request, query, acceptType));
+            }
+        }
+    }
+    
     @GET
     @Path("/")
     @ApiOperation(
@@ -185,39 +219,6 @@ public class GraqlController {
 
             return respond(response, query, APPLICATION_JSON, Json.object());
         }
-    }
-
-    /**
-     * Given a {@link Request} object retrieve the value of the {@param parameter} argument. If it is not present
-     * in the request query, return a 400 to the client.
-     *
-     * @param request information about the HTTP request
-     * @param parameter value to retrieve from the HTTP request
-     * @return value of the given parameter
-     */
-    static String mandatoryQueryParameter(Request request, String parameter){
-        return queryParameter(request, parameter).orElseThrow(() -> GraknServerException.requestMissingParameters(parameter));
-    }
-
-    /**
-     * Given a {@link Request}, retrieve the value of the {@param parameter}
-     * @param request information about the HTTP request
-     * @param parameter value to retrieve from the HTTP request
-     * @return value of the given parameter
-     */
-    static Optional<String> queryParameter(Request request, String parameter){
-        return Optional.ofNullable(request.queryParams(parameter));
-    }
-
-    /**
-     * Given a {@link Request), retreive the value of the request body. If the request does not have a body,
-     * return a 400 (missing parameter) to the client.
-     *
-     * @param request information about the HTTP request
-     * @return value of the request body as a string
-     */
-    static String mandatoryBody(Request request){
-        return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(GraknServerException::requestMissingBody);
     }
 
     /**

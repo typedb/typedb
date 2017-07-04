@@ -21,6 +21,7 @@ package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.ZookeeperLock;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
@@ -28,6 +29,7 @@ import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.EngineID;
@@ -68,7 +70,6 @@ public class SingleQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskManager.class);
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
-    private final static int TIME_UNTIL_BACKOFF = 60_000;
     private final static String TASKS_STOPPED = "/stopped/%s";
     private final static String TASKS_STOPPED_PREFIX = "/stopped";
 
@@ -78,6 +79,8 @@ public class SingleQueueTaskManager implements TaskManager {
     private final PathChildrenCache stoppedTasks;
     private final ExternalOffsetStorage offsetStorage;
     private final GraknEngineConfig config;
+    private final RedisConnection redis;
+    private final EngineGraknGraphFactory factory;
 
     private Set<SingleQueueTaskRunner> taskRunners;
     private ExecutorService taskRunnerThreadPool;
@@ -93,8 +96,10 @@ public class SingleQueueTaskManager implements TaskManager {
      *  + Create and run an instance of SingleQueueTaskRunner
      *  + Add oneself to the leader elector by instantiating failoverelector
      */
-    public SingleQueueTaskManager(EngineID engineId, GraknEngineConfig config) {
+    public SingleQueueTaskManager(EngineID engineId, GraknEngineConfig config, RedisConnection redis, EngineGraknGraphFactory factory) {
         this.config = config;
+        this.redis = redis;
+        this.factory = factory;
         this.zookeeper = new ZookeeperConnection(config);
         this.storage = new TaskStateZookeeperStore(zookeeper);
         this.offsetStorage = new ExternalOffsetStorage(zookeeper);
@@ -209,7 +214,14 @@ public class SingleQueueTaskManager implements TaskManager {
      * @return true if the task has been marked stopped
      */
     boolean isTaskMarkedStopped(TaskId taskId) {
-        return stoppedTasks.getCurrentData(String.format(TASKS_STOPPED, taskId)) != null;
+        // We don't use the cache `stoppedTasks` because it isn't guaranteed to be up-to-date.
+        try {
+            return zookeeper.connection().checkExists().forPath(String.format(TASKS_STOPPED, taskId)) != null;
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -230,6 +242,6 @@ public class SingleQueueTaskManager implements TaskManager {
      * @return New instance of a SingleQueueTaskRunner
      */
     private SingleQueueTaskRunner newTaskRunner(EngineID engineId, String priority){
-        return new SingleQueueTaskRunner(this, engineId, offsetStorage, TIME_UNTIL_BACKOFF, newConsumer(priority));
+        return new SingleQueueTaskRunner(this, engineId, config, redis, factory, offsetStorage, newConsumer(priority));
     }
 }

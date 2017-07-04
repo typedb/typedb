@@ -19,16 +19,16 @@
 package ai.grakn.graql;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.admin.VarPatternAdmin;
 
 import javax.annotation.CheckReturnValue;
 
 /**
- * A wildcard variable to refers to a concept in a query.
+ * A variable together with its properties.
  * <p>
- * A {@link VarPattern} may be given a variable name, or left as an "anonymous" variable. {@code Graql} provides
+ * A {@link VarPattern} may be given a variable, or use an "anonymous" variable. {@code Graql} provides
  * static methods for constructing {@link VarPattern} objects.
  * <p>
  * The methods on {@link VarPattern} are used to set its properties. A {@link VarPattern} behaves differently depending
@@ -40,6 +40,12 @@ import javax.annotation.CheckReturnValue;
  */
 @SuppressWarnings("UnusedReturnValue")
 public interface VarPattern extends Pattern {
+
+    /**
+     * @return an Admin class to allow inspection of this {@link VarPattern}
+     */
+    @CheckReturnValue
+    VarPatternAdmin admin();
 
     /**
      * @param id a ConceptId that this variable's ID must match
@@ -60,7 +66,7 @@ public interface VarPattern extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    VarPattern label(TypeLabel label);
+    VarPattern label(Label label);
 
     /**
      * @param value a value that this variable's value must exactly match
@@ -100,21 +106,21 @@ public interface VarPattern extends Pattern {
      * the variable must have a resource of the given type that matches the given atom
      *
      * @param type a resource type in the ontology
-     * @param var a variable representing a resource
+     * @param varPattern a variable pattern representing a resource
      * @return this
      */
     @CheckReturnValue
-    VarPattern has(String type, VarPattern var);
+    VarPattern has(String type, VarPattern varPattern);
 
     /**
      * the variable must have a resource of the given type that matches the given atom
      *
      * @param type a resource type in the ontology
-     * @param var a variable representing a resource
+     * @param varPattern a variable pattern representing a resource
      * @return this
      */
     @CheckReturnValue
-    VarPattern has(TypeLabel type, VarPattern var);
+    VarPattern has(Label type, VarPattern varPattern);
 
     /**
      * @param type a concept type id that the variable must be of this type
@@ -219,7 +225,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must be a relation with the given roleplayer
      *
-     * @param roleplayer a variable representing a roleplayer
+     * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */
     @CheckReturnValue
@@ -238,7 +244,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
      *
-     * @param roletype   a variable representing a roletype
+     * @param roletype   a variable pattern representing a roletype
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
@@ -249,7 +255,7 @@ public interface VarPattern extends Pattern {
      * the variable must be a relation with the given roleplayer playing the given roletype
      *
      * @param roletype   a role type in the ontology
-     * @param roleplayer a variable representing a roleplayer
+     * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */
     @CheckReturnValue
@@ -258,8 +264,8 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
      *
-     * @param roletype   a variable representing a roletype
-     * @param roleplayer a variable representing a roleplayer
+     * @param roletype   a variable pattern representing a roletype
+     * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */
     @CheckReturnValue
@@ -303,23 +309,17 @@ public interface VarPattern extends Pattern {
 
     /**
      * Specify that the variable is different to another variable
-     * @param varName the variable name that this variable should not be equal to
-     * @return this
-     */
-    @CheckReturnValue
-    VarPattern neq(String varName);
-
-    /**
-     * Specify that the variable is different to another variable
      * @param var the variable that this variable should not be equal to
      * @return this
      */
     @CheckReturnValue
-    VarPattern neq(VarPattern var);
+    VarPattern neq(String var);
 
     /**
-     * @return an Admin class to allow inspection of this {@link VarPattern}
+     * Specify that the variable is different to another variable
+     * @param varPattern the variable pattern that this variable should not be equal to
+     * @return this
      */
     @CheckReturnValue
-    VarPatternAdmin admin();
+    VarPattern neq(VarPattern varPattern);
 }

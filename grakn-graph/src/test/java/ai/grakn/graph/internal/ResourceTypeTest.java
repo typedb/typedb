@@ -109,7 +109,7 @@ public class ResourceTypeTest extends GraphTestBase{
     @Test
     public void whenCreatingMultipleResourceTypesWithDifferentRegexes_EnsureAllRegexesAreChecked(){
         ResourceType<String> t1 = graknGraph.putResourceType("t1", ResourceType.DataType.STRING).setRegex("[b]");
-        ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING).setRegex("[abc]").superType(t1);
+        ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING).setRegex("[abc]").sup(t1);
 
         //Valid Resource
         Resource<String> resource = t2.putResource("b");
@@ -130,13 +130,13 @@ public class ResourceTypeTest extends GraphTestBase{
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[b]", resource.getId(), resource.getValue(), resource.type().getLabel()));
-        t2.superType(t1);
+        t2.sup(t1);
     }
 
     @Test
     public void whenSettingRegexOfSuperType_EnsureAllRegexesAreApplied(){
         ResourceType<String> t1 = graknGraph.putResourceType("t1", ResourceType.DataType.STRING);
-        ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING).setRegex("[abc]").superType(t1);
+        ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING).setRegex("[abc]").sup(t1);
         Resource<String> resource = t2.putResource("a");
 
         expectedException.expect(GraphOperationException.class);
