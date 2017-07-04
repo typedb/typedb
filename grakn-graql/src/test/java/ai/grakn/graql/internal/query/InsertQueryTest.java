@@ -733,16 +733,16 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testInsertNonRuleWithLhs() {
+    public void testInsertNonRuleWithWhen() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("lhs", RULE.getLabel()));
+        exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("when", RULE.getLabel()));
         qb.insert(var().isa("movie").when(var("x"))).execute();
     }
 
     @Test
-    public void testInsertNonRuleWithRHS() {
+    public void testInsertNonRuleWithThen() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("rhs", RULE.getLabel()));
+        exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("then", RULE.getLabel()));
         qb.insert(label("thingy").sub("movie").then(var("x"))).execute();
     }
 

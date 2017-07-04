@@ -19,41 +19,41 @@ res-boolean sub resource datatype boolean;
 #Rules
 
 isa inference-rule
-lhs {
+when {
     $x isa entity1;
 }
-rhs {
+then {
     $x has res-string 'string';
 };
 
 isa inference-rule
-lhs {
+when {
     $x isa entity1;
 }
-rhs {
+then {
     $x has res-double 3.14;
 };
 
 isa inference-rule
-lhs {
+when {
     $x isa entity1;
 }
-rhs {
+then {
     $x has res-long 123;
 };
 
 isa inference-rule
-lhs {
+when {
     $x isa entity1;
 }
-rhs {
+then {
     $x has res-boolean 'true';
 };
 
 isa inference-rule
-lhs {
+when {
     $x isa entity1;
 }
-rhs {
+then {
     $x has res1 'test';
 };

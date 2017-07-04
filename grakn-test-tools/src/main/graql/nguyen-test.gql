@@ -37,22 +37,22 @@ entity2 plays P-rA plays P-rB;
 ####################################################
 
 isa inference-rule,
-lhs {
+when {
 (R-rA: $x, R-rB: $y) isa R;},
-rhs {
+then {
 (N-rA: $x, N-rB: $y) isa N;};
 
 isa inference-rule,
-lhs {
+when {
 (P-rA: $x, P-rB: $z) isa P;
 (N-rA: $z, N-rB: $w) isa N;
 (Q-rA: $w, Q-rB: $y) isa Q;},
-rhs {
+then {
 (N-rA: $x, N-rB: $y) isa N;};
 
 isa inference-rule,
-lhs {
+when {
 (N-rA: $x, N-rB: $y) isa N;
 $x has index 'c';},
-rhs {
+then {
 $y isa S;};

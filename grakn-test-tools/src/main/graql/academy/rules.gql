@@ -1,34 +1,34 @@
 insert
 
 $transitiveLocation isa inference-rule
-lhs  {
+when  {
   (located: $a, location: $b) isa located-in;
   (located: $b, location: $c) isa located-in;
 }
-rhs {
+then {
   (located: $a, location: $c) isa located-in;
 };
 
 
 $articleReferendum isa inference-rule
-lhs {
+when {
   $art isa article has subject "Italian Referendum";
   $plat isa oil-platform has distance-from-coast <= 18;
   $italy isa country has name "Italy";
   (located: $plat, location: $italy) isa located-in;
 }
-rhs {
+then {
   (information: $art, affected: $plat) isa affects;
 };
 
 
 $articlesToBonds isa inference-rule
-lhs {
+when {
   (information: $info, affected: $plat) isa affects;
   (owned: $plat, owner: $company) isa owns;
   (issuer: $company, issued: $bond) isa issues;
   $bond isa bond; #Notice that this is superfluous
 }
-rhs {
+then {
   (information: $info, affected: $bond) isa affects;
 };

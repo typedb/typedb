@@ -33,7 +33,7 @@ res2 sub resource datatype string;
 #Rules
 
 $rule isa inference-rule
-    lhs{
+    when{
         $b isa entity2;
         $b has res1 'value';
         $rel1 has res2 'value1';
@@ -41,15 +41,15 @@ $rule isa inference-rule
         $rel2 has res2 'value2';
         $rel2 (role1: $c, role2: $b) isa relation1;
     }
-    rhs {
+    then {
         (role1: $p, role2: $c) isa relation2;
     };
 
 $dummyRule isa inference-rule
-    lhs{
+    when{
         (role1: $p, role2: $c) isa relation3;
     }
-    rhs {
+    then {
         (role1: $p, role2: $c) isa relation1;
     };
 
