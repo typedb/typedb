@@ -105,8 +105,8 @@ public abstract class GraknTestEngineSetup {
         LOG.info("stopping engine...");
 
         // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
-        server.close();
         clearGraphs(server);
+        server.close();
 
         LOG.info("engine stopped.");
 
