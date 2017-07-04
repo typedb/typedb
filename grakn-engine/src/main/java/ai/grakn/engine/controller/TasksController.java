@@ -369,7 +369,7 @@ public class TasksController {
         try {
             return Json.read(requestBody);
         } catch (Exception e) {
-            LOG.error("Malformed json in body of request {}", requestBody);
+            LOG.error("Malformed json in body of request {}", requestBody, e);
             throw GraknServerException.serverException(400, e);
         }
     }

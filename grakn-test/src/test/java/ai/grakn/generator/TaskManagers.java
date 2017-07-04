@@ -30,6 +30,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -57,7 +58,13 @@ public class TaskManagers extends Generator<TaskManager> {
     private static Map<Class<? extends TaskManager>, TaskManager> taskManagers = new HashMap<>();
 
     public static void closeAndClear() {
-        taskManagers.values().forEach(TaskManager::close);
+        for (TaskManager taskManager : taskManagers.values()) {
+            try {
+                taskManager.close();
+            } catch (IOException e) {
+                LOG.error("Could not close task manager cleanly, some resources might be left open");
+            }
+        }
         taskManagers.clear();
     }
 
@@ -68,7 +75,7 @@ public class TaskManagers extends Generator<TaskManager> {
     @Override
     public TaskManager generate(SourceOfRandomness random, GenerationStatus status) {
         // TODO restore the use of taskManagerClasses
-        Class<? extends TaskManager> taskManagerToReturn = RedisTaskManager.class;
+        Class<? extends TaskManager> taskManagerToReturn = random.choose(taskManagerClasses);
 
         GraknEngineConfig config = GraknEngineConfig.create();
         JedisPoolConfig poolConfig = new JedisPoolConfig();

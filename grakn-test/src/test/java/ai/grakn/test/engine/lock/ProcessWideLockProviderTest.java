@@ -20,6 +20,7 @@ package ai.grakn.test.engine.lock;
 
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -40,7 +41,7 @@ public class ProcessWideLockProviderTest {
 
     @Test
     public void whenGivenLock_ReturnsLockWithSameClass(){
-        assertThat(new ProcessWideLockProvider().getLock(LOCK_NAME).getClass(), equalTo(Lock.class));
+        assertThat(new ProcessWideLockProvider().getLock(LOCK_NAME).getClass(), equalTo(ReentrantLock.class));
     }
 
     @Test

@@ -117,8 +117,8 @@ class RedisTaskQueue {
         worker.setExceptionHandler((jobExecutor, exception, curQueue) -> {
             // TODO review this strategy
             failures.mark();
-            LOG.error("Exception while trying to run task", exception);
-            return RecoveryStrategy.PROCEED;
+            LOG.error("Exception while trying to run task, trying to reconnect!", exception);
+            return RecoveryStrategy.RECONNECT;
         });
         consumerExecutor.execute(worker);
     }

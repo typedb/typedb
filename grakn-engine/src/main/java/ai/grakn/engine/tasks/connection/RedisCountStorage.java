@@ -20,6 +20,8 @@ package ai.grakn.engine.tasks.connection;
 
 import ai.grakn.concept.ConceptId;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 
@@ -35,6 +37,7 @@ import redis.clients.util.Pool;
  * @author fppt
  */
 public class RedisCountStorage {
+    private final static Logger LOG = LoggerFactory.getLogger(RedisCountStorage.class);
 
     private Pool<Jedis> jedisPool;
 
@@ -88,6 +91,10 @@ public class RedisCountStorage {
     private <X> X contactRedis(Function<Jedis, X> function){
         try(Jedis jedis = jedisPool.getResource()){
             return function.apply(jedis);
+        } catch (Exception e) {
+            LOG.error("All resources are taken in the jedis pool waiters: {}, idle: {}, active: {}",
+                    jedisPool.getNumWaiters(), jedisPool.getNumIdle(), jedisPool.getNumActive());
+            throw e;
         }
     }
 

@@ -29,8 +29,6 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -56,7 +54,6 @@ public class RedisTaskManager implements TaskManager {
     private final RedisTaskQueue redisTaskQueue;
     private final ExecutorService consumerExecutor;
     private final int threads;
-    private final Set<CompletableFuture<Void>> subs;
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
             EngineGraknGraphFactory factory, LockProvider distributedLockClient, MetricRegistry metricRegistry) {
@@ -73,7 +70,6 @@ public class RedisTaskManager implements TaskManager {
         this.redisTaskQueue = new RedisTaskQueue(jedisPool, distributedLockClient, metricRegistry);
         this.threads = threads;
         this.consumerExecutor = Executors.newFixedThreadPool(threads);
-        this.subs = new HashSet<CompletableFuture<Void>>();
     }
 
     @Override

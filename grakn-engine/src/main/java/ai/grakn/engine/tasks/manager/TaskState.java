@@ -29,6 +29,7 @@ import static ai.grakn.engine.TaskStatus.STOPPED;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.util.EngineID;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -44,6 +45,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Denis Lobanov
  */
 @JsonInclude(Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TaskState implements Serializable {
 
     private static final long serialVersionUID = -7301340972479426653L;
