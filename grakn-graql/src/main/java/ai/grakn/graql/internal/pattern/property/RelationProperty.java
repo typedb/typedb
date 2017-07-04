@@ -216,6 +216,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         return relationPlayers.hashCode();
     }
 
+
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //keep varName if reified, reified if contains more properties than the RelationProperty itself and potential IsaProperty
@@ -236,22 +237,21 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         //id part
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
         IdPredicate predicate = null;
-        Var typeVariable = Graql.var().asUserDefined();
         //Isa present
         if (isaProp != null) {
             VarPatternAdmin isaVar = isaProp.getType();
             Label label = isaVar.getTypeLabel().orElse(null);
+            Var typeVariable = label == null ? isaVar.getVarName() : Graql.var().asUserDefined();
+            relVar = relVar.isa(typeVariable);
             if (label != null) {
                 GraknGraph graph = parent.graph();
                 VarPatternAdmin idVar = typeVariable.id(graph.getOntologyConcept(label).getId()).admin();
                 predicate = new IdPredicate(idVar, parent);
             } else {
-                typeVariable = isaVar.getVarName();
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
             }
         }
-        relVar = relVar.isa(typeVariable);
-        return new ai.grakn.graql.internal.reasoner.atom.binary.Relation(relVar.admin(), typeVariable, predicate, parent);
+        return new ai.grakn.graql.internal.reasoner.atom.binary.Relation(relVar.admin(), predicate, parent);
     }
 
 }

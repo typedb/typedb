@@ -35,7 +35,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.binary.BinaryBase;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
@@ -490,7 +490,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<Var> varNames = getVarNames();
 
         //skip predicates from types
-        getTypeConstraints().stream().map(Binary::getPredicateVariable).forEach(varNames::remove);
+        getTypeConstraints().stream().map(BinaryBase::getValueVariable).forEach(varNames::remove);
 
         Set<IdPredicate> predicates = sub.entrySet().stream()
                 .filter(e -> varNames.contains(e.getKey()))
@@ -597,6 +597,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             answerStream = join(answerStream, subAnswerStream, ImmutableSet.copyOf(joinVars));
             joinedVars.addAll(atomicQuery.getVarNames());
         }
+
 
         Set<Var> vars = this.getVarNames();
         return answerStream
