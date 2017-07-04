@@ -119,6 +119,6 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
         //isa part
         VarPatternAdmin scVar = varName.hasScope(scopeVariable).admin();
-        return new TypeAtom(scVar, scopeVariable, predicate, parent);
+        return new TypeAtom(scVar, predicate, parent);
     }
 }
