@@ -29,6 +29,7 @@ import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -101,6 +102,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
                         .put(type.asType().getLabel(), type.asResourceType().getDataType()));
     }
 
+    @Nullable
     ResourceType.DataType getDataTypeOfSelectedResourceTypes(Set<Label> resourceTypes) {
         assert resourceTypes != null && !resourceTypes.isEmpty();
 

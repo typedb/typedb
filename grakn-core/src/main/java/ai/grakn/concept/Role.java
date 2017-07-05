@@ -19,6 +19,7 @@
 package ai.grakn.concept;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nonnull;
 import java.util.Collection;
 
 /**
@@ -60,6 +61,7 @@ public interface Role extends OntologyConcept {
      * @return The super of this Role
      */
     @Override
+    @Nonnull
     Role sup();
 
     /**

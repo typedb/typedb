@@ -37,6 +37,8 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 import com.google.common.collect.ImmutableMap;
+
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
@@ -61,7 +63,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint
 public class Resource extends Binary{
     private final Set<ValuePredicate> multiPredicate = new HashSet<>();
 
-    public Resource(VarPatternAdmin pattern, Var predicateVar, IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
+    public Resource(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
         super(pattern, predicateVar, idPred, par);
         this.multiPredicate.addAll(ps);
     }

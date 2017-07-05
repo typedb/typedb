@@ -21,6 +21,7 @@ package ai.grakn.concept;
 import ai.grakn.exception.GraphOperationException;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.Collection;
 
 /**
@@ -127,6 +128,7 @@ public interface Type extends OntologyConcept {
      * @return The direct super of this Type
      */
     @CheckReturnValue
+    @Nullable
     Type sup();
 
     /**

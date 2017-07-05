@@ -21,6 +21,8 @@ import ai.grakn.concept.Concept;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 
+import javax.annotation.Nullable;
+
 import static org.apache.tinkerpop.gremlin.structure.T.id;
 
 /**
@@ -81,6 +83,7 @@ abstract class AbstractElement<E extends Element, P extends Enum> {
      * @param key The key of the non-unique property to retrieve
      * @return The value stored in the property
      */
+    @Nullable
     public <X> X property(P key){
         Property<X> property = element().property(key.name());
         if(property != null && property.isPresent()) {

@@ -33,6 +33,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -133,10 +134,12 @@ final class ElementFactory {
      * @param v A vertex of an unknown type
      * @return A concept built to the correct type
      */
+    @Nullable
     <X extends Concept> X buildConcept(Vertex v){
         return buildConcept(buildVertexElement(v));
     }
 
+    @Nullable
     <X extends Concept> X buildConcept(VertexElement vertexElement){
         Schema.BaseType type;
 
@@ -240,6 +243,7 @@ final class ElementFactory {
         return new Shard(buildVertexElement(vertex));
     }
 
+    @Nullable
     VertexElement buildVertexElement(Vertex vertex){
         try {
             graknGraph.validVertex(vertex);

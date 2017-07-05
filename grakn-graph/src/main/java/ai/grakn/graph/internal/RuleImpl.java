@@ -75,11 +75,7 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
     }
 
     private Pattern parsePattern(String value){
-        if(value == null) {
-            return null;
-        } else {
-            return vertex().graph().graql().parsePattern(value);
-        }
+        return vertex().graph().graql().parsePattern(value);
     }
 
     /**

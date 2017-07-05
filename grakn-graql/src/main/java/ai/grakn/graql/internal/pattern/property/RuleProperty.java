@@ -31,6 +31,7 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.util.ErrorMessage;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
 
@@ -85,6 +86,7 @@ public abstract class RuleProperty extends AbstractVarProperty implements Unique
         }
     }
 
+    @Nullable
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         return null;

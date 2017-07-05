@@ -21,6 +21,8 @@ package ai.grakn.concept;
 import ai.grakn.exception.GraphOperationException;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Collection;
 
 /**
@@ -130,7 +132,7 @@ public interface RelationType extends Type {
      * @param role The Role to delete from the RelationType.
      * @return The RelationType itself.
      */
-    RelationType deleteRelates(Role role);
+    RelationType deleteRelates(@Nullable Role role);
 
     //---- Inherited Methods
     /**
@@ -147,6 +149,7 @@ public interface RelationType extends Type {
      * @return The direct supertype of this RelationType
      */
     @Override
+    @Nonnull
     RelationType sup();
 
     /**
