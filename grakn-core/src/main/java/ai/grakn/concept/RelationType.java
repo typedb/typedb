@@ -22,7 +22,6 @@ import ai.grakn.exception.GraphOperationException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Collection;
 
 /**
@@ -132,7 +131,7 @@ public interface RelationType extends Type {
      * @param role The Role to delete from the RelationType.
      * @return The RelationType itself.
      */
-    RelationType deleteRelates(@Nullable Role role);
+    RelationType deleteRelates(Role role);
 
     //---- Inherited Methods
     /**
