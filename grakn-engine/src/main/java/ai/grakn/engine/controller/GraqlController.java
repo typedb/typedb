@@ -89,7 +89,6 @@ public class GraqlController {
 
         spark.post(REST.WebPath.Graph.ANY_GRAQL, this::executeGraql);
         spark.get(REST.WebPath.Graph.GRAQL,    this::executeGraqlGET);
-        spark.post(REST.WebPath.Graph.GRAQL,   this::executeGraqlPOST);
 
         //TODO The below exceptions are very broad. They should be revised after we improve exception
         //TODO hierarchies in Graql and Graph
@@ -157,33 +156,6 @@ public class GraqlController {
             if(!validContentType(acceptType, query)) throw GraknServerException.contentTypeQueryMismatch(acceptType, query);
 
             Object responseBody = executeQuery(request, query, acceptType);
-            return respond(response, acceptType, responseBody);
-        }
-    }
-
-    @POST
-    @Path("/")
-    @ApiOperation(
-            value = "Executes graql insert query on the server and returns the IDs of the inserted concepts.")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QUERY,       value = "Insert query to execute", required = true, dataType = "string", paramType = "body"),
-    })
-    private Object executeGraqlPOST(Request request, Response response){
-        String queryString = mandatoryBody(request);
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        String acceptType = getAcceptType(request);
-
-        try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
-            Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
-
-            if(!(query instanceof InsertQuery)) throw GraknServerException.invalidQuery("INSERT");
-
-            Object responseBody = executeQuery(request, query, acceptType);
-
-            // Persist the transaction results TODO This should use a within-engine commit
-            graph.commit();
-
             return respond(response, acceptType, responseBody);
         }
     }
