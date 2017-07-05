@@ -34,7 +34,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.HasAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.Schema;
@@ -45,7 +44,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 import static ai.grakn.util.Schema.ImplicitType.KEY;
 import static ai.grakn.util.Schema.ImplicitType.KEY_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
@@ -177,7 +175,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         Var varName = var.getVarName().asUserDefined();
         Label label = this.getResourceType().getTypeLabel().orElse(null);
 
-        Var predicateVar = Graql.var().asUserDefined();
+        Var predicateVar = var().asUserDefined();
         OntologyConcept ontologyConcept = parent.graph().getOntologyConcept(label);
         IdPredicate predicate = new IdPredicate(predicateVar, ontologyConcept, parent);
         //isa part

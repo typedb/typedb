@@ -126,7 +126,7 @@ public class RelationAtom extends IsaAtom {
     public Atomic copy() {
         return new RelationAtom(this);
     }
-    
+
     /**
      * construct a $varName (rolemap) isa $typeVariable relation
      *
