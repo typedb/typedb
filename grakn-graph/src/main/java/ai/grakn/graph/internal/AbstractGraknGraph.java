@@ -47,7 +47,6 @@ import ai.grakn.util.Schema;
 import mjson.Json;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -342,8 +341,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    private Set<ConceptImpl> getConcepts(Schema.VertexProperty key, Object value){
-        Set<ConceptImpl> concepts = new HashSet<>();
+    private Set<Concept> getConcepts(Schema.VertexProperty key, Object value){
+        Set<Concept> concepts = new HashSet<>();
         getTinkerTraversal().has(key.name(), value).
             forEachRemaining(v -> concepts.add(factory().buildConcept(v)));
         return concepts;
@@ -419,19 +418,18 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
-    private <T extends OntologyConceptImpl> T putOntologyElement(Label label, Schema.BaseType baseType, Function<VertexElement, T> factory){
+    private <T extends OntologyConcept> T putOntologyElement(Label label, Schema.BaseType baseType, Function<VertexElement, T> factory){
         checkOntologyMutationAllowed();
-        OntologyConceptImpl type = buildOntologyElement(label, () -> factory.apply(putVertex(label, baseType)));
+        OntologyConcept ontologyConcept = buildOntologyElement(label, () -> factory.apply(putVertex(label, baseType)));
 
-        T finalType = validateOntologyElement(type, baseType, () -> {
+        T finalType = validateOntologyElement(ontologyConcept, baseType, () -> {
             if(Schema.MetaSchema.isMetaLabel(label)) throw GraphOperationException.reservedLabel(label);
-            throw PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.TYPE_LABEL, label);
+            throw PropertyNotUniqueException.cannotCreateProperty(ontologyConcept, Schema.VertexProperty.TYPE_LABEL, label);
         });
 
         //Automatic shard creation - If this type does not have a shard create one
-        if(!Schema.MetaSchema.isMetaLabel(label) &&
-                !type.vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()){
-            type.createShard();
+        if(!Schema.MetaSchema.isMetaLabel(label) && ontologyConcept.isType()){
+            ConceptImpl.from(ontologyConcept).createShard();
         }
 
         return finalType;
@@ -454,7 +452,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      *
      * @return The type which was either cached or built via a DB read or write
      */
-    private OntologyConceptImpl buildOntologyElement(Label label, Supplier<OntologyConceptImpl> dbBuilder){
+    private OntologyConcept buildOntologyElement(Label label, Supplier<OntologyConcept> dbBuilder){
         if(txCache().isTypeCached(label)){
             return txCache().getCachedOntologyElement(label);
         } else {
