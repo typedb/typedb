@@ -18,7 +18,6 @@
 
 package ai.grakn.concept;
 
-import javax.annotation.Nullable;
 import java.io.Serializable;
 
 /**
@@ -51,7 +50,7 @@ public class LabelId implements Comparable<LabelId>, Serializable {
     }
 
     @Override
-    public boolean equals(@Nullable Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         LabelId cast = (LabelId) o;

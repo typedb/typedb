@@ -19,7 +19,6 @@
 package ai.grakn.concept;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.function.Function;
 
@@ -59,7 +58,7 @@ public class Label implements Comparable<Label>, Serializable {
     }
 
     @Override
-    public boolean equals(@Nullable Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
