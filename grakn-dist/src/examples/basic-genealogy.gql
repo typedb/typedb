@@ -92,10 +92,11 @@ son sub child;
 daughter sub child;
 
 siblings sub relation
+    relates sibling  # TODO, deal with this role properly
 	relates sibling1
 	relates sibling2;
 
-sibling sub role is-abstract;
+sibling sub role;
 sibling1 sub sibling;
 sibling2 sub sibling;
 
@@ -115,10 +116,11 @@ grandson sub grandchild;
 granddaughter sub grandchild;
 
 cousins sub relation
+    relates cousin  # TODO, deal with this role properly
 	relates cousin1
 	relates cousin2;
 
-cousin sub role is-abstract;
+cousin sub role;
 cousin1 sub cousin;
 cousin2 sub cousin;
 
