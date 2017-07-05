@@ -19,7 +19,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static org.junit.Assert.assertEquals;
 
-public class GraknExecuteQueryControllerTest {
+public class GraqlControllerTest {
     
     private Response sendQuery(String query) {
         return sendQuery(query, APPLICATION_JSON_GRAQL, true, false, -1);
