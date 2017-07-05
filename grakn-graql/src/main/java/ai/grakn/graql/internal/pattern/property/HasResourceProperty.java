@@ -147,7 +147,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Resource resourceConcept = insertQueryExecutor.getConcept(resource).asResource();
-        Thing thing = concept.asInstance();
+        Thing thing = concept.asThing();
         thing.resource(resourceConcept);
     }
 
@@ -159,7 +159,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Role owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
         Role value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
 
-        concept.asInstance().relations(owner).stream()
+        concept.asThing().relations(owner).stream()
                 .filter(relation -> testPredicate(predicate, relation, value))
                 .forEach(Concept::delete);
     }

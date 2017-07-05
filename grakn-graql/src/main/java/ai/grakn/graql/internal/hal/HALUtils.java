@@ -98,7 +98,7 @@ public class HALUtils {
             return Schema.BaseType.RESOURCE_TYPE;
         } else if (ontologyConcept.isRuleType()) {
             return Schema.BaseType.RULE_TYPE;
-        } else if (ontologyConcept.isRoleType()) {
+        } else if (ontologyConcept.isRole()) {
             return Schema.BaseType.ROLE;
         } else if (ontologyConcept.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             return Schema.BaseType.TYPE;
@@ -111,8 +111,8 @@ public class HALUtils {
 
         resource.withProperty(ID_PROPERTY, concept.getId().getValue());
 
-        if (concept.isInstance()) {
-            Thing thing = concept.asInstance();
+        if (concept.isThing()) {
+            Thing thing = concept.asThing();
             resource.withProperty(TYPE_PROPERTY, thing.type().getLabel().getValue())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(thing).name());
         } else {

@@ -275,8 +275,8 @@ public class InsertQueryExecutor {
             return graph.putEntityType(label).sup(superConcept.asEntityType());
         } else if (superConcept.isRelationType()) {
             return graph.putRelationType(label).sup(superConcept.asRelationType());
-        } else if (superConcept.isRoleType()) {
-            return graph.putRole(label).sup(superConcept.asRoleType());
+        } else if (superConcept.isRole()) {
+            return graph.putRole(label).sup(superConcept.asRole());
         } else if (superConcept.isResourceType()) {
             return graph.putResourceType(label, getDataType(var)).sup(superConcept.asResourceType());
         } else if (superConcept.isRuleType()) {

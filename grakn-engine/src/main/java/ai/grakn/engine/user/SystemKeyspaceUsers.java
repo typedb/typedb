@@ -138,7 +138,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
             }
             Json user = Json.object();
             L.forEach(property -> {
-                Label label = property.get(resource).asInstance().type().getLabel();
+                Label label = property.get(resource).asThing().type().getLabel();
                 Object value = property.get(resource).asResource().getValue();
                 user.set(label.getValue(), value);
             });
@@ -226,7 +226,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
             boolean exists = !results.isEmpty();
             results.forEach(map -> {
                 map.forEach( (k,v) -> {
-                    v.asInstance().resources().forEach(Concept::delete);
+                    v.asThing().resources().forEach(Concept::delete);
                     v.delete();
                 });
             });

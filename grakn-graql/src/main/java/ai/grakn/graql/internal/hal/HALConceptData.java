@@ -105,8 +105,8 @@ public class HALConceptData {
 
         generateStateAndLinks(halResource, concept);
 
-        if (embedType && concept.isInstance()) {
-            Thing thing = concept.asInstance();
+        if (embedType && concept.isThing()) {
+            Thing thing = concept.asThing();
             if (typesInQuery.contains(thing.type().getLabel())
                     || (thing.type().sup() != null &&
                     typesInQuery.contains(thing.type().sup().getLabel()))) {

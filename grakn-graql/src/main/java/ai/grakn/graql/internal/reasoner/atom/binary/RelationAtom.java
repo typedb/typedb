@@ -349,7 +349,7 @@ public class RelationAtom extends IsaAtom {
                 .filter(p -> p.getValue().isEntity())
                 .map(e -> {
                     Concept c = e.getValue();
-                    return c.asInstance().type();
+                    return c.asThing().type();
                 })
                 .collect(toSet());
     }

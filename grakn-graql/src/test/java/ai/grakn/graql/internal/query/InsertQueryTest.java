@@ -770,9 +770,9 @@ public class InsertQueryTest {
                 var("r").rel("cluster-of-production", "c").rel("production-with-cluster", "g").rel("production-with-cluster", "m").isa("has-cluster")
         ).execute();
 
-        Thing cluster = results.get(0).get("c").asInstance();
-        Thing godfather = results.get(0).get("g").asInstance();
-        Thing muppets = results.get(0).get("m").asInstance();
+        Thing cluster = results.get(0).get("c").asThing();
+        Thing godfather = results.get(0).get("g").asThing();
+        Thing muppets = results.get(0).get("m").asThing();
         Relation relation = results.get(0).get("r").asRelation();
 
         Role clusterOfProduction = movieGraph.graph().getRole("cluster-of-production");

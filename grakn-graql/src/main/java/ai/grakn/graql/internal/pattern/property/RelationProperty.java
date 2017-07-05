@@ -169,7 +169,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         // Check all role types exist
         roleTypes.forEach(roleId -> {
             OntologyConcept ontologyConcept = graph.getOntologyConcept(roleId);
-            if (ontologyConcept == null || !ontologyConcept.isRoleType()) {
+            if (ontologyConcept == null || !ontologyConcept.isRole()) {
                 throw GraqlQueryException.notARoleType(roleId);
             }
         });
@@ -196,8 +196,8 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     private void addRoleplayer(InsertQueryExecutor insertQueryExecutor, Relation relation, RelationPlayer relationPlayer) {
         VarPatternAdmin roleVar = relationPlayer.getRoleType().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
 
-        Role role = insertQueryExecutor.getConcept(roleVar).asRoleType();
-        Thing roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asInstance();
+        Role role = insertQueryExecutor.getConcept(roleVar).asRole();
+        Thing roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asThing();
         relation.addRolePlayer(role, roleplayer);
     }
 
