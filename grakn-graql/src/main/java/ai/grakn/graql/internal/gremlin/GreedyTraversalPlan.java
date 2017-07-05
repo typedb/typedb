@@ -82,47 +82,107 @@ public class GreedyTraversalPlan {
     private static List<Fragment> planForConjunction(ConjunctionQuery query) {
 
         List<Fragment> plan = new ArrayList<>();
-        Collection<Set<Fragment>> connectedFragmentSets = getConnectedFragmentSets(query);
+        Map<String, Node> allNodes = new HashMap<>();
 
+        Collection<Set<Fragment>> connectedFragmentSets = getConnectedFragmentSets(query, allNodes);
+
+        System.out.println("connectedFragmentSets.size() = " + connectedFragmentSets.size());
+        System.out.println("connectedFragmentSets = " + connectedFragmentSets);
+
+//        Map<String, Fragment> neqGlobal = new HashMap<>();
         connectedFragmentSets.forEach(fragmentSet -> {
-            Map<String, Node> nodes = new HashMap<>();
-            Map<Node, Map<Node, Fragment>> edges = new HashMap<>();
-            final Set<Node> nodesWithFixedCost = new HashSet<>();
-            Set<Weighted<DirectedEdge<Node>>> weightedGraph = fragmentSet.stream()
-                    .filter(fragment -> {
 
+            Set<Node> connectedNodes = new HashSet<>();
+            Map<Node, Map<Node, Fragment>> edges = new HashMap<>();
+
+//            Set<Fragment> neqLocal = new HashSet<>();
+//            Set<Fragment> valueLocal = new HashSet<>();
+            final Set<Node> nodesWithFixedCost = new HashSet<>();
+
+            Set<Weighted<DirectedEdge<Node>>> weightedGraph = new HashSet<>();
+
+            fragmentSet.stream()
+                    .filter(fragment -> {
+                        Node start = Node.addIfAbsent(fragment.getStart(), allNodes);
                         if (!fragment.getEnd().isPresent()) {
-                            Node node = Node.addIfAbsent(fragment.getStart(), nodes);
+
+                            connectedNodes.add(start);
 
                             if (fragment.hasFixedFragmentCost()) {
                                 // fragments that should be done right away
                                 plan.add(fragment);
-                                nodesWithFixedCost.add(node);
-                                return false;
+                                nodesWithFixedCost.add(start);
+//                                return false;
 
                             } else if (fragment.getDependencies().isEmpty()) {
                                 //fragments that should be done when a node has been visited
-                                node.getFragmentsWithoutDependency().add(fragment);
-                                return false;
-
-                            } else {
-                                // check if the fragment is neq
-                                if (fragment.getEquivalentFragmentSet().fragments().size() == 2) {
-                                    node.getFragmentsWithDependency().add(fragment);
-                                    fragment.getDependencies().forEach(var -> {
-                                        Node dependency = Node.addIfAbsent(var, nodes);
-                                        dependency.getDependants().add(fragment);
-                                    });
-                                    return false;
-                                }
-                                // else it's value fragment with dependencies
-                                return true;
+                                start.getFragmentsWithoutDependency().add(fragment);
+//                                return false;
+//
+//                            } else {
+//                                // check if the fragment is neq or value
+//                                if (fragment.getEquivalentFragmentSet().fragments().size() == 2) {
+//                                    neqLocal.add(fragment);
+//                                    return false;
+//
+//                                } else {
+//                                    // else it's value fragment with dependencies
+//                                    valueLocal.add(fragment);
+//                                    return false;
+//                                }
                             }
+                            return false;
+                        } else {
+                            return true;
                         }
-                        return true;
                     })
-                    .flatMap(fragment -> fragment.getDirectedEdges(nodes, edges).stream())
-                    .collect(Collectors.toSet());
+                    .flatMap(fragment -> fragment.getDirectedEdges(allNodes, edges).stream())
+                    .forEach(weightedDirectedEdge -> {
+                        weightedGraph.add(weightedDirectedEdge);
+                        connectedNodes.add(weightedDirectedEdge.val.destination);
+                        connectedNodes.add(weightedDirectedEdge.val.source);
+                    });
+//                    .collect(Collectors.toSet());
+
+//            neqLocal.forEach(neqFragment -> {
+//                Var other = neqFragment.getDependencies().iterator().next();
+//                if (connectedNodes.contains(Node.addIfAbsent(other, allNodes))) {
+//                    allNodes.get(neqFragment.getStart().getValue()).getFragmentsWithDependency().add(neqFragment);
+//                    allNodes.get(other.getValue()).getDependants().add(neqFragment);
+////                    Node.addIfAbsent(neqFragment.getStart(), allNodes).getFragmentsWithDependency().add(neqFragment);
+////                    Node.addIfAbsent(other, allNodes).getDependants().add(neqFragment);
+//                } else {
+//                    // make sure we only add one neqFragment for each pair
+//                    String key = neqFragment.getStart().getValue().compareTo(other.getValue()) > 0 ?
+//                            neqFragment.getStart().getValue() + " " + other.getValue() :
+//                            other.getValue() + " " + neqFragment.getStart().getValue();
+//                    neqGlobal.put(key, neqFragment);
+//                }
+//            });
+//            System.out.println("neqLocal = " + neqLocal);
+
+
+//            valueLocal.forEach(valueFragment -> {
+//                Node currentNode = allNodes.get(valueFragment.getStart().getValue());
+//                Var other = valueFragment.getDependencies().iterator().next();
+//                Node otherNode = Node.addIfAbsent(other, allNodes);
+//                if (connectedNodes.contains(otherNode)) {
+//                    currentNode.getFragmentsWithDependency().add(valueFragment);
+//                    otherNode.getDependants().add(valueFragment);
+//
+//                    // as value fragment is not symmetric, we need to add it again
+//                    otherNode.getFragmentsWithDependency().add(valueFragment);
+//                    currentNode.getDependants().add(valueFragment);
+//
+//                } else {
+//                    // make sure we only add one value for each pair
+//                    String key = valueFragment.getStart().getValue().compareTo(other.getValue()) > 0 ?
+//                            valueFragment.getStart().getValue() + " " + other.getValue() :
+//                            other.getValue() + " " + valueFragment.getStart().getValue();
+//                    neqGlobal.put(key, valueFragment);
+//                }
+//            });
+//            System.out.println("neqLocal = " + neqLocal);
 
             // if there is no edge fragment
             if (!weightedGraph.isEmpty()) {
@@ -136,32 +196,76 @@ public class GreedyTraversalPlan {
                         .max(Weighted::compareTo)
                         .map(arborescenceInside -> arborescenceInside.val).orElse(Arborescence.empty());
 
-                greedyTraversal(plan, arborescence, nodes, edges);
+                System.out.println("arborescence = " + arborescence);
+                System.out.println();
+
+                greedyTraversal(plan, arborescence, allNodes, edges);
             }
 
+            System.out.println("plan = " + plan);
             // add the remaining node fragments
-            Set<Node> nodeWithFragment = nodes.values().stream()
-                    .filter(node -> !node.getFragmentsWithoutDependency().isEmpty())
+//            Set<Node> nodeWithFragment = allNodes.values().stream()
+            Set<Node> nodeWithFragment = connectedNodes.stream()
+                    .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
+                            !node.getFragmentsWithDependencyVisited().isEmpty())
                     .collect(Collectors.toSet());
             while (!nodeWithFragment.isEmpty()) {
-                nodeWithFragment.forEach(node -> addNodeFragmentToPlan(node, plan, nodes));
-                nodeWithFragment = nodes.values().stream()
-                        .filter(node -> !node.getFragmentsWithoutDependency().isEmpty())
+                System.out.println("check");
+                nodeWithFragment.forEach(node -> addNodeFragmentToPlan(node, plan, allNodes, false));
+                nodeWithFragment = connectedNodes.stream()
+                        .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
+                                !node.getFragmentsWithDependencyVisited().isEmpty())
                         .collect(Collectors.toSet());
             }
         });
+        // apply global neq
+//        plan.addAll(neqGlobal.values());
+
+        Set<Node> nodeWithFragment = allNodes.values().stream()
+                .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
+                        !node.getFragmentsWithDependencyVisited().isEmpty())
+                .collect(Collectors.toSet());
+        while (!nodeWithFragment.isEmpty()) {
+            System.out.println("final check");
+
+            nodeWithFragment.forEach(node -> addNodeFragmentToPlan(node, plan, allNodes, false));
+            nodeWithFragment = allNodes.values().stream()
+                    .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
+                            !node.getFragmentsWithDependencyVisited().isEmpty())
+                    .collect(Collectors.toSet());
+        }
+
+        System.out.println("final plan = " + plan);
         return plan;
     }
 
-    private static Collection<Set<Fragment>> getConnectedFragmentSets(ConjunctionQuery query) {
+    private static Collection<Set<Fragment>> getConnectedFragmentSets(ConjunctionQuery query,
+                                                                      Map<String, Node> allNodes) {
         Map<Integer, Set<String>> varNameSetMap = new HashMap<>();
         Map<Integer, Set<Fragment>> fragmentSetMap = new HashMap<>();
         final int[] index = {0};
         query.getEquivalentFragmentSets().stream().flatMap(EquivalentFragmentSet::stream).forEach(fragment -> {
 
-            Set<Var> fragmentVarsSet = Sets.newHashSet(fragment.getVariableNames());
-            fragmentVarsSet.addAll(fragment.getDependencies());
-            Set<String> fragmentVarNameSet = fragmentVarsSet.stream().map(Var::getValue).collect(Collectors.toSet());
+            if (!fragment.getDependencies().isEmpty()) {
+                Node start = Node.addIfAbsent(fragment.getStart(), allNodes);
+                Node other = Node.addIfAbsent(fragment.getDependencies().iterator().next(), allNodes);
+
+                start.getFragmentsWithDependency().add(fragment);
+                other.getDependants().add(fragment);
+
+                // check whether it's value fragment
+                if (fragment.getEquivalentFragmentSet().fragments().size() == 1) {
+                    // as value fragment is not symmetric, we need to add it again
+                    other.getFragmentsWithDependency().add(fragment);
+                    start.getDependants().add(fragment);
+                }
+            }
+//            Set<Var> fragmentVarsSet = Sets.newHashSet(fragment.getVariableNames());
+//            if (!fragment.getDependencies().isEmpty() && fragment.getEquivalentFragmentSet().fragments().size() == 1) {
+//                fragmentVarsSet.addAll(fragment.getDependencies());
+//            }
+            Set<String> fragmentVarNameSet = fragment.getVariableNames().stream()
+                    .map(Var::getValue).collect(Collectors.toSet());
 
             List<Integer> setsWithVarInCommon = new ArrayList<>();
             varNameSetMap.forEach((setIndex, varNameSet) -> {
@@ -202,38 +306,74 @@ public class GreedyTraversalPlan {
             edgesParentToChild.get(parent).add(child);
         });
 
+        HashSet<Node> children = Sets.newHashSet(arborescence.getParents().keySet());
+        HashSet<Node> parents = Sets.newHashSet(arborescence.getParents().values());
+        System.out.println("parents.size() = " + parents.size());
+        System.out.println("children.size() = " + children.size());
+        parents.removeAll(children);
+        System.out.println("parents.size() = " + parents.size());
+        System.out.println("parent = " + parents.iterator().next());
         Node root = arborescence.getRoot();
+        System.out.println("root = " + root);
+
         Set<Node> reachableNodes = Sets.newHashSet(root);
         while (!reachableNodes.isEmpty()) {
             Node nodeWithMinCost = reachableNodes.stream().min(Comparator.comparingDouble(node ->
                     getEdgeFragmentCost(node, arborescence, edgeFragmentChildToParent))).get();
 
+            System.out.println("nodeWithMinCost = " + nodeWithMinCost);
+
             // add edge fragment first, then node fragments
             getEdgeFragment(nodeWithMinCost, arborescence, edgeFragmentChildToParent).ifPresent(plan::add);
-            addNodeFragmentToPlan(nodeWithMinCost, plan, nodes);
+            getEdgeFragment(nodeWithMinCost, arborescence, edgeFragmentChildToParent)
+                    .ifPresent(fragment -> System.out.println("fragment exist= " + fragment));
+            System.out.println("edge traversal");
+            addNodeFragmentToPlan(nodeWithMinCost, plan, nodes, true);
 
             reachableNodes.remove(nodeWithMinCost);
             if (edgesParentToChild.containsKey(nodeWithMinCost)) {
                 reachableNodes.addAll(edgesParentToChild.get(nodeWithMinCost));
             }
+            System.out.println();
         }
     }
 
-    private static void addNodeFragmentToPlan(Node node, List<Fragment> plan, Map<String, Node> nodes) {
+    private static void addNodeFragmentToPlan(Node node, List<Fragment> plan, Map<String, Node> nodes,
+                                              boolean visited) {
+        System.out.println("node = " + node);
+        if (!visited) {
+            node.getFragmentsWithoutDependency().stream()
+                    .min(Comparator.comparingDouble(fragment -> fragment.fragmentCost(0)))
+                    .ifPresent(firstNodeFragment -> {
+                        plan.add(firstNodeFragment);
+                        node.getFragmentsWithoutDependency().remove(firstNodeFragment);
+                    });
+        }
+        node.getFragmentsWithoutDependency().addAll(node.getFragmentsWithDependencyVisited());
         plan.addAll(node.getFragmentsWithoutDependency().stream()
                 .sorted(Comparator.comparingDouble(fragment -> fragment.fragmentCost(0)))
                 .collect(Collectors.toList()));
+
         node.getFragmentsWithoutDependency().clear();
+        node.getFragmentsWithDependencyVisited().clear();
 
         if (!node.getFragmentsWithDependency().isEmpty()) {
+            System.out.println("node.getFragmentsWithDependency() = " + node.getFragmentsWithDependency());
             node.getDependants().forEach(fragment -> {
                 Node otherNode = Node.addIfAbsent(fragment.getStart(), nodes);
-                otherNode.getFragmentsWithoutDependency().add(fragment);
+                System.out.println("otherNode = " + otherNode);
+                if (node.equals(otherNode)) {
+                    otherNode = Node.addIfAbsent(fragment.getDependencies().iterator().next(), nodes);
+                }
+                System.out.println("otherNode = " + otherNode);
+                otherNode.getFragmentsWithDependencyVisited().add(fragment);
                 otherNode.getFragmentsWithDependency().remove(fragment);
             });
+
+            //TODO: Do we really need to clear this?
             node.getFragmentsWithDependency().clear();
         }
-
+        //TODO: Do we really need to clear this?
         node.getDependants().clear();
     }
 

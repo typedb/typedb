@@ -37,6 +37,7 @@ public class Node {
 
     private Set<Fragment> fragmentsWithoutDependency = new HashSet<>();
     private Set<Fragment> fragmentsWithDependency = new HashSet<>();
+    private Set<Fragment> fragmentsWithDependencyVisited = new HashSet<>();
     private Set<Fragment> dependants = new HashSet<>();
 
     private Node(String name) {
@@ -77,6 +78,10 @@ public class Node {
 
     public Set<Fragment> getFragmentsWithDependency() {
         return fragmentsWithDependency;
+    }
+
+    public Set<Fragment> getFragmentsWithDependencyVisited() {
+        return fragmentsWithDependencyVisited;
     }
 
     public Set<Fragment> getDependants() {
