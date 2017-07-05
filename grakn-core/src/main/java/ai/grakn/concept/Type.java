@@ -176,4 +176,18 @@ public interface Type extends OntologyConcept {
      * @return The Type itself.
      */
     Type deletePlays(Role role);
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default Type asType(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isType(){
+        return true;
+    }
 }

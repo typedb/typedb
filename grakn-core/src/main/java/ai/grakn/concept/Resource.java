@@ -91,4 +91,19 @@ public interface Resource<D> extends Thing {
     @Override
     Resource resource(Resource resource);
 
+    //------------------------------------- Other ---------------------------------
+    @SuppressWarnings("unchecked")
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default Resource asResource(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isResource(){
+        return true;
+    }
 }

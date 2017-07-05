@@ -22,6 +22,7 @@ import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.Pattern;
 
 import javax.annotation.Nonnull;
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
 /**
@@ -147,4 +148,19 @@ public interface RuleType extends Type {
      */
     @Override
     Collection<Rule> instances();
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default RuleType asRuleType(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isRuleType(){
+        return true;
+    }
 }

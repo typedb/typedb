@@ -95,7 +95,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Type type = insertQueryExecutor.getConcept(this.type).asType();
-        Thing thing = concept.asInstance();
+        Thing thing = concept.asThing();
         if (!thing.type().equals(type)) {
             throw GraqlQueryException.insertNewType(thing, type);
         }
@@ -105,7 +105,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
         type.getTypeLabel().ifPresent(typeLabel -> {
             OntologyConcept theOntologyConcept = graph.getOntologyConcept(typeLabel);
-            if (theOntologyConcept != null && theOntologyConcept.isRoleType()) {
+            if (theOntologyConcept != null && theOntologyConcept.isRole()) {
                 throw GraqlQueryException.queryInstanceOfRoleType(typeLabel);
             }
         });

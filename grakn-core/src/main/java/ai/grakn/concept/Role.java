@@ -89,5 +89,20 @@ public interface Role extends OntologyConcept {
      */
     @CheckReturnValue
     Collection<Type> playedByTypes();
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default Role asRole(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isRole(){
+        return true;
+    }
 }
 

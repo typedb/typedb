@@ -91,4 +91,20 @@ public interface Rule extends Thing {
      */
     @Override
     RuleType type();
+
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default Rule asRule(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isRule(){
+        return true;
+    }
 }

@@ -265,7 +265,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutRoleTypeWithAnExistingNonRoleTypeLabel_Throw(
             @Open GraknGraph graph, @FromGraph Type type) {
-        assumeFalse(type.isRoleType());
+        assumeFalse(type.isRole());
 
         exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){

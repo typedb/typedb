@@ -186,7 +186,7 @@ public class DashboardController {
     private static List<Json> getRelationTypes(Collection<Role> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
         return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes().stream())
                 .map(relationType -> relationType.getLabel().getValue()).sorted()
-                .map(relationName -> Json.object("value", relationName, "href", String.format(RELATION_TYPES, concept.asInstance().type().getLabel().getValue(), concept.getId().getValue(), relationName, limit, keyspace, limit)))
+                .map(relationName -> Json.object("value", relationName, "href", String.format(RELATION_TYPES, concept.asThing().type().getLabel().getValue(), concept.getId().getValue(), relationName, limit, keyspace, limit)))
                 .collect(toList());
     }
 
@@ -196,7 +196,7 @@ public class DashboardController {
                 .flatMap(roleType -> roleType.playedByTypes().stream().map(entityType -> entityType.getLabel().getValue()))
                 .collect(Collectors.toSet()).stream()
                 .sorted()
-                .map(entityName -> Json.object("value", entityName, "href", String.format(ENTITY_TYPES, concept.asInstance().type().getLabel().getValue(), concept.getId().getValue(), entityName, limit, keyspace, limit)))
+                .map(entityName -> Json.object("value", entityName, "href", String.format(ENTITY_TYPES, concept.asThing().type().getLabel().getValue(), concept.getId().getValue(), entityName, limit, keyspace, limit)))
                 .collect(toList());
     }
 
@@ -206,7 +206,7 @@ public class DashboardController {
                 .map(roleType -> roleType.getLabel().getValue())
                 .collect(Collectors.toSet()).stream()
                 .sorted()
-                .map(roleName -> Json.object("value", roleName, "href", String.format(ROLE_TYPES, concept.asInstance().type().getLabel().getValue(), concept.getId().getValue(), roleName, limit, keyspace, limit)))
+                .map(roleName -> Json.object("value", roleName, "href", String.format(ROLE_TYPES, concept.asThing().type().getLabel().getValue(), concept.getId().getValue(), roleName, limit, keyspace, limit)))
                 .collect(toList());
     }
 }

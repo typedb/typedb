@@ -102,7 +102,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
 
             assertTrue(
                 type.instances().stream()
-                        .flatMap(inst -> inst.asEntity()
+                        .flatMap(inst -> inst
                                 .resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
                         .anyMatch(s -> s.getValue().equals("eShakespeare"))
             );
@@ -166,7 +166,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             migrator.graph(graph);
             EntityType type = migrator.entityType(owlManager().getOWLDataFactory().getOWLClass(OwlModel.THING.owlname()));          
             Assert.assertNotNull(type);         
-            assertTrue(type.instances().stream().flatMap(inst -> inst.asEntity()
+            assertTrue(type.instances().stream().flatMap(inst -> inst
                     .resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
                     .anyMatch(s -> s.getValue().equals("eItem1")));
 

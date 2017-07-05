@@ -472,12 +472,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public RelationType putRelationType(Label label) {
         return putOntologyElement(label, Schema.BaseType.RELATION_TYPE,
-                v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE)).asRelationType();
+                v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE));
     }
 
     RelationType putRelationTypeImplicit(Label label) {
         return putOntologyElement(label, Schema.BaseType.RELATION_TYPE,
-                v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE)).asRelationType();
+                v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE));
     }
 
     @Override
@@ -488,12 +488,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public Role putRole(Label label) {
         return putOntologyElement(label, Schema.BaseType.ROLE,
-                v -> factory().buildRole(v, getMetaRoleType(), Boolean.FALSE)).asRoleType();
+                v -> factory().buildRole(v, getMetaRoleType(), Boolean.FALSE));
     }
 
     Role putRoleTypeImplicit(Label label) {
         return putOntologyElement(label, Schema.BaseType.ROLE,
-                v -> factory().buildRole(v, getMetaRoleType(), Boolean.TRUE)).asRoleType();
+                v -> factory().buildRole(v, getMetaRoleType(), Boolean.TRUE));
     }
 
     @Override
@@ -506,7 +506,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public <V> ResourceType<V> putResourceType(Label label, ResourceType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
         ResourceType<V> resourceType = putOntologyElement(label, Schema.BaseType.RESOURCE_TYPE,
-                v -> factory().buildResourceType(v, getMetaResourceType(), dataType)).asResourceType();
+                v -> factory().buildResourceType(v, getMetaResourceType(), dataType));
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if(Schema.MetaSchema.isMetaLabel(label)) {
