@@ -133,11 +133,6 @@ public class RelationAtom extends IsaAtom {
         return new RelationAtom(this);
     }
 
-
-    private static VarPatternAdmin constructRelationVarPattern(Var varName, Var typeVariable, Map<Var, VarPattern> roleMap) {
-        return constructRelationVarPattern(varName, typeVariable, roleMap.entrySet().stream().map(e -> new Pair<>(e.getKey(), e.getValue())).collect(Collectors.toList()));
-    }
-
     /**
      * construct a $varName (rolemap) isa $typeVariable relation
      *
