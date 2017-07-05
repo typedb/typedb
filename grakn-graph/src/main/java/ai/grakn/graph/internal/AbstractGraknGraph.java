@@ -894,7 +894,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             foundRelation = otherRelation;
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
             otherRelation.allRolePlayers().forEach((roleType, instances) -> {
-                if(instances.contains(other)) putShortcutEdge(main, otherRelation, (RoleImpl) roleType);
+                if(instances.contains(other)) putShortcutEdge(main, otherRelation, roleType);
             });
         }
 

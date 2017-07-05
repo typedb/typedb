@@ -132,7 +132,7 @@ class RoleImpl extends OntologyConceptImpl<Role> implements Role {
     public Stream<Casting> rolePlayers(){
         return relationTypes().stream().
                 flatMap(relationType -> relationType.instances().stream()).
-                flatMap(relation -> ((RelationImpl)relation).castingsRelation(this));
+                flatMap(relation -> ((RelationImpl)relation).reified().castingsRelation(this));
     }
 
     @Override

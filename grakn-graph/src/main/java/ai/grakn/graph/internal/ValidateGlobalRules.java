@@ -150,7 +150,7 @@ class ValidateGlobalRules {
      */
     static Optional<String> validateRelationshipStructure(RelationImpl relation){
         RelationType relationType = relation.type();
-        Collection<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
+        Collection<Casting> castings = relation.reified().castingsRelation().collect(Collectors.toSet());
         Collection<Role> roles = relationType.relates();
 
         Set<Role> rolesViaRolePlayers = castings.stream().map(Casting::getRoleType).collect(Collectors.toSet());

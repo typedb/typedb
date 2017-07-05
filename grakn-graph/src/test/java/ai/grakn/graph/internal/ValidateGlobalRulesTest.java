@@ -45,7 +45,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
 
         RelationImpl assertion = (RelationImpl) hunts.addRelation().
                 addRolePlayer(witcher, geralt).addRolePlayer(monster, werewolf);
-        assertion.castingsRelation().forEach(rolePlayer ->
+        assertion.reified().castingsRelation().forEach(rolePlayer ->
                 assertTrue(ValidateGlobalRules.validatePlaysStructure(rolePlayer).isPresent()));
 
         hunter.plays(witcher);
@@ -53,7 +53,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         boolean [] flags = {false, false};
         int count = 0;
 
-        for (Casting casting : assertion.castingsRelation().collect(Collectors.toSet())) {
+        for (Casting casting : assertion.reified().castingsRelation().collect(Collectors.toSet())) {
             flags[count] = ValidateGlobalRules.validatePlaysStructure(casting).isPresent();
             count++;
         }
@@ -63,7 +63,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         wolf.sup(creature);
         creature.plays(monster);
 
-        for (Casting casting : assertion.castingsRelation().collect(Collectors.toSet())) {
+        for (Casting casting : assertion.reified().castingsRelation().collect(Collectors.toSet())) {
             assertFalse(ValidateGlobalRules.validatePlaysStructure(casting).isPresent());
         }
     }
@@ -88,19 +88,19 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
                 .addRolePlayer(role2, other1).addRolePlayer(role1, entity);
 
         // Valid with only a single relation
-        relation1.castingsRelation().forEach(rolePlayer ->
+        relation1.reified().castingsRelation().forEach(rolePlayer ->
                 assertFalse(ValidateGlobalRules.validatePlaysStructure(rolePlayer).isPresent()));
 
         RelationImpl relation2 = (RelationImpl) relationType.addRelation()
                 .addRolePlayer(role2, other2).addRolePlayer(role1, entity);
 
         // Invalid with multiple relations
-        relation1.castingsRelation().forEach(rolePlayer -> {
+        relation1.reified().castingsRelation().forEach(rolePlayer -> {
             if (rolePlayer.getRoleType().equals(role1)) {
                 assertTrue(ValidateGlobalRules.validatePlaysStructure(rolePlayer).isPresent());
             }
         });
-        relation2.castingsRelation().forEach(rolePlayer -> {
+        relation2.reified().castingsRelation().forEach(rolePlayer -> {
             if (rolePlayer.getRoleType().equals(role1)) {
                 assertTrue(ValidateGlobalRules.validatePlaysStructure(rolePlayer).isPresent());
             }

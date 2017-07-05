@@ -1,0 +1,107 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
+package ai.grakn.graph.internal;
+
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+/**
+ * <p>
+ *     Encapsulates The {@link Relation} as a {@link VertexElement}
+ * </p>
+ *
+ * <p>
+ *     This wraps up a {@link Relation} as a {@link VertexElement}. It is used to represent any {@link Relation} which
+ *     has been reified.
+ * </p>
+ *
+ * @author fppt
+ *
+ */
+public class ReifiedRelation extends ThingImpl<Relation, RelationType> {
+    ReifiedRelation(VertexElement vertexElement) {
+        super(vertexElement);
+    }
+
+    ReifiedRelation(VertexElement vertexElement, RelationType type) {
+        super(vertexElement, type);
+    }
+
+    public Map<Role, Set<Thing>> allRolePlayers() {
+        HashMap<Role, Set<Thing>> roleMap = new HashMap<>();
+
+        //We add the role types explicitly so we can return them when there are no roleplayers
+        type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
+        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRoleType(), (k) -> new HashSet<>()).add(rp.getInstance()));
+
+        return roleMap;
+    }
+
+    public Collection<Thing> rolePlayers(Role... roles) {
+        return castingsRelation(roles).map(Casting::getInstance).collect(Collectors.toSet());
+    }
+
+    public void addRolePlayer(RelationImpl owner, Role role, Thing thing) {
+        Objects.requireNonNull(role);
+        Objects.requireNonNull(thing);
+
+        if(Schema.MetaSchema.isMetaLabel(role.getLabel())) throw GraphOperationException.metaTypeImmutable(role.getLabel());
+
+        //Do the actual put of the role and role player
+        vertex().graph().putShortcutEdge(thing, owner, role);
+    }
+
+    /**
+     * Castings are retrieved from the perspective of the {@link Relation}
+     *
+     * @param roles The role which the instances are playing
+     * @return The {@link Casting} which unify a {@link Role} and {@link Thing} with this {@link Relation}
+     */
+    Stream<Casting> castingsRelation(Role... roles){
+        if(roles.length == 0){
+            return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
+                    map(edge -> vertex().graph().factory().buildRolePlayer(edge));
+        }
+
+        //Traversal is used so we can potentially optimise on the index
+        Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
+        return vertex().graph().getTinkerTraversal().
+                has(Schema.VertexProperty.ID.name(), getId().getValue()).
+                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), type().getTypeId().getValue()).
+                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).
+                toStream().map(edge -> vertex().graph().factory().buildRolePlayer(edge));
+    }
+}

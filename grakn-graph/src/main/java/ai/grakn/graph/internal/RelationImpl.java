@@ -18,26 +18,17 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * <p>
@@ -52,12 +43,16 @@ import java.util.stream.Stream;
  *
  */
 class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation {
-    RelationImpl(VertexElement vertexElement) {
-        super(vertexElement);
+    private ReifiedRelation reifiedRelation;
+
+    RelationImpl(ReifiedRelation reifiedRelation) {
+        //TODO remove the call to super
+        super(reifiedRelation.vertex());
+        this.reifiedRelation = reifiedRelation;
     }
 
-    RelationImpl(VertexElement vertexElement, RelationType type) {
-        super(vertexElement, type);
+    ReifiedRelation reified(){
+        return reifiedRelation;
     }
 
     /**
@@ -65,28 +60,6 @@ class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation
      */
     void setHash(){
         vertex().propertyUnique(Schema.VertexProperty.INDEX, generateNewHash(type(), allRolePlayers()));
-    }
-
-    /**
-     * Castings are retrieved from the perspective of the {@link Relation}
-     *
-     * @param roles The role which the instances are playing
-     * @return The {@link Casting} which unify a {@link Role} and {@link Thing} with this {@link Relation}
-     */
-    Stream<Casting> castingsRelation(Role... roles){
-        if(roles.length == 0){
-            return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
-                    map(edge -> vertex().graph().factory().buildRolePlayer(edge));
-        }
-
-        //Traversal is used so we can potentially optimise on the index
-        Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getLabelId().getValue()).collect(Collectors.toSet());
-        return vertex().graph().getTinkerTraversal().
-                has(Schema.VertexProperty.ID.name(), getId().getValue()).
-                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), type().getLabelId().getValue()).
-                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).
-                toStream().map(edge -> vertex().graph().factory().buildRolePlayer(edge));
     }
 
     /**
@@ -120,18 +93,12 @@ class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation
      */
     @Override
     public Map<Role, Set<Thing>> allRolePlayers(){
-        HashMap<Role, Set<Thing>> roleMap = new HashMap<>();
-
-        //We add the role types explicitly so we can return them when there are no roleplayers
-        type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
-        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRoleType(), (k) -> new HashSet<>()).add(rp.getInstance()));
-
-        return roleMap;
+       return reified().allRolePlayers();
     }
 
     @Override
     public Collection<Thing> rolePlayers(Role... roles) {
-        return castingsRelation(roles).map(Casting::getInstance).collect(Collectors.toSet());
+        return reified().rolePlayers(roles);
     }
 
 
@@ -143,24 +110,8 @@ class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation
      */
     @Override
     public Relation addRolePlayer(Role role, Thing thing) {
-        Objects.requireNonNull(role);
-        Objects.requireNonNull(thing);
-
-        if(Schema.MetaSchema.isMetaLabel(role.getLabel())) throw GraphOperationException.metaTypeImmutable(role.getLabel());
-
-        //Do the actual put of the role and role player
-        return addNewRolePlayer(role, thing);
-    }
-
-    /**
-     * Adds a new role player to this relation
-     * @param role The role of the new role player.
-     * @param thing The new role player.
-     * @return The Relation itself
-     */
-    private Relation addNewRolePlayer(Role role, Thing thing){
-        vertex().graph().putShortcutEdge((ThingImpl) thing, this, (RoleImpl) role);
-        return this;
+        reified().addRolePlayer(this, role, thing);
+        return getThis();
     }
 
     /**
