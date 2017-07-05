@@ -432,20 +432,20 @@ public class InsertQueryTest {
     @Test
     public void testInsertRule() {
         String ruleTypeId = "a-rule-type";
-        Pattern lhsPattern = qb.parsePattern("$x sub entity");
-        Pattern rhsPattern = qb.parsePattern("$x sub entity");
-        VarPattern vars = var("x").isa(ruleTypeId).lhs(lhsPattern).rhs(rhsPattern);
+        Pattern when = qb.parsePattern("$x sub entity");
+        Pattern then = qb.parsePattern("$x sub entity");
+        VarPattern vars = var("x").isa(ruleTypeId).when(when).then(then);
         qb.insert(vars).execute();
 
         RuleType ruleType = movieGraph.graph().getRuleType(ruleTypeId);
         boolean found = false;
         for (ai.grakn.concept.Rule rule : ruleType.instances()) {
-            if(lhsPattern.equals(rule.getLHS()) && rhsPattern.equals(rule.getRHS())){
+            if(when.equals(rule.getWhen()) && then.equals(rule.getThen())){
                 found = true;
                 break;
             }
         }
-        assertTrue("Unable to find rule with lhs [" + lhsPattern + "] and rhs [" + rhsPattern + "]", found);
+        assertTrue("Unable to find rule with when [" + when + "] and then [" + then + "]", found);
     }
 
     @Test
@@ -721,29 +721,29 @@ public class InsertQueryTest {
     @Test
     public void testInsertRuleWithoutLhs() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("lhs")));
-        qb.insert(var().isa("inference-rule").rhs(var("x").isa("movie"))).execute();
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("when")));
+        qb.insert(var().isa("inference-rule").then(var("x").isa("movie"))).execute();
     }
 
     @Test
     public void testInsertRuleWithoutRhs() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("rhs")));
-        qb.insert(var().isa("inference-rule").lhs(var("x").isa("movie"))).execute();
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("then")));
+        qb.insert(var().isa("inference-rule").when(var("x").isa("movie"))).execute();
     }
 
     @Test
-    public void testInsertNonRuleWithLhs() {
+    public void testInsertNonRuleWithWhen() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("lhs", RULE.getLabel()));
-        qb.insert(var().isa("movie").lhs(var("x"))).execute();
+        exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("when", RULE.getLabel()));
+        qb.insert(var().isa("movie").when(var("x"))).execute();
     }
 
     @Test
-    public void testInsertNonRuleWithRHS() {
+    public void testInsertNonRuleWithThen() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("rhs", RULE.getLabel()));
-        qb.insert(label("thingy").sub("movie").rhs(var("x"))).execute();
+        exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("then", RULE.getLabel()));
+        qb.insert(label("thingy").sub("movie").then(var("x"))).execute();
     }
 
     @Test

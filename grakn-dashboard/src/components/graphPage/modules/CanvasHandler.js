@@ -69,7 +69,7 @@ function onLoadOntology(type:string) {
 }
 
 function onGraphResponseAnalytics(resp:string) {
-  const responseObject = JSON.parse(resp).response;
+  const responseObject = JSON.parse(resp);
   EventHub.$emit('analytics-string-response', responseObject);
 }
 
@@ -124,7 +124,7 @@ function loadInstancesResources(start:number, instances:Object[]) {
 function flushPromises(promises:Object[]) {
   return Promise.all(promises.map(softFail)).then((responses) => {
     responses.filter(x => x.success).map(x => x.result).forEach((resp) => {
-      const respObj = JSON.parse(resp).response;
+      const respObj = JSON.parse(resp);
       // Check if some of the resources attached to this node are already drawn in the graph:
       // if a resource is already in the graph (because explicitly asked for (e.g. all relations with weight > 0.5 ))
       // we need to draw the edges connecting this node to the resource node.
@@ -148,7 +148,7 @@ function linkResourceOwners(instances) {
     EngineClient.request({
       url: resource.properties.href,
     }).then((resp) => {
-      const responseObject = JSON.parse(resp).response;
+      const responseObject = JSON.parse(resp);
       const parsedResponse = HALParser.parseResponse(responseObject, false);
       parsedResponse.edges.forEach(edge => visualiser.addEdge(edge.from, edge.to, edge.label));
     });
@@ -170,7 +170,7 @@ function initialise(graphElement:Object) {
 }
 
 function onGraphResponse(resp:string, showIsa:boolean, showResources:boolean, nodeId:?string) {
-  const responseObject = JSON.parse(resp).response;
+  const responseObject = JSON.parse(resp);
   const parsedResponse = HALParser.parseResponse(responseObject, showIsa);
 
   if (!parsedResponse.nodes.length) {

@@ -36,7 +36,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static ai.grakn.util.ErrorMessage.NULL_VALUE;
-import static ai.grakn.util.Schema.VertexProperty.RULE_LHS;
+import static ai.grakn.util.Schema.VertexProperty.RULE_WHEN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -47,8 +47,8 @@ public class RuleTest {
     @org.junit.Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    private Pattern lhs;
-    private Pattern rhs;
+    private Pattern when;
+    private Pattern then;
     private GraknGraph graknGraph;
     private GraknSession session;
 
@@ -56,8 +56,8 @@ public class RuleTest {
     public void setupRules(){
         session = Grakn.session(Grakn.IN_MEMORY, "absd");
         graknGraph = Grakn.session(Grakn.IN_MEMORY, "absd").open(GraknTxType.WRITE);
-        lhs = graknGraph.graql().parsePattern("$x isa entity-type");
-        rhs = graknGraph.graql().parsePattern("$x isa entity-type");
+        when = graknGraph.graql().parsePattern("$x isa entity-type");
+        then = graknGraph.graql().parsePattern("$x isa entity-type");
     }
 
     @After
@@ -69,12 +69,12 @@ public class RuleTest {
     @Test
     public void whenCreatingRulesWithNullValues_Throw() throws Exception {
         RuleType conceptType = graknGraph.putRuleType("A Thing");
-        Rule rule = conceptType.putRule(lhs, rhs);
-        assertEquals(lhs, rule.getLHS());
-        assertEquals(rhs, rule.getRHS());
+        Rule rule = conceptType.putRule(when, then);
+        assertEquals(when, rule.getWhen());
+        assertEquals(then, rule.getThen());
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(NULL_VALUE.getMessage(RULE_LHS));
+        expectedException.expectMessage(NULL_VALUE.getMessage(RULE_WHEN));
 
         conceptType.putRule(null, null);
     }
@@ -83,9 +83,9 @@ public class RuleTest {
     public void whenCreatingRulesWithNonExistentEntityType_Throw() throws InvalidGraphException {
         graknGraph.putEntityType("My-Type");
 
-        lhs = graknGraph.graql().parsePattern("$x isa Your-Type");
-        rhs = graknGraph.graql().parsePattern("$x isa My-Type");
-        Rule rule = graknGraph.admin().getMetaRuleInference().putRule(lhs, rhs);
+        when = graknGraph.graql().parsePattern("$x isa Your-Type");
+        then = graknGraph.graql().parsePattern("$x isa My-Type");
+        Rule rule = graknGraph.admin().getMetaRuleInference().putRule(when, then);
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(
@@ -99,10 +99,10 @@ public class RuleTest {
         EntityType t1 = graknGraph.putEntityType("type1");
         EntityType t2 = graknGraph.putEntityType("type2");
 
-        lhs = graknGraph.graql().parsePattern("$x isa type1");
-        rhs = graknGraph.graql().parsePattern("$x isa type2");
+        when = graknGraph.graql().parsePattern("$x isa type1");
+        then = graknGraph.graql().parsePattern("$x isa type2");
 
-        Rule rule = graknGraph.admin().getMetaRuleInference().putRule(lhs, rhs);
+        Rule rule = graknGraph.admin().getMetaRuleInference().putRule(when, then);
         assertThat(rule.getHypothesisTypes(), empty());
         assertThat(rule.getConclusionTypes(), empty());
 
@@ -115,11 +115,11 @@ public class RuleTest {
     @Test
     public void whenAddingDuplicateRulesOfTheSameTypeWithTheSamePattern_ReturnTheSameRule(){
         graknGraph.putEntityType("type1");
-        lhs = graknGraph.graql().parsePattern("$x isa type1");
-        rhs = graknGraph.graql().parsePattern("$x isa type1");
+        when = graknGraph.graql().parsePattern("$x isa type1");
+        then = graknGraph.graql().parsePattern("$x isa type1");
 
-        Rule rule1 = graknGraph.admin().getMetaRuleInference().putRule(lhs, rhs);
-        Rule rule2 = graknGraph.admin().getMetaRuleInference().putRule(lhs, rhs);
+        Rule rule1 = graknGraph.admin().getMetaRuleInference().putRule(when, then);
+        Rule rule2 = graknGraph.admin().getMetaRuleInference().putRule(when, then);
 
         assertEquals(rule1, rule2);
     }
@@ -128,11 +128,11 @@ public class RuleTest {
     @Test
     public void whenAddingDuplicateRulesOfTheSameTypeWithDifferentPatternVariables_ReturnTheSameRule(){
         graknGraph.putEntityType("type1");
-        lhs = graknGraph.graql().parsePattern("$x isa type1");
-        rhs = graknGraph.graql().parsePattern("$y isa type1");
+        when = graknGraph.graql().parsePattern("$x isa type1");
+        then = graknGraph.graql().parsePattern("$y isa type1");
 
-        Rule rule1 = graknGraph.admin().getMetaRuleInference().putRule(lhs, rhs);
-        Rule rule2 = graknGraph.admin().getMetaRuleInference().putRule(lhs, rhs);
+        Rule rule1 = graknGraph.admin().getMetaRuleInference().putRule(when, then);
+        Rule rule2 = graknGraph.admin().getMetaRuleInference().putRule(when, then);
 
         assertEquals(rule1, rule2);
     }

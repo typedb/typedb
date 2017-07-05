@@ -156,7 +156,7 @@ public class HALConceptData {
                 .withProperty(ID_PROPERTY, "RHS-" + rule.getId().getValue())
                 .withProperty(TYPE_PROPERTY, "RHS")
                 .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
-                .withProperty(VALUE_PROPERTY, rule.getRHS().admin().toString());
+                .withProperty(VALUE_PROPERTY, rule.getThen().admin().toString());
         halResource.withRepresentation("RHS", RHS);
     }
 
@@ -167,7 +167,7 @@ public class HALConceptData {
                 .withProperty(ID_PROPERTY, "LHS-" + rule.getId().getValue())
                 .withProperty(TYPE_PROPERTY, "LHS")
                 .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
-                .withProperty(VALUE_PROPERTY, rule.getLHS().admin().toString());
+                .withProperty(VALUE_PROPERTY, rule.getWhen().admin().toString());
         halResource.withRepresentation("LHS", LHS);
     }
 

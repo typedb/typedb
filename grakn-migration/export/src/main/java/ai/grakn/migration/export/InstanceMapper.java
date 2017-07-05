@@ -110,8 +110,8 @@ public class InstanceMapper {
     //TODO hypothesis, conclusion, isMaterialize, etc
     private static VarPattern map(Rule rule){
         VarPattern var = base(rule);
-        var = var.lhs(and(rule.getLHS()));
-        var = var.rhs(and(rule.getRHS()));
+        var = var.when(and(rule.getWhen()));
+        var = var.then(and(rule.getThen()));
         return var;
     }
 

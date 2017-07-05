@@ -11,10 +11,10 @@ res2 sub res1;
 #Rules
 
 isa inference-rule 
-	lhs {
+	when {
 		$x isa entity1 has res1 $r1;
 	}
-	rhs {
+	then {
 		$x has res2 $r1;
 	};
 

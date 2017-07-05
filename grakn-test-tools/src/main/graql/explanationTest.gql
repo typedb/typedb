@@ -47,13 +47,13 @@ $c isa entity1, has name "c";
 
 
 isa inference-rule
-	lhs {
+	when {
 		(role1: $x, role2: $y) isa relation1;
 		($y, $z) isa inferredRelation;
 		($z, $u) isa relation2;
 		($u, $v) isa relation1;
 		(role1: $v, role2: $w) isa inferredRelation;
 	}
-	rhs {
+	then {
 		(role1: $x, role2: $w) isa inferredRelation;
 	};

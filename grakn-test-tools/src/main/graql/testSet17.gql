@@ -13,10 +13,10 @@ res2 sub resource datatype boolean;
 #Rules
 
 isa inference-rule
-lhs {
+when {
     $x isa general-entity, has res1 > 0;
 }
-rhs {
+then {
     $x has res2 true;
 };
 
