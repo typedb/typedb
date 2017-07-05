@@ -28,7 +28,10 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.ConfigBuilder;
@@ -93,6 +96,10 @@ class RedisTaskQueue {
         LOG.debug("Enqueuing job {}", job.getTaskState().getId());
         final Job queueJob = new Job(SUBSCRIPTION_CLASS_NAME, job);
         redisClient.enqueue(QUEUE_NAME, queueJob);
+    }
+
+    void runInFlightProcessor() {
+        new Timer().scheduleAtFixedRate(new RedisInflightTaskConsumer(jedisPool, Duration.ofSeconds(60), config, QUEUE_NAME), new Date(), 10000);
     }
 
     void subscribe(

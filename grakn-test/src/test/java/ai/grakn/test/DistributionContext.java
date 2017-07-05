@@ -27,11 +27,6 @@ import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.StandardSystemProperty;
-import net.lingala.zip4j.core.ZipFile;
-import net.lingala.zip4j.exception.ZipException;
-import org.junit.Assert;
-import org.junit.rules.ExternalResource;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;

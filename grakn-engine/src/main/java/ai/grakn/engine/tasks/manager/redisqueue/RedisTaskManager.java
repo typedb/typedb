@@ -87,6 +87,7 @@ public class RedisTaskManager implements TaskManager {
     }
 
     public void startBlocking() {
+        redisTaskQueue.runInFlightProcessor();
         for (int i = 0; i < threads; i++) {
             redisTaskQueue.subscribe(this, consumerExecutor, engineId, config, factory);
         }

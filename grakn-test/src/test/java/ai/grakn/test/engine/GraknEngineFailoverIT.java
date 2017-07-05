@@ -48,7 +48,6 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,25 +113,23 @@ public class GraknEngineFailoverIT {
     }
 
     @Property(trials=1)
-    @Ignore("Remove before merge")
     // This fails occasionally when there's a lingering engine from some
     // previous run that is not connected to redis
+    // It also leaves a redis instance running
     public void whenSubmittingTasksToOneEngineAndRandomlyKillingTheOthers_TheyComplete(
-            @Size(min=1000, max=5000) List<TaskState> tasks) throws Exception {
+            @Size(min=10000, max=20000) List<TaskState> tasks) throws Exception {
 
         Set<TaskId> taskIds = sendTasks(engine1.port(), tasks);
 
+        // Giving some time, the subscriptions to Redis are started asynchronously
+        Thread.sleep(3000);
         // Randomly restart one of the other engines until all of the tasks are done
-        int lowerBoundMs = 5000;
         Random random = new Random();
         List<DistributionContext> enginesToKill = ImmutableList.of(engine2, engine3);
-        do{
+        do {
             DistributionContext engineToKill = enginesToKill.get(random.nextInt(2));
-
             engineToKill.restart();
-
-            int timeToSleep = random.nextInt(3000) + lowerBoundMs;
-            Thread.sleep(timeToSleep);
+            Thread.sleep(5000);
         } while (!taskIds.stream().allMatch(GraknEngineFailoverIT::isDone));
 
         waitForStatus(taskIds, COMPLETED, FAILED);
