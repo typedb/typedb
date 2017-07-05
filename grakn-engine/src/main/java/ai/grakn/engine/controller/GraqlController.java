@@ -90,7 +90,6 @@ public class GraqlController {
         spark.post(REST.WebPath.Graph.ANY_GRAQL, this::executeGraql);
         spark.get(REST.WebPath.Graph.GRAQL,    this::executeGraqlGET);
         spark.post(REST.WebPath.Graph.GRAQL,   this::executeGraqlPOST);
-        spark.delete(REST.WebPath.Graph.GRAQL, this::executeGraqlDELETE);
 
         //TODO The below exceptions are very broad. They should be revised after we improve exception
         //TODO hierarchies in Graql and Graph
@@ -186,32 +185,6 @@ public class GraqlController {
             graph.commit();
 
             return respond(response, acceptType, responseBody);
-        }
-    }
-
-    @POST
-    @Path("/")
-    @ApiOperation(value = "Executes graql delete query on the server.")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QUERY,       value = "Insert query to execute", required = true, dataType = "string", paramType = "body"),
-    })
-    private Object executeGraqlDELETE(Request request, Response response){
-        String queryString = mandatoryBody(request);
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-
-        try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
-            Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
-
-            if(!(query instanceof DeleteQuery)) throw GraknServerException.invalidQuery("DELETE");
-
-            // Execute the query
-            ((DeleteQuery) query).execute();
-
-            // Persist the transaction results TODO This should use a within-engine commit
-            graph.commit();
-
-            return respond(response, APPLICATION_TEXT, Json.object());
         }
     }
 
