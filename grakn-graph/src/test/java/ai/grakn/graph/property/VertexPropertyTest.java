@@ -139,13 +139,13 @@ public class VertexPropertyTest {
 
         if (concept.isRelationType()) assertEquals(concept, concept.asRelationType());
 
-        if (concept.isRoleType()) assertEquals(concept, concept.asRoleType());
+        if (concept.isRole()) assertEquals(concept, concept.asRole());
 
         if (concept.isResourceType()) assertEquals(concept, concept.asResourceType());
 
         if (concept.isRuleType()) assertEquals(concept, concept.asRuleType());
 
-        if (concept.isInstance()) assertEquals(concept, concept.asInstance());
+        if (concept.isThing()) assertEquals(concept, concept.asThing());
 
         if (concept.isEntity()) assertEquals(concept, concept.asEntity());
 
@@ -182,10 +182,10 @@ public class VertexPropertyTest {
 
     @Property
     public void whenConceptIsNotARoleType_TheConceptCannotBeConvertedToARoleType(Concept concept) {
-        assumeFalse(concept.isRoleType());
+        assumeFalse(concept.isRole());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
-        concept.asRoleType();
+        concept.asRole();
     }
 
     @Property
@@ -206,10 +206,10 @@ public class VertexPropertyTest {
 
     @Property
     public void whenConceptIsNotAnInstance_TheConceptCannotBeConvertedToAnInstance(Concept concept) {
-        assumeFalse(concept.isInstance());
+        assumeFalse(concept.isThing());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
-        concept.asInstance();
+        concept.asThing();
     }
 
     @Property
@@ -258,8 +258,8 @@ public class VertexPropertyTest {
                     assumeThat(type.getRulesOfConclusion(), empty());
                 }
 
-                if (ontologyConcept.isRoleType()) {
-                    Role role = ontologyConcept.asRoleType();
+                if (ontologyConcept.isRole()) {
+                    Role role = ontologyConcept.asRole();
                     assumeThat(role.playedByTypes(), empty());
                     assumeThat(role.relationTypes(), empty());
                     Collection<? extends Relation> allRelations = graph.admin().getMetaRelationType().instances();

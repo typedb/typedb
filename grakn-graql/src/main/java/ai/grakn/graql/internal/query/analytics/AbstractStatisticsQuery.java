@@ -97,8 +97,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         ResourceType<?> metaResourceType = graph.admin().getMetaResourceType();
         metaResourceType.subs().stream()
                 .filter(type -> !type.equals(metaResourceType))
-                .forEach(type -> resourceTypesDataTypeMap
-                        .put(type.asType().getLabel(), type.asResourceType().getDataType()));
+                .forEach(type -> resourceTypesDataTypeMap.put(type.getLabel(), type.getDataType()));
     }
 
     ResourceType.DataType getDataTypeOfSelectedResourceTypes(Set<Label> resourceTypes) {

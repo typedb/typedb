@@ -93,8 +93,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
 
             assertTrue(
                     type.instances().stream()
-                            .flatMap(inst -> inst.asEntity()
-                                    .resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
+                            .flatMap(inst -> inst.resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
                             .anyMatch(s -> s.getValue().equals("eShakespeare"))
             );
             final Entity author = getEntity("eShakespeare");

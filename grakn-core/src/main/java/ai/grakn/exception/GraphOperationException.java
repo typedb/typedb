@@ -22,10 +22,9 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
@@ -91,13 +90,6 @@ public class GraphOperationException extends GraknException{
      */
     public static GraphOperationException typeCannotBeDeleted(Label label){
         return new GraphOperationException(ErrorMessage.CANNOT_DELETE.getMessage(label));
-    }
-
-    /**
-     * Thrown when a {@link Type} cannot play a specific role type.
-     */
-    public static GraphOperationException invalidPlays(Role role){
-        return new GraphOperationException(ErrorMessage.ROLE_TYPE_ERROR.getMessage(role.getLabel()));
     }
 
     /**

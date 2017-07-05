@@ -137,7 +137,7 @@ class TxCache {
     void trackForValidation(ConceptImpl element) {
         if (element.isEntity()) {
             modifiedEntities.add((EntityImpl) element);
-        } else if (element.isRoleType()) {
+        } else if (element.isRole()) {
             modifiedRoles.add((RoleImpl) element);
         } else if (element.isRelationType()) {
             modifiedRelationTypes.add((RelationTypeImpl) element);

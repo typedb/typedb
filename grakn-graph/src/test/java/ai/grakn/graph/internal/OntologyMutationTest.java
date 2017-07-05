@@ -21,13 +21,15 @@ package ai.grakn.graph.internal;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.util.ErrorMessage;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -86,7 +88,7 @@ public class OntologyMutationTest extends GraphTestBase{
     }
 
     @Test
-    public void whenChanginSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidGraphException {
+    public void whenChangingSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidGraphException {
         man.sup(car);
 
         expectedException.expect(InvalidGraphException.class);
@@ -251,6 +253,23 @@ public class OntologyMutationTest extends GraphTestBase{
         //Now make animal have the same resource type
         graknGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
         animal.resource(name);
+        graknGraph.commit();
+    }
+
+    @Test
+    public void whenDeletingRelationTypeAndLeavingRoleByItself_Thow(){
+        Role role = graknGraph.putRole("my wonderful role");
+        RelationType relation = graknGraph.putRelationType("my wonderful relation").relates(role);
+        relation.relates(role);
+        graknGraph.commit();
+
+        //Now delete the relation
+        graknGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        relation.delete();
+
+        expectedException.expect(InvalidGraphException.class);
+        expectedException.expectMessage(Matchers.containsString(ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.getLabel())));
+
         graknGraph.commit();
     }
 }

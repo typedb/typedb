@@ -92,7 +92,7 @@ public class HALBuilder {
     public static String HALExploreConcept(Concept concept, String keyspace, int offset, int limit) {
         String renderedHAL = null;
 
-        if (concept.isInstance()) {
+        if (concept.isThing()) {
             renderedHAL = new HALExploreInstance(concept, keyspace, offset, limit).render();
         }
         if (concept.isType()) {
@@ -127,7 +127,7 @@ public class HALBuilder {
             Map<Var, Representation> mapFromVarNameToHALObject = new HashMap<>();
             Stream<Map.Entry<Var, Concept>> entriesStream = answer.map().entrySet().stream();
             // Filter to work only with Instances when building HAL for explanation tree from Reasoner
-            if (filterInstances) entriesStream = entriesStream.filter(entry -> entry.getValue().isInstance());
+            if (filterInstances) entriesStream = entriesStream.filter(entry -> entry.getValue().isThing());
             entriesStream.forEach(currentMapEntry -> {
                 Concept currentConcept = currentMapEntry.getValue();
 

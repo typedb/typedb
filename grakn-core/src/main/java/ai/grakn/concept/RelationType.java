@@ -183,4 +183,19 @@ public interface RelationType extends Type {
      */
     @Override
     Collection<Relation> instances();
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default RelationType asRelationType(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isRelationType(){
+        return true;
+    }
 }

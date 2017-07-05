@@ -21,23 +21,23 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.graql.Pattern;
 
 /**
- * Represents the {@code lhs} (left-hand side) property on a {@link ai.grakn.concept.Rule}.
+ * Represents the {@code when} property on a {@link ai.grakn.concept.Rule}.
  *
  * This property can be inserted and not queried.
  *
- * The left-hand side describes the left-hand of an implication, stating that when the left-hand side of a rule is true
- * the right-hand side must hold.
+ * The when side describes the left-hand of an implication, stating that when the when side of a rule is true
+ * the then side must hold.
  *
  * @author Felix Chapman
  */
-public class LhsProperty extends RuleProperty {
+public class WhenProperty extends RuleProperty {
 
-    public LhsProperty(Pattern pattern) {
+    public WhenProperty(Pattern pattern) {
         super(pattern);
     }
 
     @Override
-    public String getName() {
-        return "lhs";
+    public String getName(){
+        return "when";
     }
 }

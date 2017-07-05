@@ -106,13 +106,13 @@ public class QueryToStringTest {
     }
 
     @Test
-    public void testQueryWithRhsToString() {
-        assertValidToString(qb.insert(var("x").isa("a-rule-type").rhs(and(qb.parsePatterns("$x isa movie;")))));
+    public void testQueryWithThenToString() {
+        assertValidToString(qb.insert(var("x").isa("a-rule-type").then(and(qb.parsePatterns("$x isa movie;")))));
     }
 
     @Test
-    public void testQueryWithLhsToString() {
-        assertValidToString(qb.insert(var("x").isa("a-rule-type").lhs(and(qb.parsePatterns("$x isa movie;")))));
+    public void testQueryWithWhenToString() {
+        assertValidToString(qb.insert(var("x").isa("a-rule-type").when(and(qb.parsePatterns("$x isa movie;")))));
     }
 
     private void assertValidToString(InsertQuery query){

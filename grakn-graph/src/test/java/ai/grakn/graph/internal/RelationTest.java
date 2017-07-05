@@ -138,7 +138,7 @@ public class RelationTest extends GraphTestBase{
                 in(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 out(Schema.EdgeLabel.SHORTCUT.getLabel()).toList();
 
-        return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).asInstance()).collect(Collectors.toSet());
+        return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).asThing()).collect(Collectors.toSet());
     }
 
     @Test
