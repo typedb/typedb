@@ -58,14 +58,14 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint
  * @author Kasper Piskorski
  *
  */
-public class Resource extends Binary{
+public class ResourceAtom extends Binary{
     private final Set<ValuePredicate> multiPredicate = new HashSet<>();
 
-    public Resource(VarPatternAdmin pattern, Var predicateVar, IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
+    public ResourceAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
         super(pattern, predicateVar, idPred, par);
         this.multiPredicate.addAll(ps);
     }
-    private Resource(Resource a) {
+    private ResourceAtom(ResourceAtom a) {
         super(a);
         Set<ValuePredicate> multiPredicate = getMultiPredicate();
         a.getMultiPredicate().stream()
@@ -118,8 +118,8 @@ public class Resource extends Binary{
 
     @Override
     protected boolean hasEquivalentPredicatesWith(Binary at) {
-        if (!(at instanceof Resource)) return false;
-        Resource atom = (Resource) at;
+        if (!(at instanceof ResourceAtom)) return false;
+        ResourceAtom atom = (ResourceAtom) at;
         if(this.getMultiPredicate().size() != atom.getMultiPredicate().size()) return false;
         for (ValuePredicate predicate : getMultiPredicate()) {
             Iterator<ValuePredicate> objIt = atom.getMultiPredicate().iterator();
@@ -155,7 +155,7 @@ public class Resource extends Binary{
         Atom ruleAtom = child.getRuleConclusionAtom();
         if(!(ruleAtom.isResource())) return false;
 
-        Resource childAtom = (Resource) ruleAtom;
+        ResourceAtom childAtom = (ResourceAtom) ruleAtom;
 
         //check types
         TypeAtom parentTypeConstraint = this.getTypeConstraints().stream().findFirst().orElse(null);
@@ -180,7 +180,7 @@ public class Resource extends Binary{
     }
 
     @Override
-    public Atomic copy(){ return new Resource(this);}
+    public Atomic copy(){ return new ResourceAtom(this);}
 
     @Override
     public boolean isResource(){ return true;}
@@ -254,12 +254,12 @@ public class Resource extends Binary{
 
     @Override
     public Unifier getUnifier(Atom parentAtom) {
-        if (!(parentAtom instanceof Resource)){
+        if (!(parentAtom instanceof ResourceAtom)){
             return new UnifierImpl(ImmutableMap.of(this.getPredicateVariable(), parentAtom.getVarName()));
         }
         Unifier unifier = super.getUnifier(parentAtom);
 
-        Resource parent = (Resource) parentAtom;
+        ResourceAtom parent = (ResourceAtom) parentAtom;
         Var childResourceVarName = this.getPredicateVariable();
         Var parentResourceVarName = parent.getPredicateVariable();
 

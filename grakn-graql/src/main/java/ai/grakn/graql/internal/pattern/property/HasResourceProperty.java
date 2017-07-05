@@ -35,6 +35,7 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.Schema;
@@ -209,6 +210,6 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         //add resource atom
         VarPatternAdmin resVar = varName.has(type, resourceVariable).admin();
-        return new ai.grakn.graql.internal.reasoner.atom.binary.Resource(resVar, resourceVariable, idPredicate, predicates, parent);
+        return new ResourceAtom(resVar, resourceVariable, idPredicate, predicates, parent);
     }
 }

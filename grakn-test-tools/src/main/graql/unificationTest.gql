@@ -20,7 +20,10 @@ entity1 sub entity
     plays superRole2
     plays anotherSuperRole2;
 
+superEntity1 sub entity1;
+
 relation1 sub relation
+    has res1
 	relates role1
 	relates role2
 	relates superRole1
