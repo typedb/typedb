@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary.type;
 
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -44,7 +43,7 @@ import java.util.stream.Collectors;
  */
 public class HasAtom extends TypeAtom {
 
-    public HasAtom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, Graql.var().asUserDefined(), null, par);}
+    public HasAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) { super(pattern, predicateVar, p, par);}
     private HasAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
         super(
                 var.has(predicateVar).admin(),
