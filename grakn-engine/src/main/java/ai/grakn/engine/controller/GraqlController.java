@@ -65,10 +65,8 @@ import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
-import static ai.grakn.util.REST.Response.Graql.RESPONSE;
 import static java.lang.Boolean.parseBoolean;
 
 /**
@@ -121,10 +119,10 @@ public class GraqlController {
             if (query instanceof DeleteQuery) {
                 query.execute();
                 graph.commit();
-                return respond(response, APPLICATION_TEXT, Json.object());
+                return respond(response, acceptType, Json.object());
             }
             else if (query instanceof InsertQuery) {
-                Object resp = respond(response, APPLICATION_JSON, executeQuery(request, query, acceptType));
+                Object resp = respond(response, acceptType, executeQuery(request, query, acceptType));
                 graph.commit();
                 return resp;
             }
