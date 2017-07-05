@@ -59,7 +59,7 @@ public class GraphWriter {
                 .filter(Concept::isType)
                 .map(Concept::asType)
                 .flatMap(c -> c.instances().stream())
-                .map(Concept::asInstance)
+                .map(Concept::asThing)
                 .map(InstanceMapper::map));
     }
 

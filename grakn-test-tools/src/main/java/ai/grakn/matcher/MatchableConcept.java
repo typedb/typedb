@@ -50,9 +50,9 @@ public class MatchableConcept {
 
     @Override
     public String toString() {
-        if (concept.isInstance()) {
+        if (concept.isThing()) {
 
-            Collection<Resource<?>> resources = concept.asInstance().resources();
+            Collection<Resource<?>> resources = concept.asThing().resources();
             Optional<?> value = resources.stream()
                     .filter(resource -> NAME_TYPES.contains(resource.type().getLabel()))
                     .map(Resource::getValue).findFirst();
@@ -60,8 +60,8 @@ public class MatchableConcept {
             return "instance(" + value.map(StringUtil::valueToString).orElse("") + ")";
         } else if (concept.isType()) {
             return "type(" + concept.asType().getLabel() + ")";
-        } else if (concept.isRoleType()) {
-            return "role(" + concept.asRoleType().getLabel() + ")";
+        } else if (concept.isRole()) {
+            return "role(" + concept.asRole().getLabel() + ")";
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }

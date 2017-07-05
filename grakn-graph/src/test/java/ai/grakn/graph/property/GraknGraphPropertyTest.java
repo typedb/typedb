@@ -121,7 +121,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingGetConceptWithAnIncorrectGeneric_ItThrows(
             @Open GraknGraph graph, @FromGraph Concept concept) {
-        assumeFalse(concept.isRoleType());
+        assumeFalse(concept.isRole());
         ConceptId id = concept.getId();
 
         exception.expect(ClassCastException.class);
@@ -149,7 +149,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingGetTypeWithAnIncorrectGeneric_ItThrows(@Open GraknGraph graph, @FromGraph Type type) {
-        assumeFalse(type.isRoleType());
+        assumeFalse(type.isRole());
         Label label = type.getLabel();
 
         exception.expect(ClassCastException.class);

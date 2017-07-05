@@ -151,7 +151,7 @@ public class GraknMatchers {
 
             @Override
             Iterable<? super MatchableConcept> transform(MatchableConcept item) {
-                return getTypes(item.get().asInstance()).stream().map(MatchableConcept::new).collect(toSet());
+                return getTypes(item.get().asThing()).stream().map(MatchableConcept::new).collect(toSet());
             }
         };
     }
@@ -163,7 +163,7 @@ public class GraknMatchers {
         return new TypeSafeMatcher<MatchableConcept>() {
             @Override
             public boolean matchesSafely(MatchableConcept concept) {
-                return concept.get().isInstance() && concept.get().asInstance().type().isRoleType();
+                return concept.get().isThing() && concept.get().asThing().type().isRole();
             }
 
             @Override
@@ -198,7 +198,7 @@ public class GraknMatchers {
         return new TypeSafeMatcher<MatchableConcept>() {
             @Override
             public boolean matchesSafely(MatchableConcept concept) {
-                return concept.get().isInstance();
+                return concept.get().isThing();
             }
 
             @Override
@@ -255,7 +255,7 @@ public class GraknMatchers {
             @Override
             Label transform(MatchableConcept item) {
                 Concept concept = item.get();
-                return concept.isRoleType() ? concept.asRoleType().getLabel() : null;
+                return concept.isRole() ? concept.asRole().getLabel() : null;
             }
         };
     }
@@ -282,7 +282,7 @@ public class GraknMatchers {
 
             @Override
             Iterable<? super MatchableConcept> transform(MatchableConcept item) {
-                return item.get().asInstance().resources().stream()
+                return item.get().asThing().resources().stream()
                         .filter(resource -> MatchableConcept.NAME_TYPES.contains(resource.type().getLabel()))
                         .map(MatchableConcept::new)
                         .collect(toSet());
