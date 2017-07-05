@@ -35,6 +35,8 @@ import static ai.grakn.engine.controller.GraqlControllerGETTest.stringResponse;
 import static ai.grakn.engine.controller.GraqlControllerGETTest.jsonResponse;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
+import static ai.grakn.util.REST.Request.Graql.INFER;
+import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
@@ -95,7 +97,7 @@ public class GraqlControllerPOSTTest {
 
         int genreCountBefore = graphContext.graph().getEntityType("movie").instances().size();
 
-        sendPOST(query);
+        sendRequest(query);
 
         // refresh graph
         graphContext.graph().close();
@@ -108,7 +110,7 @@ public class GraqlControllerPOSTTest {
     @Test
     public void POSTMalformedGraqlQuery_ResponseStatusIs400(){
         String query = "insert $x isa ;";
-        Response response = sendPOST(query);
+        Response response = sendRequest(query);
 
         assertThat(response.statusCode(), equalTo(400));
     }
@@ -116,7 +118,7 @@ public class GraqlControllerPOSTTest {
     @Test
     public void POSTMalformedGraqlQuery_ResponseExceptionContainsSyntaxError(){
         String query = "insert $x isa ;";
-        Response response = sendPOST(query);
+        Response response = sendRequest(query);
 
         assertThat(exception(response), containsString("syntax error"));
     }
@@ -127,7 +129,7 @@ public class GraqlControllerPOSTTest {
 
         Response response = RestAssured.with()
                 .body(query)
-                .post(REST.WebPath.Graph.GRAQL);
+                .post(REST.WebPath.Graph.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
@@ -136,107 +138,65 @@ public class GraqlControllerPOSTTest {
     @Test
     public void POSTWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .post(REST.WebPath.Graph.GRAQL);
+                .post(REST.WebPath.Graph.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
     }
 
     @Test
-    public void POSTGraqlMatch_ResponseStatusCodeIs405NotSupported(){
-        Response response = sendPOST("match $x isa person;");
-
-        assertThat(response.statusCode(), equalTo(405));
-    }
-
-    @Test
-    public void POSTGraqlMatch_ResponseExceptionContainsInsertOnlyAllowedMessage(){
-        Response response = sendPOST("match $x isa person;");
-
-        assertThat(exception(response), containsString("Only INSERT queries are allowed."));
-    }
-
-    @Test
-    public void POSTGraqlDelete_ResponseStatusCodeIs405NotSupported(){
-        Response response = sendPOST("match $x isa person; delete $x;");
-
-        assertThat(response.statusCode(), equalTo(405));
-    }
-
-    @Test
-    public void POSTGraqlDelete_ResponseExceptionContainsInsertOnlyAllowedMessage(){
-        Response response = sendPOST("match $x isa person; delete $x;");
-
-        assertThat(exception(response), containsString("Only INSERT queries are allowed."));
-    }
-
-    @Test
-    public void POSTGraqlCompute_ResponseStatusCodeIs405NotSupported(){
-        Response response = sendPOST("compute count in person;");
-
-        assertThat(response.statusCode(), equalTo(405));
-    }
-
-    @Test
-    public void POSTGraqlCompute_ResponseExceptionContainsInsertOnlyAllowedMessage(){
-        Response response = sendPOST("compute count in person;");
-
-        assertThat(exception(response), containsString("Only INSERT queries are allowed."));
-    }
-
-    @Test
     public void POSTGraqlInsert_ResponseStatusIs200(){
         String query = "insert $x isa person;";
-        Response response = sendPOST(query);
+        Response response = sendRequest(query);
 
         assertThat(response.statusCode(), equalTo(200));
     }
 
     @Test
     public void POSTGraqlInsertNotValid_ResponseStatusCodeIs422(){
-        Response response = sendPOST("insert person plays movie;");
+        Response response = sendRequest("insert person plays movie;");
 
         assertThat(response.statusCode(), equalTo(422));
     }
 
     @Test
     public void POSTGraqlInsertNotValid_ResponseExceptionContainsValidationErrorMessage(){
-        Response response = sendPOST("insert person plays movie;");
+        Response response = sendRequest("insert person plays movie;");
 
         assertThat(exception(response), containsString("is not of type"));
     }
 
     @Test
     public void POSTGraqlInsertWithJsonType_ResponseContentTypeIsJson(){
-        Response response = sendPOST("insert $x isa person;", APPLICATION_JSON_GRAQL);
+        Response response = sendRequest("insert $x isa person;", APPLICATION_JSON_GRAQL);
 
         assertThat(response.contentType(), equalTo(APPLICATION_JSON_GRAQL));
     }
 
     @Test
     public void POSTGraqlInsertWithJsonType_ResponseIsCorrectJson(){
-        Response response = sendPOST("insert $x isa person;", APPLICATION_JSON_GRAQL);
+        Response response = sendRequest("insert $x isa person;", APPLICATION_JSON_GRAQL);
 
         assertThat(jsonResponse(response).asJsonList().size(), equalTo(1));
     }
 
     @Test
     public void POSTGraqlInsertWithTextType_ResponseIsTextType(){
-        Response response = sendPOST("insert $x isa person;", APPLICATION_TEXT);
+        Response response = sendRequest("insert $x isa person;", APPLICATION_TEXT);
 
         assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
     }
 
     @Test
     public void POSTGraqlInsertWithTextType_ResponseIsCorrectText(){
-        Response response = sendPOST("insert $x isa person;", APPLICATION_TEXT);
+        Response response = sendRequest("insert $x isa person;", APPLICATION_TEXT);
 
         assertThat(stringResponse(response), containsString("isa person"));
     }
 
     @Test
     public void POSTGraqlInsertWithHALType_ErrorIsThrown(){
-        Response response = sendPOST("insert $x isa person;", APPLICATION_HAL);
+        Response response = sendRequest("insert $x isa person;", APPLICATION_HAL);
 
         assertThat(exception(response), containsString("Unsupported query type in HAL formatter"));
     }
@@ -247,20 +207,22 @@ public class GraqlControllerPOSTTest {
 
         verify(mockGraph, times(0)).commit();
 
-        sendPOST(query);
+        sendRequest(query);
 
         verify(mockGraph, times(1)).commit();
     }
 
-    private Response sendPOST(String query){
-        return sendPOST(query, APPLICATION_TEXT);
+    private Response sendRequest(String query){
+        return sendRequest(query, APPLICATION_TEXT);
     }
 
-    private Response sendPOST(String query, String acceptType){
+    private Response sendRequest(String query, String acceptType){
         return RestAssured.with()
                 .accept(acceptType)
                 .queryParam(KEYSPACE, mockGraph.getKeyspace())
+                .queryParam(INFER, false)
+                .queryParam(MATERIALISE, false)
                 .body(query)
-                .post(REST.WebPath.Graph.GRAQL);
+                .post(REST.WebPath.Graph.ANY_GRAQL);
     }
 }
