@@ -42,10 +42,10 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class HasResourceTypeAtom extends TypeAtom {
+public class HasAtom extends TypeAtom {
 
-    public HasResourceTypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, Graql.var().asUserDefined(), null, par);}
-    private HasResourceTypeAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
+    public HasAtom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, Graql.var().asUserDefined(), null, par);}
+    private HasAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
         super(
                 var.has(predicateVar).admin(),
                 predicateVar,
@@ -53,7 +53,7 @@ public class HasResourceTypeAtom extends TypeAtom {
                 par
         );
     }
-    private HasResourceTypeAtom(TypeAtom a) { super(a);}
+    private HasAtom(TypeAtom a) { super(a);}
 
     @Override
     public VarProperty getVarProperty() {
@@ -62,7 +62,7 @@ public class HasResourceTypeAtom extends TypeAtom {
 
     @Override
     public Atomic copy(){
-        return new HasResourceTypeAtom(this);
+        return new HasAtom(this);
     }
 
     @Override
@@ -70,6 +70,6 @@ public class HasResourceTypeAtom extends TypeAtom {
         Collection<Var> vars = u.get(getVarName());
         return vars.isEmpty()?
                 Collections.singleton(this) :
-                vars.stream().map(v -> new HasResourceTypeAtom(v, getPredicateVariable(), getPredicate(), this.getParentQuery())).collect(Collectors.toSet());
+                vars.stream().map(v -> new HasAtom(v, getPredicateVariable(), getPredicate(), this.getParentQuery())).collect(Collectors.toSet());
     }
 }
