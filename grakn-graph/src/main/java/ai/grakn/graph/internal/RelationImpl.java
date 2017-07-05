@@ -20,15 +20,14 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.util.Schema;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 /**
  * <p>
@@ -46,7 +45,6 @@ class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation
     private ReifiedRelation reifiedRelation;
 
     RelationImpl(ReifiedRelation reifiedRelation) {
-        //TODO remove the call to super
         super(reifiedRelation.vertex());
         this.reifiedRelation = reifiedRelation;
     }
@@ -55,34 +53,30 @@ class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation
         return reifiedRelation;
     }
 
-    /**
-     * Sets the internal hash in order to perform a faster lookup
-     */
-    void setHash(){
-        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateNewHash(type(), allRolePlayers()));
+    @Override
+    public Relation resource(Resource resource) {
+        reified().resource(resource);
+        return this;
     }
 
-    /**
-     *
-     * @param relationType The type of this relation
-     * @param roleMap The roles and their corresponding role players
-     * @return A unique hash identifying this relation
-     */
-    static String generateNewHash(RelationType relationType, Map<Role, Set<Thing>> roleMap){
-        SortedSet<Role> sortedRoleIds = new TreeSet<>(roleMap.keySet());
-        StringBuilder hash = new StringBuilder();
-        hash.append("RelationType_").append(relationType.getId().getValue().replace("_", "\\_")).append("_Relation");
+    @Override
+    public Collection<Resource<?>> resources(ResourceType[] resourceTypes) {
+        return reified().resources(resourceTypes);
+    }
 
-        for(Role role: sortedRoleIds){
-            hash.append("_").append(role.getId().getValue().replace("_", "\\_"));
+    @Override
+    public RelationType type() {
+        return reified().type();
+    }
 
-            roleMap.get(role).forEach(instance -> {
-                if(instance != null){
-                    hash.append("_").append(instance.getId().getValue().replace("_", "\\_"));
-                }
-            });
-        }
-        return hash.toString();
+    @Override
+    public Collection<Relation> relations(Role... roles) {
+        return reified().relations();
+    }
+
+    @Override
+    public Collection<Role> plays() {
+        return null;
     }
 
     /**
@@ -111,7 +105,7 @@ class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation
     @Override
     public Relation addRolePlayer(Role role, Thing thing) {
         reified().addRolePlayer(this, role, thing);
-        return getThis();
+        return this;
     }
 
     /**

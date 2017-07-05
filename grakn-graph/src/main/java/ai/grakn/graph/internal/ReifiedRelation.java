@@ -34,6 +34,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -81,6 +83,36 @@ public class ReifiedRelation extends ThingImpl<Relation, RelationType> {
 
         //Do the actual put of the role and role player
         vertex().graph().putShortcutEdge(thing, owner, role);
+    }
+
+    /**
+     * Sets the internal hash in order to perform a faster lookup
+     */
+    void setHash(){
+        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateNewHash(type(), allRolePlayers()));
+    }
+
+    /**
+     *
+     * @param relationType The type of this relation
+     * @param roleMap The roles and their corresponding role players
+     * @return A unique hash identifying this relation
+     */
+    static String generateNewHash(RelationType relationType, Map<Role, Set<Thing>> roleMap){
+        SortedSet<Role> sortedRoleIds = new TreeSet<>(roleMap.keySet());
+        StringBuilder hash = new StringBuilder();
+        hash.append("RelationType_").append(relationType.getId().getValue().replace("_", "\\_")).append("_Relation");
+
+        for(Role role: sortedRoleIds){
+            hash.append("_").append(role.getId().getValue().replace("_", "\\_"));
+
+            roleMap.get(role).forEach(instance -> {
+                if(instance != null){
+                    hash.append("_").append(instance.getId().getValue().replace("_", "\\_"));
+                }
+            });
+        }
+        return hash.toString();
     }
 
     /**

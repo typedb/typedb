@@ -116,11 +116,11 @@ public class PostProcessingTest extends GraphTestBase{
         RelationImpl rel5 = ((RelationImpl) relationType.addRelation().
                 addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e3)); //Absorb
 
-        rel1.setHash();
-        rel2.setHash();
-        rel3.setHash();
-        rel4.setHash();
-        rel5.setHash();
+        rel1.reified().setHash();
+        rel2.reified().setHash();
+        rel3.reified().setHash();
+        rel4.reified().setHash();
+        rel5.reified().setHash();
 
         //Check everything is broken
         assertEquals(3, resourceType.instances().size());

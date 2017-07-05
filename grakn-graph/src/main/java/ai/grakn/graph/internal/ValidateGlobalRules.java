@@ -21,10 +21,9 @@ package ai.grakn.graph.internal;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
@@ -261,15 +260,15 @@ class ValidateGlobalRules {
 
     /**
      * @param graph graph used to ensure the relation is unique
-     * @param relation The relation whose hash needs to be set.
+     * @param reifiedRelation The relation whose hash needs to be set.
      * @return An error message if the relation is not unique.
      */
-    static Optional<String> validateRelationIsUnique(AbstractGraknGraph<?> graph, RelationImpl relation){
-        Relation foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers()));
+    static Optional<String> validateRelationIsUnique(AbstractGraknGraph<?> graph, ReifiedRelation reifiedRelation){
+        RelationImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, ReifiedRelation.generateNewHash(reifiedRelation.type(), reifiedRelation.allRolePlayers()));
         if(foundRelation == null){
-            relation.setHash();
-        } else if(!foundRelation.equals(relation)){
-            return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relation));
+            reifiedRelation.setHash();
+        } else if(!foundRelation.reified().equals(reifiedRelation)){
+            return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(reifiedRelation));
         }
         return Optional.empty();
     }

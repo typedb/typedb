@@ -104,7 +104,7 @@ class Validator {
     private void validateRelation(AbstractGraknGraph<?> graph, RelationImpl relation){
         validateInstance(relation);
         ValidateGlobalRules.validateRelationshipStructure(relation).ifPresent(errorsFound::add);
-        ValidateGlobalRules.validateRelationIsUnique(graph, relation).ifPresent(errorsFound::add);
+        ValidateGlobalRules.validateRelationIsUnique(graph, relation.reified()).ifPresent(errorsFound::add);
     }
 
     /**
