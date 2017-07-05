@@ -38,6 +38,7 @@ public class REST {
          * URIs to visualiser controller
          */
         public static class Graph {
+            @Deprecated
             public static final String GRAQL = "/graph/graql";
             public static final String ANY_GRAQL = "/graph/graql/execute";
         }
