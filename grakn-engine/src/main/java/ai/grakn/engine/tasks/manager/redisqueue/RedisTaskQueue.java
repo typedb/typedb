@@ -118,7 +118,7 @@ class RedisTaskQueue {
             // TODO review this strategy
             failures.mark();
             LOG.error("Exception while trying to run task, terminating!", exception);
-            return RecoveryStrategy.PROCEED;
+            return RecoveryStrategy.TERMINATE;
         });
         consumerExecutor.execute(worker);
     }

@@ -210,6 +210,7 @@ Context context = stopTaskTimer.time();
             LOG.error("Malformed request body: {}", requestBodyAsJson);
             throw GraknServerException.requestMissingBodyParameters(REST.Request.TASKS_PARAM);
         }
+        LOG.debug("Received request {}", request);
         List<Json> taskJsonList = requestBodyAsJson.at(REST.Request.TASKS_PARAM).asJsonList();
         Json responseJson = Json.array();
         response.type(ContentType.APPLICATION_JSON.getMimeType());
@@ -244,10 +245,12 @@ Context context = stopTaskTimer.time();
         for (Json resultForTask : results) {
             responseJson.add(resultForTask);
             if (resultForTask.at("code").asInteger() != HttpStatus.SC_OK) {
+                LOG.error("Could not add task {}", resultForTask);
                 hasFailures = true;
             }
         }
         if (!hasFailures) {
+            LOG.info("Tasks added successfully");
             response.status(HttpStatus.SC_OK);
         } else if (responseJson.asJsonList().size() > 0) {
             response.status(HttpStatus.SC_ACCEPTED);

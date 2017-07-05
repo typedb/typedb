@@ -60,6 +60,8 @@ public class EmbeddedRedis {
             LOG.info("Starting redis...");
             redisServer = RedisServer.builder()
                     .port(port)
+                    // We have short running tests and sometimes we kill the connections
+                    .setting("timeout 360")
                     .build();
             if (!redisServer.isActive()) {
                 redisServer.start();
