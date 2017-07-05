@@ -129,11 +129,11 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         if (subGraph.isEmpty()) {
             EntityType metaEntityType = graph.admin().getMetaEntityType();
-            metaEntityType.subs().forEach(type -> this.subLabels.add(type.asType().getLabel()));
+            metaEntityType.subs().forEach(type -> this.subLabels.add(type.getLabel()));
             ResourceType<?> metaResourceType = graph.admin().getMetaResourceType(); //Yay for losing the type
-            metaResourceType.subs().forEach(type -> this.subLabels.add(type.asType().getLabel()));
+            metaResourceType.subs().forEach(type -> this.subLabels.add(type.getLabel()));
             RelationType metaRelationType = graph.admin().getMetaRelationType();
-            metaRelationType.subs().forEach(type -> this.subLabels.add(type.asType().getLabel()));
+            metaRelationType.subs().forEach(type -> this.subLabels.add(type.getLabel()));
             subLabels.remove(metaEntityType.getLabel());
             subLabels.remove(metaResourceType.getLabel());
             subLabels.remove(metaRelationType.getLabel());
