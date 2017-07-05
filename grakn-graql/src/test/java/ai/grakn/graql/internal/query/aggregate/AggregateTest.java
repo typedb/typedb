@@ -90,7 +90,7 @@ public class AggregateTest {
         groups.forEach((movie, results) -> {
             results.forEach(result -> {
                 assertEquals(movie, result.get(Graql.var("x")));
-                Assert.assertEquals(rule.graph().getEntityType("person"), result.get(Graql.var("y")).asInstance().type());
+                Assert.assertEquals(rule.graph().getEntityType("person"), result.get(Graql.var("y")).asThing().type());
             });
         });
     }

@@ -281,7 +281,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
     @Override
     public Set<Thing> scopes() {
         HashSet<Thing> scopes = new HashSet<>();
-        neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asInstance()));
+        neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asThing()));
         return scopes;
     }
 
@@ -307,12 +307,8 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
     }
 
     void trackSuperChange(){
-        instances().forEach(concept -> {
-            if (concept.isInstance()) {
-                ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
-                        rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
-            }
-        });
+        instances().forEach(concept -> ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
+                rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer)));
     }
 
     T plays(Role role, boolean required) {
@@ -355,11 +351,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         ((RoleImpl) role).deleteCachedDirectPlaysByType(this);
 
         //Add roleplayers to tracking to make sure they can still be played.
-        instances().forEach(concept -> {
-            if (concept.isInstance()) {
-                ((ThingImpl<?, ?>) concept).castingsInstance().forEach(rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
-            }
-        });
+        instances().forEach(concept -> ((ThingImpl<?, ?>) concept).castingsInstance().forEach(rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer)));
 
 
         return getThis();

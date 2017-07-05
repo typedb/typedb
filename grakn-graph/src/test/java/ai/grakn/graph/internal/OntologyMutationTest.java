@@ -88,7 +88,7 @@ public class OntologyMutationTest extends GraphTestBase{
     }
 
     @Test
-    public void whenChanginSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidGraphException {
+    public void whenChangingSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidGraphException {
         man.sup(car);
 
         expectedException.expect(InvalidGraphException.class);
