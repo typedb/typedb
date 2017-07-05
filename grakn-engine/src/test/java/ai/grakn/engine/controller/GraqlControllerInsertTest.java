@@ -31,14 +31,13 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
-import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.stringResponse;
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.jsonResponse;
+import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.stringResponse;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -192,13 +191,6 @@ public class GraqlControllerInsertTest {
         Response response = sendRequest("insert $x isa person;", APPLICATION_TEXT);
 
         assertThat(stringResponse(response), containsString("isa person"));
-    }
-
-    @Test
-    public void POSTGraqlInsertWithHALType_ErrorIsThrown(){
-        Response response = sendRequest("insert $x isa person;", APPLICATION_HAL);
-
-        assertThat(exception(response), containsString("Unsupported query type in HAL formatter"));
     }
 
     @Test

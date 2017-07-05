@@ -28,7 +28,6 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class GraqlControllerTest {
 
@@ -95,9 +94,9 @@ public class GraqlControllerTest {
         Response resp = sendQuery("insert $x isa movie;");
         try {
             resp.then().statusCode(200);
-            Assert.assertFalse(resp.jsonPath().getList("response").isEmpty());
+            Assert.assertFalse(resp.jsonPath().getList(".").isEmpty());
         } finally {
-            ConceptId id = ConceptId.of(resp.jsonPath().getList("response.x.id").get(0));
+            ConceptId id = ConceptId.of(resp.jsonPath().getList("x.id").get(0));
             graphContext.rollback();
             graphContext.graph().graql().match(var("x").id(id)).delete("x").execute();
         }
@@ -122,10 +121,10 @@ public class GraqlControllerTest {
     public void testDeleteQuery() {
         Response resp = sendQuery("insert $x isa movie;");
         resp.then().statusCode(200);
-        String id = resp.jsonPath().getList("response.x.id").get(0).toString();
+        String id = resp.jsonPath().getList("x.id").get(0).toString();
         resp = sendQuery("match $x id \"" + id + "\"; delete $x; ");
         resp.then().statusCode(200);
-        assertNull(resp.jsonPath().get("response"));
+        assertEquals(Json.nil(), Json.read(resp.asString()));
     }
     
     @Test
@@ -183,7 +182,6 @@ public class GraqlControllerTest {
     }
 
     private void assertResponseSameAsJavaGraql(Response resp, String queryString, Printer<?> printer, String acceptType) {
-        String response = Json.read(resp.body().asString()).at("response").toString();
         resp.then().statusCode(200);
 
         graphContext.rollback();
@@ -193,6 +191,6 @@ public class GraqlControllerTest {
 
         Object expected = acceptType.equals(APPLICATION_TEXT) ? expectedString : Json.read(expectedString);
 
-        assertEquals(Json.make(expected).toString(), response);
+        assertEquals(expected.toString(), resp.body().asString());
     }
 }

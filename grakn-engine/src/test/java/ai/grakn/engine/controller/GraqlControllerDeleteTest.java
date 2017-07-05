@@ -187,7 +187,7 @@ public class GraqlControllerDeleteTest {
                 .queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(INFER, false)
                 .queryParam(MATERIALISE, false)
-                .accept("application/graql+json")
+                .accept(APPLICATION_TEXT)
                 .body(query)
                 .post(REST.WebPath.Graph.ANY_GRAQL);
     }

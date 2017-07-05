@@ -61,7 +61,6 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
-import static ai.grakn.util.REST.Response.Graql.RESPONSE;
 import static java.lang.Boolean.parseBoolean;
 
 /**
@@ -140,7 +139,7 @@ public class GraqlController {
 
             if(!validContentType(acceptType, query)) throw GraknServerException.contentTypeQueryMismatch(acceptType, query);
 
-            Json responseBody = executeQuery(keyspace, limitEmbedded, query, acceptType);
+            Object responseBody = executeQuery(keyspace, limitEmbedded, query, acceptType);
             return respond(response, acceptType, responseBody);
         }
     }
@@ -202,7 +201,7 @@ public class GraqlController {
      * @param query read query to be executed
      * @param acceptType response format that the client will accept
      */
-    private Json executeQuery(String keyspace, int limitEmbedded, Query<?> query, String acceptType){
+    private Object executeQuery(String keyspace, int limitEmbedded, Query<?> query, String acceptType){
         Printer<?> printer;
 
         switch (acceptType) {
@@ -221,9 +220,7 @@ public class GraqlController {
 
         String formatted = printer.graqlString(query.execute());
 
-        Object response = acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
-
-        return Json.object(RESPONSE, response);
+        return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
     }
 
     static String getAcceptType(Request request) {
