@@ -76,7 +76,7 @@ import static org.mockito.Mockito.when;
 
 //TODO Run in name order until TP Bug #13730 Fixed
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class GraqlControllerGETTest {
+public class GraqlControllerReadOnlyTest {
 
     private static GraknGraph mockGraph;
     private static QueryBuilder mockQueryBuilder;

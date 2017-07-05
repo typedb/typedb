@@ -30,7 +30,7 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public class GraknExecuteQueryControllerTest {
+public class GraqlControllerTest {
 
     private Printer<Json> jsonPrinter;
     private Printer<Function<StringBuilder, StringBuilder>> graqlPrinter;

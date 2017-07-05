@@ -30,9 +30,9 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static ai.grakn.engine.controller.GraqlControllerGETTest.exception;
-import static ai.grakn.engine.controller.GraqlControllerGETTest.stringResponse;
-import static ai.grakn.engine.controller.GraqlControllerGETTest.jsonResponse;
+import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
+import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.stringResponse;
+import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.jsonResponse;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.INFER;
@@ -55,7 +55,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class GraqlControllerPOSTTest {
+public class GraqlControllerInsertTest {
 
     private static GraknGraph mockGraph;
     private static QueryBuilder mockQueryBuilder;
