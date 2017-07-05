@@ -107,7 +107,8 @@ export default {
              */
   graqlShell(query:string) {
     return this.request({
-      url: `/graph/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
+      url: `/graph/graql/execute?keyspace=${User.getCurrentKeySpace()}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
+      data: query,
       contentType: 'application/text',
       accepts: 'application/text',
     });
@@ -118,7 +119,8 @@ export default {
   graqlHAL(query:string) {
       // In match queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
     return this.request({
-      url: `/graph/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}&limitEmbedded=${User.getQueryLimit()}`,
+      url: `/graph/graql/execute?keyspace=${User.getCurrentKeySpace()}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}&limitEmbedded=${User.getQueryLimit()}`,
+      data: query
     });
   },
             /**
@@ -126,7 +128,8 @@ export default {
              */
   graqlAnalytics(query:string) {
     return this.request({
-      url: `/graph/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=false&materialise=false`,
+      url: `/graph/graql/execute?keyspace=${User.getCurrentKeySpace()}&infer=false&materialise=false`,
+      data: query,
       accepts: 'application/text',
     });
   },

@@ -22,24 +22,24 @@ import ai.grakn.graql.Pattern;
 
 
 /**
- * Represents the {@code rhs} (right-hand side) property on a {@link ai.grakn.concept.Rule}.
+ * Represents the {@code then} (right-hand side) property on a {@link ai.grakn.concept.Rule}.
  *
  * This property can be inserted and not queried.
  *
- * The right-hand side describes the right-hand of an implication, stating that when the left-hand side of a rule is
- * true the right-hand side must hold.
+ * The then side describes the right-hand of an implication, stating that when the when side of a rule is
+ * true the then side must hold.
  *
  * @author Felix Chapman
  */
-public class RhsProperty extends RuleProperty {
+public class ThenProperty extends RuleProperty {
 
-    public RhsProperty(Pattern rhs) {
-        super(rhs);
+    public ThenProperty(Pattern then) {
+        super(then);
     }
 
     @Override
     public String getName() {
-        return "rhs";
+        return "then";
     }
 
 }

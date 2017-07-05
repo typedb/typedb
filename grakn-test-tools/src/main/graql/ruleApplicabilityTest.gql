@@ -62,38 +62,38 @@ relation3 sub relation
 #Rules
 
 isa inference-rule
-	lhs {
+	when {
 		(role1: $x, role2: $y) isa binary;
 		(role1: $y, role2: $z) isa binary;
 	}
-	rhs {
+	then {
 		(role1:$x, role2:$y, role3: $z) isa relation1;
 	};
 
 isa inference-rule
-	lhs {
+	when {
 		(role1: $x, role2: $y) isa binary;
 		(role1: $y, role2: $z) isa binary;
 	}
-	rhs {
+	then {
 		(role1:$x, role2:$y, role2: $z) isa relation2;
 	};
 
 isa inference-rule
-    lhs {
+    when {
     	$r1 (role1: $x, role2: $y) isa reified-relation;
     	$r2 (role1: $y, role2: $z) isa reified-relation;
     }
-    rhs {
+    then {
     	(role1:$r1, role2:$r2) isa relation3;
     };
 
 isa inference-rule
-    lhs {
+    when {
     	$x isa entity2;
     	$y isa entity2;
     }
-    rhs {
+    then {
     	(role1:$x, role2:$y) isa relation3;
     };
 

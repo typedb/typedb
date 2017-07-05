@@ -73,8 +73,8 @@ property       : 'isa' variable                     # isa
                | 'id' id                            # propId
                | 'label' label                      # propLabel
                | 'val' predicate                    # propValue
-               | 'lhs' '{' patterns '}'             # propLhs
-               | 'rhs' '{' varPatterns '}'          # propRhs
+               | 'when' '{' patterns '}'            # propWhen
+               | 'then' '{' varPatterns '}'         # propThen
                | 'has' label (VARIABLE | predicate) # propHas
                | 'has' variable                     # propResource
                | 'key' variable                     # propKey

@@ -146,6 +146,10 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         super.delete();
 
         //Update the cache of the connected role types
-        cachedRelates.get().forEach(roleType -> ((RoleImpl) roleType).deleteCachedRelationType(this));
+        cachedRelates.get().forEach(r -> {
+            RoleImpl role = ((RoleImpl) r);
+            vertex().graph().txCache().trackForValidation(role);
+            ((RoleImpl) r).deleteCachedRelationType(this);
+        });
     }
 }

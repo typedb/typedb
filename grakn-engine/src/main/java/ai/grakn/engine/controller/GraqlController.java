@@ -27,8 +27,6 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.analytics.PathQuery;
@@ -86,8 +84,6 @@ public class GraqlController {
 
         spark.post(REST.WebPath.Graph.ANY_GRAQL, this::executeGraql);
         spark.get(REST.WebPath.Graph.GRAQL,    this::executeGraqlGET);
-        spark.post(REST.WebPath.Graph.GRAQL,   this::executeGraqlPOST);
-        spark.delete(REST.WebPath.Graph.GRAQL, this::executeGraqlDELETE);
 
         //TODO The below exceptions are very broad. They should be revised after we improve exception
         //TODO hierarchies in Graql and Graph
@@ -146,60 +142,6 @@ public class GraqlController {
 
             Json responseBody = executeQuery(keyspace, limitEmbedded, query, acceptType);
             return respond(response, acceptType, responseBody);
-        }
-    }
-
-    @POST
-    @Path("/")
-    @ApiOperation(
-            value = "Executes graql insert query on the server and returns the IDs of the inserted concepts.")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QUERY,       value = "Insert query to execute", required = true, dataType = "string", paramType = "body"),
-    })
-    private Object executeGraqlPOST(Request request, Response response){
-        String queryString = mandatoryBody(request);
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        String acceptType = getAcceptType(request);
-        int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
-
-        try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
-            Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
-
-            if(!(query instanceof InsertQuery)) throw GraknServerException.invalidQuery("INSERT");
-
-            Object responseBody = executeQuery(keyspace, limitEmbedded, query, acceptType);
-
-            // Persist the transaction results TODO This should use a within-engine commit
-            graph.commit();
-
-            return respond(response, acceptType, responseBody);
-        }
-    }
-
-    @POST
-    @Path("/")
-    @ApiOperation(value = "Executes graql delete query on the server.")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QUERY,       value = "Insert query to execute", required = true, dataType = "string", paramType = "body"),
-    })
-    private Object executeGraqlDELETE(Request request, Response response){
-        String queryString = mandatoryBody(request);
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-
-        try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
-            Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
-
-            if(!(query instanceof DeleteQuery)) throw GraknServerException.invalidQuery("DELETE");
-
-            // Execute the query
-            ((DeleteQuery) query).execute();
-
-            // Persist the transaction results TODO This should use a within-engine commit
-            graph.commit();
-
-            return respond(response, APPLICATION_TEXT, Json.object());
         }
     }
 

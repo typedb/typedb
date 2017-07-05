@@ -28,10 +28,10 @@ relation2 sub relation
 #Rules
 
 isa inference-rule
-	lhs {
+	when {
 		(role1:$x, role2:$y) isa relation2;
 	}
-	rhs {
+	then {
 		(role1:$x, role2:$y) isa sub-relation1;
 	};
 

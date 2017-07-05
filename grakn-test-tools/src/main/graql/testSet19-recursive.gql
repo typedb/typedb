@@ -29,22 +29,22 @@ name sub resource datatype string;
 #Rules
 
 isa inference-rule
-	lhs {
+	when {
 	    $x isa subEntity1;
 	    $y isa entity1;
 		(role1:$x, role2:$y) isa relation2;
 	}
-	rhs {
+	then {
 		(role1:$x, role2:$y) isa relation1;
 	};
 
 isa inference-rule
-    lhs {
+    when {
     	$x isa entity1;
     	$y isa subEntity1;
     	(role1:$x, role2:$y) isa relation2;
     }
-    rhs {
+    then {
     	(role1:$x, role2:$y) isa relation2;
     };
 #Data
