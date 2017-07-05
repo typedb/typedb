@@ -24,6 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Relation;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -75,7 +76,7 @@ class TxCache {
     private final Set<ResourceImpl> modifiedResources = new HashSet<>();
 
     //We Track Relations so that we can look them up before they are completely defined and indexed on commit
-    private final Map<String, RelationImpl> relationIndexCache = new HashMap<>();
+    private final Map<String, Relation> relationIndexCache = new HashMap<>();
 
     //We Track the number of concept connections which have been made which may result in a new shard
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
@@ -132,24 +133,24 @@ class TxCache {
 
     /**
      *
-     * @param element The element to be later validated
+     * @param concept The element to be later validated
      */
-    void trackForValidation(ConceptImpl element) {
-        if (element.isEntity()) {
-            modifiedEntities.add((EntityImpl) element);
-        } else if (element.isRole()) {
-            modifiedRoles.add((RoleImpl) element);
-        } else if (element.isRelationType()) {
-            modifiedRelationTypes.add((RelationTypeImpl) element);
-        } else if (element.isRelation()){
-            RelationImpl relation = (RelationImpl) element;
+    void trackForValidation(Concept concept) {
+        if (concept.isEntity()) {
+            modifiedEntities.add((EntityImpl) concept);
+        } else if (concept.isRole()) {
+            modifiedRoles.add((RoleImpl) concept);
+        } else if (concept.isRelationType()) {
+            modifiedRelationTypes.add((RelationTypeImpl) concept);
+        } else if (concept.isRelation()){
+            RelationImpl relation = (RelationImpl) concept;
             modifiedRelations.add(relation);
             //Caching of relations in memory so they can be retrieved without needing a commit
             relationIndexCache.put(RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
-        } else if (element.isRule()){
-            modifiedRules.add((RuleImpl) element);
-        } else if (element.isResource()){
-            modifiedResources.add((ResourceImpl) element);
+        } else if (concept.isRule()){
+            modifiedRules.add((RuleImpl) concept);
+        } else if (concept.isResource()){
+            modifiedResources.add((ResourceImpl) concept);
         }
     }
     void trackForValidation(Casting casting) {
@@ -160,7 +161,7 @@ class TxCache {
      *
      * @return All the relations which have been affected in the transaction
      */
-    Map<String, RelationImpl> getRelationIndexCache(){
+    Map<String, Relation> getRelationIndexCache(){
         return relationIndexCache;
     }
 
@@ -222,7 +223,7 @@ class TxCache {
      *
      * @param index The current index of the relation
      */
-    RelationImpl getCachedRelation(String index){
+    Relation getCachedRelation(String index){
         return relationIndexCache.get(index);
     }
 
