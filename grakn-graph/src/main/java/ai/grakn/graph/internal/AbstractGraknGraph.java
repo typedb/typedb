@@ -48,6 +48,7 @@ import ai.grakn.util.Schema;
 import mjson.Json;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -429,7 +430,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         });
 
         //Automatic shard creation - If this type does not have a shard create one
-        if(!Schema.MetaSchema.isMetaLabel(label) && ontologyConcept.isType()){
+        if(!Schema.MetaSchema.isMetaLabel(label) && !ConceptImpl.from(ontologyConcept).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()){
             ConceptImpl.from(ontologyConcept).createShard();
         }
 
