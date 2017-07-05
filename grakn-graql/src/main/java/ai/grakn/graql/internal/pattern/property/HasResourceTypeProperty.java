@@ -175,7 +175,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         Var varName = var.getVarName().asUserDefined();
         Label label = this.getResourceType().getTypeLabel().orElse(null);
 
-        Var predicateVar = Graql.var().asUserDefined();
+        Var predicateVar = var().asUserDefined();
         OntologyConcept ontologyConcept = parent.graph().getOntologyConcept(label);
         IdPredicate predicate = new IdPredicate(predicateVar, ontologyConcept, parent);
         //isa part
