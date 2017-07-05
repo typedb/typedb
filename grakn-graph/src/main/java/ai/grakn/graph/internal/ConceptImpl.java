@@ -146,6 +146,18 @@ abstract class ConceptImpl implements Concept {
     }
 
     /**
+     * Helper method to cast interfaces into their implementation.
+     *
+     * @param concept The interface to be casted
+     * @param <X> The type of the implementation to be returned
+     * @return The concept casted to it's implementation
+     */
+    @SuppressWarnings("unchecked")
+    public static <X extends ConceptImpl> X from(Concept concept){
+        return (X) concept;
+    }
+
+    /**
      *
      * @return The hash code of the underlying vertex
      */
