@@ -34,7 +34,6 @@ import ai.grakn.concept.Type;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created
