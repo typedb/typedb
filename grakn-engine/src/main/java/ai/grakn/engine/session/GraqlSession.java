@@ -97,11 +97,11 @@ class GraqlSession {
         this.session = session;
         this.factory = factory;
         this.outputFormat = outputFormat;
-        this.printer = getPrinter();
 
         queryExecutor.execute(() -> {
             try {
                 refreshGraph();
+                this.printer = getPrinter();
                 sendTypes();
                 sendEnd();
             } catch (Throwable e) {
