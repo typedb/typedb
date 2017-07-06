@@ -53,15 +53,15 @@ public class Fragments {
     private Fragments() {}
 
     public static Fragment inShortcut(
-            Var rolePlayer, Var edge, Var relation, Optional<Var> roleType,
-            Optional<Set<Label>> roleTypeLabels, Optional<Set<Label>> relationTypeLabels) {
-        return new InShortcutFragment(rolePlayer, edge, relation, roleType, roleTypeLabels, relationTypeLabels);
+            Var rolePlayer, Var edge, Var relation, Optional<Var> role,
+            Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
+        return new InShortcutFragment(rolePlayer, edge, relation, role, roleLabels, relationTypeLabels);
     }
 
     public static Fragment outShortcut(
-            Var relation, Var edge, Var rolePlayer, Optional<Var> roleType,
-            Optional<Set<Label>> roleTypeLabels, Optional<Set<Label>> relationTypeLabels) {
-        return new OutShortcutFragment(relation, edge, rolePlayer, roleType, roleTypeLabels, relationTypeLabels);
+            Var relation, Var edge, Var rolePlayer, Optional<Var> role,
+            Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
+        return new OutShortcutFragment(relation, edge, rolePlayer, role, roleLabels, relationTypeLabels);
     }
 
     public static Fragment inSub(Var start, Var end) {
