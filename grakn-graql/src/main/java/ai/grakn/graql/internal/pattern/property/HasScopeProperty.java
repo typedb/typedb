@@ -74,7 +74,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(hasScope(start, scope.getVarName()));
+        return ImmutableSet.of(hasScope(this, start, scope.getVarName()));
     }
 
     @Override

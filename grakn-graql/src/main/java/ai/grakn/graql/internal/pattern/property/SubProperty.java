@@ -73,7 +73,7 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.sub(start, superType.getVarName()));
+        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType.getVarName()));
     }
 
     @Override

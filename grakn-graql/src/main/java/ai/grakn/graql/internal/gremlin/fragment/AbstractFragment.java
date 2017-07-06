@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -49,19 +50,24 @@ abstract class AbstractFragment implements Fragment{
     private final ImmutableSet<Var> varNames;
     private EquivalentFragmentSet equivalentFragmentSet = null;
 
-    AbstractFragment(Var start) {
+    private VarProperty varProperty;
+
+    AbstractFragment(VarProperty varProperty, Var start) {
+        this.varProperty = varProperty;
         this.start = start;
         this.end = Optional.empty();
         this.varNames = ImmutableSet.of(start);
     }
 
-    AbstractFragment(Var start, Var end, Var... others) {
+    AbstractFragment(VarProperty varProperty, Var start, Var end, Var... others) {
+        this.varProperty = varProperty;
         this.start = start;
         this.end = Optional.of(end);
         this.varNames = ImmutableSet.<Var>builder().add(start).add(end).add(others).build();
     }
 
-    AbstractFragment(Var start, Var end, Var other, Var... others) {
+    AbstractFragment(VarProperty varProperty, Var start, Var end, Var other, Var... others) {
+        this.varProperty = varProperty;
         this.start = start;
         this.end = Optional.of(end);
         this.varNames = ImmutableSet.<Var>builder().add(start).add(end).add(other).add(others).build();
@@ -100,6 +106,11 @@ abstract class AbstractFragment implements Fragment{
     @Override
     public Set<Var> getVariableNames() {
         return varNames;
+    }
+
+    @Override
+    public VarProperty getVarProperty() {
+        return varProperty;
     }
 
     @Override

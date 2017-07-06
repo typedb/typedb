@@ -1,5 +1,7 @@
 package ai.grakn.engine;
 
+import ai.grakn.test.GraknTestSetup;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 
@@ -55,7 +57,16 @@ public class EngineTestHelper {
         server = new GraknEngineServer(config());
         server.start();
     }
-    
+
+    /**
+     * Similarly to {@link EngineTestHelper#engine()} it creates a test engine with the ability to write graphs to a
+     * persistent backend if needed
+     */
+    public static synchronized void engineWithGraphs() {
+        GraknTestSetup.startCassandraIfNeeded();
+        engine();
+    }
+
     /**
      * Shutdown the engine server.
      */
