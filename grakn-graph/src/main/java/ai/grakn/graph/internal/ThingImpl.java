@@ -171,7 +171,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         if(roles.length == 0){
             traversal.in(Schema.EdgeLabel.SHORTCUT.getLabel());
         } else {
-            Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
+            Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getLabelId().getValue()).collect(Collectors.toSet());
             traversal.inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                     has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).outV();
         }
@@ -255,7 +255,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
      */
     private T setInternalType(Type type){
         cachedInternalType.set(type.getLabel());
-        vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID, type.getTypeId().getValue());
+        vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID, type.getLabelId().getValue());
         return getThis();
     }
 
