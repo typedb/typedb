@@ -50,22 +50,22 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
     private final Var relation;
     private final Var edge;
     private final Var rolePlayer;
-    private final Optional<Var> roleType;
+    private final Optional<Var> role;
     private final Optional<Set<Label>> roleTypeLabels;
     private final Optional<Set<Label>> relationTypeLabels;
 
     ShortcutFragmentSet(
-            Var relation, Var edge, Var rolePlayer, Optional<Var> roleType,
-            Optional<Set<Label>> roleTypeLabels, Optional<Set<Label>> relationTypeLabels) {
+            Var relation, Var edge, Var rolePlayer, Optional<Var> role,
+            Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
         super(
-                Fragments.inShortcut(rolePlayer, edge, relation, roleType, roleTypeLabels, relationTypeLabels),
-                Fragments.outShortcut(relation, edge, rolePlayer, roleType, roleTypeLabels, relationTypeLabels)
+                Fragments.inShortcut(rolePlayer, edge, relation, role, roleLabels, relationTypeLabels),
+                Fragments.outShortcut(relation, edge, rolePlayer, role, roleLabels, relationTypeLabels)
         );
         this.relation = relation;
         this.edge = edge;
         this.rolePlayer = rolePlayer;
-        this.roleType = roleType;
-        this.roleTypeLabels = roleTypeLabels;
+        this.role = role;
+        this.roleTypeLabels = roleLabels;
         this.relationTypeLabels = relationTypeLabels;
     }
 
@@ -85,11 +85,11 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * However, we must still retain the {@link LabelFragmentSet} because it is possible it is selected as a result or
      * referred to elsewhere in the query.
      */
-    static boolean applyShortcutRoleTypeOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+    static boolean applyShortcutRoleOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
         Iterable<ShortcutFragmentSet> shortcuts = EquivalentFragmentSets.fragmentSetOfType(ShortcutFragmentSet.class, fragmentSets)::iterator;
 
         for (ShortcutFragmentSet shortcut : shortcuts) {
-            Optional<Var> roleVar = shortcut.roleType;
+            Optional<Var> roleVar = shortcut.role;
 
             if (!roleVar.isPresent()) continue;
 
@@ -162,7 +162,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * @return a new {@link ShortcutFragmentSet} with the same properties excepting role-types
      */
     private ShortcutFragmentSet substituteRoleTypeLabel(GraknGraph graph, Role role) {
-        Preconditions.checkState(this.roleType.isPresent());
+        Preconditions.checkState(this.role.isPresent());
         Preconditions.checkState(!roleTypeLabels.isPresent());
 
         Collection<Role> subTypes = withImplicitConceptsVisible(graph, role::subs);
@@ -187,7 +187,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         Set<Label> newRelationLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(
-                relation, edge, rolePlayer, roleType, roleTypeLabels, Optional.of(newRelationLabels)
+                relation, edge, rolePlayer, role, roleTypeLabels, Optional.of(newRelationLabels)
         );
     }
 }

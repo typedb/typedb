@@ -47,17 +47,17 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
 class InShortcutFragment extends AbstractFragment {
 
     private final Var edge;
-    private final Optional<Var> roleType;
-    private final Optional<Set<Label>> roleTypeLabels;
+    private final Optional<Var> role;
+    private final Optional<Set<Label>> roleLabels;
     private final Optional<Set<Label>> relationTypeLabels;
 
     InShortcutFragment(
-            Var rolePlayer, Var edge, Var relation, Optional<Var> roleType, Optional<Set<Label>> roleTypeLabels,
+            Var rolePlayer, Var edge, Var relation, Optional<Var> role, Optional<Set<Label>> roleLabels,
             Optional<Set<Label>> relationTypeLabels) {
-        super(rolePlayer, relation, edge, optionalVarToArray(roleType));
+        super(rolePlayer, relation, edge, optionalVarToArray(role));
         this.edge = edge;
-        this.roleType = roleType;
-        this.roleTypeLabels = roleTypeLabels;
+        this.role = role;
+        this.roleLabels = roleLabels;
         this.relationTypeLabels = relationTypeLabels;
     }
 
@@ -66,19 +66,19 @@ class InShortcutFragment extends AbstractFragment {
         GraphTraversal<Vertex, Edge> edgeTraversal = traversal.inE(SHORTCUT.getLabel()).as(edge.getValue());
 
         // Filter by any provided type labels
-        applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleTypeLabels, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleLabels, graph);
         applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_ID, relationTypeLabels, graph);
 
-        traverseRoleTypeFromShortcutEdge(edgeTraversal, roleType);
+        traverseRoleTypeFromShortcutEdge(edgeTraversal, role);
 
         edgeTraversal.outV();
     }
 
     @Override
     public String getName() {
-        String role = roleType.map(rt -> " role:" + rt.shortName()).orElse("");
+        String role = this.role.map(rt -> " role:" + rt.shortName()).orElse("");
         String rels = displayOptionalTypeLabels("rels", relationTypeLabels);
-        String roles = displayOptionalTypeLabels("roles", roleTypeLabels);
+        String roles = displayOptionalTypeLabels("roles", roleLabels);
         return "<-[shortcut:" + edge.shortName() + role + rels + roles + "]-";
     }
 
@@ -96,7 +96,7 @@ class InShortcutFragment extends AbstractFragment {
         InShortcutFragment that = (InShortcutFragment) o;
 
         if (!edge.equals(that.edge)) return false;
-        if (!roleTypeLabels.equals(that.roleTypeLabels)) return false;
+        if (!roleLabels.equals(that.roleLabels)) return false;
         return relationTypeLabels.equals(that.relationTypeLabels);
     }
 
@@ -104,7 +104,7 @@ class InShortcutFragment extends AbstractFragment {
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + edge.hashCode();
-        result = 31 * result + roleTypeLabels.hashCode();
+        result = 31 * result + roleLabels.hashCode();
         result = 31 * result + relationTypeLabels.hashCode();
         return result;
     }
