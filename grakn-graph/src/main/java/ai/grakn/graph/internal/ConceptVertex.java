@@ -36,4 +36,8 @@ import ai.grakn.concept.Concept;
 interface ConceptVertex {
 
     VertexElement vertex();
+
+    static ConceptVertex from(Concept concept){
+        return (ConceptVertex) concept;
+    }
 }

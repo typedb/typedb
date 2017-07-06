@@ -645,15 +645,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return getOntologyConcept(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
-    void putShortcutEdge(Thing toInstance, Relation fromRelation, Role roleType){
+    void putShortcutEdge(Thing toThing, Relation fromRelation, Role roleType){
         boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getLabelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), roleType.getLabelId().getValue()).inV().
-                hasId(toInstance.getId().getRawValue()).hasNext();
+                hasId(toThing.getId().getRawValue()).hasNext();
 
         if(!exists){
-            EdgeElement edge = RelationImpl.from(fromRelation).reify().addEdge((ConceptVertex) toInstance, Schema.EdgeLabel.SHORTCUT);
+            EdgeElement edge = RelationImpl.from(fromRelation).reify().addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.SHORTCUT);
             edge.property(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getLabelId().getValue());
             edge.property(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getLabelId().getValue());
             txCache().trackForValidation(factory().buildRolePlayer(edge));

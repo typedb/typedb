@@ -280,7 +280,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
 
             //Modify the graph once we have checked no loop occurs
             deleteEdge(Direction.OUT, Schema.EdgeLabel.SUB);
-            putEdge((ConceptVertex) newSuperType, Schema.EdgeLabel.SUB);
+            putEdge(ConceptVertex.from(newSuperType), Schema.EdgeLabel.SUB);
 
             //Update the sub types of the old super type
             if(oldSuperType != null) {

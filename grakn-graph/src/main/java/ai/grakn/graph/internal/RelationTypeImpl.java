@@ -89,7 +89,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public RelationType relates(Role role) {
         checkOntologyMutationAllowed();
-        putEdge((ConceptVertex) role, Schema.EdgeLabel.RELATES);
+        putEdge(ConceptVertex.from(role), Schema.EdgeLabel.RELATES);
 
         //TODO: the following lines below this comment should only be executed if the edge is added
 
