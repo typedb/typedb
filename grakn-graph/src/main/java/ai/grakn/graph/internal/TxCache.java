@@ -64,7 +64,7 @@ class TxCache {
     private final GraphCache graphCache;
 
     //Caches any concept which has been touched before
-    private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
+    private final Map<ConceptId, Concept> conceptCache = new HashMap<>();
     private final Map<Label, OntologyConcept> ontologyConceptCache = new HashMap<>();
     private final Map<Label, LabelId> labelCache = new HashMap<>();
 
@@ -143,20 +143,20 @@ class TxCache {
      */
     void trackForValidation(Concept concept) {
         if (concept.isEntity()) {
-            modifiedEntities.add((EntityImpl) concept);
+            modifiedEntities.add(concept.asEntity());
         } else if (concept.isRole()) {
-            modifiedRoles.add((RoleImpl) concept);
+            modifiedRoles.add(concept.asRole());
         } else if (concept.isRelationType()) {
-            modifiedRelationTypes.add((RelationTypeImpl) concept);
+            modifiedRelationTypes.add(concept.asRelationType());
         } else if (concept.isRelation()){
             RelationImpl relation = (RelationImpl) concept;
             modifiedRelations.add(relation);
             //Caching of relations in memory so they can be retrieved without needing a commit
             relationIndexCache.put(ReifiedRelation.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
         } else if (concept.isRule()){
-            modifiedRules.add((RuleImpl) concept);
+            modifiedRules.add(concept.asRule());
         } else if (concept.isResource()){
-            modifiedResources.add((ResourceImpl) concept);
+            modifiedResources.add(concept.asResource());
         }
     }
     void trackForValidation(Casting casting) {
@@ -199,7 +199,7 @@ class TxCache {
      *
      * @return All the concepts which have been accessed in this transaction
      */
-    Map<ConceptId, ConceptImpl> getConceptCache() {
+    Map<ConceptId, Concept> getConceptCache() {
         return conceptCache;
     }
 
