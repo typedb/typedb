@@ -144,7 +144,7 @@ class RoleImpl extends OntologyConceptImpl<Role> implements Role {
     }
 
     @Override
-    void trackSuperChange() {
+    void trackInstances() {
         //TODO: track the super change when the role super changes
     }
 

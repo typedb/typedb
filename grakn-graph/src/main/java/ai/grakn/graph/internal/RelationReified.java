@@ -136,4 +136,23 @@ public class RelationReified extends ThingImpl<Relation, RelationType> {
                 has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).
                 toStream().map(edge -> vertex().graph().factory().buildRolePlayer(edge));
     }
+
+    @Override
+    public String innerToString(){
+        StringBuilder description = new StringBuilder();
+        description.append("ID [").append(getId()).append("] Type [").append(type().getLabel()).append("] Roles and Role Players: \n");
+        for (Map.Entry<Role, Set<Thing>> entry : allRolePlayers().entrySet()) {
+            if(entry.getValue().isEmpty()){
+                description.append("    Role [").append(entry.getKey().getLabel()).append("] not played by any instance \n");
+            } else {
+                StringBuilder instancesString = new StringBuilder();
+                for (Thing thing : entry.getValue()) {
+                    instancesString.append(thing.getId()).append(",");
+                }
+                description.append("    Role [").append(entry.getKey().getLabel()).append("] played by [").
+                        append(instancesString.toString()).append("] \n");
+            }
+        }
+        return description.toString();
+    }
 }

@@ -238,7 +238,7 @@ class TxCache {
      *
      * @param concept The concept to be cached.
      */
-    void cacheConcept(ConceptImpl concept){
+    void cacheConcept(Concept concept){
         conceptCache.put(concept.getId(), concept);
         if(concept.isOntologyConcept()){
             OntologyConceptImpl ontologyElement = (OntologyConceptImpl) concept;

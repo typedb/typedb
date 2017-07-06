@@ -43,7 +43,7 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-abstract class ConceptImpl implements Concept {
+abstract class ConceptImpl implements Concept, ConceptVertex {
     private final VertexElement vertexElement;
 
     @SuppressWarnings("unchecked")
@@ -55,6 +55,7 @@ abstract class ConceptImpl implements Concept {
         this.vertexElement = vertexElement;
     }
 
+    @Override
     public VertexElement vertex() {
         return vertexElement;
     }
@@ -103,12 +104,12 @@ abstract class ConceptImpl implements Concept {
         }
     }
 
-    EdgeElement putEdge(Concept to, Schema.EdgeLabel label){
-        return vertex().putEdge(((ConceptImpl) to).vertex(), label);
+    EdgeElement putEdge(ConceptVertex to, Schema.EdgeLabel label){
+        return vertex().putEdge(to.vertex(), label);
     }
 
-    EdgeElement addEdge(Concept to, Schema.EdgeLabel label){
-        return vertex().addEdge(((ConceptImpl) to).vertex(), label);
+    EdgeElement addEdge(ConceptVertex to, Schema.EdgeLabel label){
+        return vertex().addEdge(to.vertex(), label);
     }
 
     void deleteEdge(Direction direction, Schema.EdgeLabel label, Concept... to) {

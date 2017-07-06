@@ -280,7 +280,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
 
             //Modify the graph once we have checked no loop occurs
             deleteEdge(Direction.OUT, Schema.EdgeLabel.SUB);
-            putEdge(newSuperType, Schema.EdgeLabel.SUB);
+            putEdge((ConceptVertex) newSuperType, Schema.EdgeLabel.SUB);
 
             //Update the sub types of the old super type
             if(oldSuperType != null) {
@@ -293,7 +293,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
             ((OntologyConceptImpl<T>) newSuperType).addCachedDirectSubType(getThis());
 
             //Track any existing data if there is some
-            trackSuperChange();
+            trackInstances();
         }
 
         return getThis();
@@ -302,7 +302,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
     /**
      * Method which performs tasks needed in order to track super changes properly
      */
-    abstract void trackSuperChange();
+    abstract void trackInstances();
 
     private boolean superLoops(){
         //Check For Loop

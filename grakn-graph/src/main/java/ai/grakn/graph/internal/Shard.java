@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -81,7 +82,7 @@ class Shard {
      *
      * @return All the concept linked to this shard
      */
-    Stream<ConceptImpl> links(){
+    Stream<Concept> links(){
         return  vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).
                 map(EdgeElement::source).
                 map(vertexElement ->  vertex().graph().factory().buildConcept(vertexElement));

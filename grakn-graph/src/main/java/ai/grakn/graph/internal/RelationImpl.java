@@ -18,12 +18,15 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
+import ai.grakn.exception.GraphOperationException;
 
 import java.util.Collection;
 import java.util.Map;
@@ -41,19 +44,16 @@ import java.util.Set;
  * @author fppt
  *
  */
-class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation {
+class RelationImpl implements Relation, ConceptVertex {
     private RelationReified relationReified;
 
     RelationImpl(RelationReified relationReified) {
-        super(relationReified.vertex());
         this.relationReified = relationReified;
     }
 
     RelationReified reified(){
         return relationReified;
     }
-
-
 
     @Override
     public Relation resource(Resource resource) {
@@ -129,21 +129,27 @@ class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation
     }
 
     @Override
-    public String innerToString(){
-        StringBuilder description = new StringBuilder();
-        description.append("ID [").append(getId()).append("] Type [").append(type().getLabel()).append("] Roles and Role Players: \n");
-        for (Map.Entry<Role, Set<Thing>> entry : allRolePlayers().entrySet()) {
-            if(entry.getValue().isEmpty()){
-                description.append("    Role [").append(entry.getKey().getLabel()).append("] not played by any instance \n");
-            } else {
-                StringBuilder instancesString = new StringBuilder();
-                for (Thing thing : entry.getValue()) {
-                    instancesString.append(thing.getId()).append(",");
-                }
-                description.append("    Role [").append(entry.getKey().getLabel()).append("] played by [").
-                        append(instancesString.toString()).append("] \n");
-            }
-        }
-        return description.toString();
+    public String toString(){
+        return reified().toString();
+    }
+
+    @Override
+    public ConceptId getId() {
+        return reified().getId();
+    }
+
+    @Override
+    public void delete() throws GraphOperationException {
+        reified().delete();
+    }
+
+    @Override
+    public int compareTo(Concept o) {
+        return reified().compareTo(o);
+    }
+
+    @Override
+    public VertexElement vertex() {
+        return reified().vertex();
     }
 }
