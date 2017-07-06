@@ -26,7 +26,6 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.exception.GraphOperationException;
 
 import java.util.Collection;
 import java.util.Map;
@@ -45,14 +44,21 @@ import java.util.Set;
  *
  */
 class RelationImpl implements Relation, ConceptVertex {
-    private RelationReified relationReified;
+    private RelationStructure relationStructure;
 
-    RelationImpl(RelationReified relationReified) {
-        this.relationReified = relationReified;
+    RelationImpl(RelationStructure relationStructure) {
+        this.relationStructure = relationStructure;
     }
 
     RelationReified reified(){
-        return relationReified;
+        if(!relationStructure.isReified()){
+            throw new UnsupportedOperationException("Reification is not yet supported");
+        }
+        return relationStructure.reified();
+    }
+
+    RelationStructure structure(){
+        return relationStructure;
     }
 
     @Override
@@ -68,7 +74,7 @@ class RelationImpl implements Relation, ConceptVertex {
 
     @Override
     public RelationType type() {
-        return reified().type();
+        return structure().type();
     }
 
     @Override
@@ -82,19 +88,19 @@ class RelationImpl implements Relation, ConceptVertex {
     }
 
     /**
-     * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
+     * Retrieve a list of all {@link Thing} involved in the {@link Relation}, and the {@link Role} they play.
      * @see Role
      *
-     * @return A list of all the role types and the instances playing them in this relation.
+     * @return A list of all the {@link Role}s and the {@link Thing}s playing them in this {@link Relation}.
      */
     @Override
     public Map<Role, Set<Thing>> allRolePlayers(){
-       return reified().allRolePlayers();
+       return structure().allRolePlayers();
     }
 
     @Override
     public Collection<Thing> rolePlayers(Role... roles) {
-        return reified().rolePlayers(roles);
+        return structure().rolePlayers(roles);
     }
 
 
@@ -142,17 +148,17 @@ class RelationImpl implements Relation, ConceptVertex {
 
     @Override
     public String toString(){
-        return reified().toString();
+        return structure().toString();
     }
 
     @Override
     public ConceptId getId() {
-        return reified().getId();
+        return structure().getId();
     }
 
     @Override
-    public void delete() throws GraphOperationException {
-        reified().delete();
+    public void delete() {
+        structure().delete();
     }
 
     @Override

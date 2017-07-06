@@ -52,7 +52,7 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-public class RelationReified extends ThingImpl<Relation, RelationType> {
+public class RelationReified extends ThingImpl<Relation, RelationType> implements RelationStructure {
     RelationReified(VertexElement vertexElement) {
         super(vertexElement);
     }
@@ -154,5 +154,15 @@ public class RelationReified extends ThingImpl<Relation, RelationType> {
             }
         }
         return description.toString();
+    }
+
+    @Override
+    public RelationReified reified() {
+        return this;
+    }
+
+    @Override
+    public boolean isReified() {
+        return true;
     }
 }
