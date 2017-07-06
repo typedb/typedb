@@ -315,21 +315,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return vars;
     }
 
-    /**
-     * @param atom in question
-     * @return true if query contains an equivalent atom
-     */
-    private boolean containsEquivalentAtom(Atom atom) {
-        return !getEquivalentAtoms(atom).isEmpty();
-    }
-
-    Set<Atom> getEquivalentAtoms(Atom atom) {
-        return atomSet.stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .filter(at -> at.isEquivalent(atom))
-                .collect(Collectors.toSet());
-    }
-
     @Override
     public Unifier getUnifier(ReasonerQuery parent) {
         throw GraqlQueryException.getUnifierOfNonAtomicQuery();
@@ -456,6 +441,56 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return true if two queries are alpha-equivalent
      */
     public boolean isEquivalent(ReasonerQueryImpl q) {
+
+        //TODO Ullmann algo
+        /*
+        Multimap<Atom, Atom> neighbours = HashMultimap.create();
+        Multimap<Atom, Atom> otherNeighbours = HashMultimap.create();
+        Multimap<Atom, Atom> candidates = HashMultimap.create();
+
+        atomSet.stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .forEach(at -> at.getNeighbours().forEach(n -> neighbours.put(at, n)));
+
+        q2.getAtoms().stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .forEach(at -> at.getNeighbours().forEach(n -> otherNeighbours.put(at, n)));
+
+        if(neighbours. != q.getAtoms().stream().filter(Atomic::isAtom).count()) return false;
+
+        //compute candidates
+        for(Atom atom : neighbours.keySet() ){
+            int thisDegree = neighbours.get(atom).size();
+            Set<Atom> cs = otherNeighbours.asMap().entrySet().stream()
+                    .filter(p -> p.getValue().size() == thisDegree)
+                    .flatMap(p -> p.getValue().stream().filter(c -> c.isEquivalent(atom)))
+                    .collect(Collectors.toSet());
+            if (cs.isEmpty()) return false;
+            cs.forEach(c -> candidates.put(atom, c));
+        }
+
+        //refine phase
+        neighbours.keySet()
+                .forEach(atom -> {
+                    boolean refinable = true;
+                    while(refinable){
+                        int csize = candidates.get(atom).size();
+                        candidates.get(atom).stream()
+                                .filter(c -> {
+                                    Collection<Atom> atomNeighbours = neighbours.get(atom);
+                                    for(Atom n : atomNeighbours){
+                                        if (CollectionUtils.intersection(candidates.get(n), otherNeighbours.get(c)).isEmpty())
+                                            return true;
+                                    }
+                                    return false;
+                                })
+                                .forEach(c -> candidates.remove(atom, c));
+                        refinable = candidates.get(atom).size() != csize;
+                        System.out.println();
+                    }
+                });
+
+        */
         Set<Atom> atoms = atomSet.stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .collect(Collectors.toSet());
@@ -466,6 +501,21 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             }
         }
         return true;
+    }
+
+    /**
+     * @param atom in question
+     * @return true if query contains an equivalent atom
+     */
+    private boolean containsEquivalentAtom(Atom atom) {
+        return !getEquivalentAtoms(atom).isEmpty();
+    }
+
+    Set<Atom> getEquivalentAtoms(Atom atom) {
+        return atomSet.stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(at -> at.isEquivalent(atom))
+                .collect(Collectors.toSet());
     }
 
     /**
