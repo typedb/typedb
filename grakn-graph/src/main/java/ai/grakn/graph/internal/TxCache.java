@@ -205,10 +205,10 @@ class TxCache {
 
     /**
      *
-     * @param concept The concept to nio longer track
+     * @param concept The concept to no longer track
      */
     @SuppressWarnings("SuspiciousMethodCalls")
-    void remove(ConceptImpl concept){
+    void remove(Concept concept){
         modifiedEntities.remove(concept);
         modifiedRoles.remove(concept);
         modifiedRelationTypes.remove(concept);

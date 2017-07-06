@@ -153,11 +153,7 @@ abstract class ConceptImpl implements Concept, ConceptVertex {
         return (X) concept;
     }
 
-    /**
-     *
-     * @return The hash code of the underlying vertex
-     */
-    public int hashCode() {
+    @Override public int hashCode() {
         return getId().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
     }
 

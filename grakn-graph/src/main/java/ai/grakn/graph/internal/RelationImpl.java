@@ -129,6 +129,18 @@ class RelationImpl implements Relation, ConceptVertex {
     }
 
     @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+        return getId().equals(((RelationImpl) object).getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getId().hashCode();
+    }
+
+    @Override
     public String toString(){
         return reified().toString();
     }
@@ -145,7 +157,7 @@ class RelationImpl implements Relation, ConceptVertex {
 
     @Override
     public int compareTo(Concept o) {
-        return reified().compareTo(o);
+        return getId().compareTo(o.getId());
     }
 
     @Override
