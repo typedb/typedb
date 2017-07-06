@@ -281,8 +281,8 @@ class ValidateGlobalRules {
      */
     static Set<String> validateRuleOntologyElementsExist(GraknGraph graph, Rule rule){
         Set<String> errors = new HashSet<>();
-        errors.addAll(checkRuleSideInvalid(graph, rule, "LHS", rule.getWhen()));
-        errors.addAll(checkRuleSideInvalid(graph, rule, "RHS", rule.getThen()));
+        errors.addAll(checkRuleSideInvalid(graph, rule, "When", rule.getWhen()));
+        errors.addAll(checkRuleSideInvalid(graph, rule, "Then", rule.getThen()));
         return errors;
     }
 
