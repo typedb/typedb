@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -33,7 +34,8 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.type.HasAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.Schema;
 
 import java.util.Collection;
@@ -172,8 +174,12 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
         Var varName = var.getVarName().asUserDefined();
         Label label = this.getResourceType().getTypeLabel().orElse(null);
+
+        Var predicateVar = var().asUserDefined();
+        OntologyConcept ontologyConcept = parent.graph().getOntologyConcept(label);
+        IdPredicate predicate = new IdPredicate(predicateVar, ontologyConcept, parent);
         //isa part
         VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();
-        return new TypeAtom(resVar, parent);
+        return new HasAtom(resVar, predicateVar, predicate, parent);
     }
 }

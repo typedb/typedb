@@ -37,7 +37,6 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.AdmissionsGraph;
 import ai.grakn.test.graphs.CWGraph;
 import ai.grakn.test.graphs.GeoGraph;
 import ai.grakn.test.graphs.SNBGraph;
@@ -62,19 +61,7 @@ import static org.junit.Assume.assumeTrue;
 public class AtomicQueryTest {
 
     @ClassRule
-    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
-
-    @ClassRule
     public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
-
-    @ClassRule
-    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
-
-    @ClassRule
-    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
-
-    @ClassRule
-    public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
     public static final GraphContext unificationWithTypesSet = GraphContext.preLoad("unificationWithTypesTest.gql").assumeTrue(GraknTestSetup.usingTinker());
@@ -89,50 +76,28 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenConstructingNonAtomicQuery_ExceptionIsThrown() {
-        String patternString = "{$x isa person;$y isa product;($x, $y) isa recommendation;($y, $t) isa typing;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, snbGraph.graph());
-        exception.expect(GraqlQueryException.class);
-        ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, snbGraph.graph());
-    }
-
-    @Test
-    public void testWhenCopying_TheCopyIsAlphaEquivalent(){
-        String patternString = "{($x, $y) isa recommendation;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, snbGraph.graph());
-        ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, snbGraph.graph());
-        ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
-        assertEquals(atomicQuery, copy);
-        assertEquals(atomicQuery.hashCode(), copy.hashCode());
-    }
-
-    @Test
-    public void testAlphaEquivalence_RepeatingVariables(){
-        GraknGraph graph = snbGraph.graph();
-        String patternString = "{(recommended-customer: $x, recommended-product: $y);}";
-        String patternString2 = "{(recommended-customer: $x, recommended-product: $x);}";
+        GraknGraph graph = geoGraph.graph();
+        String patternString = "{$x isa university;$y isa country;($x, $y) isa is-located-in;($y, $z) isa is-located-in;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
-
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
-        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
-        assertNotEquals(query, query2);
+        exception.expect(GraqlQueryException.class);
+        ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
     }
 
     @Test
     public void testWhenMaterialising_MaterialisedInformationIsPresentInGraph(){
-        GraknGraph graph = snbGraph.graph();
+        GraknGraph graph = geoGraph.graph();
         QueryBuilder qb = graph.graql().infer(false);
-        String explicitQuery = "match (recommended-customer: $x, recommended-product: $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic';";
+        String explicitQuery = "match (geo-entity: $x, entity-location: $y) isa is-located-in;$x has name 'Warsaw';$y has name 'Poland';";
         assertTrue(!qb.<MatchQuery>parse(explicitQuery).ask().execute());
 
-        String patternString = "{(recommended-customer: $x, recommended-product: $y) isa recommendation;}";
+        String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         QueryAnswers answers = new QueryAnswers();
 
         answers.add(new QueryAnswer(
                 ImmutableMap.of(
-                        Graql.var("x"), getConcept("Bob"),
-                        Graql.var("y"), getConcept("Colour of Magic")))
+                        Graql.var("x"), getConceptByResourceValue(graph, "Warsaw"),
+                        Graql.var("y"), getConceptByResourceValue(graph, "Poland")))
         );
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
 
@@ -141,12 +106,31 @@ public class AtomicQueryTest {
         assertTrue(qb.<MatchQuery>parse(explicitQuery).ask().execute());
     }
 
+    private Concept getConceptByResourceValue(GraknGraph graph, String id){
+        Set<Concept> instances = graph.getResourcesByValue(id)
+                .stream().flatMap(res -> res.ownerInstances().stream()).collect(Collectors.toSet());
+        if (instances.size() != 1)
+            throw new IllegalStateException("Something wrong, multiple instances with given res value");
+        return instances.iterator().next();
+    }
+
+    @Test
+    public void testWhenCopying_TheCopyIsAlphaEquivalent(){
+        GraknGraph graph = geoGraph.graph();
+        String patternString = "{($x, $y) isa is-located-in;}";
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
+        ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
+        assertEquals(atomicQuery, copy);
+        assertEquals(atomicQuery.hashCode(), copy.hashCode());
+    }
 
     @Test
     public void testWhenRoleTypesAreAmbiguous_answersArePermutedCorrectly(){
+        GraknGraph graph = geoGraph.graph();
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
-        GraknGraph graph = geoGraph.graph();
+
         QueryBuilder qb = graph.graql().infer(false);
         MatchQuery query = qb.parse(queryString);
         MatchQuery query2 = qb.parse(queryString2);
@@ -171,9 +155,10 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenReifyingRelation_ExtraAtomIsCreatedWithUserDefinedName(){
+        GraknGraph graph = geoGraph.graph();
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{($x, $y) relates geo-entity;}";
-        GraknGraph graph = geoGraph.graph();
+
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
         ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
@@ -186,8 +171,9 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenUnifiyingAtomWithItself_UnifierIsTrivial(){
-        String patternString = "{$x isa country;($x, $y) isa is-enemy-of;$y isa country;}";
-        GraknGraph graph = cwGraph.graph();
+        GraknGraph graph = geoGraph.graph();
+        String patternString = "{$x isa city;($x, $y) isa is-located-in;$y isa country;}";
+
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern, graph);
@@ -310,14 +296,6 @@ public class AtomicQueryTest {
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);
-    }
-
-    private Concept getConcept(String id){
-        Set<Concept> instances = snbGraph.graph().getResourcesByValue(id)
-                .stream().flatMap(res -> res.ownerInstances().stream()).collect(Collectors.toSet());
-        if (instances.size() != 1)
-            throw new IllegalStateException("Something wrong, multiple instances with given res value");
-        return instances.iterator().next();
     }
 
 }
