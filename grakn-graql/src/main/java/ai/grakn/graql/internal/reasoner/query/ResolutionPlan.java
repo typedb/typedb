@@ -147,8 +147,7 @@ public final class ResolutionPlan {
 
         Set<Atom> nonResolvableAtoms = new HashSet<>();
         while (!atoms.isEmpty()) {
-            Atom top = atoms.getFirst();
-            atoms.remove(top);
+            Atom top = atoms.remove();
             if (top.isRuleResolvable()) {
                 if (!nonResolvableAtoms.isEmpty()) {
                     queries.add(ReasonerQueries.create(nonResolvableAtoms, graph));
@@ -204,7 +203,7 @@ public final class ResolutionPlan {
             if (top == null) {
                 top = atoms.stream()
                         .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                        .findFirst().orElse(null);
+                        .findFirst().get();
             }
         }
 
