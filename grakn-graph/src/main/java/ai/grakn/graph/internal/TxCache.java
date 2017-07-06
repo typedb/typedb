@@ -351,7 +351,7 @@ class TxCache {
     private  <X extends Thing> Json loadConceptsForFixing(Set<X> instances){
         Map<String, Set<String>> conceptByIndex = new HashMap<>();
         instances.forEach(thing ->
-                conceptByIndex.computeIfAbsent(ThingImpl.from(thing).getIndex(), (e) -> new HashSet<>()).add(thing.getId().getValue()));
+                conceptByIndex.computeIfAbsent(((ThingImpl) thing).getIndex(), (e) -> new HashSet<>()).add(thing.getId().getValue()));
         return Json.make(conceptByIndex);
     }
 

@@ -430,8 +430,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         });
 
         //Automatic shard creation - If this type does not have a shard create one
-        if(!Schema.MetaSchema.isMetaLabel(label) && !ConceptImpl.from(ontologyConcept).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()){
-            ConceptImpl.from(ontologyConcept).createShard();
+        if(!Schema.MetaSchema.isMetaLabel(label) && !OntologyConceptImpl.from(ontologyConcept).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()){
+            OntologyConceptImpl.from(ontologyConcept).createShard();
         }
 
         return finalType;
@@ -861,7 +861,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 }
 
                 //Delete the node
-                ConceptImpl.from(otherResource).deleteNode();
+                ResourceImpl.from(otherResource).deleteNode();
             }
 
             //Restore the index

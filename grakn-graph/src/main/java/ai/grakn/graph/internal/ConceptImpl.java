@@ -181,22 +181,11 @@ abstract class ConceptImpl implements Concept, ConceptVertex {
         return this.getId().compareTo(o.getId());
     }
 
-    /**
-     * Helper method to cast interfaces into their implementation.
-     *
-     * @param concept The interface to be casted
-     * @return The concept casted to it's implementation
-     */
-    public static ConceptImpl from(Concept concept){
-        return (ConceptImpl) concept;
-    }
-
     //----------------------------------- Sharding Functionality
-    Shard createShard(){
+    void createShard(){
         VertexElement shardVertex = vertex().graph().addVertex(Schema.BaseType.SHARD);
         Shard shard = vertex().graph().factory().buildShard(this, shardVertex);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
-        return shard;
     }
 
     Set<Shard> shards(){

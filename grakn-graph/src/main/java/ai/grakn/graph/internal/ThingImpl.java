@@ -265,7 +265,4 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         return cachedInternalType.get();
     }
 
-    public static ThingImpl<?, ?> from(Thing thing){
-        return (ThingImpl) thing;
-    }
 }
