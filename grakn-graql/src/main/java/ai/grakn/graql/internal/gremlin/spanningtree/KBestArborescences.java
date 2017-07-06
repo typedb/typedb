@@ -45,6 +45,7 @@ import static java.util.Collections.singleton;
  * Based on "The k best spanning arborescences of a network." Camerini et al. 1980
  *
  * @author sthomson@cs.cmu.edu, swabha@cs.cmu.edu
+ * @author Jason Liu
  */
 public class KBestArborescences {
     /**

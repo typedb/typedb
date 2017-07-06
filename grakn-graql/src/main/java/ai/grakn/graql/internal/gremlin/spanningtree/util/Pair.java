@@ -26,6 +26,7 @@ import com.google.common.base.Objects;
  * @param <T> Object 1
  * @param <V> Object 2
  * @author Sam Thomson
+ * @author Jason Liu
  */
 public class Pair<T, V> {
     public final T first;

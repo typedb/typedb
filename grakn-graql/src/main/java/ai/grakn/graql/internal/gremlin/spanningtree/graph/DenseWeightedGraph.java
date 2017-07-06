@@ -37,6 +37,7 @@ import static com.google.common.collect.Range.closedOpen;
 /**
  * @param <V> the type of the nodes stored
  * @author Sam Thomson
+ * @author Jason Liu
  */
 public class DenseWeightedGraph<V> extends WeightedGraph<V> {
     final private ArrayList<V> nodes;

@@ -29,6 +29,7 @@ import java.util.Set;
  *
  * @param <V> the type of the values stored
  * @author Sam Thomson
+ * @author Jason Liu
  */
 public class Partition<V> {
     private final Map<V, V> parents;

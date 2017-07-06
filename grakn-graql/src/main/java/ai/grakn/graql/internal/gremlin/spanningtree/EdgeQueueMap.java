@@ -35,6 +35,7 @@ import java.util.Map;
 /**
  * @param <V> the type of the nodes stored
  * @author Sam Thomson
+ * @author Jason Liu
  */
 
 class EdgeQueueMap<V> {

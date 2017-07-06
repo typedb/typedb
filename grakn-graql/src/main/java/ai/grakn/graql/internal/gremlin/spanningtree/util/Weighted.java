@@ -28,6 +28,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  * @param <T> the type of object
  * @author Sam Thomson
+ * @author Jason Liu
  */
 public class Weighted<T> implements Comparable<Weighted<T>> {
     public final T val;

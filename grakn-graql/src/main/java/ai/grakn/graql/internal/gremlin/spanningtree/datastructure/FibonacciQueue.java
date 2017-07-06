@@ -31,6 +31,7 @@ import java.util.Iterator;
  *
  * @param <E> the type of the values stored
  * @author Sam Sam Thomson
+ * @author Jason Liu
  */
 public class FibonacciQueue<E> extends AbstractQueue<E> {
     private final FibonacciHeap<E, E> heap;

@@ -30,6 +30,7 @@ import java.util.Set;
  *
  * @param <V> the type of the node
  * @author Sam Thomson
+ * @author Jason Liu
  */
 public class DirectedEdge<V> {
     public final V source;
