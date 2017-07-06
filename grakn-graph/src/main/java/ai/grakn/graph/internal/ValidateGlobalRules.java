@@ -26,6 +26,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -281,8 +282,8 @@ class ValidateGlobalRules {
      */
     static Set<String> validateRuleOntologyElementsExist(GraknGraph graph, Rule rule){
         Set<String> errors = new HashSet<>();
-        errors.addAll(checkRuleSideInvalid(graph, rule, "When", rule.getWhen()));
-        errors.addAll(checkRuleSideInvalid(graph, rule, "Then", rule.getThen()));
+        errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_WHEN, rule.getWhen()));
+        errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_THEN, rule.getThen()));
         return errors;
     }
 
@@ -294,7 +295,7 @@ class ValidateGlobalRules {
      * @param pattern The pattern from which we will extract the types in the pattern
      * @return A list of errors if the pattern refers to any non-existent types in the graph
      */
-    private static Set<String> checkRuleSideInvalid(GraknGraph graph, Rule rule, String side, Pattern pattern) {
+    private static Set<String> checkRuleSideInvalid(GraknGraph graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
         Set<String> errors = new HashSet<>();
 
         pattern.admin().getVars().stream()
@@ -304,10 +305,12 @@ class ValidateGlobalRules {
                     if(ontologyConcept == null){
                         errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getLabel(), typeLabel));
                     } else {
-                        if(side.equalsIgnoreCase("LHS")){
+                        if(Schema.VertexProperty.RULE_WHEN.equals(side)){
                             RuleImpl.from(rule).addHypothesis(ontologyConcept);
-                        } else {
+                        } else if (Schema.VertexProperty.RULE_THEN.equals(side)){
                             RuleImpl.from(rule).addConclusion(ontologyConcept);
+                        } else {
+                            throw GraphOperationException.invalidPropertyUse(rule, side);
                         }
                     }
                 });
