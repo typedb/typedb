@@ -152,7 +152,7 @@ class TxCache {
             RelationImpl relation = (RelationImpl) concept;
             modifiedRelations.add(relation);
             //Caching of relations in memory so they can be retrieved without needing a commit
-            relationIndexCache.put(ReifiedRelation.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
+            relationIndexCache.put(RelationReified.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
         } else if (concept.isRule()){
             modifiedRules.add(concept.asRule());
         } else if (concept.isResource()){

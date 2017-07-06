@@ -52,12 +52,12 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-public class ReifiedRelation extends ThingImpl<Relation, RelationType> {
-    ReifiedRelation(VertexElement vertexElement) {
+public class RelationReified extends ThingImpl<Relation, RelationType> {
+    RelationReified(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    ReifiedRelation(VertexElement vertexElement, RelationType type) {
+    RelationReified(VertexElement vertexElement, RelationType type) {
         super(vertexElement, type);
     }
 

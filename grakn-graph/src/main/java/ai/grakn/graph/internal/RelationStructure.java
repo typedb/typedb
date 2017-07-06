@@ -26,7 +26,7 @@ import ai.grakn.concept.Relation;
  * </p>
  *
  * <p>
- *     This wraps up the structure of a {@link Relation} as either a {@link ReifiedRelation} or a {@link ai.grakn.RelationEdge}
+ *     This wraps up the structure of a {@link Relation} as either a {@link RelationReified} or a {@link RelationEdge}
  * </p>
  *
  * @author fppt

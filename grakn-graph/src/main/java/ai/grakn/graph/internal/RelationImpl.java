@@ -42,15 +42,15 @@ import java.util.Set;
  *
  */
 class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation {
-    private ReifiedRelation reifiedRelation;
+    private RelationReified relationReified;
 
-    RelationImpl(ReifiedRelation reifiedRelation) {
-        super(reifiedRelation.vertex());
-        this.reifiedRelation = reifiedRelation;
+    RelationImpl(RelationReified relationReified) {
+        super(relationReified.vertex());
+        this.relationReified = relationReified;
     }
 
-    ReifiedRelation reified(){
-        return reifiedRelation;
+    RelationReified reified(){
+        return relationReified;
     }
 
 

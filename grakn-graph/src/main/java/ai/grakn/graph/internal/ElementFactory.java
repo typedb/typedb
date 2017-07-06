@@ -98,7 +98,7 @@ final class ElementFactory {
 
     // -------------------------------------------- Building Relations
     RelationImpl buildRelation(VertexElement vertex, RelationType type){
-        return getOrBuildConcept(vertex, (v) -> new RelationImpl(new ReifiedRelation(v, type)));
+        return getOrBuildConcept(vertex, (v) -> new RelationImpl(new RelationReified(v, type)));
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
@@ -152,7 +152,7 @@ final class ElementFactory {
             ConceptImpl concept;
             switch (type) {
                 case RELATION:
-                    concept = new RelationImpl(new ReifiedRelation(vertexElement));
+                    concept = new RelationImpl(new RelationReified(vertexElement));
                     break;
                 case TYPE:
                     concept = new TypeImpl<>(vertexElement);

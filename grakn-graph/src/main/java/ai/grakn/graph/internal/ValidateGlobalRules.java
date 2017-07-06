@@ -148,7 +148,7 @@ class ValidateGlobalRules {
      * @return An error message indicating if the relation has an incorrect structure. This includes checking if there an equal
      * number of castings and roles as well as looping the structure to make sure castings lead to the same relation type.
      */
-    static Optional<String> validateRelationshipStructure(ReifiedRelation relation){
+    static Optional<String> validateRelationshipStructure(RelationReified relation){
         RelationType relationType = relation.type();
         Collection<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
         Collection<Role> roles = relationType.relates();
@@ -261,15 +261,15 @@ class ValidateGlobalRules {
 
     /**
      * @param graph graph used to ensure the relation is unique
-     * @param reifiedRelation The relation whose hash needs to be set.
+     * @param relationReified The relation whose hash needs to be set.
      * @return An error message if the relation is not unique.
      */
-    static Optional<String> validateRelationIsUnique(AbstractGraknGraph<?> graph, ReifiedRelation reifiedRelation){
-        RelationImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, ReifiedRelation.generateNewHash(reifiedRelation.type(), reifiedRelation.allRolePlayers()));
+    static Optional<String> validateRelationIsUnique(AbstractGraknGraph<?> graph, RelationReified relationReified){
+        RelationImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, RelationReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers()));
         if(foundRelation == null){
-            reifiedRelation.setHash();
-        } else if(!foundRelation.reified().equals(reifiedRelation)){
-            return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(reifiedRelation));
+            relationReified.setHash();
+        } else if(!foundRelation.reified().equals(relationReified)){
+            return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationReified));
         }
         return Optional.empty();
     }
