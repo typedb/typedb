@@ -236,7 +236,7 @@ class TxCache {
         if(concept.isOntologyConcept()){
             OntologyConceptImpl ontologyElement = (OntologyConceptImpl) concept;
             ontologyConceptCache.put(ontologyElement.getLabel(), ontologyElement);
-            labelCache.put(ontologyElement.getLabel(), ontologyElement.getTypeId());
+            labelCache.put(ontologyElement.getLabel(), ontologyElement.getLabelId());
         }
     }
 
