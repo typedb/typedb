@@ -293,7 +293,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
             ((OntologyConceptImpl<T>) newSuperType).addCachedDirectSubType(getThis());
 
             //Track any existing data if there is some
-            trackInstances();
+            trackRolePlayers();
         }
 
         return getThis();
@@ -302,7 +302,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
     /**
      * Method which performs tasks needed in order to track super changes properly
      */
-    abstract void trackInstances();
+    abstract void trackRolePlayers();
 
     private boolean superLoops(){
         //Check For Loop

@@ -154,7 +154,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     }
 
     @Override
-    void trackInstances(){
+    void trackRolePlayers(){
         instances().forEach(concept -> ((RelationImpl) concept).reified().castingsInstance().forEach(
                 rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer)));
     }
