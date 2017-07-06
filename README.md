@@ -28,8 +28,15 @@ This product includes software developed by [Grakn Labs](http://grakn.ai/).  It'
 
 Operating System: Unix based systems (Linux and Mac OS X)
 
-Grakn requires Oracle Java 8 (Standard Edition) with the $JAVA_HOME set accordingly. Grakn also requires Maven 3, nodejs and npm to be installed and configured correctly (you should be able to install packages global for your user via npm without needing sudo).
+Running Grakn requires:
+* Oracle Java 8 (Standard Edition) with the $JAVA_HOME set accordingly
 
+Compiling Grakn from source requires:
+* Maven 3
+* nodejs
+* npm installed and configured correctly
+
+You should be able to install packages global for your user via npm without needing sudo).
   
 ## Disclaimer  
 We don't claim Grakn will change your life, though it may improve it: we'll leave that for you to decide.  But if you lose a billion dollars or a limb while using Grakn, that's not our fault. We reserve the right to
