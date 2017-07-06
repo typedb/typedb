@@ -30,7 +30,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.type.ScopeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.ImmutableSet;
 
@@ -119,6 +119,6 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
         //isa part
         VarPatternAdmin scVar = varName.hasScope(scopeVariable).admin();
-        return new TypeAtom(scVar, scopeVariable, predicate, parent);
+        return new ScopeAtom(scVar, scopeVariable, predicate, parent);
     }
 }
