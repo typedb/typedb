@@ -14,6 +14,7 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
 import static org.junit.Assert.assertEquals;
 
@@ -46,9 +47,9 @@ public class ChuLiuEdmondsTest {
     @Test
     public void testNegativeWeightWithNodeObject() {
         Map<String, Node> nodes = new HashMap<>();
-        Node.addIfAbsent("0", nodes);
-        Node.addIfAbsent("1", nodes);
-        Node.addIfAbsent("2", nodes);
+        Node.addIfAbsent(var("0"), nodes);
+        Node.addIfAbsent(var("1"), nodes);
+        Node.addIfAbsent(var("2"), nodes);
         final WeightedGraph<Node> Isa = SparseWeightedGraph.from(ImmutableList.of(
                 weighted(DirectedEdge.from(nodes.get("0")).to(nodes.get("1")), -0.69),
                 weighted(DirectedEdge.from(nodes.get("1")).to(nodes.get("2")), 0),

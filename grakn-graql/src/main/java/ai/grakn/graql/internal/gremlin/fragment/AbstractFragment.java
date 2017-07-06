@@ -176,6 +176,8 @@ abstract class AbstractFragment implements Fragment {
         Node start = Node.addIfAbsent(getStart(), nodes);
         Node end = Node.addIfAbsent(getEnd().get(), nodes);
         Node middle = Node.addIfAbsent(start + edge + end, nodes);
+        middle.setInvalidStartingPoint();
+
         addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
@@ -187,6 +189,8 @@ abstract class AbstractFragment implements Fragment {
         Node start = Node.addIfAbsent(getStart(), nodes);
         Node end = Node.addIfAbsent(getEnd().get(), nodes);
         Node middle = Node.addIfAbsent(end + edge + start, nodes);
+        middle.setInvalidStartingPoint();
+
         addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
@@ -198,13 +202,15 @@ abstract class AbstractFragment implements Fragment {
         Node start = Node.addIfAbsent(getStart(), nodes);
         Node end = Node.addIfAbsent(getEnd().get(), nodes);
         Node middle = Node.addIfAbsent(edge, nodes);
+        middle.setInvalidStartingPoint();
+
         addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
                 weighted(DirectedEdge.from(middle).to(end), 0));
     }
 
-    void addEdgeToFragmentMapping(Node child, Node parent, Map<Node, Map<Node, Fragment>> edgeToFragment) {
+    private void addEdgeToFragmentMapping(Node child, Node parent, Map<Node, Map<Node, Fragment>> edgeToFragment) {
         if (!edgeToFragment.containsKey(child)) {
             edgeToFragment.put(child, new HashMap<>());
         }

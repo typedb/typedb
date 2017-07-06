@@ -29,11 +29,8 @@ import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
 import static ai.grakn.util.CommonUtil.optionalToStream;
 import static java.util.stream.Collectors.toSet;
 
@@ -74,24 +71,6 @@ class ValueFragment extends AbstractFragment {
     @Override
     public Set<Var> getDependencies() {
         return optionalToStream(predicate.getInnerVar()).map(VarPatternAdmin::getVarName).collect(toSet());
-    }
-
-    @Override
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<String, Node> nodes,
-                                                              Map<Node, Map<Node, Fragment>> edges) {
-        if (getDependencies().isEmpty()) {
-            return super.getDirectedEdges(nodes, edges);
-        }
-        Set<Weighted<DirectedEdge<Node>>> weightedEdges = new HashSet<>();
-        Node end = Node.addIfAbsent(getStart(), nodes);
-        getDependencies().forEach(var -> {
-            Node start = Node.addIfAbsent(var, nodes);
-            Node middle = Node.addIfAbsent(start.getName() + "(value:" + predicate + ")" + end.getName(), nodes);
-            addEdgeToFragmentMapping(middle, start, edges);
-            weightedEdges.add(weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)));
-            weightedEdges.add(weighted(DirectedEdge.from(middle).to(end), 0));
-        });
-        return weightedEdges;
     }
 
     @Override

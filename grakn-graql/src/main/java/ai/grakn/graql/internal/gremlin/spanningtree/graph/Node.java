@@ -34,6 +34,7 @@ import java.util.Set;
 public class Node {
     private String name;
     private Optional<Var> var;
+    private boolean isValidStartingPoint = true;
 
     private Set<Fragment> fragmentsWithoutDependency = new HashSet<>();
     private Set<Fragment> fragmentsWithDependency = new HashSet<>();
@@ -86,6 +87,14 @@ public class Node {
 
     public Set<Fragment> getDependants() {
         return dependants;
+    }
+
+    public boolean isValidStartingPoint() {
+        return isValidStartingPoint;
+    }
+
+    public void setInvalidStartingPoint() {
+        isValidStartingPoint = false;
     }
 
     @Override
