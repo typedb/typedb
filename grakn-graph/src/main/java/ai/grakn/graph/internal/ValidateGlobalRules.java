@@ -305,9 +305,9 @@ class ValidateGlobalRules {
                         errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getLabel(), typeLabel));
                     } else {
                         if(side.equalsIgnoreCase("LHS")){
-                            ConceptImpl.<RuleImpl>from(rule).addHypothesis(ontologyConcept);
+                            RuleImpl.from(rule).addHypothesis(ontologyConcept);
                         } else {
-                            ConceptImpl.<RuleImpl>from(rule).addConclusion(ontologyConcept);
+                            RuleImpl.from(rule).addConclusion(ontologyConcept);
                         }
                     }
                 });

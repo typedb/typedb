@@ -141,18 +141,6 @@ abstract class ConceptImpl implements Concept, ConceptVertex {
         return ConceptId.of(vertex().id().getValue());
     }
 
-    /**
-     * Helper method to cast interfaces into their implementation.
-     *
-     * @param concept The interface to be casted
-     * @param <X> The type of the implementation to be returned
-     * @return The concept casted to it's implementation
-     */
-    @SuppressWarnings("unchecked")
-    public static <X extends ConceptImpl> X from(Concept concept){
-        return (X) concept;
-    }
-
     @Override public int hashCode() {
         return getId().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
     }
@@ -191,6 +179,16 @@ abstract class ConceptImpl implements Concept, ConceptVertex {
     @Override
     public int compareTo(Concept o) {
         return this.getId().compareTo(o.getId());
+    }
+
+    /**
+     * Helper method to cast interfaces into their implementation.
+     *
+     * @param concept The interface to be casted
+     * @return The concept casted to it's implementation
+     */
+    public static ConceptImpl from(Concept concept){
+        return (ConceptImpl) concept;
     }
 
     //----------------------------------- Sharding Functionality

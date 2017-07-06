@@ -307,7 +307,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
     }
 
     void trackRolePlayers(){
-        instances().forEach(concept -> ConceptImpl.<ThingImpl<?,?>>from(concept).castingsInstance().forEach(
+        instances().forEach(concept -> ThingImpl.from(concept).castingsInstance().forEach(
                 rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer)));
     }
 

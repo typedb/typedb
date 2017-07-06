@@ -346,4 +346,8 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
         message = message + " - Label [" + getLabel() + "] - Abstract [" + isAbstract() + "] ";
         return message;
     }
+
+    public static OntologyConceptImpl from(OntologyConcept ontologyConcept){
+        return (OntologyConceptImpl) ontologyConcept;
+    }
 }

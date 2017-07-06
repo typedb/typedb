@@ -127,7 +127,11 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
     /**
      * Generate the internal hash in order to perform a faster lookups and ensure rules are unique
      */
-    public static String generateRuleIndex(RuleType type, Pattern when, Pattern then){
+    static String generateRuleIndex(RuleType type, Pattern when, Pattern then){
         return "RuleType_" + type.getLabel().getValue() + "_LHS:" + when.hashCode() + "_RHS:" + then.hashCode();
+    }
+
+    public static RuleImpl from(Rule rule){
+        return (RuleImpl) rule;
     }
 }

@@ -251,19 +251,21 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
     /**
      *
      * @param type The type of this concept
-     * @return The concept itself casted to the correct interface
      */
-    private T setInternalType(Type type){
+    private void setInternalType(Type type){
         cachedInternalType.set(type.getLabel());
         vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID, type.getLabelId().getValue());
-        return getThis();
     }
 
     /**
      *
      * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
      */
-    public Label getInternalType(){
+    Label getInternalType(){
         return cachedInternalType.get();
+    }
+
+    public static ThingImpl<?, ?> from(Thing thing){
+        return (ThingImpl) thing;
     }
 }
