@@ -134,14 +134,14 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
                 addRolePlayer(hunter, cartman).addRolePlayer(monster, werewolf).addRolePlayer(creature, cthulhu);
 
         kills.relates(monster);
-        assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion).isPresent());
+        assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion.reified()).isPresent());
 
         kills.relates(hunter);
         kills.relates(creature);
-        assertFalse(ValidateGlobalRules.validateRelationshipStructure(assertion).isPresent());
+        assertFalse(ValidateGlobalRules.validateRelationshipStructure(assertion.reified()).isPresent());
 
         RelationImpl assertion2 = (RelationImpl) naps.addRelation().addRolePlayer(hunter, cthulhu);
-        assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion2).isPresent());
+        assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion2.reified()).isPresent());
     }
 
 

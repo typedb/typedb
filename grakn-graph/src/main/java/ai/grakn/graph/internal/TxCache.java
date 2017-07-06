@@ -69,7 +69,7 @@ class TxCache {
     private final Set<Casting> modifiedCastings = new HashSet<>();
 
     private final Set<RelationTypeImpl> modifiedRelationTypes = new HashSet<>();
-    private final Set<RelationImpl> modifiedRelations = new HashSet<>();
+    private final Set<Relation> modifiedRelations = new HashSet<>();
 
     private final Set<RuleImpl> modifiedRules = new HashSet<>();
 
@@ -361,7 +361,7 @@ class TxCache {
     Set<RelationTypeImpl> getModifiedRelationTypes() {
         return modifiedRelationTypes;
     }
-    Set<RelationImpl> getModifiedRelations() {
+    Set<Relation> getModifiedRelations() {
         return modifiedRelations;
     }
 

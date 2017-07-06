@@ -147,9 +147,9 @@ class ValidateGlobalRules {
      * @return An error message indicating if the relation has an incorrect structure. This includes checking if there an equal
      * number of castings and roles as well as looping the structure to make sure castings lead to the same relation type.
      */
-    static Optional<String> validateRelationshipStructure(RelationImpl relation){
+    static Optional<String> validateRelationshipStructure(ReifiedRelation relation){
         RelationType relationType = relation.type();
-        Collection<Casting> castings = relation.reified().castingsRelation().collect(Collectors.toSet());
+        Collection<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
         Collection<Role> roles = relationType.relates();
 
         Set<Role> rolesViaRolePlayers = castings.stream().map(Casting::getRoleType).collect(Collectors.toSet());

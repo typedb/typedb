@@ -18,6 +18,8 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.Thing;
 import ai.grakn.util.CommonUtil;
 
 import java.util.ArrayList;
@@ -101,10 +103,11 @@ class Validator {
      * Validation rules exclusive to relations
      * @param relation The relation to validate
      */
-    private void validateRelation(AbstractGraknGraph<?> graph, RelationImpl relation){
+    private void validateRelation(AbstractGraknGraph<?> graph, Relation relation){
         validateInstance(relation);
-        ValidateGlobalRules.validateRelationshipStructure(relation).ifPresent(errorsFound::add);
-        ValidateGlobalRules.validateRelationIsUnique(graph, relation.reified()).ifPresent(errorsFound::add);
+        RelationImpl relationImpl = (RelationImpl) relation;
+        ValidateGlobalRules.validateRelationshipStructure(relationImpl.reified()).ifPresent(errorsFound::add);
+        ValidateGlobalRules.validateRelationIsUnique(graph, relationImpl.reified()).ifPresent(errorsFound::add);
     }
 
     /**
@@ -136,7 +139,7 @@ class Validator {
      * Validation rules exclusive to instances
      * @param instance The instance to validate
      */
-    private void validateInstance(ThingImpl instance) {
+    private void validateInstance(Thing instance) {
         ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(instance).ifPresent(errorsFound::add);
     }
 }
