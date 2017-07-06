@@ -23,6 +23,8 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -51,6 +53,11 @@ public class SubAtom extends TypeAtom {
                 p,
                 par
         );
+    }
+
+    @Override
+    public VarProperty getVarProperty() {
+        return getPattern().asVar().getProperty(SubProperty.class).orElse(null);
     }
 
     @Override

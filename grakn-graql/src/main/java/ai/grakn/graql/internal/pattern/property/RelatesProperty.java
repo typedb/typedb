@@ -76,7 +76,7 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(relates(start, role.getVarName()));
+        return ImmutableSet.of(relates(this, start, role.getVarName()));
     }
 
     @Override

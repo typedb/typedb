@@ -26,6 +26,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.collect.ImmutableList;
 
@@ -49,110 +50,112 @@ public class EquivalentFragmentSets {
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a type whose instances play a role.
-     * @param type a type variable label
+     *
+     * @param type     a type variable label
      * @param roleType a role type variable label
      * @param required whether the plays must be constrained to be "required"
      */
-    public static EquivalentFragmentSet plays(Var type, Var roleType, boolean required) {
-        return new PlaysFragmentSet(type, roleType, required);
+    public static EquivalentFragmentSet plays(VarProperty varProperty, Var type, Var roleType, boolean required) {
+        return new PlaysFragmentSet(varProperty, type, roleType, required);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a shortcut edge between two role-players.
      */
-    public static EquivalentFragmentSet shortcut(Var relation, Var edge, Var rolePlayer, Optional<Var> roleType) {
-        return new ShortcutFragmentSet(relation, edge, rolePlayer, roleType, Optional.empty(), Optional.empty());
+    public static EquivalentFragmentSet shortcut(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, Optional<Var> roleType) {
+        return new ShortcutFragmentSet(varProperty, relation, edge, rolePlayer, roleType, Optional.empty(), Optional.empty());
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a sub-type of another variable.
      */
-    public static EquivalentFragmentSet sub(Var subType, Var superType) {
-        return new SubFragmentSet(subType, superType);
+    public static EquivalentFragmentSet sub(VarProperty varProperty, Var subType, Var superType) {
+        return new SubFragmentSet(varProperty, subType, superType);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a relation with a scope.
      */
-    public static EquivalentFragmentSet hasScope(Var relation, Var scope) {
-        return new HasScopeFragmentSet(relation, scope);
+    public static EquivalentFragmentSet hasScope(VarProperty varProperty, Var relation, Var scope) {
+        return new HasScopeFragmentSet(varProperty, relation, scope);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a relation type which involves a role.
      */
-    public static EquivalentFragmentSet relates(Var relationType, Var roleType) {
-        return new RelatesFragmentSet(relationType, roleType);
+    public static EquivalentFragmentSet relates(VarProperty varProperty, Var relationType, Var roleType) {
+        return new RelatesFragmentSet(varProperty, relationType, roleType);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is not a casting or a shard.
      */
-    public static EquivalentFragmentSet notInternalFragmentSet(Var start) {
-        return new NotInternalFragmentSet(start);
+    public static EquivalentFragmentSet notInternalFragmentSet(VarProperty varProperty, Var start) {
+        return new NotInternalFragmentSet(varProperty, start);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is an instance of a type.
      */
-    public static EquivalentFragmentSet isa(Var instance, Var type) {
-        return new IsaFragmentSet(instance, type);
+    public static EquivalentFragmentSet isa(VarProperty varProperty, Var instance, Var type) {
+        return new IsaFragmentSet(varProperty, instance, type);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is not equal to another variable.
      */
-    public static EquivalentFragmentSet neq(Var varA, Var varB) {
-        return new NeqFragmentSet(varA, varB);
+    public static EquivalentFragmentSet neq(VarProperty varProperty, Var varA, Var varB) {
+        return new NeqFragmentSet(varProperty, varA, varB);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable represents a resource with value matching a predicate.
      */
-    public static EquivalentFragmentSet value(Var resource, ValuePredicateAdmin predicate) {
-        return new ValueFragmentSet(resource, predicate);
+    public static EquivalentFragmentSet value(VarProperty varProperty, Var resource, ValuePredicateAdmin predicate) {
+        return new ValueFragmentSet(varProperty, resource, predicate);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable representing a concept with a particular ID.
      */
-    public static EquivalentFragmentSet id(Var start, ConceptId id) {
-        return new IdFragmentSet(start, id);
+    public static EquivalentFragmentSet id(VarProperty varProperty, Var start, ConceptId id) {
+        return new IdFragmentSet(varProperty, start, id);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable represents an abstract type.
      */
-    public static EquivalentFragmentSet isAbstract(Var start) {
-        return new IsAbstractFragmentSet(start);
+    public static EquivalentFragmentSet isAbstract(VarProperty varProperty, Var start) {
+        return new IsAbstractFragmentSet(varProperty, start);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable representing a type with a particular label.
      */
-    public static EquivalentFragmentSet label(Var type, Label label) {
-        return new LabelFragmentSet(type, label);
+    public static EquivalentFragmentSet label(VarProperty varProperty, Var type, Label label) {
+        return new LabelFragmentSet(varProperty, type, label);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable representing a resource type with a data-type.
      */
-    public static EquivalentFragmentSet dataType(Var resourceType, ResourceType.DataType<?> dataType) {
-        return new DataTypeFragmentSet(resourceType, dataType);
+    public static EquivalentFragmentSet dataType(VarProperty varProperty, Var resourceType, ResourceType.DataType<?> dataType) {
+        return new DataTypeFragmentSet(varProperty, resourceType, dataType);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a resource type whose instances must conform to a given regex.
      */
-    public static EquivalentFragmentSet regex(Var resourceType, String regex) {
-        return new RegexFragmentSet(resourceType, regex);
+    public static EquivalentFragmentSet regex(VarProperty varProperty, Var resourceType, String regex) {
+        return new RegexFragmentSet(varProperty, resourceType, regex);
     }
 
     // TODO: Move shortcut edge optimisation here
+
     /**
      * Modify the given collection of {@link EquivalentFragmentSet} to introduce certain optimisations, such as the
      * {@link ResourceIndexFragmentSet}.
-     *
+     * <p>
      * This involves substituting various {@link EquivalentFragmentSet} with other {@link EquivalentFragmentSet}.
      */
     public static void optimiseFragmentSets(

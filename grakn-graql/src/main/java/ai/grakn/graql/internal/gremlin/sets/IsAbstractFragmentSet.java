@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.isAbstract;
@@ -28,7 +29,7 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.isAbstract;
  * @author Felix Chapman
  */
 class IsAbstractFragmentSet extends EquivalentFragmentSet {
-    IsAbstractFragmentSet(Var start) {
-        super(isAbstract(start));
+    IsAbstractFragmentSet(VarProperty varProperty, Var start) {
+        super(isAbstract(varProperty, start));
     }
 }
