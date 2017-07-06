@@ -15,7 +15,6 @@
 
     <properties>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
-        <skip-docker-tests>true</skip-docker-tests>
     </properties>
 
     <dependencies>
@@ -107,13 +106,6 @@
                     <scope>test</scope>
                 </dependency>
             </dependencies>
-        </profile>
-
-        <profile>
-            <id>docker</id>
-            <properties>
-                <skip-docker-tests>false</skip-docker-tests>
-            </properties>
         </profile>
 
         <profile>
