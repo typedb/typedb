@@ -53,6 +53,8 @@ class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation
         return reifiedRelation;
     }
 
+
+
     @Override
     public Relation resource(Resource resource) {
         reified().resource(resource);
@@ -76,7 +78,7 @@ class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation
 
     @Override
     public Collection<Role> plays() {
-        return null;
+        return reified().plays();
     }
 
     /**
