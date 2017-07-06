@@ -181,7 +181,7 @@ class ValidateGlobalRules {
      * @param relationType the relation type to be validated
      * @return Error messages if the role type sub structure does not match the relation type sub structure
      */
-    static Set<String> validateRelationTypesToRolesSchema(RelationTypeImpl relationType){
+    static Set<String> validateRelationTypesToRolesSchema(RelationType relationType){
         RelationTypeImpl superRelationType = (RelationTypeImpl) relationType.sup();
         if(Schema.MetaSchema.isMetaLabel(superRelationType.getLabel())){ //If super type is a meta type no validation needed
             return Collections.emptySet();

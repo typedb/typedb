@@ -21,11 +21,14 @@ package ai.grakn.graph.internal;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.util.REST;
@@ -62,16 +65,16 @@ class TxCache {
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
-    private final Map<Label, OntologyConceptImpl> ontologyConceptCache = new HashMap<>();
+    private final Map<Label, OntologyConcept> ontologyConceptCache = new HashMap<>();
     private final Map<Label, LabelId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
-    private final Set<EntityImpl> modifiedEntities = new HashSet<>();
+    private final Set<Entity> modifiedEntities = new HashSet<>();
 
-    private final Set<RoleImpl> modifiedRoles = new HashSet<>();
+    private final Set<Role> modifiedRoles = new HashSet<>();
     private final Set<Casting> modifiedCastings = new HashSet<>();
 
-    private final Set<RelationTypeImpl> modifiedRelationTypes = new HashSet<>();
+    private final Set<RelationType> modifiedRelationTypes = new HashSet<>();
     private final Set<Relation> modifiedRelations = new HashSet<>();
 
     private final Set<Rule> modifiedRules = new HashSet<>();
@@ -180,7 +183,7 @@ class TxCache {
      *
      * @return All the types currently cached in the transaction. Used for
      */
-    Map<Label, OntologyConceptImpl> getOntologyConceptCache(){
+    Map<Label, OntologyConcept> getOntologyConceptCache(){
         return ontologyConceptCache;
     }
 
@@ -353,15 +356,15 @@ class TxCache {
     }
 
     //--------------------------------------- Concepts Needed For Validation -------------------------------------------
-    Set<EntityImpl> getModifiedEntities() {
+    Set<Entity> getModifiedEntities() {
         return modifiedEntities;
     }
 
-    Set<RoleImpl> getModifiedRoles() {
+    Set<Role> getModifiedRoles() {
         return modifiedRoles;
     }
 
-    Set<RelationTypeImpl> getModifiedRelationTypes() {
+    Set<RelationType> getModifiedRelationTypes() {
         return modifiedRelationTypes;
     }
     Set<Relation> getModifiedRelations() {

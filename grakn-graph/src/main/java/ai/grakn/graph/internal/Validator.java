@@ -19,6 +19,8 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.util.CommonUtil;
@@ -67,7 +69,7 @@ class Validator {
             graknGraph.txCache().getModifiedEntities().forEach(this::validateInstance);
 
             //Validate RoleTypes
-            graknGraph.txCache().getModifiedRoles().forEach(this::validateRoleType);
+            graknGraph.txCache().getModifiedRoles().forEach(this::validateRole);
             //Validate Role Players
             graknGraph.txCache().getModifiedCastings().forEach(this::validateCasting);
 
@@ -120,18 +122,18 @@ class Validator {
     }
 
     /**
-     * Validation rules exclusive to role types
-     * @param roleType The roleType to validate
+     * Validation rules exclusive to role
+     * @param role The {@link Role} to validate
      */
-    private void validateRoleType(RoleImpl roleType){
-        ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(roleType).ifPresent(errorsFound::add);
+    private void validateRole(Role role){
+        ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(role).ifPresent(errorsFound::add);
     }
 
     /**
      * Validation rules exclusive to relation types
      * @param relationType The relationTypes to validate
      */
-    private void validateRelationType(RelationTypeImpl relationType){
+    private void validateRelationType(RelationType relationType){
         ValidateGlobalRules.validateHasMinimumRoles(relationType).ifPresent(errorsFound::add);
         errorsFound.addAll(ValidateGlobalRules.validateRelationTypesToRolesSchema(relationType));
     }
