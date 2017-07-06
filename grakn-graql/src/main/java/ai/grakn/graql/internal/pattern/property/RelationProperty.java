@@ -38,6 +38,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableMultiset;
@@ -251,7 +252,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             }
         }
         relVar = relVar.isa(typeVariable);
-        return new ai.grakn.graql.internal.reasoner.atom.binary.Relation(relVar.admin(), typeVariable, predicate, parent);
+        return new RelationAtom(relVar.admin(), typeVariable, predicate, parent);
     }
 
 }
