@@ -80,7 +80,7 @@ class RelationImpl implements Relation, ConceptVertex {
 
     @Override
     public Relation resource(Resource resource) {
-        reified().orElseGet(this::reify).resource(resource);
+        reify().resource(resource);
         return this;
     }
 
@@ -109,8 +109,7 @@ class RelationImpl implements Relation, ConceptVertex {
      * collection is returned.
      */
     private <X> Collection<X> readFromReified(Function<RelationReified, Collection<X>> producer){
-        if(reified().isPresent()) return producer.apply(reified().get());
-        return Collections.emptyList();
+        return reified().map(producer).orElseGet(Collections::emptyList);
     }
 
     /**
