@@ -20,26 +20,22 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknTxType;
+import java.util.List;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import java.util.List;
-
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import org.junit.Test;
 
 /**
  * @author Felix Chapman
@@ -51,12 +47,8 @@ public class TitanPreviousPropertyStepTest extends TitanTestBase {
     private static final GraphTraversalSource titan = titanGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph().traversal();
 
     private static final Vertex vertexWithFoo = titan.addV().property("v prop", "foo").next();
-    private static final Vertex vertexWithBar = titan.addV().property("v prop", "bar").next();
-    private static final Vertex vertexWithoutProperty = titan.addV().next();
-    private static final Edge edge = titan.V(vertexWithoutProperty).as("x").addE("self").to("x").property("e prop", "foo").next();
 
     @Test
-    @Ignore("Failing unpredictably")
     public void whenFilteringAPropertyToBeEqualToAPreviousProperty_UseTitanGraphStep() {
         GraphTraversal traversal = optimisableTraversal(titan);
 
@@ -86,7 +78,6 @@ public class TitanPreviousPropertyStepTest extends TitanTestBase {
     }
 
     @Test
-    @Ignore("Failing unpredictably")
     public void whenUsingATitanGraph_ApplyStrategy() {
         GraphTraversal<?, ?> traversal = optimisableTraversal(titan);
         traversal.asAdmin().applyStrategies();

@@ -426,7 +426,6 @@ public class GraqlShellIT {
     }
 
     @Test
-    @Ignore("Not sure why it never terminates, needs to be fixed")
     public void whenErrorIsLarge_UserStillSeesEntireErrorMessage() throws Exception {
         String value = Strings.repeat("really-", 100000) + "long-value";
 
@@ -534,7 +533,6 @@ public class GraqlShellIT {
     }
 
     @Test
-    @Ignore("Reading INFO as error")
     public void whenRunningBatchLoad_LoadCompletes() throws Exception {
         testShell("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
         testShell("", "-k", "batch", "-b", "src/test/graql/batch-test.gql");
@@ -546,7 +544,6 @@ public class GraqlShellIT {
     }
 
     @Test
-    @Ignore("Temporarily ignored, failing because of a 'Logging initialized' message")
     public void whenRunningBatchLoadAndAnErrorOccurs_PrintStatus() throws Exception {
         testShell("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
 

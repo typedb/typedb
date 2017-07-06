@@ -98,8 +98,8 @@ public class GraknEngineServerIT {
         assertEquals(completableTasks(allTasks), completedTasks());
     }
 
-    @Ignore("This currently works only if we call the stop on the right engine. We need to know where the task is executing")
     @Property(trials=10)
+    @Ignore("Stop not implemented yet")
     public void whenEngine1StopsATaskBeforeExecution_TheTaskIsStopped(TaskState task) {
         assertTrue(TaskClient.of("localhost", PORT1).stopTask(task.getId()));
 
@@ -110,8 +110,8 @@ public class GraknEngineServerIT {
         assertThat(completedTasks(), empty());
     }
 
-    @Ignore("This currently works only if we call the stop on the right engine. We need to know where the task is executing")
     @Property(trials=10)
+    @Ignore("Stop not implemented yet")
     public void whenEngine2StopsATaskBeforeExecution_TheTaskIsStopped(TaskState task) {
         assertTrue(TaskClient.of("localhost", PORT2).stopTask(task.getId()));
 
@@ -122,8 +122,8 @@ public class GraknEngineServerIT {
         assertThat(completedTasks(), empty());
     }
 
-    @Ignore("This currently works only if we call the stop on the right engine. We need to know where the task is executing")
     @Property(trials=10)
+    @Ignore("Stop not implemented yet")
     public void whenEngine1StopsATaskDuringExecution_TheTaskIsStopped(
             @WithClass(EndlessExecutionMockTask.class) TaskState task) {
         whenTaskStarts(id -> TaskClient.of("localhost", PORT1).stopTask(task.getId()));
@@ -135,8 +135,8 @@ public class GraknEngineServerIT {
         assertThat(completedTasks(), empty());
     }
 
-    @Ignore("This currently works only if we call the stop on the right engine. We need to know where the task is executing")
     @Property(trials=10)
+    @Ignore("Stop not implemented yet")
     public void whenEngine2StopsATaskDuringExecution_TheTaskIsStopped(
             @WithClass(EndlessExecutionMockTask.class) TaskState task) {
         whenTaskStarts(id -> TaskClient.of("localhost", PORT2).stopTask(task.getId()));
