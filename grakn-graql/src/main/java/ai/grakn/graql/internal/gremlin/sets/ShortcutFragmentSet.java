@@ -28,6 +28,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.util.Schema;
 import com.google.common.base.Preconditions;
 
 import javax.annotation.Nullable;
@@ -73,7 +74,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * A query can use the role-type labels on a shortcut edge when the following criteria are met:
      * <ol>
      *     <li>There is a {@link ShortcutFragmentSet} {@code $r-[shortcut:$e role:$R ...]->$p}
-     *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo]}
+     *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo]} that does not refer to the meta {@code role}
      * </ol>
      *
      * When these criteria are met, the {@link ShortcutFragmentSet} can be filtered to the indirect sub-types of
@@ -95,7 +96,9 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
             @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.typeLabelOf(roleVar.get(), fragmentSets);
 
-            if (roleLabel != null) {
+            if (roleLabel == null) continue;
+
+            if (!roleLabel.label().equals(Schema.MetaSchema.ROLE.getLabel())) {
                 Role role = graph.getOntologyConcept(roleLabel.label());
 
                 fragmentSets.remove(shortcut);
