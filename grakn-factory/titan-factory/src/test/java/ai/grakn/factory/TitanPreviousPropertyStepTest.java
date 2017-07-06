@@ -27,6 +27,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import static org.hamcrest.Matchers.contains;
@@ -47,6 +48,9 @@ public class TitanPreviousPropertyStepTest extends TitanTestBase {
     private static final GraphTraversalSource titan = titanGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph().traversal();
 
     private static final Vertex vertexWithFoo = titan.addV().property("v prop", "foo").next();
+    private static final Vertex vertexWithBar = titan.addV().property("v prop", "bar").next();
+    private static final Vertex vertexWithoutProperty = titan.addV().next();
+    private static final Edge edge = titan.V(vertexWithoutProperty).as("x").addE("self").to("x").property("e prop", "foo").next();
 
     @Test
     public void whenFilteringAPropertyToBeEqualToAPreviousProperty_UseTitanGraphStep() {
