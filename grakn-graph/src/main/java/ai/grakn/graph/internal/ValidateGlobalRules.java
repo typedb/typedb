@@ -268,7 +268,7 @@ class ValidateGlobalRules {
         RelationImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, RelationReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers()));
         if(foundRelation == null){
             relationReified.setHash();
-        } else if(!foundRelation.reified().equals(relationReified)){
+        } else if(foundRelation.reified().isPresent() && !foundRelation.reified().get().equals(relationReified)){
             return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationReified));
         }
         return Optional.empty();

@@ -27,6 +27,7 @@ import ai.grakn.util.CommonUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * <p>
@@ -108,9 +109,12 @@ class Validator {
      */
     private void validateRelation(AbstractGraknGraph<?> graph, Relation relation){
         validateInstance(relation);
-        RelationImpl relationImpl = (RelationImpl) relation;
-        ValidateGlobalRules.validateRelationshipStructure(relationImpl.reified()).ifPresent(errorsFound::add);
-        ValidateGlobalRules.validateRelationIsUnique(graph, relationImpl.reified()).ifPresent(errorsFound::add);
+        Optional<RelationReified> relationReified = ((RelationImpl) relation).reified();
+        //TODO: We need new validation mechanisms for non-reified relations
+        if(relationReified.isPresent()) {
+            ValidateGlobalRules.validateRelationshipStructure(relationReified.get()).ifPresent(errorsFound::add);
+            ValidateGlobalRules.validateRelationIsUnique(graph, relationReified.get()).ifPresent(errorsFound::add);
+        }
     }
 
     /**

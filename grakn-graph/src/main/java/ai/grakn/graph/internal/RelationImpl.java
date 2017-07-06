@@ -28,8 +28,11 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -50,11 +53,25 @@ class RelationImpl implements Relation, ConceptVertex {
         this.relationStructure = relationStructure;
     }
 
-    RelationReified reified(){
-        if(!relationStructure.isReified()){
-            throw new UnsupportedOperationException("Reification is not yet supported");
-        }
-        return relationStructure.reified();
+    /**
+     * Gets the {@link RelationReified} if the {@link Relation} has been reified.
+     * To reify the {@link Relation} you use {@link RelationImpl#reify()}.
+     *
+     * NOTE: This approach is done to make sure that only write operations will cause the {@link Relation} to reify
+     *
+     * @return The {@link RelationReified} if the {@link Relation} has been reified
+     */
+    Optional<RelationReified> reified(){
+        if(!relationStructure.isReified()) return Optional.empty();
+        return Optional.of(relationStructure.reified());
+    }
+
+    /**
+     * Reifys and returns the {@link RelationReified}
+     */
+    RelationReified reify(){
+        if(relationStructure.isReified()) return relationStructure.reified();
+        throw new UnsupportedOperationException("Reification is not yet supported");
     }
 
     RelationStructure structure(){
@@ -63,13 +80,13 @@ class RelationImpl implements Relation, ConceptVertex {
 
     @Override
     public Relation resource(Resource resource) {
-        reified().resource(resource);
+        reified().orElseGet(this::reify).resource(resource);
         return this;
     }
 
     @Override
     public Collection<Resource<?>> resources(ResourceType[] resourceTypes) {
-        return reified().resources(resourceTypes);
+        return readFromReified((relationReified) -> relationReified.resources(resourceTypes));
     }
 
     @Override
@@ -79,12 +96,21 @@ class RelationImpl implements Relation, ConceptVertex {
 
     @Override
     public Collection<Relation> relations(Role... roles) {
-        return reified().relations();
+        return readFromReified((relationReified) -> relationReified.relations(roles));
     }
 
     @Override
     public Collection<Role> plays() {
-        return reified().plays();
+        return readFromReified(ThingImpl::plays);
+    }
+
+    /**
+     * Reads some data from a {@link RelationReified}. If the {@link Relation} has not been reified then an empty
+     * collection is returned.
+     */
+    private <X> Collection<X> readFromReified(Function<RelationReified, Collection<X>> producer){
+        if(reified().isPresent()) return producer.apply(reified().get());
+        return Collections.emptyList();
     }
 
     /**
@@ -103,7 +129,6 @@ class RelationImpl implements Relation, ConceptVertex {
         return structure().rolePlayers(roles);
     }
 
-
     /**
      * Expands this Relation to include a new role player which is playing a specific role.
      * @param role The role of the new role player.
@@ -112,7 +137,7 @@ class RelationImpl implements Relation, ConceptVertex {
      */
     @Override
     public Relation addRolePlayer(Role role, Thing thing) {
-        reified().addRolePlayer(this, role, thing);
+        reify().addRolePlayer(this, role, thing);
         return this;
     }
 
@@ -168,6 +193,6 @@ class RelationImpl implements Relation, ConceptVertex {
 
     @Override
     public VertexElement vertex() {
-        return reified().vertex();
+        return reify().vertex();
     }
 }

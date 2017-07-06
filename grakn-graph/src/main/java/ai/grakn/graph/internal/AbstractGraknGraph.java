@@ -653,7 +653,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 hasId(toInstance.getId().getRawValue()).hasNext();
 
         if(!exists){
-            EdgeElement edge = ((RelationImpl) fromRelation).reified().addEdge((ConceptVertex) toInstance, Schema.EdgeLabel.SHORTCUT);
+            EdgeElement edge = ((RelationImpl) fromRelation).reify().addEdge((ConceptVertex) toInstance, Schema.EdgeLabel.SHORTCUT);
             edge.property(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getLabelId().getValue());
             edge.property(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getLabelId().getValue());
             txCache().trackForValidation(factory().buildRolePlayer(edge));
@@ -885,12 +885,16 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private void copyRelation(Resource main, Resource other, Relation otherRelation){
         //Gets the other resource index and replaces all occurrences of the other resource id with the main resource id
         //This allows us to find relations far more quickly.
-        String newIndex = ((RelationImpl) otherRelation).reified().getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
+        Optional<RelationReified> reifiedRelation = ((RelationImpl) otherRelation).reified();
+
+        if(!reifiedRelation.isPresent()) throw new UnsupportedOperationException("Merging non reified relations is not supported");
+
+        String newIndex = reifiedRelation.get().getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
         Relation foundRelation = txCache().getCachedRelation(newIndex);
         if(foundRelation == null) foundRelation = getConcept(Schema.VertexProperty.INDEX, newIndex);
 
         if (foundRelation != null) {//If it exists delete the other one
-            ((RelationImpl)otherRelation).reified().deleteNode(); //Raw deletion because the castings should remain
+            reifiedRelation.get().deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelation = otherRelation;
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
