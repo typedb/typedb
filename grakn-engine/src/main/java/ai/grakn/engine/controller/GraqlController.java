@@ -27,8 +27,6 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
@@ -65,10 +63,8 @@ import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
-import static ai.grakn.util.REST.Response.Graql.RESPONSE;
 import static java.lang.Boolean.parseBoolean;
 
 /**
@@ -91,8 +87,6 @@ public class GraqlController {
 
         spark.post(REST.WebPath.Graph.ANY_GRAQL, this::executeGraql);
         spark.get(REST.WebPath.Graph.GRAQL,    this::executeGraqlGET);
-        spark.post(REST.WebPath.Graph.GRAQL,   this::executeGraqlPOST);
-        spark.delete(REST.WebPath.Graph.GRAQL, this::executeGraqlDELETE);
 
         //TODO The below exceptions are very broad. They should be revised after we improve exception
         //TODO hierarchies in Graql and Graph
@@ -112,25 +106,14 @@ public class GraqlController {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
         boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
+        int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = getAcceptType(request);
+
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
-            if(!validContentType(acceptType, query)) {
-                throw GraknServerException.contentTypeQueryMismatch(acceptType, query);
-            }            
-            if (query instanceof DeleteQuery) {
-                query.execute();
-                graph.commit();
-                return respond(response, APPLICATION_TEXT, Json.object());
-            }
-            else if (query instanceof InsertQuery) {
-                Object resp = respond(response, APPLICATION_JSON, executeQuery(request, query, acceptType));
-                graph.commit();
-                return resp;
-            }
-            else {
-                return respond(response, acceptType, executeQuery(request, query, acceptType));
-            }
+            Object resp = respond(response, acceptType, executeQuery(keyspace, limitEmbedded, query, acceptType));
+            graph.commit();
+            return resp;
         }
     }
     
@@ -150,6 +133,7 @@ public class GraqlController {
         String queryString = mandatoryQueryParameter(request, QUERY);
         boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
         boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
+        int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = getAcceptType(request);
 
         try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
@@ -159,61 +143,8 @@ public class GraqlController {
 
             if(!validContentType(acceptType, query)) throw GraknServerException.contentTypeQueryMismatch(acceptType, query);
 
-            Object responseBody = executeQuery(request, query, acceptType);
+            Object responseBody = executeGET(keyspace, limitEmbedded, query, acceptType);
             return respond(response, acceptType, responseBody);
-        }
-    }
-
-    @POST
-    @Path("/")
-    @ApiOperation(
-            value = "Executes graql insert query on the server and returns the IDs of the inserted concepts.")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QUERY,       value = "Insert query to execute", required = true, dataType = "string", paramType = "body"),
-    })
-    private Object executeGraqlPOST(Request request, Response response){
-        String queryString = mandatoryBody(request);
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        String acceptType = getAcceptType(request);
-
-        try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
-            Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
-
-            if(!(query instanceof InsertQuery)) throw GraknServerException.invalidQuery("INSERT");
-
-            Object responseBody = executeQuery(request, query, acceptType);
-
-            // Persist the transaction results TODO This should use a within-engine commit
-            graph.commit();
-
-            return respond(response, acceptType, responseBody);
-        }
-    }
-
-    @POST
-    @Path("/")
-    @ApiOperation(value = "Executes graql delete query on the server.")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QUERY,       value = "Insert query to execute", required = true, dataType = "string", paramType = "body"),
-    })
-    private Object executeGraqlDELETE(Request request, Response response){
-        String queryString = mandatoryBody(request);
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-
-        try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
-            Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
-
-            if(!(query instanceof DeleteQuery)) throw GraknServerException.invalidQuery("DELETE");
-
-            // Execute the query
-            ((DeleteQuery) query).execute();
-
-            // Persist the transaction results TODO This should use a within-engine commit
-            graph.commit();
-
-            return respond(response, APPLICATION_TEXT, Json.object());
         }
     }
 
@@ -268,28 +199,58 @@ public class GraqlController {
     }
 
     /**
-     * Execute a read query and return a response in the format specified by the request.
+     * Execute a query and return a response in the format specified by the request.
      *
-     * @param request information about the HTTP request
+     * @param keyspace the keyspace the query is running on
      * @param query read query to be executed
      * @param acceptType response format that the client will accept
      */
-    private Object executeQuery(Request request, Query<?> query, String acceptType){
-        switch (acceptType){
-            case APPLICATION_TEXT:
-                return formatAsGraql(Printers.graql(false), query);
-            case APPLICATION_JSON_GRAQL:
-                return formatAsGraql(Printers.json(), query);
-            case APPLICATION_HAL:
-                // Extract extra information needed by HAL renderer
-                String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-                int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
+    private Object executeQuery(String keyspace, int limitEmbedded, Query<?> query, String acceptType){
+        Printer<?> printer;
 
-                return formatAsHAL(query, keyspace, limitEmbedded);
+        switch (acceptType) {
+            case APPLICATION_TEXT:
+                printer = Printers.graql(false);
+                break;
+            case APPLICATION_JSON_GRAQL:
+                printer = Printers.json();
+                break;
+            case APPLICATION_HAL:
+                printer = Printers.hal(keyspace, limitEmbedded);
+                break;
             default:
                 throw GraknServerException.unsupportedContentType(acceptType);
         }
 
+        String formatted = printer.graqlString(query.execute());
+
+        return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
+    }
+
+    static String getAcceptType(Request request) {
+        // TODO - we are not handling multiple values here and we should!
+        String header = request.headers("Accept");
+        return header == null ? "" : request.headers("Accept").split(",")[0];
+    }
+
+    /**
+     * Execute a read query and return a response in the format specified by the request.
+     *
+     * @param keyspace the keyspace the query is running on
+     * @param query read query to be executed
+     * @param acceptType response format that the client will accept
+     */
+    private Object executeGET(String keyspace, int limitEmbedded, Query<?> query, String acceptType){
+        switch (acceptType){
+            case APPLICATION_TEXT:
+                return formatGETAsGraql(Printers.graql(false), query);
+            case APPLICATION_JSON_GRAQL:
+                return formatGETAsGraql(Printers.json(), query);
+            case APPLICATION_HAL:
+                return formatGETAsHAL(query, keyspace, limitEmbedded);
+            default:
+                throw GraknServerException.unsupportedContentType(acceptType);
+        }
     }
 
     /**
@@ -300,7 +261,7 @@ public class GraqlController {
      * @param keyspace the keyspace from the request //TODO only needed because HAL does not support admin interface
      * @return HAL representation
      */
-    private Json formatAsHAL(Query<?> query, String keyspace, int numberEmbeddedComponents) {
+    private Json formatGETAsHAL(Query<?> query, String keyspace, int numberEmbeddedComponents) {
         // This ugly instanceof business needs to be done because the HAL array renderer does not
         // support Compute queries and because Compute queries do not have the "admin" interface
 
@@ -326,13 +287,7 @@ public class GraqlController {
      * @param query query to format
      * @return Graql representation
      */
-    private Object formatAsGraql(Printer printer, Query<?> query) {
+    private Object formatGETAsGraql(Printer printer, Query<?> query) {
         return printer.graqlString(query.execute());
-    }
-
-    static String getAcceptType(Request request) {
-        // TODO - we are not handling multiple values here and we should!
-        String header = request.headers("Accept");
-        return header == null ? "" : request.headers("Accept").split(",")[0];
     }
 }

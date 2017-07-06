@@ -32,6 +32,7 @@ import ai.grakn.util.StringUtil;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -176,7 +177,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                     .andThen(sb -> sb.append(": "))
                     .andThen(graqlString(true, entry.getValue()));
         } else {
-            return sb -> sb.append(object.toString());
+            return sb -> sb.append(Objects.toString(object));
         }
     }
 

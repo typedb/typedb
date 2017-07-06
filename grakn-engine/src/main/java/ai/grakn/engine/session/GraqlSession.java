@@ -97,11 +97,11 @@ class GraqlSession {
         this.session = session;
         this.factory = factory;
         this.outputFormat = outputFormat;
-        this.printer = getPrinter();
 
         queryExecutor.execute(() -> {
             try {
                 refreshGraph();
+                this.printer = getPrinter();
                 sendTypes();
                 sendEnd();
             } catch (Throwable e) {
@@ -370,7 +370,8 @@ class GraqlSession {
             case "json":
                 return Printers.json();
             case "hal":
-                return Printers.hal();
+                // TODO: Make this parameter configurable
+                return Printers.hal(graph.getKeyspace(), 100);
             case "graql":
             default:
                 return Printers.graql(true, resources);

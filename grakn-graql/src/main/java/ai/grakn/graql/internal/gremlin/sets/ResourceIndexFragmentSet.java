@@ -92,9 +92,7 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         Var resource = valueSet.resource();
         Object value = valueSet.predicate().equalsValue().get();
 
-        // Use isa property as the property of the fragment
-        VarProperty varProperty = isaSet.fragments().iterator().next().getVarProperty();
-        ResourceIndexFragmentSet indexFragmentSet = new ResourceIndexFragmentSet(varProperty, resource, label, value);
+        ResourceIndexFragmentSet indexFragmentSet = new ResourceIndexFragmentSet(null, resource, label, value);
 
         fragmentSets.add(indexFragmentSet);
     }
