@@ -44,9 +44,8 @@ public interface OntologyConcept extends Concept {
      *
      * @return The unique id of this type
      */
-    //TODO: rename this ugly thing.
     @CheckReturnValue
-    LabelId getTypeId();
+    LabelId getLabelId();
 
     /**
      * Returns the unique label of this Type.

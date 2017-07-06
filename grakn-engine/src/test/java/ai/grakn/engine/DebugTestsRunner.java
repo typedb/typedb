@@ -7,9 +7,8 @@ import org.junit.runner.notification.Failure;
 import ai.grakn.engine.config.GraknEngineConfigTest;
 import ai.grakn.engine.controller.AuthControllerTest;
 import ai.grakn.engine.controller.ConceptControllerTest;
-import ai.grakn.engine.controller.GraqlControllerDELETETest;
-import ai.grakn.engine.controller.GraqlControllerGETTest;
-import ai.grakn.engine.controller.GraqlControllerPOSTTest;
+import ai.grakn.engine.controller.GraqlControllerDeleteTest;
+import ai.grakn.engine.controller.GraqlControllerInsertTest;
 import ai.grakn.engine.lock.LockProviderTest;
 
 /**
@@ -26,9 +25,9 @@ public class DebugTestsRunner {
                 GraknEngineConfigTest.class,
                 AuthControllerTest.class,
                 ConceptControllerTest.class,
-                GraqlControllerDELETETest.class,
+                GraqlControllerDeleteTest.class,
                 LockProviderTest.class,
-                GraqlControllerPOSTTest.class};
+                GraqlControllerInsertTest.class};
         JUnitCore junit = new JUnitCore();
         Result result = null;
         do {

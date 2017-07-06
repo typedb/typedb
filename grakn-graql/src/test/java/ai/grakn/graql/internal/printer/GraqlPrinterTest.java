@@ -196,4 +196,11 @@ public class GraqlPrinterTest {
         String productionString = printer.graqlString(production);
         assertThat(productionString, not(containsString("\u001B")));
     }
+
+    @Test
+    public void whenPrintingNull_ResultIsNullString() {
+        Printer printer = Printers.graql(false);
+
+        assertEquals("null", printer.graqlString(null));
+    }
 }

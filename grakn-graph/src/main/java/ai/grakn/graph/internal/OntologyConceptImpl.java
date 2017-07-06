@@ -86,7 +86,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      * @return The internal id which is used for fast lookups
      */
     @Override
-    public LabelId getTypeId(){
+    public LabelId getLabelId(){
         return cachedLabelId;
     }
 
