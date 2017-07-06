@@ -23,6 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
@@ -278,7 +279,7 @@ class ValidateGlobalRules {
      * @param rule The rule to be validated
      * @return Error messages if the when or then of a rule refers to a non existent type
      */
-    static Set<String> validateRuleOntologyElementsExist(GraknGraph graph, RuleImpl rule){
+    static Set<String> validateRuleOntologyElementsExist(GraknGraph graph, Rule rule){
         Set<String> errors = new HashSet<>();
         errors.addAll(checkRuleSideInvalid(graph, rule, "LHS", rule.getWhen()));
         errors.addAll(checkRuleSideInvalid(graph, rule, "RHS", rule.getThen()));
@@ -293,7 +294,7 @@ class ValidateGlobalRules {
      * @param pattern The pattern from which we will extract the types in the pattern
      * @return A list of errors if the pattern refers to any non-existent types in the graph
      */
-    private static Set<String> checkRuleSideInvalid(GraknGraph graph, RuleImpl rule, String side, Pattern pattern) {
+    private static Set<String> checkRuleSideInvalid(GraknGraph graph, Rule rule, String side, Pattern pattern) {
         Set<String> errors = new HashSet<>();
 
         pattern.admin().getVars().stream()
@@ -304,9 +305,9 @@ class ValidateGlobalRules {
                         errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getLabel(), typeLabel));
                     } else {
                         if(side.equalsIgnoreCase("LHS")){
-                            rule.addHypothesis(ontologyConcept);
+                            ConceptImpl.<RuleImpl>from(rule).addHypothesis(ontologyConcept);
                         } else {
-                            rule.addConclusion(ontologyConcept);
+                            ConceptImpl.<RuleImpl>from(rule).addConclusion(ontologyConcept);
                         }
                     }
                 });

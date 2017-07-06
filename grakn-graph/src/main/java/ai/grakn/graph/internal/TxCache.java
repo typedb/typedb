@@ -25,6 +25,9 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.Thing;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -71,9 +74,9 @@ class TxCache {
     private final Set<RelationTypeImpl> modifiedRelationTypes = new HashSet<>();
     private final Set<Relation> modifiedRelations = new HashSet<>();
 
-    private final Set<RuleImpl> modifiedRules = new HashSet<>();
+    private final Set<Rule> modifiedRules = new HashSet<>();
 
-    private final Set<ResourceImpl> modifiedResources = new HashSet<>();
+    private final Set<Resource> modifiedResources = new HashSet<>();
 
     //We Track Relations so that we can look them up before they are completely defined and indexed on commit
     private final Map<String, Relation> relationIndexCache = new HashMap<>();
@@ -342,10 +345,10 @@ class TxCache {
 
         return formattedLog;
     }
-    private  <X extends ThingImpl> Json loadConceptsForFixing(Set<X> instances){
+    private  <X extends Thing> Json loadConceptsForFixing(Set<X> instances){
         Map<String, Set<String>> conceptByIndex = new HashMap<>();
         instances.forEach(concept ->
-                conceptByIndex.computeIfAbsent(concept.getIndex(), (e) -> new HashSet<>()).add(concept.getId().getValue()));
+                conceptByIndex.computeIfAbsent(ConceptImpl.<ThingImpl>from(concept).getIndex(), (e) -> new HashSet<>()).add(concept.getId().getValue()));
         return Json.make(conceptByIndex);
     }
 
@@ -365,11 +368,11 @@ class TxCache {
         return modifiedRelations;
     }
 
-    Set<RuleImpl> getModifiedRules() {
+    Set<Rule> getModifiedRules() {
         return modifiedRules;
     }
 
-    Set<ResourceImpl> getModifiedResources() {
+    Set<Resource> getModifiedResources() {
         return modifiedResources;
     }
 

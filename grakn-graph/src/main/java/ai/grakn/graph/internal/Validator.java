@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Relation;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.util.CommonUtil;
 
@@ -95,7 +96,7 @@ class Validator {
      * @param graph the graph to query against
      * @param rule the rule which needs to be validated
      */
-    private void validateRule(AbstractGraknGraph<?> graph, RuleImpl rule){
+    private void validateRule(AbstractGraknGraph<?> graph, Rule rule){
         errorsFound.addAll(ValidateGlobalRules.validateRuleOntologyElementsExist(graph, rule));
     }
 
