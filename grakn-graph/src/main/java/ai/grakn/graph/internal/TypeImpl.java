@@ -350,6 +350,8 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         cachedDirectPlays.ifPresent(set -> set.remove(role));
         ((RoleImpl) role).deleteCachedDirectPlaysByType(this);
 
+        trackRolePlayers();
+
         return getThis();
     }
 
