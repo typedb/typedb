@@ -653,7 +653,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 hasId(toInstance.getId().getRawValue()).hasNext();
 
         if(!exists){
-            EdgeElement edge = ((RelationImpl) fromRelation).reify().addEdge((ConceptVertex) toInstance, Schema.EdgeLabel.SHORTCUT);
+            EdgeElement edge = RelationImpl.from(fromRelation).reify().addEdge((ConceptVertex) toInstance, Schema.EdgeLabel.SHORTCUT);
             edge.property(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getLabelId().getValue());
             edge.property(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getLabelId().getValue());
             txCache().trackForValidation(factory().buildRolePlayer(edge));
@@ -887,6 +887,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //This allows us to find relations far more quickly.
         Optional<RelationReified> reifiedRelation = ((RelationImpl) otherRelation).reified();
 
+        //TODO: Figure out how to merge relations which are not reified
         if(!reifiedRelation.isPresent()) throw new UnsupportedOperationException("Merging non reified relations is not supported");
 
         String newIndex = reifiedRelation.get().getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());

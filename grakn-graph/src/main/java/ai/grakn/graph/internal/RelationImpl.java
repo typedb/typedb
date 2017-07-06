@@ -194,4 +194,8 @@ class RelationImpl implements Relation, ConceptVertex {
     public VertexElement vertex() {
         return reify().vertex();
     }
+
+    public static RelationImpl from(Relation relation){
+        return (RelationImpl) relation;
+    }
 }
