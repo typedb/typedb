@@ -99,4 +99,19 @@ public interface OntologyConcept extends Concept {
      */
     @CheckReturnValue
     Collection<Rule> getRulesOfConclusion();
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default OntologyConcept asOntologyConcept(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isOntologyConcept(){
+        return true;
+    }
 }

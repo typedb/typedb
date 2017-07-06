@@ -31,8 +31,8 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
-import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -66,8 +66,8 @@ public class InferenceRule {
     public InferenceRule(Rule rule, GraknGraph graph){
         ruleId = rule.getId();
         //TODO simplify once changes propagated to rule objects
-        body = ReasonerQueries.create(conjunction(rule.getLHS().admin()), graph);
-        head = ReasonerQueries.atomic(conjunction(rule.getRHS().admin()), graph);
+        body = ReasonerQueries.create(conjunction(rule.getWhen().admin()), graph);
+        head = ReasonerQueries.atomic(conjunction(rule.getThen().admin()), graph);
 
         //run time check for head atom validity
         if (!getHead().getAtom().isAllowedToFormRuleHead()){
@@ -169,7 +169,7 @@ public class InferenceRule {
 
         //only transfer value predicates if head has a user specified value variable
         Atom headAtom = head.getAtom();
-        if(headAtom.isResource() && ((Resource) headAtom).getMultiPredicate().isEmpty()){
+        if(headAtom.isResource() && ((ResourceAtom) headAtom).getMultiPredicate().isEmpty()){
             Set<ValuePredicate> valuePredicates = parentAtom.getValuePredicates().stream()
                     .flatMap(vp -> vp.unify(unifier).stream())
                     .collect(toSet());
@@ -244,7 +244,7 @@ public class InferenceRule {
         }
         //case of match all relation atom
         else{
-            Atom extendedParent = ((Relation) parentAtom)
+            Atom extendedParent = ((RelationAtom) parentAtom)
                     .addType(childAtom.getOntologyConcept())
                     .inferTypes();
             return childAtom.getUnifier(extendedParent);

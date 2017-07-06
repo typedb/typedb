@@ -178,7 +178,7 @@ public class TypePropertyTest {
 
     @Property
     public void whenSettingATypeAbstractFlag_TheTypesAbstractFlagIsSet(@Meta(false) Type type, boolean isAbstract) {
-        assumeFalse(type.isRoleType()); //Temporary workaround since castings may die
+        assumeFalse(type.isRole()); //Temporary workaround since castings may die
         assumeThat(directInstances(type), empty());
 
         type.setAbstract(isAbstract);
@@ -369,7 +369,7 @@ public class TypePropertyTest {
     private boolean sameType(Type type1, Type type2) {
         return type1.isEntityType() && type2.isEntityType() ||
                 type1.isRelationType() && type2.isRelationType() ||
-                type1.isRoleType() && type2.isRoleType() ||
+                type1.isRole() && type2.isRole() ||
                 type1.isResourceType() && type2.isResourceType() ||
                 type1.isRuleType() && type2.isRuleType();
     }
@@ -379,8 +379,8 @@ public class TypePropertyTest {
             subType.asEntityType().sup(superType.asEntityType());
         } else if (subType.isRelationType()) {
             subType.asRelationType().sup(superType.asRelationType());
-        } else if (subType.isRoleType()) {
-            subType.asRoleType().sup(superType.asRoleType());
+        } else if (subType.isRole()) {
+            subType.asRole().sup(superType.asRole());
         } else if (subType.isResourceType()) {
             subType.asResourceType().sup(superType.asResourceType());
         } else if (subType.isRuleType()) {
@@ -395,8 +395,8 @@ public class TypePropertyTest {
             superType.asEntityType().sub(subType.asEntityType());
         } else if (superType.isRelationType()) {
             superType.asRelationType().sub(subType.asRelationType());
-        } else if (superType.isRoleType()) {
-            superType.asRoleType().sub(subType.asRoleType());
+        } else if (superType.isRole()) {
+            superType.asRole().sub(subType.asRole());
         } else if (superType.isResourceType()) {
             superType.asResourceType().sub(subType.asResourceType());
         } else if (superType.isRuleType()) {

@@ -33,8 +33,8 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.pattern.property.LhsProperty;
-import ai.grakn.graql.internal.pattern.property.RhsProperty;
+import ai.grakn.graql.internal.pattern.property.WhenProperty;
+import ai.grakn.graql.internal.pattern.property.ThenProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
@@ -249,11 +249,11 @@ public class InsertQueryExecutor {
             );
         } else if (type.isRuleType()) {
             return addOrGetInstance(id, () -> {
-                LhsProperty lhs = var.getProperty(LhsProperty.class)
+                WhenProperty when = var.getProperty(WhenProperty.class)
                         .orElseThrow(() -> GraqlQueryException.insertRuleWithoutLhs(var));
-                RhsProperty rhs = var.getProperty(RhsProperty.class)
+                ThenProperty then = var.getProperty(ThenProperty.class)
                         .orElseThrow(() -> GraqlQueryException.insertRuleWithoutRhs(var));
-                return type.asRuleType().putRule(lhs.getPattern(), rhs.getPattern());
+                return type.asRuleType().putRule(when.getPattern(), then.getPattern());
             });
         } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
@@ -275,8 +275,8 @@ public class InsertQueryExecutor {
             return graph.putEntityType(label).sup(superConcept.asEntityType());
         } else if (superConcept.isRelationType()) {
             return graph.putRelationType(label).sup(superConcept.asRelationType());
-        } else if (superConcept.isRoleType()) {
-            return graph.putRole(label).sup(superConcept.asRoleType());
+        } else if (superConcept.isRole()) {
+            return graph.putRole(label).sup(superConcept.asRole());
         } else if (superConcept.isResourceType()) {
             return graph.putResourceType(label, getDataType(var)).sup(superConcept.asResourceType());
         } else if (superConcept.isRuleType()) {

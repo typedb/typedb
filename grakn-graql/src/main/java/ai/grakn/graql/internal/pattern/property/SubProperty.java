@@ -28,7 +28,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.type.SubAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableSet;
@@ -94,8 +94,8 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
             concept.asEntityType().sup(superConcept.asEntityType());
         } else if (concept.isRelationType()) {
             concept.asRelationType().sup(superConcept.asRelationType());
-        } else if (concept.isRoleType()) {
-            concept.asRoleType().sup(superConcept.asRoleType());
+        } else if (concept.isRole()) {
+            concept.asRole().sup(superConcept.asRole());
         } else if (concept.isResourceType()) {
             concept.asResourceType().sup(superConcept.asResourceType());
         } else if (concept.isRuleType()) {
@@ -129,6 +129,6 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarPatternAdmin resVar = varName.sub(typeVariable).admin();
-        return new TypeAtom(resVar, predicate, parent);
+        return new SubAtom(resVar, typeVariable, predicate, parent);
     }
 }

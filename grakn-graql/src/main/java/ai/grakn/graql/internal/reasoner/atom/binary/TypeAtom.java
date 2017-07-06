@@ -17,10 +17,8 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -28,20 +26,19 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  *
  * <p>
- * Atom implementation defining type atoms of the general form: $varName {isa|sub|plays|relates|has|has-scope} $valueVariable).
- * These correspond to the following respective graql properties:
+ * Atom implementation defining type atoms of the general form:
+ *
+ * {isa|sub|plays|relates|has|has-scope}($varName, $predicateVariable)
+ *
+ * Type atoms correspond to the following respective graql properties:
  * {@link IsaProperty},
  * {@link ai.grakn.graql.internal.pattern.property.SubProperty},
  * {@link ai.grakn.graql.internal.pattern.property.PlaysProperty}
@@ -53,13 +50,10 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class TypeAtom extends Binary{
+public abstract class TypeAtom extends Binary{
 
-    public TypeAtom(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
-    public TypeAtom(VarPatternAdmin pattern, IdPredicate p, ReasonerQuery par) { super(pattern, p, par);}
-    public TypeAtom(Var var, Var valueVar, IdPredicate p, ReasonerQuery par){
-        this(var.isa(valueVar).admin(), p, par);
-    }
+    public TypeAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
+        super(pattern, predicateVar, p, par);}
     protected TypeAtom(TypeAtom a) { super(a);}
 
     @Override
@@ -74,38 +68,9 @@ public class TypeAtom extends Binary{
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        BinaryBase a2 = (BinaryBase) obj;
+        Binary a2 = (Binary) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarName().equals(a2.getVarName());
-    }
-
-    @Override
-    public String toString(){
-        String typeString = (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") + "(" + getVarName() + ")";
-        return typeString + getPredicates().stream().map(Predicate::toString).collect(Collectors.joining(""));
-    }
-
-    @Override
-    protected ConceptId extractTypeId() {
-        return getPredicate() != null? getPredicate().getPredicate() : null;
-    }
-
-    @Override
-    protected Var extractValueVariableName(VarPatternAdmin var) {
-        return var.getProperties().findFirst().get().getInnerVars().findFirst().get().getVarName();
-    }
-
-    @Override
-    public Atomic copy(){
-        return new TypeAtom(this);
-    }
-
-    public Set<TypeAtom> unify(Unifier u){
-        Collection<Var> vars = u.get(getVarName());
-        Var valueVar = getValueVariable();
-        return vars.isEmpty()?
-                Collections.singleton(this) :
-                vars.stream().map(v -> new TypeAtom(v, valueVar, getPredicate(), this.getParentQuery())).collect(Collectors.toSet());
     }
 
     @Override
@@ -123,8 +88,6 @@ public class TypeAtom extends Binary{
     @Override
     public boolean isSelectable() {
         return getPredicate() == null
-                //type atom corresponding to relation or resource
-                || getOntologyConcept() != null && (getOntologyConcept().isResourceType() || getOntologyConcept().isRelationType())
                 //disjoint atom
                 || !this.getNeighbours().findFirst().isPresent()
                 || isRuleResolvable();
@@ -153,5 +116,7 @@ public class TypeAtom extends Binary{
         return getPredicate() != null ?
                 getParentQuery().graph().getConcept(getPredicate().getPredicate()) : null;
     }
+
+    public abstract Set<TypeAtom> unify(Unifier u);
 }
 

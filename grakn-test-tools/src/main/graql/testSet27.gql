@@ -24,13 +24,13 @@ holds sub relation
 name sub resource datatype string;
 
 isa inference-rule
-    lhs {
+    when {
         $st isa state;
         (related-state: $st) isa achieved;
         (related-state: $st2) isa prior;
 	    $st != $st2;
     }
-    rhs{
+    then{
         (related-state: $st) isa holds;
     };
 

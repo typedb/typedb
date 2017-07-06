@@ -31,19 +31,19 @@ relation2 sub relation
 #Rules
 
 isa inference-rule 
-	lhs {
+	when {
 		$x isa entity1;
 	}
-	rhs {
+	then {
 		(role1:$x, role2:$x) isa relation1;
 	};
 
 isa inference-rule
-    lhs {
+    when {
         (role1: $c, role2: $m) isa relation2;
         (role1: $m, role2: $op) isa relation1;
     }
-    rhs {
+    then {
         (role1: $c, role2: $op) isa relation1;
     };
 

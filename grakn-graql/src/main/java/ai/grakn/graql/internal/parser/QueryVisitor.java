@@ -429,16 +429,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<VarPattern> visitPropLhs(GraqlParser.PropLhsContext ctx) {
-        return var -> var.lhs(and(visitPatterns(ctx.patterns())));
-    }
-
-    @Override
-    public UnaryOperator<VarPattern> visitPropRhs(GraqlParser.PropRhsContext ctx) {
-        return var -> var.rhs(and(visitVarPatterns(ctx.varPatterns())));
-    }
-
-    @Override
     public UnaryOperator<VarPattern> visitPropHas(GraqlParser.PropHasContext ctx) {
         Label type = visitLabel(ctx.label());
 

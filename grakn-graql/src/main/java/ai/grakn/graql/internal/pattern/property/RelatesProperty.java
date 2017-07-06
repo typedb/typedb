@@ -31,7 +31,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.type.RelatesAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.ImmutableSet;
 
@@ -91,7 +91,7 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
 
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Role role = insertQueryExecutor.getConcept(this.role).asRoleType();
+        Role role = insertQueryExecutor.getConcept(this.role).asRole();
         concept.asRelationType().relates(role);
     }
 
@@ -125,6 +125,6 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
         IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent);
 
         VarPatternAdmin hrVar = varName.relates(roleVariable).admin();
-        return new TypeAtom(hrVar, rolePredicate, parent);
+        return new RelatesAtom(hrVar, roleVariable, rolePredicate, parent);
     }
 }

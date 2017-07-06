@@ -17,16 +17,15 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Label;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -37,7 +36,8 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
-import java.util.Collections;
+import com.google.common.collect.ImmutableMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
@@ -49,16 +49,23 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint
  *
  * <p>
  * Atom implementation defining a resource atom corresponding to a {@link HasResourceProperty}.
+ * The resource structure is the following:
+ *
+ * has($varName, $predicateVariable = resource variable), type($predicateVariable)
+ *
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-public class Resource extends MultiPredicateBinary<ValuePredicate>{
+public class ResourceAtom extends Binary{
+    private final Set<ValuePredicate> multiPredicate = new HashSet<>();
 
-    public Resource(VarPatternAdmin pattern, ReasonerQuery par) { this(pattern, Collections.emptySet(), par);}
-    public Resource(VarPatternAdmin pattern, Set<ValuePredicate> p, ReasonerQuery par){ super(pattern, p, par);}
-    private Resource(Resource a) {
+    public ResourceAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
+        super(pattern, predicateVar, idPred, par);
+        this.multiPredicate.addAll(ps);
+    }
+    private ResourceAtom(ResourceAtom a) {
         super(a);
         Set<ValuePredicate> multiPredicate = getMultiPredicate();
         a.getMultiPredicate().stream()
@@ -69,7 +76,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     @Override
     public String toString(){
         String multiPredicateString = getMultiPredicate().isEmpty()?
-                getValueVariable().toString() :
+                getPredicateVariable().toString() :
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
         return getVarName() + " has " + getOntologyConcept().getLabel() + " " +
                 multiPredicateString +
@@ -77,9 +84,42 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
-    protected boolean hasEquivalentPredicatesWith(BinaryBase at) {
-        if (!(at instanceof Resource)) return false;
-        Resource atom = (Resource) at;
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
+        hashCode = hashCode * 37 + this.getPredicateVariable().hashCode();
+        return hashCode;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        Binary a2 = (Binary) obj;
+        return Objects.equals(this.getTypeId(), a2.getTypeId())
+                && this.getVarName().equals(a2.getVarName())
+                && this.getPredicateVariable().equals(a2.getPredicateVariable());
+    }
+
+    @Override
+    public int equivalenceHashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + multiPredicateEquivalenceHashCode();
+        return hashCode;
+    }
+
+    private int multiPredicateEquivalenceHashCode(){
+        int hashCode = 0;
+        for (Predicate aMultiPredicate : multiPredicate) hashCode += aMultiPredicate.equivalenceHashCode();
+        return hashCode;
+    }
+
+    @Override
+    protected boolean hasEquivalentPredicatesWith(Binary at) {
+        if (!(at instanceof ResourceAtom)) return false;
+        ResourceAtom atom = (ResourceAtom) at;
         if(this.getMultiPredicate().size() != atom.getMultiPredicate().size()) return false;
         for (ValuePredicate predicate : getMultiPredicate()) {
             Iterator<ValuePredicate> objIt = atom.getMultiPredicate().iterator();
@@ -93,11 +133,29 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
+    public void setParentQuery(ReasonerQuery q) {
+        super.setParentQuery(q);
+        multiPredicate.forEach(pred -> pred.setParentQuery(q));
+    }
+
+    public Set<ValuePredicate> getMultiPredicate() { return multiPredicate;}
+
+    @Override
+    public PatternAdmin getCombinedPattern() {
+        Set<VarPatternAdmin> vars = getMultiPredicate().stream()
+                .map(Atomic::getPattern)
+                .map(PatternAdmin::asVar)
+                .collect(Collectors.toSet());
+        vars.add(super.getPattern().asVar());
+        return Patterns.conjunction(vars);
+    }
+
+    @Override
     public boolean isRuleApplicable(InferenceRule child) {
         Atom ruleAtom = child.getRuleConclusionAtom();
         if(!(ruleAtom.isResource())) return false;
 
-        Resource childAtom = (Resource) ruleAtom;
+        ResourceAtom childAtom = (ResourceAtom) ruleAtom;
 
         //check types
         TypeAtom parentTypeConstraint = this.getTypeConstraints().stream().findFirst().orElse(null);
@@ -122,28 +180,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
-    public Set<Var> getVarNames() {
-        Set<Var> vars = super.getVarNames();
-        getMultiPredicate().stream().flatMap(p -> p.getVarNames().stream()).forEach(vars::add);
-        return vars;
-    }
-
-    @Override
-    protected ConceptId extractTypeId(VarPatternAdmin var) {
-        HasResourceProperty resProp = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
-        Label label = resProp != null? resProp.getType() : null;
-        return label != null ? getParentQuery().graph().getOntologyConcept(label).getId() : null;
-    }
-
-    @Override
-    protected Var extractValueVariableName(VarPatternAdmin var){
-        HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
-        VarPatternAdmin resVar = prop.getResource();
-        return resVar.getVarName().isUserDefinedName()? resVar.getVarName() : Graql.var("");
-    }
-
-    @Override
-    public Atomic copy(){ return new Resource(this);}
+    public Atomic copy(){ return new ResourceAtom(this);}
 
     @Override
     public boolean isResource(){ return true;}
@@ -171,7 +208,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
         if (vps.isEmpty()) {
             if (subbedVars.contains(getVarName())
-                    || subbedVars.contains(getValueVariable())) {
+                    || subbedVars.contains(getPredicateVariable())) {
                     priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
             } else{
                     priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
@@ -217,11 +254,21 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
     @Override
     public Unifier getUnifier(Atom parentAtom) {
-        if (!(parentAtom instanceof TypeAtom)) return super.getUnifier(parentAtom);
+        if (!(parentAtom instanceof ResourceAtom)){
+            return new UnifierImpl(ImmutableMap.of(this.getPredicateVariable(), parentAtom.getVarName()));
+        }
+        Unifier unifier = super.getUnifier(parentAtom);
 
-        //case when parent is a type atom
-        Unifier unifier = new UnifierImpl();
-        unifier.addMapping(this.getValueVariable(), parentAtom.getVarName());
+        ResourceAtom parent = (ResourceAtom) parentAtom;
+        Var childResourceVarName = this.getPredicateVariable();
+        Var parentResourceVarName = parent.getPredicateVariable();
+
+        if (!childResourceVarName.getValue().isEmpty()
+                && !parentResourceVarName.getValue().isEmpty()
+                && !childResourceVarName.equals(parentResourceVarName)) {
+            unifier.addMapping(childResourceVarName, parentResourceVarName);
+        }
+
         return unifier;
     }
 

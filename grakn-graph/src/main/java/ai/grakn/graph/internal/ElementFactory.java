@@ -117,8 +117,8 @@ final class ElementFactory {
     }
 
     // -------------------------------------------- Building Rules
-    RuleImpl buildRule(VertexElement vertex, RuleType type, Pattern lhs, Pattern rhs){
-        return getOrBuildConcept(vertex, (v) -> new RuleImpl(v, type, lhs, rhs));
+    RuleImpl buildRule(VertexElement vertex, RuleType type, Pattern when, Pattern then){
+        return getOrBuildConcept(vertex, (v) -> new RuleImpl(v, type, when, then));
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------

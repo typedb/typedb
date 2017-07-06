@@ -30,7 +30,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
@@ -98,7 +98,7 @@ public class HALUtils {
             return Schema.BaseType.RESOURCE_TYPE;
         } else if (ontologyConcept.isRuleType()) {
             return Schema.BaseType.RULE_TYPE;
-        } else if (ontologyConcept.isRoleType()) {
+        } else if (ontologyConcept.isRole()) {
             return Schema.BaseType.ROLE;
         } else if (ontologyConcept.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             return Schema.BaseType.TYPE;
@@ -111,8 +111,8 @@ public class HALUtils {
 
         resource.withProperty(ID_PROPERTY, concept.getId().getValue());
 
-        if (concept.isInstance()) {
-            Thing thing = concept.asInstance();
+        if (concept.isThing()) {
+            Thing thing = concept.asThing();
             resource.withProperty(TYPE_PROPERTY, thing.type().getLabel().getValue())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(thing).name());
         } else {
@@ -154,7 +154,7 @@ public class HALUtils {
     }
 
     private static boolean bothRolePlayersAreSelected(Atom atom, MatchQuery matchQuery) {
-        Relation reasonerRel = ((Relation) atom);
+        RelationAtom reasonerRel = ((RelationAtom) atom);
         Set<Var> rolePlayersInAtom = reasonerRel.getRolePlayers().stream().collect(Collectors.toSet());
         Set<Var> selectedVars = matchQuery.admin().getSelectedNames();
         //If all the role players contained in the current relation are also selected in the user query
@@ -194,7 +194,7 @@ public class HALUtils {
     }
 
     private static Pair<Map<Var, String>, String> pairVarNamesRelationType(Atom atom) {
-        Relation reasonerRel = ((Relation) atom);
+        RelationAtom reasonerRel = ((RelationAtom) atom);
         Map<Var, String> varNamesToRole = new HashMap<>();
         // Put all the varNames in the map with EMPTY-ROLE role
         reasonerRel.getRolePlayers().forEach(varName -> varNamesToRole.put(varName, HAS_EMPTY_ROLE_EDGE));

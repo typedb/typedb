@@ -17,18 +17,19 @@
  */
 package ai.grakn.client;
 
-import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
-import static org.apache.http.HttpStatus.SC_OK;
-
-import java.net.URI;
+import mjson.Json;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
 
-import static ai.grakn.util.REST.WebPath.Graph.GRAQL;
-import mjson.Json;
+import java.net.URI;
+
+import static ai.grakn.util.REST.WebPath.Graph.ANY_GRAQL;
+import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
+import static org.apache.http.HttpStatus.SC_OK;
 
 /**
  * <p>
@@ -122,18 +123,18 @@ public class QueryClient extends Client {
      */
     public Json query(String keyspace, String query, boolean infer, boolean materialise) {
         try {
-            URI uri = new URIBuilder(GRAQL)
+            URI uri = new URIBuilder(ANY_GRAQL)
                     .setScheme(DEFAULT_SCHEME_NAME)
                     .setPort(port)
                     .setHost(host)
                     .addParameter("keyspace", keyspace)
-                    .addParameter("query", query)
                     .addParameter("infer", Boolean.toString(infer))
                     .addParameter("materialise", Boolean.toString(materialise))
                     .build();
-            HttpGet httpGet = new HttpGet(uri);
-            httpGet.addHeader("Accept", "application/graql+json");
-            HttpResponse response = httpClient.execute(httpGet);
+            HttpPost httpPost = new HttpPost(uri);
+            httpPost.setEntity(new StringEntity(query));
+            httpPost.addHeader("Accept", "application/graql+json");
+            HttpResponse response = httpClient.execute(httpPost);
             if (response.getStatusLine().getStatusCode() != SC_OK) {
                 throw new Exception("Server returned status: " + response.getStatusLine().getStatusCode() + 
                                 ", entity=" + asStringHandler.handleResponse(response));

@@ -35,6 +35,8 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
@@ -48,6 +50,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static java.util.stream.Collectors.joining;
@@ -144,7 +147,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Resource resourceConcept = insertQueryExecutor.getConcept(resource).asResource();
-        Thing thing = concept.asInstance();
+        Thing thing = concept.asThing();
         thing.resource(resourceConcept);
     }
 
@@ -156,7 +159,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Role owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
         Role value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
 
-        concept.asInstance().relations(owner).stream()
+        concept.asThing().relations(owner).stream()
                 .filter(relation -> testPredicate(predicate, relation, value))
                 .forEach(Concept::delete);
     }
@@ -183,7 +186,6 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         HasResourceProperty that = (HasResourceProperty) o;
 
         return resourceType.equals(that.resourceType) && resource.equals(that.resource);
-
     }
 
     @Override
@@ -196,13 +198,18 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         Var varName = var.getVarName().asUserDefined();
+
         Label type = this.getType();
-        VarPatternAdmin valueVar = this.getResource();
-        Var valueVariable = valueVar.getVarName().asUserDefined();
-        Set<ValuePredicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);
+        VarPatternAdmin resource = this.getResource();
+        Var resourceVariable = resource.getVarName().asUserDefined();
+        Set<ValuePredicate> predicates = getValuePredicates(resourceVariable, resource, vars, parent);
+
+        IsaProperty isaProp = resource.getProperties(IsaProperty.class).findFirst().orElse(null);
+        VarPatternAdmin typeVar = isaProp != null? isaProp.getType() : null;
+        IdPredicate idPredicate = typeVar != null? getIdPredicate(resourceVariable, typeVar, vars, parent) : null;
 
         //add resource atom
-        VarPatternAdmin resVar = varName.has(type, valueVariable).admin();
-        return new ai.grakn.graql.internal.reasoner.atom.binary.Resource(resVar, predicates, parent);
+        VarPatternAdmin resVar = varName.has(type, resourceVariable).admin();
+        return new ResourceAtom(resVar, resourceVariable, idPredicate, predicates, parent);
     }
 }

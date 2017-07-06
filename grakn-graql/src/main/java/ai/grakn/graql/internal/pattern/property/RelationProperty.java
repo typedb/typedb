@@ -38,6 +38,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableMultiset;
@@ -168,7 +169,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         // Check all role types exist
         roleTypes.forEach(roleId -> {
             OntologyConcept ontologyConcept = graph.getOntologyConcept(roleId);
-            if (ontologyConcept == null || !ontologyConcept.isRoleType()) {
+            if (ontologyConcept == null || !ontologyConcept.isRole()) {
                 throw GraqlQueryException.notARoleType(roleId);
             }
         });
@@ -195,8 +196,8 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     private void addRoleplayer(InsertQueryExecutor insertQueryExecutor, Relation relation, RelationPlayer relationPlayer) {
         VarPatternAdmin roleVar = relationPlayer.getRoleType().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
 
-        Role role = insertQueryExecutor.getConcept(roleVar).asRoleType();
-        Thing roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asInstance();
+        Role role = insertQueryExecutor.getConcept(roleVar).asRole();
+        Thing roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asThing();
         relation.addRolePlayer(role, roleplayer);
     }
 
@@ -215,7 +216,6 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     public int hashCode() {
         return relationPlayers.hashCode();
     }
-
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
@@ -237,21 +237,22 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         //id part
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
         IdPredicate predicate = null;
+        Var typeVariable = Graql.var().asUserDefined();
         //Isa present
         if (isaProp != null) {
             VarPatternAdmin isaVar = isaProp.getType();
             Label label = isaVar.getTypeLabel().orElse(null);
-            Var typeVariable = label == null ? isaVar.getVarName() : Graql.var().asUserDefined();
-            relVar = relVar.isa(typeVariable);
             if (label != null) {
                 GraknGraph graph = parent.graph();
                 VarPatternAdmin idVar = typeVariable.id(graph.getOntologyConcept(label).getId()).admin();
                 predicate = new IdPredicate(idVar, parent);
             } else {
+                typeVariable = isaVar.getVarName();
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
             }
         }
-        return new ai.grakn.graql.internal.reasoner.atom.binary.Relation(relVar.admin(), predicate, parent);
+        relVar = relVar.isa(typeVariable);
+        return new RelationAtom(relVar.admin(), typeVariable, predicate, parent);
     }
 
 }

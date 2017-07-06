@@ -43,6 +43,7 @@ public class ExamplesTest {
 
     @After
     public void closeGraph(){
+        graph.commit();
         graph.close();
     }
 
@@ -56,6 +57,12 @@ public class ExamplesTest {
     public void testPokemon() throws IOException {
         runInsertQuery("src/examples/pokemon.gql");
         assertTrue(graph.graql().match(var().rel(var().has("name", "Pikachu")).rel(var().has("name", "electric")).isa("has-type")).ask().execute());
+    }
+
+    @Test
+    public void afterLoadingGenealogyExample_MaryIsInTheGraph() throws IOException {
+        runInsertQuery("src/examples/basic-genealogy.gql");
+        assertTrue(graph.graql().match(var().has("identifier", "Mary Guthrie")).ask().execute());
     }
 
     private void runInsertQuery(String path) throws IOException {

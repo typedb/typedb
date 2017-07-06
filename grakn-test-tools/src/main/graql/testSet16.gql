@@ -19,11 +19,11 @@ res1 sub resource datatype string;
 #Rules
 
 isa inference-rule
-lhs {
+when {
     $x isa entity1, has res1 $y;
     $z isa relation1;
 }
-rhs {
+then {
     $z has res1 $y;
 };
 

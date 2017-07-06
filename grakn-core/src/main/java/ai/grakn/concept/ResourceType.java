@@ -201,6 +201,22 @@ public interface ResourceType<D> extends Type {
     @CheckReturnValue
     String getRegex();
 
+    //------------------------------------- Other ---------------------------------
+    @SuppressWarnings("unchecked")
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default ResourceType asResourceType(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isResourceType(){
+        return true;
+    }
+
     /**
      * A class used to hold the supported data types of resources and any other concepts.
      * This is used tp constrain value data types to only those we explicitly support.

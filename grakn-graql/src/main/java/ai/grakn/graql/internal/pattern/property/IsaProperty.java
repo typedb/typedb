@@ -32,7 +32,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.ImmutableSet;
 
@@ -94,7 +94,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Type type = insertQueryExecutor.getConcept(this.type).asType();
-        Thing thing = concept.asInstance();
+        Thing thing = concept.asThing();
         if (!thing.type().equals(type)) {
             throw GraqlQueryException.insertNewType(thing, type);
         }
@@ -104,7 +104,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
         type.getTypeLabel().ifPresent(typeLabel -> {
             OntologyConcept theOntologyConcept = graph.getOntologyConcept(typeLabel);
-            if (theOntologyConcept != null && theOntologyConcept.isRoleType()) {
+            if (theOntologyConcept != null && theOntologyConcept.isRole()) {
                 throw GraqlQueryException.queryInstanceOfRoleType(typeLabel);
             }
         });
@@ -137,7 +137,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         //isa part
-        VarPatternAdmin resVar = varName.isa(typeVariable).admin();
-        return new TypeAtom(resVar, predicate, parent);
+        VarPatternAdmin isaVar = varName.isa(typeVariable).admin();
+        return new IsaAtom(isaVar, typeVariable, predicate, parent);
     }
 }

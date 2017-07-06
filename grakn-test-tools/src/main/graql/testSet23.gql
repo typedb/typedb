@@ -23,10 +23,10 @@ knows sub knows-trans
 #Rules
 
 $rule0 isa inference-rule
-    lhs {
+    when {
         (friend1:$x, friend2:$y);
         (friend1:$y, friend2:$z); }
-    rhs {
+    then {
         (friend1:$x, friend2:$z) isa knows-trans;
     };
 
