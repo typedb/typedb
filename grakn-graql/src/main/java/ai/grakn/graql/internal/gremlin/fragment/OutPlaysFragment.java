@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -30,8 +31,8 @@ class OutPlaysFragment extends AbstractFragment {
 
     private final boolean required;
 
-    OutPlaysFragment(Var start, Var end, boolean required) {
-        super(start, end);
+    OutPlaysFragment(VarProperty varProperty, Var start, Var end, boolean required) {
+        super(varProperty, start, end);
         this.required = required;
     }
 

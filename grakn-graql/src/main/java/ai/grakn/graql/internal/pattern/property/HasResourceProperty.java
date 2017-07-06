@@ -125,9 +125,9 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                shortcut(relation, edge1, start, Optional.empty()),
-                shortcut(relation, edge2, resource.getVarName(), Optional.empty()),
-                neq(edge1, edge2)
+                shortcut(this, relation, edge1, start, Optional.empty()),
+                shortcut(this, relation, edge2, resource.getVarName(), Optional.empty()),
+                neq(this, edge1, edge2)
         );
     }
 

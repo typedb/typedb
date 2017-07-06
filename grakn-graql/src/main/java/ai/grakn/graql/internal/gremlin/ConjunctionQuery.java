@@ -149,7 +149,7 @@ class ConjunctionQuery {
             return traversals.stream();
         } else {
             // If this variable has no properties, only confirm that it is not internal and nothing else.
-            return Stream.of(EquivalentFragmentSets.notInternalFragmentSet(start));
+            return Stream.of(EquivalentFragmentSets.notInternalFragmentSet(null, start));
         }
     }
 

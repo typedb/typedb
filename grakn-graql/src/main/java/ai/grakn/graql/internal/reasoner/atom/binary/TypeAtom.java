@@ -24,7 +24,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
+import ai.grakn.graql.internal.reasoner.query.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
@@ -107,8 +107,8 @@ public abstract class TypeAtom extends Binary{
     @Override
     public int computePriority(Set<Var> subbedVars){
         int priority = super.computePriority(subbedVars);
-        priority += ResolutionStrategy.IS_TYPE_ATOM;
-        priority += getOntologyConcept() == null && !isRelation()? ResolutionStrategy.NON_SPECIFIC_TYPE_ATOM : 0;
+        priority += ResolutionPlan.IS_TYPE_ATOM;
+        priority += getOntologyConcept() == null && !isRelation()? ResolutionPlan.NON_SPECIFIC_TYPE_ATOM : 0;
         return priority;
     }
 

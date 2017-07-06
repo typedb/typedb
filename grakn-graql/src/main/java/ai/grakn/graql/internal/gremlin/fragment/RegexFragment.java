@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -30,8 +31,8 @@ class RegexFragment extends AbstractFragment {
 
     private final String regex;
 
-    RegexFragment(Var start, String regex) {
-        super(start);
+    RegexFragment(VarProperty varProperty, Var start, String regex) {
+        super(varProperty, start);
         this.regex = regex;
     }
 

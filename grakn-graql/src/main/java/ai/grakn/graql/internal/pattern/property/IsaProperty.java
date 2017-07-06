@@ -79,7 +79,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.isa(start, type.getVarName()));
+        return ImmutableSet.of(EquivalentFragmentSets.isa(this, start, type.getVarName()));
     }
 
     @Override
