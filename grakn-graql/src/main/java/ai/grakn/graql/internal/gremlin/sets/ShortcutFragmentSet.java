@@ -56,9 +56,9 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
     private final Optional<Set<Label>> roleTypeLabels;
     private final Optional<Set<Label>> relationTypeLabels;
 
-    ShortcutFragmentSet(VarProperty varProperty,
-            Var relation, Var edge, Var rolePlayer, Optional<Var> role,
-            Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
+    ShortcutFragmentSet(@Nullable VarProperty varProperty,
+                        Var relation, Var edge, Var rolePlayer, Optional<Var> role,
+                        Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
         super(
                 Fragments.inShortcut(varProperty, rolePlayer, edge, relation, role, roleLabels, relationTypeLabels),
                 Fragments.outShortcut(varProperty, relation, edge, rolePlayer, role, roleLabels, relationTypeLabels)

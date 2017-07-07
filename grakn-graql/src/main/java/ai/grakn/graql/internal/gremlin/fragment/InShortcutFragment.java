@@ -27,6 +27,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.Set;
 
@@ -52,9 +53,9 @@ class InShortcutFragment extends AbstractFragment {
     private final Optional<Set<Label>> roleLabels;
     private final Optional<Set<Label>> relationTypeLabels;
 
-    InShortcutFragment(VarProperty varProperty,
-            Var rolePlayer, Var edge, Var relation, Optional<Var> role, Optional<Set<Label>> roleLabels,
-            Optional<Set<Label>> relationTypeLabels) {
+    InShortcutFragment(@Nullable VarProperty varProperty,
+                       Var rolePlayer, Var edge, Var relation, Optional<Var> role, Optional<Set<Label>> roleLabels,
+                       Optional<Set<Label>> relationTypeLabels) {
         super(varProperty, rolePlayer, relation, edge, optionalVarToArray(role));
         this.edge = edge;
         this.role = role;

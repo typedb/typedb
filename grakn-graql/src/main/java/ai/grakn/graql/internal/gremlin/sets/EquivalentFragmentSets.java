@@ -62,7 +62,7 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a shortcut edge between two role-players.
      */
-    public static EquivalentFragmentSet shortcut(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, Optional<Var> roleType) {
+    public static EquivalentFragmentSet shortcut(@Nullable VarProperty varProperty, Var relation, Var edge, Var rolePlayer, Optional<Var> roleType) {
         return new ShortcutFragmentSet(varProperty, relation, edge, rolePlayer, roleType, Optional.empty(), Optional.empty());
     }
 
@@ -132,7 +132,7 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable representing a type with a particular label.
      */
-    public static EquivalentFragmentSet label(VarProperty varProperty, Var type, Label label) {
+    public static EquivalentFragmentSet label(@Nullable VarProperty varProperty, Var type, Label label) {
         return new LabelFragmentSet(varProperty, type, label);
     }
 
