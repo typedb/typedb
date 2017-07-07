@@ -649,11 +649,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     void putShortcutEdge(Thing toThing, Relation fromRelation, Role roleType){
-        boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
+        //TODO: hasId() may be faster than has(ID, ...)
+        boolean exists  = getTinkerTraversal().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getLabelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), roleType.getLabelId().getValue()).inV().
-                hasId(toThing.getId().getRawValue()).hasNext();
+                has(Schema.VertexProperty.ID.name(), toThing.getId()).hasNext();
 
         if(!exists){
             EdgeElement edge = RelationImpl.from(fromRelation).reify().addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.SHORTCUT);
