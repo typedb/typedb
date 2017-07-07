@@ -100,6 +100,7 @@ class OutShortcutFragment extends AbstractFragment {
         OutShortcutFragment that = (OutShortcutFragment) o;
 
         if (!edge.equals(that.edge)) return false;
+        if (!roleType.equals(that.roleType)) return false;
         if (!roleTypeLabels.equals(that.roleTypeLabels)) return false;
         return relationTypeLabels.equals(that.relationTypeLabels);
     }
@@ -108,6 +109,7 @@ class OutShortcutFragment extends AbstractFragment {
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + edge.hashCode();
+        result = 31 * result + roleType.hashCode();
         result = 31 * result + roleTypeLabels.hashCode();
         result = 31 * result + relationTypeLabels.hashCode();
         return result;

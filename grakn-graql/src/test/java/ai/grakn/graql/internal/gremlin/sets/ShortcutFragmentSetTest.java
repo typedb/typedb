@@ -60,7 +60,7 @@ public class ShortcutFragmentSetTest {
         ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.graph());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
-                new ShortcutFragmentSet(null, a, b, c, Optional.of(d), Optional.of(ImmutableSet.of(author, director)), Optional.empty()),
+                new ShortcutFragmentSet(null, a, b, c, Optional.empty(), Optional.of(ImmutableSet.of(author, director)), Optional.empty()),
                 authorLabelFragmentSet
         );
 
@@ -80,7 +80,7 @@ public class ShortcutFragmentSetTest {
         ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.graph());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
-                new ShortcutFragmentSet(null, a, b, c, Optional.of(d), Optional.empty(), Optional.empty()),
+                new ShortcutFragmentSet(null, a, b, c, Optional.empty(), Optional.empty(), Optional.empty()),
                 authorLabelFragmentSet
         );
 
