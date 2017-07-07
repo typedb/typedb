@@ -90,7 +90,7 @@ public class PostProcessingTask extends BackgroundTask {
     private static Map<String,Set<ConceptId>> getPostProcessingJobs(Schema.BaseType type, TaskConfiguration configuration) {
         return configuration.json().at(REST.Request.COMMIT_LOG_FIXING).at(type.name()).asJsonMap().entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey,
-                e -> e.getValue().asList().stream().map(ConceptId::of).collect(Collectors.toSet())
+                e -> e.getValue().asList().stream().map(o -> ConceptId.of(o.toString())).collect(Collectors.toSet())
         ));
     }
 

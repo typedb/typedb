@@ -96,7 +96,7 @@ public class GraqlControllerTest {
             resp.then().statusCode(200);
             Assert.assertFalse(resp.jsonPath().getList(".").isEmpty());
         } finally {
-            ConceptId id = ConceptId.of(resp.jsonPath().getList("x.id").get(0));
+            ConceptId id = ConceptId.of(resp.jsonPath().getList("x.id").get(0).toString());
             graphContext.rollback();
             graphContext.graph().graql().match(var("x").id(id)).delete("x").execute();
         }

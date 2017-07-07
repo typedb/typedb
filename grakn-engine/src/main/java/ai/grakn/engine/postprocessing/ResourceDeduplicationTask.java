@@ -137,8 +137,8 @@ public class ResourceDeduplicationTask extends BackgroundTask {
             LOG.debug("Resource index: " + vertex.property(Schema.VertexProperty.INDEX.name()).value());
             Object key = vertex.property(Schema.VertexProperty.INDEX.name()).value();
             if (key != null) {
-                LOG.debug("Emit " + key + " -- "  +  ConceptId.of(vertex.property(Schema.VertexProperty.ID.name())));
-                emitter.emit(key.toString(), ConceptId.of(vertex.property(Schema.VertexProperty.ID.name()).value()));
+                LOG.debug("Emit " + key + " -- "  +  ConceptId.of(vertex.value(Schema.VertexProperty.ID.name()).toString()));
+                emitter.emit(key.toString(), ConceptId.of(vertex.value(Schema.VertexProperty.ID.name()).toString()));
             }
             else {
                 LOG.warn("Resource " + vertex.property(Schema.VertexProperty.ID.name()) + " has no value?!");
