@@ -19,6 +19,7 @@
 package ai.grakn.concept;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.Collection;
 
 /**
@@ -59,6 +60,7 @@ public interface OntologyConcept extends Concept {
      * @return The direct super of this concept
      */
     @CheckReturnValue
+    @Nullable
     OntologyConcept sup();
 
     /**

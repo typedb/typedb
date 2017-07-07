@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.reasoner.query.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
 
@@ -52,7 +53,7 @@ import java.util.Set;
  */
 public abstract class TypeAtom extends Binary{
 
-    public TypeAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
+    public TypeAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
         super(pattern, predicateVar, p, par);}
     protected TypeAtom(TypeAtom a) { super(a);}
 
@@ -111,6 +112,7 @@ public abstract class TypeAtom extends Binary{
         return priority;
     }
 
+    @Nullable
     @Override
     public OntologyConcept getOntologyConcept() {
         return getPredicate() != null ?

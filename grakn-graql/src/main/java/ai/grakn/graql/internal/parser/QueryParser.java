@@ -150,6 +150,7 @@ public class QueryParser {
             @Nullable
             T previous = null;
 
+            @Nullable
             @Override
             protected T computeNext() {
                 if (tokenStream.LA(1) == GraqlLexer.EOF) {
@@ -174,7 +175,8 @@ public class QueryParser {
                 }
             }
 
-            private T swapPrevious(T newPrevious) {
+            @Nullable
+            private T swapPrevious(@Nullable T newPrevious) {
                 T oldPrevious = previous;
                 previous = newPrevious;
                 return oldPrevious;

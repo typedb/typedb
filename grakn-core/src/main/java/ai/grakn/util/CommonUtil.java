@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -93,7 +94,7 @@ public class CommonUtil {
     }
 
     @CheckReturnValue
-    public static RuntimeException unreachableStatement(String message, Throwable cause) {
+    public static RuntimeException unreachableStatement(@Nullable String message, Throwable cause) {
         return new RuntimeException("Statement expected to be unreachable: " + message, cause);
     }
 

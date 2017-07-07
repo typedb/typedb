@@ -54,6 +54,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.Collections;
@@ -362,6 +363,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
+    @Nullable
     VertexElement addVertex(Schema.BaseType baseType){
         Vertex vertex = operateOnOpenGraph(() -> getTinkerPopGraph().addVertex(baseType.name()));
         vertex.property(Schema.VertexProperty.ID.name(), vertex.id().toString());
@@ -542,6 +544,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         OntologyConcept ontologyConcept = buildOntologyElement(label, ()-> getOntologyConcept(convertToId(label)));
         return validateOntologyElement(ontologyConcept, baseType, () -> null);
     }
+    @Nullable
     <T extends OntologyConcept> T getOntologyConcept(LabelId id){
         if(!id.isValid()) return null;
         return getConcept(Schema.VertexProperty.TYPE_ID, id.getValue());
