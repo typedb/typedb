@@ -138,7 +138,6 @@ public class GraknGraphPropertyTest {
         assertEquals(type, graph.getOntologyConcept(label));
     }
 
-    @Ignore // TODO: Reactivate this test when we figure out what to do about getType now returning {@link OntologyConcept}
     @Property
     public void whenCallingGetTypeWithANonExistingTypeLabel_ItReturnsNull(@Open GraknGraph graph, Label label) {
         Set<Label> allTypes = allOntologyElementsFrom(graph).stream().map(OntologyConcept::getLabel).collect(toSet());

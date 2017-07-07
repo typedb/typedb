@@ -48,6 +48,7 @@ import static ai.grakn.graph.property.PropertyUtil.directInstances;
 import static ai.grakn.graph.property.PropertyUtil.directSubs;
 import static ai.grakn.graph.property.PropertyUtil.indirectSuperTypes;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
+import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.SUPER_LOOP_DETECTED;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
@@ -166,13 +167,13 @@ public class TypePropertyTest {
         assertEquals(type, graph.getOntologyConcept(label));
     }
 
-    @Ignore // TODO: Make this pass!
     @Property
     public void whenATypeWithDirectInstancesIsSetToAbstract_Throw(Type type) {
         assumeThat(directInstances(type), not(empty()));
 
-        // TODO: Better define exception
-        exception.expect(Exception.class);
+        exception.expect(GraphOperationException.class);
+        exception.expectMessage(IS_ABSTRACT.getMessage(type.getLabel()));
+
         type.setAbstract(true);
     }
 
