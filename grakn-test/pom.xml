@@ -31,10 +31,6 @@
     <artifactId>grakn-test</artifactId>
     <packaging>jar</packaging>
 
-    <properties>
-        <jenkins.docker-test.reportsDirectory>${project.basedir}/target/surefire-reports</jenkins.docker-test.reportsDirectory>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>ai.grakn</groupId>
@@ -189,48 +185,4 @@
             </exclusions>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.5.0</version>
-                <configuration>
-                    <skip>${skip-docker-tests}</skip>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>docker-image-with-src-compiled</id>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <phase>integration-test</phase>
-                        <configuration>
-                            <executable>/usr/bin/docker</executable>
-                            <arguments>
-                                <argument>build</argument>
-                                <argument>-t</argument>
-                                <argument>graknlabs/jenkins-with-src-compiled:latest</argument>
-                                <argument>${project.basedir}/../</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>docker-test</id>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <phase>integration-test</phase>
-                        <configuration>
-                            <executable>${project.basedir}/bin/run_test_in_docker.sh</executable>
-                            <arguments>
-                                <argument>${grakn.test-profile}</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>

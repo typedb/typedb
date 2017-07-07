@@ -40,6 +40,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import javax.annotation.Nullable;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -274,7 +275,7 @@ public class GraqlShell {
         }
     }
 
-    private static void printUsage(Options options, String footer) {
+    private static void printUsage(Options options, @Nullable String footer) {
         HelpFormatter helpFormatter = new HelpFormatter();
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(System.out, Charset.defaultCharset());
         PrintWriter printWriter = new PrintWriter(new BufferedWriter(outputStreamWriter));

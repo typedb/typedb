@@ -36,6 +36,7 @@ import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -89,6 +90,7 @@ public class HALBuilder {
         return new HALConceptData(concept, separationDegree, false, new HashSet<>(), keyspace, offset, limit).render();
     }
 
+    @Nullable
     public static String HALExploreConcept(Concept concept, String keyspace, int offset, int limit) {
         String renderedHAL = null;
 

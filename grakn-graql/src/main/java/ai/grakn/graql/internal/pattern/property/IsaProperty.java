@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.ImmutableSet;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -126,6 +127,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
         return type.hashCode();
     }
 
+    @Nullable
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //IsaProperty is unique within a var, so skip if this is a relation
