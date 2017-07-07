@@ -65,7 +65,7 @@ final class ElementFactory {
     }
 
     private <X extends Concept> X getOrBuildConcept(VertexElement v, Function<VertexElement, X> conceptBuilder){
-        ConceptId conceptId = ConceptId.of(v.id().toString());
+        ConceptId conceptId = ConceptId.of(v.property(Schema.VertexProperty.ID));
 
         if(!graknGraph.txCache().isConceptCached(conceptId)){
             X newConcept = conceptBuilder.apply(v);
@@ -150,7 +150,7 @@ final class ElementFactory {
             return null;
         }
 
-        ConceptId conceptId = ConceptId.of(vertexElement.id().getValue());
+        ConceptId conceptId = ConceptId.of(vertexElement.property(Schema.VertexProperty.ID));
         if(!graknGraph.txCache().isConceptCached(conceptId)){
             Concept concept;
             switch (type) {

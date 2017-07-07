@@ -48,8 +48,15 @@ import java.util.stream.StreamSupport;
  * @author fppt
  */
 class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty>{
+    static String PREFIX = "V";
+
     VertexElement(AbstractGraknGraph graknGraph, Vertex element) {
         super(graknGraph, element);
+    }
+
+    @Override
+    ElementId id() {
+        return ElementId.of(PREFIX + super.id().getValue());
     }
 
     /**
