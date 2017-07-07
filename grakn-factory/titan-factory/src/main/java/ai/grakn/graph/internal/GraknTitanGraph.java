@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.util.Schema;
@@ -60,9 +61,13 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
      * @return true if the concept has been modified
      */
     @Override
-    public boolean isConceptModified(ConceptImpl concept) {
-        TitanVertex vertex = (TitanVertex) concept.vertex().element();
-        return vertex.isModified() || vertex.isNew();
+    public boolean isConceptModified(Concept concept) {
+        //TODO: Clean this crap up
+        if(concept instanceof ConceptImpl) {
+            TitanVertex vertex = (TitanVertex) ((ConceptImpl) concept).vertex().element();
+            return vertex.isModified() || vertex.isNew();
+        }
+        return true;
     }
 
     @Override

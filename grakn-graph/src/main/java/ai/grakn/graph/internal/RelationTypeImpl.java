@@ -89,7 +89,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public RelationType relates(Role role) {
         checkOntologyMutationAllowed();
-        putEdge(role, Schema.EdgeLabel.RELATES);
+        putEdge(ConceptVertex.from(role), Schema.EdgeLabel.RELATES);
 
         //TODO: the following lines below this comment should only be executed if the edge is added
 
@@ -100,7 +100,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         ((RoleImpl) role).addCachedRelationType(this);
 
         //Put all the instance back in for tracking because their unique hashes need to be regenerated
-        instances().forEach(instance -> vertex().graph().txCache().trackForValidation((ConceptImpl) instance));
+        instances().forEach(instance -> vertex().graph().txCache().trackForValidation(instance));
 
         return this;
     }
@@ -133,7 +133,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         ((RoleImpl) role).deleteCachedRelationType(this);
 
         //Put all the instance back in for tracking because their unique hashes need to be regenerated
-        instances().forEach(instance -> vertex().graph().txCache().trackForValidation((ConceptImpl) instance));
+        instances().forEach(instance -> vertex().graph().txCache().trackForValidation(instance));
 
         return this;
     }
@@ -151,5 +151,12 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
             vertex().graph().txCache().trackForValidation(role);
             ((RoleImpl) r).deleteCachedRelationType(this);
         });
+    }
+
+    @Override
+    void trackRolePlayers(){
+        //TODO this operation should not call reify() rather it should call reified. Need to think of a way to validate Relation Type changes when the instances of the relation type are not reified
+        instances().forEach(concept -> ((RelationImpl) concept).reify().castingsInstance().forEach(
+                rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer)));
     }
 }

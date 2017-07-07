@@ -33,6 +33,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
@@ -169,7 +170,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param concept A concept in the graph
      * @return True if the concept has been modified in the transaction
      */
-    public abstract boolean isConceptModified(ConceptImpl concept);
+    public abstract boolean isConceptModified(Concept concept);
 
     /**
      *
@@ -342,8 +343,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    private Set<ConceptImpl> getConcepts(Schema.VertexProperty key, Object value){
-        Set<ConceptImpl> concepts = new HashSet<>();
+    private Set<Concept> getConcepts(Schema.VertexProperty key, Object value){
+        Set<Concept> concepts = new HashSet<>();
         getTinkerTraversal().has(key.name(), value).
             forEachRemaining(v -> concepts.add(factory().buildConcept(v)));
         return concepts;
@@ -419,19 +420,18 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
-    private <T extends OntologyConceptImpl> T putOntologyElement(Label label, Schema.BaseType baseType, Function<VertexElement, T> factory){
+    private <T extends OntologyConcept> T putOntologyElement(Label label, Schema.BaseType baseType, Function<VertexElement, T> factory){
         checkOntologyMutationAllowed();
-        OntologyConceptImpl type = buildOntologyElement(label, () -> factory.apply(putVertex(label, baseType)));
+        OntologyConcept ontologyConcept = buildOntologyElement(label, () -> factory.apply(putVertex(label, baseType)));
 
-        T finalType = validateOntologyElement(type, baseType, () -> {
+        T finalType = validateOntologyElement(ontologyConcept, baseType, () -> {
             if(Schema.MetaSchema.isMetaLabel(label)) throw GraphOperationException.reservedLabel(label);
-            throw PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.TYPE_LABEL, label);
+            throw PropertyNotUniqueException.cannotCreateProperty(ontologyConcept, Schema.VertexProperty.TYPE_LABEL, label);
         });
 
         //Automatic shard creation - If this type does not have a shard create one
-        if(!Schema.MetaSchema.isMetaLabel(label) &&
-                !type.vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()){
-            type.createShard();
+        if(!Schema.MetaSchema.isMetaLabel(label) && !OntologyConceptImpl.from(ontologyConcept).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()){
+            OntologyConceptImpl.from(ontologyConcept).createShard();
         }
 
         return finalType;
@@ -454,7 +454,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      *
      * @return The type which was either cached or built via a DB read or write
      */
-    private OntologyConceptImpl buildOntologyElement(Label label, Supplier<OntologyConceptImpl> dbBuilder){
+    private OntologyConcept buildOntologyElement(Label label, Supplier<OntologyConcept> dbBuilder){
         if(txCache().isTypeCached(label)){
             return txCache().getCachedOntologyElement(label);
         } else {
@@ -645,15 +645,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return getOntologyConcept(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
-    void putShortcutEdge(ThingImpl toInstance, RelationImpl fromRelation, RoleImpl roleType){
+    void putShortcutEdge(Thing toThing, Relation fromRelation, Role roleType){
         boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getLabelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), roleType.getLabelId().getValue()).inV().
-                hasId(toInstance.getId().getRawValue()).hasNext();
+                hasId(toThing.getId().getRawValue()).hasNext();
 
         if(!exists){
-            EdgeElement edge = fromRelation.addEdge(toInstance, Schema.EdgeLabel.SHORTCUT);
+            EdgeElement edge = RelationImpl.from(fromRelation).reify().addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.SHORTCUT);
             edge.property(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getLabelId().getValue());
             edge.property(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getLabelId().getValue());
             txCache().trackForValidation(factory().buildRolePlayer(edge));
@@ -814,9 +814,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param conceptIds Set of Ids containing potential duplicates of the main concept
      * @return a set containing the duplicates of the given concept
      */
-    private Set<? extends ConceptImpl> getDuplicates(ConceptImpl mainConcept, Set<ConceptId> conceptIds){
-        Set<ConceptImpl> duplicated = conceptIds.stream()
-                .map(this::<ConceptImpl>getConcept)
+    private <X extends ConceptImpl> Set<X> getDuplicates(X mainConcept, Set<ConceptId> conceptIds){
+        Set<X> duplicated = conceptIds.stream()
+                .map(this::<X>getConcept)
                 //filter non-null, will be null if previously deleted/merged
                 .filter(Objects::nonNull)
                 .collect(toSet());
@@ -827,18 +827,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
-     * Given an index, get the concept associated with it. The "main" concept is the one
-     * returned by the index after all of the duplicates have been created.
-     *
-     * @param index retrieve the concept associated with this index
-     * @return Concept representing the vertex at the given index
-     */
-    private ConceptImpl getMainConcept(String index){
-        //This is done to ensure we merge into the indexed casting.
-        return getConcept(Schema.VertexProperty.INDEX, index);
-    }
-
-    /**
      * Check if the given index has duplicates to merge
      * @param index Index of the potentially duplicated resource
      * @param resourceVertexIds Set of vertex ids containing potential duplicates
@@ -846,7 +834,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public boolean duplicateResourcesExist(String index, Set<ConceptId> resourceVertexIds){
-        ResourceImpl<?> mainResource = (ResourceImpl<?>) getMainConcept(index);
+        //This is done to ensure we merge into the indexed casting.
+        ResourceImpl<?> mainResource = getConcept(Schema.VertexProperty.INDEX, index);
         return getDuplicates(mainResource, resourceVertexIds).size() > 0;
     }
 
@@ -857,21 +846,22 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds){
-        ResourceImpl<?> mainResource = (ResourceImpl<?>) getMainConcept(index);
-        Set<ResourceImpl> duplicates = (Set<ResourceImpl>) getDuplicates(mainResource, resourceVertexIds);
+        //This is done to ensure we merge into the indexed casting.
+        ResourceImpl<?> mainResource = this.getConcept(Schema.VertexProperty.INDEX, index);
+        Set<ResourceImpl> duplicates = getDuplicates(mainResource, resourceVertexIds);
 
         if(duplicates.size() > 0) {
             //Remove any resources associated with this index that are not the main resource
-            for (ResourceImpl<?> otherResource : duplicates) {
+            for (Resource otherResource : duplicates) {
                 Collection<Relation> otherRelations = otherResource.relations();
 
                 //Copy the actual relation
                 for (Relation otherRelation : otherRelations) {
-                    copyRelation(mainResource, otherResource, (RelationImpl) otherRelation);
+                    copyRelation(mainResource, otherResource, otherRelation);
                 }
 
                 //Delete the node
-                otherResource.deleteNode();
+                ResourceImpl.from(otherResource).deleteNode();
             }
 
             //Restore the index
@@ -892,20 +882,25 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param other The other instance which already posses the relation
      * @param otherRelation The other relation to potentially be absorbed
      */
-    private void copyRelation(ResourceImpl main, ResourceImpl<?> other, RelationImpl otherRelation){
+    private void copyRelation(Resource main, Resource other, Relation otherRelation){
         //Gets the other resource index and replaces all occurrences of the other resource id with the main resource id
         //This allows us to find relations far more quickly.
-        String newIndex = otherRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
-        RelationImpl foundRelation = txCache().getCachedRelation(newIndex);
+        Optional<RelationReified> reifiedRelation = ((RelationImpl) otherRelation).reified();
+
+        //TODO: Figure out how to merge relations which are not reified
+        if(!reifiedRelation.isPresent()) throw new UnsupportedOperationException("Merging non reified relations is not supported");
+
+        String newIndex = reifiedRelation.get().getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
+        Relation foundRelation = txCache().getCachedRelation(newIndex);
         if(foundRelation == null) foundRelation = getConcept(Schema.VertexProperty.INDEX, newIndex);
 
         if (foundRelation != null) {//If it exists delete the other one
-            otherRelation.deleteNode(); //Raw deletion because the castings should remain
+            reifiedRelation.get().deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelation = otherRelation;
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
             otherRelation.allRolePlayers().forEach((roleType, instances) -> {
-                if(instances.contains(other)) putShortcutEdge(main, otherRelation, (RoleImpl) roleType);
+                if(instances.contains(other)) putShortcutEdge(main, otherRelation, roleType);
             });
         }
 

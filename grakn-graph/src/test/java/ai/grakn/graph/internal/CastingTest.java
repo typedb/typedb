@@ -57,7 +57,7 @@ public class CastingTest extends GraphTestBase {
         RelationImpl relation = (RelationImpl) relationType.addRelation().
                 addRolePlayer(role1, e1);
 
-        Set<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
+        Set<Casting> castings = relation.reified().get().castingsRelation().collect(Collectors.toSet());
 
         castings.forEach(rolePlayer -> {
             assertEquals(e1, rolePlayer.getInstance());
@@ -75,16 +75,16 @@ public class CastingTest extends GraphTestBase {
         RelationImpl relation = (RelationImpl) relationType.addRelation().
                 addRolePlayer(role1, e1);
 
-        Set<Thing> things = relation.castingsRelation().map(Casting::getInstance).collect(Collectors.toSet());
-        Set<Role> roles = relation.castingsRelation().map(Casting::getRoleType).collect(Collectors.toSet());
+        Set<Thing> things = relation.reified().get().castingsRelation().map(Casting::getInstance).collect(Collectors.toSet());
+        Set<Role> roles = relation.reified().get().castingsRelation().map(Casting::getRoleType).collect(Collectors.toSet());
         assertThat(things, containsInAnyOrder(e1));
         assertThat(roles, containsInAnyOrder(role1));
 
         //Now Update
         relation.addRolePlayer(role2, e1).addRolePlayer(role3, e3);
 
-        things = relation.castingsRelation().map(Casting::getInstance).collect(Collectors.toSet());
-        roles = relation.castingsRelation().map(Casting::getRoleType).collect(Collectors.toSet());
+        things = relation.reified().get().castingsRelation().map(Casting::getInstance).collect(Collectors.toSet());
+        roles = relation.reified().get().castingsRelation().map(Casting::getRoleType).collect(Collectors.toSet());
         assertThat(things, containsInAnyOrder(e1, e3));
         assertThat(roles, containsInAnyOrder(role1, role2, role3));
     }

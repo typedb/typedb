@@ -20,9 +20,6 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -45,10 +42,8 @@ import java.util.stream.Stream;
  *
  * @author fppt
  *
- * @param <T> The leaf interface of the object concept.
- *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
-abstract class ConceptImpl implements Concept {
+abstract class ConceptImpl implements Concept, ConceptVertex {
     private final VertexElement vertexElement;
 
     @SuppressWarnings("unchecked")
@@ -60,6 +55,7 @@ abstract class ConceptImpl implements Concept {
         this.vertexElement = vertexElement;
     }
 
+    @Override
     public VertexElement vertex() {
         return vertexElement;
     }
@@ -108,12 +104,12 @@ abstract class ConceptImpl implements Concept {
         }
     }
 
-    EdgeElement putEdge(Concept to, Schema.EdgeLabel label){
-        return vertex().putEdge(((ConceptImpl) to).vertex(), label);
+    EdgeElement putEdge(ConceptVertex to, Schema.EdgeLabel label){
+        return vertex().putEdge(to.vertex(), label);
     }
 
-    EdgeElement addEdge(Concept to, Schema.EdgeLabel label){
-        return vertex().addEdge(((ConceptImpl) to).vertex(), label);
+    EdgeElement addEdge(ConceptVertex to, Schema.EdgeLabel label){
+        return vertex().addEdge(to.vertex(), label);
     }
 
     void deleteEdge(Direction direction, Schema.EdgeLabel label, Concept... to) {
@@ -145,11 +141,7 @@ abstract class ConceptImpl implements Concept {
         return ConceptId.of(vertex().id().getValue());
     }
 
-    /**
-     *
-     * @return The hash code of the underlying vertex
-     */
-    public int hashCode() {
+    @Override public int hashCode() {
         return getId().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
     }
 
@@ -190,11 +182,10 @@ abstract class ConceptImpl implements Concept {
     }
 
     //----------------------------------- Sharding Functionality
-    Shard createShard(){
+    void createShard(){
         VertexElement shardVertex = vertex().graph().addVertex(Schema.BaseType.SHARD);
         Shard shard = vertex().graph().factory().buildShard(this, shardVertex);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
-        return shard;
     }
 
     Set<Shard> shards(){

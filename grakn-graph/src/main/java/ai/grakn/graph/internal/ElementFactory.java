@@ -63,7 +63,7 @@ final class ElementFactory {
         this.graknGraph = graknGraph;
     }
 
-    private <X extends ConceptImpl> X getOrBuildConcept(VertexElement v, Function<VertexElement, X> conceptBuilder){
+    private <X extends Concept> X getOrBuildConcept(VertexElement v, Function<VertexElement, X> conceptBuilder){
         ConceptId conceptId = ConceptId.of(v.id().toString());
 
         if(!graknGraph.txCache().isConceptCached(conceptId)){
@@ -98,7 +98,7 @@ final class ElementFactory {
 
     // -------------------------------------------- Building Relations
     RelationImpl buildRelation(VertexElement vertex, RelationType type){
-        return getOrBuildConcept(vertex, (v) -> new RelationImpl(v, type));
+        return getOrBuildConcept(vertex, (v) -> new RelationImpl(new RelationReified(v, type)));
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
@@ -149,10 +149,10 @@ final class ElementFactory {
 
         ConceptId conceptId = ConceptId.of(vertexElement.id().getValue());
         if(!graknGraph.txCache().isConceptCached(conceptId)){
-            ConceptImpl concept;
+            Concept concept;
             switch (type) {
                 case RELATION:
-                    concept = new RelationImpl(vertexElement);
+                    concept = new RelationImpl(new RelationReified(vertexElement));
                     break;
                 case TYPE:
                     concept = new TypeImpl<>(vertexElement);
