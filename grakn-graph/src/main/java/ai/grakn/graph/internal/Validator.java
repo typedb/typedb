@@ -18,10 +18,16 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.Thing;
 import ai.grakn.util.CommonUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * <p>
@@ -64,7 +70,7 @@ class Validator {
             graknGraph.txCache().getModifiedEntities().forEach(this::validateInstance);
 
             //Validate RoleTypes
-            graknGraph.txCache().getModifiedRoles().forEach(this::validateRoleType);
+            graknGraph.txCache().getModifiedRoles().forEach(this::validateRole);
             //Validate Role Players
             graknGraph.txCache().getModifiedCastings().forEach(this::validateCasting);
 
@@ -93,7 +99,7 @@ class Validator {
      * @param graph the graph to query against
      * @param rule the rule which needs to be validated
      */
-    private void validateRule(AbstractGraknGraph<?> graph, RuleImpl rule){
+    private void validateRule(AbstractGraknGraph<?> graph, Rule rule){
         errorsFound.addAll(ValidateGlobalRules.validateRuleOntologyElementsExist(graph, rule));
     }
 
@@ -101,10 +107,14 @@ class Validator {
      * Validation rules exclusive to relations
      * @param relation The relation to validate
      */
-    private void validateRelation(AbstractGraknGraph<?> graph, RelationImpl relation){
+    private void validateRelation(AbstractGraknGraph<?> graph, Relation relation){
         validateInstance(relation);
-        ValidateGlobalRules.validateRelationshipStructure(relation).ifPresent(errorsFound::add);
-        ValidateGlobalRules.validateRelationIsUnique(graph, relation).ifPresent(errorsFound::add);
+        Optional<RelationReified> relationReified = ((RelationImpl) relation).reified();
+        //TODO: We need new validation mechanisms for non-reified relations
+        if(relationReified.isPresent()) {
+            ValidateGlobalRules.validateRelationshipStructure(relationReified.get()).ifPresent(errorsFound::add);
+            ValidateGlobalRules.validateRelationIsUnique(graph, relationReified.get()).ifPresent(errorsFound::add);
+        }
     }
 
     /**
@@ -116,18 +126,18 @@ class Validator {
     }
 
     /**
-     * Validation rules exclusive to role types
-     * @param roleType The roleType to validate
+     * Validation rules exclusive to role
+     * @param role The {@link Role} to validate
      */
-    private void validateRoleType(RoleImpl roleType){
-        ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(roleType).ifPresent(errorsFound::add);
+    private void validateRole(Role role){
+        ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(role).ifPresent(errorsFound::add);
     }
 
     /**
      * Validation rules exclusive to relation types
      * @param relationType The relationTypes to validate
      */
-    private void validateRelationType(RelationTypeImpl relationType){
+    private void validateRelationType(RelationType relationType){
         ValidateGlobalRules.validateHasMinimumRoles(relationType).ifPresent(errorsFound::add);
         errorsFound.addAll(ValidateGlobalRules.validateRelationTypesToRolesSchema(relationType));
     }
@@ -136,7 +146,7 @@ class Validator {
      * Validation rules exclusive to instances
      * @param instance The instance to validate
      */
-    private void validateInstance(ThingImpl instance) {
+    private void validateInstance(Thing instance) {
         ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(instance).ifPresent(errorsFound::add);
     }
 }

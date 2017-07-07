@@ -280,7 +280,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
 
             //Modify the graph once we have checked no loop occurs
             deleteEdge(Direction.OUT, Schema.EdgeLabel.SUB);
-            putEdge(newSuperType, Schema.EdgeLabel.SUB);
+            putEdge(ConceptVertex.from(newSuperType), Schema.EdgeLabel.SUB);
 
             //Update the sub types of the old super type
             if(oldSuperType != null) {
@@ -293,7 +293,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
             ((OntologyConceptImpl<T>) newSuperType).addCachedDirectSubType(getThis());
 
             //Track any existing data if there is some
-            trackSuperChange();
+            trackRolePlayers();
         }
 
         return getThis();
@@ -302,7 +302,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
     /**
      * Method which performs tasks needed in order to track super changes properly
      */
-    abstract void trackSuperChange();
+    abstract void trackRolePlayers();
 
     private boolean superLoops(){
         //Check For Loop
@@ -345,5 +345,9 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
         String message = super.innerToString();
         message = message + " - Label [" + getLabel() + "] - Abstract [" + isAbstract() + "] ";
         return message;
+    }
+
+    public static OntologyConceptImpl from(OntologyConcept ontologyConcept){
+        return (OntologyConceptImpl) ontologyConcept;
     }
 }
