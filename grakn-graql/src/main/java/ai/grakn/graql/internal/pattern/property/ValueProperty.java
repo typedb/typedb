@@ -67,7 +67,7 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.value(start, predicate));
+        return ImmutableSet.of(EquivalentFragmentSets.value(this, start, predicate));
     }
 
     @Override

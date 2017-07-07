@@ -20,13 +20,14 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 class OutSubFragment extends AbstractFragment {
 
-    OutSubFragment(Var start, Var end) {
-        super(start, end);
+    OutSubFragment(VarProperty varProperty, Var start, Var end) {
+        super(varProperty, start, end);
     }
 
     @Override

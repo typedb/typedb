@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -91,6 +92,11 @@ public interface Fragment {
      * Get all variable names in the fragment - the start and end (if present)
      */
     Set<Var> getVariableNames();
+
+    /**
+     * Get the corresponding property
+     */
+    VarProperty getVarProperty();
 
     /**
      * A starting fragment is a fragment that can start a traversal.

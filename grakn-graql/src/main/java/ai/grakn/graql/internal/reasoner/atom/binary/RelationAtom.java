@@ -35,13 +35,14 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
+import ai.grakn.graql.internal.reasoner.query.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -104,6 +105,11 @@ public class RelationAtom extends IsaAtom {
     }
 
     @Override
+    public VarProperty getVarProperty() {
+        return getPattern().asVar().getProperty(RelationProperty.class).orElse(null);
+    }
+
+    @Override
     public String toString(){
         String relationString = (isUserDefinedName()? getVarName() + " ": "") +
                 (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") +
@@ -135,7 +141,7 @@ public class RelationAtom extends IsaAtom {
      * @param rolePlayerMappings list of rolePlayer-roleType mappings
      * @return corresponding {@link VarPatternAdmin}
      */
-    private static VarPatternAdmin constructRelationVar(Var varName, Var typeVariable, List<Pair<Var, VarPattern>> rolePlayerMappings) {
+    private static VarPatternAdmin constructRelationVarPattern(Var varName, Var typeVariable, List<Pair<Var, VarPattern>> rolePlayerMappings) {
         VarPattern var = !varName.getValue().isEmpty()? varName : Graql.var();
         for (Pair<Var, VarPattern> mapping : rolePlayerMappings) {
             Var rp = mapping.getKey();
@@ -217,7 +223,7 @@ public class RelationAtom extends IsaAtom {
     @Override
     public int computePriority(Set<Var> subbedVars) {
         int priority = super.computePriority(subbedVars);
-        priority += ResolutionStrategy.IS_RELATION_ATOM;
+        priority += ResolutionPlan.IS_RELATION_ATOM;
         return priority;
     }
 
@@ -554,7 +560,7 @@ public class RelationAtom extends IsaAtom {
                     rolePlayerMappings.add(new Pair<>(varName, metaRoleVar));
                 });
 
-        PatternAdmin newPattern = constructRelationVar(getVarName(), getPredicateVariable(), rolePlayerMappings);
+        PatternAdmin newPattern = constructRelationVarPattern(getVarName(), getPredicateVariable(), rolePlayerMappings);
         return new RelationAtom(newPattern.asVar(), getPredicateVariable(), getPredicate(), getParentQuery());
     }
 

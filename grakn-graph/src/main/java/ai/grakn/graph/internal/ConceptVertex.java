@@ -14,23 +14,30 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.graql.internal.gremlin.sets;
+package ai.grakn.graph.internal;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.concept.Concept;
 
 /**
- * @author Felix Chapman
+ * <p>
+ *     A {@link Concept} represented as a {@link VertexElement}
+ * </p>
+ *
+ * <p>
+ *     This class is helper used to ensure that any concept which needs to contain a {@link VertexElement} can handle it.
+ *     Either by returning an existing one r going through some reification procedure to return a new one.
+ * </p>
+ *
+ * @author fppt
+ *
  */
-class PlaysFragmentSet extends EquivalentFragmentSet {
+interface ConceptVertex {
 
-    PlaysFragmentSet(VarProperty varProperty, Var type, Var roleType, boolean required) {
-        super(Fragments.outPlays(varProperty, type, roleType, required),
-                Fragments.inPlays(varProperty, roleType, type, required));
+    VertexElement vertex();
+
+    static ConceptVertex from(Concept concept){
+        return (ConceptVertex) concept;
     }
 }

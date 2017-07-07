@@ -159,4 +159,8 @@ class ResourceImpl<D> extends ThingImpl<Resource<D>, ResourceType<D>> implements
     public String innerToString(){
         return super.innerToString() + "- Value [" + getValue() + "] ";
     }
+
+    public static ResourceImpl from(Resource resource){
+        return (ResourceImpl) resource;
+    }
 }

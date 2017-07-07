@@ -88,7 +88,7 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
      * @return The {@link Rule} itself
      */
     Rule addHypothesis(OntologyConcept ontologyConcept) {
-        putEdge(ontologyConcept, Schema.EdgeLabel.HYPOTHESIS);
+        putEdge(ConceptVertex.from(ontologyConcept), Schema.EdgeLabel.HYPOTHESIS);
         return getThis();
     }
 
@@ -98,7 +98,7 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
      * @return The {@link Rule} itself
      */
     Rule addConclusion(OntologyConcept ontologyConcept) {
-        putEdge(ontologyConcept, Schema.EdgeLabel.CONCLUSION);
+        putEdge(ConceptVertex.from(ontologyConcept), Schema.EdgeLabel.CONCLUSION);
         return getThis();
     }
 
@@ -127,7 +127,11 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
     /**
      * Generate the internal hash in order to perform a faster lookups and ensure rules are unique
      */
-    public static String generateRuleIndex(RuleType type, Pattern when, Pattern then){
+    static String generateRuleIndex(RuleType type, Pattern when, Pattern then){
         return "RuleType_" + type.getLabel().getValue() + "_LHS:" + when.hashCode() + "_RHS:" + then.hashCode();
+    }
+
+    public static RuleImpl from(Rule rule){
+        return (RuleImpl) rule;
     }
 }
