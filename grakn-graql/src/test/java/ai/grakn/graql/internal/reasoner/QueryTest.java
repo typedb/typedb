@@ -38,6 +38,7 @@ import ai.grakn.test.GraknTestSetup;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Set;
@@ -91,6 +92,8 @@ public class QueryTest {
         queryEquivalence(query, query2, true);
     }
 
+    //TODO
+    @Ignore
     @Test
     public void testAlphaEquivalence_chainTreeAndLoopStructure() {
         GraknGraph graph = geoGraph.graph();
