@@ -33,6 +33,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * A priority queue of incoming edges for each strongly connected component that we haven't chosen
+ * an incoming edge for yet.
+ * *
+ *
  * @param <V> the type of the nodes stored
  * @author Sam Thomson
  * @author Jason Liu

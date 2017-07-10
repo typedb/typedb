@@ -28,6 +28,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * An arborescence is a directed graph in which, for the root and any other vertex,
+ * there is exactly one directed path between them.
+ * (https://en.wikipedia.org/wiki/Arborescence_(graph_theory))
+ *
  * @param <V> the type of the nodes
  * @author Jason Liu
  */
@@ -39,22 +43,22 @@ public class Arborescence<V> {
      */
     private final ImmutableMap<V, V> parents;
 
-    private V root = null;
+    private final V root;
 
-    private Arborescence(ImmutableMap<V, V> parents) {
+    private Arborescence(ImmutableMap<V, V> parents, V root) {
         this.parents = parents;
+        this.root = root;
     }
 
     public static <T> Arborescence<T> of(ImmutableMap<T, T> parents) {
-        Arborescence<T> arborescence = new Arborescence<>(parents);
         if (parents != null && !parents.isEmpty()) {
             HashSet<T> allParents = Sets.newHashSet(parents.values());
             allParents.removeAll(parents.keySet());
-            if (!allParents.isEmpty()) {
-                arborescence.root = allParents.iterator().next();
+            if (allParents.size() == 1) {
+                return new Arborescence<>(parents, allParents.iterator().next());
             }
         }
-        return arborescence;
+        return new Arborescence<>(parents, null);
     }
 
     public static <T> Arborescence<T> empty() {
