@@ -54,6 +54,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
     private final Optional<Var> roleType;
     private final Optional<Set<Label>> roleTypeLabels;
     private final Optional<Set<Label>> relationTypeLabels;
+    private final VarProperty varProperty;
 
     ShortcutFragmentSet(VarProperty varProperty,
             Var relation, Var edge, Var rolePlayer, Optional<Var> roleType,
@@ -68,6 +69,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         this.roleType = roleType;
         this.roleTypeLabels = roleTypeLabels;
         this.relationTypeLabels = relationTypeLabels;
+        this.varProperty = varProperty;
     }
 
     /**
@@ -170,7 +172,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         Set<Label> newRoleLabels = subTypes.stream().map(OntologyConcept::getLabel).collect(toSet());
 
-        return new ShortcutFragmentSet(null,
+        return new ShortcutFragmentSet(varProperty,
                 relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleLabels), relationTypeLabels
         );
     }
@@ -187,7 +189,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         Set<Label> newRelationLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
 
-        return new ShortcutFragmentSet(null,
+        return new ShortcutFragmentSet(varProperty,
                 relation, edge, rolePlayer, roleType, roleTypeLabels, Optional.of(newRelationLabels)
         );
     }
