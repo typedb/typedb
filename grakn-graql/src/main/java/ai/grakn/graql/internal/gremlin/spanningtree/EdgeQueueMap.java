@@ -23,7 +23,6 @@ import ai.grakn.graql.internal.gremlin.spanningtree.datastructure.Partition;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Pair;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -31,6 +30,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * A priority queue of incoming edges for each strongly connected component that we haven't chosen
@@ -58,7 +58,7 @@ class EdgeQueueMap<V> {
         }
 
         public static <T> EdgeQueue<T> create(T component, Partition<T> partition) {
-            return new EdgeQueue<T>(component, partition);
+            return new EdgeQueue<>(component, partition);
         }
 
         public void addEdge(ExclusiveEdge<V> exclusiveEdge) {
@@ -75,7 +75,7 @@ class EdgeQueueMap<V> {
          * Always breaks ties in favor of edges in bestArborescence
          */
         public Optional<ExclusiveEdge<V>> popBestEdge(Arborescence<V> bestArborescence) {
-            if (edges.isEmpty()) return Optional.absent();
+            if (edges.isEmpty()) return Optional.empty();
             final LinkedList<ExclusiveEdge<V>> candidates = Lists.newLinkedList();
             do {
                 candidates.addFirst(edges.poll());
@@ -86,9 +86,7 @@ class EdgeQueueMap<V> {
             // it will be first
             final ExclusiveEdge<V> bestEdge = candidates.removeFirst();
 //            edges.addAll(candidates); // add back all the edges we looked at but didn't pick
-            for (ExclusiveEdge<V> c : candidates) {
-                edges.add(c);
-            }
+            edges.addAll(candidates);
             return Optional.of(bestEdge);
         }
     }
@@ -111,7 +109,7 @@ class EdgeQueueMap<V> {
      * Always breaks ties in favor of edges in best
      */
     public Optional<ExclusiveEdge<V>> popBestEdge(V component, Arborescence<V> best) {
-        if (!queueByDestination.containsKey(component)) return Optional.absent();
+        if (!queueByDestination.containsKey(component)) return Optional.empty();
         return queueByDestination.get(component).popBestEdge(best);
     }
 

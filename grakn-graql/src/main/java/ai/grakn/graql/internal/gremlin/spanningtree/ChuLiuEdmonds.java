@@ -23,7 +23,6 @@ import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Pair;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -33,12 +32,14 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
 import static com.google.common.base.Predicates.and;
 import static com.google.common.base.Predicates.not;
+
 
 /**
  * Chu-Liu-Edmonds' algorithm for finding a maximum branching in a complete, directed graph in O(n^2) time.
@@ -172,7 +173,7 @@ public class ChuLiuEdmonds {
             if (!weaklyConnected.sameComponent(edge.source, edge.destination)) {
                 // Edge connects two different WCCs. Including it won't create a new cycle
                 weaklyConnected.merge(edge.source, edge.destination);
-                return Optional.absent();
+                return Optional.empty();
             } else {
                 // Edge is contained within one WCC. Including it will create a new cycle.
                 return Optional.of(merge(wEdge, unseenIncomingEdges));

@@ -18,13 +18,13 @@
 
 package ai.grakn.graql.internal.gremlin.spanningtree.datastructure;
 
-import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.collect.Iterators;
 
 import java.util.AbstractQueue;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * A PriorityQueue built on top of a FibonacciHeap
@@ -35,12 +35,9 @@ import java.util.Iterator;
  */
 public class FibonacciQueue<E> extends AbstractQueue<E> {
     private final FibonacciHeap<E, E> heap;
-    private final Function<FibonacciHeap<E, ?>.Entry, E> getValue = new Function<FibonacciHeap<E, ?>.Entry, E>() {
-        @Override
-        public E apply(FibonacciHeap<E, ?>.Entry input) {
-            assert input != null;
-            return input.value;
-        }
+    private final Function<FibonacciHeap<E, ?>.Entry, E> getValue = input -> {
+        assert input != null;
+        return input.value;
     };
 
     private FibonacciQueue(FibonacciHeap<E, E> heap) {
@@ -48,11 +45,11 @@ public class FibonacciQueue<E> extends AbstractQueue<E> {
     }
 
     public static <C> FibonacciQueue<C> create(Comparator<? super C> comparator) {
-        return new FibonacciQueue<C>(FibonacciHeap.create(comparator));
+        return new FibonacciQueue<>(FibonacciHeap.create(comparator));
     }
 
     public static <C extends Comparable> FibonacciQueue<C> create() {
-        return new FibonacciQueue<C>(FibonacciHeap.create());
+        return new FibonacciQueue<>(FibonacciHeap.create());
     }
 
     public Comparator<? super E> comparator() {
@@ -62,7 +59,7 @@ public class FibonacciQueue<E> extends AbstractQueue<E> {
     @Override
     public E peek() {
         Optional<FibonacciHeap<E, E>.Entry> first = heap.peekOption();
-        return first.isPresent() ? first.get().value : null;
+        return first.map(entry -> entry.value).orElse(null);
     }
 
     @Override
@@ -72,7 +69,7 @@ public class FibonacciQueue<E> extends AbstractQueue<E> {
 
     @Override
     public E poll() {
-        return heap.pollOption().orNull();
+        return heap.pollOption().orElse(null);
     }
 
     @Override
@@ -82,6 +79,6 @@ public class FibonacciQueue<E> extends AbstractQueue<E> {
 
     @Override
     public Iterator<E> iterator() {
-        return Iterators.transform(heap.iterator(), getValue);
+        return Iterators.transform(heap.iterator(), getValue::apply);
     }
 }

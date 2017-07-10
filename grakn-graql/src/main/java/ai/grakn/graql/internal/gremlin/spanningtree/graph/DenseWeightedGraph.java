@@ -57,7 +57,7 @@ public class DenseWeightedGraph<V> extends WeightedGraph<V> {
         for (int i = 0; i < nodeList.size(); i++) {
             indexOf.put(nodeList.get(i), i);
         }
-        return new DenseWeightedGraph<V>(nodeList, indexOf, weights);
+        return new DenseWeightedGraph<>(nodeList, indexOf, weights);
     }
 
     public static DenseWeightedGraph<Integer> from(double[][] weights) {

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.spanningtree.graph;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
@@ -52,12 +53,12 @@ public class DirectedEdge<V> {
         }
 
         public DirectedEdge<V> to(V destination) {
-            return new DirectedEdge<V>(source, destination);
+            return new DirectedEdge<>(source, destination);
         }
     }
 
     public static <T> EdgeBuilder<T> from(T source) {
-        return new EdgeBuilder<T>(source);
+        return new EdgeBuilder<>(source);
     }
 
     @Override
@@ -67,7 +68,7 @@ public class DirectedEdge<V> {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("source", source)
                 .add("destination", destination).toString();
     }
@@ -84,12 +85,9 @@ public class DirectedEdge<V> {
     //// Edge Predicates
 
     public static <T> Predicate<DirectedEdge<T>> hasDestination(final T node) {
-        return new Predicate<DirectedEdge<T>>() {
-            @Override
-            public boolean apply(DirectedEdge<T> input) {
-                assert input != null;
-                return input.destination.equals(node);
-            }
+        return input -> {
+            assert input != null;
+            return input.destination.equals(node);
         };
     }
 
@@ -99,32 +97,21 @@ public class DirectedEdge<V> {
             requiredSourceByDestinationBuilder.put(edge.destination, edge.source);
         }
         final Map<T, T> requiredSourceByDest = requiredSourceByDestinationBuilder.build();
-        return new Predicate<DirectedEdge<T>>() {
-            @Override
-            public boolean apply(DirectedEdge<T> input) {
-                assert input != null;
-                return (requiredSourceByDest.containsKey(input.destination) &&
-                        !input.source.equals(requiredSourceByDest.get(input.destination)));
-            }
+        return input -> {
+            assert input != null;
+            return (requiredSourceByDest.containsKey(input.destination) &&
+                    !input.source.equals(requiredSourceByDest.get(input.destination)));
         };
     }
 
     public static <T> Predicate<DirectedEdge<T>> isAutoCycle() {
-        return new Predicate<DirectedEdge<T>>() {
-            @Override
-            public boolean apply(DirectedEdge<T> input) {
-                assert input != null;
-                return input.source.equals(input.destination);
-            }
+        return input -> {
+            assert input != null;
+            return input.source.equals(input.destination);
         };
     }
 
     public static <T> Predicate<DirectedEdge<T>> isIn(final Set<DirectedEdge<T>> banned) {
-        return new Predicate<DirectedEdge<T>>() {
-            @Override
-            public boolean apply(DirectedEdge<T> input) {
-                return banned.contains(input);
-            }
-        };
+        return input -> banned.contains(input);
     }
 }

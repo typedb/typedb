@@ -49,7 +49,7 @@ public class SparseWeightedGraph<V> extends WeightedGraph<V> {
             }
             incomingEdges.get(edge.val.destination).put(edge.val.source, edge);
         }
-        return new SparseWeightedGraph<T>(ImmutableSet.copyOf(nodes), incomingEdges);
+        return new SparseWeightedGraph<>(ImmutableSet.copyOf(nodes), incomingEdges);
     }
 
     public static <T> SparseWeightedGraph<T> from(Iterable<Weighted<DirectedEdge<T>>> edges) {

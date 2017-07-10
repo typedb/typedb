@@ -18,15 +18,15 @@
 
 package ai.grakn.graql.internal.gremlin.spanningtree.datastructure;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Optional;
 
 import static com.google.common.collect.Iterators.concat;
 import static com.google.common.collect.Iterators.singletonIterator;
@@ -53,15 +53,15 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
     // the largest degree of any root list entry is guaranteed to be <= log_phi(MAX_CAPACITY) = 45
     private final static int MAX_DEGREE = 45;
 
-    private Optional<Entry> oMinEntry = Optional.absent();
+    private Optional<Entry> oMinEntry = Optional.empty();
     private int size = 0;
     private final Comparator<? super P> comparator;
 
     class Entry {
         public final V value;
         private P priority;
-        private Optional<Entry> oParent = Optional.absent();
-        private Optional<Entry> oFirstChild = Optional.absent();
+        private Optional<Entry> oParent = Optional.empty();
+        private Optional<Entry> oFirstChild = Optional.empty();
         private Entry previous;
         private Entry next;
         private int degree = 0;
@@ -82,7 +82,7 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
     }
 
     public static <T, C> FibonacciHeap<T, C> create(Comparator<? super C> comparator) {
-        return new FibonacciHeap<T, C>(comparator);
+        return new FibonacciHeap<>(comparator);
     }
 
     /**
@@ -105,7 +105,7 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      * Runtime: O(1)
      */
     public void clear() {
-        oMinEntry = Optional.absent();
+        oMinEntry = Optional.empty();
         size = 0;
     }
 
@@ -154,7 +154,7 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
     public Optional<Entry> add(V value, P priority) {
         Preconditions.checkNotNull(value);
         Preconditions.checkNotNull(priority);
-        if (size >= MAX_CAPACITY) return Optional.absent();
+        if (size >= MAX_CAPACITY) return Optional.empty();
         final Entry result = new Entry(value, priority);
         // add as a root
         oMinEntry = mergeLists(Optional.of(result), oMinEntry);
@@ -176,18 +176,18 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      * Runtime: O(log n) amortized
      */
     public Optional<V> pollOption() {
-        if (!oMinEntry.isPresent()) return Optional.absent();
+        if (!oMinEntry.isPresent()) return Optional.empty();
         final Entry minEntry = oMinEntry.get();
         // move minEntry's children to the root list
         if (minEntry.oFirstChild.isPresent()) {
             for (Entry childOfMin : getCycle(minEntry.oFirstChild.get())) {
-                childOfMin.oParent = Optional.absent();
+                childOfMin.oParent = Optional.empty();
             }
             mergeLists(oMinEntry, minEntry.oFirstChild);
         }
         // remove minEntry from root list
         if (size == 1) {
-            oMinEntry = Optional.absent();
+            oMinEntry = Optional.empty();
         } else {
             final Entry next = minEntry.next;
             unlinkFromNeighbors(minEntry);
@@ -231,12 +231,11 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      * Depth-first iteration
      */
     private Iterator<Entry> siblingsAndBelow(Optional<Entry> oEntry) {
-        if (!oEntry.isPresent()) return Iterators.emptyIterator();
-        return concat(transform(getCycle(oEntry.get()).iterator(),
+        return oEntry.map(entry1 -> concat(transform(getCycle(entry1).iterator(),
                 entry -> {
                     assert entry != null;
                     return concat(singletonIterator(entry), siblingsAndBelow(entry.oFirstChild));
-                }));
+                }))).orElse(Collections.emptyIterator());
     }
 
     private LinkedList<Entry> getCycle(Entry start) {
@@ -281,12 +280,12 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
         assert parent.oFirstChild.isPresent();
         if (parent.oFirstChild.get().equals(entry)) {
             if (parent.degree == 0) {
-                parent.oFirstChild = Optional.absent();
+                parent.oFirstChild = Optional.empty();
             } else {
                 parent.oFirstChild = Optional.of(entry.next);
             }
         }
-        entry.oParent = Optional.absent();
+        entry.oParent = Optional.empty();
         unlinkFromNeighbors(entry);
         // add to root list
         mergeLists(Optional.of(entry), oMinEntry);

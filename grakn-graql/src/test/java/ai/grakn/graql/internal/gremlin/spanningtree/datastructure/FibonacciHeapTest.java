@@ -20,12 +20,12 @@
 */
 package ai.grakn.graql.internal.gremlin.spanningtree.datastructure;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
