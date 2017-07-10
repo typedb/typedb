@@ -74,7 +74,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * A query can use the role-type labels on a shortcut edge when the following criteria are met:
      * <ol>
      *     <li>There is a {@link ShortcutFragmentSet} {@code $r-[shortcut:$e role:$R ...]->$p}
-     *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo]} that does not refer to the meta {@code role}
+     *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo]}
      * </ol>
      *
      * When these criteria are met, the {@link ShortcutFragmentSet} can be filtered to the indirect sub-types of
@@ -82,7 +82,9 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * <p>
      * {@code $r-[shortcut:$e roles:foo ...]->$p}
      * <p>
-     *
+     * In the special case where the role is specified as the meta {@code role}, no labels are added and the role
+     * variable is detached from the shortcut edge.
+     * <p>
      * However, we must still retain the {@link LabelFragmentSet} because it is possible it is selected as a result or
      * referred to elsewhere in the query.
      */
@@ -98,14 +100,18 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
             if (roleLabel == null) continue;
 
-            if (!roleLabel.label().equals(Schema.MetaSchema.ROLE.getLabel())) {
+            ShortcutFragmentSet newShortcut;
+
+            if (roleLabel.label().equals(Schema.MetaSchema.ROLE.getLabel())) {
+                newShortcut = shortcut.removeRoleVar();
+            } else {
                 Role role = graph.getOntologyConcept(roleLabel.label());
-
-                fragmentSets.remove(shortcut);
-                fragmentSets.add(shortcut.substituteRoleTypeLabel(graph, role));
-
-                return true;
+                newShortcut = shortcut.substituteRoleTypeLabel(graph, role);
             }
+
+            fragmentSets.remove(shortcut);
+            fragmentSets.add(newShortcut);
+            return true;
         }
 
         return false;
@@ -192,5 +198,14 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         return new ShortcutFragmentSet(
                 relation, edge, rolePlayer, role, roleTypeLabels, Optional.of(newRelationLabels)
         );
+    }
+
+    /**
+     * Remove any specified role variable
+     */
+    private ShortcutFragmentSet removeRoleVar() {
+        Preconditions.checkState(role.isPresent());
+        return new ShortcutFragmentSet(
+                relation, edge, rolePlayer, Optional.empty(), roleTypeLabels, relationTypeLabels);
     }
 }
