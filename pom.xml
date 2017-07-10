@@ -396,7 +396,7 @@
                     </systemProperties>
                     <!-- Added this because of crash during build. We have tests that can't run concurrently. -->
                     <forkCount>1</forkCount>
-                    <reuseForks>true</reuseForks>
+                    <reuseForks>false</reuseForks>
                     <argLine>-Xmx1024m</argLine>
                 </configuration>
             </plugin>
