@@ -81,6 +81,16 @@
             <version>${jackson.version}</version>
         </dependency>
         <dependency>
+            <artifactId>jackson-databind</artifactId>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>${netty-all.version}</version>
+        </dependency>
+        <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-graph</artifactId>
             <version>${project.version}</version>
