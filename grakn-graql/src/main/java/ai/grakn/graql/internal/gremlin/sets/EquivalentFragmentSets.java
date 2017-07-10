@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.internal.gremlin.sets.LabelFragmentSet.applyRedundantLabelEliminationOptimisation;
 import static ai.grakn.graql.internal.gremlin.sets.ResourceIndexFragmentSet.applyResourceIndexOptimisation;
 import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutRelationTypeOptimisation;
-import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutRoleTypeOptimisation;
+import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutRoleOptimisation;
 
 /**
  * Factory class for producing instances of {@link EquivalentFragmentSet}.
@@ -62,7 +62,7 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a shortcut edge between two role-players.
      */
-    public static EquivalentFragmentSet shortcut(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, Optional<Var> roleType) {
+    public static EquivalentFragmentSet shortcut(@Nullable VarProperty varProperty, Var relation, Var edge, Var rolePlayer, Optional<Var> roleType) {
         return new ShortcutFragmentSet(varProperty, relation, edge, rolePlayer, roleType, Optional.empty(), Optional.empty());
     }
 
@@ -132,7 +132,7 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable representing a type with a particular label.
      */
-    public static EquivalentFragmentSet label(VarProperty varProperty, Var type, Label label) {
+    public static EquivalentFragmentSet label(@Nullable VarProperty varProperty, Var type, Label label) {
         return new LabelFragmentSet(varProperty, type, label);
     }
 
@@ -164,7 +164,7 @@ public class EquivalentFragmentSets {
         // TODO: Create a real interface for these when there are more of them
         ImmutableList<Supplier<Boolean>> optimisations = ImmutableList.of(
                 () -> applyResourceIndexOptimisation(fragmentSets, graph),
-                () -> applyShortcutRoleTypeOptimisation(fragmentSets, graph),
+                () -> applyShortcutRoleOptimisation(fragmentSets, graph),
                 () -> applyShortcutRelationTypeOptimisation(fragmentSets, graph),
                 () -> applyRedundantLabelEliminationOptimisation(fragmentSets, graph)
         );

@@ -34,6 +34,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.Set;
 
@@ -54,16 +55,16 @@ public class Fragments {
     private Fragments() {
     }
 
-    public static Fragment inShortcut(VarProperty varProperty,
-            Var rolePlayer, Var edge, Var relation, Optional<Var> roleType,
-            Optional<Set<Label>> roleTypeLabels, Optional<Set<Label>> relationTypeLabels) {
-        return new InShortcutFragment(varProperty, rolePlayer, edge, relation, roleType, roleTypeLabels, relationTypeLabels);
+    public static Fragment inShortcut(@Nullable VarProperty varProperty,
+                                      Var rolePlayer, Var edge, Var relation, Optional<Var> role,
+                                      Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
+        return new InShortcutFragment(varProperty, rolePlayer, edge, relation, role, roleLabels, relationTypeLabels);
     }
 
-    public static Fragment outShortcut(VarProperty varProperty,
-            Var relation, Var edge, Var rolePlayer, Optional<Var> roleType,
-            Optional<Set<Label>> roleTypeLabels, Optional<Set<Label>> relationTypeLabels) {
-        return new OutShortcutFragment(varProperty, relation, edge, rolePlayer, roleType, roleTypeLabels, relationTypeLabels);
+    public static Fragment outShortcut(@Nullable VarProperty varProperty,
+                                       Var relation, Var edge, Var rolePlayer, Optional<Var> role,
+                                       Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
+        return new OutShortcutFragment(varProperty, relation, edge, rolePlayer, role, roleLabels, relationTypeLabels);
     }
 
     public static Fragment inSub(VarProperty varProperty, Var start, Var end) {
