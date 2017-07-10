@@ -98,20 +98,20 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
             @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.typeLabelOf(roleVar.get(), fragmentSets);
 
-            if (roleLabel == null) continue;
+            if (roleLabel != null) {
+                ShortcutFragmentSet newShortcut;
 
-            ShortcutFragmentSet newShortcut;
+                if (roleLabel.label().equals(Schema.MetaSchema.ROLE.getLabel())) {
+                    newShortcut = shortcut.removeRoleVar();
+                } else {
+                    Role role = graph.getOntologyConcept(roleLabel.label());
+                    newShortcut = shortcut.substituteRoleTypeLabel(graph, role);
+                }
 
-            if (roleLabel.label().equals(Schema.MetaSchema.ROLE.getLabel())) {
-                newShortcut = shortcut.removeRoleVar();
-            } else {
-                Role role = graph.getOntologyConcept(roleLabel.label());
-                newShortcut = shortcut.substituteRoleTypeLabel(graph, role);
+                fragmentSets.remove(shortcut);
+                fragmentSets.add(newShortcut);
+                return true;
             }
-
-            fragmentSets.remove(shortcut);
-            fragmentSets.add(newShortcut);
-            return true;
         }
 
         return false;
