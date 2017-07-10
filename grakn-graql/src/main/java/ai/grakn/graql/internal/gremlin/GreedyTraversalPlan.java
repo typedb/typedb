@@ -123,16 +123,16 @@ public class GreedyTraversalPlan {
                 greedyTraversal(plan, arborescence, allNodes, edges);
             }
 
-            AddUnvisitedNodeFragments(plan, allNodes, connectedNodes);
+            addUnvisitedNodeFragments(plan, allNodes, connectedNodes);
         });
 
-        AddUnvisitedNodeFragments(plan, allNodes, allNodes.values());
+        addUnvisitedNodeFragments(plan, allNodes, allNodes.values());
 
         LOG.trace("Greedy Plan = " + plan);
         return plan;
     }
 
-    private static void AddUnvisitedNodeFragments(List<Fragment> plan,
+    private static void addUnvisitedNodeFragments(List<Fragment> plan,
                                                   Map<String, Node> allNodes,
                                                   Collection<Node> connectedNodes) {
         Set<Node> nodeWithFragment = connectedNodes.stream()
@@ -175,7 +175,7 @@ public class GreedyTraversalPlan {
 
     private static Collection<Set<Fragment>> getConnectedFragmentSets(ConjunctionQuery query,
                                                                       Map<String, Node> allNodes) {
-        Map<Integer, Set<String>> varNameSetMap = new HashMap<>();
+        Map<Integer, Set<Var>> varSetMap = new HashMap<>();
         Map<Integer, Set<Fragment>> fragmentSetMap = new HashMap<>();
         final int[] index = {0};
         query.getEquivalentFragmentSets().stream().flatMap(EquivalentFragmentSet::stream).forEach(fragment -> {
@@ -195,11 +195,9 @@ public class GreedyTraversalPlan {
                 }
             }
 
-            Set<String> fragmentVarNameSet = fragment.getVariableNames().stream()
-                    .map(Var::getValue).collect(Collectors.toSet());
-
+            Set<Var> fragmentVarNameSet = Sets.newHashSet(fragment.getVariableNames());
             List<Integer> setsWithVarInCommon = new ArrayList<>();
-            varNameSetMap.forEach((setIndex, varNameSet) -> {
+            varSetMap.forEach((setIndex, varNameSet) -> {
                 if (!Collections.disjoint(varNameSet, fragmentVarNameSet)) {
                     setsWithVarInCommon.add(setIndex);
                 }
@@ -207,16 +205,16 @@ public class GreedyTraversalPlan {
 
             if (setsWithVarInCommon.isEmpty()) {
                 index[0] += 1;
-                varNameSetMap.put(index[0], fragmentVarNameSet);
+                varSetMap.put(index[0], fragmentVarNameSet);
                 fragmentSetMap.put(index[0], Sets.newHashSet(fragment));
             } else {
                 Iterator<Integer> iterator = setsWithVarInCommon.iterator();
                 Integer firstSet = iterator.next();
-                varNameSetMap.get(firstSet).addAll(fragmentVarNameSet);
+                varSetMap.get(firstSet).addAll(fragmentVarNameSet);
                 fragmentSetMap.get(firstSet).add(fragment);
                 while (iterator.hasNext()) {
                     Integer nextSet = iterator.next();
-                    varNameSetMap.get(firstSet).addAll(varNameSetMap.remove(nextSet));
+                    varSetMap.get(firstSet).addAll(varSetMap.remove(nextSet));
                     fragmentSetMap.get(firstSet).addAll(fragmentSetMap.remove(nextSet));
                 }
             }
