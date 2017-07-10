@@ -91,10 +91,6 @@ public class RedisCountStorage {
     private <X> X contactRedis(Function<Jedis, X> function){
         try(Jedis jedis = jedisPool.getResource()){
             return function.apply(jedis);
-        } catch (Exception e) {
-            LOG.error("All resources are taken in the jedis pool waiters: {}, idle: {}, active: {}",
-                    jedisPool.getNumWaiters(), jedisPool.getNumIdle(), jedisPool.getNumActive());
-            throw e;
         }
     }
 
@@ -106,9 +102,5 @@ public class RedisCountStorage {
     }
     public static String getKeyNumShards(String keyspace, ConceptId conceptId){
         return "NS_" + keyspace + "_" + conceptId.getValue();
-    }
-
-    public Pool<Jedis> getJedisPool() {
-        return jedisPool;
     }
 }

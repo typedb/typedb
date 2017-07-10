@@ -20,7 +20,6 @@ package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
@@ -69,21 +68,6 @@ public abstract class BackgroundTask {
         this.engineConfig = engineConfig;
         this.redis = redis;
         this.lockProvider = lockProvider;
-        this.metricRegistry = metricRegistry;
-        this.factory = factory;
-    }
-
-    // TODO Get rid of this constructor and fix the tests
-    public final void initialize(
-            Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration,
-            TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig, RedisCountStorage redis,
-            EngineGraknGraphFactory factory, MetricRegistry metricRegistry)  {
-        this.configuration = configuration;
-        this.taskSubmitter = taskSubmitter;
-        this.saveCheckpoint = saveCheckpoint;
-        this.engineConfig = engineConfig;
-        this.redis = redis;
-        this.lockProvider = new ProcessWideLockProvider();
         this.metricRegistry = metricRegistry;
         this.factory = factory;
     }
@@ -172,13 +156,14 @@ public abstract class BackgroundTask {
         Preconditions.checkNotNull(factory, "BackgroundTask#initialise must be called before retrieving the engine factory");
         return factory;
     }
+
     public final MetricRegistry metricRegistry() {
         Preconditions.checkNotNull(metricRegistry, "BackgroundTask#initialise must be called before retrieving metrics registry");
         return metricRegistry;
     }
 
-    @Nullable
     public LockProvider getLockProvider() {
+        Preconditions.checkNotNull(lockProvider, "Lock provider was null, possible race condition in initialisation");
         return lockProvider;
     }
 }

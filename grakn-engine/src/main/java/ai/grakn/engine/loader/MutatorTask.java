@@ -74,17 +74,11 @@ public class MutatorTask extends BackgroundTask {
      * @return true if the data was inserted, false otherwise
      */
     private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts) {
-        Context context = metricRegistry()
-                .timer(name(MutatorTask.class, "execution")).time();
-        try {
+        try(Context context = metricRegistry().timer(name(MutatorTask.class, "execution")).time()) {
             graph.showImplicitConcepts(true);
             inserts.forEach(q -> {
-                Context contextSingle = metricRegistry()
-                        .timer(name(MutatorTask.class, "execution-single")).time();
-                try {
+                try(Context contextSingle = metricRegistry().timer(name(MutatorTask.class, "execution-single")).time()){
                     q.withGraph(graph).execute();
-                } finally {
-                    contextSingle.stop();
                 }
             });
 
@@ -98,8 +92,6 @@ public class MutatorTask extends BackgroundTask {
                         UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));
             }
             return true;
-        } finally {
-            context.stop();
         }
     }
 

@@ -95,6 +95,7 @@ public class SystemController {
 
     private static final String PROMETHEUS_CONTENT_TYPE = "text/plain; version=0.0.4";
     private static final String PROMETHEUS = "prometheus";
+    public static final String JSON = "json";
 
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
     private final EngineGraknGraphFactory factory;
@@ -225,13 +226,14 @@ public class SystemController {
         response.header(CACHE_CONTROL, "must-revalidate,no-cache,no-store");
         response.status(HttpServletResponse.SC_OK);
         Optional<String> format = Optional.ofNullable(request.queryParams(FORMAT));
-        if (format.orElse("").equals(PROMETHEUS)) {
+        String dFormat = format.orElse(JSON);
+        if (dFormat.equals(PROMETHEUS)) {
             // Prometheus format for the metrics
             response.type(PROMETHEUS_CONTENT_TYPE);
             final Writer writer1 = new StringWriter();
             TextFormat.write004(writer1, this.prometheusRegistry.metricFamilySamples());
             return writer1.toString();
-        } else {
+        } else if (dFormat.equals(JSON)) {
             // Json/Dropwizard format
             response.type(APPLICATION_JSON);
             final ObjectWriter writer = mapper.writer();
@@ -239,6 +241,8 @@ public class SystemController {
                 writer.writeValue(output, this.metricRegistry);
                 return new String(output.toByteArray(), "UTF-8");
             }
+        } else {
+            throw new IllegalArgumentException("Unexpected format " + dFormat);
         }
     }
 

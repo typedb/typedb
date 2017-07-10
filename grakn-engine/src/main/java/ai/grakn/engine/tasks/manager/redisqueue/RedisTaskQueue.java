@@ -99,7 +99,7 @@ class RedisTaskQueue {
     }
 
     void runInFlightProcessor() {
-        new Timer().scheduleAtFixedRate(new RedisInflightTaskConsumer(jedisPool, Duration.ofSeconds(60), config, QUEUE_NAME), new Date(), 10000);
+        new Timer().scheduleAtFixedRate(new RedisInflightTaskConsumer(jedisPool, Duration.ofSeconds(600), config, QUEUE_NAME), new Date(), 10000);
     }
 
     void subscribe(
@@ -119,6 +119,8 @@ class RedisTaskQueue {
                         ((RedisTaskQueueConsumer) runner)
                                 .setRunningState(redisTaskManager, engineId, config, jedisPool,
                                         factory, lockProvider, metricRegistry);
+                    } else {
+                        LOG.error("Found unexoected job in queue of type {}", runner.getClass().getName());
                     }
                 }, WorkerEvent.JOB_EXECUTE);
         worker.setExceptionHandler((jobExecutor, exception, curQueue) -> {

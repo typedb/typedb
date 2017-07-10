@@ -86,22 +86,22 @@ public class RedisTaskManager implements TaskManager {
         }
     }
 
-    public void startBlocking() {
-        redisTaskQueue.runInFlightProcessor();
-        for (int i = 0; i < threads; i++) {
-            redisTaskQueue.subscribe(this, consumerExecutor, engineId, config, factory);
-        }
-        LOG.info("Redis task manager started with {} subscriptions", threads);
-    }
-
     @Override
-    public void start() {
-        CompletableFuture
+    public CompletableFuture<Void> start() {
+        return CompletableFuture
                 .runAsync(this::startBlocking)
                 .exceptionally(e -> {
                     close();
                     throw new RuntimeException("Failed to intitialize subscription");
                 });
+    }
+
+    private void startBlocking() {
+        redisTaskQueue.runInFlightProcessor();
+        for (int i = 0; i < threads; i++) {
+            redisTaskQueue.subscribe(this, consumerExecutor, engineId, config, factory);
+        }
+        LOG.info("Redis task manager started with {} subscriptions", threads);
     }
 
     @Override

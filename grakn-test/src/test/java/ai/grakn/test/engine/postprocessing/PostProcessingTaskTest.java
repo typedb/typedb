@@ -22,6 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
@@ -78,7 +79,8 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(), METRIC_REGISTRY);
+        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
+                new ProcessWideLockProvider(), METRIC_REGISTRY);
         task.start();
 
         verify(mockConfiguration, times(2)).json();
@@ -88,7 +90,8 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(), METRIC_REGISTRY);
+        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
+                new ProcessWideLockProvider(), METRIC_REGISTRY);
         task.start();
 
         verify(mockConfiguration, times(2)).json();
@@ -99,8 +102,10 @@ public class PostProcessingTaskTest {
         // Add a bunch of jobs to the cache
         PostProcessingTask task1 = new PostProcessingTask();
         PostProcessingTask task2 = new PostProcessingTask();
-        task1.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(), METRIC_REGISTRY);
-        task2.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(), METRIC_REGISTRY);
+        task1.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
+                new ProcessWideLockProvider(), METRIC_REGISTRY);
+        task2.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
+                new ProcessWideLockProvider(), METRIC_REGISTRY);
 
         Thread pp1 = new Thread(task1::start);
         Thread pp2 = new Thread(task2::start);

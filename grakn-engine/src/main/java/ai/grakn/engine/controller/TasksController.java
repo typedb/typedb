@@ -57,7 +57,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import static java.util.stream.Collectors.toList;
-import javax.annotation.Nonnull;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -183,13 +182,11 @@ public class TasksController {
     @ApiImplicitParam(name = REST.Request.UUID_PARAMETER, value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private Json stopTask(Request request, Response response) {
         String id = request.params(REST.Request.ID_PARAMETER);
-Context context = stopTaskTimer.time();
-        try {
+        try (Context context = stopTaskTimer.time()) {
             manager.stopTask(TaskId.of(id));
             response.status(HttpStatus.SC_OK);
             response.type(APPLICATION_JSON);
-        return Json.object();} finally {
-            context.stop();
+            return Json.object();
         }
     }
 
@@ -250,7 +247,6 @@ Context context = stopTaskTimer.time();
             }
         }
         if (!hasFailures) {
-            LOG.info("Tasks added successfully");
             response.status(HttpStatus.SC_OK);
         } else if (responseJson.asJsonList().size() > 0) {
             response.status(HttpStatus.SC_ACCEPTED);
@@ -417,7 +413,7 @@ Context context = stopTaskTimer.time();
     }
 
     // TODO: Return 'schedule' object as its own object
-    private Json serialiseStateSubset(@Nonnull TaskState state) {
+    private Json serialiseStateSubset(TaskState state) {
         return Json.object()
                 .set("id", state.getId().getValue())
                 .set("status", state.status().name())
@@ -427,7 +423,7 @@ Context context = stopTaskTimer.time();
                 .set("recurring", state.schedule().isRecurring());
     }
 
-    private Json serialiseStateFull(@Nonnull TaskState state) {
+    private Json serialiseStateFull(TaskState state) {
         return serialiseStateSubset(state)
                 .set("interval", state.schedule().interval().map(Duration::toMillis).orElse(null))
                 .set("recurring", state.schedule().isRecurring())

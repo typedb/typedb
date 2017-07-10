@@ -30,7 +30,6 @@ import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.REST;
 import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer.Context;
-import com.google.common.base.Preconditions;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -58,9 +57,8 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
     public boolean start() {
         final long shardingThreshold = engineConfiguration().getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
         final int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
-        Context context = metricRegistry()
-                .timer(name(UpdatingInstanceCountTask.class, "execution")).time();
-        try {
+        try (Context context = metricRegistry()
+                .timer(name(UpdatingInstanceCountTask.class, "execution")).time()) {
             Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
             metricRegistry().histogram(name(UpdatingInstanceCountTask.class, "jobs"))
                     .update(jobs.size());
@@ -101,8 +99,6 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
         } catch(Exception e) {
             LOG.error("Could not terminate task", e);
             throw e;
-        } finally {
-            context.stop();
         }
     }
 
@@ -147,7 +143,6 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      */
     private void shardConcept(RedisCountStorage redis, EngineGraknGraphFactory factory,
             String keyspace, ConceptId conceptId, int maxRetry, long shardingThreshold){
-        Preconditions.checkNotNull(this.getLockProvider(), Preconditions.checkNotNull(this.getLockProvider(), "Lock provider was null, possible race condition in initialisation"));
         Lock engineLock = this.getLockProvider().getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
 

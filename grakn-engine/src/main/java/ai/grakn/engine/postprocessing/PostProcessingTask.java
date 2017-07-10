@@ -63,9 +63,8 @@ public class PostProcessingTask extends BackgroundTask {
      */
     @Override
     public boolean start() {
-        Context context = metricRegistry()
-                .timer(name(PostProcessingTask.class, "execution")).time();
-        try {
+        try (Context context = metricRegistry()
+                .timer(name(PostProcessingTask.class, "execution")).time()) {
             Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.RESOURCE, configuration());
 
             allToPostProcess.forEach((conceptIndex, conceptIds) -> {
@@ -86,8 +85,6 @@ public class PostProcessingTask extends BackgroundTask {
             LOG.debug(JOB_FINISHED, Schema.BaseType.RESOURCE.name(), allToPostProcess);
 
             return true;
-        } finally {
-            context.stop();
         }
     }
 

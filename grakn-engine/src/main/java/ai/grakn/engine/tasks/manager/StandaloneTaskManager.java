@@ -38,6 +38,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -124,8 +125,7 @@ public class StandaloneTaskManager implements TaskManager {
 
     @Override
     public void addTask(TaskState taskState, TaskConfiguration configuration){
-        Context context = addTaskTimer.time();
-        try{
+        try (Context context = addTaskTimer.time()) {
             if(!taskState.priority().equals(TaskState.Priority.LOW)) LOG.info("Standalone mode only has a single priority.");
             storage.newState(taskState);
 
@@ -146,14 +146,14 @@ public class StandaloneTaskManager implements TaskManager {
             scheduledTasks.put(taskState.getId(), future);
 
             LOG.info("Added task " + taskState.getId());
-        } finally {
-            context.stop();
         }
     }
 
     @Override
-    public void start() {
-
+    public CompletableFuture<Void> start() {
+        // NO-OP The consumer runs straight after the addTask
+        return CompletableFuture
+                .runAsync(() -> {});
     }
 
     public void stopTask(TaskId id) {
@@ -195,8 +195,7 @@ public class StandaloneTaskManager implements TaskManager {
 
     private Runnable executeTask(TaskState task, TaskConfiguration configuration) {
         return () -> {
-            Context context = executeTaskTimer.time();
-            try {
+            try (Context context = executeTaskTimer.time()) {
                 BackgroundTask runningTask = task.taskClass().newInstance();
                 runningTask.initialize(saveCheckpoint(task), configuration, this, config, redis, factory, lockProvider, metricRegistry);
                 runningTasks.put(task.getId(), runningTask);
@@ -234,7 +233,6 @@ public class StandaloneTaskManager implements TaskManager {
                 saveState(task);
                 runningTasks.remove(task.getId());
                 cancelTask(task);
-                context.stop();
             }
         };
     }

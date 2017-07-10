@@ -10,6 +10,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.ResourceDeduplicationTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.test.EngineContext;
@@ -80,7 +81,8 @@ public class ResourceDeduplicationMapReduceIT {
     }
 
     private void initTask(ResourceDeduplicationTask task) {
-        task.initialize(checkpoint -> { throw new RuntimeException("No checkpoint expected.");}, configuration(), (x, y) -> {}, engine.config(), null, null, new MetricRegistry());
+        task.initialize(checkpoint -> { throw new RuntimeException("No checkpoint expected.");}, configuration(), (x, y) -> {}, engine.config(), null, null,
+                new ProcessWideLockProvider(), new MetricRegistry());
     }
 
     private void miniOntology(GraknGraph graph) {
@@ -396,7 +398,7 @@ public class ResourceDeduplicationMapReduceIT {
                 null,
                 null,
                 engine.server().factory(),
-                new MetricRegistry());
+                new ProcessWideLockProvider(), new MetricRegistry());
         task.start();
         Assert.assertEquals(new Long(3), task.totalElimintated());        
         transact(graph -> {

@@ -23,6 +23,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.exception.InvalidGraphException;
@@ -117,7 +118,8 @@ public class PostProcessingTest {
                                 Schema.BaseType.RESOURCE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))
         );
-        task.initialize(null, configuration, (x, y) -> {}, engine.config(), null, engine.server().factory(), new MetricRegistry());
+        task.initialize(null, configuration, (x, y) -> {}, engine.config(), null, engine.server().factory(),
+                new ProcessWideLockProvider(), new MetricRegistry());
 
         task.start();
 

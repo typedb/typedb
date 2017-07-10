@@ -20,6 +20,7 @@ package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.TaskId;
 import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * <p>
@@ -39,7 +40,7 @@ public interface TaskManager extends TaskSubmitter, Closeable {
     /**
      * Make sure the manager is initialized and starts processing tasks
      */
-    void start();
+    CompletableFuture<Void> start();
 
     /**
      * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the

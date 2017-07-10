@@ -18,12 +18,16 @@
 
 package ai.grakn.engine.tasks.manager;
 
-
 import ai.grakn.engine.tasks.BackgroundTask;
 
 /**
  * <p>
  *     Submits Background Tasks for processing
+ * </p>
+ *
+ * <p>
+ *     Allows tasks to be submitted for processing. Any task submitted is added to {@link TaskStateStorage}
+ *     and is later executed by Task runner such as {@link ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager}.
  * </p>
  *
  * @author fppt

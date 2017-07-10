@@ -21,8 +21,8 @@ package ai.grakn.engine;
 
 import java.util.UUID;
 import javax.annotation.CheckReturnValue;
-import org.apache.tinkerpop.shaded.jackson.annotation.JsonCreator;
-import org.apache.tinkerpop.shaded.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
 /**
  * An identifier for a task
