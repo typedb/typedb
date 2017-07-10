@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
@@ -98,27 +99,7 @@ public class GreedyTraversalPlan {
             Set<Weighted<DirectedEdge<Node>>> weightedGraph = new HashSet<>();
 
             fragmentSet.stream()
-                    .filter(fragment -> {
-                        if (!fragment.getEnd().isPresent()) {
-                            Node start = Node.addIfAbsent(fragment.getStart(), allNodes);
-                            connectedNodes.add(start);
-
-                            if (fragment.hasFixedFragmentCost()) {
-                                // fragments that should be done right away
-                                plan.add(fragment);
-                                nodesWithFixedCost.add(start);
-
-                            } else if (fragment.getDependencies().isEmpty()) {
-                                //fragments that should be done when a node has been visited
-                                start.getFragmentsWithoutDependency().add(fragment);
-
-                            }
-                            return false;
-
-                        } else {
-                            return true;
-                        }
-                    })
+                    .filter(filterNodeFragment(plan, allNodes, connectedNodes, nodesWithFixedCost))
                     .flatMap(fragment -> fragment.getDirectedEdges(allNodes, edges).stream())
                     .forEach(weightedDirectedEdge -> {
                         weightedGraph.add(weightedDirectedEdge);
@@ -142,34 +123,54 @@ public class GreedyTraversalPlan {
                 greedyTraversal(plan, arborescence, allNodes, edges);
             }
 
-            // add the remaining node fragments
-            Set<Node> nodeWithFragment = connectedNodes.stream()
-                    .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
-                            !node.getFragmentsWithDependencyVisited().isEmpty())
-                    .collect(Collectors.toSet());
-            while (!nodeWithFragment.isEmpty()) {
-                nodeWithFragment.forEach(node -> addNodeFragmentToPlan(node, plan, allNodes, false));
-                nodeWithFragment = connectedNodes.stream()
-                        .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
-                                !node.getFragmentsWithDependencyVisited().isEmpty())
-                        .collect(Collectors.toSet());
-            }
+            AddUnvisitedNodeFragments(plan, allNodes, connectedNodes);
         });
 
-        Set<Node> nodeWithFragment = allNodes.values().stream()
+        AddUnvisitedNodeFragments(plan, allNodes, allNodes.values());
+
+        LOG.trace("Greedy Plan = " + plan);
+        return plan;
+    }
+
+    private static void AddUnvisitedNodeFragments(List<Fragment> plan,
+                                                  Map<String, Node> allNodes,
+                                                  Collection<Node> connectedNodes) {
+        Set<Node> nodeWithFragment = connectedNodes.stream()
                 .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
                         !node.getFragmentsWithDependencyVisited().isEmpty())
                 .collect(Collectors.toSet());
         while (!nodeWithFragment.isEmpty()) {
             nodeWithFragment.forEach(node -> addNodeFragmentToPlan(node, plan, allNodes, false));
-            nodeWithFragment = allNodes.values().stream()
+            nodeWithFragment = connectedNodes.stream()
                     .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
                             !node.getFragmentsWithDependencyVisited().isEmpty())
                     .collect(Collectors.toSet());
         }
+    }
 
-        LOG.trace("Greedy Plan = " + plan);
-        return plan;
+    private static Predicate<Fragment> filterNodeFragment(List<Fragment> plan, Map<String, Node> allNodes,
+                                                          Set<Node> connectedNodes, Set<Node> nodesWithFixedCost) {
+        return fragment -> {
+            if (!fragment.getEnd().isPresent()) {
+                Node start = Node.addIfAbsent(fragment.getStart(), allNodes);
+                connectedNodes.add(start);
+
+                if (fragment.hasFixedFragmentCost()) {
+                    // fragments that should be done right away
+                    plan.add(fragment);
+                    nodesWithFixedCost.add(start);
+
+                } else if (fragment.getDependencies().isEmpty()) {
+                    //fragments that should be done when a node has been visited
+                    start.getFragmentsWithoutDependency().add(fragment);
+
+                }
+                return false;
+
+            } else {
+                return true;
+            }
+        };
     }
 
     private static Collection<Set<Fragment>> getConnectedFragmentSets(ConjunctionQuery query,
