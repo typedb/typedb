@@ -63,7 +63,7 @@ class OutPlaysFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
+    public double fragmentCost() {
         return COST_ROLES_PER_TYPE;
     }
 

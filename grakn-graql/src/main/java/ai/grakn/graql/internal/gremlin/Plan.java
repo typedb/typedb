@@ -78,7 +78,7 @@ class Plan implements Comparable<Plan> {
 
         double cost = !costs.isEmpty() ? costs.peek() : 0D;
 
-        double newCost = fragmentCost(newFragment, cost, names);
+        double newCost = fragmentCost(newFragment, names);
         totalCost += newCost;
 
         names.addAll(newFragment.getVariableNames());

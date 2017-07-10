@@ -48,7 +48,7 @@ class NotInternalFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
+    public double fragmentCost() {
         return COST_SAME_AS_PREVIOUS;
     }
 }

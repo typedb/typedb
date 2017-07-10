@@ -180,7 +180,7 @@ abstract class AbstractFragment implements Fragment {
 
         addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(
-                weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
+                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
                 weighted(DirectedEdge.from(middle).to(end), 0));
     }
 
@@ -193,7 +193,7 @@ abstract class AbstractFragment implements Fragment {
 
         addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(
-                weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
+                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
                 weighted(DirectedEdge.from(middle).to(end), 0));
     }
 
@@ -206,7 +206,7 @@ abstract class AbstractFragment implements Fragment {
 
         addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(
-                weighted(DirectedEdge.from(start).to(middle), -fragmentCost(0)),
+                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
                 weighted(DirectedEdge.from(middle).to(end), 0));
     }
 

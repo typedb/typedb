@@ -88,7 +88,7 @@ class InShortcutFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
+    public double fragmentCost() {
         return COST_RELATIONS_PER_INSTANCE;
     }
 

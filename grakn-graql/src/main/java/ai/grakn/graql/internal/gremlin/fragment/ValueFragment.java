@@ -51,7 +51,7 @@ class ValueFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
+    public double fragmentCost() {
         if (predicate.isSpecific()) {
             return COST_RESOURCES_PER_VALUE;
         } else {

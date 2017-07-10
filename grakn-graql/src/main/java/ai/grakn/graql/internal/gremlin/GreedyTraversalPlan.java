@@ -257,7 +257,7 @@ public class GreedyTraversalPlan {
                                               boolean visited) {
         if (!visited) {
             node.getFragmentsWithoutDependency().stream()
-                    .min(Comparator.comparingDouble(fragment -> fragment.fragmentCost(0)))
+                    .min(Comparator.comparingDouble(Fragment::fragmentCost))
                     .ifPresent(firstNodeFragment -> {
                         plan.add(firstNodeFragment);
                         node.getFragmentsWithoutDependency().remove(firstNodeFragment);
@@ -265,7 +265,7 @@ public class GreedyTraversalPlan {
         }
         node.getFragmentsWithoutDependency().addAll(node.getFragmentsWithDependencyVisited());
         plan.addAll(node.getFragmentsWithoutDependency().stream()
-                .sorted(Comparator.comparingDouble(fragment -> fragment.fragmentCost(0)))
+                .sorted(Comparator.comparingDouble(Fragment::fragmentCost))
                 .collect(Collectors.toList()));
 
         node.getFragmentsWithoutDependency().clear();
@@ -288,7 +288,7 @@ public class GreedyTraversalPlan {
     private static double getEdgeFragmentCost(Node node, Arborescence<Node> arborescence,
                                               Map<Node, Map<Node, Fragment>> edgeToFragment) {
         Optional<Fragment> fragment = getEdgeFragment(node, arborescence, edgeToFragment);
-        return fragment.map(fragmentInside -> fragmentInside.fragmentCost(0)).orElse(0D);
+        return fragment.map(Fragment::fragmentCost).orElse(0D);
     }
 
     private static Optional<Fragment> getEdgeFragment(Node node, Arborescence<Node> arborescence,

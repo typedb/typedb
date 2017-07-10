@@ -110,7 +110,10 @@ public interface Fragment {
         return false;
     }
 
-    double fragmentCost(double previousCost);
+    /**
+     * Get the cost for executing the fragment.
+     */
+    double fragmentCost();
 
     /**
      * If a fragment has fixed cost, the traversal is done using index. This makes the fragment a good starting point.

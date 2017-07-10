@@ -174,7 +174,7 @@ public class GraqlTraversal {
         double listCost = 0;
 
         for (Fragment fragment : fragments) {
-            cost = fragmentCost(fragment, cost, names);
+            cost = fragmentCost(fragment, names);
             names.addAll(fragment.getVariableNames());
             listCost += cost;
         }
@@ -182,9 +182,9 @@ public class GraqlTraversal {
         return listCost;
     }
 
-    static double fragmentCost(Fragment fragment, double previousCost, Collection<Var> names) {
+    static double fragmentCost(Fragment fragment, Collection<Var> names) {
         if (names.contains(fragment.getStart())) {
-            return fragment.fragmentCost(previousCost);
+            return fragment.fragmentCost();
         } else {
             // Restart traversal, meaning we are navigating from all vertices
             return COST_NEW_TRAVERSAL;
