@@ -49,6 +49,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -310,6 +311,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param var variable name
      * @return id predicate for the specified var name if any
      */
+    @Nullable
     public IdPredicate getIdPredicate(Var var) {
         Set<IdPredicate> relevantSubs = getIdPredicates().stream()
                 .filter(sub -> sub.getVarName().equals(var))

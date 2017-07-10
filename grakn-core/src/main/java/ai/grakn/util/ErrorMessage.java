@@ -66,6 +66,7 @@ public enum ErrorMessage {
     NO_TYPE("Concept [%s] does not have a type"),
     INVALID_DIRECTION("Cannot traverse an edge in direction [%s]"),
     RESERVED_WORD("The word [%s] is reserved internally and cannot be used"),
+    INVALID_PROPERTY_USE("The concept [%s] cannot contain vertex property [%s]"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),

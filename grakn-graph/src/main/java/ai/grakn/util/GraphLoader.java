@@ -31,6 +31,7 @@ import ai.grakn.graql.Query;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.io.Files;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -61,11 +62,11 @@ public class GraphLoader {
     private static Properties graphConfig;
 
     private final InternalFactory<?> factory;
-    private Consumer<GraknGraph> preLoad;
+    private @Nullable Consumer<GraknGraph> preLoad;
     private boolean graphLoaded = false;
     private GraknGraph graph;
 
-    protected GraphLoader(Consumer<GraknGraph> preLoad){
+    protected GraphLoader(@Nullable Consumer<GraknGraph> preLoad){
         factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties());
         this.preLoad = preLoad;
     }

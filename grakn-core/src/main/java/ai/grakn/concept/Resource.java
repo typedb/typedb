@@ -19,8 +19,8 @@
 package ai.grakn.concept;
 
 
-
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.Collection;
 
 /**
@@ -79,6 +79,7 @@ public interface Resource<D> extends Thing {
      * @return The Thing which is connected to a unique Resource.
      */
     @CheckReturnValue
+    @Nullable
     Thing owner();
 
     /**

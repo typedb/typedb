@@ -33,6 +33,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -63,7 +64,7 @@ final class ElementFactory {
         this.graknGraph = graknGraph;
     }
 
-    private <X extends ConceptImpl> X getOrBuildConcept(VertexElement v, Function<VertexElement, X> conceptBuilder){
+    private <X extends Concept> X getOrBuildConcept(VertexElement v, Function<VertexElement, X> conceptBuilder){
         ConceptId conceptId = ConceptId.of(v.id().toString());
 
         if(!graknGraph.txCache().isConceptCached(conceptId)){
@@ -98,7 +99,7 @@ final class ElementFactory {
 
     // -------------------------------------------- Building Relations
     RelationImpl buildRelation(VertexElement vertex, RelationType type){
-        return getOrBuildConcept(vertex, (v) -> new RelationImpl(v, type));
+        return getOrBuildConcept(vertex, (v) -> new RelationImpl(new RelationReified(v, type)));
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
@@ -133,10 +134,12 @@ final class ElementFactory {
      * @param v A vertex of an unknown type
      * @return A concept built to the correct type
      */
+    @Nullable
     <X extends Concept> X buildConcept(Vertex v){
         return buildConcept(buildVertexElement(v));
     }
 
+    @Nullable
     <X extends Concept> X buildConcept(VertexElement vertexElement){
         Schema.BaseType type;
 
@@ -149,10 +152,10 @@ final class ElementFactory {
 
         ConceptId conceptId = ConceptId.of(vertexElement.id().getValue());
         if(!graknGraph.txCache().isConceptCached(conceptId)){
-            ConceptImpl concept;
+            Concept concept;
             switch (type) {
                 case RELATION:
-                    concept = new RelationImpl(vertexElement);
+                    concept = new RelationImpl(new RelationReified(vertexElement));
                     break;
                 case TYPE:
                     concept = new TypeImpl<>(vertexElement);
@@ -240,6 +243,7 @@ final class ElementFactory {
         return new Shard(buildVertexElement(vertex));
     }
 
+    @Nullable
     VertexElement buildVertexElement(Vertex vertex){
         try {
             graknGraph.validVertex(vertex);

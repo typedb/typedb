@@ -29,6 +29,7 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -89,7 +90,7 @@ public class RuleTest {
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(
-                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage("LHS", rule.getId(), rule.type().getLabel(), "Your-Type"));
+                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(Schema.VertexProperty.RULE_WHEN.name(), rule.getId(), rule.type().getLabel(), "Your-Type"));
 
         graknGraph.commit();
     }

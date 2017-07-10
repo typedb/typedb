@@ -24,11 +24,27 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.exception.GraknServerException;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import java.util.Arrays;
+import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
+import spark.Request;
+import spark.Response;
+import spark.Service;
+
+import javax.annotation.Nullable;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import java.util.List;
+import java.util.Optional;
+
 import static ai.grakn.engine.controller.GraqlController.getAcceptType;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.exception.GraknServerException;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Concept.OFFSET_EMBEDDED;
@@ -48,20 +64,7 @@ import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
 import static java.util.stream.Collectors.toList;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import mjson.Json;
-import org.apache.commons.httpclient.HttpStatus;
-import spark.Request;
-import spark.Response;
-import spark.Service;
 
 /**
  * <p>
@@ -182,7 +185,7 @@ public class ConceptController {
      * @param concept the concept to validate
      * @return true if the concept is valid, false otherwise
      */
-    private static boolean notPresent(Concept concept){
+    private static boolean notPresent(@Nullable Concept concept){
         return concept == null;
     }
 

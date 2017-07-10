@@ -58,6 +58,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -95,7 +96,7 @@ public class RelationAtom extends IsaAtom {
     private Multimap<Role, String> roleConceptIdMap = null;
     private Set<RelationPlayer> relationPlayers = null;
 
-    public RelationAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate predicate, ReasonerQuery par) {
+    public RelationAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate predicate, ReasonerQuery par) {
         super(pattern, predicateVar, predicate, par);}
 
     private RelationAtom(RelationAtom a) {

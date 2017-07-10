@@ -25,6 +25,8 @@ import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
 
+import javax.annotation.Nullable;
+
 /**
  * <p>
  *     An ontological element used to model and categorise different types of {@link Rule}.
@@ -55,6 +57,7 @@ class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
                 () -> getRule(when, then), (vertex, type) -> vertex().graph().factory().buildRule(vertex, type, when, then));
     }
 
+    @Nullable
     private Rule getRule(Pattern when, Pattern then) {
         String index = RuleImpl.generateRuleIndex(this, when, then);
         return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);

@@ -86,7 +86,7 @@ public class TxCacheTest extends GraphTestBase{
 
         Set<Casting> castings = ((RelationImpl) rt1.addRelation().
                 addRolePlayer(r1, e1).
-                addRolePlayer(r2, e2)).
+                addRolePlayer(r2, e2)).reified().get().
                 castingsRelation().collect(Collectors.toSet());
 
         assertTrue(graknGraph.txCache().getModifiedCastings().containsAll(castings));
@@ -109,7 +109,7 @@ public class TxCacheTest extends GraphTestBase{
         assertThat(graknGraph.txCache().getModifiedCastings(), is(empty()));
 
         t1.sup(t2);
-        assertTrue(graknGraph.txCache().getModifiedCastings().containsAll(relation.castingsRelation().collect(Collectors.toSet())));
+        assertTrue(graknGraph.txCache().getModifiedCastings().containsAll(relation.reified().get().castingsRelation().collect(Collectors.toSet())));
     }
 
     @Test

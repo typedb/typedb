@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -52,7 +53,7 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
      * {@link org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex} has been modified or not.
      */
     @Override
-    public boolean isConceptModified(ConceptImpl concept) {
+    public boolean isConceptModified(Concept concept) {
         return true;
     }
 

@@ -24,6 +24,7 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
+import javax.annotation.Nullable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -86,7 +87,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      * @throws GraphOperationException when an instance does not match the provided regex
      * @param regex The regex to check against
      */
-    private void checkInstancesMatchRegex(String regex){
+    private void checkInstancesMatchRegex(@Nullable String regex){
         if(regex != null) {
             Pattern pattern = Pattern.compile(regex);
             Matcher matcher;
