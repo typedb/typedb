@@ -20,8 +20,6 @@ package ai.grakn.engine.tasks.connection;
 
 import ai.grakn.concept.ConceptId;
 import java.util.function.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 
@@ -37,8 +35,6 @@ import redis.clients.util.Pool;
  * @author fppt
  */
 public class RedisCountStorage {
-    private final static Logger LOG = LoggerFactory.getLogger(RedisCountStorage.class);
-
     private Pool<Jedis> jedisPool;
 
     private RedisCountStorage(Pool<Jedis> jedisPool){
