@@ -65,14 +65,14 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             // Display values for resources and ids for everything else
             if (concept.isResource()) {
                 sb.append(colorKeyword("val ")).append(StringUtil.valueToString(concept.asResource().getValue()));
-            } else if (concept.isType()) {
-                Type type = concept.asType();
-                sb.append(colorKeyword("label ")).append(colorType(type));
+            } else if (concept.isOntologyConcept()) {
+                OntologyConcept ontoConcept = concept.asOntologyConcept();
+                sb.append(colorKeyword("label ")).append(colorType(ontoConcept));
 
-                Type superType = type.sup();
+                OntologyConcept superConcept = ontoConcept.sup();
 
-                if (superType != null) {
-                    sb.append(colorKeyword(" sub ")).append(colorType(superType));
+                if (superConcept != null) {
+                    sb.append(colorKeyword(" sub ")).append(colorType(superConcept));
                 }
             } else {
                 sb.append(colorKeyword("id ")).append(idToString(concept.getId()));
