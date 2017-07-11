@@ -16,9 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.tasks;
+package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.TaskId;
+import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * <p>
@@ -27,11 +29,18 @@ import ai.grakn.engine.TaskId;
  *
  * <p>
  *     Provides common methods for scheduling tasks for execution and stopping task execution.
+ *     At the moment it assumes that upon construction, some threads will be started that
+ *     take care of consuming the elements of the queue.
  * </p>
  *
  * @author Denis Lobanov, alexandraorth
  */
-public interface TaskManager extends TaskSubmitter{
+public interface TaskManager extends TaskSubmitter, Closeable {
+
+    /**
+     * Make sure the manager is initialized and starts processing tasks
+     */
+    CompletableFuture<Void> start();
 
     /**
      * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the
@@ -47,6 +56,4 @@ public interface TaskManager extends TaskSubmitter{
     TaskStateStorage storage();
 
     // TODO: Add 'pause' and 'restart' methods
-
-    void close();
 }

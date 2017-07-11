@@ -20,31 +20,27 @@ package ai.grakn.test;
 
 import ai.grakn.client.Client;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.tasks.TaskManager;
+import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
+import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
+import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.StandardSystemProperty;
-import net.lingala.zip4j.core.ZipFile;
-import net.lingala.zip4j.exception.ZipException;
-import org.junit.Assert;
-import org.junit.rules.ExternalResource;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import static java.lang.System.currentTimeMillis;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Properties;
-import java.util.stream.Stream;
-
-import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
-import static ai.grakn.test.GraknTestEngineSetup.startKafka;
-import static ai.grakn.test.GraknTestEngineSetup.stopKafka;
-import static java.lang.System.currentTimeMillis;
 import static java.util.stream.Collectors.joining;
+import java.util.stream.Stream;
+import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
+import org.junit.Assert;
+import org.junit.rules.ExternalResource;
 
 /**
  * Start a SingleQueueEngine from the packaged distribution.
@@ -70,7 +66,7 @@ public class DistributionContext extends ExternalResource {
     }
 
     public static DistributionContext startSingleQueueEngineProcess(){
-        return new DistributionContext(SingleQueueTaskManager.class);
+        return new DistributionContext(RedisTaskManager.class);
     }
 
     public static DistributionContext startInMemoryEngineProcess(){
@@ -108,11 +104,8 @@ public class DistributionContext extends ExternalResource {
         assertPackageBuilt();
 
         unzipDistribution();
-
         GraknTestSetup.startCassandraIfNeeded();
-
-        startKafka(GraknEngineConfig.create());
-
+        GraknTestSetup.startRedisIfNeeded(6379);
         engineProcess = newEngineProcess(port);
         waitForEngine(port);
     }
@@ -120,12 +113,6 @@ public class DistributionContext extends ExternalResource {
     @Override
     public void after() {
         engineProcess.destroyForcibly();
-
-        try {
-            stopKafka();
-        } catch (Exception e) {
-            throw new RuntimeException("Could not shut down", e);
-        }
     }
 
     private void assertPackageBuilt() throws IOException {
@@ -190,12 +177,12 @@ public class DistributionContext extends ExternalResource {
             if (Client.serverIsRunning("localhost:" + port)) {
                 return;
             }
-
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+        throw new RuntimeException("Could not start engine within expected time");
     }
 }
