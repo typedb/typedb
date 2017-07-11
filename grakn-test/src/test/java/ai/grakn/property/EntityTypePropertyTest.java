@@ -17,7 +17,7 @@
  *
  */
 
-package ai.grakn.graph.property;
+package ai.grakn.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;

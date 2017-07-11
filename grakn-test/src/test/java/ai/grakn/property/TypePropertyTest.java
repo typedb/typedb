@@ -17,15 +17,15 @@
  *
  */
 
-package ai.grakn.graph.property;
+package ai.grakn.property;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
@@ -43,10 +43,10 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graph.property.PropertyUtil.choose;
-import static ai.grakn.graph.property.PropertyUtil.directInstances;
-import static ai.grakn.graph.property.PropertyUtil.directSubs;
-import static ai.grakn.graph.property.PropertyUtil.indirectSuperTypes;
+import static ai.grakn.property.PropertyUtil.choose;
+import static ai.grakn.property.PropertyUtil.directInstances;
+import static ai.grakn.property.PropertyUtil.directSubs;
+import static ai.grakn.property.PropertyUtil.indirectSuperTypes;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
