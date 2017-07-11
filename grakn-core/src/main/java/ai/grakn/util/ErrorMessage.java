@@ -48,7 +48,7 @@ public enum ErrorMessage {
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
-    HAS_INVALID("The type [%s] is not allowed to have a %s of type [%s]"),
+    HAS_INVALID("The type [%s] is not allowed to have a resource of type [%s]"),
     INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
     BACKEND_EXCEPTION("Backend Exception."),
     GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),

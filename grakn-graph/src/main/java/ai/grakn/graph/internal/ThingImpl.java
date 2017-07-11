@@ -197,14 +197,12 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
      */
     @Override
     public T resource(Resource resource){
-        String type = "resource";
         Schema.ImplicitType has = Schema.ImplicitType.HAS;
         Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_VALUE;
         Schema.ImplicitType hasOwner  = Schema.ImplicitType.HAS_OWNER;
 
         //Is this resource a key to me?
         if(type().keys().contains(resource.type())){
-            type = "key";
             has = Schema.ImplicitType.KEY;
             hasValue = Schema.ImplicitType.KEY_VALUE;
             hasOwner  = Schema.ImplicitType.KEY_OWNER;
@@ -213,16 +211,15 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
 
         Label label = resource.type().getLabel();
         RelationType hasResource = vertex().graph().getOntologyConcept(has.getLabel(label));
-        Role hasResourceTarget = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
+        Role hasResourceOwner = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
         Role hasResourceValue = vertex().graph().getOntologyConcept(hasValue.getLabel(label));
 
-        if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
-            throw GraphOperationException.hasNotAllowed(this, resource, type);
+        if(hasResource == null || hasResourceOwner == null || hasResourceValue == null){
+            throw GraphOperationException.hasNotAllowed(this, resource);
         }
 
-        Relation relation = hasResource.addRelation();
-        relation.addRolePlayer(hasResourceTarget, this);
-        relation.addRolePlayer(hasResourceValue, resource);
+        EdgeElement resourceEdge = putEdge(ResourceImpl.from(resource), Schema.EdgeLabel.RESOURCE);
+        vertex().graph().factory().buildRelation(resourceEdge, hasResource, hasResourceOwner, hasResourceValue);
 
         return getThis();
     }

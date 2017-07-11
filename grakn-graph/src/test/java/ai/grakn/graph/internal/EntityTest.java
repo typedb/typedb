@@ -123,7 +123,7 @@ public class EntityTest extends GraphTestBase{
     }
 
     @Test
-    public void whenAddingResourceToEntityWitoutAllowingItBetweenTypes_Throw(){
+    public void whenAddingResourceToEntityWithoutAllowingItBetweenTypes_Throw(){
         EntityType entityType = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
 
@@ -132,7 +132,7 @@ public class EntityTest extends GraphTestBase{
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(
-                ErrorMessage.HAS_INVALID.getMessage(entityType.getLabel(), "resource", resourceType.getLabel())
+                ErrorMessage.HAS_INVALID.getMessage(entityType.getLabel(), resourceType.getLabel())
         );
 
         entity.resource(resource);

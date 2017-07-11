@@ -82,8 +82,8 @@ public class GraphOperationException extends GraknException{
      * Thrown when an {@code thing} is not allowed to have {@code resource} of the type {@code hasType}.
      * {@code hasType} can be resources or keys.
      */
-    public static GraphOperationException hasNotAllowed(Thing thing, Resource resource, String hasType){
-        return new GraphOperationException(HAS_INVALID.getMessage(thing.type().getLabel(), hasType, resource.type().getLabel()));
+    public static GraphOperationException hasNotAllowed(Thing thing, Resource resource){
+        return new GraphOperationException(HAS_INVALID.getMessage(thing.type().getLabel(), resource.type().getLabel()));
     }
 
     /**
