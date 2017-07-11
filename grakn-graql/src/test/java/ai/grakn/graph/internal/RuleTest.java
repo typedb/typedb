@@ -29,21 +29,11 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.Serializable;
-import java.nio.ByteBuffer;
 
 import static ai.grakn.util.ErrorMessage.NULL_VALUE;
 import static ai.grakn.util.Schema.VertexProperty.RULE_LHS;
@@ -145,78 +135,5 @@ public class RuleTest {
         Rule rule2 = graknGraph.admin().getMetaRuleInference().putRule(lhs, rhs);
 
         assertEquals(rule1, rule2);
-    }
-
-    @Test
-    public void serializeTest() throws IOException, ClassNotFoundException {
-        Thingy thingy = new Thingy(123, true);
-
-        for (int i = 0; i < 100_000_000; i++) {
-            Serializer.deserialize(Serializer.serialize(thingy));
-//            Thingy.fromString(thingy.toString());
-        }
-    }
-
-
-    static class Thingy implements Serializable {
-        long a;
-        boolean b;
-
-        public Thingy() {}
-
-        public Thingy(long a, boolean b) {
-            this.a = a;
-            this.b = b;
-        }
-
-        @Override
-        public String toString() {
-            return (b ? "v" : "e") + a;
-        }
-
-        static Thingy fromString(String string) {
-            long a = Long.parseLong(string.substring(1, string.length()));
-            boolean b = string.substring(0, 1).equals("v");
-            return new Thingy(a, b);
-        }
-    }
-
-    public static class Serializer {
-
-        static Kryo kryo = new Kryo();
-
-        public static byte[] serialize(Thingy obj) throws IOException {
-            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES + 1);
-            buffer.putLong(obj.a);
-            buffer.put(obj.b ? (byte) 1 : (byte) 0);
-            return buffer.array();
-        }
-
-        public static Object deserialize(byte[] bytes) throws IOException, ClassNotFoundException {
-            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES + 1);
-            buffer.put(bytes);
-            buffer.flip();//need flip
-            long a = buffer.getLong();
-            boolean b = buffer.get() == 1;
-            return new Thingy(a, b);
-        }
-
-        public static byte[] serializeKryo(Object obj) throws IOException {
-            try(ByteArrayOutputStream b = new ByteArrayOutputStream()){
-                try(Output o = new Output(b)){
-                    kryo.writeObject(o, obj);
-                }
-                return b.toByteArray();
-            }
-        }
-
-        public static Object deserializeKryo(byte[] bytes) throws IOException, ClassNotFoundException {
-            try(ByteArrayInputStream b = new ByteArrayInputStream(bytes)){
-                try(Input o = new Input(b)){
-                    return kryo.readObject(o, Thingy.class);
-                }
-            }
-        }
-
     }
 }
