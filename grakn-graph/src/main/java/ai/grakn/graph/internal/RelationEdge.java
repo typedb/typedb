@@ -40,7 +40,7 @@ import java.util.Set;
  * @author fppt
  *
  */
-public class RelationEdge extends RelationStructure{
+public class RelationEdge implements RelationStructure{
     private final EdgeElement edgeElement;
 
     public RelationEdge(EdgeElement edgeElement) {
@@ -53,7 +53,7 @@ public class RelationEdge extends RelationStructure{
 
     @Override
     public ConceptId getId() {
-        return null
+        return null;
     }
 
     @Override

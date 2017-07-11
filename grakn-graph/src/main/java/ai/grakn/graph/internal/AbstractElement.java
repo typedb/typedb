@@ -39,12 +39,14 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
  *
  */
 abstract class AbstractElement<E extends Element, P extends Enum> {
+    private final String prefix;
     private final E element;
     private final AbstractGraknGraph graknGraph;
 
-    AbstractElement(AbstractGraknGraph graknGraph, E element){
+    AbstractElement(AbstractGraknGraph graknGraph, E element, String prefix){
         this.graknGraph = graknGraph;
         this.element = element;
+        this.prefix = prefix;
     }
 
     E element(){
@@ -52,7 +54,7 @@ abstract class AbstractElement<E extends Element, P extends Enum> {
     }
 
     ElementId id(){
-        return ElementId.of(element().id());
+        return ElementId.of(prefix + element().id());
     }
 
     /**
