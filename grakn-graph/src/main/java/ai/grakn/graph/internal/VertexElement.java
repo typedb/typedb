@@ -48,10 +48,9 @@ import java.util.stream.StreamSupport;
  * @author fppt
  */
 class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty>{
-    static String PREFIX = "V";
 
     VertexElement(AbstractGraknGraph graknGraph, Vertex element) {
-        super(graknGraph, element, PREFIX);
+        super(graknGraph, element, Schema.PREFIX_VERTEX);
     }
 
     /**

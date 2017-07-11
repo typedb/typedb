@@ -41,6 +41,9 @@ import javax.annotation.CheckReturnValue;
  * @author Filipe Teixeira
  */
 public final class Schema {
+    public final static String PREFIX_VERTEX = "V";
+    public final static String PREFIX_EDGE = "E";
+
     private Schema() {
         throw new UnsupportedOperationException();
     }

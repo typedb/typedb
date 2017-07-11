@@ -159,7 +159,7 @@ public class PostProcessingTest extends GraphTestBase{
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), type.currentShard().vertex().element());
         resourceVertex.property(Schema.VertexProperty.INDEX.name(), index);
         resourceVertex.property(Schema.VertexProperty.VALUE_STRING.name(), value);
-        resourceVertex.property(Schema.VertexProperty.ID.name(), VertexElement.PREFIX + resourceVertex.id().toString());
+        resourceVertex.property(Schema.VertexProperty.ID.name(), Schema.PREFIX_VERTEX + resourceVertex.id().toString());
 
         return new ResourceImpl<>(new VertexElement(graknGraph, resourceVertex));
     }

@@ -42,14 +42,15 @@ public class PostProcessingTestUtils {
     static <T> Set<Vertex> createDuplicateResource(GraknGraph graknGraph, ResourceType<T> resourceType, Resource<T> resource) {
         AbstractGraknGraph<?> graph = (AbstractGraknGraph<?>) graknGraph;
         Vertex originalResource = graph.getTinkerTraversal()
-                .hasId(resource.getId().getValue()).next();
-        Vertex vertexResourceTypeShard = graph.getTinkerTraversal()
-                .hasId(resourceType.getId().getValue()).in(Schema.EdgeLabel.SHARD.getLabel()).next();
+                .has(Schema.VertexProperty.ID.name(), resource.getId().getValue()).next();
+        Vertex vertexResourceTypeShard = graph.getTinkerTraversal().
+                has(Schema.VertexProperty.ID.name(), resourceType.getId().getValue()).
+                in(Schema.EdgeLabel.SHARD.getLabel()).next();
 
         Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
         resourceVertex.property(Schema.VertexProperty.INDEX.name(),originalResource.value(Schema.VertexProperty.INDEX.name()));
         resourceVertex.property(Schema.VertexProperty.VALUE_STRING.name(), originalResource.value(Schema.VertexProperty.VALUE_STRING.name()));
-        resourceVertex.property(Schema.VertexProperty.ID.name(), resourceVertex.id().toString());
+        resourceVertex.property(Schema.VertexProperty.ID.name(), Schema.PREFIX_VERTEX + resourceVertex.id());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceTypeShard);
         // This is done to push the concept into the cache
