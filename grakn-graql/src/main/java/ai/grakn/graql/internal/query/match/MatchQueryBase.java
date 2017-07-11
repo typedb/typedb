@@ -92,9 +92,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, graph);
         LOG.trace("Created query plan");
         LOG.trace(graqlTraversal.toString());
-        System.out.println(graqlTraversal);
         GraphTraversal<Vertex, Map<String, Vertex>> traversal = graqlTraversal.getGraphTraversal(graph);
-        System.out.println(traversal);
 
         String[] selectedNames = pattern.commonVarNames().stream().map(Var::getValue).toArray(String[]::new);
 
