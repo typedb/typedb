@@ -20,12 +20,12 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.Type;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -138,8 +138,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     void checkValidProperty(GraknGraph graph, VarPatternAdmin var) {
-        Type type = graph.getOntologyConcept(resourceType);
-        if(type == null || !type.isResourceType()) {
+        OntologyConcept ontologyConcept = graph.getOntologyConcept(resourceType);
+        if(ontologyConcept == null || !ontologyConcept.isResourceType()) {
             throw GraqlQueryException.mustBeResourceType(resourceType);
         }
     }
