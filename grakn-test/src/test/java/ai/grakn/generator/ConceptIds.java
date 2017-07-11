@@ -22,7 +22,7 @@ package ai.grakn.generator;
 import ai.grakn.concept.ConceptId;
 
 /**
- * Generator that generates totally concept IDs
+ * Generator that generates totally random concept IDs
  */
 public class ConceptIds extends AbstractGenerator<ConceptId> {
 
