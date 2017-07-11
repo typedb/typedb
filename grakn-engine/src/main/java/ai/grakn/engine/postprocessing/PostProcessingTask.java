@@ -21,24 +21,23 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskSchedule;
-import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.engine.tasks.TaskSchedule;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
-import static com.codahale.metrics.MetricRegistry.name;
-import com.codahale.metrics.Timer.Context;
-import com.google.common.base.Preconditions;
+import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -63,29 +62,22 @@ public class PostProcessingTask extends BackgroundTask {
      */
     @Override
     public boolean start() {
-        try (Context context = metricRegistry()
-                .timer(name(PostProcessingTask.class, "execution")).time()) {
-            Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.RESOURCE, configuration());
+        Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.RESOURCE, configuration());
 
-            allToPostProcess.forEach((conceptIndex, conceptIds) -> {
-                Context contextSingle = metricRegistry()
-                        .timer(name(PostProcessingTask.class, "execution-single")).time();
-                try {
-                    String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
-                    int maxRetry = engineConfiguration()
-                            .getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+        allToPostProcess.entrySet().forEach(e -> {
+            String conceptIndex = e.getKey();
+            Set<ConceptId> conceptIds = e.getValue();
 
-                    GraphMutators.runGraphMutationWithRetry(factory(), keyspace, maxRetry,
-                            (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
-                } finally {
-                    contextSingle.stop();
-                }
-            });
+            String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
+            int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
-            LOG.debug(JOB_FINISHED, Schema.BaseType.RESOURCE.name(), allToPostProcess);
+            GraphMutators.runGraphMutationWithRetry(factory(), keyspace, maxRetry,
+                    (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
+        });
 
-            return true;
-        }
+        LOG.debug(JOB_FINISHED, Schema.BaseType.RESOURCE.name(), allToPostProcess);
+
+        return true;
     }
 
     /**
@@ -110,12 +102,12 @@ public class PostProcessingTask extends BackgroundTask {
      * @param conceptIds
      */
     private void runPostProcessingMethod(GraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds){
-        Preconditions.checkNotNull(this.getLockProvider(), "Lock provider was null, possible race condition in initialisation");
+
         if(graph.admin().duplicateResourcesExist(conceptIndex, conceptIds)){
 
             // Acquire a lock when you post process on an index to prevent race conditions
             // Lock is acquired after checking for duplicates to reduce runtime
-            Lock indexLock = this.getLockProvider().getLock(PostProcessingTask.LOCK_KEY + "/" + conceptIndex);
+            Lock indexLock = LockProvider.getLock(PostProcessingTask.LOCK_KEY + "/" + conceptIndex);
             indexLock.lock();
 
             try {

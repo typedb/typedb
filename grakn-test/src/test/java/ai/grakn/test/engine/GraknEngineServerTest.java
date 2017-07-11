@@ -18,20 +18,22 @@
 
 package ai.grakn.test.engine;
 
-import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
+import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
-import static junit.framework.TestCase.assertTrue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertNotNull;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
+import static ai.grakn.engine.GraknEngineConfig.ZK_CONNECTION_TIMEOUT;
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
 public class GraknEngineServerTest {
 
@@ -39,8 +41,7 @@ public class GraknEngineServerTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @Rule
-    public final EngineContext kafka = EngineContext.startNoQueue();
-
+    public final EngineContext kafka = EngineContext.startKafkaServer();
 
     @Test
     public void whenEnginePropertiesIndicatesStandaloneTM_StandaloneTmIsStarted() {
@@ -49,8 +50,7 @@ public class GraknEngineServerTest {
         conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, StandaloneTaskManager.class.getName());
 
         // Start Engine
-        try (GraknEngineServer server = new GraknEngineServer(conf)) {
-            server.start();
+        try (GraknEngineServer server = GraknEngineServer.start(conf)) {
             assertTrue(server.getTaskManager() instanceof StandaloneTaskManager);
         }
     }
@@ -60,12 +60,12 @@ public class GraknEngineServerTest {
         // Should start engine with distributed server, which means we will get a cannot
         // connect to Zookeeper exception (that has not been started)
         GraknEngineConfig conf = GraknEngineConfig.create();
-        conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
+        conf.setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
+        conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
 
         // Start Engine
-        try (GraknEngineServer server = new GraknEngineServer(conf)) {
-            server.start();
-            assertThat(server.getTaskManager(), instanceOf(RedisTaskManager.class));
+        try (GraknEngineServer server = GraknEngineServer.start(conf)) {
+            assertThat(server.getTaskManager(), instanceOf(SingleQueueTaskManager.class));
         }
     }
 
@@ -74,8 +74,7 @@ public class GraknEngineServerTest {
         GraknTestSetup.startCassandraIfNeeded();
 
         GraknEngineConfig conf = GraknEngineConfig.create();
-        try (GraknEngineServer server = new GraknEngineServer(conf)) {
-            server.start();
+        try (GraknEngineServer server = GraknEngineServer.start(conf)) {
             assertNotNull(server.factory().systemKeyspace());
 
             // init a random keyspace

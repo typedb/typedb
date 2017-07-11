@@ -19,9 +19,11 @@
 package ai.grakn.engine.tasks.connection;
 
 import ai.grakn.concept.ConceptId;
-import java.util.function.Function;
 import redis.clients.jedis.Jedis;
-import redis.clients.util.Pool;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
+
+import java.util.function.Function;
 
 /**
  * <p>
@@ -29,20 +31,24 @@ import redis.clients.util.Pool;
  * </p>
  *
  * <p>
- *    Given a pool of connections to Redis, it manages the counting
+ *    A class which manages the connection to the central Redis cache.
+ *    This serves as a cache for keeping track of the counts of concepts which may be in need of sharding.
  * </p>
  *
  * @author fppt
  */
-public class RedisCountStorage {
-    private Pool<Jedis> jedisPool;
+public class RedisConnection {
 
-    private RedisCountStorage(Pool<Jedis> jedisPool){
-        this.jedisPool = jedisPool;
+    private JedisPool jedisPool;
+
+    private RedisConnection(String url, int port){
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setMaxTotal(128);
+        jedisPool = new JedisPool(poolConfig, url, port);
     }
 
-    public static RedisCountStorage create(Pool<Jedis> jedisPool) {
-        return new RedisCountStorage(jedisPool);
+    public static RedisConnection create(String url, int port) {
+        return new RedisConnection(url, port);
     }
 
     /**

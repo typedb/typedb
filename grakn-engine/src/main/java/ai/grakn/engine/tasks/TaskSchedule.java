@@ -17,11 +17,8 @@
  *
  */
 
-package ai.grakn.engine.tasks.manager;
+package ai.grakn.engine.tasks;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.time.Duration;
@@ -77,14 +74,9 @@ public class TaskSchedule implements Serializable {
         return new TaskSchedule(instant, requireNonNull(interval));
     }
 
-    public TaskSchedule(Instant runAt, @Nullable Duration interval) {
+    private TaskSchedule(Instant runAt, @Nullable Duration interval) {
         this.runAt = requireNonNull(runAt);
         this.interval = interval;
-    }
-
-    @JsonCreator
-    public TaskSchedule(@JsonProperty("runAt") long runAt, @JsonProperty("interval") @Nullable Long interval) {
-        this(Instant.ofEpochMilli(runAt), interval != null ? Duration.ofMillis(interval) : null);
     }
 
     /**
@@ -94,12 +86,6 @@ public class TaskSchedule implements Serializable {
         return runAt;
     }
 
-    @JsonProperty("runAt")
-    public long getRunAt() {
-        return runAt.toEpochMilli();
-    }
-
-
     /**
      * Get the interval that the task should recur, if it is a recurring task.
      */
@@ -107,15 +93,9 @@ public class TaskSchedule implements Serializable {
         return Optional.ofNullable(interval);
     }
 
-    @JsonProperty("interval")
-    public Long getInterval() {
-        return interval != null ? interval.toMillis() : null;
-    }
-
     /**
      * Get whether the task is a recurring task.
      */
-    @JsonIgnore
     public boolean isRecurring() {
         return interval != null;
     }

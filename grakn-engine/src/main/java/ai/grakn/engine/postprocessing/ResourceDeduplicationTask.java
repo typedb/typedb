@@ -27,7 +27,6 @@ import ai.grakn.concept.Resource;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.util.Schema;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -84,8 +83,11 @@ public class ResourceDeduplicationTask extends BackgroundTask {
      * @author borislav
      *
      */
-    @SuppressFBWarnings("CN_IMPLEMENTS_CLONE_BUT_NOT_CLONEABLE")
     public static class Job implements MapReduce<String, ConceptId, String, Long, Long> {
+        static Schema.VertexProperty[] possibleValues =
+            {Schema.VertexProperty.VALUE_BOOLEAN, Schema.VertexProperty.VALUE_DOUBLE, Schema.VertexProperty.VALUE_FLOAT,
+             Schema.VertexProperty.VALUE_INTEGER, Schema.VertexProperty.VALUE_LONG, Schema.VertexProperty.VALUE_STRING};
+        
         private boolean deleteUnattached = false;
         private String keyspace;
         private String uri;
@@ -193,7 +195,6 @@ public class ResourceDeduplicationTask extends BackgroundTask {
 
         @Override
         public MapReduce<String, ConceptId, String, Long, Long> clone() {
-            // TODO: verify this is the right behaviour
             return this;
         }
 

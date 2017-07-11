@@ -9,7 +9,6 @@ import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
-import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -65,7 +64,7 @@ public class GraqlControllerTest {
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(GraknEngineConfig.create().getProperties());
-        new GraqlController(factory, spark, new MetricRegistry());
+        new GraqlController(factory, spark);
     });
 
     @Before

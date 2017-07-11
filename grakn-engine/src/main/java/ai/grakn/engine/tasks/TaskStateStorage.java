@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.tasks.manager;
+package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;

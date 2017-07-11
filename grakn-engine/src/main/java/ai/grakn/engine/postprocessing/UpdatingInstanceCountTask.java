@@ -21,23 +21,21 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.connection.RedisCountStorage;
-import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskSchedule;
-import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.engine.tasks.TaskSchedule;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.connection.RedisConnection;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.REST;
-import static com.codahale.metrics.MetricRegistry.name;
-import com.codahale.metrics.Timer.Context;
+import mjson.Json;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -51,55 +49,29 @@ import org.slf4j.LoggerFactory;
  * @author fppt
  */
 public class UpdatingInstanceCountTask extends BackgroundTask {
-    private final static Logger LOG = LoggerFactory.getLogger(UpdatingInstanceCountTask.class);
 
     @Override
     public boolean start() {
-        final long shardingThreshold = engineConfiguration().getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
-        final int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
-        try (Context context = metricRegistry()
-                .timer(name(UpdatingInstanceCountTask.class, "execution")).time()) {
-            Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
-            metricRegistry().histogram(name(UpdatingInstanceCountTask.class, "jobs"))
-                    .update(jobs.size());
-            String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
+        long shardingThreshold = engineConfiguration().getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
+        int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
-            //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
-            //The graph cannot be used because each engine can have it's own snapshot of the graph with caching which makes
-            //values only approximately correct
-            Set<ConceptId> conceptToShard = new HashSet<>();
+        Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
+        String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
 
-            //Update counts
-            jobs.forEach((key, value) -> {
-                metricRegistry()
-                        .histogram(name(UpdatingInstanceCountTask.class, "shard-size-increase"))
-                        .update(value);
-                Context contextSingle = metricRegistry()
-                        .timer(name(UpdatingInstanceCountTask.class, "execution-single")).time();
-                try {
-                    if (updateShardCounts(redis(), keyspace, key, value, shardingThreshold)) {
-                        conceptToShard.add(key);
-                    }
-                } finally {
-                    contextSingle.stop();
-                }
-            });
+        //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
+        //The graph cannot be used because each engine can have it's own snapshot of the graph with caching which makes
+        //values only approximately correct
+        Set<ConceptId> conceptToShard = new HashSet<>();
 
-            //Shard anything which requires sharding
-            conceptToShard.forEach(type -> {
-                Context contextSharding = metricRegistry().timer("sharding").time();
-                try {
-                    shardConcept(redis(), factory(), keyspace, type, maxRetry, shardingThreshold);
-                } finally {
-                    contextSharding.stop();
-                }
-            });
-            LOG.debug("Updating instance count successful for {} tasks", jobs.size());
-            return true;
-        } catch(Exception e) {
-            LOG.error("Could not terminate task", e);
-            throw e;
-        }
+        //Update counts
+        jobs.forEach((key, value) -> {
+            if(updateShardCounts(redis(), keyspace, key, value, shardingThreshold)) conceptToShard.add(key);
+        });
+
+        //Shard anything which requires sharding
+        conceptToShard.forEach(type -> shardConcept(redis(), factory(), keyspace, type, maxRetry, shardingThreshold));
+
+        return true;
     }
 
     /**
@@ -123,11 +95,10 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @return true if sharding is needed.
      */
     private static boolean updateShardCounts(
-            RedisCountStorage redis, String keyspace, ConceptId conceptId, long value, long shardingThreshold){
-        long numShards = redis.getCount(RedisCountStorage.getKeyNumShards(keyspace, conceptId));
+            RedisConnection redis, String keyspace, ConceptId conceptId, long value, long shardingThreshold){
+        long numShards = redis.getCount(RedisConnection.getKeyNumShards(keyspace, conceptId));
         if(numShards == 0) numShards = 1;
-        long numInstances = redis.adjustCount(
-                RedisCountStorage.getKeyNumInstances(keyspace, conceptId), value);
+        long numInstances = redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace, conceptId), value);
         return numInstances > shardingThreshold * numShards;
     }
 
@@ -141,9 +112,10 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @param keyspace The graph containing the type to shard
      * @param conceptId The id of the concept to shard
      */
-    private void shardConcept(RedisCountStorage redis, EngineGraknGraphFactory factory,
-            String keyspace, ConceptId conceptId, int maxRetry, long shardingThreshold){
-        Lock engineLock = this.getLockProvider().getLock(getLockingKey(keyspace, conceptId));
+    private static void shardConcept(
+            RedisConnection redis, EngineGraknGraphFactory factory, String keyspace, ConceptId conceptId, int maxRetry,
+            long shardingThreshold){
+        Lock engineLock = LockProvider.getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
 
         try {
@@ -157,7 +129,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
                 });
 
                 //Update number of shards
-                redis.adjustCount(RedisCountStorage.getKeyNumShards(keyspace, conceptId), 1);
+                redis.adjustCount(RedisConnection.getKeyNumShards(keyspace, conceptId), 1);
             }
         } finally {
             engineLock.unlock();
