@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -88,7 +89,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                    String id = vertex.id().toString();
+                    String id = vertex.value(Schema.VertexProperty.ID.name());
                     vertex.property(clusterLabel, id);
                     messenger.sendMessage(messageScopeShortcutIn, id);
                     messenger.sendMessage(messageScopeShortcutOut, id);

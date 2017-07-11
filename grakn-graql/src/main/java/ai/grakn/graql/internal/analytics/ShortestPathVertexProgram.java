@@ -22,6 +22,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -116,7 +117,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
             case 0:
                 if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
                     // send message from both source(1) and destination(-1) vertex
-                    String id = vertex.id().toString();
+                    String id = vertex.value(Schema.VertexProperty.ID.name());
                     if (persistentProperties.get(SOURCE).equals(id)) {
                         LOGGER.debug("Found source vertex");
                         vertex.property(PREDECESSOR, "");
@@ -135,7 +136,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
             default:
                 if (memory.<Boolean>get(FOUND_PATH)) {
                     //This will likely have to change as we support more and more vendors.
-                    String id = vertex.id().toString();
+                    String id = vertex.value(Schema.VertexProperty.ID.name());
                     if (memory.get(PREDECESSOR_FROM_SOURCE).equals(id)) {
                         LOGGER.debug("Traversing back to vertex " + id);
                         memory.set(PREDECESSOR_FROM_SOURCE, vertex.value(PREDECESSOR));
@@ -155,7 +156,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     private void updateInstance(Vertex vertex, Messenger<Tuple> messenger, Memory memory) {
         if (!vertex.property(PREDECESSOR).isPresent()) {
-            String id = vertex.id().toString();
+            String id = vertex.value(Schema.VertexProperty.ID.name());
             LOGGER.debug("Considering instance " + id);
 
             Iterator<Tuple> iterator = messenger.receiveMessages();
@@ -216,7 +217,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                     if ((int) message.getValue(DIRECTION) == -1) {
                         LOGGER.debug("Found path");
                         memory.or(FOUND_PATH, true);
-                        memory.set(PREDECESSORS, vertex.id().toString() + DIVIDER + message.getValue(ID));
+                        memory.set(PREDECESSORS, vertex.value(Schema.VertexProperty.ID.name()) +
+                                DIVIDER + message.getValue(ID));
                         return;
                     }
                 }
@@ -227,7 +229,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                     if ((int) message.getValue(DIRECTION) == 1) {
                         LOGGER.debug("Found path");
                         memory.or(FOUND_PATH, true);
-                        memory.set(PREDECESSORS, message.getValue(ID) + DIVIDER + vertex.id().toString());
+                        memory.set(PREDECESSORS, message.getValue(ID) + DIVIDER +
+                                vertex.value(Schema.VertexProperty.ID.name()));
                         return;
                     }
                 }
