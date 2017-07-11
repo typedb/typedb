@@ -138,7 +138,7 @@ abstract class ConceptImpl implements Concept, ConceptVertex {
      */
     @Override
     public ConceptId getId(){
-        return ConceptId.of(vertex().id().getValue().toString());
+        return ConceptId.of(vertex().id().getValue());
     }
 
     @Override public int hashCode() {

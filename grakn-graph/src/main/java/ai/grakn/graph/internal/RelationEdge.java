@@ -53,7 +53,7 @@ public class RelationEdge implements RelationStructure{
 
     @Override
     public ConceptId getId() {
-        return null;
+        return ConceptId.of(edge().id().getValue());
     }
 
     @Override

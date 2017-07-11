@@ -36,15 +36,15 @@ import java.io.Serializable;
 class ElementId implements Serializable {
 
     private static final long serialVersionUID = 6688475951939464790L;
-    private Object elementId;
+    private String elementId;
     private int hashCode = 0;
 
-    private ElementId(Object conceptId){
+    private ElementId(String conceptId){
         this.elementId = conceptId;
     }
 
     @CheckReturnValue
-    public Object getValue(){
+    public String getValue(){
         return elementId;
     }
 
@@ -53,26 +53,20 @@ class ElementId implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ElementId cast = (ElementId) o;
-        if (elementId instanceof String) {
-            return elementId.equals(cast.elementId.toString());
-        }
-        else if (cast.elementId instanceof String) {
-            return cast.elementId.equals(elementId.toString());
-        }
         return elementId.equals(cast.elementId);
     }
 
     @Override
     public int hashCode() {
         if (hashCode == 0 ){
-            hashCode = elementId.toString().hashCode();
+            hashCode = elementId.hashCode();
         }
         return hashCode;
     }
 
     @Override
     public String toString(){
-        return getValue().toString();
+        return getValue();
     }
 
     /**
@@ -81,7 +75,7 @@ class ElementId implements Serializable {
      * @return The matching concept ID
      */
     @CheckReturnValue
-    public static ElementId of(Object value){
+    public static ElementId of(String value){
         return new ElementId(value);
     }
 }
