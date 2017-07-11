@@ -44,22 +44,42 @@
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>spark-gremlin</artifactId>
-            <version>3.1.1-incubating</version>
+            <version>${spark-gremlin.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>javax.servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jackson-annotations</artifactId>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jackson-core</artifactId>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>hadoop-gremlin</artifactId>
-            <version>3.1.1-incubating</version>
+            <version>${spark-gremlin.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>javax.servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

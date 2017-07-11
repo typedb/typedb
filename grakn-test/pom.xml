@@ -124,6 +124,10 @@
                     <groupId>com.fasterxml.jackson.core</groupId>
                     <artifactId>jackson-annotations</artifactId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>jackson-core</artifactId>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                </exclusion>
             </exclusions>
             <scope>test</scope>
         </dependency>
@@ -164,12 +168,6 @@
             <version>${systen-rules.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.apache.curator</groupId>
-            <artifactId>curator-test</artifactId>
-            <scope>test</scope>
-            <version>${curator.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>ai.grakn</groupId>
@@ -181,6 +179,10 @@
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-nop</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jackson-module-scala_2.10</artifactId>
+                    <groupId>com.fasterxml.jackson.module</groupId>
                 </exclusion>
             </exclusions>
         </dependency>

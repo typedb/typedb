@@ -20,36 +20,33 @@ package ai.grakn.test.engine.tasks;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskSchedule;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.manager.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskSchedule;
+import static ai.grakn.engine.tasks.manager.TaskSchedule.now;
+import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.engine.tasks.TaskSchedule.now;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
+import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class holding useful methods for use throughout background task tests
@@ -89,33 +86,30 @@ public class BackgroundTaskTestUtils {
         waitForStatus(storage, task.getId(), status);
     }
 
-    public static void waitForStatus(TaskStateStorage storage, TaskId task, Set<TaskStatus> status) {
+    // Added the synchronized because for some reason some variable update wasn't shared between threads
+    public static synchronized void waitForStatus(TaskStateStorage storage, TaskId task, Set<TaskStatus> status) {
         Instant initial = Instant.now();
-
-        while(true) {
-            long duration = Duration.between(initial, Instant.now()).toMillis();
-            if (duration > 120000){
-                TaskStatus finalStatus = storage.containsTask(task) ? storage.getState(task).status() : null;
-                LOG.warn("Waiting for status of " + task + " to be any of " + status + ", but status is " + finalStatus);
-                initial = Instant.now();
-            }
-
+        long duration = Duration.between(initial, Instant.now()).toMillis();
+        while(duration < 30000) {
             if (storage.containsTask(task)) {
-                TaskStatus currentStatus = storage.getState(task).status();
+                               TaskStatus currentStatus = storage.getState(task).status();
                 if (status.contains(currentStatus)) {
                     return;
                 }
             }
-
             try {
-                Thread.sleep(100);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
+                break;
             }
+            duration = Duration.between(initial, Instant.now()).toMillis();
         }
+        TaskStatus finalStatus = storage.containsTask(task) ? storage.getState(task).status() : null;
+        LOG.warn("Waiting for status of " + task + " to be any of " + status + ", but status is " + finalStatus);
     }
 
-    public static Multiset<TaskId> completableTasks(List<TaskState> tasks) {
+    public static Multiset<TaskId> completableTasks(Set<TaskState> tasks) {
         Map<TaskId, Long> tasksById = tasks.stream().collect(groupingBy(TaskState::getId, counting()));
         Set<TaskId> retriedTasks = Maps.filterValues(tasksById, count -> count != null && count > 1).keySet();
 
@@ -146,7 +140,7 @@ public class BackgroundTaskTestUtils {
         return ImmutableMultiset.copyOf(completableTasks);
     }
 
-    public static Set<TaskId> failingTasks(List<TaskState> tasks) {
+    public static Set<TaskId> failingTasks(Set<TaskState> tasks) {
         Multiset<TaskId> completableTasks = completableTasks(tasks);
         return tasks.stream().map(TaskState::getId).filter(task -> !completableTasks.contains(task)).collect(toSet());
     }
