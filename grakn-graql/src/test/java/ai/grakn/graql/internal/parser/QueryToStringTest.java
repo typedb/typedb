@@ -67,6 +67,7 @@ public class QueryToStringTest {
                 ),
                 var("y").has("name", var("n"))
         ).orderBy("n").select("x", "y").limit(8).offset(4);
+        System.out.println(query);
         assertSameResults(query);
     }
 
@@ -211,12 +212,6 @@ public class QueryToStringTest {
     @Test
     public void testDecimalToString() {
         assertEquals("match $x val 0.0001;", qb.match(var("x").val(0.0001)).toString());
-    }
-
-    @Test(expected=UnsupportedOperationException.class)
-    public void testToStringUnsupported() {
-        //noinspection ResultOfMethodCallIgnored
-        qb.match(var("x").isa(var().val("abc"))).toString();
     }
 
     @Test

@@ -96,7 +96,7 @@ class VarPatternImpl extends AbstractVarPattern {
 
         StringBuilder builder = new StringBuilder();
 
-        String name = getVarName().isUserDefinedName() ? getPrintableName() : "";
+        String name = getVarName().isUserDefinedName() ? getVarName().toString() : "";
 
         builder.append(name);
 

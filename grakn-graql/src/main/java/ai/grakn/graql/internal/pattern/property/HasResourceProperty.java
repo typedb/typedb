@@ -111,7 +111,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         repr.add(typeLabelToString(resourceType));
 
         if (resource.getVarName().isUserDefinedName()) {
-            repr.add(resource.getPrintableName());
+            repr.add(resource.getVarName().toString());
         } else {
             resource.getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.getPredicate().toString()));
         }
