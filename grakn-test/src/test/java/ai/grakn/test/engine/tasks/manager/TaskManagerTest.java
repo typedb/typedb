@@ -19,46 +19,54 @@
 package ai.grakn.test.engine.tasks.manager;
 
 import ai.grakn.engine.TaskStatus;
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import ai.grakn.engine.tasks.manager.TaskCheckpoint;
-import ai.grakn.engine.tasks.manager.TaskManager;
-import static ai.grakn.engine.tasks.manager.TaskSchedule.now;
-import static ai.grakn.engine.tasks.manager.TaskSchedule.recurring;
-import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskSchedule;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskResumes;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.generator.TaskManagers;
 import ai.grakn.generator.TaskStates;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
+import com.google.common.collect.ImmutableList;
+import com.pholser.junit.quickcheck.Property;
+import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import mjson.Json;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.tasks.TaskSchedule.now;
+import static ai.grakn.engine.tasks.TaskSchedule.recurring;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskResumes;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
-import com.google.common.collect.ImmutableList;
-import com.pholser.junit.quickcheck.Property;
-import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import java.time.Duration;
 import static java.time.Duration.between;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import static java.util.stream.Collectors.toList;
-import java.util.stream.Stream;
-import mjson.Json;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -67,16 +75,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
-import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Test all implementations of the TaskManager interface
@@ -93,7 +94,7 @@ public class TaskManagerTest {
     }
 
     @ClassRule
-    public static EngineContext engineContext = EngineContext.startSingleQueueServer();
+    public static EngineContext kafka = EngineContext.startKafkaServer();
 
     @AfterClass
     public static void closeTaskManagers(){
@@ -101,15 +102,11 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    public void afterRunning_AllNonFailingTasksAreRecordedAsCompleted(Set<TaskState> tasks, TaskManager manager) {
+    public void afterRunning_AllNonFailingTasksAreRecordedAsCompleted(List<TaskState> tasks, TaskManager manager) {
         // Schedule tasks
         tasks.forEach((taskState) -> manager.addTask(taskState, configuration(taskState)));
 
         waitForDoneStatus(manager.storage(), tasks);
-
-        assertTrue(tasks.stream().map((taskState) -> manager.storage().getState(taskState.getId()))
-                .peek(a -> System.out.println("ID: " + a.getId()))
-                .allMatch(Objects::nonNull));
 
         completableTasks(tasks).forEach(task ->
                 assertThat("Task " + task + " should have completed.", manager.storage().getState(task).status(), is(COMPLETED))
@@ -117,7 +114,7 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    public void afterRunning_AllFailingTasksAreRecordedAsFailed(Set<TaskState> tasks, TaskManager manager) {
+    public void afterRunning_AllFailingTasksAreRecordedAsFailed(List<TaskState> tasks, TaskManager manager) {
         // Schedule tasks
         tasks.forEach((taskState) -> manager.addTask(taskState, configuration(taskState)));
 
@@ -129,7 +126,6 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    @Ignore("Stopping not implemented")
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(TaskState task, TaskManager manager) {
         manager.stopTask(task.getId());
 
@@ -141,7 +137,6 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    @Ignore("Stopping not implemented")
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(TaskState task, TaskManager manager) {
         manager.stopTask(task.getId());
 
@@ -153,7 +148,6 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    @Ignore("Stopping not implemented")
     public void whenStoppingATaskDuringExecution_TheTaskIsCancelled(
             @TaskStates.WithClass(EndlessExecutionMockTask.class) TaskState task, TaskManager manager) {
         whenTaskStarts(manager::stopTask);
@@ -167,7 +161,6 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    @Ignore("Stopping not implemented")
     public void whenStoppingATaskDuringExecution_TheTaskIsMarkedAsStopped(
             @TaskStates.WithClass(EndlessExecutionMockTask.class) TaskState task, TaskManager manager) {
         whenTaskStarts(manager::stopTask);
@@ -180,7 +173,6 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    @Ignore("Stopping not implemented")
     public void whenStoppingATaskAfterExecution_TheTaskIsNotCancelled(TaskState task, TaskManager manager) {
         whenTaskFinishes(manager::stopTask);
 
@@ -192,7 +184,6 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    @Ignore("Stopping not implemented")
     public void whenStoppingATaskAfterExecution_TheTaskIsMarkedAsCompleted(TaskState task, TaskManager manager) {
         whenTaskFinishes(manager::stopTask);
 
@@ -256,7 +247,6 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    @Ignore("Stopping not implemented")
     public void whenRecurringTaskSubmitted_ItExecutesMoreThanOnce(
             @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task, TaskManager manager) {
 
@@ -272,7 +262,7 @@ public class TaskManagerTest {
         );
 
         // Make task recurring
-        task.schedule(recurring(Instant.now(), Duration.ofMillis(100)));
+        task.schedule(TaskSchedule.recurring(Instant.now(), Duration.ofMillis(100)));
 
         // Execute task and wait for it to complete
         manager.addTask(task, configuration(task));
@@ -284,7 +274,6 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    @Ignore("Stopping not implemented")
     public void whenRecurringTaskSubmitted_ThereIsAnIntervalBetweenExecutions(
             @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task, TaskManager manager) {
 
@@ -308,7 +297,7 @@ public class TaskManagerTest {
         });
 
         // Make task recurring
-        task.schedule(recurring(interval));
+        task.schedule(TaskSchedule.recurring(interval));
 
         // Execute task and wait for it to complete
         manager.addTask(task, configuration(task));
@@ -332,7 +321,7 @@ public class TaskManagerTest {
         });
 
         // Make task recurring
-        task.schedule(recurring(Instant.now(), Duration.ofSeconds(10)));
+        task.schedule(TaskSchedule.recurring(Instant.now(), Duration.ofSeconds(10)));
 
         // Execute task and wait for it to complete
         manager.addTask(task, configuration(task));
@@ -344,7 +333,6 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    @Ignore("Checkpoint not implemented")
     public void whenATaskIsRestartedAfterExecution_ItIsResumed(
             @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task, TaskManager manager) {
         ShortExecutionMockTask.resumedCounter.set(0);
@@ -359,7 +347,6 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    @Ignore("Checkpoint not implemented")
     public void whenATaskIsRestartedAfterExecution_ItIsResumedFromLastCheckpoint(
             @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task, TaskManager manager) {
         TaskCheckpoint checkpoint = TaskCheckpoint.of(Json.object("checkpoint", true));
@@ -372,11 +359,10 @@ public class TaskManagerTest {
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 
         // Assert that status is not FAILED
-        assertStatus(manager, task, COMPLETED);
+        assertStatus(manager, task, TaskStatus.COMPLETED);
     }
 
     @Property(trials=10)
-    @Ignore("Checkpoint not implemented")
     public void whenATaskIsStoppedDuringExecution_ItSavesItsLastCheckpoint(
             @TaskStates.WithClass(EndlessExecutionMockTask.class) TaskState task, TaskManager manager) {
         whenTaskStarts(manager::stopTask);

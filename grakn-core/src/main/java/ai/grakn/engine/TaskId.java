@@ -19,10 +19,8 @@
 
 package ai.grakn.engine;
 
-import java.util.UUID;
 import javax.annotation.CheckReturnValue;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
+import java.util.UUID;
 
 /**
  * An identifier for a task
@@ -30,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
  * @author Felix Chapman
  */
 public final class TaskId {
-    private String value;
+    private final String value;
 
     @CheckReturnValue
     public static TaskId of(String value) {
@@ -42,10 +40,7 @@ public final class TaskId {
         return new TaskId(UUID.randomUUID().toString());
     }
 
-    public TaskId() {}
-
-    @JsonCreator
-    public TaskId(@JsonProperty("value") String value) {
+    private TaskId(String value) {
         this.value = value;
     }
 
@@ -53,7 +48,6 @@ public final class TaskId {
      * Get the string value of the task ID
      */
     @CheckReturnValue
-    @JsonProperty("value")
     public String getValue() {
         return value;
     }

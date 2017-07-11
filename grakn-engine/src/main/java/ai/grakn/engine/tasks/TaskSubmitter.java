@@ -16,27 +16,26 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.lock;
+package ai.grakn.engine.tasks;
 
-import com.google.common.util.concurrent.Striped;
-import java.util.concurrent.locks.Lock;
+import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 
 /**
- *
  * <p>
- *     Simple locking meachanism that can be used in case of single engine execution
+ *     Submits Background Tasks for processing
  * </p>
  *
- * @author alexandraorth
+ * <p>
+ *     Allows tasks to be submitted for processing. Any task submitted is added to {@link TaskStateStorage}
+ *     and is later executed by Task runner such as {@link SingleQueueTaskRunner}.
+ * </p>
+ *
+ * @author fppt
  */
-public class ProcessWideLockProvider implements LockProvider {
-
-    private Striped<Lock> locks = Striped.lazyWeakLock(128);
-
-    public ProcessWideLockProvider(){
-    }
-
-    public Lock getLock(String lockToObtain){
-        return locks.get(lockToObtain);
-    }
+public interface TaskSubmitter {
+    /**
+     * Schedule a {@link BackgroundTask} for execution.
+     * @param taskState Task to execute
+     */
+    void addTask(TaskState taskState, TaskConfiguration configuration);
 }

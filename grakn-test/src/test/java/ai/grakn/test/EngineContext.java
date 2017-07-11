@@ -21,29 +21,27 @@ package ai.grakn.test;
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.connection.RedisConnection;
+import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
+import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
+import ai.grakn.engine.tasks.mock.MockBackgroundTask;
+import ai.grakn.util.GraphLoader;
+import com.jayway.restassured.RestAssured;
+import org.junit.rules.ExternalResource;
+
+import javax.annotation.Nullable;
+
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_URL;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
-import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.tasks.connection.RedisCountStorage;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.engine.tasks.manager.TaskManager;
-import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
-import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.test.GraknTestEngineSetup.startEngine;
+import static ai.grakn.test.GraknTestEngineSetup.startKafka;
 import static ai.grakn.test.GraknTestEngineSetup.startRedis;
 import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
 import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
-import static ai.grakn.util.GraphLoader.randomKeyspace;
-import com.jayway.restassured.RestAssured;
-import javax.annotation.Nullable;
-import org.junit.rules.ExternalResource;
-import org.redisson.Redisson;
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
 
 /**
  * <p>
@@ -56,26 +54,27 @@ public class EngineContext extends ExternalResource {
 
     private GraknEngineServer server;
 
+    private final boolean startKafka;
     private final boolean startSingleQueueEngine;
     private final boolean startStandaloneEngine;
     private final GraknEngineConfig config = GraknTestEngineSetup.createTestConfig();
-    private RedissonClient redissonClient;
 
-    private EngineContext(boolean startSingleQueueEngine, boolean startStandaloneEngine){
+    private EngineContext(boolean startKafka, boolean startSingleQueueEngine, boolean startStandaloneEngine){
         this.startSingleQueueEngine = startSingleQueueEngine;
         this.startStandaloneEngine = startStandaloneEngine;
+        this.startKafka = startKafka;
     }
 
-    public static EngineContext startNoQueue(){
-        return new EngineContext( false, false);
+    public static EngineContext startKafkaServer(){
+        return new EngineContext(true, false, false);
     }
 
     public static EngineContext startSingleQueueServer(){
-        return new EngineContext( true, false);
+        return new EngineContext(true, true, false);
     }
 
     public static EngineContext startInMemoryServer(){
-        return new EngineContext( false, true);
+        return new EngineContext(false, false, true);
     }
 
     public EngineContext port(int port) {
@@ -91,10 +90,8 @@ public class EngineContext extends ExternalResource {
         return config;
     }
 
-    public RedisCountStorage redis() {
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        JedisPool jedisPool = new JedisPool(poolConfig, config.getProperty(REDIS_SERVER_URL), config.getPropertyAsInt(REDIS_SERVER_PORT));
-        return RedisCountStorage.create(jedisPool);
+    public RedisConnection redis() {
+        return RedisConnection.create(config.getProperty(REDIS_SERVER_URL), config.getPropertyAsInt(REDIS_SERVER_PORT));
     }
 
     public TaskManager getTaskManager(){
@@ -107,7 +104,7 @@ public class EngineContext extends ExternalResource {
 
     //TODO Rename this method to "sessionWithNewKeyspace"
     public GraknSession factoryWithNewKeyspace() {
-        return Grakn.session(uri(), randomKeyspace());
+        return Grakn.session(uri(), GraphLoader.randomKeyspace());
     }
 
     @Override
@@ -116,33 +113,26 @@ public class EngineContext extends ExternalResource {
         if (!config.getPropertyAsBool("test.start.embedded.components", true)) {
             return;
         }
-
-        try {
-            startRedis(config);
-            Config rConfig = new Config();
-            rConfig.useSingleServer().setAddress("127.0.0.1:" + config.tryProperty(REDIS_SERVER_PORT).orElse("6379" ));
-
-            this.redissonClient = Redisson.create(rConfig);
-
-            @Nullable Class<? extends TaskManager> taskManagerClass = null;
-
-            if(startSingleQueueEngine){
-                taskManagerClass = RedisTaskManager.class;
-            }
-
-            if (startStandaloneEngine){
-                taskManagerClass = StandaloneTaskManager.class;
-            }
-
-            if (taskManagerClass != null) {
-                config.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
-                server = startEngine(config);
-            }
-        } catch (Exception e) {
-            stopRedis();
-            throw e;
+        if(startKafka){
+            startKafka(config);
         }
 
+        startRedis(config);
+
+        @Nullable Class<? extends TaskManager> taskManagerClass = null;
+
+        if(startSingleQueueEngine){
+            taskManagerClass = SingleQueueTaskManager.class;
+        }
+
+        if (startStandaloneEngine){
+            taskManagerClass = StandaloneTaskManager.class;
+        }
+
+        if (taskManagerClass != null) {
+            config.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
+            server = startEngine(config);
+        }
     }
 
     @Override
@@ -157,13 +147,13 @@ public class EngineContext extends ExternalResource {
                 noThrow(() -> stopEngine(server), "Error closing engine");
             }
 
+            if(startKafka){
+                noThrow(GraknTestEngineSetup::stopKafka, "Error stopping kafka");
+            }
+
             stopRedis();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
         }
-    }
-
-    public RedissonClient getRedissonClient() {
-        return redissonClient;
     }
 }

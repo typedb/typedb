@@ -56,7 +56,6 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static ai.grakn.util.REST.Response.EXCEPTION;
-import com.codahale.metrics.MetricRegistry;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -85,17 +84,14 @@ public class GraqlControllerReadOnlyTest {
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
     private static SystemKeyspace mockSystemKeyspace = mock(SystemKeyspace.class);
 
-    private static final JsonMapper jsonMapper = new JsonMapper();
-
     @ClassRule
     public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
 
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(spark  -> {
-        MetricRegistry metricRegistry = new MetricRegistry();
-        new SystemController(mockFactory, spark, metricRegistry);
-        new GraqlController(mockFactory, spark, metricRegistry);
-    }).port(8080); // TODO: Don't use the default port when bug #15130 is fixed
+    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
+        new SystemController(mockFactory, spark);
+        new GraqlController(mockFactory, spark);
+    });//.port(4567); // TODO: Don't use the default port when bug #15130 is fixed
 
     @Before
     public void setupMock() {
@@ -485,7 +481,7 @@ public class GraqlControllerReadOnlyTest {
     }
 
     protected static String exception(Response response) {
-        return response.getBody().as(Json.class, jsonMapper).at(EXCEPTION).asString();
+        return response.getBody().as(Json.class, new JsonMapper()).at(EXCEPTION).asString();
     }
 
     protected static String stringResponse(Response response) {
@@ -493,7 +489,7 @@ public class GraqlControllerReadOnlyTest {
     }
 
     protected static Json jsonResponse(Response response) {
-        return response.getBody().as(Json.class, jsonMapper);
+        return response.getBody().as(Json.class, new JsonMapper());
     }
 }
 

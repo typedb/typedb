@@ -16,36 +16,29 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.tasks.manager;
+package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
-import static ai.grakn.engine.TaskStatus.COMPLETED;
+import ai.grakn.engine.util.EngineID;
+
+import java.io.Serializable;
+import java.time.Instant;
+
 import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
-import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.util.EngineID;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.io.Serializable;
-import java.time.Instant;
 import static java.time.Instant.now;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Internal task state model used to keep track of scheduled tasks.
- * TODO: make immutable, fix json serialisation/deserialisation
  *
  * @author Denis Lobanov
  */
-@JsonInclude(Include.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class TaskState implements Serializable {
 
     private static final long serialVersionUID = -7301340972479426653L;
@@ -108,16 +101,7 @@ public class TaskState implements Serializable {
         return new TaskState(taskClass, creator, schedule, TaskId.generate(), priority);
     }
 
-    public static TaskState of(TaskId id) {
-        return new TaskState(null, null, null, id, null);
-    }
-
-    @JsonCreator
-    public TaskState(@JsonProperty("taskClass") Class<?> taskClass,
-            @JsonProperty("creator") String creator,
-            @JsonProperty("schedule") TaskSchedule schedule,
-            @JsonProperty("id") TaskId id,
-            @JsonProperty("priority") Priority priority) {
+    private TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, TaskId id, Priority priority) {
         this.status = CREATED;
         this.statusChangeTime = now();
         this.taskClassName = taskClass != null ? taskClass.getName() : null;
@@ -141,7 +125,6 @@ public class TaskState implements Serializable {
         this.priority = taskState.priority;
     }
 
-    @JsonProperty("id")
     public TaskId getId() {
         return TaskId.of(taskId);
     }
@@ -210,21 +193,11 @@ public class TaskState implements Serializable {
         return creator;
     }
 
-    @JsonProperty("creator")
-    public String getCreator() {
-        return creator;
-    }
-
     public EngineID engineID() {
         return engineID;
     }
 
     public TaskSchedule schedule() {
-        return schedule;
-    }
-
-    @JsonProperty("schedule")
-    public TaskSchedule getSchedule() {
         return schedule;
     }
 
@@ -256,36 +229,6 @@ public class TaskState implements Serializable {
 
     public TaskState copy() {
         return new TaskState(this);
-    }
-
-    @JsonProperty("serialVersionUID")
-    public static long getSerialVersionUID() {
-        return serialVersionUID;
-    }
-
-    @JsonProperty("priority")
-    public Priority getPriority() {
-        return priority;
-    }
-
-    @JsonProperty("status")
-    public TaskStatus getStatus() {
-        return status;
-    }
-
-    @JsonProperty("taskClassName")
-    public String getTaskClassName() {
-        return taskClassName;
-    }
-
-    @JsonProperty("engineId")
-    public EngineID getEngineID() {
-        return engineID;
-    }
-
-    @JsonProperty("taskCheckpoint")
-    public TaskCheckpoint getTaskCheckpoint() {
-        return taskCheckpoint;
     }
 
     @Override

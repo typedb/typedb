@@ -51,11 +51,8 @@ public class EngineTestHelper {
      * </p> 
      */
     public static synchronized void engine() {
-        if (server != null) {
-            return;
-        }
-        server = new GraknEngineServer(config());
-        server.start();
+        if (server != null) return;
+        server = GraknEngineServer.start(config());        
     }
 
     /**
@@ -66,7 +63,7 @@ public class EngineTestHelper {
         GraknTestSetup.startCassandraIfNeeded();
         engine();
     }
-
+    
     /**
      * Shutdown the engine server.
      */
