@@ -27,6 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -130,10 +131,11 @@ class RoleImpl extends OntologyConceptImpl<Role> implements Role {
      * @return Get all the roleplayers of this role type
      */
     public Stream<Casting> rolePlayers(){
-        //TODO: This should not call reify() it should call reified() but we need a way of getting the roleplayers from relation edges which are not linked to the relation type
         return relationTypes().stream().
                 flatMap(relationType -> relationType.instances().stream()).
-                flatMap(relation -> ((RelationImpl)relation).reify().castingsRelation(this));
+                map(relation -> RelationImpl.from(relation).reified()).
+                filter(Optional::isPresent).
+                flatMap(relation -> relation.get().castingsRelation(this));
     }
 
     @Override
