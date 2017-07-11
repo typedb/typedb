@@ -45,8 +45,8 @@ public class Utility {
      * @return the type
      */
     static LabelId getVertexTypeId(Vertex vertex) {
-        if (vertex.property(Schema.VertexProperty.INSTANCE_TYPE_ID.name()).isPresent()) {
-            return LabelId.of(vertex.value(Schema.VertexProperty.INSTANCE_TYPE_ID.name()));
+        if (vertex.property(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()).isPresent()) {
+            return LabelId.of(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()));
         }
         return LabelId.invalid();
     }

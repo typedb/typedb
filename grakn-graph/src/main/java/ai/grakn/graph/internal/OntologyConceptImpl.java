@@ -66,8 +66,8 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
 
     OntologyConceptImpl(VertexElement vertexElement) {
         super(vertexElement);
-        cachedLabel = Label.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
-        cachedLabelId = LabelId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
+        cachedLabel = Label.of(vertex().property(Schema.VertexProperty.LABEL));
+        cachedLabelId = LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID));
     }
 
     OntologyConceptImpl(VertexElement vertexElement, T superType) {

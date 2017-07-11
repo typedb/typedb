@@ -148,14 +148,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private LabelId getNextId(){
         TypeImpl<?, ?> metaConcept = (TypeImpl<?, ?>) getMetaConcept();
-        Integer currentValue = metaConcept.vertex().property(Schema.VertexProperty.CURRENT_TYPE_ID);
+        Integer currentValue = metaConcept.vertex().property(Schema.VertexProperty.CURRENT_LABEL_ID);
         if(currentValue == null){
             currentValue = Schema.MetaSchema.values().length + 1;
         } else {
             currentValue = currentValue + 1;
         }
         //Vertex is used directly here to bypass meta type mutation check
-        metaConcept.property(Schema.VertexProperty.CURRENT_TYPE_ID, currentValue);
+        metaConcept.property(Schema.VertexProperty.CURRENT_LABEL_ID, currentValue);
         return LabelId.of(currentValue);
     }
 
@@ -377,7 +377,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             vertex = addTypeVertex(getNextId(), label, baseType);
         } else {
             if(!baseType.equals(concept.baseType())) {
-                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.VertexProperty.TYPE_LABEL, label);
+                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.VertexProperty.LABEL, label);
             }
             vertex = concept.vertex();
         }
@@ -394,8 +394,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType){
         VertexElement vertexElement = addVertex(baseType);
-        vertexElement.property(Schema.VertexProperty.TYPE_LABEL, label.getValue());
-        vertexElement.property(Schema.VertexProperty.TYPE_ID, id.getValue());
+        vertexElement.property(Schema.VertexProperty.LABEL, label.getValue());
+        vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
         return vertexElement;
     }
 
@@ -428,7 +428,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         T finalType = validateOntologyElement(ontologyConcept, baseType, () -> {
             if(Schema.MetaSchema.isMetaLabel(label)) throw GraphOperationException.reservedLabel(label);
-            throw PropertyNotUniqueException.cannotCreateProperty(ontologyConcept, Schema.VertexProperty.TYPE_LABEL, label);
+            throw PropertyNotUniqueException.cannotCreateProperty(ontologyConcept, Schema.VertexProperty.LABEL, label);
         });
 
         //Automatic shard creation - If this type does not have a shard create one
@@ -547,7 +547,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Nullable
     <T extends OntologyConcept> T getOntologyConcept(LabelId id){
         if(!id.isValid()) return null;
-        return getConcept(Schema.VertexProperty.TYPE_ID, id.getValue());
+        return getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
     }
 
     @Override
@@ -652,14 +652,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //TODO: hasId() may be faster than has(ID, ...)
         boolean exists  = getTinkerTraversal().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), fromRelation.type().getLabelId().getValue()).
-                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), roleType.getLabelId().getValue()).inV().
+                has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
+                has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), roleType.getLabelId().getValue()).inV().
                 has(Schema.VertexProperty.ID.name(), toThing.getId()).hasNext();
 
         if(!exists){
             EdgeElement edge = RelationImpl.from(fromRelation).reify().addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.SHORTCUT);
-            edge.property(Schema.EdgeProperty.RELATION_TYPE_ID, fromRelation.type().getLabelId().getValue());
-            edge.property(Schema.EdgeProperty.ROLE_TYPE_ID, roleType.getLabelId().getValue());
+            edge.property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, fromRelation.type().getLabelId().getValue());
+            edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, roleType.getLabelId().getValue());
             txCache().trackForValidation(factory().buildRolePlayer(edge));
             txCache().trackForValidation(fromRelation); //This is so we can reassign the hash if needed
         }

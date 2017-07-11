@@ -63,8 +63,8 @@ import java.util.stream.Stream;
  */
 abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
     private Cache<Label> cachedInternalType = new Cache<>(() -> {
-        int typeId = vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID);
-        Type type = vertex().graph().getConcept(Schema.VertexProperty.TYPE_ID, typeId);
+        int typeId = vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID);
+        Type type = vertex().graph().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
         return type.getLabel();
     });
 
@@ -173,7 +173,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         } else {
             Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getLabelId().getValue()).collect(Collectors.toSet());
             traversal.inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                    has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).outV();
+                    has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).outV();
         }
         traversal.forEachRemaining(v -> relations.add(vertex().graph().buildConcept(v)));
 
@@ -254,7 +254,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
      */
     private void setInternalType(Type type){
         cachedInternalType.set(type.getLabel());
-        vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID, type.getLabelId().getValue());
+        vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID, type.getLabelId().getValue());
     }
 
     /**

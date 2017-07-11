@@ -72,7 +72,7 @@ class RelationEdge implements RelationStructure{
 
     @Override
     public RelationType type() {
-        LabelId labelId = LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_ID));
+        LabelId labelId = LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID));
         return graph.getOntologyConcept(labelId);
     }
 

@@ -250,7 +250,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         final Set<V> instances = new HashSet<>();
 
         GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerPopGraph().traversal().V()
-                .has(Schema.VertexProperty.TYPE_ID.name(), getLabelId().getValue())
+                .has(Schema.VertexProperty.LABEL_ID.name(), getLabelId().getValue())
                 .union(__.identity(),
                         __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
                 ).unfold()
@@ -372,7 +372,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
     }
 
     T property(Schema.VertexProperty key, Object value){
-        if(!Schema.VertexProperty.CURRENT_TYPE_ID.equals(key)) checkOntologyMutationAllowed();
+        if(!Schema.VertexProperty.CURRENT_LABEL_ID.equals(key)) checkOntologyMutationAllowed();
         vertex().property(key, value);
         return getThis();
     }
