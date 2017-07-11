@@ -19,10 +19,12 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
+import ai.grakn.util.Schema;
 
 import java.util.Collection;
 import java.util.Map;
@@ -40,10 +42,12 @@ import java.util.Set;
  * @author fppt
  *
  */
-public class RelationEdge implements RelationStructure{
+class RelationEdge implements RelationStructure{
+    private final AbstractGraknGraph<?> graph;
     private final EdgeElement edgeElement;
 
-    public RelationEdge(EdgeElement edgeElement) {
+    public RelationEdge(AbstractGraknGraph<?> graph, EdgeElement edgeElement) {
+        this.graph = graph;
         this.edgeElement = edgeElement;
     }
 
@@ -57,8 +61,8 @@ public class RelationEdge implements RelationStructure{
     }
 
     @Override
-    public RelationReified reified() {
-        return null;
+    public RelationReified reify() {
+        throw new UnsupportedOperationException("Reification is not yet supported");
     }
 
     @Override
@@ -68,7 +72,8 @@ public class RelationEdge implements RelationStructure{
 
     @Override
     public RelationType type() {
-        return null;
+        LabelId labelId = LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_ID));
+        return graph.getOntologyConcept(labelId);
     }
 
     @Override

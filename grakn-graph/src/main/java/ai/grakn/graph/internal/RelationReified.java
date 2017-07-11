@@ -157,7 +157,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     }
 
     @Override
-    public RelationReified reified() {
+    public RelationReified reify() {
         return this;
     }
 
