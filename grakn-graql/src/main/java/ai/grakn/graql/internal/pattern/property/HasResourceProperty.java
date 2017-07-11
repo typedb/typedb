@@ -20,12 +20,12 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -41,7 +41,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -91,12 +90,6 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     public VarPatternAdmin getResource() {
         return resource;
-    }
-
-    // TODO: If `VarPatternAdmin#setVarName` is removed, this may no longer be necessary
-    @CheckReturnValue
-    public HasResourceProperty setResource(VarPatternAdmin resource) {
-        return new HasResourceProperty(resourceType, resource);
     }
 
     @Override

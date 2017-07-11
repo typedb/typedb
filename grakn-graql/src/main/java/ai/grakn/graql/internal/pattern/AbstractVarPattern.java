@@ -53,8 +53,6 @@ import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -66,10 +64,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -346,12 +342,6 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final VarPatternAdmin setVarName(Var name) {
-        Preconditions.checkState(getVarName().isUserDefinedName(), ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
-        return Patterns.varPattern(name, properties());
-    }
-
-    @Override
     public final String getPrintableName() {
         if (properties().size() == 0) {
             // If there are no properties, we display the variable name
@@ -371,19 +361,6 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     @Override
     public final Stream<VarProperty> getProperties() {
         return properties().stream();
-    }
-
-    @Override
-    public final <T extends VarProperty> VarPatternAdmin mapProperty(Class<T> type, UnaryOperator<T> mapper) {
-        ImmutableSet<VarProperty> newProperties = getProperties().map(property -> {
-            if (type.isInstance(property)) {
-                return mapper.apply(type.cast(property));
-            } else {
-                return property;
-            }
-        }).collect(toImmutableSet());
-
-        return Patterns.varPattern(getVarName(), newProperties);
     }
 
     private VarPattern addCasting(RelationPlayer relationPlayer) {

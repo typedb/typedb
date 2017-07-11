@@ -73,15 +73,6 @@ public class RelationPlayer {
         return rolePlayer;
     }
 
-    // TODO: If `VarPatternAdmin#setVarName` is removed, this may no longer be necessary
-    /**
-     * Set the role player, returning a new {@link RelationPlayer} with that role player set
-     */
-    @CheckReturnValue
-    public RelationPlayer setRolePlayer(VarPatternAdmin rolePlayer) {
-        return new RelationPlayer(roleType, rolePlayer);
-    }
-
     @Override
     public String toString() {
         return getRoleType().map(r -> r.getPrintableName() + ": ").orElse("") + getRolePlayer().getPrintableName();
