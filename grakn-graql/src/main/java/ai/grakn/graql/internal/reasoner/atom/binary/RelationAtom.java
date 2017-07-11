@@ -256,6 +256,7 @@ public class RelationAtom extends IsaAtom {
 
         roleMap.entries().stream()
                 .filter(e -> varTypeMap.containsKey(e.getValue()))
+                .sorted(Comparator.comparing(e -> varTypeMap.get(e.getValue()).getLabel()))
                 .forEach(e -> roleTypeMap.put(e.getKey(), varTypeMap.get(e.getValue())));
         return roleTypeMap;
     }

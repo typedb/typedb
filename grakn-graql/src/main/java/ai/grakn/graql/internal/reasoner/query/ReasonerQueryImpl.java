@@ -315,21 +315,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return vars;
     }
 
-    /**
-     * @param atom in question
-     * @return true if query contains an equivalent atom
-     */
-    private boolean containsEquivalentAtom(Atom atom) {
-        return !getEquivalentAtoms(atom).isEmpty();
-    }
-
-    Set<Atom> getEquivalentAtoms(Atom atom) {
-        return atomSet.stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .filter(at -> at.isEquivalent(atom))
-                .collect(Collectors.toSet());
-    }
-
     @Override
     public Unifier getUnifier(ReasonerQuery parent) {
         throw GraqlQueryException.getUnifierOfNonAtomicQuery();
@@ -383,32 +368,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public boolean removeAtomic(Atomic atom) {
         return atomSet.remove(atom);
-    }
-
-    /**
-     * remove given atom together with its disjoint neighbours (atoms it is connected to)
-     * @param atom to be removed
-     * @return modified query
-     */
-    ReasonerQueryImpl removeAtom(Atom atom){
-        //selectability may change after removing the top atom so determine first
-        Set<TypeAtom> nonSelectableTypes = atom.getTypeConstraints().stream()
-                .filter(at -> !at.isSelectable())
-                .collect(Collectors.toSet());
-
-        //remove atom of interest
-        removeAtomic(atom);
-
-        //remove disjoint type constraints
-        nonSelectableTypes.stream()
-                .filter(at -> !at.getNeighbours().findFirst().isPresent())
-                .forEach(this::removeAtomic);
-
-        //remove dangling predicates
-        atom.getPredicates().stream()
-                .filter(pred -> getVarNames().contains(pred.getVarName()))
-                .forEach(this::removeAtomic);
-        return this;
     }
 
     /**
@@ -466,6 +425,21 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             }
         }
         return true;
+    }
+
+    /**
+     * @param atom in question
+     * @return true if query contains an equivalent atom
+     */
+    private boolean containsEquivalentAtom(Atom atom) {
+        return !getEquivalentAtoms(atom).isEmpty();
+    }
+
+    Set<Atom> getEquivalentAtoms(Atom atom) {
+        return atomSet.stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(at -> at.isEquivalent(atom))
+                .collect(Collectors.toSet());
     }
 
     /**
