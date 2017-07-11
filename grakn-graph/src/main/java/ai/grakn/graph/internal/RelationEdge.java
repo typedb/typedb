@@ -62,8 +62,12 @@ class RelationEdge implements RelationStructure{
     private Cache<Thing> owner = new Cache<>(() -> edge().graph().factory().buildConcept(edge().source()));
     private Cache<Thing> value = new Cache<>(() -> edge().graph().factory().buildConcept(edge().target()));
 
-    public RelationEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
+    RelationEdge(EdgeElement edgeElement) {
         this.edgeElement = edgeElement;
+    }
+
+    RelationEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
+        this(edgeElement);
         this.relationType.set(relationType);
         this.ownerRole.set(ownerRole);
         this.valueRole.set(valueRole);

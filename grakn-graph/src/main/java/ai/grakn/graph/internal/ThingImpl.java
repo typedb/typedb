@@ -20,14 +20,15 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -164,6 +165,13 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
      */
     @Override
     public Collection<Relation> relations(Role... roles) {
+        Set<Relation> relations = reifiedRelations(roles);
+        relations.addAll(edgeRelations(roles));
+
+        return relations;
+    }
+
+    private Set<Relation> reifiedRelations(Role... roles){
         Set<Relation> relations = new HashSet<>();
         GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerTraversal().
                 has(Schema.VertexProperty.ID.name(), getId().getValue());
@@ -176,6 +184,19 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
                     has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).outV();
         }
         traversal.forEachRemaining(v -> relations.add(vertex().graph().buildConcept(v)));
+
+        return relations;
+    }
+
+    private Set<Relation> edgeRelations(Role... roles){
+        Set<Label> roleLabels = Arrays.stream(roles).map(OntologyConcept::getLabel).collect(Collectors.toSet());
+        Set<Relation> relations = new HashSet<>();
+
+        vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.RESOURCE).forEach(edge -> {
+            if (roleLabels.isEmpty() || roleLabels.contains(Label.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID)))) {
+                relations.add(vertex().graph().factory().buildRelation(edge));
+            }
+        });
 
         return relations;
     }
