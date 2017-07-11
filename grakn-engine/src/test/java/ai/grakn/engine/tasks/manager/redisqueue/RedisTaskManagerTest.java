@@ -68,7 +68,7 @@ public class RedisTaskManagerTest {
         jedisPool = new JedisPool(poolConfig, "localhost", 9899);
         assertFalse(jedisPool.isClosed());
         engineGraknGraphFactory = EngineGraknGraphFactory.create(CONFIG.getProperties());
-        int nThreads = 3;
+        int nThreads = 2;
         executor = Executors.newFixedThreadPool(nThreads);
         taskManager = new RedisTaskManager(engineID, CONFIG, jedisPool, nThreads, engineGraknGraphFactory, LOCK_PROVIDER, metricRegistry);
         CompletableFuture<Void> cf = taskManager.start();
