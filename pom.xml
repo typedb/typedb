@@ -62,11 +62,11 @@
         <halbuilder-standard.version>4.0.1</halbuilder-standard.version>
         <rest-assured.version>2.7.0</rest-assured.version>
         <java-tuples.version>1.2</java-tuples.version>
-        <spark.version>1.6.3</spark.version>
+        <spark.version>1.5.2</spark.version>
         <jinjava.version>2.1.0</jinjava.version>
         <airline.version>0.6</airline.version>
         <antlr4.visitor>true</antlr4.visitor>
-        <swagger.version>1.5.15</swagger.version>
+        <swagger.version>1.5.8</swagger.version>
         <websocket.version>1.1</websocket.version>
         <jetty.version>9.3.6.v20151106</jetty.version>
         <mjson.version>1.4.0</mjson.version>
@@ -101,7 +101,7 @@
         <jackson.version>2.8.5</jackson.version>
         <prometheus.version>0.0.13</prometheus.version>
         <jesque.version>2.1.2</jesque.version>
-        <auto-value.version>1.2</auto-value.version>
+        <auto-value.version>1.4.1</auto-value.version>
         <main.basedir>${project.parent.basedir}</main.basedir>
         <redisson.version>3.1.0</redisson.version>
         <spark-gremlin.version>3.1.7</spark-gremlin.version>
