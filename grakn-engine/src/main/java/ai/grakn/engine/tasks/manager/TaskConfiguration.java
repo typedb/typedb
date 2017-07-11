@@ -16,8 +16,10 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.tasks;
+package ai.grakn.engine.tasks.manager;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import mjson.Json;
 
@@ -26,22 +28,37 @@ import mjson.Json;
  *
  * @author alexandraorth
  */
+
 public class TaskConfiguration implements Serializable {
 
     private static final long serialVersionUID = -7301340972479426643L;
 
     private final Json configuration;
 
-    public static TaskConfiguration of(Json checkpoint){
-        return new TaskConfiguration(checkpoint);
+    public static TaskConfiguration of(Json configuration){
+        return new TaskConfiguration(configuration);
     }
 
-    private TaskConfiguration(Json configuration){
+    public TaskConfiguration(Json configuration){
         this.configuration = configuration;
+    }
+
+    @JsonCreator
+    public TaskConfiguration(@JsonProperty("configuration") String configuration){
+        this.configuration = Json.read(configuration);
     }
 
     public Json json(){
         return configuration;
+    }
+
+    public Json configuration(){
+        return configuration;
+    }
+
+    @JsonProperty
+    public String getConfiguration(){
+        return configuration.toString();
     }
 
     @Override

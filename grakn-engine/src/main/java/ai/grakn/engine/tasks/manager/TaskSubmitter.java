@@ -16,34 +16,26 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.tasks;
+package ai.grakn.engine.tasks.manager;
 
-import ai.grakn.engine.TaskId;
-import org.apache.kafka.common.serialization.Serializer;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import ai.grakn.engine.tasks.BackgroundTask;
 
 /**
  * <p>
- * Implementation of {@link org.apache.kafka.common.serialization.Serializer} that allows usage of {@link TaskId} as
- * kafka queue keys
+ *     Submits Background Tasks for processing
  * </p>
  *
- * @author alexandraorth
+ * <p>
+ *     Allows tasks to be submitted for processing. Any task submitted is added to {@link TaskStateStorage}
+ *     and is later executed by Task runner such as {@link ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager}.
+ * </p>
+ *
+ * @author fppt
  */
-public class TaskConfigurationSerializer implements Serializer<TaskConfiguration> {
-
-    @Override
-    public void configure(Map<String, ?> configs, boolean isKey) {
-
-    }
-
-    @Override
-    public byte[] serialize(String topic, TaskConfiguration data) {
-        return data.json().toString().getBytes(StandardCharsets.UTF_8);
-    }
-
-    @Override
-    public void close() {}
+public interface TaskSubmitter {
+    /**
+     * Schedule a {@link BackgroundTask} for execution.
+     * @param taskState Task to execute
+     */
+    void addTask(TaskState taskState, TaskConfiguration configuration);
 }

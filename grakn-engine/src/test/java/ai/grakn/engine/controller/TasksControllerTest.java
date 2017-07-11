@@ -18,9 +18,17 @@
 
 package ai.grakn.engine.controller;
 
+import ai.grakn.engine.TaskId;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.controller.Utilities.createTask;
 import static ai.grakn.engine.controller.Utilities.exception;
+import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.tasks.manager.TaskSchedule;
+import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskStateStorage;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
+import ai.grakn.engine.util.EngineID;
+import ai.grakn.exception.GraknBackendException;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
 import static ai.grakn.util.REST.Request.CONFIGURATION_PARAM;
@@ -33,59 +41,53 @@ import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
-import static com.jayway.restassured.RestAssured.given;
+import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.ImmutableMap;
 import static com.jayway.restassured.RestAssured.with;
+import com.jayway.restassured.config.ObjectMapperConfig;
+import com.jayway.restassured.config.RestAssuredConfig;
+import com.jayway.restassured.mapper.ObjectMapper;
+import com.jayway.restassured.mapper.ObjectMapperDeserializationContext;
+import com.jayway.restassured.mapper.ObjectMapperSerializationContext;
+import com.jayway.restassured.response.Response;
+import com.jayway.restassured.specification.RequestSpecification;
+import java.time.Duration;
+import java.time.Instant;
 import static java.time.Instant.now;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import mjson.Json;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+import org.apache.http.HttpStatus;
+import org.apache.http.entity.ContentType;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import org.mockito.Mockito;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.http.HttpStatus;
-import org.apache.http.entity.ContentType;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.jayway.restassured.response.Response;
-
-import ai.grakn.engine.TaskId;
-import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.TaskSchedule;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.engine.util.EngineID;
-import ai.grakn.exception.GraknBackendException;
-import mjson.Json;
-
 public class TasksControllerTest {
     private static TaskManager manager = mock(TaskManager.class);
     private final JsonMapper jsonMapper = new JsonMapper();
-    
+
     @ClassRule
     public static final SparkContext ctx = SparkContext.withControllers(spark -> {
-        new TasksController(spark, manager);
+        new TasksController(spark, manager, new MetricRegistry());
     });
-    
+
     @Before
     public void reset(){
         Mockito.reset(manager);
@@ -289,7 +291,7 @@ public class TasksControllerTest {
 
     @Test
     public void afterSendingBulkWithNoTask_OkAndEmptyResponse(){
-        Response response = send(Collections.emptyList());
+        Response response = send(ImmutableList.of());
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
         assertThat(Json.read(response.body().asString()), equalTo(Json.array()));
     }
@@ -442,11 +444,24 @@ public class TasksControllerTest {
 
     private Response send(Map<String, String> configuration, Map<String, String> params, int times){
         Json jsonParams = makeJsonTask(configuration, params);
-        return send(Collections.nCopies(times, jsonParams));
+        return send(copy(times, jsonParams));
     }
 
-    private Response send(List<Json> tasks){
-        return given().body(Json.object().set("tasks", tasks)).post(TASKS);
+    // Using this because nCopies is not serialised correctly into Json
+    private ImmutableList<Json> copy(int times, Json jsonParams) {
+        Builder<Json> builder = ImmutableList.builder();
+        for(int i = 0; i < times; i++) {
+            builder.add((Json)org.apache.commons.lang.SerializationUtils.clone(jsonParams));
+        }
+        return builder.build();
+    }
+
+    private Response send(ImmutableList<Json> tasks){
+        Json tasksList = Json.object().set("tasks", tasks);
+        RequestSpecification request = with()
+                .config(new RestAssuredConfig().objectMapperConfig(new ObjectMapperConfig(jsonMapper)))
+                .body(tasksList);
+        return request.post(String.format("http://%s%s", ctx.uri(), TASKS));
     }
 
     private Response get(TaskId taskId){
@@ -455,5 +470,18 @@ public class TasksControllerTest {
 
     private Json makeJsonTask(Map<String, String> configuration, Map<String, String> params) {
         return Json.make(params).set(CONFIGURATION_PARAM, Json.make(configuration));
+    }
+
+    public static class JsonMapper implements ObjectMapper{
+
+        @Override
+        public Object deserialize(ObjectMapperDeserializationContext objectMapperDeserializationContext) {
+            return Json.read(objectMapperDeserializationContext.getDataToDeserialize().asString());
+        }
+
+        @Override
+        public Object serialize(ObjectMapperSerializationContext objectMapperSerializationContext) {
+            return objectMapperSerializationContext.getObjectToSerialize().toString();
+        }
     }
 }
