@@ -78,7 +78,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author Felix Chapman
  */
-public abstract class AbstractVarPattern implements VarPatternAdmin {
+public abstract class AbstractVarPattern extends AbstractPattern implements VarPatternAdmin {
 
     @Override
     public abstract Var getVarName();
