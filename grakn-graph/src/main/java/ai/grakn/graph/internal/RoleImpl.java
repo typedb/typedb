@@ -56,10 +56,6 @@ class RoleImpl extends OntologyConceptImpl<Role> implements Role {
         super(vertexElement);
     }
 
-    RoleImpl(VertexElement vertexElement, Role type) {
-        super(vertexElement, type);
-    }
-
     RoleImpl(VertexElement vertexElement, Role type, Boolean isImplicit) {
         super(vertexElement, type, isImplicit);
     }
