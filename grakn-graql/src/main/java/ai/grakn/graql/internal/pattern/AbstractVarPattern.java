@@ -287,7 +287,7 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
 
     @Override
     public final VarPattern rel(VarPattern roleplayer) {
-        return addCasting(RelationPlayerImpl.of(roleplayer.admin()));
+        return addCasting(RelationPlayer.of(roleplayer.admin()));
     }
 
     @Override
@@ -307,7 +307,7 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
 
     @Override
     public final VarPattern rel(VarPattern roletype, VarPattern roleplayer) {
-        return addCasting(RelationPlayerImpl.of(roletype.admin(), roleplayer.admin()));
+        return addCasting(RelationPlayer.of(roletype.admin(), roleplayer.admin()));
     }
 
     @Override

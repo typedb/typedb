@@ -26,23 +26,80 @@ import java.util.Optional;
  *
  * @author Felix Chapman
  */
-public interface RelationPlayer {
+public class RelationPlayer {
+    private final int hashCode;
+    private final Optional<VarPatternAdmin> roleType;
+    private final VarPatternAdmin rolePlayer;
+
+    /**
+     * @param roletype the role type of the casting
+     * @param rolePlayer the role player of the casting
+     */
+    private RelationPlayer(Optional<VarPatternAdmin> roletype, VarPatternAdmin rolePlayer) {
+        this.roleType = roletype;
+        this.rolePlayer = rolePlayer;
+        hashCode = 31 * roleType.hashCode() + rolePlayer.hashCode();
+    }
+
+    /**
+     * A casting without a role type specified
+     * @param rolePlayer the role player of the casting
+     */
+    public static RelationPlayer of(VarPatternAdmin rolePlayer) {
+        return new RelationPlayer(Optional.empty(), rolePlayer);
+    }
+
+    /**
+     * @param roleType the role type of the casting
+     * @param rolePlayer the role player of the casting
+     */
+    public static RelationPlayer of(VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
+        return new RelationPlayer(Optional.of(roleType), rolePlayer);
+    }
+
     /**
      * @return the role type, if specified
      */
     @CheckReturnValue
-    Optional<VarPatternAdmin> getRoleType();
+    public Optional<VarPatternAdmin> getRoleType() {
+        return roleType;
+    }
 
     /**
      * @return the role player
      */
     @CheckReturnValue
-    VarPatternAdmin getRolePlayer();
+    public VarPatternAdmin getRolePlayer() {
+        return rolePlayer;
+    }
 
     // TODO: If `VarPatternAdmin#setVarName` is removed, this may no longer be necessary
     /**
      * Set the role player, returning a new {@link RelationPlayer} with that role player set
      */
     @CheckReturnValue
-    RelationPlayer setRolePlayer(VarPatternAdmin rolePlayer);
+    public RelationPlayer setRolePlayer(VarPatternAdmin rolePlayer) {
+        return new RelationPlayer(roleType, rolePlayer);
+    }
+
+    @Override
+    public String toString() {
+        return getRoleType().map(r -> r.getPrintableName() + ": ").orElse("") + getRolePlayer().getPrintableName();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RelationPlayer casting = (RelationPlayer) o;
+
+        return roleType.equals(casting.roleType) && rolePlayer.equals(casting.rolePlayer);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
 }
