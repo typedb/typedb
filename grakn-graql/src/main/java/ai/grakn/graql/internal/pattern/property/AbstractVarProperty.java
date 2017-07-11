@@ -63,4 +63,8 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
         return getInnerVars();
     }
 
+    @Override
+    public final String toString() {
+        return graqlString();
+    }
 }
