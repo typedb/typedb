@@ -155,8 +155,11 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
 
     @Override
     void trackRolePlayers(){
-        //TODO this operation should not call reify() rather it should call reified. Need to think of a way to validate Relation Type changes when the instances of the relation type are not reified
-        instances().forEach(concept -> ((RelationImpl) concept).reify().castingsInstance().forEach(
-                rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer)));
+        instances().forEach(concept -> {
+            RelationImpl relation = RelationImpl.from(concept);
+            if(relation.reified().isPresent()){
+                relation.reified().get().castingsRelation().forEach(rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
+            }
+        });
     }
 }
