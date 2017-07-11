@@ -219,12 +219,12 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
     public void delete(){
 
         //If the deletion is successful we will need to update the cache of linked concepts. To do this caches must be loaded
-        cachedDirectPlays.get();
+        Map<Role, Boolean> plays = cachedDirectPlays.get();
 
         super.delete();
 
         //Updated caches of linked types
-        cachedDirectPlays.get().keySet().forEach(roleType -> ((RoleImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
+        plays.keySet().forEach(roleType -> ((RoleImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
     }
     @Override
     boolean deletionAllowed(){
