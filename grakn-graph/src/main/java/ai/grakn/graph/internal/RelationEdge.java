@@ -50,6 +50,9 @@ import java.util.stream.Stream;
 class RelationEdge implements RelationStructure{
     private final EdgeElement edgeElement;
 
+    private Cache<RelationType> relationType = new Cache<>(() ->
+            edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
+
     private Cache<Role> ownerRole = new Cache<>(() -> edge().graph().getOntologyConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
 
@@ -59,13 +62,15 @@ class RelationEdge implements RelationStructure{
     private Cache<Thing> owner = new Cache<>(() -> edge().graph().factory().buildConcept(edge().source()));
     private Cache<Thing> value = new Cache<>(() -> edge().graph().factory().buildConcept(edge().target()));
 
-    public RelationEdge(Role ownerRole, Role valueRole, EdgeElement edgeElement) {
+    public RelationEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
         this.edgeElement = edgeElement;
+        this.relationType.set(relationType);
         this.ownerRole.set(ownerRole);
         this.valueRole.set(valueRole);
-        
-        edgeElement.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole.getLabelId());
-        edgeElement.property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, valueRole.getLabelId());
+
+        edgeElement.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole.getLabelId().getValue());
+        edgeElement.property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, valueRole.getLabelId().getValue());
+        edgeElement.property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationType.getLabelId().getValue());
     }
 
     EdgeElement edge(){
@@ -89,7 +94,7 @@ class RelationEdge implements RelationStructure{
 
     @Override
     public RelationType type() {
-        return edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID)));
+        return relationType.get();
     }
 
     @Override
