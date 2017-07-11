@@ -21,7 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -189,12 +189,17 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
     }
 
     private Set<Relation> edgeRelations(Role... roles){
-        Set<Label> roleLabels = Arrays.stream(roles).map(OntologyConcept::getLabel).collect(Collectors.toSet());
+        Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
         Set<Relation> relations = new HashSet<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.RESOURCE).forEach(edge -> {
-            if (roleLabels.isEmpty() || roleLabels.contains(Label.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID)))) {
+            if (roleSet.isEmpty()) {
                 relations.add(vertex().graph().factory().buildRelation(edge));
+            } else {
+                Role roleOwner = vertex().graph().getOntologyConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID)));
+                if(roleSet.contains(roleOwner)){
+                    relations.add(vertex().graph().factory().buildRelation(edge));
+                }
             }
         });
 
