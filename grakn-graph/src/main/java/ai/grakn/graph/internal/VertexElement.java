@@ -86,7 +86,11 @@ class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty>{
      * @param type the type of the edge to create
      */
     EdgeElement putEdge(VertexElement to, Schema.EdgeLabel type){
-        GraphTraversal<Vertex, Edge> traversal = graph().getTinkerPopGraph().traversal().V(id().getValue()).outE(type.getLabel()).as("edge").otherV().hasId(to.element().id()).select("edge");
+        GraphTraversal<Vertex, Edge> traversal = graph().getTinkerTraversal().
+                has(Schema.VertexProperty.ID.name(), id().getValue()).
+                outE(type.getLabel()).as("edge").otherV().
+                has(Schema.VertexProperty.ID.name(), to.id().getValue()).select("edge");
+
         if(!traversal.hasNext()) {
             return addEdge(to, type);
         } else {

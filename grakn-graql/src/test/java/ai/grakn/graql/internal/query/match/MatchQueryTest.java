@@ -848,6 +848,9 @@ public class MatchQueryTest {
     @Test
     public void testMatchHas() {
         MatchQuery query = qb.match(x.has("name"));
+
+        Role thing = movieGraph.graph().getRole("has-name-owner");
+
         assertThat(query, variable("x", containsInAnyOrder(
                 person, language, genre, aRuleType, cluster, character
         )));
