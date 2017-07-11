@@ -27,8 +27,13 @@ import ai.grakn.concept.Thing;
 import ai.grakn.util.Schema;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -43,11 +48,18 @@ import java.util.Set;
  *
  */
 class RelationEdge implements RelationStructure{
-    private final AbstractGraknGraph<?> graph;
     private final EdgeElement edgeElement;
 
-    public RelationEdge(AbstractGraknGraph<?> graph, EdgeElement edgeElement) {
-        this.graph = graph;
+    private Cache<Role> ownerRole = new Cache<>(() -> edge().graph().getOntologyConcept(LabelId.of(
+            edge().property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
+
+    private Cache<Role> valueRole = new Cache<>(() -> edge().graph().getOntologyConcept(LabelId.of(
+            edge().property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
+
+    private Cache<Thing> owner = new Cache<>(() -> edge().graph().factory().buildConcept(edge().source()));
+    private Cache<Thing> value = new Cache<>(() -> edge().graph().factory().buildConcept(edge().target()));
+
+    public RelationEdge(EdgeElement edgeElement) {
         this.edgeElement = edgeElement;
     }
 
@@ -72,22 +84,50 @@ class RelationEdge implements RelationStructure{
 
     @Override
     public RelationType type() {
-        LabelId labelId = LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID));
-        return graph.getOntologyConcept(labelId);
+        return edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID)));
     }
 
     @Override
     public Map<Role, Set<Thing>> allRolePlayers() {
-        return null;
+        HashMap<Role, Set<Thing>> result = new HashMap<>();
+        result.put(ownerRole(), Collections.singleton(owner()));
+        result.put(valueRole(), Collections.singleton(value()));
+        return result;
     }
 
     @Override
     public Collection<Thing> rolePlayers(Role... roles) {
-        return null;
+        if(roles.length == 0){
+            return Stream.of(owner(), value()).collect(Collectors.toSet());
+        }
+
+        HashSet<Thing> result = new HashSet<>();
+        for (Role role : roles) {
+            if(role.equals(ownerRole())) {
+                result.add(owner());
+            } else if (role.equals(valueRole())) {
+                result.add(value());
+            }
+        }
+        return result;
+    }
+
+    private Role ownerRole(){
+        return ownerRole.get();
+    }
+    private Thing owner(){
+        return owner.get();
+    }
+
+    private Role valueRole(){
+        return valueRole.get();
+    }
+    private Thing value(){
+        return value.get();
     }
 
     @Override
     public void delete() {
-
+        edge().delete();
     }
 }

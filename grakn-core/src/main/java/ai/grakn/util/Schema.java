@@ -183,6 +183,8 @@ public final class Schema {
      * A property enum defining the possible labels that can go on the edge label.
      */
     public enum EdgeProperty {
+        RELATION_ROLE_OWNER_LABEL_ID(Integer.class),
+        RELATION_ROLE_VALUE_LABEL_ID(Integer.class),
         ROLE_LABEL_ID(Integer.class),
         RELATION_TYPE_LABEL_ID(Integer.class),
         REQUIRED(Boolean.class);
