@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.admin;
 
+import ai.grakn.GraknGraph;
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -80,5 +81,5 @@ public interface VarProperty {
      * @return created atom
      */
     @CheckReturnValue
-    Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent);
+    Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, GraknGraph graph, ReasonerQuery parent);
 }

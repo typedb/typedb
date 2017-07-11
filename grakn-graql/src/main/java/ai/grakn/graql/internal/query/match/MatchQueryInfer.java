@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -53,7 +54,7 @@ class MatchQueryInfer extends MatchQueryModifier {
 
         Iterator<Conjunction<VarPatternAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         Conjunction<VarPatternAdmin> conj = conjIt.next();
-        ReasonerQueryImpl conjQuery = ReasonerQueries.create(conj, graph);
+        ReasonerQuery conjQuery = ReasonerQueries.create(conj, graph);
         Stream<Answer> answerStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise) : graph.graql().match(conj).stream();
         while(conjIt.hasNext()) {
             conj = conjIt.next();

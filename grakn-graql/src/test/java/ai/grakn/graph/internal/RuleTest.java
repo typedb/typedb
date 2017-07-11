@@ -96,6 +96,21 @@ public class RuleTest {
     }
 
     @Test
+    public void whenAddingRuleWithDisjunctionInTheHead_Throw() throws InvalidGraphException{
+        graknGraph.putRelationType("relation1");
+        when = graknGraph.graql().parsePattern("(role: $x) or (role: $x, role: $y)");
+        then = graknGraph.graql().parsePattern("(role: $x, role: $y) isa relation1");
+
+        Rule rule = graknGraph.admin().getMetaRuleInference().putRule(when, then);
+
+        expectedException.expect(InvalidGraphException.class);
+        expectedException.expectMessage(
+                ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
+
+        graknGraph.commit();
+    }
+
+    @Test
     public void whenCreatingRules_EnsureHypothesisAndConclusionTypesAreFilledOnCommit() throws InvalidGraphException{
         EntityType t1 = graknGraph.putEntityType("type1");
         EntityType t2 = graknGraph.putEntityType("type2");

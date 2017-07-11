@@ -72,6 +72,9 @@ public interface Atomic {
     @CheckReturnValue
     default boolean isSelectable(){ return false;}
 
+    @CheckReturnValue
+    default boolean isAllowedToFormRuleHead(){ return false; }
+
     /**
      * @return true if atom is recursive
      */

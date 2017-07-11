@@ -218,7 +218,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, GraknGraph graph, ReasonerQuery parent) {
         //keep varName if reified, reified if contains more properties than the RelationProperty itself and potential IsaProperty
         boolean isReified = var.getProperties()
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
@@ -243,7 +243,6 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             VarPatternAdmin isaVar = isaProp.getType();
             Label label = isaVar.getTypeLabel().orElse(null);
             if (label != null) {
-                GraknGraph graph = parent.graph();
                 VarPatternAdmin idVar = typeVariable.id(graph.getOntologyConcept(label).getId()).admin();
                 predicate = new IdPredicate(idVar, parent);
             } else {

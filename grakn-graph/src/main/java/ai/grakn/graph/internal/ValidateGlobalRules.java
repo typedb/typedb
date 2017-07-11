@@ -28,6 +28,8 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
@@ -35,6 +37,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -273,6 +276,35 @@ class ValidateGlobalRules {
             return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationReified));
         }
         return Optional.empty();
+    }
+
+    static Set<String> validateRuleIsHornClause(GraknGraph graph, Rule rule){
+        Set<String> errors = new HashSet<>();
+        if (rule.getWhen().admin().isDisjunction()){
+            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
+        }
+        errors.addAll(checkRuleHeadInvalid(graph, rule, rule.getThen()));
+        return errors;
+    }
+
+    private static Set<String> checkRuleHeadInvalid(GraknGraph graph, Rule rule, Pattern head) {
+        Set<String> errors = new HashSet<>();
+        Set<Atomic> headAtomics = head.admin().getVars().stream()
+                .flatMap(var -> var.getProperties().map(p -> p.mapToAtom(var, head.admin().getVars(), graph, null)))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<Atomic> allowed = headAtomics.stream().filter(Atomic::isAllowedToFormRuleHead).collect(Collectors.toSet());
+
+        if (allowed.size() != 1) {
+            errors.add(ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC.getMessage(rule.getId(), rule.type().getLabel()));
+        }
+        else{
+            if (!allowed.iterator().next().isAllowedToFormRuleHead()){
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getId(), rule.type().getLabel()));
+            }
+        }
+        return errors;
     }
 
     /**
