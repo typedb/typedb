@@ -19,10 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.engine.controller.GraqlController;
-import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.printer.Printers;
@@ -41,9 +38,11 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import java.util.Collections;
-import java.util.Properties;
 
-import static ai.grakn.engine.controller.Utilities.*;
+import static ai.grakn.engine.controller.Utilities.exception;
+import static ai.grakn.engine.controller.Utilities.jsonResponse;
+import static ai.grakn.engine.controller.Utilities.originalQuery;
+import static ai.grakn.engine.controller.Utilities.stringResponse;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.ID_PROPERTY;
@@ -438,6 +437,7 @@ public class GraqlControllerGETTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
+    @Ignore
     @Test
     public void ZGETGraqlComputePathWithTextType_ResponseIsCorrect() {
         assumeTrue(GraknTestSetup.usingTitan());
@@ -453,6 +453,7 @@ public class GraqlControllerGETTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
+    @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseContentTypeIsHAL() {
         assumeTrue(GraknTestSetup.usingTitan());
@@ -467,6 +468,7 @@ public class GraqlControllerGETTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
+    @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseStatusIs200() {
         assumeTrue(GraknTestSetup.usingTitan());
@@ -481,6 +483,7 @@ public class GraqlControllerGETTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
+    @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseIsNotEmpty() {
         assumeTrue(GraknTestSetup.usingTitan());
@@ -495,6 +498,7 @@ public class GraqlControllerGETTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
+    @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseContainsValidHALObjects() {
         assumeTrue(GraknTestSetup.usingTitan());
