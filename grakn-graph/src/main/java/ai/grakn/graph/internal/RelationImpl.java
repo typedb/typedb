@@ -71,7 +71,8 @@ class RelationImpl implements Relation, ConceptVertex {
      */
     RelationReified reify(){
         if(relationStructure.isReified()) return relationStructure.reify();
-        throw new UnsupportedOperationException("Reification is not yet supported");
+        relationStructure = relationStructure.reify();
+        return relationStructure.reify();
     }
 
     RelationStructure structure(){

@@ -99,13 +99,16 @@ final class ElementFactory {
 
     // -------------------------------------------- Building Relations
     RelationImpl buildRelation(VertexElement vertex, RelationType type){
-        return getOrBuildConcept(vertex, (v) -> new RelationImpl(new RelationReified(v, type)));
+        return getOrBuildConcept(vertex, (v) -> new RelationImpl(buildRelationReified(v, type)));
     }
     RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value){
         return new RelationImpl(new RelationEdge(type, owner, value, edge));
     }
     RelationImpl buildRelation(EdgeElement edge){
         return new RelationImpl(new RelationEdge(edge));
+    }
+    RelationReified buildRelationReified(VertexElement vertex, RelationType type){
+        return new RelationReified(vertex, type);
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------

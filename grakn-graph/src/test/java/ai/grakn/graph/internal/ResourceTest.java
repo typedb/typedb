@@ -27,9 +27,12 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Iterables;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Set;
 
 import static ai.grakn.util.ErrorMessage.INVALID_DATATYPE;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -155,6 +158,9 @@ public class ResourceTest extends GraphTestBase{
         RelationStructure relationStructureBefore = relation.structure();
         assertThat(relationStructureBefore, instanceOf(RelationEdge.class));
 
+        //Get the roles and role players via the relation edge:
+        Map<Role, Set<Thing>> allRolePlayerBefore = relationStructureBefore.allRolePlayers();
+
         //Expand Ontology to allow new role
         Role newRole = graknGraph.putRole("My New Role");
         entityType.plays(newRole);
@@ -171,6 +177,12 @@ public class ResourceTest extends GraphTestBase{
         //Check IDs are equal
         assertEquals(relationStructureBefore.getId(), relation.getId());
         assertEquals(relationStructureBefore.getId(), relationStructureAfter.getId());
+
+        //Check Role Players have been transferred
+        allRolePlayerBefore.forEach((role, player) -> assertEquals(player, relationStructureAfter.rolePlayers(role)));
+
+        //Check new role player has been added as well
+        assertEquals(newEntity, Iterables.getOnlyElement(relationStructureAfter.rolePlayers(newRole)));
     }
 
 }

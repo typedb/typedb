@@ -42,6 +42,7 @@ import java.util.stream.Stream;
  *
  * <p>
  *     This wraps up a {@link Relation} as a {@link EdgeElement}. It is used to represent any binary {@link Relation}.
+ *     This also includes the ability to automatically reify a {@link RelationEdge} into a {@link RelationReified}.
  * </p>
  *
  * @author fppt
@@ -89,7 +90,22 @@ class RelationEdge implements RelationStructure{
 
     @Override
     public RelationReified reify() {
-        throw new UnsupportedOperationException("Reification is not yet supported");
+        //Build the Relation Vertex
+        VertexElement relationVertex = edge().graph().addVertex(Schema.BaseType.RELATION, getId());
+        RelationReified relationReified = edge().graph().factory().buildRelationReified(relationVertex, type());
+
+        //TODO: Try to get rid of this step. This should ideally be injected in someway
+        //Get the original Relation
+        RelationImpl relation = edge().graph().getConcept(getId());
+
+        //Connect the existing roles and their players
+        relationReified.addRolePlayer(relation, ownerRole(), owner());
+        relationReified.addRolePlayer(relation, valueRole(), value());
+
+        //Delete the old edge
+        delete();
+
+        return relationReified;
     }
 
     @Override

@@ -363,10 +363,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
-    @Nullable
     VertexElement addVertex(Schema.BaseType baseType){
         Vertex vertex = operateOnOpenGraph(() -> getTinkerPopGraph().addVertex(baseType.name()));
         vertex.property(Schema.VertexProperty.ID.name(), Schema.PREFIX_VERTEX + vertex.id().toString());
+        return factory().buildVertexElement(vertex);
+    }
+
+    VertexElement addVertex(Schema.BaseType baseType, ConceptId conceptId){
+        Vertex vertex = operateOnOpenGraph(() -> getTinkerPopGraph().addVertex(baseType.name()));
+        vertex.property(Schema.VertexProperty.ID.name(), conceptId.getValue());
         return factory().buildVertexElement(vertex);
     }
 
