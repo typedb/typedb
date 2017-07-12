@@ -25,9 +25,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.graql.Pattern;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -286,19 +284,6 @@ public class MovieGraph extends TestGraph {
         // These rules are totally made up for testing purposes and don't work!
         aRuleType = graph.putRuleType("a-rule-type");
         aRuleType.resource(name);
-
-        Pattern when = graph.graql().parsePattern("$x id 'expect-when'");
-        Pattern then = graph.graql().parsePattern("$x id 'expect-then'");
-
-        Rule expectation = aRuleType.putRule(when, then);
-
-        putResource(expectation, name, "expectation-rule");
-
-        when = graph.graql().parsePattern("$x id 'materialize-when'");
-        then = graph.graql().parsePattern("$x id 'materialize-then'");
-        Rule materialize = aRuleType.putRule(when, then);
-
-        putResource(materialize, name, "materialize-rule");
     }
 
     private static void hasCast(Thing movie, Thing person, Thing character) {

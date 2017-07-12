@@ -122,6 +122,11 @@ public class RuleTest {
                 graknGraph.graql().parsePattern("{(role1: $x, role2: $y) isa relation1; $x has res1 'value';}"),
                 ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC
         );
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("{role1: $x, role2: $y) isa relation1; role1: $y, role2: $z) isa relation1;}"),
+                ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC
+        );
     }
 
     @Test
@@ -194,6 +199,11 @@ public class RuleTest {
         validateIllegalRule(
                 graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
                 graknGraph.graql().parsePattern("$x id '100'"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("$x label 'entity1'"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
     }

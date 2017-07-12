@@ -279,6 +279,12 @@ class ValidateGlobalRules {
         return Optional.empty();
     }
 
+
+    /**
+     * @param graph graph used to ensure the rule is a valid Horn clause
+     * @param rule the rule to be validated
+     * @return Error messages if the rule is not a valid Horn clause (in implication form, conjunction in the body, single-atom conjunction in the head)
+     */
     static Set<String> validateRuleIsHornClause(GraknGraph graph, Rule rule){
         Set<String> errors = new HashSet<>();
         if (rule.getWhen().admin().isDisjunction()){
@@ -287,7 +293,13 @@ class ValidateGlobalRules {
         errors.addAll(checkRuleHeadInvalid(graph, rule, rule.getThen()));
         return errors;
     }
-    
+
+    /**
+     * @param graph graph used to ensure the rule head is valid
+     * @param rule the rule to be validated
+     * @param head head of the rule of interest
+     * @return Error messages if the rule head is invalid - is not a single-atom conjunction or contains illegal atomics
+     */
     private static Set<String> checkRuleHeadInvalid(GraknGraph graph, Rule rule, Pattern head) {
         Set<String> errors = new HashSet<>();
         Set<Conjunction<VarPatternAdmin>> patterns = head.admin().getDisjunctiveNormalForm().getPatterns();
