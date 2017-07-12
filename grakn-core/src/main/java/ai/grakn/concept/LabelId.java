@@ -73,7 +73,7 @@ public class LabelId implements Comparable<LabelId>, Serializable {
     }
 
     public boolean isValid(){
-        return typeId != null && typeId != -1;
+        return typeId != null;
     }
 
     /**
@@ -89,6 +89,6 @@ public class LabelId implements Comparable<LabelId>, Serializable {
      * @return a type id which does not match any type
      */
     public static LabelId invalid(){
-        return new LabelId(-1);
+        return new LabelId(null);
     }
 }

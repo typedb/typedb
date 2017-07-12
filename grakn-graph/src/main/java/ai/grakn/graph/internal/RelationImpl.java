@@ -70,9 +70,9 @@ class RelationImpl implements Relation, ConceptVertex {
      * Reifys and returns the {@link RelationReified}
      */
     RelationReified reify(){
-        if(relationStructure.isReified()) return relationStructure.reify();
-        relationStructure = relationStructure.reify();
-        return relationStructure.reify();
+        RelationReified relationReified = relationStructure.reify();
+        relationStructure = relationReified;
+        return relationReified;
     }
 
     RelationStructure structure(){

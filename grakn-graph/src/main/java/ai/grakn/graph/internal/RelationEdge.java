@@ -25,6 +25,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -32,8 +33,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * <p>
@@ -129,7 +128,7 @@ class RelationEdge implements RelationStructure{
     @Override
     public Collection<Thing> rolePlayers(Role... roles) {
         if(roles.length == 0){
-            return Stream.of(owner(), value()).collect(Collectors.toSet());
+            return Sets.newHashSet(owner(), value());
         }
 
         HashSet<Thing> result = new HashSet<>();

@@ -21,13 +21,13 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -130,8 +130,8 @@ class RoleImpl extends OntologyConceptImpl<Role> implements Role {
         return relationTypes().stream().
                 flatMap(relationType -> relationType.instances().stream()).
                 map(relation -> RelationImpl.from(relation).reified()).
-                filter(Optional::isPresent).
-                flatMap(relation -> relation.get().castingsRelation(this));
+                flatMap(CommonUtil::optionalToStream).
+                flatMap(relation -> relation.castingsRelation(this));
     }
 
     @Override
