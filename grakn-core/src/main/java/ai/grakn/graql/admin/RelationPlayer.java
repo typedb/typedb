@@ -22,47 +22,47 @@ import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 
 /**
- * A pair of role type and role player (where the role type may not be present)
+ * A pair of role and role player (where the role may not be present)
  *
  * @author Felix Chapman
  */
 public class RelationPlayer {
     private final int hashCode;
-    private final Optional<VarPatternAdmin> roleType;
+    private final Optional<VarPatternAdmin> role;
     private final VarPatternAdmin rolePlayer;
 
     /**
-     * @param roletype the role type of the casting
-     * @param rolePlayer the role player of the casting
+     * @param role the role of the role - role player pair
+     * @param rolePlayer the role player of the  role - role player pair
      */
-    private RelationPlayer(Optional<VarPatternAdmin> roletype, VarPatternAdmin rolePlayer) {
-        this.roleType = roletype;
+    private RelationPlayer(Optional<VarPatternAdmin> role, VarPatternAdmin rolePlayer) {
+        this.role = role;
         this.rolePlayer = rolePlayer;
-        hashCode = 31 * roleType.hashCode() + rolePlayer.hashCode();
+        hashCode = 31 * this.role.hashCode() + rolePlayer.hashCode();
     }
 
     /**
-     * A casting without a role type specified
-     * @param rolePlayer the role player of the casting
+     * A role - role player pair without a role specified
+     * @param rolePlayer the role player of the role - role player pair
      */
     public static RelationPlayer of(VarPatternAdmin rolePlayer) {
         return new RelationPlayer(Optional.empty(), rolePlayer);
     }
 
     /**
-     * @param roleType the role type of the casting
-     * @param rolePlayer the role player of the casting
+     * @param roleType the role of the role - role player pair
+     * @param rolePlayer the role player of the role - role player pair
      */
     public static RelationPlayer of(VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
         return new RelationPlayer(Optional.of(roleType), rolePlayer);
     }
 
     /**
-     * @return the role type, if specified
+     * @return the role, if specified
      */
     @CheckReturnValue
-    public Optional<VarPatternAdmin> getRoleType() {
-        return roleType;
+    public Optional<VarPatternAdmin> getRole() {
+        return role;
     }
 
     /**
@@ -75,7 +75,7 @@ public class RelationPlayer {
 
     @Override
     public String toString() {
-        return getRoleType().map(r -> r.getPrintableName() + ": ").orElse("") + getRolePlayer().getPrintableName();
+        return getRole().map(r -> r.getPrintableName() + ": ").orElse("") + getRolePlayer().getPrintableName();
     }
 
     @Override
@@ -85,7 +85,7 @@ public class RelationPlayer {
 
         RelationPlayer casting = (RelationPlayer) o;
 
-        return roleType.equals(casting.roleType) && rolePlayer.equals(casting.rolePlayer);
+        return role.equals(casting.role) && rolePlayer.equals(casting.rolePlayer);
 
     }
 

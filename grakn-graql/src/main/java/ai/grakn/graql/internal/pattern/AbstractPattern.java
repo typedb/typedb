@@ -24,6 +24,8 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.PatternAdmin;
 
 /**
+ * Abstract implementation of {@link PatternAdmin}.
+ *
  * @author Felix Chapman
  */
 public abstract class AbstractPattern implements PatternAdmin {
