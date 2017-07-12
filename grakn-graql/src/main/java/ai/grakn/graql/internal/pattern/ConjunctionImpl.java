@@ -18,12 +18,16 @@
 
 package ai.grakn.graql.internal.pattern;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 import java.util.List;
@@ -79,6 +83,12 @@ class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
     @Override
     public Conjunction<?> asConjunction() {
         return this;
+    }
+
+    @Override
+    public ReasonerQuery toReasonerQuery(GraknGraph graph){
+        Conjunction<VarPatternAdmin> pattern = Iterables.getOnlyElement(getDisjunctiveNormalForm().getPatterns());
+        return ReasonerQueries.create(pattern, graph);
     }
 
     private static <U extends PatternAdmin> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {

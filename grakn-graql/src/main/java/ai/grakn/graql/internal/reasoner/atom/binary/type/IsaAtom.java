@@ -57,6 +57,11 @@ public class IsaAtom extends TypeAtom {
     protected IsaAtom(TypeAtom a) { super(a);}
 
     @Override
+    public boolean isAllowedToFormRuleHead(){
+        return getOntologyConcept() != null;
+    }
+
+    @Override
     public VarProperty getVarProperty() {
         return getPattern().asVar().getProperty(IsaProperty.class).orElse(null);
     }

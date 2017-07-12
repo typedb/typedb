@@ -23,6 +23,8 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.GraphOperationException;
@@ -96,16 +98,144 @@ public class RuleTest {
     }
 
     @Test
+    public void whenAddingRuleWithDisjunctionInTheBody_Throw() throws InvalidGraphException{
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role: $x) or (role: $x, role: $y)"),
+                graknGraph.graql().parsePattern("(role: $x, role: $y) isa relation1"),
+                ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY
+        );
+    }
+
+    @Test
     public void whenAddingRuleWithDisjunctionInTheHead_Throw() throws InvalidGraphException{
-        graknGraph.putRelationType("relation1");
-        when = graknGraph.graql().parsePattern("(role: $x) or (role: $x, role: $y)");
-        then = graknGraph.graql().parsePattern("(role: $x, role: $y) isa relation1");
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("(role1: $x) or (role1: $x, role2: $y)"),
+                ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD
+        );
+    }
+
+    @Test
+    public void whenAddingRuleWithNonAtomicHead_Throw() throws InvalidGraphException{
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("{(role1: $x, role2: $y) isa relation1; $x has res1 'value';}"),
+                ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC
+        );
+    }
+
+    @Test
+    public void whenAddingRuleWithIllegalAtomicInHead_ResourceWithInequality_Throw() throws InvalidGraphException{
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("$x has res1 >10"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+    }
+
+    @Test
+    public void whenAddingRuleWithIllegalAtomicInHead_RelationWithMetaRoles_Throw() throws InvalidGraphException{
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("(role: $y, role: $x) isa relation1"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+    }
+
+    @Test
+    public void whenAddingRuleWithIllegalAtomicInHead_RelationWithMissingRoles_Throw() throws InvalidGraphException{
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("($x, $y) isa relation1"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+    }
+
+    @Test
+    public void whenAddingRuleWithIllegalAtomicInHead_RelationWithoutType_Throw() throws InvalidGraphException{
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("(role3: $y, role3: $x)"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+    }
+
+    @Test
+    public void whenAddingRuleWithIllegalAtomicInHead_IllegalTypeAtoms_Throw() throws InvalidGraphException{
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("$x isa $z"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("$x sub entity1"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("$x plays role1"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("$x has res1"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("$x has-scope $y"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+    }
+
+    @Test
+    public void whenAddingRuleWithIllegalAtomicInHead_Predicate_Throw() throws InvalidGraphException{
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("$x id '100'"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+    }
+
+    @Test
+    public void whenAddingRuleWithIllegalAtomicInHead_PropertyAtoms_Throw() throws InvalidGraphException{
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("$x is-abstract"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("$x has res1 $y"),
+                graknGraph.graql().parsePattern("$y datatype string"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+        validateIllegalRule(
+                graknGraph.graql().parsePattern("$x isa entity1"),
+                graknGraph.graql().parsePattern("$x regex /entity/"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+    }
+    
+    private void validateIllegalRule(Pattern when, Pattern then, ErrorMessage message){
+        ResourceType<Integer> res1 = graknGraph.putResourceType("res1", ResourceType.DataType.INTEGER);
+        graknGraph.putEntityType("entity1").resource(res1);
+        Role role1 = graknGraph.putRole("role1");
+        Role role2 = graknGraph.putRole("role2");
+        Role role3 = graknGraph.putRole("role3");
+
+        graknGraph.putRelationType("relation1")
+                .relates(role1)
+                .relates(role2)
+                .relates(role3);
+        graknGraph.putRelationType("relation2")
+                .relates(role3);
 
         Rule rule = graknGraph.admin().getMetaRuleInference().putRule(when, then);
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(
-                ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
+                message.getMessage(rule.getId(), rule.type().getLabel()));
 
         graknGraph.commit();
     }
