@@ -19,18 +19,25 @@
 
 package ai.grakn.generator;
 
-import com.google.common.collect.ImmutableList;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.RuleType;
+import ai.grakn.graql.QueryBuilder;
 
-public class MetasyntacticStrings extends AbstractGenerator<String> {
-    public MetasyntacticStrings() {
-        super(String.class);
+/**
+ * A generator that produces random {@link Rule}s
+ *
+ * @author Felix Chapman
+ */
+public class Rules extends AbstractThingGenerator<Rule, RuleType> {
+
+    public Rules() {
+        super(Rule.class, RuleTypes.class);
     }
 
     @Override
-    protected String generate() {
-        return random.choose(ImmutableList.of(
-                "foo", "bar", "baz", "qux", "quux", "corge", "grault",
-                "garply", "waldo", "fred", "plugh", "xyzzy", "thud"
-        ));
+    protected Rule newInstance(RuleType type) {
+        // TODO: generate more complicated rules
+        QueryBuilder graql = this.graph().graql();
+        return type.putRule(graql.parsePattern("$x"), graql.parsePattern("$x"));
     }
 }

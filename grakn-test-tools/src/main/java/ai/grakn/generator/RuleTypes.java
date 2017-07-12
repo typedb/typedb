@@ -19,20 +19,35 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.graql.QueryBuilder;
+import ai.grakn.concept.Label;
+import com.google.common.collect.ImmutableSet;
 
-public class Rules extends AbstractInstanceGenerator<Rule, RuleType> {
+import java.util.Collection;
 
-    public Rules() {
-        super(Rule.class, RuleTypes.class);
+/**
+ * A generator that produces random {@link RuleType}s
+ *
+ * @author Felix Chapman
+ */
+public class RuleTypes extends AbstractOntologyConceptGenerator<RuleType> {
+
+    public RuleTypes() {
+        super(RuleType.class);
     }
 
     @Override
-    protected Rule newInstance(RuleType type) {
-        // TODO: generate more complicated rules
-        QueryBuilder graql = this.graph().graql();
-        return type.putRule(graql.parsePattern("$x"), graql.parsePattern("$x"));
+    protected RuleType newOntologyConcept(Label label) {
+        return graph().putRuleType(label);
+    }
+
+    @Override
+    protected RuleType metaOntologyConcept() {
+        return graph().admin().getMetaRuleType();
+    }
+
+    @Override
+    protected Collection<RuleType> otherMetaOntologyConcepts() {
+        return ImmutableSet.of(graph().admin().getMetaRuleInference(), graph().admin().getMetaRuleConstraint());
     }
 }

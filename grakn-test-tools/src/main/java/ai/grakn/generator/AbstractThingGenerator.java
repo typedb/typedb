@@ -21,15 +21,23 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.generator.AbstractTypeGenerator.Meta;
+import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
 
 import java.util.Collection;
 
-public abstract class AbstractInstanceGenerator<T extends Thing, S extends Type> extends FromGraphGenerator<T> {
+/**
+ * Abstract class for generating {@link Thing}s.
+ *
+ * @param <T> The kind of {@link Thing} to generate.
+ * @param <S> The {@link Type} of the {@link Thing} being generated.
+ *
+ * @author Felix Chapman
+ */
+public abstract class AbstractThingGenerator<T extends Thing, S extends Type> extends FromGraphGenerator<T> {
 
-    private final Class<? extends AbstractTypeGenerator<S>> generatorClass;
+    private final Class<? extends AbstractOntologyConceptGenerator<S>> generatorClass;
 
-    AbstractInstanceGenerator(Class<T> type, Class<? extends AbstractTypeGenerator<S>> generatorClass) {
+    AbstractThingGenerator(Class<T> type, Class<? extends AbstractOntologyConceptGenerator<S>> generatorClass) {
         super(type);
         this.generatorClass = generatorClass;
     }

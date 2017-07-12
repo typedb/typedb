@@ -36,12 +36,14 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Generator that generates totally random type names
+ *
+ * @author Felix Chapman
  */
-public class TypeLabels extends FromGraphGenerator<Label> {
+public class Labels extends FromGraphGenerator<Label> {
 
     private boolean mustBeUnused = false;
 
-    public TypeLabels() {
+    public Labels() {
         super(Label.class);
         this.fromLastGeneratedGraph();
     }
@@ -75,7 +77,7 @@ public class TypeLabels extends FromGraphGenerator<Label> {
         mustBeUnused();
     }
 
-    TypeLabels mustBeUnused() {
+    Labels mustBeUnused() {
         mustBeUnused = true;
         return this;
     }
@@ -88,6 +90,9 @@ public class TypeLabels extends FromGraphGenerator<Label> {
         return Label.of(gen(String.class));
     }
 
+    /**
+     * Specify that the label should be unused in the graph
+     */
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration

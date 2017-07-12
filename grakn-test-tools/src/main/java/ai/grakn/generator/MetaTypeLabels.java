@@ -19,17 +19,30 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Label;
+import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
 
-public class Relations extends AbstractInstanceGenerator<Relation, RelationType> {
+import java.util.stream.Stream;
 
-    public Relations() {
-        super(Relation.class, RelationTypes.class);
+import static ai.grakn.util.CommonUtil.toImmutableSet;
+
+/**
+ * Generator that generates meta type names only
+ *
+ * @author Felix Chapman
+ */
+public class MetaTypeLabels extends AbstractGenerator<Label> {
+
+    private static final ImmutableSet<Label> META_TYPE_LABELS =
+            Stream.of(Schema.MetaSchema.values()).map(m -> m.getLabel()).collect(toImmutableSet());
+
+    public MetaTypeLabels() {
+        super(Label.class);
     }
 
     @Override
-    protected Relation newInstance(RelationType type) {
-        return type.addRelation();
+    public Label generate() {
+        return random.choose(META_TYPE_LABELS);
     }
 }

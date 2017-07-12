@@ -61,10 +61,10 @@ import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.stream.Collectors.joining;
 
-//import static ai.grakn.graql.Graql.var;
-
 /**
  * Generator to create random {@link GraknGraph}s.
+ *
+ * @author Felix Chapman
  */
 @SuppressWarnings("unchecked") // We're performing random operations. Generics will not constrain us!
 public class GraknGraphs extends AbstractGenerator<GraknGraph> implements MinimalCounterexampleHook {
@@ -315,7 +315,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private Label typeLabel() {
-        return gen().make(TypeLabels.class, gen().make(MetasyntacticStrings.class)).generate(random, status);
+        return gen().make(Labels.class, gen().make(MetasyntacticStrings.class)).generate(random, status);
     }
 
     private OntologyConcept ontologyConcept() {
@@ -400,6 +400,9 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         System.err.println("Graph generated:\n" + graphSummary);
     }
 
+    /**
+     * Specify whether the generated graph should be open or closed
+     */
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration

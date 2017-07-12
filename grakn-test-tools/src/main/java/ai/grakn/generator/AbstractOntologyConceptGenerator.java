@@ -19,9 +19,8 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Type;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -39,55 +38,69 @@ import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.stream.Collectors.toSet;
 
-public abstract class AbstractTypeGenerator<T extends OntologyConcept> extends FromGraphGenerator<T> {
+/**
+ * Abstract class for generating {@link OntologyConcept}s.
+ *
+ * @param <T> the kind of {@link OntologyConcept} to generate
+ *
+ * @author Felix Chapman
+ */
+public abstract class AbstractOntologyConceptGenerator<T extends OntologyConcept> extends FromGraphGenerator<T> {
 
     private Optional<Boolean> meta = Optional.empty();
     private Optional<Boolean> includeAbstract = Optional.empty();
 
-    AbstractTypeGenerator(Class<T> type) {
+    AbstractOntologyConceptGenerator(Class<T> type) {
         super(type);
     }
 
     @Override
     protected final T generateFromGraph() {
-        Collection<T> types;
+        Collection<T> ontologyConcepts;
 
         if (!includeNonMeta()) {
-            types = Sets.newHashSet(otherMetaTypes());
-            types.add(metaType());
+            ontologyConcepts = Sets.newHashSet(otherMetaOntologyConcepts());
+            ontologyConcepts.add(metaOntologyConcept());
         } else {
-            types = (Collection<T>) metaType().subs();
+            ontologyConcepts = (Collection<T>) metaOntologyConcept().subs();
         }
 
-        types = types.stream().filter(this::filter).collect(toSet());
+        ontologyConcepts = ontologyConcepts.stream().filter(this::filter).collect(toSet());
 
         if (!includeMeta()) {
-            types.remove(metaType());
-            types.removeAll(otherMetaTypes());
+            ontologyConcepts.remove(metaOntologyConcept());
+            ontologyConcepts.removeAll(otherMetaOntologyConcepts());
         }
 
+        // TODO: We should have an AbstractTypeGenerator with this annotation, not here
         if(!includeAbstract()){
-            types = types.stream().filter(type -> Schema.MetaSchema.isMetaLabel(type.getLabel()) || type instanceof Type && !((Type) type).isAbstract()).collect(toSet());
+            ontologyConcepts = ontologyConcepts.stream()
+                    .filter(ontologyConcept -> {
+                        boolean isMeta = Schema.MetaSchema.isMetaLabel(ontologyConcept.getLabel());
+                        boolean nonAbstract = ontologyConcept.isType() && !ontologyConcept.asType().isAbstract();
+                        return isMeta || nonAbstract;
+                    })
+                    .collect(toSet());
         }
 
-        if (types.isEmpty() && includeNonMeta()) {
-            Label label = genFromGraph(TypeLabels.class).mustBeUnused().generate(random, status);
+        if (ontologyConcepts.isEmpty() && includeNonMeta()) {
+            Label label = genFromGraph(Labels.class).mustBeUnused().generate(random, status);
             assert graph().getOntologyConcept(label) == null;
-            return newType(label);
+            return newOntologyConcept(label);
         } else {
-            return random.choose(types);
+            return random.choose(ontologyConcepts);
         }
     }
 
-    protected abstract T newType(Label label);
+    protected abstract T newOntologyConcept(Label label);
 
-    protected abstract T metaType();
+    protected abstract T metaOntologyConcept();
 
-    protected Collection<T> otherMetaTypes() {
+    protected Collection<T> otherMetaOntologyConcepts() {
         return ImmutableSet.of();
     }
 
-    protected boolean filter(T type) {
+    protected boolean filter(T ontologyConcept) {
         return true;
     }
 
@@ -103,12 +116,12 @@ public abstract class AbstractTypeGenerator<T extends OntologyConcept> extends F
         return includeAbstract.orElse(true);
     }
 
-    final AbstractTypeGenerator<T> excludeMeta() {
+    final AbstractOntologyConceptGenerator<T> excludeMeta() {
         meta = Optional.of(false);
         return this;
     }
 
-    final AbstractTypeGenerator<T> excludeAbstract() {
+    final AbstractOntologyConceptGenerator<T> excludeAbstract() {
         includeAbstract = Optional.of(false);
         return this;
     }
@@ -121,6 +134,9 @@ public abstract class AbstractTypeGenerator<T extends OntologyConcept> extends F
         this.includeAbstract = Optional.of(includeAbstract.value());
     }
 
+    /**
+     * Specify whether the generated {@link OntologyConcept} should be a meta concept
+     */
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
@@ -128,6 +144,9 @@ public abstract class AbstractTypeGenerator<T extends OntologyConcept> extends F
         boolean value() default true;
     }
 
+    /**
+     * Specify whether the generated {@link OntologyConcept} should be abstract
+     */
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration

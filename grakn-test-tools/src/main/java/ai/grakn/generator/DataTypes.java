@@ -19,19 +19,24 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.ResourceType;
+import com.pholser.junit.quickcheck.generator.GenerationStatus;
+import com.pholser.junit.quickcheck.generator.Generator;
+import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 /**
- * Generator that generates totally random concept IDs
+ * Generator that produces random valid resource data types.
+ *
+ * @author Felix Chapman
  */
-public class ConceptIds extends AbstractGenerator<ConceptId> {
+public class DataTypes extends Generator<ResourceType.DataType> {
 
-    public ConceptIds() {
-        super(ConceptId.class);
+    public DataTypes() {
+        super(ResourceType.DataType.class);
     }
 
     @Override
-    public ConceptId generate() {
-        return ConceptId.of(gen(String.class));
+    public ResourceType.DataType generate(SourceOfRandomness random, GenerationStatus status) {
+        return random.choose(ResourceType.DataType.SUPPORTED_TYPES.values());
     }
 }

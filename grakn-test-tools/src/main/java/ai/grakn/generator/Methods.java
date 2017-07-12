@@ -34,6 +34,11 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+/**
+ * A generator that produces random {@link Method}s of a given {@link Class}
+ *
+ * @author Felix Chapman
+ */
 public class Methods extends AbstractGenerator<Method> {
 
     private Class<?> clazz = null;
@@ -67,6 +72,9 @@ public class Methods extends AbstractGenerator<Method> {
         }
     }
 
+    /**
+     * Specify what class to generate methods from
+     */
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration

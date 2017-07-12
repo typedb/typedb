@@ -19,22 +19,22 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 
-public class RelationTypes extends AbstractTypeGenerator<RelationType> {
+/**
+ * Generator that produces {@link Entity}s
+ *
+ * @author Felix Chapman
+ */
+public class Entities extends AbstractThingGenerator<Entity, EntityType> {
 
-    public RelationTypes() {
-        super(RelationType.class);
+    public Entities() {
+        super(Entity.class, EntityTypes.class);
     }
 
     @Override
-    protected RelationType newType(Label label) {
-        return graph().putRelationType(label);
-    }
-
-    @Override
-    protected RelationType metaType() {
-        return graph().admin().getMetaRelationType();
+    protected Entity newInstance(EntityType type) {
+        return type.addEntity();
     }
 }

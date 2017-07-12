@@ -19,30 +19,30 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Label;
-import com.google.common.collect.ImmutableSet;
 
-import java.util.Collection;
+/**
+ * A generator that produces {@link ResourceType}s
+ *
+ * @author Felix Chapman
+ */
+public class ResourceTypes extends AbstractOntologyConceptGenerator<ResourceType> {
 
-public class RuleTypes extends AbstractTypeGenerator<RuleType> {
-
-    public RuleTypes() {
-        super(RuleType.class);
+    public ResourceTypes() {
+        super(ResourceType.class);
     }
 
     @Override
-    protected RuleType newType(Label label) {
-        return graph().putRuleType(label);
+    protected ResourceType newOntologyConcept(Label label) {
+        ResourceType.DataType<?> dataType = gen(ResourceType.DataType.class);
+
+        return graph().putResourceType(label, dataType);
     }
 
     @Override
-    protected RuleType metaType() {
-        return graph().admin().getMetaRuleType();
+    protected ResourceType metaOntologyConcept() {
+        return graph().admin().getMetaResourceType();
     }
 
-    @Override
-    protected Collection<RuleType> otherMetaTypes() {
-        return ImmutableSet.of(graph().admin().getMetaRuleInference(), graph().admin().getMetaRuleConstraint());
-    }
 }

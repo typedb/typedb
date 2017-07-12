@@ -27,6 +27,8 @@ import java.time.ZoneId;
 
 /**
  * Generator that generates random valid resource values.
+ *
+ * @author Felix Chapman
  */
 public class ResourceValues extends AbstractGenerator<Object> {
 

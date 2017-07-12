@@ -32,6 +32,13 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+/**
+ * Generator for creating things using an existing graph.
+ *
+ * @param <T> the type of thing to generate
+ *
+ * @author Felix Chapman
+ */
 public abstract class FromGraphGenerator<T> extends AbstractGenerator<T> {
     private Supplier<GraknGraph> graphSupplier =
             () -> gen().make(GraknGraphs.class).setOpen(true).generate(random, status);
@@ -73,6 +80,9 @@ public abstract class FromGraphGenerator<T> extends AbstractGenerator<T> {
         return this;
     }
 
+    /**
+     * Specify that the generated objects should be from the graph generated in a previous parameter
+     */
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration

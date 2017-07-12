@@ -31,8 +31,8 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
-import ai.grakn.generator.PutTypeFunctions;
-import ai.grakn.generator.TypeLabels.Unused;
+import ai.grakn.generator.PutOntologyConceptFunctions;
+import ai.grakn.generator.Labels.Unused;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.pholser.junit.quickcheck.From;
@@ -65,7 +65,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingAnyPutMethod_CreateAnOntologyElementWithTheGivenName(
             @Open GraknGraph graph,
-            @Unused Label label, @From(PutTypeFunctions.class) BiFunction<GraknGraph, Label, OntologyConcept> putOntologyElement) {
+            @Unused Label label, @From(PutOntologyConceptFunctions.class) BiFunction<GraknGraph, Label, OntologyConcept> putOntologyElement) {
         OntologyConcept type = putOntologyElement.apply(graph, label);
         assertEquals(label, type.getLabel());
     }
@@ -73,7 +73,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingAnyPutTypeMethod_CreateATypeWithDefaultProperties(
             @Open GraknGraph graph,
-            @Unused Label label, @From(PutTypeFunctions.class) BiFunction<GraknGraph, Label, OntologyConcept> putOntologyElement) {
+            @Unused Label label, @From(PutOntologyConceptFunctions.class) BiFunction<GraknGraph, Label, OntologyConcept> putOntologyElement) {
         OntologyConcept ontologyConcept = putOntologyElement.apply(graph, label);
 
         assertThat("Type should only have one sub-type: itself", ontologyConcept.subs(), contains(ontologyConcept));

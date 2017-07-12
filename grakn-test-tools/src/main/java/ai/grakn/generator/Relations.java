@@ -19,25 +19,22 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
 
-public class ResourceTypes extends AbstractTypeGenerator<ResourceType> {
+/**
+ * A generator that produces {@link Relation}s
+ *
+ * @author Felix Chapman
+ */
+public class Relations extends AbstractThingGenerator<Relation, RelationType> {
 
-    public ResourceTypes() {
-        super(ResourceType.class);
+    public Relations() {
+        super(Relation.class, RelationTypes.class);
     }
 
     @Override
-    protected ResourceType newType(Label label) {
-        ResourceType.DataType<?> dataType = gen(ResourceType.DataType.class);
-
-        return graph().putResourceType(label, dataType);
+    protected Relation newInstance(RelationType type) {
+        return type.addRelation();
     }
-
-    @Override
-    protected ResourceType metaType() {
-        return graph().admin().getMetaResourceType();
-    }
-
 }

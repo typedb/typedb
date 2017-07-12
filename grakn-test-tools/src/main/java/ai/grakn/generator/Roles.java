@@ -19,22 +19,27 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ResourceType;
-import com.pholser.junit.quickcheck.generator.GenerationStatus;
-import com.pholser.junit.quickcheck.generator.Generator;
-import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
 
 /**
- * Generator that produces random valid resource data types.
+ * A generator that produces random {@link Role}s
+ *
+ * @author Felix Chapman
  */
-public class DataTypes extends Generator<ResourceType.DataType> {
+public class Roles extends AbstractOntologyConceptGenerator<Role> {
 
-    public DataTypes() {
-        super(ResourceType.DataType.class);
+    public Roles() {
+        super(Role.class);
     }
 
     @Override
-    public ResourceType.DataType generate(SourceOfRandomness random, GenerationStatus status) {
-        return random.choose(ResourceType.DataType.SUPPORTED_TYPES.values());
+    protected Role newOntologyConcept(Label label) {
+        return graph().putRole(label);
+    }
+
+    @Override
+    protected Role metaOntologyConcept() {
+        return graph().admin().getMetaRoleType();
     }
 }

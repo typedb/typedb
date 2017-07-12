@@ -19,28 +19,27 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.ResourceType;
-import com.google.common.collect.ImmutableList;
 
-import java.util.function.BiFunction;
+/**
+ * A generator that produces {@link RelationType}s
+ *
+ * @author Felix Chapman
+ */
+public class RelationTypes extends AbstractOntologyConceptGenerator<RelationType> {
 
-public class PutTypeFunctions extends AbstractGenerator<BiFunction> {
-
-    public PutTypeFunctions() {
-        super(BiFunction.class);
+    public RelationTypes() {
+        super(RelationType.class);
     }
 
     @Override
-    protected BiFunction<GraknGraph, Label, OntologyConcept> generate() {
-        return random.choose(ImmutableList.of(
-                GraknGraph::putEntityType,
-                (graph, label) -> graph.putResourceType(label, gen(ResourceType.DataType.class)),
-                GraknGraph::putRuleType,
-                GraknGraph::putRelationType,
-                GraknGraph::putRole
-        ));
+    protected RelationType newOntologyConcept(Label label) {
+        return graph().putRelationType(label);
+    }
+
+    @Override
+    protected RelationType metaOntologyConcept() {
+        return graph().admin().getMetaRelationType();
     }
 }

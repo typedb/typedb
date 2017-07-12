@@ -19,19 +19,23 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import com.google.common.collect.ImmutableList;
 
-public class Resources extends AbstractInstanceGenerator<Resource, ResourceType> {
-
-    public Resources() {
-        super(Resource.class, ResourceTypes.class);
+/**
+ * Generator for producing a limited set of readable, meaningless strings.
+ *
+ * @author Felix Chapman
+ */
+public class MetasyntacticStrings extends AbstractGenerator<String> {
+    public MetasyntacticStrings() {
+        super(String.class);
     }
 
     @Override
-    protected Resource newInstance(ResourceType type) {
-        ResourceType.DataType<?> dataType = type.getDataType();
-        Object value = gen().make(ResourceValues.class).dataType(dataType).generate(random, status);
-        return type.putResource(value);
+    protected String generate() {
+        return random.choose(ImmutableList.of(
+                "foo", "bar", "baz", "qux", "quux", "corge", "grault",
+                "garply", "waldo", "fred", "plugh", "xyzzy", "thud"
+        ));
     }
 }

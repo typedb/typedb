@@ -19,22 +19,27 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Role;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 
-public class RoleTypes extends AbstractTypeGenerator<Role> {
+/**
+ * A generator that produces {@link Resource}s
+<<<<<<< Updated upstream:grakn-test-tools/src/main/java/ai/grakn/generator/Resources.java
+=======
+ *
+ * @author Felix Chapman
+>>>>>>> Stashed changes:grakn-test-tools/src/main/java/ai/grakn/generator/Resources.java
+ */
+public class Resources extends AbstractThingGenerator<Resource, ResourceType> {
 
-    public RoleTypes() {
-        super(Role.class);
+    public Resources() {
+        super(Resource.class, ResourceTypes.class);
     }
 
     @Override
-    protected Role newType(Label label) {
-        return graph().putRole(label);
-    }
-
-    @Override
-    protected Role metaType() {
-        return graph().admin().getMetaRoleType();
+    protected Resource newInstance(ResourceType type) {
+        ResourceType.DataType<?> dataType = type.getDataType();
+        Object value = gen().make(ResourceValues.class).dataType(dataType).generate(random, status);
+        return type.putResource(value);
     }
 }

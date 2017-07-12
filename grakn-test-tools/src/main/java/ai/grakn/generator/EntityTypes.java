@@ -22,19 +22,24 @@ package ai.grakn.generator;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 
-public class EntityTypes extends AbstractTypeGenerator<EntityType> {
+/**
+ * Generator that produces {@link EntityType}s
+ *
+ * @author Felix Chapman
+ */
+public class EntityTypes extends AbstractOntologyConceptGenerator<EntityType> {
 
     public EntityTypes() {
         super(EntityType.class);
     }
 
     @Override
-    protected EntityType newType(Label label) {
+    protected EntityType newOntologyConcept(Label label) {
         return graph().putEntityType(label);
     }
 
     @Override
-    protected EntityType metaType() {
+    protected EntityType metaOntologyConcept() {
         return graph().admin().getMetaEntityType();
     }
 }

@@ -26,6 +26,8 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 /**
  * Abstract class for generating test objects that handles some boilerplate.
  * @param <T> the type to generate
+ *
+ * @author Felix Chapman
  */
 public abstract class AbstractGenerator<T> extends Generator<T> {
 
