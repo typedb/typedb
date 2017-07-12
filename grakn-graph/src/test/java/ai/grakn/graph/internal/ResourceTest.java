@@ -139,9 +139,10 @@ public class ResourceTest extends GraphTestBase{
 
         entity.resource(resource);
 
-        RelationStructure relationStructure = RelationImpl.from(entity.relations().iterator().next()).structure();
+        RelationStructure relationStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relations())).structure();
         assertThat(relationStructure, instanceOf(RelationEdge.class));
         assertTrue("Edge Relation id not starting with [" + Schema.PREFIX_EDGE + "]",relationStructure.getId().getValue().startsWith(Schema.PREFIX_EDGE));
+        assertEquals(entity, resource.owner());
     }
 
     @Test
