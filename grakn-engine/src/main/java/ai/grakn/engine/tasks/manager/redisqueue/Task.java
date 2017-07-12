@@ -20,6 +20,7 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskState;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.auto.value.AutoValue;
@@ -31,6 +32,7 @@ import java.io.Serializable;
  * @author Domenico Corapi
  */
 @AutoValue
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonDeserialize(builder = AutoValue_Task.Builder.class)
 abstract class Task implements Serializable {
     protected static final long serialVersionUID = 42L;

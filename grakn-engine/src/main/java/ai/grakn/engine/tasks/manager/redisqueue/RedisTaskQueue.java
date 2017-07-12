@@ -61,7 +61,13 @@ class RedisTaskQueue {
     private final static Logger LOG = LoggerFactory.getLogger(RedisTaskQueue.class);
 
     private static final String QUEUE_NAME = "grakn_engine_queue";
-    public static final String SUBSCRIPTION_CLASS_NAME = Task.class.getName();
+    private static final String SUBSCRIPTION_CLASS_NAME = Task.class.getName();
+    static final MapBasedJobFactory JOB_FACTORY = new MapBasedJobFactory(
+            map(entry(
+                    // Assign elements with this class
+                    SUBSCRIPTION_CLASS_NAME,
+                    // To be run by this class
+                    RedisTaskQueueConsumer.class)));
 
     private final Client redisClient;
     private final Config config;
@@ -133,12 +139,6 @@ class RedisTaskQueue {
     }
 
     private Worker getJobSubscriber() {
-        return new WorkerPoolImpl(config, Arrays.asList(QUEUE_NAME),
-                new MapBasedJobFactory(
-                        map(entry(
-                                // Assign elements with this class
-                                SUBSCRIPTION_CLASS_NAME,
-                                // To be run by this class
-                                RedisTaskQueueConsumer.class))), jedisPool);
+        return new WorkerPoolImpl(config, Arrays.asList(QUEUE_NAME), JOB_FACTORY, jedisPool);
     }
 }

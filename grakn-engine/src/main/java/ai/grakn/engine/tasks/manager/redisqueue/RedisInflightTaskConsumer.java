@@ -25,7 +25,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.TimerTask;
+import mjson.Json;
 import net.greghaines.jesque.Config;
+import net.greghaines.jesque.Job;
 import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.utils.ResqueConstants;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
@@ -41,7 +43,6 @@ import redis.clients.util.Pool;
  */
 public class RedisInflightTaskConsumer extends TimerTask {
     private final static Logger LOG = LoggerFactory.getLogger(RedisInflightTaskConsumer.class);
-
     private final static ObjectMapper objectMapper = new ObjectMapper();
 
     public static final int END = 10;
@@ -69,16 +70,21 @@ public class RedisInflightTaskConsumer extends TimerTask {
                 if (!elements.isEmpty()) {
                     String head = elements.get(0);
                     try {
-                        Task task = objectMapper.readValue(head, Task.class);
-                        long runAt = task.getTaskState().schedule().getRunAt();
-                        Instant runAtDate = Instant.ofEpochMilli(runAt);
-                        Duration gap = Duration.between(runAtDate, Instant.now());
-                        if (gap.getSeconds() > processInterval.getSeconds()) {
-                            LOG.info("Found dead task in inflight: ", head);
-                            resource.rpoplpush(key, JesqueUtils.createKey(config.getNamespace(), QUEUE, queueName));
+                        Job job = objectMapper.readValue(head, Job.class);
+                        if (job.getArgs().length > 0) {
+                            // TODO Use Jackson for this
+                            long runAt = Json.read(head).at("args").at(0).at("taskState").at("schedule").at("runAt").asLong();
+                            Instant runAtDate = Instant.ofEpochMilli(runAt);
+                            Duration gap = Duration.between(runAtDate, Instant.now());
+                            if (gap.getSeconds() > processInterval.getSeconds()) {
+                                LOG.info("Found dead task in inflight: ", head);
+                                // TODO Making some big assump tions here, a new task might be at the head of the queue
+                                resource.rpoplpush(key, JesqueUtils.createKey(config.getNamespace(), QUEUE, queueName));
+                            }
                         }
                     } catch (IOException e) {
                         LOG.error("Could not deserialize task, process manually from inflight queue: {}", head, e);
+                        // TODO clean up the queue otherwise we always process the same (or make it a LIFO queue)
                     }
                 }
             }

@@ -23,12 +23,14 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import net.greghaines.jesque.ConfigBuilder;
 import org.junit.Test;
-import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -40,7 +42,8 @@ public class RedisInflightTaskConsumerTest {
     private static String TRICKY_TASK = "{\"class\":\"ai.grakn.engine.tasks.manager.redisqueue.Task\",\"args\":[{\"taskState\":{\"creator\":\"\",\"schedule\":{\"runAt\":1499800245809,\"interval\":null},\"id\":{\"value\":\"0debb87c-a4cd-46d2-90a7-03efbb10318f\"},\"priority\":\"LOW\",\"status\":\"CREATED\",\"taskClassName\":\"ai.grakn.engine.tasks.mock.LongExecutionMockTask\"},\"taskConfiguration\":{\"configuration\":\"{\\\"id\\\":\\\"0cc42a2d-134c-4385-a4e9-69edcc10fee8\\\"}\"}}],\"vars\":null}";
 
     @Test
-    public void whenRunningInFlightConsumerWithTrickyTask_NoFailures() throws ExecutionException, InterruptedException {
+    public void whenRunningInFlightConsumerWithTrickyTask_NoFailures()
+            throws ExecutionException, InterruptedException, TimeoutException {
         JedisPool jedisPool = mock(JedisPool.class);
         Jedis jedis = mock(Jedis.class);
         when(jedisPool.getResource()).thenReturn(jedis);
@@ -50,11 +53,12 @@ public class RedisInflightTaskConsumerTest {
         when(jedis.keys(anyString())).thenReturn(stringHashSet);
         ArrayList<String> v = new ArrayList<>();
         v.add(TRICKY_TASK);
-        when(jedis.lrange(eq(k), anyInt(), anyInt())).thenReturn(v);
+        when(jedis.lrange(anyString(), anyLong(), anyLong())).thenReturn(v);
         when(jedis.rpoplpush(anyString(), anyString())).thenReturn("does not matter");
         RedisInflightTaskConsumer redisInflightTaskConsumer =
                 new RedisInflightTaskConsumer(jedisPool,
                         Duration.ofSeconds(2), new ConfigBuilder().build(), QUEUE_NAME);
         redisInflightTaskConsumer.run();
+        verify(jedis, times(1)).rpoplpush(anyString(), anyString());
     }
 }
