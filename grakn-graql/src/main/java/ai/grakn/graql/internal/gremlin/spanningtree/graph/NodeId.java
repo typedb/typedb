@@ -30,8 +30,13 @@ import java.util.Set;
  */
 public class NodeId {
 
+    /**
+     * The type of a node.
+     * If the node contains a var from the query, its type is VAR.
+     * If the node is an edge from the query, its type is the type of the fragment.
+     **/
     public enum NodeType {
-        HAS_SCOPE, ISA, PLAYS, RELATES, SHORTCUT, SUB, VAR
+        HAS_SCOPE, ISA, PLAYS, RELATES, SUB, VAR
     }
 
     private final NodeType nodeType;
