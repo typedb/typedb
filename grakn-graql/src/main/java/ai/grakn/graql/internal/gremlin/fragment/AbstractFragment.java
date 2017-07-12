@@ -24,6 +24,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -76,7 +77,7 @@ abstract class AbstractFragment implements Fragment {
     private final ImmutableSet<Var> varNames;
     private EquivalentFragmentSet equivalentFragmentSet = null;
 
-    private VarProperty varProperty;
+    private VarProperty varProperty; // For reasoner to map fragments to atoms
 
     AbstractFragment(VarProperty varProperty, Var start) {
         this.varProperty = varProperty;
@@ -135,7 +136,7 @@ abstract class AbstractFragment implements Fragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<String, Node> Nodes,
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> Nodes,
                                                               Map<Node, Map<Node, Fragment>> edges) {
         return Collections.emptySet();
     }
@@ -170,12 +171,13 @@ abstract class AbstractFragment implements Fragment {
         return result;
     }
 
-    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesOut(String edge, Map<String, Node> nodes,
-                                                          Map<Node, Map<Node, Fragment>> edgeToFragment) {
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(NodeId.NodeType nodeType,
+                                                              Map<NodeId, Node> nodes,
+                                                              Map<Node, Map<Node, Fragment>> edgeToFragment) {
 
-        Node start = Node.addIfAbsent(getStart(), nodes);
-        Node end = Node.addIfAbsent(getEnd().get(), nodes);
-        Node middle = Node.addIfAbsent(start + edge + end, nodes);
+        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, getStart(), nodes);
+        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, getEnd().get(), nodes);
+        Node middle = Node.addIfAbsent(nodeType, Sets.newHashSet(getStart(), getEnd().get()), nodes);
         middle.setInvalidStartingPoint();
 
         addEdgeToFragmentMapping(middle, start, edgeToFragment);
@@ -184,24 +186,13 @@ abstract class AbstractFragment implements Fragment {
                 weighted(DirectedEdge.from(middle).to(end), 0));
     }
 
-    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesIn(String edge, Map<String, Node> nodes,
-                                                         Map<Node, Map<Node, Fragment>> edgeToFragment) {
-        Node start = Node.addIfAbsent(getStart(), nodes);
-        Node end = Node.addIfAbsent(getEnd().get(), nodes);
-        Node middle = Node.addIfAbsent(end + edge + start, nodes);
-        middle.setInvalidStartingPoint();
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Var edge,
+                                                              Map<NodeId, Node> nodes,
+                                                              Map<Node, Map<Node, Fragment>> edgeToFragment) {
 
-        addEdgeToFragmentMapping(middle, start, edgeToFragment);
-        return Sets.newHashSet(
-                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
-                weighted(DirectedEdge.from(middle).to(end), 0));
-    }
-
-    Set<Weighted<DirectedEdge<Node>>> getDirectedEdgesBoth(Var edge, Map<String, Node> nodes,
-                                                           Map<Node, Map<Node, Fragment>> edgeToFragment) {
-        Node start = Node.addIfAbsent(getStart(), nodes);
-        Node end = Node.addIfAbsent(getEnd().get(), nodes);
-        Node middle = Node.addIfAbsent(edge, nodes);
+        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, getStart(), nodes);
+        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, getEnd().get(), nodes);
+        Node middle = Node.addIfAbsent(NodeId.NodeType.VAR, edge, nodes);
         middle.setInvalidStartingPoint();
 
         addEdgeToFragmentMapping(middle, start, edgeToFragment);

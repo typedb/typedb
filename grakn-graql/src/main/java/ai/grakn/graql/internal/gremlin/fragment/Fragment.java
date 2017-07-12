@@ -24,6 +24,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -126,9 +127,10 @@ public interface Fragment {
     /**
      * Convert the fragment to a set of weighted edges for query planning
      *
+     * @param nodes          all nodes in the query
      * @param edgeToFragment a mapping from edge(child, parent) to its corresponding fragment
      * @return a set of edges
      */
-    Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<String, Node> nodes,
+    Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
                                                        Map<Node, Map<Node, Fragment>> edgeToFragment);
 }

@@ -29,6 +29,7 @@ import ai.grakn.graql.internal.gremlin.spanningtree.Arborescence;
 import ai.grakn.graql.internal.gremlin.spanningtree.ChuLiuEdmonds;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.collect.Sets;
@@ -87,7 +88,7 @@ public class GreedyTraversalPlan {
     private static List<Fragment> planForConjunction(ConjunctionQuery query) {
 
         List<Fragment> plan = new ArrayList<>();
-        Map<String, Node> allNodes = new HashMap<>();
+        Map<NodeId, Node> allNodes = new HashMap<>();
 
         Collection<Set<Fragment>> connectedFragmentSets = getConnectedFragmentSets(query, allNodes);
 
@@ -133,7 +134,7 @@ public class GreedyTraversalPlan {
     }
 
     private static void addUnvisitedNodeFragments(List<Fragment> plan,
-                                                  Map<String, Node> allNodes,
+                                                  Map<NodeId, Node> allNodes,
                                                   Collection<Node> connectedNodes) {
         Set<Node> nodeWithFragment = connectedNodes.stream()
                 .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
@@ -148,11 +149,11 @@ public class GreedyTraversalPlan {
         }
     }
 
-    private static Predicate<Fragment> filterNodeFragment(List<Fragment> plan, Map<String, Node> allNodes,
+    private static Predicate<Fragment> filterNodeFragment(List<Fragment> plan, Map<NodeId, Node> allNodes,
                                                           Set<Node> connectedNodes, Set<Node> nodesWithFixedCost) {
         return fragment -> {
             if (!fragment.getEnd().isPresent()) {
-                Node start = Node.addIfAbsent(fragment.getStart(), allNodes);
+                Node start = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.getStart(), allNodes);
                 connectedNodes.add(start);
 
                 if (fragment.hasFixedFragmentCost()) {
@@ -174,15 +175,18 @@ public class GreedyTraversalPlan {
     }
 
     private static Collection<Set<Fragment>> getConnectedFragmentSets(ConjunctionQuery query,
-                                                                      Map<String, Node> allNodes) {
+                                                                      Map<NodeId, Node> allNodes) {
         Map<Integer, Set<Var>> varSetMap = new HashMap<>();
         Map<Integer, Set<Fragment>> fragmentSetMap = new HashMap<>();
         final int[] index = {0};
         query.getEquivalentFragmentSets().stream().flatMap(EquivalentFragmentSet::stream).forEach(fragment -> {
 
             if (!fragment.getDependencies().isEmpty()) {
-                Node start = Node.addIfAbsent(fragment.getStart(), allNodes);
-                Node other = Node.addIfAbsent(fragment.getDependencies().iterator().next(), allNodes);
+                // it's either neq or value fragment
+
+                Node start = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.getStart(), allNodes);
+                Node other = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.getDependencies().iterator().next(),
+                        allNodes);
 
                 start.getFragmentsWithDependency().add(fragment);
                 other.getDependants().add(fragment);
@@ -223,7 +227,7 @@ public class GreedyTraversalPlan {
     }
 
     private static void greedyTraversal(List<Fragment> plan, Arborescence<Node> arborescence,
-                                        Map<String, Node> nodes,
+                                        Map<NodeId, Node> nodes,
                                         Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
 
         Map<Node, Set<Node>> edgesParentToChild = new HashMap<>();
@@ -252,7 +256,7 @@ public class GreedyTraversalPlan {
         }
     }
 
-    private static void addNodeFragmentToPlan(Node node, List<Fragment> plan, Map<String, Node> nodes,
+    private static void addNodeFragmentToPlan(Node node, List<Fragment> plan, Map<NodeId, Node> nodes,
                                               boolean visited) {
         if (!visited) {
             node.getFragmentsWithoutDependency().stream()
@@ -272,9 +276,9 @@ public class GreedyTraversalPlan {
 
         if (!node.getFragmentsWithDependency().isEmpty()) {
             node.getDependants().forEach(fragment -> {
-                Node otherNode = nodes.get(fragment.getStart().getValue());
+                Node otherNode = nodes.get(new NodeId(NodeId.NodeType.VAR, fragment.getStart()));
                 if (node.equals(otherNode)) {
-                    otherNode = nodes.get(fragment.getDependencies().iterator().next().getValue());
+                    otherNode = nodes.get(new NodeId(NodeId.NodeType.VAR, fragment.getDependencies().iterator().next()));
                 }
                 otherNode.getFragmentsWithDependencyVisited().add(fragment);
                 otherNode.getFragmentsWithDependency().remove(fragment);

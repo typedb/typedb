@@ -23,7 +23,6 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -32,8 +31,8 @@ import java.util.Set;
  * @author Jason Liu
  */
 public class Node {
-    private String name;
-    private Optional<Var> var;
+
+    private final NodeId nodeId;
     private boolean isValidStartingPoint = true;
 
     private Set<Fragment> fragmentsWithoutDependency = new HashSet<>();
@@ -41,36 +40,24 @@ public class Node {
     private Set<Fragment> fragmentsWithDependencyVisited = new HashSet<>();
     private Set<Fragment> dependants = new HashSet<>();
 
-    private Node(String name) {
-        this.name = name;
-        this.var = Optional.empty();
+    private Node(NodeId nodeId) {
+        this.nodeId = nodeId;
     }
 
-    private Node(Var var) {
-        this.name = var.getValue();
-        this.var = Optional.of(var);
-    }
-
-    public static Node addIfAbsent(Var var, Map<String, Node> nodes) {
-        if (!nodes.containsKey(var.getValue())) {
-            nodes.put(var.getValue(), new Node(var));
+    public static Node addIfAbsent(NodeId.NodeType nodeType, Var var, Map<NodeId, Node> nodes) {
+        NodeId nodeId = new NodeId(nodeType, var);
+        if (!nodes.containsKey(nodeId)) {
+            nodes.put(nodeId, new Node(nodeId));
         }
-        return nodes.get(var.getValue());
+        return nodes.get(nodeId);
     }
 
-    public static Node addIfAbsent(String name, Map<String, Node> nodes) {
-        if (!nodes.containsKey(name)) {
-            nodes.put(name, new Node(name));
+    public static Node addIfAbsent(NodeId.NodeType nodeType, Set<Var> vars, Map<NodeId, Node> nodes) {
+        NodeId nodeId = new NodeId(nodeType, vars);
+        if (!nodes.containsKey(nodeId)) {
+            nodes.put(nodeId, new Node(nodeId));
         }
-        return nodes.get(name);
-    }
-
-    public Optional<Var> getVar() {
-        return var;
-    }
-
-    public String getName() {
-        return name;
+        return nodes.get(nodeId);
     }
 
     public Set<Fragment> getFragmentsWithoutDependency() {
@@ -102,17 +89,17 @@ public class Node {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Node node = (Node) o;
-        return name.equals(node.name);
+        Node that = (Node) o;
+        return nodeId.equals(that.nodeId);
     }
 
     @Override
     public int hashCode() {
-        return name.hashCode();
+        return nodeId.hashCode();
     }
 
     @Override
     public String toString() {
-        return name;
+        return nodeId.toString();
     }
 }
