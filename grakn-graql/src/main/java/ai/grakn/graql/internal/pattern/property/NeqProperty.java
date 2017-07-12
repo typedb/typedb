@@ -93,7 +93,7 @@ public class NeqProperty extends AbstractVarProperty implements NamedProperty {
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, GraknGraph graph, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         return new NeqPredicate(var.getVarName(), this, parent);
     }
 }

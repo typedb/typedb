@@ -89,7 +89,7 @@ public abstract class RuleProperty extends AbstractVarProperty implements Unique
 
     @Nullable
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, GraknGraph graph, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         return null;
     }
 }

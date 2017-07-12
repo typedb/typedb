@@ -100,7 +100,7 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty 
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, GraknGraph graph, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         return new ValuePredicate(var.getVarName(), this.getPredicate(), parent);
     }
 }

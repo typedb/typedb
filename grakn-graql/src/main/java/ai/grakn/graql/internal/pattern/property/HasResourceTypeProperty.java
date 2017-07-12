@@ -171,13 +171,13 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, GraknGraph graph, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
         Var varName = var.getVarName().asUserDefined();
         Label label = this.getResourceType().getTypeLabel().orElse(null);
 
         Var predicateVar = var().asUserDefined();
-        OntologyConcept ontologyConcept = graph.getOntologyConcept(label);
+        OntologyConcept ontologyConcept = parent.graph().getOntologyConcept(label);
         IdPredicate predicate = new IdPredicate(predicateVar, ontologyConcept, parent);
         //isa part
         VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();

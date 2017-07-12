@@ -81,5 +81,5 @@ public interface VarProperty {
      * @return created atom
      */
     @CheckReturnValue
-    Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, GraknGraph graph, ReasonerQuery parent);
+    Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent);
 }

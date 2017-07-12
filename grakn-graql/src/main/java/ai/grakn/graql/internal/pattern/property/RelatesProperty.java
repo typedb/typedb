@@ -118,7 +118,7 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, GraknGraph graph, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         Var varName = var.getVarName().asUserDefined();
         VarPatternAdmin roleVar = this.getRole();
         Var roleVariable = roleVar.getVarName().asUserDefined();
