@@ -18,11 +18,9 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 
-import com.google.common.collect.Iterables;
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 

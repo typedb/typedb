@@ -25,7 +25,6 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 
 import java.util.Iterator;

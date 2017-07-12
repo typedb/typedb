@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.GraknGraph;
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 import java.util.stream.Stream;
