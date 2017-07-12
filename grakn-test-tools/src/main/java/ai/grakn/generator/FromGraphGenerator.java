@@ -71,8 +71,9 @@ public abstract class FromGraphGenerator<T> extends AbstractGenerator<T> {
         fromLastGeneratedGraph();
     }
 
-    final void fromGraph(Supplier<GraknGraph> graphSupplier) {
+    final FromGraphGenerator<T> fromGraph(Supplier<GraknGraph> graphSupplier) {
         this.graphSupplier = graphSupplier;
+        return this;
     }
 
     final FromGraphGenerator<T> fromLastGeneratedGraph() {
