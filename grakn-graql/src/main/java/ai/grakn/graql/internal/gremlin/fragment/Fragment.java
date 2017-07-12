@@ -23,7 +23,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 import java.util.Optional;
 import java.util.Set;
@@ -66,7 +66,7 @@ public interface Fragment {
      * @param traversal the traversal to extend with this Fragment
      * @param graph the graph to execute the traversal on
      */
-    void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph);
+    void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph);
 
     /**
      * The name of the fragment

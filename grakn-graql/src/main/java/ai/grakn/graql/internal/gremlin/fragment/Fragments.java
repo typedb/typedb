@@ -40,7 +40,6 @@ import java.util.Set;
 import static ai.grakn.util.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
-import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -146,7 +145,7 @@ public class Fragments {
     }
 
     @SuppressWarnings("unchecked")
-    static GraphTraversal<Vertex, Vertex> outSubs(GraphTraversal<Vertex, Vertex> traversal) {
+    static <T> GraphTraversal<T, Vertex> outSubs(GraphTraversal<T, Vertex> traversal) {
         // These traversals make sure to only navigate types by checking they do not have a `THING_TYPE_LABEL_ID` property
         return traversal.union(__.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.repeat(__.out(SUB.getLabel())).emit()).unfold();
     }
@@ -164,7 +163,7 @@ public class Fragments {
     }
 
     static void applyTypeLabelsToTraversal(
-            GraphTraversal<Vertex, Edge> traversal, Schema.EdgeProperty property, Optional<Set<Label>> typeLabels, GraknGraph graph) {
+            GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property, Optional<Set<Label>> typeLabels, GraknGraph graph) {
         typeLabels.ifPresent(labels -> {
             Set<Integer> typeIds = labels.stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
             traversal.has(property.name(), P.within(typeIds));
@@ -176,16 +175,17 @@ public class Fragments {
      *
      * @param traversal the traversal, starting from the shortcut edge
      * @param roleType the variable to assign to the role-type. If not present, do nothing
+     * @param edgeProperty the edge property to look up the role label ID
      */
-    static void traverseRoleTypeFromShortcutEdge(GraphTraversal<Vertex, Edge> traversal, Optional<Var> roleType) {
+    static void traverseRoleTypeFromShortcutEdge(GraphTraversal<?, Edge> traversal, Optional<Var> roleType, Schema.EdgeProperty edgeProperty) {
         roleType.ifPresent(var -> {
             // Access role-type ID from edge
             Var roleTypeIdProperty = Graql.var();
             Var edge = Graql.var();
-            traversal.as(edge.getValue()).values(ROLE_LABEL_ID.name()).as(roleTypeIdProperty.getValue());
+            traversal.as(edge.getValue()).values(edgeProperty.name()).as(roleTypeIdProperty.getValue());
 
             // Look up direct role-type using ID
-            GraphTraversal<Vertex, Vertex> vertexTraversal =
+            GraphTraversal<?, Vertex> vertexTraversal =
                     traversal.V().has(LABEL_ID.name(), __.where(P.eq(roleTypeIdProperty.getValue())));
 
             // Navigate up type hierarchy

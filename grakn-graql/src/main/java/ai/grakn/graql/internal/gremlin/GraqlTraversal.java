@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
@@ -72,7 +73,7 @@ public class GraqlTraversal {
      */
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    public GraphTraversal<Vertex, Map<String, Vertex>> getGraphTraversal(GraknGraph graph) {
+    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(GraknGraph graph) {
         Traversal[] traversals =
                 fragments.stream().map(list -> getConjunctionTraversal(graph, list)).toArray(Traversal[]::new);
 

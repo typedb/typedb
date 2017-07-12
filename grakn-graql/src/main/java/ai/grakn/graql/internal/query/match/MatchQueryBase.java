@@ -24,6 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -38,6 +39,8 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,7 +95,8 @@ public class MatchQueryBase extends AbstractMatchQuery {
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, graph);
         LOG.trace("Created query plan");
         LOG.trace(graqlTraversal.toString());
-        GraphTraversal<Vertex, Map<String, Vertex>> traversal = graqlTraversal.getGraphTraversal(graph);
+        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(graph);
+        System.out.println(traversal);
 
         String[] selectedNames = pattern.commonVarNames().stream().map(Var::getValue).toArray(String[]::new);
 
@@ -103,7 +107,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
         }
 
         return traversal.toStream()
-                .map(vertices -> makeResults(graph, vertices))
+                .map(elements -> makeResults(graph, elements))
                 .filter(result -> shouldShowResult(graph, result))
                 .sequential()
                 .map(QueryAnswer::new);
@@ -169,14 +173,22 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
     /**
      * @param graph the graph to get results from
-     * @param vertices a map of vertices where the key is the variable name
+     * @param elements a map of vertices and edges where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private Map<Var, Concept> makeResults(GraknGraph graph, Map<String, Vertex> vertices) {
+    private Map<Var, Concept> makeResults(GraknGraph graph, Map<String, Element> elements) {
         return pattern.commonVarNames().stream().collect(Collectors.<Var, Var, Concept>toMap(
                 Function.identity(),
-                name -> graph.admin().buildConcept(vertices.get(name.getValue()))
+                name -> buildConcept(graph.admin(), elements.get(name.getValue()))
         ));
+    }
+
+    private Concept buildConcept(GraknAdmin graph, Element element) {
+        if (element instanceof Vertex) {
+            return graph.buildConcept((Vertex) element);
+        } else {
+            return graph.buildConcept((Edge) element);
+        }
     }
 
     /**
