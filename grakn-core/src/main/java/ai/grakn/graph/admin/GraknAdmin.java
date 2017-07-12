@@ -32,6 +32,7 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
@@ -55,6 +56,16 @@ public interface GraknAdmin {
      */
     @CheckReturnValue
     <T extends Concept> T buildConcept(Vertex vertex);
+
+    /**
+     *
+     * @param edge An {@link Edge} which contains properties necessary to build a {@link Concept} from.
+     * @param <T> The type of the {@link Concept} being built
+     * @return A {@link Concept} built using the provided {@link Edge}
+     */
+    @CheckReturnValue
+    <T extends Concept> T buildConcept(Edge edge);
+
 
     /**
      * Utility function to get a read-only Tinkerpop traversal.

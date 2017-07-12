@@ -49,6 +49,7 @@ import mjson.Json;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -241,6 +242,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public <T extends Concept> T buildConcept(Vertex vertex) {
         return factory().buildConcept(vertex);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T extends Concept> T buildConcept(Edge edge){
+        return (T) factory().buildRelation(factory().buildEdge(edge));
     }
 
     @Override
