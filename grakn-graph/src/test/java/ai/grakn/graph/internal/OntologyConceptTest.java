@@ -20,10 +20,23 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNull;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class OntologyConceptTest extends GraphTestBase {
 
@@ -45,5 +58,39 @@ public class OntologyConceptTest extends GraphTestBase {
 
         //Check old label is dead
         assertNull(graknGraph.getType(originalLabel));
+    }
+
+    @Test
+    public void whenSpecifyingTheResourceTypeOfAnEntityType_EnsureTheImplicitStructureIsCreated(){
+        graknGraph.showImplicitConcepts(true);
+        Label resourceLabel = Label.of("Resource Type");
+        EntityType entityType = graknGraph.putEntityType("Entity1");
+        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+
+        //Implicit Names
+        Label hasResourceOwnerLabel = Schema.ImplicitType.HAS_OWNER.getLabel(resourceLabel);
+        Label hasResourceValueLabel = Schema.ImplicitType.HAS_VALUE.getLabel(resourceLabel);
+        Label hasResourceLabel = Schema.ImplicitType.HAS.getLabel(resourceLabel);
+
+        entityType.resource(resourceType);
+
+        RelationType relationType = graknGraph.getRelationType(hasResourceLabel.getValue());
+        Assert.assertEquals(hasResourceLabel, relationType.getLabel());
+
+        Set<Label> roleLabels = relationType.relates().stream().map(OntologyConcept::getLabel).collect(toSet());
+        assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
+
+        assertThat(entityType.plays(), containsInAnyOrder(graknGraph.getRole(hasResourceOwnerLabel.getValue())));
+        assertThat(resourceType.plays(), containsInAnyOrder(graknGraph.getRole(hasResourceValueLabel.getValue())));
+
+        //Check everything is implicit
+        assertTrue(relationType.isImplicit());
+        relationType.relates().forEach(role -> assertTrue(role.isImplicit()));
+
+        // Check that resource is not required
+        EdgeElement entityPlays = ((EntityTypeImpl) entityType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
+        assertFalse(entityPlays.propertyBoolean(Schema.EdgeProperty.REQUIRED));
+        EdgeElement resourcePlays = ((ResourceTypeImpl <?>) resourceType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
+        assertFalse(resourcePlays.propertyBoolean(Schema.EdgeProperty.REQUIRED));
     }
 }
