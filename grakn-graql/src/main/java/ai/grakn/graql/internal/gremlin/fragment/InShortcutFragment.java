@@ -31,7 +31,7 @@ import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelsToTraversal;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabels;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.traverseRoleTypeFromShortcutEdge;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.traverseRoleFromShortcutEdge;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_ID;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
@@ -69,7 +69,7 @@ class InShortcutFragment extends AbstractFragment {
         applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleLabels, graph);
         applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_ID, relationTypeLabels, graph);
 
-        traverseRoleTypeFromShortcutEdge(edgeTraversal, role);
+        traverseRoleFromShortcutEdge(edgeTraversal, role);
 
         edgeTraversal.outV();
     }
