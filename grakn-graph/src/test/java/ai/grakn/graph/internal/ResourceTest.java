@@ -26,6 +26,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.util.Schema;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
@@ -36,6 +37,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ResourceTest extends GraphTestBase{
     @Test
@@ -134,7 +136,10 @@ public class ResourceTest extends GraphTestBase{
 
         entity.resource(resource);
 
-        RelationImpl relation = RelationImpl.from(entity.relations().iterator().next());
-        assertThat(relation.structure(), instanceOf(RelationEdge.class));
+        RelationStructure relationStructure = RelationImpl.from(entity.relations().iterator().next()).structure();
+        assertThat(relationStructure, instanceOf(RelationEdge.class));
+        assertTrue("Edge Relation id not starting with [" + Schema.PREFIX_EDGE + "]",relationStructure.getId().getValue().startsWith(Schema.PREFIX_EDGE));
+
     }
+
 }
