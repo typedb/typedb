@@ -133,15 +133,15 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when attempting to mutate a property which is immutable
      */
-    public static GraphOperationException immutableProperty(Object oldValue, Object newValue, Schema.VertexProperty vertexProperty){
+    public static GraphOperationException immutableProperty(Object oldValue, Object newValue, Enum vertexProperty){
         return new GraphOperationException(ErrorMessage.IMMUTABLE_VALUE.getMessage(oldValue, newValue, vertexProperty.name()));
     }
 
     /**
      * Thrown when attempting to set a property to null
      */
-    public static GraphOperationException settingNullProperty(Schema.VertexProperty property){
-        return new GraphOperationException(ErrorMessage.NULL_VALUE.getMessage(property.name()));
+    public static GraphOperationException settingNullProperty(Enum property){
+        return new GraphOperationException(ErrorMessage.NULL_VALUE.getMessage(property));
     }
 
     /**
