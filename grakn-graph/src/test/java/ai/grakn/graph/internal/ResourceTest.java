@@ -18,12 +18,13 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
 import org.junit.Test;
 
@@ -121,5 +122,19 @@ public class ResourceTest extends GraphTestBase{
         assertEquals(date, myBirthday.getValue());
         assertEquals(myBirthday, resourceType.getResource(date));
         assertThat(graknGraph.getResourcesByValue(date), containsInAnyOrder(myBirthday));
+    }
+
+    @Test
+    public void whenLinkingResourcesToThings_EnsureTheRelationIsAnEdge(){
+        ResourceType<String> resourceType = graknGraph.putResourceType("My resource type", ResourceType.DataType.STRING);
+        Resource<String> resource = resourceType.putResource("A String");
+
+        EntityType entityType = graknGraph.putEntityType("My entity type").resource(resourceType);
+        Entity entity = entityType.addEntity();
+
+        entity.resource(resource);
+
+        RelationImpl relation = RelationImpl.from(entity.relations().iterator().next());
+        assertThat(relation.structure(), instanceOf(RelationEdge.class));
     }
 }
