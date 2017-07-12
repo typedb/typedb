@@ -267,21 +267,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return vars;
     }
 
-    /**
-     * @param atom in question
-     * @return true if query contains an equivalent atom
-     */
-    private boolean containsEquivalentAtom(Atom atom) {
-        return !getEquivalentAtoms(atom).isEmpty();
-    }
-
-    Set<Atom> getEquivalentAtoms(Atom atom) {
-        return atomSet.stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .filter(at -> at.isEquivalent(atom))
-                .collect(Collectors.toSet());
-    }
-
     @Override
     public Unifier getUnifier(ReasonerQuery parent) {
         throw GraqlQueryException.getUnifierOfNonAtomicQuery();
@@ -393,6 +378,21 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             }
         }
         return true;
+    }
+
+    /**
+     * @param atom in question
+     * @return true if query contains an equivalent atom
+     */
+    private boolean containsEquivalentAtom(Atom atom) {
+        return !getEquivalentAtoms(atom).isEmpty();
+    }
+
+    Set<Atom> getEquivalentAtoms(Atom atom) {
+        return atomSet.stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(at -> at.isEquivalent(atom))
+                .collect(Collectors.toSet());
     }
 
     /**
