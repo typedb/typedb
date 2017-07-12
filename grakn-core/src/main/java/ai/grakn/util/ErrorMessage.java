@@ -92,6 +92,10 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_DISJUNCTION_IN_HEAD("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a disjunction in the head\n"),
 
+    VALIDATION_RULE_BODY_ONTOLOGICALLY_INVALID("The rule [%s] of type [%s] does not form a valid Horn clause, as its body is ontologically invalid\n"),
+
+    VALIDATION_RULE_HEAD_ONTOLOGICALLY_INVALID("The rule [%s] of type [%s] does not form a valid Horn clause, as its head is ontologically invalid\n"),
+
     VALIDATION_RULE_HEAD_NON_ATOMIC("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a multi-atom head\n"),
 
     VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("The rule [%s] of type [%s] does not form a valid Horn clause, as its head contains illegal atomics\n"),

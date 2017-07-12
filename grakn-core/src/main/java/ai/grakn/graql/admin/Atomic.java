@@ -78,6 +78,9 @@ public interface Atomic {
     @CheckReturnValue
     default boolean isAllowedToFormRuleHead(){ return false; }
 
+    @CheckReturnValue
+    default boolean isOntologicallyValid(){ return true; }
+
     /**
      * @return true if atom is recursive
      */

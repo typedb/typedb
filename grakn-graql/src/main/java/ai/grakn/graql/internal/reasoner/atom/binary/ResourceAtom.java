@@ -206,6 +206,18 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
+    public boolean isOntologicallyValid() {
+        OntologyConcept type = getOntologyConcept();
+        if (type == null) return true;
+        if (!type.isResourceType()) return false;
+
+        OntologyConcept ownerType = getParentQuery().getVarOntologyConceptMap().get(getVarName());
+
+        return ownerType == null ||
+                ownerType.isType() && ownerType.asType().resources().contains(type.asResourceType());
+    }
+
+    @Override
     public boolean requiresMaterialisation(){ return true;}
 
     @Override

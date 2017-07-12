@@ -222,6 +222,35 @@ public class RelationAtom extends IsaAtom {
     }
 
     @Override
+    public boolean isOntologicallyValid() {
+        OntologyConcept type = getOntologyConcept();
+        if (type != null && !type.isRelationType()) return false;
+
+        //check roles are ok
+        Collection<Role> possibleRoles = type != null? type.asRelationType().relates() : Collections.EMPTY_SET;
+        Map<Var, OntologyConcept> varOntologyConceptMap = getParentQuery().getVarOntologyConceptMap();
+
+        for (Map.Entry<Role, Collection<Var>> e : getRoleVarMap().asMap().entrySet() ){
+            Role role = e.getKey();
+            if (!Schema.MetaSchema.isMetaLabel(role.getLabel())) {
+                //check whether this role can be played in this relation
+                if (type != null && !possibleRoles.contains(role)) {
+                    return false;
+                }
+
+                //check whether the role player's type allows playing this role
+                for (Var player : e.getValue()) {
+                    OntologyConcept playerType = varOntologyConceptMap.get(player);
+                    if (playerType != null && !playerType.asType().plays().contains(role)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    @Override
     public int computePriority(Set<Var> subbedVars) {
         int priority = super.computePriority(subbedVars);
         priority += ResolutionPlan.IS_RELATION_ATOM;

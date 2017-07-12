@@ -72,6 +72,9 @@ public interface ReasonerQuery{
     @CheckReturnValue
     MatchQuery getMatchQuery();
 
+    @CheckReturnValue
+    boolean isOntologicallyValid();
+
     /**
      * @return true if any of the atoms constituting the query can be resolved through a rule
      */
