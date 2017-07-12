@@ -244,10 +244,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return factory().buildConcept(vertex);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T extends Concept> T buildConcept(Edge edge){
-        return (T) factory().buildRelation(factory().buildEdge(edge));
+        return factory().buildConcept(edge);
     }
 
     @Override
@@ -556,13 +555,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    //TODO: Cleanup factory so we can clean this up
-    @SuppressWarnings("unchecked")
     private <T extends Concept>T getConceptEdge(ConceptId id){
         String edgeId = id.getValue().substring(1);
         GraphTraversal<Edge, Edge> traversal = getTinkerPopGraph().traversal().E().hasId(edgeId);
         if(traversal.hasNext()){
-            return (T) factory().buildRelation(factory().buildEdge(traversal.next()));
+            return factory().buildConcept(factory().buildEdgeElement(traversal.next()));
         }
         return null;
     }
