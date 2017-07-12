@@ -548,9 +548,25 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(txCache().isConceptCached(id)){
             return txCache().getCachedConcept(id);
         } else {
+            if(id.getValue().startsWith(Schema.PREFIX_EDGE)){
+                T concept = getConceptEdge(id);
+                if(concept != null) return concept;
+            }
             return getConcept(Schema.VertexProperty.ID, id.getValue());
         }
     }
+
+    //TODO: Cleanup factory so we can clean this up
+    @SuppressWarnings("unchecked")
+    private <T extends Concept>T getConceptEdge(ConceptId id){
+        String edgeId = id.getValue().substring(1);
+        GraphTraversal<Edge, Edge> traversal = getTinkerPopGraph().traversal().E().hasId(edgeId);
+        if(traversal.hasNext()){
+            return (T) factory().buildRelation(factory().buildEdge(traversal.next()));
+        }
+        return null;
+    }
+
     private <T extends OntologyConcept> T getOntologyConcept(Label label, Schema.BaseType baseType){
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
