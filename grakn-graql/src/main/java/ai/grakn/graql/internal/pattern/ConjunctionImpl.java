@@ -33,7 +33,7 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
-class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
+class ConjunctionImpl<T extends PatternAdmin> extends AbstractPattern implements Conjunction<T> {
 
     private final Set<T> patterns;
 

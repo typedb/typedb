@@ -107,7 +107,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return relationPlayers.stream().map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream);
+        return relationPlayers.stream().map(RelationPlayer::getRole).flatMap(CommonUtil::optionalToStream);
     }
 
     @Override
@@ -115,13 +115,13 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         return relationPlayers.stream().flatMap(relationPlayer -> {
             Stream.Builder<VarPatternAdmin> builder = Stream.builder();
             builder.add(relationPlayer.getRolePlayer());
-            relationPlayer.getRoleType().ifPresent(builder::add);
+            relationPlayer.getRole().ifPresent(builder::add);
             return builder.build();
         });
     }
 
     private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(Var start, Var castingName, RelationPlayer relationPlayer) {
-        Optional<VarPatternAdmin> roleType = relationPlayer.getRoleType();
+        Optional<VarPatternAdmin> roleType = relationPlayer.getRole();
 
         if (roleType.isPresent()) {
             return addRelatesPattern(start, castingName, roleType.get(), relationPlayer.getRolePlayer());
@@ -151,7 +151,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
 
         Set<Label> roleTypes = relationPlayers.stream()
-                .map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream)
+                .map(RelationPlayer::getRole).flatMap(CommonUtil::optionalToStream)
                 .map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
@@ -194,7 +194,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param relationPlayer a casting between a role type and role player
      */
     private void addRoleplayer(InsertQueryExecutor insertQueryExecutor, Relation relation, RelationPlayer relationPlayer) {
-        VarPatternAdmin roleVar = relationPlayer.getRoleType().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
+        VarPatternAdmin roleVar = relationPlayer.getRole().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
 
         Role role = insertQueryExecutor.getConcept(roleVar).asRole();
         Thing roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asThing();
@@ -228,7 +228,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         Set<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(toSet());
 
         for (RelationPlayer rp : relationPlayers) {
-            VarPatternAdmin role = rp.getRoleType().orElse(null);
+            VarPatternAdmin role = rp.getRole().orElse(null);
             VarPatternAdmin rolePlayer = rp.getRolePlayer();
             if (role != null) relVar = relVar.rel(role, rolePlayer);
             else relVar = relVar.rel(rolePlayer);

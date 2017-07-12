@@ -42,4 +42,16 @@ public interface Pattern {
      */
     @CheckReturnValue
     PatternAdmin admin();
+
+    /**
+     * Join patterns in a conjunction
+     */
+    @CheckReturnValue
+    Pattern and(Pattern pattern);
+
+    /**
+     * Join patterns in a disjunction
+     */
+    @CheckReturnValue
+    Pattern or(Pattern pattern);
 }
