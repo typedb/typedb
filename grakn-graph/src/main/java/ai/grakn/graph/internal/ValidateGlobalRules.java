@@ -281,19 +281,13 @@ class ValidateGlobalRules {
 
     static Set<String> validateRuleIsHornClause(GraknGraph graph, Rule rule){
         Set<String> errors = new HashSet<>();
-        errors.addAll(checkRuleBodyInvalid(graph, rule, rule.getWhen()));
+        if (rule.getWhen().admin().isDisjunction()){
+            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
+        }
         errors.addAll(checkRuleHeadInvalid(graph, rule, rule.getThen()));
         return errors;
     }
-
-    private static Set<String> checkRuleBodyInvalid(GraknGraph graph, Rule rule, Pattern body) {
-        Set<String> errors = new HashSet<>();
-        if (body.admin().isDisjunction()){
-            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
-        }
-        return errors;
-    }
-
+    
     private static Set<String> checkRuleHeadInvalid(GraknGraph graph, Rule rule, Pattern head) {
         Set<String> errors = new HashSet<>();
         Set<Conjunction<VarPatternAdmin>> patterns = head.admin().getDisjunctiveNormalForm().getPatterns();
