@@ -27,7 +27,6 @@ import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 /**
@@ -51,12 +50,6 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
      */
     @CheckReturnValue
     Var getVarName();
-
-    /**
-     * @param name the new variable name of this variable
-     */
-    @CheckReturnValue
-    VarPatternAdmin setVarName(Var name);
 
     /**
      * Get a stream of all properties on this variable
@@ -88,16 +81,6 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
      */
     @CheckReturnValue
     <T extends VarProperty> boolean hasProperty(Class<T> type);
-
-    // TODO: If `VarPatternAdmin#setVarName` is removed, this may no longer be necessary
-    /**
-     * Return this {@link VarPattern} with instances of the given {@link VarProperty} modified.
-     * @param type the type of the {@link VarProperty}
-     * @param <T> the type of the {@link VarProperty}
-     * @return whether this {@link VarPattern} has a {@link VarProperty} of the given type
-     */
-    @CheckReturnValue
-    <T extends VarProperty> VarPatternAdmin mapProperty(Class<T> type, UnaryOperator<T> mapper);
 
     /**
      * @return the ID this variable represents, if it represents something with a specific ID
