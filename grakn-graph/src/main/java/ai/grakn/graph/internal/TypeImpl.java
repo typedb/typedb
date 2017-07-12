@@ -65,11 +65,11 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
 class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
-    private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
-    private Cache<Set<T>> cachedShards = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
+    private final Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
+    private final Cache<Set<T>> cachedShards = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
 
     //This cache is different in order to keep track of which plays are required
-    private Cache<Map<Role, Boolean>> cachedDirectPlays = new Cache<>(() -> {
+    private final Cache<Map<Role, Boolean>> cachedDirectPlays = new Cache<>(() -> {
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {

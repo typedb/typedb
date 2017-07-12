@@ -139,7 +139,38 @@ public class ResourceTest extends GraphTestBase{
         RelationStructure relationStructure = RelationImpl.from(entity.relations().iterator().next()).structure();
         assertThat(relationStructure, instanceOf(RelationEdge.class));
         assertTrue("Edge Relation id not starting with [" + Schema.PREFIX_EDGE + "]",relationStructure.getId().getValue().startsWith(Schema.PREFIX_EDGE));
+    }
 
+    @Test
+    public void whenAddingRolePlayerToRelationEdge_RelationAutomaticallyReifies(){
+        //Create boring resource which creates a relation edge
+        ResourceType<String> resourceType = graknGraph.putResourceType("My resource type", ResourceType.DataType.STRING);
+        Resource<String> resource = resourceType.putResource("A String");
+        EntityType entityType = graknGraph.putEntityType("My entity type").resource(resourceType);
+        Entity entity = entityType.addEntity();
+        entity.resource(resource);
+        RelationImpl relation = RelationImpl.from(entity.relations().iterator().next());
+
+        //Check it's a relation edge.
+        RelationStructure relationStructureBefore = relation.structure();
+        assertThat(relationStructureBefore, instanceOf(RelationEdge.class));
+
+        //Expand Ontology to allow new role
+        Role newRole = graknGraph.putRole("My New Role");
+        entityType.plays(newRole);
+        relation.type().relates(newRole);
+        Entity newEntity = entityType.addEntity();
+
+        //Now actually add the new role player
+        relation.addRolePlayer(newRole, newEntity);
+
+        //Check it's a relation reified now.
+        RelationStructure relationStructureAfter = relation.structure();
+        assertThat(relationStructureAfter, instanceOf(RelationReified.class));
+
+        //Check IDs are equal
+        assertEquals(relationStructureBefore.getId(), relation.getId());
+        assertEquals(relationStructureBefore.getId(), relationStructureAfter.getId());
     }
 
 }

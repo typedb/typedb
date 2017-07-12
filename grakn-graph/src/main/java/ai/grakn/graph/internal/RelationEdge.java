@@ -50,17 +50,17 @@ import java.util.stream.Stream;
 class RelationEdge implements RelationStructure{
     private final EdgeElement edgeElement;
 
-    private Cache<RelationType> relationType = new Cache<>(() ->
+    private final Cache<RelationType> relationType = new Cache<>(() ->
             edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
 
-    private Cache<Role> ownerRole = new Cache<>(() -> edge().graph().getOntologyConcept(LabelId.of(
+    private final Cache<Role> ownerRole = new Cache<>(() -> edge().graph().getOntologyConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
 
-    private Cache<Role> valueRole = new Cache<>(() -> edge().graph().getOntologyConcept(LabelId.of(
+    private final Cache<Role> valueRole = new Cache<>(() -> edge().graph().getOntologyConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
 
-    private Cache<Thing> owner = new Cache<>(() -> edge().graph().factory().buildConcept(edge().source()));
-    private Cache<Thing> value = new Cache<>(() -> edge().graph().factory().buildConcept(edge().target()));
+    private final Cache<Thing> owner = new Cache<>(() -> edge().graph().factory().buildConcept(edge().source()));
+    private final Cache<Thing> value = new Cache<>(() -> edge().graph().factory().buildConcept(edge().target()));
 
     RelationEdge(EdgeElement edgeElement) {
         this.edgeElement = edgeElement;

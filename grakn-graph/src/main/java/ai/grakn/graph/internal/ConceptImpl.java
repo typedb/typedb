@@ -44,6 +44,7 @@ import java.util.stream.Stream;
  *
  */
 abstract class ConceptImpl implements Concept, ConceptVertex {
+    private final Cache<ConceptId> conceptId = new Cache<>(() -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
 
     @SuppressWarnings("unchecked")
@@ -138,7 +139,7 @@ abstract class ConceptImpl implements Concept, ConceptVertex {
      */
     @Override
     public ConceptId getId(){
-        return ConceptId.of(vertex().id().getValue());
+        return conceptId.get();
     }
 
     @Override public int hashCode() {
