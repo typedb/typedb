@@ -94,7 +94,7 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_HEAD_NON_ATOMIC("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a multi-atom head\n"),
 
-    VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("The rule [%s] of type [%s] does not form a valid Horn clause, as [$s] is not allowed to form a rule head\n"),
+    VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("The rule [%s] of type [%s] does not form a valid Horn clause, as its head contains illegal atomics\n"),
 
 
     //--------------------------------------------- Factory Errors
