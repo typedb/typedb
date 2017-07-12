@@ -85,6 +85,7 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
      */
     @CheckReturnValue
     public static ConceptId of(String value){
+
         return new ConceptId(value);
     }
 }

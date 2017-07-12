@@ -29,8 +29,8 @@ import org.junit.runner.RunWith;
 
 import static ai.grakn.property.PropertyUtil.choose;
 import static ai.grakn.property.PropertyUtil.directInstances;
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -50,6 +50,6 @@ public class ThingPropertyTest {
     @Property
     public void whenGettingTheResourceOfAThing_TheResourcesOwnerIsTheThing(Thing thing, long seed) {
         Resource<?> resource = choose(thing.resources(), seed);
-        assertEquals(thing, resource.owner());
+        assertTrue("[" + thing + "] is connected to resource [" + resource + "] but is not in it's owner set", resource.ownerInstances().contains(thing));
     }
 }
