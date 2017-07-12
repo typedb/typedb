@@ -39,7 +39,7 @@ import ai.grakn.generator.AbstractOntologyConceptGenerator.Abstract;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
-import ai.grakn.generator.MetaTypeLabels;
+import ai.grakn.generator.MetaLabels;
 import ai.grakn.generator.Methods.MethodOf;
 import ai.grakn.generator.ResourceValues;
 import ai.grakn.util.ErrorMessage;
@@ -268,7 +268,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeLabels.class) Label label) {
+    public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaLabels.class) Label label) {
         graph.admin().delete();
         graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
         assertNotNull(graph.getOntologyConcept(label));

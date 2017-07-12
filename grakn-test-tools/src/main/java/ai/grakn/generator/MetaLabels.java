@@ -32,12 +32,12 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
  *
  * @author Felix Chapman
  */
-public class MetaTypeLabels extends AbstractGenerator<Label> {
+public class MetaLabels extends AbstractGenerator<Label> {
 
     private static final ImmutableSet<Label> META_TYPE_LABELS =
-            Stream.of(Schema.MetaSchema.values()).map(m -> m.getLabel()).collect(toImmutableSet());
+            Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(toImmutableSet());
 
-    public MetaTypeLabels() {
+    public MetaLabels() {
         super(Label.class);
     }
 
