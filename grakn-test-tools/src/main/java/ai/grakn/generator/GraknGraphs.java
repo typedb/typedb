@@ -33,7 +33,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -71,7 +70,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
     private static GraknGraph lastGeneratedGraph;
 
-    private static StringBuilder graphSummary;
+    private StringBuilder graphSummary;
 
     private GraknGraph graph;
     private Boolean open = null;
@@ -129,8 +128,12 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
         if (!shouldOpen) graph.close();
 
-        lastGeneratedGraph = graph;
+        setLastGeneratedGraph(graph);
         return graph;
+    }
+
+    private static void setLastGeneratedGraph(GraknGraph graph) {
+        lastGeneratedGraph = graph;
     }
 
     private void closeGraph(GraknGraph graph){
@@ -364,9 +367,10 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return chooseOrThrow((Collection<Resource>) graph.admin().getMetaResourceType().instances());
     }
 
-    private Rule rule() {
-        return chooseOrThrow(graph.admin().getMetaRuleType().instances());
-    }
+    //TODO: re-enable when grakn-graph can create graql constructs
+//    private Rule rule() {
+//        return chooseOrThrow(graph.admin().getMetaRuleType().instances());
+//    }
 
     private <T> T chooseOrThrow(Collection<? extends T> collection) {
         if (collection.isEmpty()) {
@@ -410,7 +414,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         boolean value() default true;
     }
 
-    private class GraphGeneratorException extends RuntimeException {
+    private static class GraphGeneratorException extends RuntimeException {
 
     }
 }
