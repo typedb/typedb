@@ -78,7 +78,7 @@ public class RedisInflightTaskConsumer extends TimerTask {
                             resource.rpoplpush(key, JesqueUtils.createKey(config.getNamespace(), QUEUE, queueName));
                         }
                     } catch (IOException e) {
-                        LOG.error("Could not deserialize task, process manually from inflight queue: {}", head);
+                        LOG.error("Could not deserialize task, process manually from inflight queue: {}", head, e);
                     }
                 }
             }

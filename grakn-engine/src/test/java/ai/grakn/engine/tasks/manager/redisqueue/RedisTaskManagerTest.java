@@ -1,3 +1,22 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
+ */
+
 package ai.grakn.engine.tasks.manager.redisqueue;
 
 import ai.grakn.engine.GraknEngineConfig;
@@ -12,6 +31,7 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskState.Priority;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.test.GraphContext;
 import ai.grakn.util.EmbeddedRedis;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.KEYSPACE;
@@ -34,6 +54,7 @@ import static junit.framework.TestCase.fail;
 import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -58,6 +79,9 @@ public class RedisTaskManagerTest {
 
     private static ExecutorService executor;
     private static RedisTaskManager taskManager;
+
+    @ClassRule
+    public static final GraphContext graph = GraphContext.empty();
 
     @BeforeClass
     public static void setupClass() {
