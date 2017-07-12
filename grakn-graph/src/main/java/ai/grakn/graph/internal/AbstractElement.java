@@ -151,7 +151,7 @@ abstract class AbstractElement<E extends Element, P extends Enum> {
      *
      * @param property The key of the immutable property to mutate
      * @param newValue The new value to put on the property (if the property is not set)
-     * @param foundValue The current valud of the property
+     * @param foundValue The current value of the property
      * @param converter Helper method to ensure data is persisted in the correct format
      */
     <X> void propertyImmutable(P property, X newValue, X foundValue, Function<X, Object> converter){
@@ -166,6 +166,10 @@ abstract class AbstractElement<E extends Element, P extends Enum> {
         } else {
             property(property, converter.apply(newValue));
         }
+    }
+
+    <X> void propertyImmutable(P property, X newValue, X foundValue){
+        propertyImmutable(property, newValue, foundValue, Function.identity());
     }
 
     /**

@@ -34,7 +34,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
@@ -77,7 +76,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
 
     OntologyConceptImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
         this(vertexElement, superType);
-        vertex().propertyImmutable(Schema.VertexProperty.IS_IMPLICIT, isImplicit, vertex().property(Schema.VertexProperty.IS_IMPLICIT), Function.identity());
+        vertex().propertyImmutable(Schema.VertexProperty.IS_IMPLICIT, isImplicit, vertex().property(Schema.VertexProperty.IS_IMPLICIT));
         cachedIsImplicit.set(isImplicit);
     }
 
