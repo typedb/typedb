@@ -31,7 +31,7 @@ import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelsToTraversal;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabels;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.traverseRoleTypeFromShortcutEdge;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.traverseRoleFromShortcutEdge;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_ID;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
@@ -48,17 +48,17 @@ class OutShortcutFragment extends AbstractFragment {
 
     private final Var edge;
 
-    private final Optional<Var> roleType;
-    private final Optional<Set<Label>> roleTypeLabels;
+    private final Optional<Var> role;
+    private final Optional<Set<Label>> roleLabels;
     private final Optional<Set<Label>> relationTypeLabels;
 
     OutShortcutFragment(
-            Var relation, Var edge, Var rolePlayer, Optional<Var> roleType, Optional<Set<Label>> roleTypeLabels,
+            Var relation, Var edge, Var rolePlayer, Optional<Var> role, Optional<Set<Label>> roleLabels,
             Optional<Set<Label>> relationTypeLabels) {
-            super(relation, rolePlayer, edge, optionalVarToArray(roleType));
+            super(relation, rolePlayer, edge, optionalVarToArray(role));
             this.edge = edge;
-            this.roleType = roleType;
-            this.roleTypeLabels = roleTypeLabels;
+            this.role = role;
+            this.roleLabels = roleLabels;
             this.relationTypeLabels = relationTypeLabels;
     }
 
@@ -67,25 +67,25 @@ class OutShortcutFragment extends AbstractFragment {
         GraphTraversal<Vertex, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel()).as(edge.getValue());
 
         // Filter by any provided type labels
-        applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleTypeLabels, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleLabels, graph);
         applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_ID, relationTypeLabels, graph);
 
-        traverseRoleTypeFromShortcutEdge(edgeTraversal, roleType);
+        traverseRoleFromShortcutEdge(edgeTraversal, role);
 
         edgeTraversal.inV();
     }
 
     @Override
     public String getName() {
-        String role = roleType.map(rt -> " role:" + rt.shortName()).orElse("");
+        String role = this.role.map(rt -> " role:" + rt.shortName()).orElse("");
         String rels = displayOptionalTypeLabels("rels", relationTypeLabels);
-        String roles = displayOptionalTypeLabels("roles", roleTypeLabels);
+        String roles = displayOptionalTypeLabels("roles", roleLabels);
         return "-[shortcut:" + edge.shortName() + role + rels + roles + "]->";
     }
 
     @Override
     public double fragmentCost(double previousCost) {
-        long numRolePlayers = roleTypeLabels.isPresent() ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
+        long numRolePlayers = roleLabels.isPresent() ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
         return previousCost * numRolePlayers;
     }
 
@@ -98,7 +98,8 @@ class OutShortcutFragment extends AbstractFragment {
         OutShortcutFragment that = (OutShortcutFragment) o;
 
         if (!edge.equals(that.edge)) return false;
-        if (!roleTypeLabels.equals(that.roleTypeLabels)) return false;
+        if (!role.equals(that.role)) return false;
+        if (!roleLabels.equals(that.roleLabels)) return false;
         return relationTypeLabels.equals(that.relationTypeLabels);
     }
 
@@ -106,7 +107,8 @@ class OutShortcutFragment extends AbstractFragment {
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + edge.hashCode();
-        result = 31 * result + roleTypeLabels.hashCode();
+        result = 31 * result + role.hashCode();
+        result = 31 * result + roleLabels.hashCode();
         result = 31 * result + relationTypeLabels.hashCode();
         return result;
     }
