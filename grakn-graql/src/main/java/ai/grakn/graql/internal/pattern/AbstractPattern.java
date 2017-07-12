@@ -24,7 +24,9 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.PatternAdmin;
 
 /**
- * Abstract implementation of {@link PatternAdmin}.
+ * The abstract implementation of {@link PatternAdmin}.
+ *
+ * All implementations of {@link PatternAdmin} should extend this class to inherit certain default behaviours.
  *
  * @author Felix Chapman
  */
