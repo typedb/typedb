@@ -81,6 +81,10 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
         cachedIsImplicit.set(isImplicit);
     }
 
+    public T setLabel(Label label){
+        return getThis();
+    }
+
     /**
      *
      * @return The internal id which is used for fast lookups
