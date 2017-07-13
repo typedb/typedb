@@ -65,11 +65,9 @@ final class ElementFactory {
         this.graknGraph = graknGraph;
     }
 
-    private <X extends Concept> X getOrBuildConcept(VertexElement v, Function<VertexElement, X> conceptBuilder){
-        ConceptId conceptId = ConceptId.of(v.property(Schema.VertexProperty.ID));
-
+    private <X extends Concept, E extends AbstractElement> X getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder){
         if(!graknGraph.txCache().isConceptCached(conceptId)){
-            X newConcept = conceptBuilder.apply(v);
+            X newConcept = conceptBuilder.apply(element);
             graknGraph.txCache().cacheConcept(newConcept);
         }
 
@@ -81,6 +79,16 @@ final class ElementFactory {
         }
 
         return concept;
+    }
+
+    private <X extends Concept> X getOrBuildConcept(VertexElement element, Function<VertexElement, X> conceptBuilder){
+        ConceptId conceptId = ConceptId.of(element.property(Schema.VertexProperty.ID));
+        return getOrBuildConcept(element, conceptId, conceptBuilder);
+    }
+
+    private <X extends Concept> X getOrBuildConcept(EdgeElement element, Function<EdgeElement, X> conceptBuilder){
+        ConceptId conceptId = ConceptId.of(element.id().getValue());
+        return getOrBuildConcept(element, conceptId, conceptBuilder);
     }
 
     // ---------------------------------------- Building Resource Types  -----------------------------------------------
@@ -103,10 +111,10 @@ final class ElementFactory {
         return getOrBuildConcept(vertex, (v) -> new RelationImpl(buildRelationReified(v, type)));
     }
     RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value){
-        return new RelationImpl(new RelationEdge(type, owner, value, edge));
+        return getOrBuildConcept(edge, (e) -> new RelationImpl(new RelationEdge(type, owner, value, edge)));
     }
     RelationImpl buildRelation(EdgeElement edge){
-        return new RelationImpl(new RelationEdge(edge));
+        return getOrBuildConcept(edge, (e) -> new RelationImpl(new RelationEdge(edge)));
     }
     RelationReified buildRelationReified(VertexElement vertex, RelationType type){
         return new RelationReified(vertex, type);
