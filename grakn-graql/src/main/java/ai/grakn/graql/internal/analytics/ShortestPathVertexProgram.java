@@ -35,6 +35,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
+import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
+
 /**
  * The vertex program for computing the shortest path between two instances.
  * <p>
@@ -115,7 +117,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     public void safeExecute(final Vertex vertex, Messenger<Tuple> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
+                if (vertexHasSelectedTypeId(vertex, selectedTypes)) {
                     // send message from both source(1) and destination(-1) vertex
                     String id = vertex.value(Schema.VertexProperty.ID.name());
                     if (persistentProperties.get(SOURCE).equals(id)) {
@@ -146,8 +148,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                         memory.set(PREDECESSOR_FROM_DESTINATION, vertex.value(PREDECESSOR));
                         vertex.property(FOUND_IN_ITERATION, memory.getIteration());
                     }
-                } else if (selectedTypes.contains(Utility.getVertexTypeId(vertex)) &&
-                        messenger.receiveMessages().hasNext()) {
+                } else if (vertexHasSelectedTypeId(vertex, selectedTypes) && messenger.receiveMessages().hasNext()) {
                     updateInstance(vertex, messenger, memory);
                 }
                 break;

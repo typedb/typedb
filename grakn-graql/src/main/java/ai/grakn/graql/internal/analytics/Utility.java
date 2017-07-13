@@ -40,6 +40,7 @@ import java.util.Set;
 public class Utility {
     /**
      * The Grakn type property on a given Tinkerpop vertex.
+     * If the vertex is an ontology element, return invalid type.
      *
      * @param vertex the Tinkerpop vertex
      * @return the type
@@ -49,6 +50,17 @@ public class Utility {
             return LabelId.of(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()));
         }
         return LabelId.invalid();
+    }
+
+    static boolean vertexHasSelectedTypeId(Vertex vertex, Set<LabelId> selectedTypeIds) {
+        return vertex.property(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()).isPresent() &&
+                selectedTypeIds.contains(LabelId.of(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name())));
+    }
+
+    static boolean vertexHasSelectedTypeId(Vertex vertex, Set<LabelId> selectedTypeId1, Set<LabelId> selectedTypeId2) {
+        return vertex.property(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()).isPresent() &&
+                selectedTypeId1.contains(LabelId.of(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()))) &&
+                selectedTypeId2.contains(LabelId.of(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name())));
     }
 
     /**
