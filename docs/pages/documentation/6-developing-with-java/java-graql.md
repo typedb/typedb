@@ -137,14 +137,14 @@ Reasoning can be configured using `QueryBuilder` objects in the following way:
 
 ```java
 //graph is a GraknGraph instance
-QueryBuilder qb = graph.graql().infer(true);
+qb = graph.graql().infer(true);
 ```
 
 ### Switching materialisation on
 
 ```java
 //graph is a GraknGraph instance
-QueryBuilder qb = graph.graql().infer(true).materialise(true);
+qb = graph.graql().infer(true).materialise(true);
 ```
 
 Once the `QueryBuilder` has been defined, the constructed queries will obey the specified reasoning variants.

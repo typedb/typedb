@@ -84,6 +84,8 @@ In Graql the left-hand-side of the rule is required to be a [conjunctive pattern
 A classic reasoning example is the ancestor example. Yhe two Graql rules R1 and R2 stated below define the ancestor relationship, which can be understood as either happening between two generations directly between a parent and a child or between three generations when the first generation hop is expressed via a parentship relation and the second generation hop is captured by an ancestor relation.
 
 ```graql
+insert
+
 $R1 isa inference-rule,
 lhs {
     (parent: $p, child: $c) isa Parent;

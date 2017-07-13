@@ -210,6 +210,8 @@ We will move on to discuss the use of GRAKN.AI to infer new information about a 
 However, the `person` entity does have a gender resource, and we can use Grakn to infer more information about each relationship by using that property. The ontology accommodates the more specific roles of mother, father, daughter and son:
 
 ```graql
+insert
+
 person 
   plays son
   plays daughter
@@ -233,6 +235,8 @@ daughter sub child;
 Included in *basic-genealogy.gql* are a set of Graql rules to instruct Grakn's reasoner on how to label each parentship relation:
 
 ```graql
+insert
+
 $genderizeParentships1 isa inference-rule
 lhs
 {(parent: $p, child: $c) isa parentship;

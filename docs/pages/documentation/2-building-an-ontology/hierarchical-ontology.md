@@ -80,6 +80,8 @@ It is possible to define entity types more granularly. Think of sub-categories t
 For example, if we have a entity type called `vehicle`, we can break that down further by differentiating between `cars` and `motorbikes`. This can be done as follows:
 
 ```graql
+insert
+
 vehicle sub entity;
 car sub vehicle;
 motorbikes sub vehicle;
@@ -132,6 +134,8 @@ Grakn also allows you to design hierarchies of relation types and role types, en
 Now lets take a look at expanding our genealogy ontology. When modelling a domain there are many ways of doing so. For this example we are going to redo the `marriage` relation type so that it can provide more meaning:
 
 ```graql
+insert
+
 relatives sub relation
   is-abstract;
 
@@ -157,6 +161,8 @@ From now on, we can be clear if a person is a `husband` or a `wife` or just a `s
 Lets expand this even further:
 
 ```graql
+insert
+
 parentship sub relatives
   relates parent
   relates mother
