@@ -544,15 +544,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //------------------------------------ Lookup
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
-        if(txCache().isConceptCached(id)){
-            return txCache().getCachedConcept(id);
-        } else {
-            if(id.getValue().startsWith(Schema.PREFIX_EDGE)){
-                T concept = getConceptEdge(id);
-                if(concept != null) return concept;
+        return operateOnOpenGraph(() -> {
+            if (txCache().isConceptCached(id)) {
+                return txCache().getCachedConcept(id);
+            } else {
+                if (id.getValue().startsWith(Schema.PREFIX_EDGE)) {
+                    T concept = getConceptEdge(id);
+                    if (concept != null) return concept;
+                }
+                return getConcept(Schema.VertexProperty.ID, id.getValue());
             }
-            return getConcept(Schema.VertexProperty.ID, id.getValue());
-        }
+        });
     }
 
     private <T extends Concept>T getConceptEdge(ConceptId id){
