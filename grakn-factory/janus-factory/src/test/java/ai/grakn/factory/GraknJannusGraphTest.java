@@ -25,7 +25,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.graph.internal.GraknTitanGraph;
+import ai.grakn.graph.internal.GraknJanusGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,7 +44,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class GraknTitanGraphTest extends TitanTestBase{
+public class GraknJannusGraphTest extends JanusTestBase {
     private GraknGraph graknGraph;
 
     @Before
@@ -78,7 +78,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         assertEquals(100, graknGraph.admin().getMetaEntityType().instances().size());
     }
     private void addEntity(EntityType type){
-        GraknTitanGraph graph = titanGraphFactory.open(GraknTxType.WRITE);
+        GraknJanusGraph graph = titanGraphFactory.open(GraknTxType.WRITE);
         type.addEntity();
         graph.commit();
     }
@@ -103,17 +103,17 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @Test
     public void whenCreatingGraphsWithDifferentKeyspace_EnsureCaseIsIgnored(){
-        TitanInternalFactory factory1 =  new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES);
-        TitanInternalFactory factory2 = new TitanInternalFactory("Case", Grakn.IN_MEMORY, TEST_PROPERTIES);
-        GraknTitanGraph case1 = factory1.open(GraknTxType.WRITE);
-        GraknTitanGraph case2 = factory2.open(GraknTxType.WRITE);
+        JanusInternalFactory factory1 =  new JanusInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        JanusInternalFactory factory2 = new JanusInternalFactory("Case", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        GraknJanusGraph case1 = factory1.open(GraknTxType.WRITE);
+        GraknJanusGraph case2 = factory2.open(GraknTxType.WRITE);
 
         assertEquals(case1.getKeyspace(), case2.getKeyspace());
     }
 
     @Test
     public void whenClosingTheGraph_EnsureTheTransactionIsClosed(){
-        GraknTitanGraph graph = new TitanInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        GraknJanusGraph graph = new JanusInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
 
         String entityTypeLabel = "Hello";
 
@@ -131,7 +131,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @Test
     public void whenCreatingDateResource_EnsureDateCanBeRetrieved(){
-        GraknTitanGraph graph = new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        GraknJanusGraph graph = new JanusInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
         ResourceType<LocalDateTime> dateType = graph.putResourceType("date", ResourceType.DataType.DATE);
         LocalDateTime now = LocalDateTime.now();
         Resource<LocalDateTime> date = dateType.putResource(now);

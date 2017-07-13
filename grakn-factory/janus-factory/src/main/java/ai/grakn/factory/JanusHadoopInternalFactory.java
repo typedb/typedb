@@ -44,12 +44,12 @@ import java.util.Properties;
  *
  * @author fppt
  */
-public class TitanHadoopInternalFactory extends AbstractInternalFactory<AbstractGraknGraph<HadoopGraph>, HadoopGraph> {
+public class JanusHadoopInternalFactory extends AbstractInternalFactory<AbstractGraknGraph<HadoopGraph>, HadoopGraph> {
     private static final String CLUSTER_KEYSPACE = "titanmr.ioformat.conf.storage.cassandra.keyspace";
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
-    private final Logger LOG = LoggerFactory.getLogger(TitanHadoopInternalFactory.class);
+    private final Logger LOG = LoggerFactory.getLogger(JanusHadoopInternalFactory.class);
 
-    TitanHadoopInternalFactory(String keyspace, String engineUrl, Properties properties) {
+    JanusHadoopInternalFactory(String keyspace, String engineUrl, Properties properties) {
         super(keyspace, engineUrl, properties);
 
         properties.setProperty(CLUSTER_KEYSPACE, keyspace);

@@ -14,7 +14,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
 package ai.grakn.factory;
@@ -39,7 +38,7 @@ import java.util.Set;
 import static java.util.Collections.emptyIterator;
 
 /**
- * Optimise a particular traversal in Titan:
+ * Optimise a particular traversal in Janus:
  * <p>
  * <code>
  * g.V().outE().values(c).as(b).V().filter(__.properties(a).where(P.eq(b)));
@@ -50,7 +49,7 @@ import static java.util.Collections.emptyIterator;
  *
  * @author Felix Chapman
  */
-class TitanPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implements Scoping {
+class JanusPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implements Scoping {
 
     private static final long serialVersionUID = -8906462828437711078L;
     private final String propertyKey;
@@ -63,7 +62,7 @@ class TitanPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implement
      * the step label that refers to a previously visited value in the traversal.
      * e.g. in {@code g.V().as(b)}, {@code b} is a step label.
      */
-    TitanPreviousPropertyStep(Traversal.Admin traversal, String propertyKey, String stepLabel) {
+    JanusPreviousPropertyStep(Traversal.Admin traversal, String propertyKey, String stepLabel) {
         super(traversal);
         this.propertyKey = Objects.requireNonNull(propertyKey);
         this.stepLabel = Objects.requireNonNull(stepLabel);
@@ -80,9 +79,9 @@ class TitanPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implement
     }
 
     /**
-     * Look up vertices in Titan which have a property {@link TitanPreviousPropertyStep#propertyKey} with the given
+     * Look up vertices in Janus which have a property {@link JanusPreviousPropertyStep#propertyKey} with the given
      * value.
-     * @param tx the Titan transaction to read from
+     * @param tx the Janus transaction to read from
      * @param value the value that the property should have
      */
     private Iterator<TitanVertex> verticesWithProperty(TitanTransaction tx, Object value) {
@@ -95,7 +94,7 @@ class TitanPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implement
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        TitanPreviousPropertyStep<?> that = (TitanPreviousPropertyStep<?>) o;
+        JanusPreviousPropertyStep<?> that = (JanusPreviousPropertyStep<?>) o;
 
         return propertyKey.equals(that.propertyKey) && stepLabel.equals(that.stepLabel);
     }

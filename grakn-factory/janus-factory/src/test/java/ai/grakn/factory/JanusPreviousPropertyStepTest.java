@@ -14,7 +14,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
 package ai.grakn.factory;
@@ -43,7 +42,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Felix Chapman
  */
-public class TitanPreviousPropertyStepTest extends TitanTestBase {
+public class JanusPreviousPropertyStepTest extends JanusTestBase {
 
     private static final GraphTraversalSource tinker = TinkerGraph.open().traversal();
 
@@ -89,7 +88,7 @@ public class TitanPreviousPropertyStepTest extends TitanTestBase {
         traversal.asAdmin().applyStrategies();
 
         List<Step> steps = traversal.asAdmin().getSteps();
-        assertThat(steps, hasItem(instanceOf(TitanPreviousPropertyStep.class)));
+        assertThat(steps, hasItem(instanceOf(JanusPreviousPropertyStep.class)));
     }
 
     @Test
@@ -98,7 +97,7 @@ public class TitanPreviousPropertyStepTest extends TitanTestBase {
         traversal.asAdmin().applyStrategies();
 
         List<Step> steps = traversal.asAdmin().getSteps();
-        assertThat(steps, not(hasItem(instanceOf(TitanPreviousPropertyStep.class))));
+        assertThat(steps, not(hasItem(instanceOf(JanusPreviousPropertyStep.class))));
     }
 
     @Test
@@ -106,7 +105,7 @@ public class TitanPreviousPropertyStepTest extends TitanTestBase {
         GraphTraversal<Vertex, Vertex> traversal = optimisableTraversal(titan);
         List<TraversalStrategy<?>> strategies = traversal.asAdmin().getStrategies().toList();
 
-        assertThat(strategies, hasItem(instanceOf(TitanPreviousPropertyStepStrategy.class)));
+        assertThat(strategies, hasItem(instanceOf(JanusPreviousPropertyStepStrategy.class)));
     }
 
     @Test
@@ -114,7 +113,7 @@ public class TitanPreviousPropertyStepTest extends TitanTestBase {
         GraphTraversal<Vertex, Vertex> traversal = optimisableTraversal(tinker);
         List<TraversalStrategy<?>> strategies = traversal.asAdmin().getStrategies().toList();
 
-        assertThat(strategies, not(hasItem(instanceOf(TitanPreviousPropertyStepStrategy.class))));
+        assertThat(strategies, not(hasItem(instanceOf(JanusPreviousPropertyStepStrategy.class))));
     }
 
     private GraphTraversal<Vertex, Vertex> optimisableTraversal(GraphTraversalSource g) {
@@ -125,7 +124,7 @@ public class TitanPreviousPropertyStepTest extends TitanTestBase {
         GraphTraversal expected = g.V().outE().values("e prop").as("x");
 
         GraphTraversal.Admin<Vertex, Object> admin = expected.asAdmin();
-        TitanPreviousPropertyStep<?> graphStep = new TitanPreviousPropertyStep<>(admin, "v prop", "x");
+        JanusPreviousPropertyStep<?> graphStep = new JanusPreviousPropertyStep<>(admin, "v prop", "x");
         admin.addStep(graphStep);
 
         admin.applyStrategies();

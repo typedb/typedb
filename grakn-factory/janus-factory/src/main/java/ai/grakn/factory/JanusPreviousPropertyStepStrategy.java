@@ -14,7 +14,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
 package ai.grakn.factory;
@@ -36,18 +35,18 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Optimisation applied to use Titan indices in the following additional case:
+ * Optimisation applied to use Janus indices in the following additional case:
  * <p>
  * <code>
  * g.V().outE().values(c).as(b).V().filter(__.properties(a).where(P.eq(b)));
  * </code>
  * <p>
- * In this instance, the vertex can be looked up directly in Titan, joining the {@code V().filter(..)}
+ * In this instance, the vertex can be looked up directly in Janus, joining the {@code V().filter(..)}
  * steps together.
  *
  * @author Felix Chapman
  */
-public class TitanPreviousPropertyStepStrategy
+public class JanusPreviousPropertyStepStrategy
         extends AbstractTraversalStrategy<ProviderOptimizationStrategy> implements ProviderOptimizationStrategy {
 
     private static final long serialVersionUID = 6888929702831948298L;
@@ -107,14 +106,14 @@ public class TitanPreviousPropertyStepStrategy
     }
 
     /**
-     * Replace the {@code graphStep} and {@code filterStep} with a new {@link TitanPreviousPropertyStep} in the given
+     * Replace the {@code graphStep} and {@code filterStep} with a new {@link JanusPreviousPropertyStep} in the given
      * {@code traversal}.
      */
     private void executeStrategy(
             Traversal.Admin<?, ?> traversal, GraphStep<?, ?> graphStep, TraversalFilterStep<Vertex> filterStep,
             String propertyKey, String label) {
 
-        TitanPreviousPropertyStep newStep = new TitanPreviousPropertyStep(traversal, propertyKey, label);
+        JanusPreviousPropertyStep newStep = new JanusPreviousPropertyStep(traversal, propertyKey, label);
         traversal.removeStep(filterStep);
         TraversalHelper.replaceStep(graphStep, newStep, traversal);
     }

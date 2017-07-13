@@ -18,7 +18,7 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.graph.internal.GraknTitanGraph;
+import ai.grakn.graph.internal.GraknJanusGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.EdgeLabel;
@@ -61,12 +61,12 @@ import static java.util.Arrays.stream;
  *
  * @author fppt
  */
-final public class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, TitanGraph> {
+final public class JanusInternalFactory extends AbstractInternalFactory<GraknJanusGraph, TitanGraph> {
     private final static String DEFAULT_CONFIG = "backend-default";
 
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
 
-    TitanInternalFactory(String keyspace, String engineUrl, Properties properties) {
+    JanusInternalFactory(String keyspace, String engineUrl, Properties properties) {
         super(keyspace, engineUrl, properties);
     }
 
@@ -81,8 +81,8 @@ final public class TitanInternalFactory extends AbstractInternalFactory<GraknTit
     }
 
     @Override
-    GraknTitanGraph buildGraknGraphFromTinker(TitanGraph graph) {
-        return new GraknTitanGraph(graph, super.keyspace, super.engineUrl, super.properties);
+    GraknJanusGraph buildGraknGraphFromTinker(TitanGraph graph) {
+        return new GraknJanusGraph(graph, super.keyspace, super.engineUrl, super.properties);
     }
 
     @Override
@@ -97,7 +97,7 @@ final public class TitanInternalFactory extends AbstractInternalFactory<GraknTit
 
         if (!strategiesApplied.getAndSet(true)) {
             TraversalStrategies strategies = TraversalStrategies.GlobalCache.getStrategies(StandardTitanGraph.class);
-            strategies = strategies.clone().addStrategies(new TitanPreviousPropertyStepStrategy());
+            strategies = strategies.clone().addStrategies(new JanusPreviousPropertyStepStrategy());
             TraversalStrategies.GlobalCache.registerStrategies(StandardTitanGraph.class, strategies);
             TraversalStrategies.GlobalCache.registerStrategies(StandardTitanTx.class, strategies);
         }
