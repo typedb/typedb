@@ -389,7 +389,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             vertex = addTypeVertex(getNextId(), label, baseType);
         } else {
             if(!baseType.equals(concept.baseType())) {
-                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.VertexProperty.LABEL, label);
+                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.VertexProperty.ONTOLOGY_LABEL, label);
             }
             vertex = concept.vertex();
         }
@@ -406,7 +406,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType){
         VertexElement vertexElement = addVertex(baseType);
-        vertexElement.property(Schema.VertexProperty.LABEL, label.getValue());
+        vertexElement.property(Schema.VertexProperty.ONTOLOGY_LABEL, label.getValue());
         vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
         return vertexElement;
     }
@@ -440,7 +440,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         T finalType = validateOntologyElement(ontologyConcept, baseType, () -> {
             if(Schema.MetaSchema.isMetaLabel(label)) throw GraphOperationException.reservedLabel(label);
-            throw PropertyNotUniqueException.cannotCreateProperty(ontologyConcept, Schema.VertexProperty.LABEL, label);
+            throw PropertyNotUniqueException.cannotCreateProperty(ontologyConcept, Schema.VertexProperty.ONTOLOGY_LABEL, label);
         });
 
         //Automatic shard creation - If this type does not have a shard create one
