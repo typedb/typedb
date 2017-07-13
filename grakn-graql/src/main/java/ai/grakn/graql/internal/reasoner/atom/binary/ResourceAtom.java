@@ -206,7 +206,7 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public boolean isOntologicallyValid() {
+    public Set<String> validateOntologically() {
         OntologyConcept type = getOntologyConcept();
         if (type == null) return true;
         if (!type.isResourceType()) return false;

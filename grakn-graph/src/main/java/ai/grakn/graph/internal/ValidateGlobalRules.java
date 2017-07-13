@@ -325,7 +325,6 @@ class ValidateGlobalRules {
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.getId(), rule.type().getLabel()));
         } else {
             ReasonerQuery headQuery = patterns.iterator().next().toReasonerQuery(graph);
-
             if (!headQuery.isOntologicallyValid()) {
                 errors.add(ErrorMessage.VALIDATION_RULE_HEAD_ONTOLOGICALLY_INVALID.getMessage(rule.getId(), rule.type().getLabel()));
             }

@@ -51,6 +51,7 @@ import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.OntologyConceptConverterImpl;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleTypeConverter;
 import ai.grakn.util.CommonUtil;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
@@ -222,9 +223,12 @@ public class RelationAtom extends IsaAtom {
     }
 
     @Override
-    public boolean isOntologicallyValid() {
+    public Set<String> validateOntologically() {
+        Set<String> errors = new HashSet<>();
         OntologyConcept type = getOntologyConcept();
-        if (type != null && !type.isRelationType()) return false;
+        if (type != null && !type.isRelationType()){
+            errors.add(ErrorMessage.VALIDATION_RULE_BODY_ONTOLOGICALLY_INVALID.getMessage());
+        }
 
         //check roles are ok
         Collection<Role> possibleRoles = type != null? type.asRelationType().relates() : Collections.EMPTY_SET;
@@ -235,19 +239,19 @@ public class RelationAtom extends IsaAtom {
             if (!Schema.MetaSchema.isMetaLabel(role.getLabel())) {
                 //check whether this role can be played in this relation
                 if (type != null && !possibleRoles.contains(role)) {
-                    return false;
+                    errors.add(ErrorMessage.VALIDATION_RULE_BODY_ONTOLOGICALLY_INVALID.getMessage());
                 }
 
                 //check whether the role player's type allows playing this role
                 for (Var player : e.getValue()) {
                     OntologyConcept playerType = varOntologyConceptMap.get(player);
                     if (playerType != null && !playerType.asType().plays().contains(role)) {
-                        return false;
+                        errors.add(ErrorMessage.VALIDATION_RULE_BODY_ONTOLOGICALLY_INVALID.getMessage());
                     }
                 }
             }
         }
-        return true;
+        return errors;
     }
 
     @Override

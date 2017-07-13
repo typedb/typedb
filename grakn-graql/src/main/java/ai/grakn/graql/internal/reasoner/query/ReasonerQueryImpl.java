@@ -187,7 +187,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public boolean isOntologicallyValid() {
         for(Atomic at : getAtoms()){
-            if (!at.isOntologicallyValid()){
+            if (!at.validateOntologically()){
                 return false;
             }
         }
