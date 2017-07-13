@@ -18,9 +18,10 @@ In this section we focus on using the Graph API in a multi-threaded environment,
 Transactions in GRAKN.AI are thread bound, which means that for a specific keyspace and thread, only one transaction can be open at any time.
 The following would result in an exception because the first transaction `graph1` was never closed:
 
-```java
-graph1 = Grakn.session(Grakn.DEFAULT_URI, "MyGraph").open(GraknTxType.Write);
-graph2 = Grakn.session(Grakn.DEFAULT_URI, "MyGraph").open(GraknTxType.Write);
+<!-- Ignored because this is designed to crash! -->
+```java-test-ignore
+graph1 = Grakn.session(uri, "MyGraph").open(GraknTxType.WRITE);
+graph2 = Grakn.session(uri, "MyGraph").open(GraknTxType.WRITE);
 ```
 
 If you require multiple transactions open at the same time then you must do this on different threads. This is best illustrated with an example. Let's say that you wish to create 100 entities of a specific type concurrently.  The following will achieve that:

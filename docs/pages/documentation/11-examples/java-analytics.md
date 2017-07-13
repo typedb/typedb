@@ -47,7 +47,7 @@ First, we start Grakn Engine using the terminal:
 
 The rest of the project is contained in the Java example code, which can be found on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql). The maven dependencies for this project are:
 
-```java
+```xml
 <dependency>
 <groupId>ai.grakn</groupId>
 <artifactId>titan-factory</artifactId>

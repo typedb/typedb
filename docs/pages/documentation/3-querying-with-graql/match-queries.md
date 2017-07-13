@@ -82,7 +82,7 @@ qb.match(var("x").val(contains("Bar")))
 
 ### has
 
-Match concepts that have the resource specified. If a [predicate](#predicates) is provided, the resource must also match that predicate.
+Match things that have the resource specified. If a [predicate](#predicates) is provided, the resource must also match that predicate.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell4" data-toggle="tab">Graql</a></li>
@@ -98,8 +98,8 @@ match $x has identifier contains "Bar";
 </div>
 <div role="tabpanel" class="tab-pane" id="java4">
 <pre>
-qb.match(var("x").has("identifier", var("x"));
-qb.match(var("x").has("identifier", contains("Bar"));
+qb.match(var("x").has("identifier", var("x")));
+qb.match(var("x").has("identifier", contains("Bar")));
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -107,7 +107,7 @@ qb.match(var("x").has("identifier", contains("Bar"));
 
 ### relation
 
-Match concepts that have a relation with the given variable. If a role is provided, the role player must be playing that role.
+Match things that have a relation with the given variable. If a role is provided, the role player must be playing that role.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell6" data-toggle="tab">Graql</a></li>
@@ -178,16 +178,16 @@ Match types that are a subclass of the given type.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell7">
 <pre>
-match $x sub concept; # List all concepts
-match $x sub resource; # List all resources
-match $x sub entity; # List all entities
-match $x sub role; # List all roles
-match $x sub relation; # List all relations
+match $x sub thing; # List all types
+match $x sub resource; # List all resource types
+match $x sub entity; # List all entity types
+match $x sub role; # List all role types
+match $x sub relation; # List all relation types
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java7">
 <pre>
-qb.match(var("x").sub("concept"))
+qb.match(var("x").sub("thing"));
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -209,14 +209,14 @@ match parentship relates $x;
 </div>
 <div role="tabpanel" class="tab-pane" id="java8">
 <pre>
-qb.match(label("parentship").hasRole(var("x")));
+qb.match(label("parentship").relates(var("x")));
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
 
 ### plays
-Match concept types that play the given role.
+Match types that play the given role.
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell9" data-toggle="tab">Graql</a></li>
     <li><a href="#java9" data-toggle="tab">Java</a></li>
@@ -230,28 +230,29 @@ match $x plays child;
 </div>
 <div role="tabpanel" class="tab-pane" id="java9">
 <pre>
-qb.match(var("x").playsRole("child"));
+qb.match(var("x").plays("child"));
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
 ### has
-Match concept types that can have the given resource.
+Match types that can have the given resource.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell10" data-toggle="tab">Graql</a></li>
     <li><a href="#java10" data-toggle="tab">Java</a></li>
 </ul>
 
+<!--JCS: Why so many duplicates?-->
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell10">
 <pre>
-match $x has firstname; <!--JCS: Why so many duplicates?-->
+match $x has firstname;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java10">
 <pre>
-qb.match(var("x").hasResource("firstname"));
+qb.match(var("x").has("firstname"));
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -271,7 +272,7 @@ match $x plays has-firstname-owner;
 </div>
 <div role="tabpanel" class="tab-pane" id="java11">
 <pre>
-qb.match(var("x").playsRole("has-firstname-owner"));
+qb.match(var("x").plays("has-firstname-owner"));
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -310,7 +311,7 @@ match $x has age > 70;
 </div>
 <div role="tabpanel" class="tab-pane" id="java12">
 <pre>
-qb.match(var("x").has("age", gt(70));
+qb.match(var("x").has("age", gt(70)));
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
