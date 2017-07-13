@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import com.google.common.base.Preconditions;
+
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
@@ -85,7 +87,7 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
      */
     @CheckReturnValue
     public static ConceptId of(String value){
-
+        Preconditions.checkNotNull(value);
         return new ConceptId(value);
     }
 }
