@@ -31,7 +31,10 @@ import static ai.grakn.property.PropertyUtil.choose;
 import static ai.grakn.property.PropertyUtil.directInstances;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeThat;
 
 /**
  * @author Felix Chapman
@@ -49,6 +52,7 @@ public class ThingPropertyTest {
 
     @Property
     public void whenGettingTheResourceOfAThing_TheResourcesOwnerIsTheThing(Thing thing, long seed) {
+        assumeThat(thing, not(instanceOf(Resource.class)));
         Resource<?> resource = choose(thing.resources(), seed);
         assertTrue("[" + thing + "] is connected to resource [" + resource + "] but is not in it's owner set", resource.ownerInstances().contains(thing));
     }
