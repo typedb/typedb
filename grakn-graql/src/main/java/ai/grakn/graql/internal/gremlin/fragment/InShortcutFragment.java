@@ -23,10 +23,15 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
+import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -53,8 +58,8 @@ class InShortcutFragment extends AbstractFragment {
     private final Optional<Set<Label>> relationTypeLabels;
 
     InShortcutFragment(VarProperty varProperty,
-            Var rolePlayer, Var edge, Var relation, Optional<Var> roleType, Optional<Set<Label>> roleTypeLabels,
-            Optional<Set<Label>> relationTypeLabels) {
+                       Var rolePlayer, Var edge, Var relation, Optional<Var> roleType, Optional<Set<Label>> roleTypeLabels,
+                       Optional<Set<Label>> relationTypeLabels) {
         super(varProperty, rolePlayer, relation, edge, optionalVarToArray(roleType));
         this.edge = edge;
         this.roleType = roleType;
@@ -84,8 +89,14 @@ class InShortcutFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost * NUM_RELATIONS_PER_INSTANCE;
+    public double fragmentCost() {
+        return COST_RELATIONS_PER_INSTANCE;
+    }
+
+    @Override
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
+                                                              Map<Node, Map<Node, Fragment>> edges) {
+        return getDirectedEdges(edge, nodes, edges);
     }
 
     @Override
