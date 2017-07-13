@@ -49,13 +49,13 @@ import static java.util.stream.Collectors.toSet;
  */
 class ShortcutFragmentSet extends EquivalentFragmentSet {
 
-    private final VarProperty varProperty;
     private final Var relation;
     private final Var edge;
     private final Var rolePlayer;
     private final Optional<Var> role;
     private final Optional<Set<Label>> roleTypeLabels;
     private final Optional<Set<Label>> relationTypeLabels;
+    private final VarProperty varProperty;
 
     ShortcutFragmentSet(VarProperty varProperty,
             Var relation, Var edge, Var rolePlayer, Optional<Var> role,
@@ -64,13 +64,13 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
                 Fragments.inShortcut(varProperty, rolePlayer, edge, relation, role, roleLabels, relationTypeLabels),
                 Fragments.outShortcut(varProperty, relation, edge, rolePlayer, role, roleLabels, relationTypeLabels)
         );
-        this.varProperty = varProperty;
         this.relation = relation;
         this.edge = edge;
         this.rolePlayer = rolePlayer;
         this.role = role;
         this.roleTypeLabels = roleLabels;
         this.relationTypeLabels = relationTypeLabels;
+        this.varProperty = varProperty;
     }
 
     /**
@@ -181,7 +181,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         Set<Label> newRoleLabels = subTypes.stream().map(OntologyConcept::getLabel).collect(toSet());
 
-        return new ShortcutFragmentSet(null,
+        return new ShortcutFragmentSet(varProperty,
                 relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleLabels), relationTypeLabels
         );
     }
@@ -198,7 +198,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         Set<Label> newRelationLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
 
-        return new ShortcutFragmentSet(null,
+        return new ShortcutFragmentSet(varProperty,
                 relation, edge, rolePlayer, role, roleTypeLabels, Optional.of(newRelationLabels)
         );
     }
