@@ -75,14 +75,14 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         return castingsRelation(roles).map(Casting::getInstance).collect(Collectors.toSet());
     }
 
-    public void addRolePlayer(RelationImpl owner, Role role, Thing thing) {
+    public void addRolePlayer(Role role, Thing thing) {
         Objects.requireNonNull(role);
         Objects.requireNonNull(thing);
 
         if(Schema.MetaSchema.isMetaLabel(role.getLabel())) throw GraphOperationException.metaTypeImmutable(role.getLabel());
 
         //Do the actual put of the role and role player
-        vertex().graph().putShortcutEdge(thing, owner, role);
+        vertex().graph().putShortcutEdge(thing, this, role);
     }
 
     /**
@@ -124,7 +124,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     Stream<Casting> castingsRelation(Role... roles){
         if(roles.length == 0){
             return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
-                    map(edge -> vertex().graph().factory().buildRolePlayer(edge));
+                    map(edge -> vertex().graph().factory().buildCasting(edge));
         }
 
         //Traversal is used so we can potentially optimise on the index
@@ -134,7 +134,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type().getLabelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).
-                toStream().map(edge -> vertex().graph().factory().buildRolePlayer(edge));
+                toStream().map(edge -> vertex().graph().factory().buildCasting(edge));
     }
 
     @Override

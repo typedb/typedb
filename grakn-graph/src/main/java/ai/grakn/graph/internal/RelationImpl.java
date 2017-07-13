@@ -137,7 +137,8 @@ class RelationImpl implements Relation, ConceptVertex {
      */
     @Override
     public Relation addRolePlayer(Role role, Thing thing) {
-        reify().addRolePlayer(this, role, thing);
+        reify().addRolePlayer(role, thing);
+        vertex().graph().txCache().trackForValidation(this); //This is so we can reassign the hash if needed
         return this;
     }
 

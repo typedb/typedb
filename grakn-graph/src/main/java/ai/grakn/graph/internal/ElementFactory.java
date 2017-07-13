@@ -272,11 +272,11 @@ final class ElementFactory {
         return new EdgeElement(graknGraph, edge);
     }
 
-    Casting buildRolePlayer(Edge edge){
-        return buildRolePlayer(buildEdgeElement(edge));
+    Casting buildCasting(Edge edge){
+        return buildCasting(buildEdgeElement(edge));
     }
 
-    Casting buildRolePlayer(EdgeElement edge) {
+    Casting buildCasting(EdgeElement edge) {
         return new Casting(edge);
     }
 
