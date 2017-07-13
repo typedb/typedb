@@ -35,7 +35,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
@@ -104,11 +103,6 @@ public class RelationAtom extends IsaAtom {
         super(a);
         this.relationPlayers = a.relationPlayers;
         this.roleVarMap = a.roleVarMap;
-    }
-
-    @Override
-    public VarProperty getVarProperty() {
-        return getPattern().asVar().getProperty(RelationProperty.class).orElse(null);
     }
 
     @Override
@@ -297,6 +291,7 @@ public class RelationAtom extends IsaAtom {
 
         roleMap.entries().stream()
                 .filter(e -> varTypeMap.containsKey(e.getValue()))
+                .sorted(Comparator.comparing(e -> varTypeMap.get(e.getValue()).getLabel()))
                 .forEach(e -> roleTypeMap.put(e.getKey(), varTypeMap.get(e.getValue())));
         return roleTypeMap;
     }
@@ -334,7 +329,7 @@ public class RelationAtom extends IsaAtom {
         GraknGraph graph = parent.graph();
 
         Set<VarPatternAdmin> roleVars = getRelationPlayers().stream()
-                .map(RelationPlayer::getRoleType)
+                .map(RelationPlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
                 .collect(Collectors.toSet());
         //try directly
@@ -458,7 +453,7 @@ public class RelationAtom extends IsaAtom {
         vars.addAll(getRolePlayers());
         //add user specified role type vars
         getRelationPlayers().stream()
-                .map(RelationPlayer::getRoleType)
+                .map(RelationPlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
                 .filter(v -> v.getVarName().isUserDefinedName())
                 .forEach(r -> vars.add(r.getVarName()));
@@ -534,7 +529,7 @@ public class RelationAtom extends IsaAtom {
         List<Pair<Var, VarPattern>> rolePlayerMappings = new ArrayList<>();
         getRelationPlayers().forEach(c -> {
             Var varName = c.getRolePlayer().getVarName();
-            VarPatternAdmin role = c.getRoleType().orElse(null);
+            VarPatternAdmin role = c.getRole().orElse(null);
             if (role != null) {
                 rolePlayerMappings.add(new Pair<>(varName, role));
                 //try directly
@@ -609,7 +604,7 @@ public class RelationAtom extends IsaAtom {
         GraknGraph graph = getParentQuery().graph();
         getRelationPlayers().forEach(c -> {
             Var varName = c.getRolePlayer().getVarName();
-            VarPatternAdmin role = c.getRoleType().orElse(null);
+            VarPatternAdmin role = c.getRole().orElse(null);
             if (role != null) {
                 //try directly
                 Label typeLabel = role.getTypeLabel().orElse(null);
@@ -641,9 +636,9 @@ public class RelationAtom extends IsaAtom {
                     Role role = e.getKey();
                     Label roleLabel = role.getLabel();
                     relationPlayers.stream()
-                            .filter(rp -> rp.getRoleType().isPresent())
+                            .filter(rp -> rp.getRole().isPresent())
                             .forEach(rp -> {
-                                VarPatternAdmin roleTypeVar = rp.getRoleType().orElse(null);
+                                VarPatternAdmin roleTypeVar = rp.getRole().orElse(null);
                                 Label rl = roleTypeVar != null ? roleTypeVar.getTypeLabel().orElse(null) : null;
                                 if (roleLabel != null && roleLabel.equals(rl)) {
                                     roleRelationPlayerMap.put(role, rp);
@@ -667,9 +662,9 @@ public class RelationAtom extends IsaAtom {
         Set<Role> childRoles = new HashSet<>(childRoleRPMap.keySet());
 
         parentAtom.getRelationPlayers().stream()
-                .filter(prp -> prp.getRoleType().isPresent())
+                .filter(prp -> prp.getRole().isPresent())
                 .forEach(prp -> {
-                    VarPatternAdmin parentRoleTypeVar = prp.getRoleType().orElse(null);
+                    VarPatternAdmin parentRoleTypeVar = prp.getRole().orElse(null);
                     Label parentRoleLabel = parentRoleTypeVar.getTypeLabel().orElse(null);
 
                     //TODO take into account indirect roles
@@ -767,7 +762,7 @@ public class RelationAtom extends IsaAtom {
                 .orElse(newVar);
 
         for (RelationPlayer c: getRelationPlayers()) {
-            VarPatternAdmin roleType = c.getRoleType().orElse(null);
+            VarPatternAdmin roleType = c.getRole().orElse(null);
             if (roleType != null) {
                 relVar = relVar.rel(roleType, c.getRolePlayer());
             } else {

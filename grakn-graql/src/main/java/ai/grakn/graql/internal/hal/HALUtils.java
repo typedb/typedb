@@ -176,7 +176,7 @@ public class HALUtils {
                 var.getProperty(RelationProperty.class).get()
                         .getRelationPlayers().forEach(x -> {
                             tempMap.put(x.getRolePlayer().getVarName(),
-                                    (x.getRoleType().isPresent()) ? x.getRoleType().get().getPrintableName() : HAS_EMPTY_ROLE_EDGE);
+                                    (x.getRole().isPresent()) ? x.getRole().get().getPrintableName() : HAS_EMPTY_ROLE_EDGE);
                         }
                 );
                 String relationType = null;

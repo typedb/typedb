@@ -19,26 +19,25 @@
 package ai.grakn.test.engine.tasks.storage;
 
 import ai.grakn.engine.TaskId;
-import ai.grakn.engine.tasks.TaskSchedule;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
-import ai.grakn.engine.util.EngineID;
+import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
+import ai.grakn.engine.tasks.manager.TaskSchedule;
+import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskState.Priority;
+import ai.grakn.engine.tasks.manager.TaskStateInMemoryStore;
+import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import org.junit.Before;
-import org.junit.Test;
-
+import ai.grakn.engine.util.EngineID;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static ai.grakn.engine.TaskStatus.CREATED;
-import static ai.grakn.engine.TaskStatus.RUNNING;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Test;
 
 public class TaskStateInMemoryStoreTest {
     private static final EngineID engineID = EngineID.me();
@@ -158,6 +157,6 @@ public class TaskStateInMemoryStoreTest {
     }
 
     public TaskState task(){
-        return TaskState.of(ShortExecutionMockTask.class, this.getClass().getName(), TaskSchedule.now(), TaskState.Priority.LOW);
+        return TaskState.of(ShortExecutionMockTask.class, this.getClass().getName(), TaskSchedule.now(), Priority.LOW);
     }
 }

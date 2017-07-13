@@ -67,8 +67,8 @@ class IdFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return 1;
+    public double fragmentCost() {
+        return COST_INDEX;
     }
 
     @Override

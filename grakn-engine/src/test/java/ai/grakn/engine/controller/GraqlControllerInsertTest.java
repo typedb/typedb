@@ -24,6 +24,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
+import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import org.junit.Before;
@@ -65,7 +66,7 @@ public class GraqlControllerInsertTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark);
+        new GraqlController(mockFactory, spark, new MetricRegistry());
     });
 
     @Before

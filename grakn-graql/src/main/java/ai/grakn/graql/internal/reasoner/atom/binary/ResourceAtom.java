@@ -25,7 +25,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
@@ -75,11 +74,6 @@ public class ResourceAtom extends Binary{
         a.getMultiPredicate().stream()
                 .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
                 .forEach(multiPredicate::add);
-    }
-
-    @Override
-    public VarProperty getVarProperty() {
-        return getPattern().asVar().getProperties(HasResourceProperty.class).findFirst().orElse(null);
     }
 
     @Override
