@@ -105,6 +105,10 @@ public class EngineContext extends ExternalResource {
         return config.uri();
     }
 
+    public int port() {
+        return config.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER);
+    }
+
     //TODO Rename this method to "sessionWithNewKeyspace"
     public GraknSession factoryWithNewKeyspace() {
         return Grakn.session(uri(), randomKeyspace());
