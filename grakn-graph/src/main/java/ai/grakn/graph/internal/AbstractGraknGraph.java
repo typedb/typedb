@@ -307,8 +307,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public GraphTraversal<Vertex, Vertex> getTinkerTraversal(){
         operateOnOpenGraph(() -> null); //This is to check if the graph is open
-        ReadOnlyStrategy readOnlyStrategy = ReadOnlyStrategy.instance();
-        return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph()).V();
+        return getTinkerPopGraph().traversal().withStrategies(ReadOnlyStrategy.instance()).V();
     }
 
     @Override
