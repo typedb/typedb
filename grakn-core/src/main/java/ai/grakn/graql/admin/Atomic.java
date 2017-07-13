@@ -20,7 +20,6 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.graql.Var;
 
-import java.util.Collections;
 import java.util.HashSet;
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
