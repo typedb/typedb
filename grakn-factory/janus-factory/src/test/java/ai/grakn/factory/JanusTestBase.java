@@ -33,7 +33,7 @@ import java.util.Properties;
 public abstract class JanusTestBase {
     private final static String CONFIG_LOCATION = "../../conf/main/grakn.properties";
     private final static String TEST_SHARED = "shared";
-    static JanusInternalFactory titanGraphFactory;
+    static JanusInternalFactory janusGraphFactory;
     final static Properties TEST_PROPERTIES = new Properties();
 
     @Rule
@@ -49,6 +49,6 @@ public abstract class JanusTestBase {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(CONFIG_LOCATION), e);
         }
 
-        titanGraphFactory = new JanusInternalFactory(TEST_SHARED, Grakn.IN_MEMORY, TEST_PROPERTIES);
+        janusGraphFactory = new JanusInternalFactory(TEST_SHARED, Grakn.IN_MEMORY, TEST_PROPERTIES);
     }
 }

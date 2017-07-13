@@ -23,11 +23,11 @@ import ai.grakn.GraknTxType;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.GraknJanusGraph;
 import ai.grakn.util.Schema;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -50,16 +50,16 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class JanusInternalFactoryTest extends JanusTestBase {
-    private static TitanGraph sharedGraph;
+    private static JanusGraph sharedGraph;
 
     @BeforeClass
     public static void setupClass() throws InterruptedException {
-        sharedGraph = titanGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph();
+        sharedGraph = janusGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph();
     }
 
     @Test
     public void testGraphConfig() throws InterruptedException {
-        TitanManagement management = sharedGraph.openManagement();
+        JanusGraphManagement management = sharedGraph.openManagement();
 
         //Test Composite Indices
         String byId = "by" + Schema.VertexProperty.ID.name();
@@ -97,10 +97,10 @@ public class JanusInternalFactoryTest extends JanusTestBase {
     public void testSingleton(){
         JanusInternalFactory factory = new JanusInternalFactory("anothertest", Grakn.IN_MEMORY, TEST_PROPERTIES);
         GraknJanusGraph mg1 = factory.open(GraknTxType.BATCH);
-        TitanGraph tinkerGraphMg1 = mg1.getTinkerPopGraph();
+        JanusGraph tinkerGraphMg1 = mg1.getTinkerPopGraph();
         mg1.close();
         GraknJanusGraph mg2 = factory.open(GraknTxType.WRITE);
-        TitanGraph tinkerGraphMg2 = mg2.getTinkerPopGraph();
+        JanusGraph tinkerGraphMg2 = mg2.getTinkerPopGraph();
         mg2.close();
         GraknJanusGraph mg3 = factory.open(GraknTxType.BATCH);
 
@@ -113,11 +113,11 @@ public class JanusInternalFactoryTest extends JanusTestBase {
         assertNotEquals(mg1, mg2);
         assertNotEquals(tinkerGraphMg1, tinkerGraphMg2);
 
-        StandardTitanGraph standardTitanGraph1 = (StandardTitanGraph) tinkerGraphMg1;
-        StandardTitanGraph standardTitanGraph2 = (StandardTitanGraph) tinkerGraphMg2;
+        StandardJanusGraph standardJanusGraph1 = (StandardJanusGraph) tinkerGraphMg1;
+        StandardJanusGraph standardJanusGraph2 = (StandardJanusGraph) tinkerGraphMg2;
 
-        assertTrue(standardTitanGraph1.getConfiguration().isBatchLoading());
-        assertFalse(standardTitanGraph2.getConfiguration().isBatchLoading());
+        assertTrue(standardJanusGraph1.getConfiguration().isBatchLoading());
+        assertFalse(standardJanusGraph2.getConfiguration().isBatchLoading());
     }
 
     @Test
@@ -184,12 +184,12 @@ public class JanusInternalFactoryTest extends JanusTestBase {
     }
 
 
-    private static TitanGraph getGraph() {
+    private static JanusGraph getGraph() {
         String name = UUID.randomUUID().toString().replaceAll("-", "");
-        titanGraphFactory = new JanusInternalFactory(name, Grakn.IN_MEMORY, TEST_PROPERTIES);
-        Graph graph = titanGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph();
-        assertThat(graph, instanceOf(TitanGraph.class));
-        return (TitanGraph) graph;
+        janusGraphFactory = new JanusInternalFactory(name, Grakn.IN_MEMORY, TEST_PROPERTIES);
+        Graph graph = janusGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph();
+        assertThat(graph, instanceOf(JanusGraph.class));
+        return (JanusGraph) graph;
     }
 
     private void addConcepts(Graph graph) {

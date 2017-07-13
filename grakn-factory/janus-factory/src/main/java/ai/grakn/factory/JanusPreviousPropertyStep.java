@@ -18,9 +18,6 @@
 
 package ai.grakn.factory;
 
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanTraversalUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
@@ -28,6 +25,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.Scoping;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 
 import java.util.Collections;
 import java.util.EnumSet;
@@ -49,7 +49,7 @@ import static java.util.Collections.emptyIterator;
  *
  * @author Felix Chapman
  */
-class JanusPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implements Scoping {
+class JanusPreviousPropertyStep<S> extends FlatMapStep<S, JanusGraphVertex> implements Scoping {
 
     private static final long serialVersionUID = -8906462828437711078L;
     private final String propertyKey;
@@ -69,8 +69,8 @@ class JanusPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implement
     }
 
     @Override
-    protected Iterator<TitanVertex> flatMap(Traverser.Admin<S> traverser) {
-        TitanTransaction tx = TitanTraversalUtil.getTx(this.traversal);
+    protected Iterator<JanusGraphVertex> flatMap(Traverser.Admin<S> traverser) {
+        JanusGraphTransaction tx = JanusGraphTraversalUtil.getTx(this.traversal);
 
         // Retrieve property value to look-up, that is identified in the traversal by the `stepLabel`
         Object value = getNullableScopeValue(Pop.first, stepLabel, traverser);
@@ -84,7 +84,7 @@ class JanusPreviousPropertyStep<S> extends FlatMapStep<S, TitanVertex> implement
      * @param tx the Janus transaction to read from
      * @param value the value that the property should have
      */
-    private Iterator<TitanVertex> verticesWithProperty(TitanTransaction tx, Object value) {
+    private Iterator<JanusGraphVertex> verticesWithProperty(JanusGraphTransaction tx, Object value) {
         return tx.query().has(propertyKey, value).vertices().iterator();
     }
 

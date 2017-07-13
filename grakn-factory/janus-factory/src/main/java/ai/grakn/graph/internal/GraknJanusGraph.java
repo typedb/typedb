@@ -23,25 +23,25 @@ import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.util.Schema;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
-import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
-import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.util.JanusGraphCleanup;
+import org.janusgraph.diskstorage.locking.PermanentLockingException;
+import org.janusgraph.diskstorage.locking.TemporaryLockingException;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import java.util.Properties;
 import java.util.function.Supplier;
 
 /**
  * <p>
- *     A Grakn Graph using {@link TitanGraph} as a vendor backend.
+ *     A Grakn Graph using {@link JanusGraph} as a vendor backend.
  * </p>
  *
  * <p>
- *     Wraps up a {@link TitanGraph} as a method of storing the Grakn Graph object Model.
+ *     Wraps up a {@link JanusGraph} as a method of storing the Grakn Graph object Model.
  *     With this vendor some issues to be aware of:
  *     1. Whenever a transaction is closed if none remain open then the connection to the graph is closed permanently.
  *     2. Clearing the graph explicitly closes the connection as well.
@@ -49,13 +49,13 @@ import java.util.function.Supplier;
  *
  * @author fppt
  */
-public class GraknJanusGraph extends AbstractGraknGraph<TitanGraph> {
-    public GraknJanusGraph(TitanGraph graph, String name, String engineUrl, Properties properties){
+public class GraknJanusGraph extends AbstractGraknGraph<JanusGraph> {
+    public GraknJanusGraph(JanusGraph graph, String name, String engineUrl, Properties properties){
         super(graph, name, engineUrl, properties);
     }
 
     /**
-     * Uses {@link TitanVertex#isModified()}
+     * Uses {@link JanusGraphVertex#isModified()}
      *
      * @param concept A concept in the graph
      * @return true if the concept has been modified
@@ -64,7 +64,7 @@ public class GraknJanusGraph extends AbstractGraknGraph<TitanGraph> {
     public boolean isConceptModified(Concept concept) {
         //TODO: Clean this crap up
         if(concept instanceof ConceptImpl) {
-            TitanVertex vertex = (TitanVertex) ((ConceptImpl) concept).vertex().element();
+            JanusGraphVertex vertex = (JanusGraphVertex) ((ConceptImpl) concept).vertex().element();
             return vertex.isModified() || vertex.isNew();
         }
         return true;
@@ -83,12 +83,12 @@ public class GraknJanusGraph extends AbstractGraknGraph<TitanGraph> {
 
     @Override
     public int numOpenTx() {
-        return ((StandardTitanGraph) getTinkerPopGraph()).getOpenTxs();
+        return ((StandardJanusGraph) getTinkerPopGraph()).getOpenTxs();
     }
 
     @Override
     protected void clearGraph() {
-        TitanCleanup.clear(getTinkerPopGraph());
+        JanusGraphCleanup.clear(getTinkerPopGraph());
     }
 
     @Override
@@ -113,7 +113,7 @@ public class GraknJanusGraph extends AbstractGraknGraph<TitanGraph> {
     private <X> X executeLockingMethod(Supplier<X> method){
         try {
             return method.get();
-        } catch (TitanException e){
+        } catch (JanusGraphException e){
             if(e.isCausedBy(TemporaryLockingException.class) || e.isCausedBy(PermanentLockingException.class)){
                 throw TemporaryWriteException.temporaryLock(e);
             } else {
@@ -126,7 +126,7 @@ public class GraknJanusGraph extends AbstractGraknGraph<TitanGraph> {
     public void validVertex(Vertex vertex) {
         super.validVertex(vertex);
 
-        if(((TitanVertex) vertex).isRemoved()){
+        if(((JanusGraphVertex) vertex).isRemoved()){
             throw new IllegalStateException("The vertex [" + vertex + "] has been removed and is no longer valid");
         }
     }

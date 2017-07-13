@@ -21,22 +21,22 @@ package ai.grakn.factory;
 import ai.grakn.graph.internal.GraknJanusGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.Namifiable;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.VertexLabel;
-import com.thinkaurelius.titan.core.schema.TitanIndex;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.Namifiable;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
+import org.janusgraph.core.VertexLabel;
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,17 +51,17 @@ import static java.util.Arrays.stream;
 
 /**
  * <p>
- *     A Grakn Graph on top of {@link TitanGraph}
+ *     A Grakn Graph on top of {@link JanusGraph}
  * </p>
  *
  * <p>
- *     This produces a grakn graph on top of {@link TitanGraph}.
+ *     This produces a grakn graph on top of {@link JanusGraph}.
  *     The base construction process defined by {@link AbstractInternalFactory} ensures the graph factories are singletons.
  * </p>
  *
  * @author fppt
  */
-final public class JanusInternalFactory extends AbstractInternalFactory<GraknJanusGraph, TitanGraph> {
+final public class JanusInternalFactory extends AbstractInternalFactory<GraknJanusGraph, JanusGraph> {
     private final static String DEFAULT_CONFIG = "backend-default";
 
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
@@ -71,7 +71,7 @@ final public class JanusInternalFactory extends AbstractInternalFactory<GraknJan
     }
 
     @Override
-    public TitanGraph getGraphWithNewTransaction(TitanGraph graph, boolean batchloading){
+    public JanusGraph getGraphWithNewTransaction(JanusGraph graph, boolean batchloading){
         if(graph.isClosed()) graph = buildTinkerPopGraph(batchloading);
 
         if(!graph.tx().isOpen()){
@@ -81,31 +81,31 @@ final public class JanusInternalFactory extends AbstractInternalFactory<GraknJan
     }
 
     @Override
-    GraknJanusGraph buildGraknGraphFromTinker(TitanGraph graph) {
+    GraknJanusGraph buildGraknGraphFromTinker(JanusGraph graph) {
         return new GraknJanusGraph(graph, super.keyspace, super.engineUrl, super.properties);
     }
 
     @Override
-    TitanGraph buildTinkerPopGraph(boolean batchLoading) {
-        return newTitanGraph(super.keyspace, super.engineUrl, super.properties, batchLoading);
+    JanusGraph buildTinkerPopGraph(boolean batchLoading) {
+        return newJanusGraph(super.keyspace, super.engineUrl, super.properties, batchLoading);
     }
 
-    private synchronized TitanGraph newTitanGraph(String name, String address, Properties properties, boolean batchLoading){
-        TitanGraph titanGraph = configureGraph(name, address, properties, batchLoading);
-        buildTitanIndexes(titanGraph);
-        titanGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
+    private synchronized JanusGraph newJanusGraph(String name, String address, Properties properties, boolean batchLoading){
+        JanusGraph JanusGraph = configureGraph(name, address, properties, batchLoading);
+        buildJanusIndexes(JanusGraph);
+        JanusGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
 
         if (!strategiesApplied.getAndSet(true)) {
-            TraversalStrategies strategies = TraversalStrategies.GlobalCache.getStrategies(StandardTitanGraph.class);
+            TraversalStrategies strategies = TraversalStrategies.GlobalCache.getStrategies(StandardJanusGraph.class);
             strategies = strategies.clone().addStrategies(new JanusPreviousPropertyStepStrategy());
-            TraversalStrategies.GlobalCache.registerStrategies(StandardTitanGraph.class, strategies);
-            TraversalStrategies.GlobalCache.registerStrategies(StandardTitanTx.class, strategies);
+            TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraph.class, strategies);
+            TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraphTx.class, strategies);
         }
 
-        return titanGraph;
+        return JanusGraph;
     }
 
-    private TitanGraph configureGraph(String name, String address, Properties properties, boolean batchLoading){
+    private JanusGraph configureGraph(String name, String address, Properties properties, boolean batchLoading){
         //Load default properties if none provided
         if(properties == null){
             properties = new Properties();
@@ -117,7 +117,8 @@ final public class JanusInternalFactory extends AbstractInternalFactory<GraknJan
             }
         }
 
-        TitanFactory.Builder builder = TitanFactory.build().
+
+        JanusGraphFactory.Builder builder = JanusGraphFactory.build().
                 set("storage.hostname", address).
                 set("storage.cassandra.keyspace", name).
                 set("storage.batch-loading", batchLoading);
@@ -128,8 +129,8 @@ final public class JanusInternalFactory extends AbstractInternalFactory<GraknJan
     }
 
 
-    private static void buildTitanIndexes(TitanGraph graph) {
-        TitanManagement management = graph.openManagement();
+    private static void buildJanusIndexes(JanusGraph graph) {
+        JanusGraphManagement management = graph.openManagement();
 
         makeVertexLabels(management);
         makeEdgeLabels(management);
@@ -141,7 +142,7 @@ final public class JanusInternalFactory extends AbstractInternalFactory<GraknJan
         management.commit();
     }
 
-    private static void makeEdgeLabels(TitanManagement management){
+    private static void makeEdgeLabels(JanusGraphManagement management){
         for (Schema.EdgeLabel edgeLabel : Schema.EdgeLabel.values()) {
             EdgeLabel label = management.getEdgeLabel(edgeLabel.getLabel());
             if(label == null) {
@@ -150,7 +151,7 @@ final public class JanusInternalFactory extends AbstractInternalFactory<GraknJan
         }
     }
 
-    private static void makeVertexLabels(TitanManagement management){
+    private static void makeVertexLabels(JanusGraphManagement management){
         for (Schema.BaseType baseType : Schema.BaseType.values()) {
             VertexLabel foundLabel = management.getVertexLabel(baseType.name());
             if(foundLabel == null) {
@@ -159,7 +160,7 @@ final public class JanusInternalFactory extends AbstractInternalFactory<GraknJan
         }
     }
 
-    private static void makeIndicesVertexCentric(TitanManagement management){
+    private static void makeIndicesVertexCentric(JanusGraphManagement management){
         ResourceBundle keys = ResourceBundle.getBundle("indices-edges");
         Set<String> edgeLabels = keys.keySet();
         for(String edgeLabel : edgeLabels){
@@ -194,7 +195,7 @@ final public class JanusInternalFactory extends AbstractInternalFactory<GraknJan
         }
     }
 
-    private static void makePropertyKeys(TitanManagement management){
+    private static void makePropertyKeys(JanusGraphManagement management){
         stream(Schema.VertexProperty.values()).forEach(property ->
                 makePropertyKey(management, property.name(), property.getDataType()));
 
@@ -202,23 +203,23 @@ final public class JanusInternalFactory extends AbstractInternalFactory<GraknJan
                 makePropertyKey(management, property.name(), property.getDataType()));
     }
 
-    private static void makePropertyKey(TitanManagement management, String propertyKey, Class type){
+    private static void makePropertyKey(JanusGraphManagement management, String propertyKey, Class type){
         if (management.getPropertyKey(propertyKey) == null) {
             management.makePropertyKey(propertyKey).dataType(type).make();
         }
     }
 
-    private static void makeIndicesComposite(TitanManagement management){
+    private static void makeIndicesComposite(JanusGraphManagement management){
         ResourceBundle keys = ResourceBundle.getBundle("indices-composite");
         Set<String> keyString = keys.keySet();
         for(String propertyKeyLabel : keyString){
             String indexLabel = "by" + propertyKeyLabel;
-            TitanIndex index = management.getGraphIndex(indexLabel);
+            JanusGraphIndex index = management.getGraphIndex(indexLabel);
 
             if(index == null) {
                 boolean isUnique = Boolean.parseBoolean(keys.getString(propertyKeyLabel));
                 PropertyKey key = management.getPropertyKey(propertyKeyLabel);
-                TitanManagement.IndexBuilder indexBuilder = management.buildIndex(indexLabel, Vertex.class).addKey(key);
+                JanusGraphManagement.IndexBuilder indexBuilder = management.buildIndex(indexLabel, Vertex.class).addKey(key);
                 if (isUnique) {
                     indexBuilder.unique();
                 }
