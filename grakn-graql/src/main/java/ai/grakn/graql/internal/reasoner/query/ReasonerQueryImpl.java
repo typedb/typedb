@@ -185,13 +185,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public boolean isOntologicallyValid() {
-        for(Atomic at : getAtoms()){
-            if (!at.validateOntologically()){
-                return false;
-            }
-        }
-        return true;
+    public Set<String> validateOntologically() {
+        return getAtoms().stream()
+                .flatMap(at -> at.validateOntologically().stream())
+                .collect(Collectors.toSet());
     }
 
     /**

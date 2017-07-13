@@ -72,8 +72,11 @@ public interface ReasonerQuery{
     @CheckReturnValue
     MatchQuery getMatchQuery();
 
+    /**
+     * @return error messages indicating ontological inconsistencies of the query
+     */
     @CheckReturnValue
-    boolean isOntologicallyValid();
+    Set<String> validateOntologically();
 
     /**
      * @return true if any of the atoms constituting the query can be resolved through a rule

@@ -227,7 +227,8 @@ public class RelationAtom extends IsaAtom {
         Set<String> errors = new HashSet<>();
         OntologyConcept type = getOntologyConcept();
         if (type != null && !type.isRelationType()){
-            errors.add(ErrorMessage.VALIDATION_RULE_BODY_ONTOLOGICALLY_INVALID.getMessage());
+            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE.getMessage(type.getLabel()));
+            return errors;
         }
 
         //check roles are ok
@@ -239,14 +240,14 @@ public class RelationAtom extends IsaAtom {
             if (!Schema.MetaSchema.isMetaLabel(role.getLabel())) {
                 //check whether this role can be played in this relation
                 if (type != null && !possibleRoles.contains(role)) {
-                    errors.add(ErrorMessage.VALIDATION_RULE_BODY_ONTOLOGICALLY_INVALID.getMessage());
+                    errors.add(ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage(role.getLabel(), type.getLabel()));
                 }
 
                 //check whether the role player's type allows playing this role
                 for (Var player : e.getValue()) {
                     OntologyConcept playerType = varOntologyConceptMap.get(player);
                     if (playerType != null && !playerType.asType().plays().contains(role)) {
-                        errors.add(ErrorMessage.VALIDATION_RULE_BODY_ONTOLOGICALLY_INVALID.getMessage());
+                        errors.add(ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage(playerType.getLabel(), role.getLabel(), type == null? "" : type.getLabel()));
                     }
                 }
             }
