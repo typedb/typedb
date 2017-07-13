@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.tasks;
+package ai.grakn.engine.tasks.manager;
 
 import java.io.Serializable;
 import java.time.Instant;

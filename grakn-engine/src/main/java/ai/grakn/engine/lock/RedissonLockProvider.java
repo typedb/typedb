@@ -15,33 +15,26 @@
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
+package ai.grakn.engine.lock;
 
-package ai.grakn.engine.tasks;
-
-import ai.grakn.engine.TaskId;
-import mjson.Json;
-import org.apache.kafka.common.serialization.Deserializer;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import org.redisson.api.RedissonClient;
 
 /**
- * <p>
- * Implementation of {@link org.apache.kafka.common.serialization.Deserializer} that allows usage of {@link TaskId} as
- * kafka queue keys
- * </p>
+ * Proxy for Redisson lock
  *
- * @author alexandraorth
+ * @author Domenico Corapi
  */
-public class TaskConfigurationDeserializer implements Deserializer<TaskConfiguration> {
-    @Override
-    public void configure(Map<String, ?> configs, boolean isKey) {}
+public class RedissonLockProvider implements LockProvider {
 
-    @Override
-    public TaskConfiguration deserialize(String topic, byte[] data) {
-        return TaskConfiguration.of(Json.read(new String(data, StandardCharsets.UTF_8)));
+    private RedissonClient redissonClient;
+
+    public RedissonLockProvider(RedissonClient redissonClient) {
+        this.redissonClient = redissonClient;
     }
 
     @Override
-    public void close() {}
+    public Lock getLock(String lockName) {
+        return redissonClient.getLock(lockName);
+    }
 }

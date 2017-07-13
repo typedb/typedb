@@ -57,6 +57,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <artifactId>jackson-annotations</artifactId>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <version>${jackson.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

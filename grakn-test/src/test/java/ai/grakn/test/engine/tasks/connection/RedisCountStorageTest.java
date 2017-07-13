@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.tasks.connection;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.tasks.connection.RedisConnection;
+import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.test.EngineContext;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -41,11 +41,11 @@ import static org.junit.Assert.assertEquals;
  *
  * @author fppt
  */
-public class RedisConnectionTest {
+public class RedisCountStorageTest {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
-    private static RedisConnection redis;
+    private static RedisCountStorage redis;
 
     @BeforeClass
     public static void getConnection(){
@@ -60,17 +60,18 @@ public class RedisConnectionTest {
         ExecutorService pool = Executors.newCachedThreadPool();
         Set<Future> futures = new HashSet<>();
 
-        assertEquals(0, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, conceptId)));
+        assertEquals(0, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace, conceptId)));
 
         for(int i =0; i < counts.length; i ++) {
             int finalI = i;
-            futures.add(pool.submit(() -> redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace, conceptId), counts[finalI])));
+            futures.add(pool.submit(() -> redis.adjustCount(
+                    RedisCountStorage.getKeyNumInstances(keyspace, conceptId), counts[finalI])));
         }
         for (Future future : futures) {
             future.get();
         }
 
-        assertEquals(23, redis.getCount(RedisConnection.getKeyNumInstances(keyspace, conceptId)));
+        assertEquals(23, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace, conceptId)));
     }
 
     @Test
@@ -80,15 +81,15 @@ public class RedisConnectionTest {
         ConceptId roach = ConceptId.of("Roach");
         ConceptId ciri = ConceptId.of("Ciri");
 
-        assertEquals(0, redis.getCount(RedisConnection.getKeyNumInstances(keyspace1, roach)));
-        assertEquals(0, redis.getCount(RedisConnection.getKeyNumInstances(keyspace2, roach)));
+        assertEquals(0, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace1, roach)));
+        assertEquals(0, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace2, roach)));
 
-        redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace1, roach), 1);
-        assertEquals(1, redis.getCount(RedisConnection.getKeyNumInstances(keyspace1, roach)));
-        assertEquals(0, redis.getCount(RedisConnection.getKeyNumInstances(keyspace2, roach)));
+        redis.adjustCount(RedisCountStorage.getKeyNumInstances(keyspace1, roach), 1);
+        assertEquals(1, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace1, roach)));
+        assertEquals(0, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace2, roach)));
 
-        redis.adjustCount(RedisConnection.getKeyNumInstances(keyspace2, ciri), 1);
-        assertEquals(0, redis.getCount(RedisConnection.getKeyNumInstances(keyspace1, ciri)));
-        assertEquals(1, redis.getCount(RedisConnection.getKeyNumInstances(keyspace2, ciri)));
+        redis.adjustCount(RedisCountStorage.getKeyNumInstances(keyspace2, ciri), 1);
+        assertEquals(0, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace1, ciri)));
+        assertEquals(1, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace2, ciri)));
     }
 }
