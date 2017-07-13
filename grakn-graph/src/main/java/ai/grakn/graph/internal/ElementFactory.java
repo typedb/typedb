@@ -219,7 +219,7 @@ final class ElementFactory {
         Schema.EdgeLabel label;
 
         try {
-            label = Schema.EdgeLabel.valueOf(edgeElement.label());
+            label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase());
         } catch (IllegalStateException e){
             LOG.warn("Invalid edge [" + edgeElement + "] due to " + e.getMessage(), e);
             return null;
