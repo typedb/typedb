@@ -88,6 +88,15 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] of type [%s] refers to type [%s] which does not exist in the graph \n"),
 
+    VALIDATION_RULE_DISJUNCTION_IN_BODY("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a disjunction in the body\n"),
+
+    VALIDATION_RULE_DISJUNCTION_IN_HEAD("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a disjunction in the head\n"),
+
+    VALIDATION_RULE_HEAD_NON_ATOMIC("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a multi-atom head\n"),
+
+    VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("The rule [%s] of type [%s] does not form a valid Horn clause, as its head contains illegal atomics\n"),
+
+
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),
     INVALID_COMPUTER("The graph computer [%s] is not supported"),
@@ -210,10 +219,7 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     GRAPH_MISSING("Provided query does not have an associated graph"),
-    NON_HORN_RULE("The specified rule [%s] is not a Horn rule"),
-    DISALLOWED_ATOM_IN_RULE_HEAD("Atom [%s] is not allowed to form a head of the rule [%s]."),
     HEAD_ROLES_MISSING("The specified rule [%s] is ambiguous - it does not specify all role types in the head."),
-    PARENT_MISSING("Attempted operation on atom %s that does not have a parent"),
     PATTERN_NOT_VAR("The pattern [%s] is not a var"),
     MULTIPLE_RESOURCES("Multiple resource types found during data extraction in atom [%s]"),
     MULTIPLE_VALUE_PREDICATES("Multiple value predicates found during data extraction in atom [%s]"),

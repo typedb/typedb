@@ -287,15 +287,15 @@ public class MovieGraph extends TestGraph {
         aRuleType = graph.putRuleType("a-rule-type");
         aRuleType.resource(name);
 
-        Pattern when = graph.graql().parsePattern("$x id 'expect-when'");
-        Pattern then = graph.graql().parsePattern("$x id 'expect-then'");
+        Pattern when = graph.graql().parsePattern("$x plays actor");
+        Pattern then = graph.graql().parsePattern("$x isa person");
 
         Rule expectation = aRuleType.putRule(when, then);
 
         putResource(expectation, name, "expectation-rule");
 
-        when = graph.graql().parsePattern("$x id 'materialize-when'");
-        then = graph.graql().parsePattern("$x id 'materialize-then'");
+        when = graph.graql().parsePattern("$x has name 'materialize-when'");
+        then = graph.graql().parsePattern("$x has name 'materialize-then'");
         Rule materialize = aRuleType.putRule(when, then);
 
         putResource(materialize, name, "materialize-rule");

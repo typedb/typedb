@@ -28,6 +28,10 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
@@ -273,6 +277,47 @@ class ValidateGlobalRules {
             return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationReified));
         }
         return Optional.empty();
+    }
+
+
+    /**
+     * @param graph graph used to ensure the rule is a valid Horn clause
+     * @param rule the rule to be validated
+     * @return Error messages if the rule is not a valid Horn clause (in implication form, conjunction in the body, single-atom conjunction in the head)
+     */
+    static Set<String> validateRuleIsHornClause(GraknGraph graph, Rule rule){
+        Set<String> errors = new HashSet<>();
+        if (rule.getWhen().admin().isDisjunction()){
+            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
+        }
+        errors.addAll(checkRuleHeadInvalid(graph, rule, rule.getThen()));
+        return errors;
+    }
+
+    /**
+     * @param graph graph used to ensure the rule head is valid
+     * @param rule the rule to be validated
+     * @param head head of the rule of interest
+     * @return Error messages if the rule head is invalid - is not a single-atom conjunction or contains illegal atomics
+     */
+    private static Set<String> checkRuleHeadInvalid(GraknGraph graph, Rule rule, Pattern head) {
+        Set<String> errors = new HashSet<>();
+        Set<Conjunction<VarPatternAdmin>> patterns = head.admin().getDisjunctiveNormalForm().getPatterns();
+        if (patterns.size() != 1){
+            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.getId(), rule.type().getLabel()));
+        } else {
+            ReasonerQuery headQuery = patterns.iterator().next().toReasonerQuery(graph);
+            Set<Atomic> allowed = headQuery.getAtoms().stream()
+                    .filter(Atomic::isAllowedToFormRuleHead).collect(Collectors.toSet());
+
+            if (allowed.size() > 1) {
+                errors.add(ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC.getMessage(rule.getId(), rule.type().getLabel()));
+            }
+            else if (allowed.isEmpty()){
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getId(), rule.type().getLabel()));
+            }
+        }
+        return errors;
     }
 
     /**
