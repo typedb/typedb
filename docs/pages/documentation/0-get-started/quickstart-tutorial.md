@@ -341,7 +341,8 @@ match $x has identifier "Barbara Shafner"; $y has identifier "Jacob J. Niesz";
 
 and then search for relationships joining two of them using:
 
-```graql
+<!-- Ignoring because uses fake IDs -->
+```graql-test-ignore
 compute path from "id1" to "id2"; # Use the actual values of identifier for each person
 # e.g. compute path from "114848" to "348264";
 ```
@@ -354,7 +355,8 @@ The path query uses a scalable shortest path algorithm to determine the smallest
 
 To narrow the path to specific relations between specific entities:
 
-```graql
+<!-- Ignoring because uses fake IDs -->
+```graql-test-ignore
 compute path from "id1" to "id2" in person, parentship;
 ```
 

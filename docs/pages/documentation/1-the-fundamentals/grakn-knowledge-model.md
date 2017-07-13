@@ -259,7 +259,8 @@ A relation is valid if:
 Let us say that we want to model a marriage between a man `Bob` and woman `Alice`.
 This will be our first attempt:
 
-```graql
+<!-- This example is meant to fail TODO: Make this only parse, not execute -->
+```graql-test-ignore
 insert
   human is-abstract sub entity;
   human has name;

@@ -51,7 +51,7 @@ The implication form of Horn clauses aligns more naturally with Graql semantics 
 ## Graql Rule Syntax
 In Graql we refer to the body of the rule as the left-hand-side of the rule (antecedent of the implication) and the head as the right-hand-side of the rule (consequent of the implication). Therefore, in Graql terms, we define rule objects in the following way:
 
-```graql
+```graql-test-ignore
 $optional-name isa inference-rule,
 lhs {
     ...;
@@ -65,7 +65,7 @@ rhs {
 
 Each dotted line corresponds to a single Graql variable. The rule name is optional and can be omitted, but it is useful if we want to be able to refer to and identify particular rules in the graph. This way, as inference-rule is a concept, we can attach resources to it:
 
-```graql
+```graql-test-ignore
 $myRule isa inference-rule,
 lhs {
     ...;
