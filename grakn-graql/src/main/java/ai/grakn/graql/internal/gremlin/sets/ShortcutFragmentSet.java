@@ -29,6 +29,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.util.Schema;
 import com.google.common.base.Preconditions;
 
 import javax.annotation.Nullable;
@@ -48,25 +49,27 @@ import static java.util.stream.Collectors.toSet;
  */
 class ShortcutFragmentSet extends EquivalentFragmentSet {
 
+    private final VarProperty varProperty;
     private final Var relation;
     private final Var edge;
     private final Var rolePlayer;
-    private final Optional<Var> roleType;
+    private final Optional<Var> role;
     private final Optional<Set<Label>> roleTypeLabels;
     private final Optional<Set<Label>> relationTypeLabels;
 
     ShortcutFragmentSet(VarProperty varProperty,
-            Var relation, Var edge, Var rolePlayer, Optional<Var> roleType,
-            Optional<Set<Label>> roleTypeLabels, Optional<Set<Label>> relationTypeLabels) {
+            Var relation, Var edge, Var rolePlayer, Optional<Var> role,
+            Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
         super(
-                Fragments.inShortcut(varProperty, rolePlayer, edge, relation, roleType, roleTypeLabels, relationTypeLabels),
-                Fragments.outShortcut(varProperty, relation, edge, rolePlayer, roleType, roleTypeLabels, relationTypeLabels)
+                Fragments.inShortcut(varProperty, rolePlayer, edge, relation, role, roleLabels, relationTypeLabels),
+                Fragments.outShortcut(varProperty, relation, edge, rolePlayer, role, roleLabels, relationTypeLabels)
         );
+        this.varProperty = varProperty;
         this.relation = relation;
         this.edge = edge;
         this.rolePlayer = rolePlayer;
-        this.roleType = roleType;
-        this.roleTypeLabels = roleTypeLabels;
+        this.role = role;
+        this.roleTypeLabels = roleLabels;
         this.relationTypeLabels = relationTypeLabels;
     }
 
@@ -82,26 +85,34 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * <p>
      * {@code $r-[shortcut:$e roles:foo ...]->$p}
      * <p>
-     *
+     * In the special case where the role is specified as the meta {@code role}, no labels are added and the role
+     * variable is detached from the shortcut edge.
+     * <p>
      * However, we must still retain the {@link LabelFragmentSet} because it is possible it is selected as a result or
      * referred to elsewhere in the query.
      */
-    static boolean applyShortcutRoleTypeOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+    static boolean applyShortcutRoleOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
         Iterable<ShortcutFragmentSet> shortcuts = EquivalentFragmentSets.fragmentSetOfType(ShortcutFragmentSet.class, fragmentSets)::iterator;
 
         for (ShortcutFragmentSet shortcut : shortcuts) {
-            Optional<Var> roleVar = shortcut.roleType;
+            Optional<Var> roleVar = shortcut.role;
 
             if (!roleVar.isPresent()) continue;
 
             @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.typeLabelOf(roleVar.get(), fragmentSets);
 
             if (roleLabel != null) {
-                Role role = graph.getOntologyConcept(roleLabel.label());
+                ShortcutFragmentSet newShortcut;
+
+                if (roleLabel.label().equals(Schema.MetaSchema.ROLE.getLabel())) {
+                    newShortcut = shortcut.removeRoleVar();
+                } else {
+                    Role role = graph.getOntologyConcept(roleLabel.label());
+                    newShortcut = shortcut.substituteRoleTypeLabel(graph, role);
+                }
 
                 fragmentSets.remove(shortcut);
-                fragmentSets.add(shortcut.substituteRoleTypeLabel(graph, role));
-
+                fragmentSets.add(newShortcut);
                 return true;
             }
         }
@@ -163,7 +174,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * @return a new {@link ShortcutFragmentSet} with the same properties excepting role-types
      */
     private ShortcutFragmentSet substituteRoleTypeLabel(GraknGraph graph, Role role) {
-        Preconditions.checkState(this.roleType.isPresent());
+        Preconditions.checkState(this.role.isPresent());
         Preconditions.checkState(!roleTypeLabels.isPresent());
 
         Collection<Role> subTypes = withImplicitConceptsVisible(graph, role::subs);
@@ -188,7 +199,15 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         Set<Label> newRelationLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(null,
-                relation, edge, rolePlayer, roleType, roleTypeLabels, Optional.of(newRelationLabels)
+                relation, edge, rolePlayer, role, roleTypeLabels, Optional.of(newRelationLabels)
         );
+    }
+
+    /**
+     * Remove any specified role variable
+     */
+    private ShortcutFragmentSet removeRoleVar() {
+        Preconditions.checkState(role.isPresent());
+        return new ShortcutFragmentSet(varProperty, relation, edge, rolePlayer, Optional.empty(), roleTypeLabels, relationTypeLabels);
     }
 }
