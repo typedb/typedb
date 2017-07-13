@@ -49,7 +49,7 @@ public class GraknJannusGraphTest extends JanusTestBase {
 
     @Before
     public void setup(){
-        graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
+        graknGraph = janusGraphFactory.open(GraknTxType.WRITE);
     }
 
     @After
@@ -74,11 +74,11 @@ public class GraknJannusGraphTest extends JanusTestBase {
             future.get();
         }
 
-        graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
+        graknGraph = janusGraphFactory.open(GraknTxType.WRITE);
         assertEquals(100, graknGraph.admin().getMetaEntityType().instances().size());
     }
     private void addEntity(EntityType type){
-        GraknJanusGraph graph = titanGraphFactory.open(GraknTxType.WRITE);
+        GraknJanusGraph graph = janusGraphFactory.open(GraknTxType.WRITE);
         type.addEntity();
         graph.commit();
     }
@@ -88,7 +88,7 @@ public class GraknJannusGraphTest extends JanusTestBase {
         String label = "My New Type";
         graknGraph.putEntityType(label);
         graknGraph.abort();
-        graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
+        graknGraph = janusGraphFactory.open(GraknTxType.WRITE);
         assertNull(graknGraph.getEntityType(label));
     }
 

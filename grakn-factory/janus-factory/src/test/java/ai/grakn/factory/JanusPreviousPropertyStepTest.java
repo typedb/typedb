@@ -46,7 +46,7 @@ public class JanusPreviousPropertyStepTest extends JanusTestBase {
 
     private static final GraphTraversalSource tinker = TinkerGraph.open().traversal();
 
-    private static final GraphTraversalSource titan = titanGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph().traversal();
+    private static final GraphTraversalSource titan = janusGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph().traversal();
 
     private static final Vertex vertexWithFoo = titan.addV().property("v prop", "foo").next();
     private static final Vertex vertexWithBar = titan.addV().property("v prop", "bar").next();
