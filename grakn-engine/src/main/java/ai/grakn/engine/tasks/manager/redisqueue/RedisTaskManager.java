@@ -20,6 +20,7 @@
 package ai.grakn.engine.tasks.manager.redisqueue;
 
 import ai.grakn.engine.GraknEngineConfig;
+import static ai.grakn.engine.GraknEngineConfig.TASKS_RETRY_DELAY;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.LockProvider;
@@ -28,11 +29,7 @@ import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.MetricRegistry;
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -46,17 +43,18 @@ import redis.clients.util.Pool;
  * @author pluraliseseverythings
  */
 public class RedisTaskManager implements TaskManager {
+
     private final static Logger LOG = LoggerFactory.getLogger(RedisTaskManager.class);
     private final EngineID engineId;
     private final GraknEngineConfig config;
     private final RedisTaskStorage redisTaskStorage;
     private final EngineGraknGraphFactory factory;
     private final RedisTaskQueue redisTaskQueue;
-    private final ExecutorService consumerExecutor;
     private final int threads;
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
-            EngineGraknGraphFactory factory, LockProvider distributedLockClient, MetricRegistry metricRegistry) {
+            EngineGraknGraphFactory factory, LockProvider distributedLockClient,
+            MetricRegistry metricRegistry) {
         this(engineId, config, jedisPool, 2, factory, distributedLockClient, metricRegistry);
     }
 
@@ -67,23 +65,15 @@ public class RedisTaskManager implements TaskManager {
         this.config = config;
         this.factory = factory;
         this.redisTaskStorage = RedisTaskStorage.create(jedisPool, metricRegistry);
-        this.redisTaskQueue = new RedisTaskQueue(jedisPool, distributedLockClient, metricRegistry);
+        this.redisTaskQueue = new RedisTaskQueue(jedisPool, distributedLockClient, metricRegistry,
+                Integer.parseInt(config.tryProperty(TASKS_RETRY_DELAY).orElse("180")));
         this.threads = threads;
-        this.consumerExecutor = Executors.newFixedThreadPool(threads);
     }
 
     @Override
     public void close() {
         LOG.info("Closing task manager");
-        try {
-            this.redisTaskQueue.close();
-            this.consumerExecutor.shutdown();
-            this.consumerExecutor.awaitTermination(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            LOG.error("Task manager termination interrupted", e);
-        } catch (IOException e) {
-            LOG.error("Task manager termination not completed", e);
-        }
+        this.redisTaskQueue.close();
     }
 
     @Override
@@ -99,7 +89,7 @@ public class RedisTaskManager implements TaskManager {
     private void startBlocking() {
         redisTaskQueue.runInFlightProcessor();
         for (int i = 0; i < threads; i++) {
-            redisTaskQueue.subscribe(this, consumerExecutor, engineId, config, factory);
+            redisTaskQueue.subscribe(this, engineId, config, factory, threads);
         }
         LOG.info("Redis task manager started with {} subscriptions", threads);
     }
@@ -128,7 +118,7 @@ public class RedisTaskManager implements TaskManager {
     }
 
     @Override
-    public void addTask(TaskState taskState, TaskConfiguration configuration){
+    public void addTask(TaskState taskState, TaskConfiguration configuration) {
         Task task = Task.builder()
                 .setTaskConfiguration(configuration)
                 .setTaskState(taskState).build();

@@ -19,6 +19,7 @@
 
 package ai.grakn.engine.tasks.manager.redisqueue;
 
+import static ai.grakn.engine.tasks.manager.redisqueue.RedisInflightTaskConsumer.ITERATIONS;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -32,8 +33,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import redis.clients.jedis.BuilderFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.Response;
+import redis.clients.jedis.Transaction;
 
 public class RedisInflightTaskConsumerTest {
 
@@ -54,11 +58,15 @@ public class RedisInflightTaskConsumerTest {
         ArrayList<String> v = new ArrayList<>();
         v.add(TRICKY_TASK);
         when(jedis.lrange(anyString(), anyLong(), anyLong())).thenReturn(v);
-        when(jedis.rpoplpush(anyString(), anyString())).thenReturn("does not matter");
+        when(jedis.watch(anyString())).thenReturn("");
+        Transaction transaction = mock(Transaction.class);
+        when(transaction.rpoplpush(anyString(), anyString())).thenReturn(new Response<>(
+                BuilderFactory.STRING));
+        when(jedis.multi()).thenReturn(transaction);
         RedisInflightTaskConsumer redisInflightTaskConsumer =
                 new RedisInflightTaskConsumer(jedisPool,
                         Duration.ofSeconds(2), new ConfigBuilder().build(), QUEUE_NAME);
         redisInflightTaskConsumer.run();
-        verify(jedis, times(1)).rpoplpush(anyString(), anyString());
+        verify(transaction, times( ITERATIONS)).rpoplpush(anyString(), anyString());
     }
 }

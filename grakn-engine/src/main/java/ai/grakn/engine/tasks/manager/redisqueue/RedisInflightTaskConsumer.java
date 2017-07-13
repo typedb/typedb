@@ -34,6 +34,7 @@ import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Transaction;
 import redis.clients.util.Pool;
 
 /**
@@ -42,10 +43,11 @@ import redis.clients.util.Pool;
  * @author Domenico Corapi
  */
 public class RedisInflightTaskConsumer extends TimerTask {
-    private final static Logger LOG = LoggerFactory.getLogger(RedisInflightTaskConsumer.class);
-    private final static ObjectMapper objectMapper = new ObjectMapper();
+    private static final Logger LOG = LoggerFactory.getLogger(RedisInflightTaskConsumer.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public static final int END = 10;
+    static final int ITERATIONS = 10;
+
     private Pool<Jedis> jedisPool;
     private Duration processInterval;
     private Config config;
@@ -65,29 +67,51 @@ public class RedisInflightTaskConsumer extends TimerTask {
             Set<String> keys = resource
                     .keys(String.format("resque:%s:*", ResqueConstants.INFLIGHT));
             for(String key : keys) {
-                LOG.debug("Processing inflight for {}", key);
-                List<String> elements = resource.lrange(key, 0, 0);
-                if (!elements.isEmpty()) {
-                    String head = elements.get(0);
-                    try {
-                        Job job = objectMapper.readValue(head, Job.class);
-                        if (job.getArgs().length > 0) {
-                            // TODO Use Jackson for this
-                            long runAt = Json.read(head).at("args").at(0).at("taskState").at("schedule").at("runAt").asLong();
-                            Instant runAtDate = Instant.ofEpochMilli(runAt);
-                            Duration gap = Duration.between(runAtDate, Instant.now());
-                            if (gap.getSeconds() > processInterval.getSeconds()) {
-                                LOG.info("Found dead task in inflight: ", head);
-                                // TODO Making some big assump tions here, a new task might be at the head of the queue
-                                resource.rpoplpush(key, JesqueUtils.createKey(config.getNamespace(), QUEUE, queueName));
+                for(int i = 0; i < ITERATIONS; i++) {
+                    LOG.debug("Processing inflight for {}, iteration {}", key, i);
+                    resource.watch(key);
+                    List<String> elements = resource.lrange(key, -1, -1);
+                    LOG.info("NOOP");
+                    // Optimistic concurrency control. If there are changes in keys we fail
+                    if (!elements.isEmpty()) {
+                        String head = elements.get(0);
+                        try {
+                            Job job = objectMapper.readValue(head, Job.class);
+                            if (job.getArgs().length > 0) {
+                                processElement(key, resource, head);
                             }
+                        } catch (IOException e) {
+                            LOG.error("Could not deserialize task, moving to head: {}", head, e);
+                            // Moving to the head
+                            attemptMove(resource, key, key);
                         }
-                    } catch (IOException e) {
-                        LOG.error("Could not deserialize task, process manually from inflight queue: {}", head, e);
-                        // TODO clean up the queue otherwise we always process the same (or make it a LIFO queue)
                     }
                 }
             }
+        }
+    }
+
+    private void processElement(String key, Jedis resource, String head) {
+        // TODO Use Jackson for this
+        long runAt = Json.read(head).at("args").at(0).at("taskState")
+                .at("schedule").at("runAt").asLong();
+        Instant runAtDate = Instant.ofEpochMilli(runAt);
+        Duration gap = Duration.between(runAtDate, Instant.now());
+        if (gap.getSeconds() > processInterval.getSeconds()) {
+            LOG.info("Found dead task in inflight: {}", head);
+            String keyDest = JesqueUtils
+                    .createKey(config.getNamespace(), QUEUE, queueName);
+            attemptMove(resource, key, keyDest);
+        }
+    }
+
+    private void attemptMove(Jedis resource, String key, String keyDest) {
+        Transaction transaction = resource.multi();
+        transaction.rpoplpush(key, keyDest);
+        List<Object> result = transaction.exec();
+        if (result == null) {
+            LOG.warn("Could not move job from {} to {}, something modified the queue. "
+                    + "The move will be retried when the task is next scheduled", key, keyDest);
         }
     }
 }

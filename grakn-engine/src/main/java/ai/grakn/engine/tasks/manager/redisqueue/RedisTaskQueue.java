@@ -27,12 +27,10 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Timer;
-import java.util.concurrent.ExecutorService;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.ConfigBuilder;
 import net.greghaines.jesque.Job;
@@ -44,6 +42,7 @@ import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.RecoveryStrategy;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerEvent;
+import net.greghaines.jesque.worker.WorkerPool;
 import net.greghaines.jesque.worker.WorkerPoolImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,27 +72,36 @@ class RedisTaskQueue {
     private final Config config;
     private final Histogram queueSize;
     private final Meter failures;
+    private final int processingDelay;
     private Pool<Jedis> jedisPool;
     private LockProvider lockProvider;
     private final MetricRegistry metricRegistry;
 
     private final Meter putJobMeter;
+    private WorkerPool workerPool;
 
     RedisTaskQueue(
             Pool<Jedis> jedisPool,
             LockProvider lockProvider,
-            MetricRegistry metricRegistry) {
+            MetricRegistry metricRegistry,
+            int processingDelay) {
         this.jedisPool = jedisPool;
         this.lockProvider = lockProvider;
         this.metricRegistry = metricRegistry;
         this.config = new ConfigBuilder().build();
         this.redisClient = new ClientPoolImpl(config, jedisPool);
+        this.processingDelay = processingDelay;
         this.putJobMeter = metricRegistry.meter(name(RedisTaskQueue.class, "put-job"));
         this.queueSize = metricRegistry.histogram(name(RedisTaskQueue.class, "queue-size"));
         this.failures = metricRegistry.meter(name(RedisTaskQueue.class, "failures"));
     }
 
-    void close() throws IOException {
+    void close() {
+        synchronized(this) {
+            if (workerPool != null) {
+                workerPool.end(false);
+            }
+        }
         redisClient.end();
     }
 
@@ -105,17 +113,28 @@ class RedisTaskQueue {
     }
 
     void runInFlightProcessor() {
-        new Timer().scheduleAtFixedRate(new RedisInflightTaskConsumer(jedisPool, Duration.ofSeconds(600), config, QUEUE_NAME), new Date(), 10000);
+        new Timer().scheduleAtFixedRate(new RedisInflightTaskConsumer(jedisPool, Duration.ofSeconds(
+                processingDelay), config, QUEUE_NAME), new Date(), 2000);
     }
 
     void subscribe(
             RedisTaskManager redisTaskManager,
-            ExecutorService consumerExecutor,
             EngineID engineId,
-            GraknEngineConfig config,
-            EngineGraknGraphFactory factory) {
+            GraknEngineConfig engineConfig,
+            EngineGraknGraphFactory factory,
+            int poolSize) {
         LOG.info("Subscribing worker to jobs in queue {}", QUEUE_NAME);
-        Worker worker = getJobSubscriber();
+        // sync to avoid close while starting
+        synchronized(this) {
+            this.workerPool = new WorkerPool(() -> getWorker(redisTaskManager, engineId, engineConfig, factory), poolSize);
+            // This just starts poolSize threads
+            workerPool.run();
+        }
+    }
+
+    private Worker getWorker(RedisTaskManager redisTaskManager, EngineID engineId,
+            GraknEngineConfig engineConfig, EngineGraknGraphFactory factory) {
+        Worker worker = new WorkerPoolImpl(config, Arrays.asList(QUEUE_NAME), JOB_FACTORY, jedisPool);
         // We need this since the job can only be instantiated with the
         // task coming from the queue
         worker.getWorkerEventEmitter().addListener(
@@ -123,7 +142,7 @@ class RedisTaskQueue {
                     queueSize.update(queue.length());
                     if (runner instanceof RedisTaskQueueConsumer) {
                         ((RedisTaskQueueConsumer) runner)
-                                .setRunningState(redisTaskManager, engineId, config, jedisPool,
+                                .setRunningState(redisTaskManager, engineId, engineConfig, jedisPool,
                                         factory, lockProvider, metricRegistry);
                     } else {
                         LOG.error("Found unexoected job in queue of type {}", runner.getClass().getName());
@@ -135,10 +154,6 @@ class RedisTaskQueue {
             LOG.error("Exception while trying to run task, terminating!", exception);
             return RecoveryStrategy.TERMINATE;
         });
-        consumerExecutor.execute(worker);
-    }
-
-    private Worker getJobSubscriber() {
-        return new WorkerPoolImpl(config, Arrays.asList(QUEUE_NAME), JOB_FACTORY, jedisPool);
+        return worker;
     }
 }
