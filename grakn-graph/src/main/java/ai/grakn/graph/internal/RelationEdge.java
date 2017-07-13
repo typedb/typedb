@@ -93,10 +93,6 @@ class RelationEdge implements RelationStructure{
         VertexElement relationVertex = edge().graph().addVertex(Schema.BaseType.RELATION, getId());
         RelationReified relationReified = edge().graph().factory().buildRelationReified(relationVertex, type());
 
-        //Connect the existing roles and their players
-        relationReified.addRolePlayer(ownerRole(), owner());
-        relationReified.addRolePlayer(valueRole(), value());
-
         //Delete the old edge
         delete();
 

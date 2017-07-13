@@ -26,6 +26,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
+import com.google.common.collect.Iterables;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -70,9 +71,21 @@ class RelationImpl implements Relation, ConceptVertex {
      * Reifys and returns the {@link RelationReified}
      */
     RelationReified reify(){
-        RelationReified relationReified = relationStructure.reify();
-        relationStructure = relationReified;
-        return relationReified;
+        if(relationStructure.isReified()) return relationStructure.reify();
+
+        //Get the role players to transfer
+        Map<Role, Set<Thing>> rolePlayers = structure().allRolePlayers();
+
+        //Now Reify
+        relationStructure = relationStructure.reify();
+
+        //Transfer relationships
+        rolePlayers.forEach((role, things) -> {
+            Thing thing = Iterables.getOnlyElement(things);
+            addRolePlayer(role, thing);
+        });
+
+        return relationStructure.reify();
     }
 
     RelationStructure structure(){

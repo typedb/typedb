@@ -182,6 +182,9 @@ public class ResourceTest extends GraphTestBase{
         //Check Role Players have been transferred
         allRolePlayerBefore.forEach((role, player) -> assertEquals(player, relationStructureAfter.rolePlayers(role)));
 
+        //Check Type Has Been Transferred
+        assertEquals(relationStructureBefore.type(), relationStructureAfter.type());
+
         //Check new role player has been added as well
         assertEquals(newEntity, Iterables.getOnlyElement(relationStructureAfter.rolePlayers(newRole)));
     }
