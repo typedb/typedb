@@ -51,6 +51,7 @@
         <tinkerpop.version>3.1.1-grakn-SNAPSHOT</tinkerpop.version>
         <junit.version>4.12</junit.version>
         <titan.version>1.1.0.grakn-SNAPSHOT</titan.version>
+        <janus.version>0.2.0-grakn-SNAPSHOT</janus.version>
         <guava.version>19.0</guava.version>
         <antlr.version>4.5</antlr.version>
         <jline.version>2.12</jline.version>
