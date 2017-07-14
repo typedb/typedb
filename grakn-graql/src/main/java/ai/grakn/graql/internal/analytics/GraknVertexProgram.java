@@ -52,8 +52,13 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
             Schema.EdgeLabel.SHORTCUT.getLabel()));
     static final MessageScope.Local<?> messageScopeShortcutOut = MessageScope.Local.of(() -> __.outE(
             Schema.EdgeLabel.SHORTCUT.getLabel()));
+    static final MessageScope.Local<?> messageScopeResourceIn = MessageScope.Local.of(() -> __.inE(
+            Schema.EdgeLabel.RESOURCE.getLabel()));
+    static final MessageScope.Local<?> messageScopeResourceOut = MessageScope.Local.of(() -> __.outE(
+            Schema.EdgeLabel.RESOURCE.getLabel()));
     static final Set<MessageScope> messageScopeSetShortcut =
-            Sets.newHashSet(messageScopeShortcutIn, messageScopeShortcutOut);
+            Sets.newHashSet(messageScopeShortcutIn, messageScopeShortcutOut,
+                    messageScopeResourceIn, messageScopeResourceOut);
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
