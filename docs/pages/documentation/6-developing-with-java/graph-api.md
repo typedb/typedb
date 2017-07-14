@@ -244,19 +244,19 @@ Rule instances can be added to the graph both through the Graph API as well as t
 
 ```graql
 $R1 isa inference-rule,
-lhs {
+when {
     (parent: $p, child: $c) isa Parent;
 },
-rhs {
+then {
     (ancestor: $p, descendant: $c) isa Ancestor;
 };
 
 $R2 isa inference-rule,
-lhs {
+when {
     (parent: $p, child: $c) isa Parent;
     (ancestor: $c, descendant: $d) isa Ancestor;
 },
-rhs {
+then {
     (ancestor: $p, descendant: $d) isa Ancestor;
 };
 ```
@@ -264,31 +264,31 @@ rhs {
 As there is more than one way to define Graql patterns through the API, there are several ways to construct rules. One options is through the Pattern factory:
 
 ```java
-Pattern rule1LHS = var().rel("parent", "p").rel("child", "c").isa("Parent");
-Pattern rule1RHS = var().rel("ancestor", "p").rel("descendant", "c").isa("Ancestor");
+Pattern rule1when = var().rel("parent", "p").rel("child", "c").isa("Parent");
+Pattern rule1then = var().rel("ancestor", "p").rel("descendant", "c").isa("Ancestor");
 
-Pattern rule2LHS = and(
+Pattern rule2when = and(
         var().rel("parent", "p").rel("child", "c").isa("Parent')"),
         var().rel("ancestor", "c").rel("descendant", "d").isa("Ancestor")
 );
-Pattern rule2RHS = var().rel("ancestor", "p").rel("descendant", "d").isa("Ancestor");
+Pattern rule2then = var().rel("ancestor", "p").rel("descendant", "d").isa("Ancestor");
 ```
 
 If we have a specific `GraknGraph graph` already defined, we can use the Graql pattern parser:
 
 ```java
-rule1LHS = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;"));
-rule1RHS = and(graph.graql().parsePatterns("(ancestor: $p, descendant: $c) isa Ancestor;"));
+rule1when = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;"));
+rule1then = and(graph.graql().parsePatterns("(ancestor: $p, descendant: $c) isa Ancestor;"));
 
-rule2LHS = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;(ancestor: $c, descendant: $d) isa Ancestor;"));
-rule2RHS = and(graph.graql().parsePatterns("(ancestor: $p, descendant: $d) isa Ancestor;"));
+rule2when = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;(ancestor: $c, descendant: $d) isa Ancestor;"));
+rule2then = and(graph.graql().parsePatterns("(ancestor: $p, descendant: $d) isa Ancestor;"));
 ```
 
 We conclude the rule creation with defining the rules from their constituent patterns:
 
 ```java
-Rule rule1 = inferenceRule.putRule(rule1LHS, rule1RHS);
-Rule rule2 = inferenceRule.putRule(rule2LHS, rule2RHS);
+Rule rule1 = inferenceRule.putRule(rule1when, rule1then);
+Rule rule2 = inferenceRule.putRule(rule2when, rule2then);
 ```
 
 
