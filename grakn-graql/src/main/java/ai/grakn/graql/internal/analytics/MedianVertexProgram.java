@@ -95,13 +95,12 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
         persistentProperties.put(LABEL, labelKey);
     }
 
-    @Override
     public Set<String> getElementComputeKeys() {
         return Sets.newHashSet(degreePropertyKey, labelKey);
     }
 
     @Override
-    public Set<String> getMemoryComputeKeys() {
+    public Set getMemoryComputeKeys() {
         return MEMORY_COMPUTE_KEYS;
     }
 
@@ -173,7 +172,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
                     if (degree > 0) {
                         memory.set(PIVOT,
                                 vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE)));
-                        memory.incr(COUNT, degree);
+                        //memory.incr(COUNT, degree);
                     }
                 }
                 break;
@@ -210,13 +209,13 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
 
     private void updateMemoryPositive(Vertex vertex, Memory memory, Number value) {
         vertex.property(labelKey, memory.getIteration());
-        memory.incr(POSITIVE_COUNT, vertex.value(degreePropertyKey));
+        //memory.incr(POSITIVE_COUNT, vertex.value(degreePropertyKey));
         memory.set(PIVOT_POSITIVE, value);
     }
 
     private void updateMemoryNegative(Vertex vertex, Memory memory, Number value) {
         vertex.property(labelKey, -memory.getIteration());
-        memory.incr(NEGATIVE_COUNT, vertex.value(degreePropertyKey));
+        //memory.incr(NEGATIVE_COUNT, vertex.value(degreePropertyKey));
         memory.set(PIVOT_NEGATIVE, value);
     }
 
