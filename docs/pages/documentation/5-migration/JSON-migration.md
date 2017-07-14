@@ -164,9 +164,9 @@ The resulting Graql statement, if printed out, looks as follows:
 match $2 has type-id "2"; $1 has type-id "1";
 insert $p0 isa pokemon has weight 85 has height 6 has pokedex-no 4 has description "Charmander";
 (pokemon-with-type: $p0, type-of-pokemon: $1) isa has-type;
-$p1 isa pokemon has weight 190 has height 11 has pokedex-no "5" has description "Charmeleon";
+$p1 isa pokemon has weight 190 has height 11 has pokedex-no 5 has description "Charmeleon";
 (pokemon-with-type: $p1, type-of-pokemon: $1) isa has-type;
-$p2 isa pokemon has weight 905 has height 17 has pokedex-no "6" has description "Charizard";
+$p2 isa pokemon has weight 905 has height 17 has pokedex-no 6 has description "Charizard";
 (pokemon-with-type: $p2, type-of-pokemon: $1) isa has-type;
 (pokemon-with-type: $p2, type-of-pokemon: $2) isa has-type;
 ```
