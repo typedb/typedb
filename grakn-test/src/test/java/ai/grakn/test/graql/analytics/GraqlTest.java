@@ -25,10 +25,10 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidGraphException;
@@ -126,9 +126,16 @@ public class GraqlTest {
     }
 
     @Test(expected = GraqlQueryException.class)
-    public void testInvalidIdWithAnalytics() {
+    public void testInvalidTypeWithStatistics() {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum of thingy;").execute();
+        }
+    }
+
+    @Test(expected = GraqlQueryException.class)
+    public void testInvalidTypeWithDegree() {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+            graph.graql().parse("compute degrees of thingy;").execute();
         }
     }
 
