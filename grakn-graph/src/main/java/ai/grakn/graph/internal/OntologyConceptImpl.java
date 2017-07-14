@@ -27,6 +27,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -79,11 +80,16 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
     }
 
     public T setLabel(Label label){
-        vertex().graph().txCache().remove(this);
-        vertex().propertyUnique(Schema.VertexProperty.TYPE_LABEL, label.getValue());
-        cachedLabel.set(label);
-        vertex().graph().txCache().cacheConcept(this);
-        return getThis();
+        try {
+            vertex().graph().txCache().remove(this);
+            vertex().propertyUnique(Schema.VertexProperty.TYPE_LABEL, label.getValue());
+            cachedLabel.set(label);
+            vertex().graph().txCache().cacheConcept(this);
+            return getThis();
+        } catch (PropertyNotUniqueException exception){
+            vertex().graph().txCache().cacheConcept(this);
+            throw GraphOperationException.labelTaken(label);
+        }
     }
 
     /**

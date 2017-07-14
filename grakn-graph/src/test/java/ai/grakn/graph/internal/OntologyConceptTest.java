@@ -23,6 +23,8 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.Assert;
@@ -92,5 +94,18 @@ public class OntologyConceptTest extends GraphTestBase {
         assertFalse(entityPlays.propertyBoolean(Schema.EdgeProperty.REQUIRED));
         EdgeElement resourcePlays = ((ResourceTypeImpl <?>) resourceType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
         assertFalse(resourcePlays.propertyBoolean(Schema.EdgeProperty.REQUIRED));
+    }
+
+    @Test
+    public void whenChangingTheLabelOfOntologyConceptAndThatLabelIsTakenByAnotherConcept_Throw(){
+        Label label = Label.of("mylabel");
+
+        EntityType e1 = graknGraph.putEntityType("Entity1");
+        graknGraph.putEntityType(label);
+
+        expectedException.expect(GraphOperationException.class);
+        expectedException.expectMessage(ErrorMessage.LABEL_TAKEN.getMessage(label));
+
+        e1.setLabel(label);
     }
 }
