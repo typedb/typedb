@@ -49,6 +49,7 @@ import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.util.DefaultComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.util.MapMemory;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.spark.process.computer.payload.ViewIncomingPayload;
 import org.apache.tinkerpop.gremlin.spark.structure.Spark;
 import org.apache.tinkerpop.gremlin.spark.structure.io.InputFormatRDD;
@@ -59,6 +60,8 @@ import org.apache.tinkerpop.gremlin.spark.structure.io.OutputRDD;
 import org.apache.tinkerpop.gremlin.spark.structure.io.PersistedInputRDD;
 import org.apache.tinkerpop.gremlin.spark.structure.io.PersistedOutputRDD;
 import org.apache.tinkerpop.gremlin.spark.structure.io.SparkContextStorage;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.Storage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,6 +134,16 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
     }
 
     @Override
+    public GraphComputer vertices(Traversal<Vertex, Vertex> traversal) throws IllegalArgumentException {
+        return null;
+    }
+
+    @Override
+    public GraphComputer edges(Traversal<Vertex, Edge> traversal) throws IllegalArgumentException {
+        return null;
+    }
+
+    @Override
     public Future<ComputerResult> submit() {
         this.validateStatePriorToExecution();
 
@@ -192,8 +205,7 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
                     }
                 }
                 // write the computed graph to the respective output (rdd or output format)
-                final String[] elementComputeKeys = this.vertexProgram.getElementComputeKeys().toArray(
-                        new String[this.vertexProgram.getElementComputeKeys().size()]);
+                final String[] elementComputeKeys = new String[2];// this.vertexProgram.getElementComputeKeys().toArray(new String[this.vertexProgram.getElementComputeKeys().size()]);
                 computedGraphRDD = GraknSparkExecutor.prepareFinalGraphRDD(
                         graknGraphRDD.loadedGraphRDD, viewIncomingRDD, elementComputeKeys);
                 if ((hadoopConfiguration.get(Constants.GREMLIN_HADOOP_GRAPH_OUTPUT_FORMAT, null) != null ||

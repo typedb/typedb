@@ -25,6 +25,7 @@ import org.apache.tinkerpop.gremlin.hadoop.process.computer.util.Rule;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
+import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.util.MemoryHelper;
 import org.apache.tinkerpop.gremlin.spark.process.computer.RuleAccumulator;
@@ -63,9 +64,9 @@ public class GraknSparkMemory implements Memory.Admin, Serializable {
                             final Set<MapReduce> mapReducers,
                             final JavaSparkContext sparkContext) {
         if (null != vertexProgram) {
-            for (final String key : vertexProgram.getMemoryComputeKeys()) {
-                MemoryHelper.validateKey(key);
-                this.memoryKeys.add(key);
+            for (final MemoryComputeKey key : vertexProgram.getMemoryComputeKeys()) {
+                MemoryHelper.validateKey(key.getKey());
+                this.memoryKeys.add(key.getKey());
             }
         }
         for (final MapReduce mapReduce : mapReducers) {
@@ -126,7 +127,6 @@ public class GraknSparkMemory implements Memory.Admin, Serializable {
         }
     }
 
-    @Override
     public void incr(final String key, final long delta) {
         checkKeyValue(key, delta);
         if (this.inTask) {
@@ -136,7 +136,6 @@ public class GraknSparkMemory implements Memory.Admin, Serializable {
         }
     }
 
-    @Override
     public void and(final String key, final boolean bool) {
         checkKeyValue(key, bool);
         if (this.inTask) {
@@ -146,7 +145,6 @@ public class GraknSparkMemory implements Memory.Admin, Serializable {
         }
     }
 
-    @Override
     public void or(final String key, final boolean bool) {
         checkKeyValue(key, bool);
         if (this.inTask) {
@@ -164,6 +162,11 @@ public class GraknSparkMemory implements Memory.Admin, Serializable {
         } else {
             this.memory.get(key).setValue(new Rule(Rule.Operation.SET, value));
         }
+    }
+
+    @Override
+    public void add(String s, Object o) throws IllegalArgumentException, IllegalStateException {
+
     }
 
     @Override
