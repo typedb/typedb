@@ -49,8 +49,8 @@ insert
   middlename sub resource datatype string;
   picture sub resource datatype string;
   age sub resource datatype long;
-  birth-date sub resource datatype date;
-  death-date sub resource datatype date;
+  birth-date sub resource datatype string;
+  death-date sub resource datatype string;
   gender sub resource datatype string;
 
 # Roles and Relations
@@ -142,7 +142,7 @@ marriage sub relatives
   relates wife
   has "date";
 	    
-spouse sub role is-abstract;
+spouse sub role;
 spouse1 sub spouse;
 spouse2 sub spouse;
 husband sub spouse;
@@ -249,7 +249,7 @@ insert
     relates wife
     has "date";
     
-  spouse sub role is-abstract;
+  spouse sub role;
   spouse1 sub spouse;
   spouse2 sub spouse;
   husband sub spouse;   
