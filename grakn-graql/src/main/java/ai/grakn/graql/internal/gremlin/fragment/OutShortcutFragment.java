@@ -101,7 +101,8 @@ class OutShortcutFragment extends AbstractFragment {
 
         traverseRoleTypeFromShortcutEdge(edgeTraversal, roleType, roleProperty);
 
-        return edgeTraversal.toV(direction);
+        // TODO: This is definitely wrong
+        return edgeTraversal.toV(direction).as(edge.getValue());
     }
 
     @Override

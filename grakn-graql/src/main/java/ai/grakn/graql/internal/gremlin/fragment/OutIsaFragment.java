@@ -22,10 +22,13 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
 import static ai.grakn.util.Schema.EdgeLabel.SHARD;
+import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
 
 class OutIsaFragment extends AbstractFragment {
 
@@ -35,7 +38,16 @@ class OutIsaFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        Fragments.outSubs(traversal.out(ISA.getLabel()).out(SHARD.getLabel()));
+        GraphTraversal<? extends Element, Vertex> vertexTraversal = traversal.choose(e -> e instanceof Vertex,
+                __.out(ISA.getLabel()).out(SHARD.getLabel()),
+                edgeTraversal()
+        );
+
+        Fragments.outSubs(vertexTraversal);
+    }
+
+    private GraphTraversal<?, Vertex> edgeTraversal() {
+        return Fragments.traverseOntologyConceptFromEdge(__.identity(), RELATION_TYPE_LABEL_ID);
     }
 
     @Override

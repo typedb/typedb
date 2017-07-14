@@ -21,12 +21,18 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
+import static ai.grakn.util.Schema.EdgeLabel.RESOURCE;
 import static ai.grakn.util.Schema.EdgeLabel.SHARD;
+import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
+import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 
 class InIsaFragment extends AbstractFragment {
 
@@ -36,7 +42,19 @@ class InIsaFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        Fragments.inSubs((GraphTraversal<Vertex, Vertex>) traversal).in(SHARD.getLabel()).in(ISA.getLabel());
+        Fragments.inSubs((GraphTraversal<Vertex, Vertex>) traversal);
+
+        traversal.union(
+                __.in(SHARD.getLabel()).in(ISA.getLabel()),
+                edgeInstances()
+        );
+    }
+
+    private GraphTraversal edgeInstances() {
+        // TODO: This is abysmally slow!
+        Var labelId = var();
+        return __.values(LABEL_ID.name()).as(labelId.getValue())
+                .V().outE(RESOURCE.getLabel()).has(RELATION_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
     }
 
     @Override

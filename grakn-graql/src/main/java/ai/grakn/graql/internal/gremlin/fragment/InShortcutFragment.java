@@ -29,7 +29,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
 import java.util.Set;
@@ -70,12 +69,10 @@ class InShortcutFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        traversal.choose(e -> e instanceof Vertex,
+        traversal.union(
                 reifiedRelationTraversal(graph),
-                __.union(
-                        edgeRelationTraversal(graph, Direction.OUT, RELATION_ROLE_OWNER_LABEL_ID),
-                        edgeRelationTraversal(graph, Direction.IN, RELATION_ROLE_VALUE_LABEL_ID)
-                )
+                edgeRelationTraversal(graph, Direction.OUT, RELATION_ROLE_OWNER_LABEL_ID),
+                edgeRelationTraversal(graph, Direction.IN, RELATION_ROLE_VALUE_LABEL_ID)
         );
     }
 
@@ -92,7 +89,8 @@ class InShortcutFragment extends AbstractFragment {
     }
 
     private GraphTraversal edgeRelationTraversal(GraknGraph graph, Direction direction, Schema.EdgeProperty roleProperty) {
-        GraphTraversal<Object, Edge> edgeTraversal = __.toE(direction, Schema.EdgeLabel.RESOURCE.getLabel());
+        // TODO: This is definitely wrong
+        GraphTraversal<Object, Edge> edgeTraversal = __.as(edge.getValue()).toE(direction, Schema.EdgeLabel.RESOURCE.getLabel());
 
         // Filter by any provided type labels
         applyTypeLabelsToTraversal(edgeTraversal, roleProperty, roleTypeLabels, graph);

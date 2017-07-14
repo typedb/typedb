@@ -179,20 +179,24 @@ public class Fragments {
      */
     static void traverseRoleTypeFromShortcutEdge(GraphTraversal<?, Edge> traversal, Optional<Var> roleType, Schema.EdgeProperty edgeProperty) {
         roleType.ifPresent(var -> {
-            // Access role-type ID from edge
-            Var roleTypeIdProperty = Graql.var();
             Var edge = Graql.var();
-            traversal.as(edge.getValue()).values(edgeProperty.name()).as(roleTypeIdProperty.getValue());
-
-            // Look up direct role-type using ID
-            GraphTraversal<?, Vertex> vertexTraversal =
-                    traversal.V().has(LABEL_ID.name(), __.where(P.eq(roleTypeIdProperty.getValue())));
-
-            // Navigate up type hierarchy
-            Fragments.outSubs(vertexTraversal).as(var.getValue());
-
-            traversal.select(edge.getValue());
+            traversal.as(edge.getValue());
+            traverseOntologyConceptFromEdge(traversal, edgeProperty);
+            traversal.as(var.getValue()).select(edge.getValue());
         });
+    }
+
+    static GraphTraversal<?, Vertex> traverseOntologyConceptFromEdge(GraphTraversal<?, Edge> traversal, Schema.EdgeProperty edgeProperty) {
+        // Access label ID from edge
+        Var labelId = Graql.var();
+        traversal.values(edgeProperty.name()).as(labelId.getValue());
+
+        // Look up ontology concept using ID
+        GraphTraversal<?, Vertex> vertexTraversal =
+                traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
+
+        // Navigate up hierarchy
+        return Fragments.outSubs(vertexTraversal);
     }
 
 }
