@@ -144,7 +144,7 @@ insert
   plays employer;  
   
   name sub resource, datatype string;
-  "date" sub resource, datatype date;
+  "date" sub resource, datatype string;
   
   employment sub relation,
     relates employee, relates employer,
@@ -261,12 +261,12 @@ This will be our first attempt:
 
 ```graql
 insert
-  person is-abstract sub entity;
-  person has name;
+  human is-abstract sub entity;
+  human has name;
   name sub resource datatype string;
   
-  man is-abstract sub person;
-  woman sub person;
+  man is-abstract sub human;
+  woman sub human;
   
   marriage sub relation;
   marriage relates husband;
@@ -305,12 +305,12 @@ Let's fix these issues and try again:
 
 ```graql
 insert
-  person is-abstract sub entity;                   
-  person has name;
+  human is-abstract sub entity;
+  human has name;
   name sub resource datatype string;
   
-  man sub person; # Fix (3)
-  woman sub person;
+  man sub human; # Fix (3)
+  woman sub human;
   
   marriage sub relation;
   marriage relates husband;
@@ -338,7 +338,7 @@ Inference is a process of extracting implicit information from explicit data. Gr
 Both mechanisms can be employed when querying the knowledge graph with Graql, thus supporting retrieval of both explicit and implicit information at query time.      
 
 ### Type Inference
-The type inference is based on a simple graph traversal along the `sub` edges. Every instance of a given concept type is automatically classified as an (indirect) instance of all (possibly indirect) supertypes of that type. For example, whenever `customer sub person` is in the ontology, every instance of `customer` will be retrieved on the query `match $x isa person`. 
+The type inference is based on a simple graph traversal along the `sub` edges. Every instance of a given concept type is automatically classified as an (indirect) instance of all (possibly indirect) supertypes of that type. For example, whenever `customer sub human` is in the ontology, every instance of `customer` will be retrieved on the query `match $x isa human`.
 
 Similarly for roles, every instance playing a given role is inferred to also play all its (possibly indirect) super-roles. <!--For example, whenever `inst` plays the role of wife in a relation of the type `marriage`, the system will infer that `inst` plays also the role of `partner1` in that relation, given the ontology from Figure 2.-->
 
@@ -359,14 +359,14 @@ insert
   located-subject sub role;
   subject-location sub role;
 
-  transitive-location sub rule,
+  $transitive-location isa inference-rule,
     lhs {
       ($x, $y) isa located-in;
       ($y, $z) isa located-in;
     }
     rhs {
       ($x, $z) isa located-in;
-    }
+    };
 
 ```
 

@@ -26,7 +26,7 @@ The results you get involve 3 clusters with sizes: 3, 5, 3.
 If you want to see the actual members of the clusters you have to use the modifier `members`.
 
 ```graql
-compute cluster in person, knows; members;
+compute cluster in person, relatives; members;
 ```
 
 Here, the [subgraph](./analytics-overview.html) functionality has been used to get more meaningful results, because executing the cluster algorithm without specifying a subgraph will not result in meaningful information.

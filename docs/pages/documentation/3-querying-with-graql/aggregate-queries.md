@@ -150,7 +150,6 @@ Find the median of the given resource variable.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell6">
 <pre>
-match
 match $x isa person, has age $a; aggregate median $a;
 
 </pre>
@@ -230,7 +229,7 @@ match $x has identifier contains "Elizabeth"; aggregate count;
 Compute queries are computationally intensive and run in parallel on a cluster (so are good for big data).
 
 ```graql
-compute count of person; 
+compute count in person;
 ```
 
 Can be used to calculate the number of people in the graph very fast, but you can't filter the results to determine the number of people with a certain name.

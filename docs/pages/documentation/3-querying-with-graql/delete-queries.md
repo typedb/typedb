@@ -57,7 +57,7 @@ match $x label marriage; delete $x relates spouse1;
 </div>
 <div role="tabpanel" class="tab-pane" id="java2">
 <pre>
-qb.match(var("x").label("marriage")).delete(var("x").hasRole("spouse1"));
+qb.match(var("x").label("marriage")).delete(var("x").relates("spouse1"));
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -79,7 +79,7 @@ match $x label person; delete $x plays sibling1;
 </div>
 <div role="tabpanel" class="tab-pane" id="java3">
 <pre>
-qb.match(var("x").label("person")).delete(var("x").playsRole("sibling1"));
+qb.match(var("x").label("person")).delete(var("x").plays("sibling1"));
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
