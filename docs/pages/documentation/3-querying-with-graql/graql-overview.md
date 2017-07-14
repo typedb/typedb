@@ -66,7 +66,7 @@ relates
 #### Rules definition
 
 ```graql-test-ignore
-lhs, rhs
+when, then
 ```
 
 #### Statistics 
