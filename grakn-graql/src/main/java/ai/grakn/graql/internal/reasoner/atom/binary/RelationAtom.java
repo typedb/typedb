@@ -341,7 +341,7 @@ public class RelationAtom extends IsaAtom {
         Set<Var> untypedVars = Sets.difference(subbedVars, getParentQuery().getVarOntologyConceptMap().keySet());
         return untypedVars.stream()
                 .map(v -> new Pair<>(v, sub.get(v)))
-                .filter(p -> p.getValue().isEntity())
+                .filter(p -> p.getValue().isInstance())
                 .map(e -> {
                     Concept c = e.getValue();
                     return c.asInstance().type();

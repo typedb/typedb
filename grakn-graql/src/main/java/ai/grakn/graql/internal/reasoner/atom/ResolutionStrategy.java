@@ -99,6 +99,11 @@ public final class ResolutionStrategy {
     public static final int VARIABLE_VALUE_PREDICATE = -100;
 
     /**
+     * number of entities that need to be attached to a resource wtih a specific value to be considered a supernode
+     */
+    public static final int RESOURCE_SUPERNODE_SIZE = 5;
+
+    /**
      * priority modifier for each value predicate with variable requiring comparison
      * NB: atom satisfying this criterion should be resolved last
      */
