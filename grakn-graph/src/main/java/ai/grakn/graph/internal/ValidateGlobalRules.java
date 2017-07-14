@@ -287,7 +287,9 @@ class ValidateGlobalRules {
      */
     static Set<String> validateRuleIsValidHornClause(GraknGraph graph, Rule rule){
         Set<String> errors = new HashSet<>();
-        errors.addAll(checkRuleBodyInvalid(graph, rule, rule.getWhen()));
+        if (rule.getWhen().admin().getDisjunctiveNormalForm().getPatterns().size() != 1){
+            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
+        }
         errors.addAll(checkRuleHeadInvalid(graph, rule, rule.getThen()));
         return errors;
     }
@@ -309,21 +311,6 @@ class ValidateGlobalRules {
         //cross check
         ReasonerQuery combined = rule.getWhen().and(rule.getThen()).admin().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
         errors.addAll(combined.validateOntologically());
-        return errors;
-    }
-
-    /**
-     * @param graph graph used to ensure the rule head is valid
-     * @param rule the rule to be validated
-     * @param body head of the rule of interest
-     * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain illegal atomics and is ontologically valid
-     */
-    private static Set<String> checkRuleBodyInvalid(GraknGraph graph, Rule rule, Pattern body) {
-        Set<String> errors = new HashSet<>();
-        Set<Conjunction<VarPatternAdmin>> patterns = body.admin().getDisjunctiveNormalForm().getPatterns();
-        if (patterns.size() != 1){
-            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
-        }
         return errors;
     }
 
