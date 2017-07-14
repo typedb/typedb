@@ -21,8 +21,7 @@ package ai.grakn.test;
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_URL;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
@@ -93,7 +92,7 @@ public class EngineContext extends ExternalResource {
 
     public RedisCountStorage redis() {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
-        JedisPool jedisPool = new JedisPool(poolConfig, config.getProperty(REDIS_SERVER_URL), config.getPropertyAsInt(REDIS_SERVER_PORT));
+        JedisPool jedisPool = new JedisPool(poolConfig, config.getProperty(REDIS_HOST));
         return RedisCountStorage.create(jedisPool);
     }
 
@@ -120,7 +119,7 @@ public class EngineContext extends ExternalResource {
         try {
             startRedis(config);
             Config rConfig = new Config();
-            rConfig.useSingleServer().setAddress("127.0.0.1:" + config.tryProperty(REDIS_SERVER_PORT).orElse("6379" ));
+            rConfig.useSingleServer().setAddress(config.tryProperty(REDIS_HOST).orElse("127.0.0.1:6379" ));
 
             this.redissonClient = Redisson.create(rConfig);
 

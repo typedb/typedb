@@ -40,7 +40,7 @@ The Grakn engine is the main server component running the platform. A client alw
 * websockets endpoint for Graql queries
 * distributed background task processing peer.
 
-An engine server makes use of industry standard infrastructure packages such as an embedded HTTP server, Kafka, Zookeeper, Spark and Hadoop. Engines can be deployed in a horizontally scalable cluster. They are stateless and co-operate in a peer-to-peer fashion. They can be load-balanced and support failover, providing guarantees that any submitted task will be eventually completed. See the [Deployment Guide](../deploy-grakn/grakn-deployment-guide.html) for more information on how to configure a GRAKN Engine or a cluster thereof.
+An engine server makes use of industry standard infrastructure packages such as an embedded HTTP server, Spark and Hadoop. Engines can be deployed in a horizontally scalable cluster. They are stateless and co-operate in a peer-to-peer fashion. They can be load-balanced and support failover, providing guarantees that any submitted task will be eventually completed. See the [Deployment Guide](../deploy-grakn/grakn-deployment-guide.html) for more information on how to configure a GRAKN Engine or a cluster thereof.
 
 The following diagram shows how the various components stack together:
 
