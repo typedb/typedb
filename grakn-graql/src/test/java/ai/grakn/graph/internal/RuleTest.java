@@ -307,24 +307,7 @@ public class RuleTest {
     }
 
     private void validateOntologicallyIllegalRule(Pattern when, Pattern then, String message){
-        ResourceType<Integer> res1 = graknGraph.putResourceType("res1", ResourceType.DataType.INTEGER);
-
-        Role role1 = graknGraph.putRole("role1");
-        Role role2 = graknGraph.putRole("role2");
-        Role role3 = graknGraph.putRole("role3");
-
-        graknGraph.putEntityType("entity1")
-                .resource(res1)
-                .plays(role1)
-                .plays(role2);
-
-        graknGraph.putRelationType("relation1")
-                .relates(role1)
-                .relates(role2)
-                .relates(role3);
-        graknGraph.putRelationType("relation2")
-                .relates(role3);
-
+        initGraph(graknGraph);
         graknGraph.admin().getMetaRuleInference().putRule(when, then);
 
         expectedException.expect(InvalidGraphException.class);
@@ -334,24 +317,7 @@ public class RuleTest {
     }
     
     private void validateIllegalRule(Pattern when, Pattern then, ErrorMessage message){
-        ResourceType<Integer> res1 = graknGraph.putResourceType("res1", ResourceType.DataType.INTEGER);
-
-        Role role1 = graknGraph.putRole("role1");
-        Role role2 = graknGraph.putRole("role2");
-        Role role3 = graknGraph.putRole("role3");
-
-        graknGraph.putEntityType("entity1")
-                .resource(res1)
-                .plays(role1)
-                .plays(role2);
-
-        graknGraph.putRelationType("relation1")
-                .relates(role1)
-                .relates(role2)
-                .relates(role3);
-        graknGraph.putRelationType("relation2")
-                .relates(role3);
-
+        initGraph(graknGraph);
         Rule rule = graknGraph.admin().getMetaRuleInference().putRule(when, then);
 
         expectedException.expect(InvalidGraphException.class);
@@ -359,6 +325,25 @@ public class RuleTest {
                 message.getMessage(rule.getId(), rule.type().getLabel()));
 
         graknGraph.commit();
+    }
+    
+    private void initGraph(GraknGraph graph){
+        ResourceType<Integer> res1 = graph.putResourceType("res1", ResourceType.DataType.INTEGER);
+        Role role1 = graph.putRole("role1");
+        Role role2 = graph.putRole("role2");
+        Role role3 = graph.putRole("role3");
+
+        graph.putEntityType("entity1")
+                .resource(res1)
+                .plays(role1)
+                .plays(role2);
+
+        graph.putRelationType("relation1")
+                .relates(role1)
+                .relates(role2)
+                .relates(role3);
+        graph.putRelationType("relation2")
+                .relates(role3);
     }
 
     @Test

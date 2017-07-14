@@ -79,6 +79,9 @@ public interface Atomic {
     @CheckReturnValue
     default boolean isAllowedToFormRuleHead(){ return false; }
 
+    /**
+     * @return error messages indicating ontological inconsistencies of this atomic
+     */
     @CheckReturnValue
     default Set<String> validateOntologically(){ return new HashSet<>();}
 
