@@ -292,6 +292,26 @@ class ValidateGlobalRules {
         return errors;
     }
 
+
+    /**
+     * @param graph graph used to ensure the rule is a valid Horn clause
+     * @param rule the rule to be validated ontologically
+     * @return Error messages if the rule has ontological inconsistencies
+     */
+    static Set<String> validateRuleOntologically(GraknGraph graph, Rule rule) {
+        Set<String> errors = new HashSet<>();
+        ReasonerQuery bodyQuery = rule.getWhen().admin().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
+        ReasonerQuery headQuery = rule.getThen().admin().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
+
+        errors.addAll(bodyQuery.validateOntologically());
+        errors.addAll(headQuery.validateOntologically());
+
+        //cross check
+        ReasonerQuery combined = rule.getWhen().and(rule.getThen()).admin().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
+        errors.addAll(combined.validateOntologically());
+        return errors;
+    }
+
     /**
      * @param graph graph used to ensure the rule head is valid
      * @param rule the rule to be validated
@@ -303,9 +323,6 @@ class ValidateGlobalRules {
         Set<Conjunction<VarPatternAdmin>> patterns = body.admin().getDisjunctiveNormalForm().getPatterns();
         if (patterns.size() != 1){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
-        } else {
-            ReasonerQuery bodyQuery = patterns.iterator().next().toReasonerQuery(graph);
-            errors.addAll(bodyQuery.validateOntologically());
         }
         return errors;
     }
@@ -323,8 +340,6 @@ class ValidateGlobalRules {
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.getId(), rule.type().getLabel()));
         } else {
             ReasonerQuery headQuery = patterns.iterator().next().toReasonerQuery(graph);
-            errors.addAll(headQuery.validateOntologically());
-
             Set<Atomic> allowed = headQuery.getAtoms().stream()
                     .filter(Atomic::isAllowedToFormRuleHead).collect(Collectors.toSet());
 
