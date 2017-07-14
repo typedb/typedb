@@ -41,6 +41,7 @@ import static ai.grakn.util.ErrorMessage.INVALID_PROPERTY_USE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.NO_TYPE;
 import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
+import static ai.grakn.util.ErrorMessage.UNKNOWN_CONCEPT;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 
 /**
@@ -245,5 +246,12 @@ public class GraphOperationException extends GraknException{
      */
     public static GraphOperationException invalidPropertyUse(Concept concept, Schema.VertexProperty property) {
         return new GraphOperationException(INVALID_PROPERTY_USE.getMessage(concept, property));
+    }
+
+    /**
+     * Thrown when trying to build a {@link Concept} using an invalid graph construct
+     */
+    public static GraphOperationException unknownConcept(String type){
+        return new GraphOperationException(UNKNOWN_CONCEPT.getMessage(type));
     }
 }

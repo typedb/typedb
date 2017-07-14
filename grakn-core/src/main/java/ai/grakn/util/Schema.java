@@ -155,7 +155,7 @@ public final class Schema {
      */
     public enum VertexProperty {
         //Unique Properties
-        LABEL(String.class), INDEX(String.class), ID(String.class), LABEL_ID(Integer.class),
+        ONTOLOGY_LABEL(String.class), INDEX(String.class), ID(String.class), LABEL_ID(Integer.class),
 
         //Other Properties
         THING_TYPE_LABEL_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),

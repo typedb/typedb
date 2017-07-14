@@ -24,11 +24,11 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
@@ -204,7 +204,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
-        return labelSet.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+        return labelSet.stream()
+                .map(graph.get().admin()::convertToId)
+                .filter(LabelId::isValid)
+                .collect(Collectors.toSet());
     }
 
     static String getRandomJobId() {

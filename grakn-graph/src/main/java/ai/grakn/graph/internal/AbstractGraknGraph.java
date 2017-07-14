@@ -244,10 +244,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return factory().buildConcept(vertex);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T extends Concept> T buildConcept(Edge edge){
-        return (T) factory().buildRelation(factory().buildEdge(edge));
+        return factory().buildConcept(edge);
     }
 
     @Override
@@ -390,7 +389,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             vertex = addTypeVertex(getNextId(), label, baseType);
         } else {
             if(!baseType.equals(concept.baseType())) {
-                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.VertexProperty.LABEL, label);
+                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.VertexProperty.ONTOLOGY_LABEL, label);
             }
             vertex = concept.vertex();
         }
@@ -407,7 +406,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType){
         VertexElement vertexElement = addVertex(baseType);
-        vertexElement.property(Schema.VertexProperty.LABEL, label.getValue());
+        vertexElement.property(Schema.VertexProperty.ONTOLOGY_LABEL, label.getValue());
         vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
         return vertexElement;
     }
@@ -441,7 +440,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         T finalType = validateOntologyElement(ontologyConcept, baseType, () -> {
             if(Schema.MetaSchema.isMetaLabel(label)) throw GraphOperationException.reservedLabel(label);
-            throw PropertyNotUniqueException.cannotCreateProperty(ontologyConcept, Schema.VertexProperty.LABEL, label);
+            throw PropertyNotUniqueException.cannotCreateProperty(ontologyConcept, Schema.VertexProperty.ONTOLOGY_LABEL, label);
         });
 
         //Automatic shard creation - If this type does not have a shard create one
@@ -545,12 +544,28 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //------------------------------------ Lookup
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
-        if(txCache().isConceptCached(id)){
-            return txCache().getCachedConcept(id);
-        } else {
-            return getConcept(Schema.VertexProperty.ID, id.getValue());
-        }
+        return operateOnOpenGraph(() -> {
+            if (txCache().isConceptCached(id)) {
+                return txCache().getCachedConcept(id);
+            } else {
+                if (id.getValue().startsWith(Schema.PREFIX_EDGE)) {
+                    T concept = getConceptEdge(id);
+                    if (concept != null) return concept;
+                }
+                return getConcept(Schema.VertexProperty.ID, id.getValue());
+            }
+        });
     }
+
+    private <T extends Concept>T getConceptEdge(ConceptId id){
+        String edgeId = id.getValue().substring(1);
+        GraphTraversal<Edge, Edge> traversal = getTinkerPopGraph().traversal().E().hasId(edgeId);
+        if(traversal.hasNext()){
+            return factory().buildConcept(factory().buildEdgeElement(traversal.next()));
+        }
+        return null;
+    }
+
     private <T extends OntologyConcept> T getOntologyConcept(Label label, Schema.BaseType baseType){
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
@@ -661,8 +676,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return getOntologyConcept(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
-    void putShortcutEdge(Thing toThing, Relation fromRelation, Role roleType){
-        //TODO: hasId() may be faster than has(ID, ...)
+    void putShortcutEdge(Thing toThing, RelationReified fromRelation, Role roleType){
         boolean exists  = getTinkerTraversal().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
@@ -670,11 +684,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 has(Schema.VertexProperty.ID.name(), toThing.getId()).hasNext();
 
         if(!exists){
-            EdgeElement edge = RelationImpl.from(fromRelation).reify().addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.SHORTCUT);
+            EdgeElement edge = fromRelation.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.SHORTCUT);
             edge.property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, fromRelation.type().getLabelId().getValue());
             edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, roleType.getLabelId().getValue());
-            txCache().trackForValidation(factory().buildRolePlayer(edge));
-            txCache().trackForValidation(fromRelation); //This is so we can reassign the hash if needed
+            txCache().trackForValidation(factory().buildCasting(edge));
         }
     }
 
@@ -917,7 +930,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             foundRelation = otherRelation;
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
             otherRelation.allRolePlayers().forEach((roleType, instances) -> {
-                if(instances.contains(other)) putShortcutEdge(main, otherRelation, roleType);
+                Optional<RelationReified> relationReified = RelationImpl.from(otherRelation).reified();
+                if(instances.contains(other) && relationReified.isPresent()) putShortcutEdge(main, relationReified.get(), roleType);
             });
         }
 
