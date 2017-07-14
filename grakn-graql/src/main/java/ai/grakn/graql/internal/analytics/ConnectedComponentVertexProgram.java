@@ -67,13 +67,12 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         this.clusterLabel = (String) this.persistentProperties.get(CLUSTER_LABEL);
     }
 
-    @Override
     public Set<String> getElementComputeKeys() {
         return Collections.singleton(clusterLabel);
     }
 
     @Override
-    public Set<String> getMemoryComputeKeys() {
+    public Set getMemoryComputeKeys() {
         return MEMORY_COMPUTE_KEYS;
     }
 
@@ -110,7 +109,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
             vertex.property(clusterLabel, max);
             messenger.sendMessage(messageScopeShortcutIn, max);
             messenger.sendMessage(messageScopeShortcutOut, max);
-            memory.and(VOTE_TO_HALT, false);
+            //memory.and(VOTE_TO_HALT, false);
         }
     }
 
@@ -126,7 +125,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
             throw GraqlQueryException.maxIterationsReached(this.getClass());
         }
 
-        memory.or(VOTE_TO_HALT, true);
+        //memory.or(VOTE_TO_HALT, true);
         return false;
     }
 

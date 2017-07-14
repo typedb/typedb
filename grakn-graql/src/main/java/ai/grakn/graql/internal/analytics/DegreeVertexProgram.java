@@ -74,7 +74,6 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
         degreePropertyKey = (String) this.persistentProperties.get(DEGREE);
     }
 
-    @Override
     public Set<String> getElementComputeKeys() {
         return Collections.singleton(degreePropertyKey);
     }
