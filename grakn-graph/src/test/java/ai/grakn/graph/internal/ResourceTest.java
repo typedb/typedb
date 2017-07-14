@@ -143,6 +143,7 @@ public class ResourceTest extends GraphTestBase{
         assertThat(relationStructure, instanceOf(RelationEdge.class));
         assertTrue("Edge Relation id not starting with [" + Schema.PREFIX_EDGE + "]",relationStructure.getId().getValue().startsWith(Schema.PREFIX_EDGE));
         assertEquals(entity, resource.owner());
+        assertThat(entity.resources(), containsInAnyOrder(resource));
     }
 
     @Test
