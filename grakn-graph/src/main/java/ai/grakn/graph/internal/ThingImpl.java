@@ -126,12 +126,21 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         Set<ConceptId> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
 
         Set<Resource<?>> resources = new HashSet<>();
+
+        //Get Resources Attached Via Implicit Relations
         getShortcutNeighbours().forEach(concept -> {
             if(concept.isResource() && !equals(concept)) {
                 Resource<?> resource = concept.asResource();
                 if(resourceTypesIds.isEmpty() || resourceTypesIds.contains(resource.type().getId())) {
                     resources.add(resource);
                 }
+            }
+        });
+
+        //Get Resources Attached Via resource edge
+        neighbours(Direction.OUT, Schema.EdgeLabel.RESOURCE).forEach(resource -> {
+            if(resourceTypesIds.isEmpty() || resourceTypesIds.contains(resource.asThing().type().getId())) {
+                resources.add(resource.asResource());
             }
         });
 
