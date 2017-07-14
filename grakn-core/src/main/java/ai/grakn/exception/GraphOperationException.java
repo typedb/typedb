@@ -22,10 +22,9 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
@@ -38,6 +37,7 @@ import static ai.grakn.util.ErrorMessage.CLOSE_GRAPH_FAILURE;
 import static ai.grakn.util.ErrorMessage.HAS_INVALID;
 import static ai.grakn.util.ErrorMessage.INVALID_DIRECTION;
 import static ai.grakn.util.ErrorMessage.INVALID_PATH_TO_CONFIG;
+import static ai.grakn.util.ErrorMessage.INVALID_PROPERTY_USE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.NO_TYPE;
 import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
@@ -91,13 +91,6 @@ public class GraphOperationException extends GraknException{
      */
     public static GraphOperationException typeCannotBeDeleted(Label label){
         return new GraphOperationException(ErrorMessage.CANNOT_DELETE.getMessage(label));
-    }
-
-    /**
-     * Thrown when a {@link Type} cannot play a specific role type.
-     */
-    public static GraphOperationException invalidPlays(Role role){
-        return new GraphOperationException(ErrorMessage.ROLE_TYPE_ERROR.getMessage(role.getLabel()));
     }
 
     /**
@@ -244,5 +237,13 @@ public class GraphOperationException extends GraknException{
      */
     public static GraphOperationException reservedLabel(Label label){
         return new GraphOperationException(RESERVED_WORD.getMessage(label.getValue()));
+    }
+
+    /**
+     * Thrown when trying to add a {@link Schema.VertexProperty} to a {@link Concept} which does not accept that type
+     * of {@link Schema.VertexProperty}
+     */
+    public static GraphOperationException invalidPropertyUse(Concept concept, Schema.VertexProperty property) {
+        return new GraphOperationException(INVALID_PROPERTY_USE.getMessage(concept, property));
     }
 }

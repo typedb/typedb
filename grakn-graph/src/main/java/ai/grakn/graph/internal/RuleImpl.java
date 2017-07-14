@@ -49,11 +49,11 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
         super(vertexElement);
     }
 
-    RuleImpl(VertexElement vertexElement, RuleType type, Pattern lhs, Pattern rhs) {
+    RuleImpl(VertexElement vertexElement, RuleType type, Pattern when, Pattern then) {
         super(vertexElement, type);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
-        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateRuleIndex(type(), lhs, rhs));
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, getWhen(), Pattern::toString);
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, getThen(), Pattern::toString);
+        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateRuleIndex(type(), when, then));
     }
 
     /**
@@ -61,8 +61,8 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
      * @return A string representing the left hand side GraQL query.
      */
     @Override
-    public Pattern getLHS() {
-        return parsePattern(vertex().property(Schema.VertexProperty.RULE_LHS));
+    public Pattern getWhen() {
+        return parsePattern(vertex().property(Schema.VertexProperty.RULE_WHEN));
     }
 
     /**
@@ -70,8 +70,8 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
      * @return A string representing the right hand side GraQL query.
      */
     @Override
-    public Pattern getRHS() {
-        return parsePattern(vertex().property(Schema.VertexProperty.RULE_RHS));
+    public Pattern getThen() {
+        return parsePattern(vertex().property(Schema.VertexProperty.RULE_THEN));
     }
 
     private Pattern parsePattern(String value){
@@ -88,7 +88,7 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
      * @return The {@link Rule} itself
      */
     Rule addHypothesis(OntologyConcept ontologyConcept) {
-        putEdge(ontologyConcept, Schema.EdgeLabel.HYPOTHESIS);
+        putEdge(ConceptVertex.from(ontologyConcept), Schema.EdgeLabel.HYPOTHESIS);
         return getThis();
     }
 
@@ -98,7 +98,7 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
      * @return The {@link Rule} itself
      */
     Rule addConclusion(OntologyConcept ontologyConcept) {
-        putEdge(ontologyConcept, Schema.EdgeLabel.CONCLUSION);
+        putEdge(ConceptVertex.from(ontologyConcept), Schema.EdgeLabel.CONCLUSION);
         return getThis();
     }
 
@@ -127,7 +127,11 @@ class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
     /**
      * Generate the internal hash in order to perform a faster lookups and ensure rules are unique
      */
-    public static String generateRuleIndex(RuleType type, Pattern lhs, Pattern rhs){
-        return "RuleType_" + type.getLabel().getValue() + "_LHS:" + lhs.hashCode() + "_RHS:" + rhs.hashCode();
+    static String generateRuleIndex(RuleType type, Pattern when, Pattern then){
+        return "RuleType_" + type.getLabel().getValue() + "_LHS:" + when.hashCode() + "_RHS:" + then.hashCode();
+    }
+
+    public static RuleImpl from(Rule rule){
+        return (RuleImpl) rule;
     }
 }

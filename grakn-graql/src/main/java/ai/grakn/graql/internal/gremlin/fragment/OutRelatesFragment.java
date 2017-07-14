@@ -20,15 +20,23 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
+import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Map;
+import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.RELATES;
 
 class OutRelatesFragment extends AbstractFragment {
 
-    OutRelatesFragment(Var start, Var end) {
-        super(start, end);
+    OutRelatesFragment(VarProperty varProperty, Var start, Var end) {
+        super(varProperty, start, end);
     }
 
     @Override
@@ -42,7 +50,13 @@ class OutRelatesFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost * NUM_ROLE_PLAYERS_PER_RELATION;
+    public double fragmentCost() {
+        return COST_ROLE_PLAYERS_PER_RELATION;
+    }
+
+    @Override
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
+                                                              Map<Node, Map<Node, Fragment>> edges) {
+        return getDirectedEdges(NodeId.NodeType.RELATES, nodes, edges);
     }
 }

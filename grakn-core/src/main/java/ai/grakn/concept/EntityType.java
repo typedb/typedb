@@ -20,6 +20,8 @@ package ai.grakn.concept;
 
 import ai.grakn.exception.GraphOperationException;
 
+import javax.annotation.Nonnull;
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
 /**
@@ -140,6 +142,7 @@ public interface EntityType extends Type{
      * @return The supertype of this EntityType
      */
     @Override
+    @Nonnull
     EntityType sup();
 
     /**
@@ -159,4 +162,19 @@ public interface EntityType extends Type{
      */
     @Override
     Collection<Entity> instances();
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default EntityType asEntityType(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isEntityType(){
+        return true;
+    }
 }

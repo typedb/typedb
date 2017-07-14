@@ -48,6 +48,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -119,6 +120,7 @@ public class ReasonerUtils {
      * @param parent reasoner query the mapped predicate should belong to
      * @return mapped IdPredicate
      */
+    @Nullable
     public static IdPredicate getIdPredicate(Var typeVariable, VarPatternAdmin typeVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
         IdPredicate predicate = null;
         //look for id predicate among vars

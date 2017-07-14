@@ -22,10 +22,16 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
+import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -52,14 +58,14 @@ class OutShortcutFragment extends AbstractFragment {
     private final Optional<Set<Label>> roleLabels;
     private final Optional<Set<Label>> relationTypeLabels;
 
-    OutShortcutFragment(
-            Var relation, Var edge, Var rolePlayer, Optional<Var> role, Optional<Set<Label>> roleLabels,
-            Optional<Set<Label>> relationTypeLabels) {
-            super(relation, rolePlayer, edge, optionalVarToArray(role));
-            this.edge = edge;
-            this.role = role;
-            this.roleLabels = roleLabels;
-            this.relationTypeLabels = relationTypeLabels;
+    OutShortcutFragment(VarProperty varProperty,
+                        Var relation, Var edge, Var rolePlayer, Optional<Var> role, Optional<Set<Label>> roleLabels,
+                        Optional<Set<Label>> relationTypeLabels) {
+        super(varProperty, relation, rolePlayer, edge, optionalVarToArray(role));
+        this.edge = edge;
+        this.role = role;
+        this.roleLabels = roleLabels;
+        this.relationTypeLabels = relationTypeLabels;
     }
 
     @Override
@@ -84,9 +90,14 @@ class OutShortcutFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        long numRolePlayers = roleLabels.isPresent() ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
-        return previousCost * numRolePlayers;
+    public double fragmentCost() {
+        return roleLabels.isPresent() ? COST_ROLE_PLAYERS_PER_ROLE : COST_ROLE_PLAYERS_PER_RELATION;
+    }
+
+    @Override
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
+                                                              Map<Node, Map<Node, Fragment>> edges) {
+        return getDirectedEdges(edge, nodes, edges);
     }
 
     @Override

@@ -41,22 +41,22 @@ $a2 isa q, has index "a2";
 ####################################################
 
 isa inference-rule,
-lhs {
+when {
 $x isa q;
 (TC-roleA: $x, TC-roleB: $y) isa TC;},
-rhs {
+then {
 (N-TC-roleA: $x, N-TC-roleB: $y) isa N-TC;};
 
 isa inference-rule,
-lhs {
+when {
 (P-roleA: $x, P-roleB: $y) isa P;},
-rhs {
+then {
 (TC-roleA: $x, TC-roleB: $y) isa TC;};
 
 isa inference-rule,
-lhs {
+when {
 (P-roleA: $x, P-roleB: $z) isa P;
 (TC-roleA:$z, TC-roleB: $y) isa TC;},
-rhs {
+then {
 (TC-roleA: $x, TC-roleB: $y) isa TC;};
 

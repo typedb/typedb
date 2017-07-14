@@ -50,7 +50,6 @@ public enum ErrorMessage {
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
     HAS_INVALID("The type [%s] is not allowed to have a %s of type [%s]"),
     INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
-    ROLE_TYPE_ERROR("The role type [%s] cannot play itself"),
     BACKEND_EXCEPTION("Backend Exception."),
     GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
     SESSION_CLOSED("The session for graph [%s] was closed"),
@@ -67,6 +66,7 @@ public enum ErrorMessage {
     NO_TYPE("Concept [%s] does not have a type"),
     INVALID_DIRECTION("Cannot traverse an edge in direction [%s]"),
     RESERVED_WORD("The word [%s] is reserved internally and cannot be used"),
+    INVALID_PROPERTY_USE("The concept [%s] cannot contain vertex property [%s]"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -87,6 +87,15 @@ public enum ErrorMessage {
     VALIDATION_REQUIRED_RELATION("The role player [%s] of type [%s] can only play the role of [%s] once but is currently doing so [%s] times \n"),
 
     VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] of type [%s] refers to type [%s] which does not exist in the graph \n"),
+
+    VALIDATION_RULE_DISJUNCTION_IN_BODY("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a disjunction in the body\n"),
+
+    VALIDATION_RULE_DISJUNCTION_IN_HEAD("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a disjunction in the head\n"),
+
+    VALIDATION_RULE_HEAD_NON_ATOMIC("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a multi-atom head\n"),
+
+    VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("The rule [%s] of type [%s] does not form a valid Horn clause, as its head contains illegal atomics\n"),
+
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),
@@ -132,8 +141,8 @@ public enum ErrorMessage {
     MULTIPLE_GRAPH("a graph has been specified twice for this query"),
     MULTIPLE_ORDER("an ordering has been specified twice for this query"),
 
-    INSERT_RULE_WITHOUT_LHS("the rule '%s' doesn't have a lhs specified"),
-    INSERT_RULE_WITHOUT_RHS("the rule '%s' doesn't have a rhs specified"),
+    INSERT_RULE_WITHOUT_WHEN("the rule '%s' doesn't have a when specified"),
+    INSERT_RULE_WITHOUT_THEN("the rule '%s' doesn't have a then specified"),
     INSERT_UNSUPPORTED_PROPERTY("the property '%s' can only be inserted on a '%s'"),
     INSERT_WITHOUT_TYPE("'%s' doesn't have an 'isa' or a 'sub'"),
     INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', a 'sub' or an 'id'"),
@@ -210,10 +219,7 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     GRAPH_MISSING("Provided query does not have an associated graph"),
-    NON_HORN_RULE("The specified rule [%s] is not a Horn rule"),
-    DISALLOWED_ATOM_IN_RULE_HEAD("Atom [%s] is not allowed to form a head of the rule [%s]."),
     HEAD_ROLES_MISSING("The specified rule [%s] is ambiguous - it does not specify all role types in the head."),
-    PARENT_MISSING("Attempted operation on atom %s that does not have a parent"),
     PATTERN_NOT_VAR("The pattern [%s] is not a var"),
     MULTIPLE_RESOURCES("Multiple resource types found during data extraction in atom [%s]"),
     MULTIPLE_VALUE_PREDICATES("Multiple value predicates found during data extraction in atom [%s]"),

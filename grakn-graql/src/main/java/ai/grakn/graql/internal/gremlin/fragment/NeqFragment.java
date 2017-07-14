@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -29,8 +30,8 @@ class NeqFragment extends AbstractFragment {
 
     private final Var other;
 
-    NeqFragment(Var start, Var other) {
-        super(start);
+    NeqFragment(VarProperty varProperty, Var start, Var other) {
+        super(varProperty, start);
         this.other = other;
     }
 
@@ -45,9 +46,9 @@ class NeqFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
+    public double fragmentCost() {
         // This is arbitrary - we imagine about half the results are filtered out
-        return previousCost / 2.0;
+        return COST_NEQ;
     }
 
     @Override

@@ -51,14 +51,15 @@ public interface Concept extends Comparable<Concept>{
     ConceptId getId();
 
     //------------------------------------- Other ---------------------------------
-
     /**
      * Return as a {@link OntologyConcept} if the {@link Concept} is a {@link OntologyConcept}.
      *
      * @return A {@link OntologyConcept} if the {@link Concept} is a {@link OntologyConcept}
      */
     @CheckReturnValue
-    OntologyConcept asOntologyConcept();
+    default OntologyConcept asOntologyConcept(){
+        throw GraphOperationException.invalidCasting(this, OntologyConcept.class);
+    }
 
     /**
      * Return as a {@link Type} if the {@link Concept} is a {@link Type}.
@@ -66,7 +67,9 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link Type} if the {@link Concept} is a {@link Type}
      */
     @CheckReturnValue
-    Type asType();
+    default Type asType(){
+        throw GraphOperationException.invalidCasting(this, Type.class);
+    }
 
     /**
      * Return as an {@link Thing} if the {@link Concept} is an {@link Thing}.
@@ -74,7 +77,9 @@ public interface Concept extends Comparable<Concept>{
      * @return An {@link Thing} if the {@link Concept} is an {@link Thing}
      */
     @CheckReturnValue
-    Thing asInstance();
+    default Thing asThing(){
+        throw GraphOperationException.invalidCasting(this, Thing.class);
+    }
 
     /**
      * Return as an {@link EntityType} if the {@link Concept} is an {@link EntityType}.
@@ -82,7 +87,9 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link EntityType} if the {@link Concept} is an {@link EntityType}
      */
     @CheckReturnValue
-    EntityType asEntityType();
+    default EntityType asEntityType(){
+        throw GraphOperationException.invalidCasting(this, EntityType.class);
+    }
 
     /**
      * Return as a {@link Role} if the {@link Concept} is a {@link Role}.
@@ -90,7 +97,9 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link Role} if the {@link Concept} is a {@link Role}
      */
     @CheckReturnValue
-    Role asRoleType();
+    default Role asRole(){
+        throw GraphOperationException.invalidCasting(this, Role.class);
+    }
 
     /**
      * Return as a {@link RelationType} if the {@link Concept} is a {@link RelationType}.
@@ -98,7 +107,9 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link RelationType} if the {@link Concept} is a {@link RelationType}
      */
     @CheckReturnValue
-    RelationType asRelationType();
+    default RelationType asRelationType(){
+        throw GraphOperationException.invalidCasting(this, RelationType.class);
+    }
 
     /**
      * Return as a {@link RelationType} if the {@link Concept} is a {@link RelationType}
@@ -106,7 +117,9 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link RelationType} if the {@link Concept} is a {@link RelationType}
      */
     @CheckReturnValue
-    <D> ResourceType<D> asResourceType();
+    default <D> ResourceType<D> asResourceType(){
+        throw GraphOperationException.invalidCasting(this, ResourceType.class);
+    }
 
     /**
      * Return as a {@link RuleType} if the {@link Concept} is a {@link RuleType}.
@@ -114,14 +127,18 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link RuleType} if the {@link Concept} is a {@link RuleType}
      */
     @CheckReturnValue
-    RuleType asRuleType();
+    default RuleType asRuleType(){
+        throw GraphOperationException.invalidCasting(this, RuleType.class);
+    }
 
     /**
      * Return as an {@link Entity}, if the {@link Concept} is an {@link Entity} {@link Thing}.
      * @return An {@link Entity} if the {@link Concept} is a {@link Thing}
      */
     @CheckReturnValue
-    Entity asEntity();
+    default Entity asEntity(){
+        throw GraphOperationException.invalidCasting(this, Entity.class);
+    }
 
     /**
      * Return as a {@link Relation} if the {@link Concept} is a {@link Relation} {@link Thing}.
@@ -129,7 +146,9 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link Relation}  if the {@link Concept} is a {@link Relation}
      */
     @CheckReturnValue
-    Relation asRelation();
+    default Relation asRelation(){
+        throw GraphOperationException.invalidCasting(this, Relation.class);
+    }
 
     /**
      * Return as a {@link Resource}  if the {@link Concept} is a {@link Resource} {@link Thing}.
@@ -137,7 +156,9 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link Resource} if the {@link Concept} is a {@link Resource}
      */
     @CheckReturnValue
-    <D> Resource<D> asResource();
+    default <D> Resource<D> asResource(){
+        throw GraphOperationException.invalidCasting(this, Resource.class);
+    }
 
     /**
      * Return as a {@link Rule} if the {@link Concept} is a {@link Rule} {@link Thing}.
@@ -145,7 +166,9 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link Rule} if the {@link Concept} is a {@link Rule}
      */
     @CheckReturnValue
-    Rule asRule();
+    default Rule asRule(){
+        throw GraphOperationException.invalidCasting(this, Rule.class);
+    }
 
     /**
      * Determine if the {@link Concept} is a {@link OntologyConcept}
@@ -153,7 +176,9 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the{@link Concept} concept is a {@link OntologyConcept}
      */
     @CheckReturnValue
-    boolean isOntologyConcept();
+    default boolean isOntologyConcept(){
+        return false;
+    }
 
     /**
      * Determine if the {@link Concept} is a {@link Type}.
@@ -161,7 +186,9 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the{@link Concept} concept is a {@link Type}
      */
     @CheckReturnValue
-    boolean isType();
+    default boolean isType(){
+        return false;
+    }
 
     /**
      * Determine if the {@link Concept} is an {@link Thing}.
@@ -169,7 +196,9 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the {@link Concept} is an {@link Thing}
      */
     @CheckReturnValue
-    boolean isInstance();
+    default boolean isThing(){
+        return false;
+    }
 
     /**
      * Determine if the {@link Concept} is an {@link EntityType}.
@@ -177,7 +206,9 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the {@link Concept} is an {@link EntityType}.
      */
     @CheckReturnValue
-    boolean isEntityType();
+    default boolean isEntityType(){
+        return false;
+    }
 
     /**
      * Determine if the {@link Concept} is a {@link Role}.
@@ -185,7 +216,9 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the {@link Concept} is a {@link Role}
      */
     @CheckReturnValue
-    boolean isRoleType();
+    default boolean isRole(){
+        return false;
+    }
 
     /**
      * Determine if the {@link Concept} is a {@link RelationType}.
@@ -193,7 +226,9 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the {@link Concept} is a {@link RelationType}
      */
     @CheckReturnValue
-    boolean isRelationType();
+    default boolean isRelationType(){
+        return false;
+    }
 
     /**
      * Determine if the {@link Concept} is a {@link ResourceType}.
@@ -201,7 +236,9 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the{@link Concept} concept is a {@link ResourceType}
      */
     @CheckReturnValue
-    boolean isResourceType();
+    default boolean isResourceType(){
+        return false;
+    }
 
     /**
      * Determine if the {@link Concept} is a {@link RuleType}.
@@ -209,7 +246,9 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the {@link Concept} is a {@link RuleType}
      */
     @CheckReturnValue
-    boolean isRuleType();
+    default boolean isRuleType(){
+        return false;
+    }
 
     /**
      * Determine if the {@link Concept} is an {@link Entity}.
@@ -217,7 +256,9 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the {@link Concept} is a {@link Entity}
      */
     @CheckReturnValue
-    boolean isEntity();
+    default boolean isEntity(){
+        return false;
+    }
 
     /**
      * Determine if the {@link Concept} is a {@link Relation}.
@@ -225,7 +266,9 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the {@link Concept} is a {@link Relation}
      */
     @CheckReturnValue
-    boolean isRelation();
+    default boolean isRelation(){
+        return false;
+    }
 
     /**
      * Determine if the {@link Concept} is a {@link Resource}.
@@ -233,7 +276,9 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the {@link Concept} is a {@link Resource}
      */
     @CheckReturnValue
-    boolean isResource();
+    default boolean isResource(){
+        return false;
+    }
 
     /**
      * Determine if the {@link Concept} is a {@link Rule}.
@@ -241,7 +286,9 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the {@link Concept} is a {@link Rule}
      */
     @CheckReturnValue
-    boolean isRule();
+    default boolean isRule(){
+        return false;
+    }
 
     /**
      * Delete the Concept.

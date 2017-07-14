@@ -345,6 +345,7 @@ public class ReasoningTests {
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources3() {
         QueryBuilder qb = testSet16.graph().graql().infer(true);
+
         String queryString1 = "match $x isa entity1, has res1 $y; $z isa relation1;";
         QueryAnswers answers1 = queryAnswers(qb.parse(queryString1));
         assertEquals(answers1.size(), 1);
@@ -355,6 +356,7 @@ public class ReasoningTests {
                     assertTrue(ans.get(var("z")).isRelation());
                 }
         );
+
         String queryString2 = "match $x isa relation1, has res1 $y;";
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
         assertEquals(answers2.size(), 1);

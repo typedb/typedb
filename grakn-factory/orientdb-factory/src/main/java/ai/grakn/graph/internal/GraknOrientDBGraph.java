@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -53,7 +54,7 @@ public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
      * {@link org.apache.tinkerpop.gremlin.orientdb.OrientElement} which helps us to determine this.
      */
     @Override
-    public boolean isConceptModified(ConceptImpl concept) {
+    public boolean isConceptModified(Concept concept) {
         return true;
     }
 

@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -31,8 +32,8 @@ class IdFragment extends AbstractFragment {
 
     private final ConceptId id;
 
-    IdFragment(Var start, ConceptId id) {
-        super(start);
+    IdFragment(VarProperty varProperty, Var start, ConceptId id) {
+        super(varProperty, start);
         this.id = id;
     }
 
@@ -66,8 +67,8 @@ class IdFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return 1;
+    public double fragmentCost() {
+        return COST_INDEX;
     }
 
     @Override

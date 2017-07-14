@@ -118,6 +118,7 @@ public interface Answer {
      * @param vars variables to be retained
      * @return answer with filtered variables
      */
+    // TODO: Consider renaming this to `project`
     @CheckReturnValue
     Answer filterVars(Set<Var> vars);
 

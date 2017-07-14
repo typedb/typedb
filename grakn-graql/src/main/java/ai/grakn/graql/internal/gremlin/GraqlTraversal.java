@@ -28,6 +28,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -54,9 +55,9 @@ public class GraqlTraversal {
     //             V            V
     private final ImmutableSet<ImmutableList<Fragment>> fragments;
 
-    // TODO: Find a better way to represent these values
     // Just a pretend big number
     private static final long NUM_VERTICES_ESTIMATE = 10_000;
+    private static final double COST_NEW_TRAVERSAL = Math.log1p(NUM_VERTICES_ESTIMATE);
 
     private GraqlTraversal(Set<? extends List<Fragment>> fragments) {
         this.fragments = fragments.stream().map(ImmutableList::copyOf).collect(toImmutableSet());
@@ -114,7 +115,7 @@ public class GraqlTraversal {
      * @param names a set of variable names so far encountered in the query
      */
     private void applyFragment(
-            Fragment fragment, GraphTraversal<Vertex, Vertex> traversal, Var currentName, Set<Var> names,
+            Fragment fragment, GraphTraversal<Vertex, Vertex> traversal, @Nullable Var currentName, Set<Var> names,
             GraknGraph graph
     ) {
         Var start = fragment.getStart();
@@ -169,11 +170,11 @@ public class GraqlTraversal {
     static double fragmentListCost(List<Fragment> fragments) {
         Set<Var> names = new HashSet<>();
 
-        double cost = 1;
+        double cost = 0;
         double listCost = 0;
 
         for (Fragment fragment : fragments) {
-            cost = fragmentCost(fragment, cost, names);
+            cost = fragmentCost(fragment, names);
             names.addAll(fragment.getVariableNames());
             listCost += cost;
         }
@@ -181,12 +182,12 @@ public class GraqlTraversal {
         return listCost;
     }
 
-    static double fragmentCost(Fragment fragment, double previousCost, Collection<Var> names) {
+    static double fragmentCost(Fragment fragment, Collection<Var> names) {
         if (names.contains(fragment.getStart())) {
-            return fragment.fragmentCost(previousCost);
+            return fragment.fragmentCost();
         } else {
             // Restart traversal, meaning we are navigating from all vertices
-            return fragment.fragmentCost(NUM_VERTICES_ESTIMATE) * previousCost;
+            return COST_NEW_TRAVERSAL;
         }
     }
 

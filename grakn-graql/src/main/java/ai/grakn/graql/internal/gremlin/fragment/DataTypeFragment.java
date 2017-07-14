@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -30,8 +31,8 @@ class DataTypeFragment extends AbstractFragment {
 
     private final ResourceType.DataType dataType;
 
-    DataTypeFragment(Var start, ResourceType.DataType dataType) {
-        super(start);
+    DataTypeFragment(VarProperty varProperty, Var start, ResourceType.DataType dataType) {
+        super(varProperty, start);
         this.dataType = dataType;
     }
 
@@ -46,8 +47,8 @@ class DataTypeFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost / ResourceType.DataType.SUPPORTED_TYPES.size();
+    public double fragmentCost() {
+        return COST_DATA_TYPE;
     }
 
     @Override
@@ -59,7 +60,6 @@ class DataTypeFragment extends AbstractFragment {
         DataTypeFragment that = (DataTypeFragment) o;
 
         return dataType != null ? dataType.equals(that.dataType) : that.dataType == null;
-
     }
 
     @Override

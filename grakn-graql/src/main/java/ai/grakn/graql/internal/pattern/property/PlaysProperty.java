@@ -76,7 +76,7 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.plays(start, role.getVarName(), required));
+        return ImmutableSet.of(EquivalentFragmentSets.plays(this, start, role.getVarName(), required));
     }
 
     @Override
@@ -91,7 +91,7 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Role role = insertQueryExecutor.getConcept(this.role).asRoleType();
+        Role role = insertQueryExecutor.getConcept(this.role).asRole();
         concept.asType().plays(role);
     }
 

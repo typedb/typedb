@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -31,8 +32,8 @@ class LabelFragment extends AbstractFragment {
 
     private final Label label;
 
-    LabelFragment(Var start, Label label) {
-        super(start);
+    LabelFragment(VarProperty varProperty, Var start, Label label) {
+        super(varProperty, start);
         this.label = label;
     }
 
@@ -47,8 +48,8 @@ class LabelFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return 1;
+    public double fragmentCost() {
+        return COST_INDEX;
     }
 
     @Override

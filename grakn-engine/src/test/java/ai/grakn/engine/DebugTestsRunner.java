@@ -7,10 +7,9 @@ import org.junit.runner.notification.Failure;
 import ai.grakn.engine.config.GraknEngineConfigTest;
 import ai.grakn.engine.controller.AuthControllerTest;
 import ai.grakn.engine.controller.ConceptControllerTest;
-import ai.grakn.engine.controller.GraqlControllerDELETETest;
-import ai.grakn.engine.controller.GraqlControllerGETTest;
-import ai.grakn.engine.controller.GraqlControllerPOSTTest;
-import ai.grakn.engine.lock.LockProviderTest;
+import ai.grakn.engine.controller.GraqlControllerDeleteTest;
+import ai.grakn.engine.controller.GraqlControllerInsertTest;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 
 /**
  * Run a selected set of classes/methods as a main program. Helps with debugging tests, especially
@@ -26,9 +25,9 @@ public class DebugTestsRunner {
                 GraknEngineConfigTest.class,
                 AuthControllerTest.class,
                 ConceptControllerTest.class,
-                GraqlControllerDELETETest.class,
-                LockProviderTest.class,
-                GraqlControllerPOSTTest.class};
+                GraqlControllerDeleteTest.class,
+                ProcessWideLockProvider.class,
+                GraqlControllerInsertTest.class};
         JUnitCore junit = new JUnitCore();
         Result result = null;
         do {

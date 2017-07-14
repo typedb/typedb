@@ -26,6 +26,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.util.Schema;
@@ -54,13 +55,14 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
     private final Optional<Var> role;
     private final Optional<Set<Label>> roleTypeLabels;
     private final Optional<Set<Label>> relationTypeLabels;
+    private final VarProperty varProperty;
 
-    ShortcutFragmentSet(
+    ShortcutFragmentSet(VarProperty varProperty,
             Var relation, Var edge, Var rolePlayer, Optional<Var> role,
             Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
         super(
-                Fragments.inShortcut(rolePlayer, edge, relation, role, roleLabels, relationTypeLabels),
-                Fragments.outShortcut(relation, edge, rolePlayer, role, roleLabels, relationTypeLabels)
+                Fragments.inShortcut(varProperty, rolePlayer, edge, relation, role, roleLabels, relationTypeLabels),
+                Fragments.outShortcut(varProperty, relation, edge, rolePlayer, role, roleLabels, relationTypeLabels)
         );
         this.relation = relation;
         this.edge = edge;
@@ -68,6 +70,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         this.role = role;
         this.roleTypeLabels = roleLabels;
         this.relationTypeLabels = relationTypeLabels;
+        this.varProperty = varProperty;
     }
 
     /**
@@ -178,7 +181,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         Set<Label> newRoleLabels = subTypes.stream().map(OntologyConcept::getLabel).collect(toSet());
 
-        return new ShortcutFragmentSet(
+        return new ShortcutFragmentSet(varProperty,
                 relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleLabels), relationTypeLabels
         );
     }
@@ -195,7 +198,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         Set<Label> newRelationLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
 
-        return new ShortcutFragmentSet(
+        return new ShortcutFragmentSet(varProperty,
                 relation, edge, rolePlayer, role, roleTypeLabels, Optional.of(newRelationLabels)
         );
     }
@@ -205,7 +208,6 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      */
     private ShortcutFragmentSet removeRoleVar() {
         Preconditions.checkState(role.isPresent());
-        return new ShortcutFragmentSet(
-                relation, edge, rolePlayer, Optional.empty(), roleTypeLabels, relationTypeLabels);
+        return new ShortcutFragmentSet(varProperty, relation, edge, rolePlayer, Optional.empty(), roleTypeLabels, relationTypeLabels);
     }
 }

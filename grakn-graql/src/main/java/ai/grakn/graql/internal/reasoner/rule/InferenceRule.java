@@ -22,18 +22,17 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -66,13 +65,8 @@ public class InferenceRule {
     public InferenceRule(Rule rule, GraknGraph graph){
         ruleId = rule.getId();
         //TODO simplify once changes propagated to rule objects
-        body = ReasonerQueries.create(conjunction(rule.getLHS().admin()), graph);
-        head = ReasonerQueries.atomic(conjunction(rule.getRHS().admin()), graph);
-
-        //run time check for head atom validity
-        if (!getHead().getAtom().isAllowedToFormRuleHead()){
-            throw GraqlQueryException.disallowedAtomInRuleHead(this.getHead().getAtom().toString(), this.toString());
-        }
+        body = ReasonerQueries.create(conjunction(rule.getWhen().admin()), graph);
+        head = ReasonerQueries.atomic(conjunction(rule.getThen().admin()), graph);
     }
 
     public InferenceRule(InferenceRule r){

@@ -20,7 +20,7 @@ package ai.grakn.engine.tasks.mock;
 
 import ai.grakn.engine.TaskId;
 
-import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 
 /**
  * Mocked task that will throw exception

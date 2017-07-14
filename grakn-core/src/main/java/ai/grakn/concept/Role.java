@@ -19,6 +19,7 @@
 package ai.grakn.concept;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nonnull;
 import java.util.Collection;
 
 /**
@@ -60,6 +61,7 @@ public interface Role extends OntologyConcept {
      * @return The super of this Role
      */
     @Override
+    @Nonnull
     Role sup();
 
     /**
@@ -87,5 +89,20 @@ public interface Role extends OntologyConcept {
      */
     @CheckReturnValue
     Collection<Type> playedByTypes();
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default Role asRole(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isRole(){
+        return true;
+    }
 }
 

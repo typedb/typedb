@@ -25,6 +25,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -36,10 +37,10 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.util.Schema.VertexProperty.INSTANCE_TYPE_ID;
-import static ai.grakn.util.Schema.VertexProperty.TYPE_ID;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
+import static ai.grakn.util.Schema.VertexProperty.INSTANCE_TYPE_ID;
+import static ai.grakn.util.Schema.VertexProperty.TYPE_ID;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -50,97 +51,98 @@ import static java.util.stream.Collectors.toSet;
  */
 public class Fragments {
 
-    private Fragments() {}
-
-    public static Fragment inShortcut(
-            Var rolePlayer, Var edge, Var relation, Optional<Var> role,
-            Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
-        return new InShortcutFragment(rolePlayer, edge, relation, role, roleLabels, relationTypeLabels);
+    private Fragments() {
     }
 
-    public static Fragment outShortcut(
-            Var relation, Var edge, Var rolePlayer, Optional<Var> role,
-            Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
-        return new OutShortcutFragment(relation, edge, rolePlayer, role, roleLabels, relationTypeLabels);
+    public static Fragment inShortcut(VarProperty varProperty,
+                                      Var rolePlayer, Var edge, Var relation, Optional<Var> role,
+                                      Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
+        return new InShortcutFragment(varProperty, rolePlayer, edge, relation, role, roleLabels, relationTypeLabels);
     }
 
-    public static Fragment inSub(Var start, Var end) {
-        return new InSubFragment(start, end);
+    public static Fragment outShortcut(VarProperty varProperty,
+                                       Var relation, Var edge, Var rolePlayer, Optional<Var> role,
+                                       Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
+        return new OutShortcutFragment(varProperty, relation, edge, rolePlayer, role, roleLabels, relationTypeLabels);
     }
 
-    public static Fragment outSub(Var start, Var end) {
-        return new OutSubFragment(start, end);
+    public static Fragment inSub(VarProperty varProperty, Var start, Var end) {
+        return new InSubFragment(varProperty, start, end);
     }
 
-    public static InRelatesFragment inRelates(Var start, Var end) {
-        return new InRelatesFragment(start, end);
+    public static Fragment outSub(VarProperty varProperty, Var start, Var end) {
+        return new OutSubFragment(varProperty, start, end);
     }
 
-    public static Fragment outRelates(Var start, Var end) {
-        return new OutRelatesFragment(start, end);
+    public static InRelatesFragment inRelates(VarProperty varProperty, Var start, Var end) {
+        return new InRelatesFragment(varProperty, start, end);
     }
 
-    public static Fragment inIsa(Var start, Var end) {
-        return new InIsaFragment(start, end);
+    public static Fragment outRelates(VarProperty varProperty, Var start, Var end) {
+        return new OutRelatesFragment(varProperty, start, end);
     }
 
-    public static Fragment outIsa(Var start, Var end) {
-        return new OutIsaFragment(start, end);
+    public static Fragment inIsa(VarProperty varProperty, Var start, Var end) {
+        return new InIsaFragment(varProperty, start, end);
     }
 
-    public static Fragment inHasScope(Var start, Var end) {
-        return new InHasScopeFragment(start, end);
+    public static Fragment outIsa(VarProperty varProperty, Var start, Var end) {
+        return new OutIsaFragment(varProperty, start, end);
     }
 
-    public static Fragment outHasScope(Var start, Var end) {
-        return new OutHasScopeFragment(start, end);
+    public static Fragment inHasScope(VarProperty varProperty, Var start, Var end) {
+        return new InHasScopeFragment(varProperty, start, end);
     }
 
-    public static Fragment dataType(Var start, ResourceType.DataType dataType) {
-        return new DataTypeFragment(start, dataType);
+    public static Fragment outHasScope(VarProperty varProperty, Var start, Var end) {
+        return new OutHasScopeFragment(varProperty, start, end);
     }
 
-    public static Fragment inPlays(Var start, Var end, boolean required) {
-        return new InPlaysFragment(start, end, required);
+    public static Fragment dataType(VarProperty varProperty, Var start, ResourceType.DataType dataType) {
+        return new DataTypeFragment(varProperty, start, dataType);
     }
 
-    public static Fragment outPlays(Var start, Var end, boolean required) {
-        return new OutPlaysFragment(start, end, required);
+    public static Fragment inPlays(VarProperty varProperty, Var start, Var end, boolean required) {
+        return new InPlaysFragment(varProperty, start, end, required);
     }
 
-    public static Fragment id(Var start, ConceptId id) {
-        return new IdFragment(start, id);
+    public static Fragment outPlays(VarProperty varProperty, Var start, Var end, boolean required) {
+        return new OutPlaysFragment(varProperty, start, end, required);
     }
 
-    public static Fragment label(Var start, Label label) {
-        return new LabelFragment(start, label);
+    public static Fragment id(VarProperty varProperty, Var start, ConceptId id) {
+        return new IdFragment(varProperty, start, id);
     }
 
-    public static Fragment value(Var start, ValuePredicateAdmin predicate) {
-        return new ValueFragment(start, predicate);
+    public static Fragment label(VarProperty varProperty, Var start, Label label) {
+        return new LabelFragment(varProperty, start, label);
     }
 
-    public static Fragment isAbstract(Var start) {
-        return new IsAbstractFragment(start);
+    public static Fragment value(VarProperty varProperty, Var start, ValuePredicateAdmin predicate) {
+        return new ValueFragment(varProperty, start, predicate);
     }
 
-    public static Fragment regex(Var start, String regex) {
-        return new RegexFragment(start, regex);
+    public static Fragment isAbstract(VarProperty varProperty, Var start) {
+        return new IsAbstractFragment(varProperty, start);
     }
 
-    public static Fragment notInternal(Var start) {
-        return new NotInternalFragment(start);
+    public static Fragment regex(VarProperty varProperty, Var start, String regex) {
+        return new RegexFragment(varProperty, start, regex);
     }
 
-    public static Fragment neq(Var start, Var other) {
-        return new NeqFragment(start, other);
+    public static Fragment notInternal(VarProperty varProperty, Var start) {
+        return new NotInternalFragment(varProperty, start);
+    }
+
+    public static Fragment neq(VarProperty varProperty, Var start, Var other) {
+        return new NeqFragment(varProperty, start, other);
     }
 
     /**
      * A {@link Fragment} that uses an index stored on each resource. Resources are indexed by direct type and value.
      */
-    public static Fragment resourceIndex(Var start, Label label, Object resourceValue) {
-        return new ResourceIndexFragment(start, label, resourceValue);
+    public static Fragment resourceIndex(VarProperty varProperty, Var start, Label label, Object resourceValue) {
+        return new ResourceIndexFragment(varProperty, start, label, resourceValue);
     }
 
     @SuppressWarnings("unchecked")
@@ -157,7 +159,7 @@ public class Fragments {
 
     static String displayOptionalTypeLabels(String name, Optional<Set<Label>> typeLabels) {
         return typeLabels.map(labels ->
-            " " + name + ":" + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
+                " " + name + ":" + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
         ).orElse("");
     }
 

@@ -62,15 +62,21 @@ public interface Atomic {
     default boolean isUserDefinedName(){ return false;}
 
     /**
-     * @return true if the atom can be resolved by a rule (atom exists in one of the rule's head)
+     * @return true if the atomic can be resolved by a rule (atom exists in one of the rule's head)
      */
     @CheckReturnValue
     default boolean isRuleResolvable(){ return false;}
     /**
-     * @return true if the atom can form an atomic query
+     * @return true if the atomic can form an atomic query
      */
     @CheckReturnValue
     default boolean isSelectable(){ return false;}
+
+    /**
+     * @return true if the atomic can constitute the head of a rule
+     */
+    @CheckReturnValue
+    default boolean isAllowedToFormRuleHead(){ return false; }
 
     /**
      * @return true if atom is recursive

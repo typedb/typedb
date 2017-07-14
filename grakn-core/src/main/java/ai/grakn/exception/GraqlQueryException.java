@@ -46,8 +46,8 @@ import static ai.grakn.util.ErrorMessage.INSERT_NEW_TYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_NO_DATATYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
 import static ai.grakn.util.ErrorMessage.INSERT_RESOURCE_WITHOUT_VALUE;
-import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_LHS;
-import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_RHS;
+import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_WHEN;
+import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_THEN;
 import static ai.grakn.util.ErrorMessage.INSERT_TYPE_WITHOUT_LABEL;
 import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
 import static ai.grakn.util.ErrorMessage.INSERT_UNSUPPORTED_PROPERTY;
@@ -249,20 +249,12 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(reasonerQuery));
     }
 
-    public static GraqlQueryException disallowedAtomInRuleHead(String atom, String inferenceRule) {
-        return new GraqlQueryException(ErrorMessage.DISALLOWED_ATOM_IN_RULE_HEAD.getMessage(atom, inferenceRule));
-    }
-
     public static GraqlQueryException ruleCreationArityMismatch() {
         return new GraqlQueryException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
     }
 
     public static GraqlQueryException valuePredicateAtomWithMultiplePredicates() {
         return new GraqlQueryException("Attempting creation of ValuePredicate atom with more than single predicate");
-    }
-
-    public static GraqlQueryException atomParentMissing(String atom) {
-        return new GraqlQueryException(ErrorMessage.PARENT_MISSING.getMessage(atom));
     }
 
     public static GraqlQueryException getUnifierOfNonAtomicQuery() {
@@ -290,11 +282,11 @@ public class GraqlQueryException extends GraknException{
     }
 
     public static GraqlQueryException insertRuleWithoutLhs(VarPatternAdmin var) {
-        return new GraqlQueryException(INSERT_RULE_WITHOUT_LHS.getMessage(var));
+        return new GraqlQueryException(INSERT_RULE_WITHOUT_WHEN.getMessage(var));
     }
 
     public static GraqlQueryException insertRuleWithoutRhs(VarPatternAdmin var) {
-        return new GraqlQueryException(INSERT_RULE_WITHOUT_RHS.getMessage(var));
+        return new GraqlQueryException(INSERT_RULE_WITHOUT_THEN.getMessage(var));
     }
 
     public static GraqlQueryException insertTypeWithoutLabel() {

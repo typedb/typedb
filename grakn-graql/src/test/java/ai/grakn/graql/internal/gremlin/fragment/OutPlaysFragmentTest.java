@@ -18,7 +18,7 @@ public class OutPlaysFragmentTest {
 
     private final Var start = Graql.var();
     private final Var end = Graql.var();
-    private final OutPlaysFragment fragment = new OutPlaysFragment(start, end, false);
+    private final OutPlaysFragment fragment = new OutPlaysFragment(null, start, end, false);
 
     @Test
     @SuppressWarnings("unchecked")

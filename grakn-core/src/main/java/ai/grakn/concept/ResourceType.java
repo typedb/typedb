@@ -24,6 +24,8 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -153,6 +155,7 @@ public interface ResourceType<D> extends Type {
      * @return The supertype of this ResourceType,
      */
     @Override
+    @Nonnull
     ResourceType<D> sup();
 
     /**
@@ -164,6 +167,7 @@ public interface ResourceType<D> extends Type {
      * @return The Resource with the provided value and type or null if no such Resource exists.
      */
     @CheckReturnValue
+    @Nullable
     <V> Resource<V> getResource(V value);
 
     /**
@@ -199,7 +203,24 @@ public interface ResourceType<D> extends Type {
      * @return The regular expression to which instances of this ResourceType must conform.
      */
     @CheckReturnValue
+    @Nullable
     String getRegex();
+
+    //------------------------------------- Other ---------------------------------
+    @SuppressWarnings("unchecked")
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default ResourceType asResourceType(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isResourceType(){
+        return true;
+    }
 
     /**
      * A class used to hold the supported data types of resources and any other concepts.

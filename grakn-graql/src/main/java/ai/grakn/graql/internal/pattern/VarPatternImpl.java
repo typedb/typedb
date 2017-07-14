@@ -24,6 +24,8 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Set;
@@ -32,6 +34,8 @@ import java.util.Set;
  * Implementation of {@link VarPattern} interface
  */
 class VarPatternImpl extends AbstractVarPattern {
+
+    protected final Logger LOG = LoggerFactory.getLogger(VarPatternImpl.class);
 
     private final Var name;
 
@@ -87,12 +91,12 @@ class VarPatternImpl extends AbstractVarPattern {
                 .forEach(innerVars::remove);
 
         if (innerVars.stream().anyMatch(VarPatternImpl::invalidInnerVariable)) {
-            throw new UnsupportedOperationException("Graql strings cannot represent a query with inner variables");
+            LOG.warn("printing a query with inner variables, which is not supported in native Graql");
         }
 
         StringBuilder builder = new StringBuilder();
 
-        String name = getVarName().isUserDefinedName() ? getPrintableName() : "";
+        String name = getVarName().isUserDefinedName() ? getVarName().toString() : "";
 
         builder.append(name);
 

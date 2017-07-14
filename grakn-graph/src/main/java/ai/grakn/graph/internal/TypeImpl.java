@@ -250,7 +250,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         final Set<V> instances = new HashSet<>();
 
         GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerPopGraph().traversal().V()
-                .has(Schema.VertexProperty.TYPE_ID.name(), getTypeId().getValue())
+                .has(Schema.VertexProperty.TYPE_ID.name(), getLabelId().getValue())
                 .union(__.identity(),
                         __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
                 ).unfold()
@@ -258,7 +258,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
                 .in(Schema.EdgeLabel.ISA.getLabel());
 
         traversal.forEachRemaining(vertex -> {
-            ConceptImpl concept = vertex().graph().factory().buildConcept(vertex);
+            Concept concept = vertex().graph().factory().buildConcept(vertex);
             if (concept != null) instances.add((V) concept);
         });
 
@@ -281,7 +281,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
     @Override
     public Set<Thing> scopes() {
         HashSet<Thing> scopes = new HashSet<>();
-        neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asInstance()));
+        neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asThing()));
         return scopes;
     }
 
@@ -292,7 +292,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
      */
     @Override
     public T scope(Thing thing) {
-        putEdge(thing, Schema.EdgeLabel.HAS_SCOPE);
+        putEdge(ConceptVertex.from(thing), Schema.EdgeLabel.HAS_SCOPE);
         return getThis();
     }
 
@@ -306,13 +306,9 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         return getThis();
     }
 
-    void trackSuperChange(){
-        instances().forEach(concept -> {
-            if (concept.isInstance()) {
-                ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
-                        rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
-            }
-        });
+    void trackRolePlayers(){
+        instances().forEach(concept -> ((ThingImpl<?, ?>)concept).castingsInstance().forEach(
+                rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer)));
     }
 
     T plays(Role role, boolean required) {
@@ -324,7 +320,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         //Update the cache of types played by the role
         ((RoleImpl) role).addCachedDirectPlaysByType(this);
 
-        EdgeElement edge = putEdge(role, Schema.EdgeLabel.PLAYS);
+        EdgeElement edge = putEdge(ConceptVertex.from(role), Schema.EdgeLabel.PLAYS);
 
         if (required) {
             edge.property(Schema.EdgeProperty.REQUIRED, true);
@@ -354,13 +350,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         cachedDirectPlays.ifPresent(set -> set.remove(role));
         ((RoleImpl) role).deleteCachedDirectPlaysByType(this);
 
-        //Add roleplayers to tracking to make sure they can still be played.
-        instances().forEach(concept -> {
-            if (concept.isInstance()) {
-                ((ThingImpl<?, ?>) concept).castingsInstance().forEach(rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
-            }
-        });
-
+        trackRolePlayers();
 
         return getThis();
     }

@@ -35,6 +35,8 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
 import com.google.common.collect.Sets;
+
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -55,9 +57,9 @@ public abstract class Binary extends Atom {
     private final Var predicateVariable;
     private Type type = null;
     private ConceptId typeId = null;
-    private IdPredicate predicate = null;
+    private @Nullable IdPredicate predicate = null;
 
-    Binary(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
+    Binary(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
         super(pattern, par);
         this.predicateVariable = predicateVar;
         this.predicate = p;
@@ -75,6 +77,7 @@ public abstract class Binary extends Atom {
     public Var getPredicateVariable() { return predicateVariable;}
     public IdPredicate getPredicate() { return predicate;}
 
+    @Nullable
     @Override
     public OntologyConcept getOntologyConcept(){
         if (type == null && typeId != null) {

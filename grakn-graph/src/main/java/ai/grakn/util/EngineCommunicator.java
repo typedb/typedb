@@ -22,6 +22,7 @@ import ai.grakn.Grakn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -56,7 +57,7 @@ public class EngineCommunicator {
      * @param body The body to attach to the request
      * @return The result of the request
      */
-    public static String contactEngine(String engineUrl, String restType, String body){
+    public static String contactEngine(String engineUrl, String restType, @Nullable String body){
         if(engineUrl.equals(Grakn.IN_MEMORY)) {
             return "Engine not contacted due to in memory graph being used";
         }

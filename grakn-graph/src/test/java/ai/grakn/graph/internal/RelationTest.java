@@ -138,7 +138,7 @@ public class RelationTest extends GraphTestBase{
                 in(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 out(Schema.EdgeLabel.SHORTCUT.getLabel()).toList();
 
-        return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).asInstance()).collect(Collectors.toSet());
+        return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).asThing()).collect(Collectors.toSet());
     }
 
     @Test
@@ -174,7 +174,7 @@ public class RelationTest extends GraphTestBase{
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
-        assertEquals(getFakeId(relation.type(), roleMap), relation.getIndex());
+        assertEquals(getFakeId(relation.type(), roleMap), relation.reified().get().getIndex());
     }
     private String getFakeId(RelationType relationType, TreeMap<Role, Thing> roleMap){
         String itemIdentifier = "RelationType_" + relationType.getId() + "_Relation";

@@ -50,20 +50,22 @@ public interface Rule extends Thing {
 
     //------------------------------------- Accessors ----------------------------------
     /**
-     * Retrieves the Left Hand Side of a Graql query.
+     * Retrieves the Left Hand Side of the rule.
+     * When this query is satisfied the "then" part of the rule is executed.
      *
      * @return A string representing the left hand side Graql query.
      */
     @CheckReturnValue
-    Pattern getLHS();
+    Pattern getWhen();
 
     /**
-     * Retrieves the Right Hand Side of a Graql query.
+     * Retrieves the Right Hand Side of the rule.
+     * This query is executed when the "when" part of the rule is satisfied
      *
      * @return A string representing the right hand side Graql query.
      */
     @CheckReturnValue
-    Pattern getRHS();
+    Pattern getThen();
 
     //------------------------------------- Edge Handling ----------------------------------
     /**
@@ -89,4 +91,20 @@ public interface Rule extends Thing {
      */
     @Override
     RuleType type();
+
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default Rule asRule(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isRule(){
+        return true;
+    }
 }

@@ -21,6 +21,7 @@ package ai.grakn.concept;
 import ai.grakn.exception.GraphOperationException;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nonnull;
 import java.util.Collection;
 
 /**
@@ -147,6 +148,7 @@ public interface RelationType extends Type {
      * @return The direct supertype of this RelationType
      */
     @Override
+    @Nonnull
     RelationType sup();
 
     /**
@@ -183,4 +185,19 @@ public interface RelationType extends Type {
      */
     @Override
     Collection<Relation> instances();
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default RelationType asRelationType(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isRelationType(){
+        return true;
+    }
 }

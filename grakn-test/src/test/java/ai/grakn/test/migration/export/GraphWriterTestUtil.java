@@ -132,8 +132,8 @@ public abstract class GraphWriterTestUtil {
     public static void assertRuleCopied(Rule rule1, GraknGraph two){
         Rule rule2 = getInstanceUniqueByResourcesFromGraph(two, rule1).asRule();
 
-        assertEquals(Graql.and(rule1.getLHS()), rule2.getLHS());
-        assertEquals(Graql.and(rule1.getRHS()), rule2.getRHS());
+        assertEquals(Graql.and(rule1.getWhen()), rule2.getWhen());
+        assertEquals(Graql.and(rule1.getThen()), rule2.getThen());
     }
 
     public static void assertOntologiesEqual(GraknGraph one, GraknGraph two){

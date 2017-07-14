@@ -25,6 +25,8 @@ import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
 
+import javax.annotation.Nullable;
+
 /**
  * <p>
  *     An ontological element used to model and categorise different types of {@link Rule}.
@@ -47,16 +49,17 @@ class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
     }
 
     @Override
-    public Rule putRule(Pattern lhs, Pattern rhs) {
-        if(lhs == null) throw GraphOperationException.settingNullProperty(Schema.VertexProperty.RULE_LHS);
-        if(rhs == null) throw GraphOperationException.settingNullProperty(Schema.VertexProperty.RULE_RHS);
+    public Rule putRule(Pattern when, Pattern then) {
+        if(when == null) throw GraphOperationException.settingNullProperty(Schema.VertexProperty.RULE_WHEN);
+        if(then == null) throw GraphOperationException.settingNullProperty(Schema.VertexProperty.RULE_THEN);
 
         return putInstance(Schema.BaseType.RULE,
-                () -> getRule(lhs, rhs), (vertex, type) -> vertex().graph().factory().buildRule(vertex, type, lhs, rhs));
+                () -> getRule(when, then), (vertex, type) -> vertex().graph().factory().buildRule(vertex, type, when, then));
     }
 
-    private Rule getRule(Pattern lhs, Pattern rhs) {
-        String index = RuleImpl.generateRuleIndex(this, lhs, rhs);
+    @Nullable
+    private Rule getRule(Pattern when, Pattern then) {
+        String index = RuleImpl.generateRuleIndex(this, when, then);
         return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);
     }
 }

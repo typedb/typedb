@@ -42,22 +42,22 @@ $peter isa person, has name "peter";
 ####################################################
 
 isa inference-rule,
-lhs {
+when {
 (sibA: $x, sibB: $y) isa Sibling;},
-rhs {
+then {
 (SG-role-A: $x, SG-role-B: $y) isa SameGen;};
 
 isa inference-rule,
-lhs {
+when {
 (parent: $x, child: $u) isa Parent;
 ($u, $v) isa SameGen;
 (parent: $y, child: $v) isa Parent;},
-rhs {
+then {
 (SG-role-A: $x, SG-role-B: $y) isa SameGen;};
 
 isa inference-rule,
-lhs {
+when {
 (parent: $z, child: $x) isa Parent;
 (parent: $z, child: $y) isa Parent;},
-rhs {
+then {
 (sibA: $x, sibB: $y) isa Sibling;};

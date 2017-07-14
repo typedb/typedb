@@ -99,7 +99,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         ImmutableSet<EquivalentFragmentSet> distinctCastingTraversals = castingNames.stream().flatMap(
                 castingName -> castingNames.stream()
                         .filter(otherName -> !otherName.equals(castingName))
-                        .map(otherName -> EquivalentFragmentSets.neq(castingName, otherName))
+                        .map(otherName -> EquivalentFragmentSets.neq(this, castingName, otherName))
         ).collect(toImmutableSet());
 
         return Sets.union(traversals, distinctCastingTraversals);
@@ -107,7 +107,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return relationPlayers.stream().map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream);
+        return relationPlayers.stream().map(RelationPlayer::getRole).flatMap(CommonUtil::optionalToStream);
     }
 
     @Override
@@ -115,13 +115,13 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         return relationPlayers.stream().flatMap(relationPlayer -> {
             Stream.Builder<VarPatternAdmin> builder = Stream.builder();
             builder.add(relationPlayer.getRolePlayer());
-            relationPlayer.getRoleType().ifPresent(builder::add);
+            relationPlayer.getRole().ifPresent(builder::add);
             return builder.build();
         });
     }
 
     private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(Var start, Var castingName, RelationPlayer relationPlayer) {
-        Optional<VarPatternAdmin> roleType = relationPlayer.getRoleType();
+        Optional<VarPatternAdmin> roleType = relationPlayer.getRole();
 
         if (roleType.isPresent()) {
             return addRelatesPattern(start, castingName, roleType.get(), relationPlayer.getRolePlayer());
@@ -135,7 +135,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin rolePlayer) {
-        return Stream.of(shortcut(start, casting, rolePlayer.getVarName(), Optional.empty()));
+        return Stream.of(shortcut(this, start, casting, rolePlayer.getVarName(), Optional.empty()));
     }
 
     /**
@@ -144,14 +144,14 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
-        return Stream.of(shortcut(start, casting, rolePlayer.getVarName(), Optional.of(roleType.getVarName())));
+        return Stream.of(shortcut(this, start, casting, rolePlayer.getVarName(), Optional.of(roleType.getVarName())));
     }
 
     @Override
     public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
 
         Set<Label> roleTypes = relationPlayers.stream()
-                .map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream)
+                .map(RelationPlayer::getRole).flatMap(CommonUtil::optionalToStream)
                 .map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
@@ -169,7 +169,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         // Check all role types exist
         roleTypes.forEach(roleId -> {
             OntologyConcept ontologyConcept = graph.getOntologyConcept(roleId);
-            if (ontologyConcept == null || !ontologyConcept.isRoleType()) {
+            if (ontologyConcept == null || !ontologyConcept.isRole()) {
                 throw GraqlQueryException.notARoleType(roleId);
             }
         });
@@ -194,10 +194,10 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param relationPlayer a casting between a role type and role player
      */
     private void addRoleplayer(InsertQueryExecutor insertQueryExecutor, Relation relation, RelationPlayer relationPlayer) {
-        VarPatternAdmin roleVar = relationPlayer.getRoleType().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
+        VarPatternAdmin roleVar = relationPlayer.getRole().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
 
-        Role role = insertQueryExecutor.getConcept(roleVar).asRoleType();
-        Thing roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asInstance();
+        Role role = insertQueryExecutor.getConcept(roleVar).asRole();
+        Thing roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asThing();
         relation.addRolePlayer(role, roleplayer);
     }
 
@@ -228,7 +228,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         Set<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(toSet());
 
         for (RelationPlayer rp : relationPlayers) {
-            VarPatternAdmin role = rp.getRoleType().orElse(null);
+            VarPatternAdmin role = rp.getRole().orElse(null);
             VarPatternAdmin rolePlayer = rp.getRolePlayer();
             if (role != null) relVar = relVar.rel(role, rolePlayer);
             else relVar = relVar.rel(rolePlayer);
@@ -243,8 +243,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             VarPatternAdmin isaVar = isaProp.getType();
             Label label = isaVar.getTypeLabel().orElse(null);
             if (label != null) {
-                GraknGraph graph = parent.graph();
-                VarPatternAdmin idVar = typeVariable.id(graph.getOntologyConcept(label).getId()).admin();
+                VarPatternAdmin idVar = typeVariable.id(parent.graph().getOntologyConcept(label).getId()).admin();
                 predicate = new IdPredicate(idVar, parent);
             } else {
                 typeVariable = isaVar.getVarName();

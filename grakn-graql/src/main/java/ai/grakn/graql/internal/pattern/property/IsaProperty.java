@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.ImmutableSet;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -78,7 +79,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.isa(start, type.getVarName()));
+        return ImmutableSet.of(EquivalentFragmentSets.isa(this, start, type.getVarName()));
     }
 
     @Override
@@ -94,7 +95,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Type type = insertQueryExecutor.getConcept(this.type).asType();
-        Thing thing = concept.asInstance();
+        Thing thing = concept.asThing();
         if (!thing.type().equals(type)) {
             throw GraqlQueryException.insertNewType(thing, type);
         }
@@ -104,7 +105,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
         type.getTypeLabel().ifPresent(typeLabel -> {
             OntologyConcept theOntologyConcept = graph.getOntologyConcept(typeLabel);
-            if (theOntologyConcept != null && theOntologyConcept.isRoleType()) {
+            if (theOntologyConcept != null && theOntologyConcept.isRole()) {
                 throw GraqlQueryException.queryInstanceOfRoleType(typeLabel);
             }
         });
@@ -126,6 +127,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
         return type.hashCode();
     }
 
+    @Nullable
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //IsaProperty is unique within a var, so skip if this is a relation
