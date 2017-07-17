@@ -170,7 +170,7 @@ We have decided to omit exception handling to keep the tutorial simple. In produ
 
 ## Defining The Ontology
 
-Let's define the ontology. As we are mainly interested in both the **tweet** and **who posted the tweet**, let us capture these concepts by defining two **entities**: `user` and `tweet`.
+Let's define the ontology. As we are mainly interested in both the **tweet** and **who posted the tweet**, let us capture these concepts by defining two **entity types**: `user` and `tweet`.
 
 The `user` entity will hold the user's actual username in a **resource** called `screen_name`, while the `tweet` entity will contain the user's tweet in another resource called `text`. We will also define a resource `identifier` for the id.
 
