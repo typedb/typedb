@@ -159,7 +159,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
 
     <X extends Thing> Set<X> getShortcutNeighbours(){
         Set<X> foundNeighbours = new HashSet<X>();
-        vertex().graph().getTinkerTraversal().
+        vertex().graph().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
                 in(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 out(Schema.EdgeLabel.SHORTCUT.getLabel()).
@@ -182,7 +182,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
 
     private Set<Relation> reifiedRelations(Role... roles){
         Set<Relation> relations = new HashSet<>();
-        GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerTraversal().
+        GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue());
 
         if(roles.length == 0){

@@ -77,7 +77,7 @@ public class GraqlTraversal {
         Traversal[] traversals =
                 fragments.stream().map(list -> getConjunctionTraversal(graph, list)).toArray(Traversal[]::new);
 
-        return graph.admin().getTinkerTraversal().limit(1).union(traversals);
+        return graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
     }
 
     public ImmutableSet<ImmutableList<Fragment>> fragments() {
@@ -90,7 +90,7 @@ public class GraqlTraversal {
     private GraphTraversal<Vertex, Map<String, Vertex>> getConjunctionTraversal(
             GraknGraph graph, ImmutableList<Fragment> fragmentList
     ) {
-        GraphTraversal<Vertex, Vertex> traversal = graph.admin().getTinkerTraversal();
+        GraphTraversal<Vertex, Vertex> traversal = graph.admin().getTinkerTraversal().V();
 
         Set<Var> foundNames = new HashSet<>();
 

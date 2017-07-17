@@ -196,7 +196,7 @@ abstract class ConceptImpl implements Concept, ConceptVertex {
 
     Shard currentShard(){
         String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
-        Vertex shardVertex = vertex().graph().getTinkerTraversal().has(Schema.VertexProperty.ID.name(), currentShardId).next();
+        Vertex shardVertex = vertex().graph().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
         return vertex().graph().factory().buildShard(shardVertex);
     }
 

@@ -127,7 +127,7 @@ public class PostProcessingTest extends GraphTestBase{
         assertEquals(1, r1.relations().size());
         assertEquals(2, r11.relations().size());
         assertEquals(1, r1.relations().size());
-        assertEquals(6, graknGraph.getTinkerTraversal().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(6, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
 
         r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().contains(e1)));
 

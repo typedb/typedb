@@ -77,7 +77,7 @@ class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty>{
      * @param type the type of the edge to create
      */
     EdgeElement putEdge(VertexElement to, Schema.EdgeLabel type){
-        GraphTraversal<Vertex, Edge> traversal = graph().getTinkerTraversal().
+        GraphTraversal<Vertex, Edge> traversal = graph().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), id().getValue()).
                 outE(type.getLabel()).as("edge").otherV().
                 has(Schema.VertexProperty.ID.name(), to.id().getValue()).select("edge");

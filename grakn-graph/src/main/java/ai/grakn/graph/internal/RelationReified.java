@@ -129,7 +129,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
 
         //Traversal is used so we can potentially optimise on the index
         Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getLabelId().getValue()).collect(Collectors.toSet());
-        return vertex().graph().getTinkerTraversal().
+        return vertex().graph().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type().getLabelId().getValue()).

@@ -47,6 +47,7 @@ import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import mjson.Json;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -311,10 +312,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public GraphTraversal<Vertex, Vertex> getTinkerTraversal(){
+    public GraphTraversalSource getTinkerTraversal(){
         operateOnOpenGraph(() -> null); //This is to check if the graph is open
         ReadOnlyStrategy readOnlyStrategy = ReadOnlyStrategy.instance();
-        return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph()).V();
+        return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph());
     }
 
     @Override
@@ -337,7 +338,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //----------------------------------------------General Functionality-----------------------------------------------
     @Override
     public <T extends Concept> T  getConcept(Schema.VertexProperty key, Object value) {
-        Iterator<Vertex> vertices = getTinkerTraversal().has(key.name(), value);
+        Iterator<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value);
 
         if(vertices.hasNext()){
             Vertex vertex = vertices.next();
@@ -352,7 +353,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private Set<Concept> getConcepts(Schema.VertexProperty key, Object value){
         Set<Concept> concepts = new HashSet<>();
-        getTinkerTraversal().has(key.name(), value).
+        getTinkerTraversal().V().has(key.name(), value).
             forEachRemaining(v -> concepts.add(factory().buildConcept(v)));
         return concepts;
     }
@@ -559,7 +560,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private <T extends Concept>T getConceptEdge(ConceptId id){
         String edgeId = id.getValue().substring(1);
-        GraphTraversal<Edge, Edge> traversal = getTinkerPopGraph().traversal().E().hasId(edgeId);
+        GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E().hasId(edgeId);
         if(traversal.hasNext()){
             return factory().buildConcept(factory().buildEdgeElement(traversal.next()));
         }
@@ -677,7 +678,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     void putShortcutEdge(Thing toThing, RelationReified fromRelation, Role roleType){
-        boolean exists  = getTinkerTraversal().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
+        boolean exists  = getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), roleType.getLabelId().getValue()).inV().

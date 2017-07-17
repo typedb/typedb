@@ -134,7 +134,7 @@ public class RelationTest extends GraphTestBase{
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
     private Set<Concept> followShortcutsToNeighbours(GraknGraph graph, Thing thing) {
-        List<Vertex> vertices = graph.admin().getTinkerTraversal().has(Schema.VertexProperty.ID.name(), thing.getId().getValue()).
+        List<Vertex> vertices = graph.admin().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), thing.getId().getValue()).
                 in(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 out(Schema.EdgeLabel.SHORTCUT.getLabel()).toList();
 

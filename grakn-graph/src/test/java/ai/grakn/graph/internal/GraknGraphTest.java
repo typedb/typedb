@@ -53,7 +53,7 @@ public class GraknGraphTest extends GraphTestBase {
     public void whenAttemptingToMutateViaTraversal_Throw(){
         expectedException.expect(VerificationException.class);
         expectedException.expectMessage("not read only");
-        graknGraph.getTinkerTraversal().drop().iterate();
+        graknGraph.getTinkerTraversal().V().drop().iterate();
     }
 
     @Test
@@ -316,8 +316,8 @@ public class GraknGraphTest extends GraphTestBase {
         failMutation(graknGraph, () -> relationT2.relates(roleT1));
     }
     private void failMutation(GraknGraph graph, Runnable mutator){
-        int vertexCount = graph.admin().getTinkerTraversal().toList().size();
-        int eddgeCount = graph.admin().getTinkerTraversal().bothE().toList().size();
+        int vertexCount = graph.admin().getTinkerTraversal().V().toList().size();
+        int eddgeCount = graph.admin().getTinkerTraversal().E().toList().size();
 
         Exception caughtException = null;
         try{
@@ -329,8 +329,8 @@ public class GraknGraphTest extends GraphTestBase {
         assertNotNull("No exception thrown when attempting to mutate a read only graph", caughtException);
         assertThat(caughtException, instanceOf(GraphOperationException.class));
         assertEquals(caughtException.getMessage(), ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.getKeyspace()));
-        assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.admin().getTinkerTraversal().toList().size());
-        assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.admin().getTinkerTraversal().bothE().toList().size());
+        assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.admin().getTinkerTraversal().V().toList().size());
+        assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.admin().getTinkerTraversal().E().toList().size());
     }
 
     @Test

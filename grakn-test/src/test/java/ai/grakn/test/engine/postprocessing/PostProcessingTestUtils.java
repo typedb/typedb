@@ -13,11 +13,11 @@ import java.util.Set;
 public class PostProcessingTestUtils {
 
     static boolean checkUnique(GraknGraph graph, String key) {
-        return graph.admin().getTinkerTraversal().has(Schema.VertexProperty.INDEX.name(), key).toList().size() < 2;
+        return graph.admin().getTinkerTraversal().V().has(Schema.VertexProperty.INDEX.name(), key).toList().size() < 2;
     }
     
     static <T> String indexOf(GraknGraph graph, Resource<T> resource) {
-        Vertex originalResource = graph.admin().getTinkerTraversal()
+        Vertex originalResource = graph.admin().getTinkerTraversal().V()
                                         .hasId(resource.getId().getValue()).next();
         return originalResource.value(Schema.VertexProperty.INDEX.name());
     }
@@ -26,9 +26,9 @@ public class PostProcessingTestUtils {
     static <T> Resource<T> createDuplicateResource(GraknGraph graknGraph, Resource<T> resource) {
         ResourceType<T> resourceType = resource.type();
         AbstractGraknGraph<?> graph = (AbstractGraknGraph<?>) graknGraph;
-        Vertex originalResource = graph.getTinkerTraversal()
+        Vertex originalResource = graph.getTinkerTraversal().V()
                 .hasId(resource.getId().getValue()).next();
-        Vertex vertexResourceTypeShard = graph.getTinkerTraversal()
+        Vertex vertexResourceTypeShard = graph.getTinkerTraversal().V()
                 .hasId(resourceType.getId().getValue()).in(Schema.EdgeLabel.SHARD.getLabel()).next();
         Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
         resourceVertex.property(Schema.VertexProperty.INDEX.name(),originalResource.value(Schema.VertexProperty.INDEX.name()));
@@ -41,9 +41,9 @@ public class PostProcessingTestUtils {
     @SuppressWarnings("unchecked")
     static <T> Set<Vertex> createDuplicateResource(GraknGraph graknGraph, ResourceType<T> resourceType, Resource<T> resource) {
         AbstractGraknGraph<?> graph = (AbstractGraknGraph<?>) graknGraph;
-        Vertex originalResource = graph.getTinkerTraversal()
+        Vertex originalResource = graph.getTinkerTraversal().V()
                 .has(Schema.VertexProperty.ID.name(), resource.getId().getValue()).next();
-        Vertex vertexResourceTypeShard = graph.getTinkerTraversal().
+        Vertex vertexResourceTypeShard = graph.getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), resourceType.getId().getValue()).
                 in(Schema.EdgeLabel.SHARD.getLabel()).next();
 
