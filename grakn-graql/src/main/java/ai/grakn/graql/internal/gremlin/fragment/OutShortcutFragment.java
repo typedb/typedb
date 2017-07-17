@@ -24,6 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -34,6 +35,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Optional;
 import java.util.Set;
 
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_DIRECTION;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_EDGE;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelsToTraversal;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabels;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.traverseRoleTypeFromShortcutEdge;
@@ -101,8 +104,11 @@ class OutShortcutFragment extends AbstractFragment {
 
         traverseRoleTypeFromShortcutEdge(edgeTraversal, roleType, roleProperty);
 
-        // TODO: This is definitely wrong
-        return edgeTraversal.toV(direction).as(edge.getValue());
+        // Identify the relation - role-player pair by combining the relation edge and direction into a map
+        edgeTraversal.as(RELATION_EDGE).constant(direction).as(RELATION_DIRECTION);
+        edgeTraversal.select(Pop.last, RELATION_EDGE, RELATION_DIRECTION).as(edge.getValue()).select(RELATION_EDGE);
+
+        return edgeTraversal.toV(direction);
     }
 
     @Override

@@ -50,6 +50,10 @@ import static java.util.stream.Collectors.toSet;
  */
 public class Fragments {
 
+    // TODO: Make sure these never clash with a real Graql variable
+    static final String RELATION_EDGE = "!RELATION_EDGE";
+    static final String RELATION_DIRECTION = "!RELATION_DIRECTION";
+
     private Fragments() {
     }
 
