@@ -38,6 +38,14 @@ import java.util.Collection;
  * @author fppt
  */
 public interface OntologyConcept extends Concept {
+    //------------------------------------- Modifiers ----------------------------------
+    /**
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
+     */
+    OntologyConcept setLabel(Label label);
+
     //------------------------------------- Accessors ---------------------------------
     /**
      * Returns the unique id of this Type.
