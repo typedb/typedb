@@ -294,22 +294,23 @@ class ValidateGlobalRules {
         return errors;
     }
 
-
     /**
+     * NB: assumes the rule obeys the Horn clause form
      * @param graph graph used to ensure the rule is a valid Horn clause
      * @param rule the rule to be validated ontologically
      * @return Error messages if the rule has ontological inconsistencies
      */
     static Set<String> validateRuleOntologically(GraknGraph graph, Rule rule) {
         Set<String> errors = new HashSet<>();
-        ReasonerQuery bodyQuery = rule.getWhen().admin().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
-        ReasonerQuery headQuery = rule.getThen().admin().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
 
-        errors.addAll(bodyQuery.validateOntologically());
-        errors.addAll(headQuery.validateOntologically());
-
-        //cross check
-        ReasonerQuery combined = rule.getWhen().and(rule.getThen()).admin().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
+        //both body and head refer to the same graph and have to be valid with respect to the ontology that governs it
+        //as a result the rule can be ontologically validated by combining them into a conjunction
+        //this additionally allows to cross check body-head references
+        ReasonerQuery combined = rule
+                .getWhen()
+                .and(rule.getThen())
+                .admin().getDisjunctiveNormalForm().getPatterns().iterator().next()
+                .toReasonerQuery(graph);
         errors.addAll(combined.validateOntologically());
         return errors;
     }
