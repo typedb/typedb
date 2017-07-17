@@ -28,12 +28,12 @@ This dependency will give you access to the Core API. Your Java application will
 ```xml
 <dependency>
 <groupId>ai.grakn</groupId>
-<artifactId>titan-factory</artifactId>
+<artifactId>janus-factory</artifactId>
 <version>${project.version}</version>
 </dependency>
 ```
 
-If you want your server to run against a OrientDB backend instead, substitute `orientdb-factory` within `<artifactId></artifactId>` instead of `titan-factory`. Please note that, at this time, OrientDB support is still in early stages of development.
+If you want your server to run against a OrientDB backend instead, substitute `orientdb-factory` within `<artifactId></artifactId>` instead of `janus-factory`. Please note that, at this time, OrientDB support is still in early stages of development.
 
 ### Grakn Engine
 

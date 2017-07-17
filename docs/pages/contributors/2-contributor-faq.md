@@ -58,7 +58,7 @@ The solution was to include the Titan factory dependency explicitly:
 ```bash
 <dependency>
     <groupId>ai.grakn</groupId>
-    <artifactId>titan-factory</artifactId>
+    <artifactId>janus-factory</artifactId>
     <version>${project.version}</version>
 </dependency>
 ```

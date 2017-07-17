@@ -112,7 +112,7 @@
         <!-- Factories -->
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>titan-factory</artifactId>
+            <artifactId>janus-factory</artifactId>
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>

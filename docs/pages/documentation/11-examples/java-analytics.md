@@ -50,7 +50,7 @@ The rest of the project is contained in the Java example code, which can be foun
 ```xml
 <dependency>
 <groupId>ai.grakn</groupId>
-<artifactId>titan-factory</artifactId>
+<artifactId>janus-factory</artifactId>
 <version>${grakn.version}</version>
 </dependency>
 <dependency>

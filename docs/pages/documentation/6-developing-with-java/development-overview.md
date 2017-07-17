@@ -40,7 +40,7 @@ Depending on the configuration of the Grakn server, your Java application will r
 ```xml   
 <dependency>
     <groupId>ai.grakn</groupId>
-    <artifactId>titan-factory</artifactId>
+    <artifactId>janus-factory</artifactId>
     <version>${grakn.version}</version>
 </dependency>
 ```    
