@@ -1,16 +1,16 @@
 ---
-title: Using Grakn To Work With Tweet Data
+title: Working With Tweets
 keywords: analytics, social-media, streaming, twitter
 last_updated: July 2017
 tags: [analytics, social-media, streaming, twitter, examples]
-summary: "Using Grakn To Work With Tweet Data"
+summary: "An example which demonstrates key Grakn concepts in a practical setting"
 sidebar: documentation_sidebar
-permalink: /documentation/examples/using-grakn-to-work-with-tweet-data.html
+permalink: /documentation/examples/working-with-tweets.html
 folder: documentation
 comment_issue_id: 27
 ---
 
-# Using Grakn To Work With Tweet Data
+# Working With Tweets
 In this tutorial we will look at how to stream public tweets into Grakn's knowledge graph. The tutorial aims to demonstrate key concepts such as receiving, inserting and querying data. Upon the completion of this tutorial, you will have learnt about these concepts:
 
 - Defining a simple Grakn.ai ontology using the Java API
@@ -178,7 +178,7 @@ Next we will define two **roles** - `posts` and `posted_by` to express that a `u
 
 The structure can be sumarrized by the following graph:
 
-![twitter-example](image/twitter-example.jpg)
+![Ontology](/images/working-with-tweets-ontology.jpg)
 
 With that set, let's define a new method `initTweetOntology` inside `GraknTweetOntologyHelper` class and define our ontology creation there.
 
