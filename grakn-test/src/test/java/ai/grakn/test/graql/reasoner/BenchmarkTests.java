@@ -124,7 +124,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveChain()  {
-        final int N = 1000;
+        final int N = 20;
 
         // DJ - differential joins
         // IC - inverse cache
@@ -203,7 +203,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveMatrix(){
-        final int N = 30;
+        final int N = 5;
 
         //                         DJ       IC     FO
         //results @N = 15 14400     ?
@@ -232,10 +232,6 @@ public class BenchmarkTests {
         Concept id = iqb.<MatchQuery>parse("match $x has index 'a';").execute().iterator().next().get("x");
         String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id '" + id.getId().getValue() + "';";
         MatchQuery query3 = iqb.parse(queryString3);
-
-        startTime = System.currentTimeMillis();
-        List<Answer> executeLimit = query.limit(369000).execute();
-        System.out.println("full result with limit: " + (System.currentTimeMillis() - startTime) + " results: " + executeLimit.size());
 
         startTime = System.currentTimeMillis();
         List<Answer> execute = query.execute();
@@ -307,16 +303,5 @@ public class BenchmarkTests {
         List<Answer> results = query.limit(limit).execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
-    }
-
-    private Conjunction<VarPatternAdmin> conjunction(Conjunction<PatternAdmin> pattern){
-        return Patterns.conjunction(pattern.admin().getVars());
-    }
-
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknGraph graph){
-        Set<VarPatternAdmin> vars = graph.graql().parsePattern(patternString).admin()
-                .getDisjunctiveNormalForm().getPatterns()
-                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
     }
 }
