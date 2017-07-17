@@ -54,7 +54,7 @@ public class JanusPreviousPropertyStepTest extends JanusTestBase {
     private static final Edge edge = janus.V(vertexWithoutProperty).as("x").addE("self").to("x").property("e prop", "foo").next();
 
     @Test
-    public void whenFilteringAPropertyToBeEqualToAPreviousProperty_UseTitanGraphStep() {
+    public void whenFilteringAPropertyToBeEqualToAPreviousProperty_UseJanusGraphStep() {
         GraphTraversal traversal = optimisableTraversal(janus);
 
         GraphTraversal expected = optimisedTraversal(janus);
@@ -83,7 +83,7 @@ public class JanusPreviousPropertyStepTest extends JanusTestBase {
     }
 
     @Test
-    public void whenUsingATitanGraph_ApplyStrategy() {
+    public void whenUsingAJanusGraph_ApplyStrategy() {
         GraphTraversal<?, ?> traversal = optimisableTraversal(janus);
         traversal.asAdmin().applyStrategies();
 
@@ -92,7 +92,7 @@ public class JanusPreviousPropertyStepTest extends JanusTestBase {
     }
 
     @Test
-    public void whenUsingANonTitanGraph_DontApplyStrategy() {
+    public void whenUsingANonJanusGraph_DontApplyStrategy() {
         GraphTraversal<?, ?> traversal = optimisableTraversal(tinker);
         traversal.asAdmin().applyStrategies();
 
@@ -101,7 +101,7 @@ public class JanusPreviousPropertyStepTest extends JanusTestBase {
     }
 
     @Test
-    public void whenUsingATitanGraph_TheTitanPreviousPropertyStepStrategyIsInList() {
+    public void whenUsingAJanusGraph_TheTitanPreviousPropertyStepStrategyIsInList() {
         GraphTraversal<Vertex, Vertex> traversal = optimisableTraversal(janus);
         List<TraversalStrategy<?>> strategies = traversal.asAdmin().getStrategies().toList();
 
@@ -109,7 +109,7 @@ public class JanusPreviousPropertyStepTest extends JanusTestBase {
     }
 
     @Test
-    public void whenUsingANonTitanGraph_TheTitanPreviousPropertyStepStrategyIsNotInList() {
+    public void whenUsingANonJanusGraph_TheTitanPreviousPropertyStepStrategyIsNotInList() {
         GraphTraversal<Vertex, Vertex> traversal = optimisableTraversal(tinker);
         List<TraversalStrategy<?>> strategies = traversal.asAdmin().getStrategies().toList();
 
