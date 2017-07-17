@@ -27,6 +27,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -56,17 +57,14 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  *           For example an {@link EntityType} or {@link RelationType} or {@link Role}
  */
 abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImpl implements OntologyConcept {
-    private final Label cachedLabel;
-    private final LabelId cachedLabelId;
-
-    private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
-    private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
+    private final Cache<Label> cachedLabel = new Cache<>(() ->  Label.of(vertex().property(Schema.VertexProperty.ONTOLOGY_LABEL)));
+    private final Cache<LabelId> cachedLabelId = new Cache<>(() -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
+    private final Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
+    private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private final Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
     OntologyConceptImpl(VertexElement vertexElement) {
         super(vertexElement);
-        cachedLabel = Label.of(vertex().property(Schema.VertexProperty.ONTOLOGY_LABEL));
-        cachedLabelId = LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID));
     }
 
     OntologyConceptImpl(VertexElement vertexElement, T superType) {
@@ -80,13 +78,26 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
         cachedIsImplicit.set(isImplicit);
     }
 
+    public T setLabel(Label label){
+        try {
+            vertex().graph().txCache().remove(this);
+            vertex().propertyUnique(Schema.VertexProperty.ONTOLOGY_LABEL, label.getValue());
+            cachedLabel.set(label);
+            vertex().graph().txCache().cacheConcept(this);
+            return getThis();
+        } catch (PropertyNotUniqueException exception){
+            vertex().graph().txCache().cacheConcept(this);
+            throw GraphOperationException.labelTaken(label);
+        }
+    }
+
     /**
      *
      * @return The internal id which is used for fast lookups
      */
     @Override
     public LabelId getLabelId(){
-        return cachedLabelId;
+        return cachedLabelId.get();
     }
 
     /**
@@ -95,7 +106,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      */
     @Override
     public Label getLabel() {
-        return cachedLabel;
+        return cachedLabel.get();
     }
 
     /**

@@ -45,6 +45,7 @@ import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
+import com.codahale.metrics.MetricRegistry;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -65,8 +66,9 @@ public class ConceptControllerTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(mockFactory, spark);
-        new ConceptController(mockFactory, spark);
+        MetricRegistry metricRegistry = new MetricRegistry();
+        new SystemController(mockFactory, spark, metricRegistry);
+        new ConceptController(mockFactory, spark, metricRegistry);
     });
 
     @Before

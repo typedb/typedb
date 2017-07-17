@@ -1,14 +1,12 @@
 package ai.grakn.graql;
 
+import java.io.EOFException;
+import java.io.IOException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.io.EOFException;
-import java.io.IOException;
-
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

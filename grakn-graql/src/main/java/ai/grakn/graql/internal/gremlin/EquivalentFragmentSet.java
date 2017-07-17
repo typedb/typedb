@@ -25,6 +25,8 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.joining;
+
 /**
  * a pattern to match in the graph. comprised of {@code Fragments}, each describing one way to represent the traversal,
  * starting from different variables.
@@ -69,6 +71,11 @@ public abstract class EquivalentFragmentSet implements Streamable<Fragment> {
     @Override
     public final int hashCode() {
         return fragments != null ? fragments.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return fragments.stream().map(Object::toString).collect(joining(", ", "{", "}"));
     }
 
     @Override

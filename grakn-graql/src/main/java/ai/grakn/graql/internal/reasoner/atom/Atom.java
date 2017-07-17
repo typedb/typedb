@@ -88,9 +88,11 @@ public abstract class Atom extends AtomicBase {
     public boolean isResource(){ return false;}
 
     /**
-     * @return the var property this atom was mapped from
+     * @return var properties this atom (its pattern) contains
      */
-    public abstract VarProperty getVarProperty();
+    public Set<VarProperty> getVarProperties() {
+        return getPattern().asVar().getProperties().collect(Collectors.toSet());
+    }
 
     /**
      * @return partial substitutions for this atom (NB: instances)
@@ -183,11 +185,6 @@ public abstract class Atom extends AtomicBase {
                 .filter(this::isRuleApplicable)
                 .findFirst().isPresent();
     }
-
-    /**
-     * @return true if the atom can constitute a head of a rule
-     */
-    public boolean isAllowedToFormRuleHead(){ return false; }
 
     /**
      * @return true if the atom requires materialisation in order to be referenced

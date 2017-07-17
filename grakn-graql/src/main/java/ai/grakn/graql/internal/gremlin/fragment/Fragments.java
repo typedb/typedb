@@ -37,9 +37,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.util.Schema.VertexProperty.THING_TYPE_LABEL_ID;
-import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
+import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
+import static ai.grakn.util.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -58,15 +58,15 @@ public class Fragments {
     }
 
     public static Fragment inShortcut(VarProperty varProperty,
-            Var rolePlayer, Var edge, Var relation, Optional<Var> roleType,
-            Optional<Set<Label>> roleTypeLabels, Optional<Set<Label>> relationTypeLabels) {
-        return new InShortcutFragment(varProperty, rolePlayer, edge, relation, roleType, roleTypeLabels, relationTypeLabels);
+                                      Var rolePlayer, Var edge, Var relation, Optional<Var> role,
+                                      Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
+        return new InShortcutFragment(varProperty, rolePlayer, edge, relation, role, roleLabels, relationTypeLabels);
     }
 
     public static Fragment outShortcut(VarProperty varProperty,
-            Var relation, Var edge, Var rolePlayer, Optional<Var> roleType,
-            Optional<Set<Label>> roleTypeLabels, Optional<Set<Label>> relationTypeLabels) {
-        return new OutShortcutFragment(varProperty, relation, edge, rolePlayer, roleType, roleTypeLabels, relationTypeLabels);
+                                       Var relation, Var edge, Var rolePlayer, Optional<Var> role,
+                                       Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
+        return new OutShortcutFragment(varProperty, relation, edge, rolePlayer, role, roleLabels, relationTypeLabels);
     }
 
     public static Fragment inSub(VarProperty varProperty, Var start, Var end) {
@@ -118,7 +118,7 @@ public class Fragments {
     }
 
     public static Fragment label(VarProperty varProperty, Var start, Label label) {
-        return new LabelFragment(varProperty,  start, label);
+        return new LabelFragment(varProperty, start, label);
     }
 
     public static Fragment value(VarProperty varProperty, Var start, ValuePredicateAdmin predicate) {
@@ -162,7 +162,7 @@ public class Fragments {
 
     static String displayOptionalTypeLabels(String name, Optional<Set<Label>> typeLabels) {
         return typeLabels.map(labels ->
-            " " + name + ":" + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
+                " " + name + ":" + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
         ).orElse("");
     }
 
@@ -178,11 +178,11 @@ public class Fragments {
      * Optionally traverse from a shortcut edge to the role-type it mentions, plus any super-types.
      *
      * @param traversal the traversal, starting from the shortcut edge
-     * @param roleType the variable to assign to the role-type. If not present, do nothing
+     * @param role the variable to assign to the role. If not present, do nothing
      * @param edgeProperty the edge property to look up the role label ID
      */
-    static void traverseRoleTypeFromShortcutEdge(GraphTraversal<?, Edge> traversal, Optional<Var> roleType, Schema.EdgeProperty edgeProperty) {
-        roleType.ifPresent(var -> {
+    static void traverseRoleFromShortcutEdge(GraphTraversal<?, Edge> traversal, Optional<Var> role, Schema.EdgeProperty edgeProperty) {
+        role.ifPresent(var -> {
             Var edge = Graql.var();
             traversal.as(edge.getValue());
             traverseOntologyConceptFromEdge(traversal, edgeProperty);

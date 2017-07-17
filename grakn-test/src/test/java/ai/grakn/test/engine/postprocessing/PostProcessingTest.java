@@ -23,30 +23,30 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
 import ai.grakn.util.REST;
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import ai.grakn.util.Schema;
+import static ai.grakn.util.Schema.VertexProperty.INDEX;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Sets;
+import java.util.Set;
+import static java.util.stream.Collectors.toSet;
 import mjson.Json;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.Set;
-
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
-import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.Schema.VertexProperty.INDEX;
-import static java.util.stream.Collectors.toSet;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
 
 public class PostProcessingTest {
 
@@ -117,7 +117,8 @@ public class PostProcessingTest {
                                 Schema.BaseType.RESOURCE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))
         );
-        task.initialize(null, configuration, (x, y) -> {}, engine.config(), null, engine.server().factory());
+        task.initialize(null, configuration, (x, y) -> {}, engine.config(), null, engine.server().factory(),
+                new ProcessWideLockProvider(), new MetricRegistry());
 
         task.start();
 

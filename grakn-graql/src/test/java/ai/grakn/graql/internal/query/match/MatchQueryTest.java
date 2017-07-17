@@ -489,8 +489,8 @@ public class MatchQueryTest {
         assertThat(query, results(containsInAnyOrder(
                 allOf(hasEntry(is(x), godfather), hasEntry(is(y), production)),
                 allOf(hasEntry(is(x), godfather), hasEntry(is(y), movie)),
-                allOf(hasEntry(is(x), heat),      hasEntry(is(y), production)),
-                allOf(hasEntry(is(x), heat),      hasEntry(is(y), movie))
+                allOf(hasEntry(is(x), heat), hasEntry(is(y), production)),
+                allOf(hasEntry(is(x), heat), hasEntry(is(y), movie))
         )));
     }
 
@@ -620,7 +620,8 @@ public class MatchQueryTest {
         expectedException.expect(UnsupportedOperationException.class);
         expectedException.expectMessage(MATCH_INVALID.getMessage(WhenProperty.class.getName()));
 
-        query.forEach(r -> {});
+        query.forEach(r -> {
+        });
     }
 
     @Test
@@ -672,7 +673,7 @@ public class MatchQueryTest {
             Collection<Role> graphAPIPlays;
 
             OntologyConcept ontologyConcept = graph.getOntologyConcept(type);
-            if(ontologyConcept.isType()){
+            if (ontologyConcept.isType()) {
                 graphAPIPlays = new HashSet<>(ontologyConcept.asType().plays());
             } else {
                 graphAPIPlays = Collections.EMPTY_SET;
@@ -763,6 +764,14 @@ public class MatchQueryTest {
     }
 
     @Test
+    public void testMatchAllDistinctPairsOfACertainType() {
+        int numConcepts = (int) qb.match(x.isa("movie")).stream().count();
+        MatchQuery pairs = qb.match(x.isa("movie"), y.isa("movie"), x.neq(y));
+
+        assertThat(pairs.execute(), hasSize(numConcepts * (numConcepts - 1)));
+    }
+
+    @Test
     public void testAllGreaterThanResources() {
         MatchQuery query = qb.match(x.val(gt(y)));
 
@@ -785,6 +794,17 @@ public class MatchQueryTest {
         );
 
         assertThat(query, variable("x", contains(godfather)));
+    }
+
+    @Test
+    public void testMoviesHasHigherTmdbCount() {
+
+        MatchQuery query = qb.match(
+                x.has("tmdb-vote-count", lt(r)),
+                var().has("title", "The Muppets").has("tmdb-vote-count", r)
+        );
+
+        assertThat(query, variable("x", contains(chineseCoffee)));
     }
 
     @Test
@@ -1146,7 +1166,7 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void whenExecutingGraqlTraversalFromGraph_ReturnExpectedResults(){
+    public void whenExecutingGraqlTraversalFromGraph_ReturnExpectedResults() {
         EntityType type = movieGraph.graph().putEntityType("Concept Type");
         Entity entity = type.addEntity();
 

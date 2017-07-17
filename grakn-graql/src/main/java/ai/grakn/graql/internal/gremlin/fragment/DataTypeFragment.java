@@ -47,8 +47,8 @@ class DataTypeFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost / ResourceType.DataType.SUPPORTED_TYPES.size();
+    public double fragmentCost() {
+        return COST_DATA_TYPE;
     }
 
     @Override
@@ -60,7 +60,6 @@ class DataTypeFragment extends AbstractFragment {
         DataTypeFragment that = (DataTypeFragment) o;
 
         return dataType != null ? dataType.equals(that.dataType) : that.dataType == null;
-
     }
 
     @Override

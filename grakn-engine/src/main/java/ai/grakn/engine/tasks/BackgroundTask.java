@@ -20,11 +20,16 @@ package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.tasks.connection.RedisConnection;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.tasks.connection.RedisCountStorage;
+import ai.grakn.engine.tasks.manager.TaskCheckpoint;
+import ai.grakn.engine.tasks.manager.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskSubmitter;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Preconditions;
-
-import javax.annotation.Nullable;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 /**
  * Interface which all tasks that wish to be scheduled for later execution as background tasks must implement.
@@ -33,29 +38,37 @@ import java.util.function.Consumer;
  */
 public abstract class BackgroundTask {
 
-    private @Nullable TaskSubmitter taskSubmitter = null;
-    private @Nullable TaskConfiguration configuration = null;
+    private @Nullable
+    TaskSubmitter taskSubmitter = null;
+    private @Nullable
+    TaskConfiguration configuration = null;
     private @Nullable Consumer<TaskCheckpoint> saveCheckpoint = null;
     private @Nullable GraknEngineConfig engineConfig = null;
-    private @Nullable RedisConnection redis = null;
     private @Nullable EngineGraknGraphFactory factory = null;
+    private @Nullable RedisCountStorage redis = null;
+    private @Nullable MetricRegistry metricRegistry = null;
+    private @Nullable LockProvider lockProvider = null;
 
     /**
      * Initialize the {@link BackgroundTask}. This must be called prior to any other call to {@link BackgroundTask}.
      *
      * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
      *                       the task to resume from this point should it crash.
-     * @param configuration The configuration needed to execute the task
-     * @param taskSubmitter Allows followup tasks to be submitted for processing
+     * @param configuration  The configuration needed to execute the task
+     * @param taskSubmitter  Allows followup tasks to be submitted for processing
+     * @param metricRegistry Metric registry
      */
     public final void initialize(
-            Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration, TaskSubmitter taskSubmitter,
-            GraknEngineConfig engineConfig, RedisConnection redis, EngineGraknGraphFactory factory) {
+            Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration,
+            TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig, RedisCountStorage redis,
+            EngineGraknGraphFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry)  {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
         this.saveCheckpoint = saveCheckpoint;
         this.engineConfig = engineConfig;
         this.redis = redis;
+        this.lockProvider = lockProvider;
+        this.metricRegistry = metricRegistry;
         this.factory = factory;
     }
 
@@ -134,7 +147,7 @@ public abstract class BackgroundTask {
         return engineConfig;
     }
 
-    public final RedisConnection redis() {
+    public final RedisCountStorage redis() {
         Preconditions.checkNotNull(redis, "BackgroundTask#initialise must be called before retrieving redis connection");
         return redis;
     }
@@ -142,5 +155,15 @@ public abstract class BackgroundTask {
     public final EngineGraknGraphFactory factory(){
         Preconditions.checkNotNull(factory, "BackgroundTask#initialise must be called before retrieving the engine factory");
         return factory;
+    }
+
+    public final MetricRegistry metricRegistry() {
+        Preconditions.checkNotNull(metricRegistry, "BackgroundTask#initialise must be called before retrieving metrics registry");
+        return metricRegistry;
+    }
+
+    public LockProvider getLockProvider() {
+        Preconditions.checkNotNull(lockProvider, "Lock provider was null, possible race condition in initialisation");
+        return lockProvider;
     }
 }

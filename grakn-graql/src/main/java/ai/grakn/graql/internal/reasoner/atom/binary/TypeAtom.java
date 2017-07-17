@@ -95,11 +95,6 @@ public abstract class TypeAtom extends Binary{
     }
 
     @Override
-    public boolean isAllowedToFormRuleHead(){
-        return getOntologyConcept() != null;
-    }
-
-    @Override
     public boolean requiresMaterialisation() {
         return isUserDefinedName() && getOntologyConcept() != null && getOntologyConcept().isRelationType();
     }

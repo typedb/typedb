@@ -432,8 +432,8 @@ public class InsertQueryTest {
     @Test
     public void testInsertRule() {
         String ruleTypeId = "a-rule-type";
-        Pattern when = qb.parsePattern("$x sub entity");
-        Pattern then = qb.parsePattern("$x sub entity");
+        Pattern when = qb.parsePattern("$x isa entity");
+        Pattern then = qb.parsePattern("$x isa entity");
         VarPattern vars = var("x").isa(ruleTypeId).when(when).then(then);
         qb.insert(vars).execute();
 

@@ -363,6 +363,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             LOG.trace("AQ: " + this + ": inferred rel types for: " + relationTypes.stream().map(Type::getLabel).collect(Collectors.toList()));
             return relationTypes.stream()
                     .map(((RelationAtom) atom)::addType)
+                    .sorted(Comparator.comparing(Atom::isRuleResolvable))
                     .map(ReasonerAtomicQuery::new);
         }
     }

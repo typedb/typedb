@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
@@ -28,6 +29,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.ImmutableList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
@@ -117,6 +119,11 @@ public final class ResolutionPlan {
     public static final int VARIABLE_VALUE_PREDICATE = -100;
 
     /**
+     * number of entities that need to be attached to a resource wtih a specific value to be considered a supernode
+     */
+    public static final int RESOURCE_SUPERNODE_SIZE = 5;
+
+    /**
      * priority modifier for each value predicate with variable requiring comparison
      * NB: atom satisfying this criterion should be resolved last
      */
@@ -131,7 +138,10 @@ public final class ResolutionPlan {
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
         GraknGraph graph = query.graph();
 
-        Map<VarProperty, Atom> propertyMap = query.selectAtoms().stream().collect(Collectors.toMap(Atom::getVarProperty, a -> a));
+        Map<VarProperty, Atom> propertyMap = new HashMap<>();
+        query.getAtoms().stream()
+                .filter(Atomic::isSelectable).map(at -> (Atom) at)
+                .forEach(at -> at.getVarProperties().forEach(p -> propertyMap.put(p, at)));
         Set<VarProperty> properties = propertyMap.keySet();
 
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(query.getPattern(), graph);
@@ -143,6 +153,7 @@ public final class ResolutionPlan {
                 .filter(properties::contains)
                 .distinct()
                 .map(propertyMap::get)
+                .distinct()
                 .collect(Collectors.toCollection(LinkedList::new));
 
         Set<Atom> nonResolvableAtoms = new HashSet<>();

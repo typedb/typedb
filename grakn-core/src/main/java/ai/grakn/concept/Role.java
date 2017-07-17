@@ -37,6 +37,12 @@ import java.util.Collection;
  */
 public interface Role extends OntologyConcept {
     //------------------------------------- Modifiers ----------------------------------
+    /**
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
+     */
+    Role setLabel(Label label);
 
     /**
      * Sets the super of this Role.

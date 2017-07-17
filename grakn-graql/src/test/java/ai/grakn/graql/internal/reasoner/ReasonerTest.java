@@ -194,28 +194,6 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testAddingRuleWithHeadWithoutRoleTypesNotAllowed() {
-        GraknGraph graph = testGeoGraph.graph();
-        Pattern body = Graql.and(graph.graql().parsePatterns(
-                        "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                        "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
-        Pattern head = Graql.and(graph.graql().parsePatterns("($x, $z) isa is-located-in;"));
-        exception.expect(GraqlQueryException.class);
-        Rule rule = graph.admin().getMetaRuleInference().putRule(body, head);
-        InferenceRule irule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
-    }
-
-    @Test
-    public void testAddingRuleWithNonSpecificResourceInTheHeadNotAllowed() {
-        GraknGraph graph = testGeoGraph.graph();
-        Pattern body = Graql.and(graph.graql().parsePatterns("$x isa country;"));
-        Pattern head = Graql.and(graph.graql().parsePatterns("$x has name contains 'land';"));
-        exception.expect(GraqlQueryException.class);
-        Rule rule = graph.admin().getMetaRuleInference().putRule(body, head);
-        InferenceRule irule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
-    }
-
-    @Test
     public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {
         GraknGraph graph = testGeoGraph.graph();
         RuleType inferenceRule = graph.admin().getMetaRuleInference();
