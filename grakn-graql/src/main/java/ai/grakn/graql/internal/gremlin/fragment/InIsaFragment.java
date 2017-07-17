@@ -31,6 +31,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.Schema.BaseType.RELATION_TYPE;
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
+import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
+import static ai.grakn.util.Schema.EdgeLabel.RELATES;
 import static ai.grakn.util.Schema.EdgeLabel.RESOURCE;
 import static ai.grakn.util.Schema.EdgeLabel.SHARD;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
@@ -52,22 +54,38 @@ class InIsaFragment extends AbstractFragment {
 
         traversal.choose(isImplicitRelationType,
                 __.union(
-                        toVertexInstances(),
+                        toVertexInstances(__.identity()),
                         (GraphTraversal) toEdgeInstances()
                 ),
-                toVertexInstances()
+                toVertexInstances(__.identity())
         );
     }
 
-    private <T> GraphTraversal<T, Vertex> toVertexInstances() {
-        return __.<T>in(SHARD.getLabel()).in(ISA.getLabel());
+    private <T> GraphTraversal<T, Vertex> toVertexInstances(GraphTraversal<T, Vertex> traversal) {
+        return traversal.in(SHARD.getLabel()).in(ISA.getLabel());
     }
 
     private GraphTraversal<?, Edge> toEdgeInstances() {
-        // TODO: This is abysmally slow!
+        Var type = var();
         Var labelId = var();
-        return __.<Vertex, String>values(LABEL_ID.name()).as(labelId.getValue())
-                .V().outE(RESOURCE.getLabel()).has(RELATION_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
+
+        // There is no fast way to retrieve all edge instances, because edges cannot be globally indexed.
+        // This is a best-effort, that uses the ontology to limit the search space...
+
+        // First retrieve the type ID
+        GraphTraversal<Vertex, Vertex> traversal =
+                __.<Vertex>as(type.getValue()).values(LABEL_ID.name()).as(labelId.getValue()).select(type.getValue());
+
+        // Next, navigate the ontology to all possible types whose instances can be in this relation
+        traversal = Fragments.inSubs(traversal.out(RELATES.getLabel()).in(PLAYS.getLabel()));
+
+        // Navigate to all (vertex) instances of those types
+        // (we do not need to navigate to edge instances, because edge instances cannot be role-players)
+        traversal = toVertexInstances(traversal);
+
+        // Finally, navigate to all relation edges with the correct type attached to these instances
+        return traversal.outE(RESOURCE.getLabel())
+                .has(RELATION_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
     }
 
     @Override
