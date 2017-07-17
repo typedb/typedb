@@ -176,7 +176,7 @@ The `user` entity will hold the user's actual username in a **resource** called 
 
 Next we will define two **roles** - `posts` and `posted_by` to express that a `user` posts a `tweet`, and similarly, a `tweet` is posted by a `user`. We will tie this two roles by a **relation** called `user-tweet-relation`.
 
-The structure can be sumarrized by the following graph:
+The structure can be summarized by the following graph:
 
 ![Ontology](/images/working-with-tweets-ontology.jpg)
 
@@ -454,7 +454,7 @@ public static void main(String[] args) {
 
 ## Crafting Simple Queries Using Graql
 
-We will perform a query which will count the number of tweets a user has posted since the program started. It can be achieved it by utilizing the aggregate query feature. Graql has been chosen over the graph API for this task because it is declarative and therefore much easier to use for complex queries than the graph API.
+We will perform a query which will count the number of tweets a user has posted since the program started. It can be achieved it by utilizing the aggregate query feature. Graql has been chosen over the graph API for this task because it is declarative and therefore much easier to use for complex queries.
 
 Let's look at how we can build it step-by-step, start by creating a `QueryBuilder` object which we will use to craft the query in Graql.
 
@@ -464,7 +464,7 @@ QueryBuilder qb = graknGraph.graql();
 
 Now let's begin crafting the query. For this tutorial, let's create a `match` query where we retrieve both the `user` and `tweet`.
 
-We will bind them into `var`s which will be named... `user` and `tweet`, respectively. Notice how we deliberately assign the `var`s  identical names as the respective entity types. This is not a necessity and in practice, you are free to name them anything you want.
+We will bind them into `var`s which will be named `user` and `tweet`, respectively. Notice how we deliberately assign the `var`s  identical names as the respective entity types. This is not a necessity and in practice, you are free to name them anything you want.
 
 Also, pay attention to how we also supply the `user-tweet-relation` relation as part of the condition.
 
