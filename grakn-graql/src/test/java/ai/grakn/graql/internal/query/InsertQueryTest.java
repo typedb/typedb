@@ -541,7 +541,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testKeyUniqueOwner() throws InvalidGraphException {
+    public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidGraphException {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
