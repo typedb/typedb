@@ -174,7 +174,7 @@ I want to clear the graph I've been experimenting with and try something with a 
 If you are using the Java API, it's a simple as:
 
 ```java-test-ignore
-graph = Grakn.factory(Grakn.DEFAULT_URI, "my-graph").getGraph();
+graph = Grakn.session(Grakn.DEFAULT_URI, "my-graph").open(GraknTxType.WRITE);
 graph.clear();
 ```
 
