@@ -91,19 +91,19 @@ Then continue to the `<dependencies>` section and make sure you have all the req
     <dependency>
         <groupId>ai.grakn</groupId>
         <artifactId>grakn-graph</artifactId>
-        <version>0.13.0</version>
+        <version><Current Grakn Version></version>
     </dependency>
 
     <dependency>
         <groupId>org.twitter4j</groupId>
         <artifactId>twitter4j-core</artifactId>
-        <version>4.0.6</version>
+        <version><Current Twitter4j Core Version></version>
     </dependency>
 
     <dependency>
         <groupId>org.twitter4j</groupId>
         <artifactId>twitter4j-stream</artifactId>
-        <version>4.0.6</version>
+        <version><Current Twitter4j Stream Version></version>
     </dependency>
 </dependencies>
 ```
