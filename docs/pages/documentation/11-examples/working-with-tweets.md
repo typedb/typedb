@@ -108,8 +108,6 @@ Then continue to the `<dependencies>` section and make sure you have all the req
 </dependencies>
 ```
 
-You can see the complete `pom.xml` definition [here](google.com).
-
 ## The Main Class
 
 Let's kick things off by defining a `Main` class inside the `ai.grakn.twitterexample` package. Aside from Twitter credentials, it contains a few important Grakn settings.
