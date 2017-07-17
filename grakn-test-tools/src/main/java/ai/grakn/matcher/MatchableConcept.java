@@ -21,6 +21,7 @@ package ai.grakn.matcher;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.Thing;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableSet;
@@ -59,12 +60,13 @@ public class MatchableConcept {
         if (concept.isResource()) {
             return "hasValue(" + valueToString(concept.asResource().getValue()) + ")";
         } else if (concept.isThing()) {
-            Collection<Resource<?>> resources = concept.asThing().resources();
+            Thing thing = concept.asThing();
+            Collection<Resource<?>> resources = thing.resources();
             Optional<?> value = resources.stream()
                     .filter(resource -> NAME_TYPES.contains(resource.type().getLabel()))
                     .map(Resource::getValue).findFirst();
 
-            return "instance(" + value.map(StringUtil::valueToString).orElse("") + ")";
+            return "instance(" + value.map(StringUtil::valueToString).orElse("") + ") isa " + thing.type().getLabel();
         } else if (concept.isType()) {
             return "type(" + concept.asType().getLabel() + ")";
         } else if (concept.isRole()) {
@@ -72,5 +74,20 @@ public class MatchableConcept {
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MatchableConcept that = (MatchableConcept) o;
+
+        return concept.equals(that.concept);
+    }
+
+    @Override
+    public int hashCode() {
+        return concept.hashCode();
     }
 }
