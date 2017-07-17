@@ -42,8 +42,12 @@ public class MatchableConcept {
 
     private final Concept concept;
 
-    MatchableConcept(Concept concept) {
+    private MatchableConcept(Concept concept) {
         this.concept = concept;
+    }
+
+    public static MatchableConcept of(Concept concept) {
+        return new MatchableConcept(concept);
     }
 
     Concept get() {
