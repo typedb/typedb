@@ -20,6 +20,7 @@
 package ai.grakn.util;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Label;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
@@ -34,6 +35,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
+
+import static ai.grakn.util.ErrorMessage.INVALID_IMPLICIT_TYPE;
 
 /**
  * Common utility methods used within Grakn.
@@ -67,6 +70,20 @@ public class CommonUtil {
             graph.showImplicitConcepts(implicitFlag);
         }
         return result;
+    }
+
+    /**
+     * Helper method which converts the implicit type label back into the original label from which is was built.
+     *
+     * @param implicitType the implicit type label
+     * @return The original label which was used to build this type
+     */
+    public static Label explicitLabel(Label implicitType){
+        if(!implicitType.getValue().startsWith("key") && implicitType.getValue().startsWith("has")){
+            throw new IllegalArgumentException(INVALID_IMPLICIT_TYPE.getMessage(implicitType));
+        }
+        int endIndex = implicitType.getValue().lastIndexOf("-");
+        return Label.of(implicitType.getValue().substring(4, endIndex));
     }
 
     /**

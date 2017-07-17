@@ -68,6 +68,7 @@ public enum ErrorMessage {
     RESERVED_WORD("The word [%s] is reserved internally and cannot be used"),
     INVALID_PROPERTY_USE("The concept [%s] cannot contain vertex property [%s]"),
     UNKNOWN_CONCEPT("Uknown concept type [%s]"),
+    INVALID_IMPLICIT_TYPE("Label [%s] is not an implicit label"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -80,6 +81,8 @@ public enum ErrorMessage {
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relation Type. \n"),
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
     VALIDATION_INSTANCE("Thing [%s] of type [%s] does not play the required role [%s] \n"),
+
+    VALIDATION_TOO_MANY_KEYS("Thing [%s] has more than one key of type [%s] \n"),
 
     VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role Type [%s] which is connected to Relation Type [%s] " +
             "does not have a %s Role Type which is connected to the %s Relation Type [%s] \n"),

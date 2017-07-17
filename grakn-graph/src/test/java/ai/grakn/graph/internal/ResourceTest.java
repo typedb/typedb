@@ -192,7 +192,7 @@ public class ResourceTest extends GraphTestBase{
     }
 
     @Test
-    public void whenInsertingAThingWithTwoKeyResources_Throw(){
+    public void whenInsertingAThingWithTwoKeys_Throw(){
         ResourceType<String> resourceType = graknGraph.putResourceType("Key Thingy", ResourceType.DataType.STRING);
         EntityType entityType = graknGraph.putEntityType("Entity Type Thingy").key(resourceType);
         Entity entity = entityType.addEntity();
