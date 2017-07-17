@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -95,7 +96,7 @@ public class GraqlTraversal {
 
         // If the first fragment can operate on edges, then we have to navigate all edges as well
         if (fragmentList.get(0).operatesOnEdge()) {
-            traversal = __.union(traversal, __.V().outE());
+            traversal = __.union(traversal, __.V().outE(Schema.EdgeLabel.RESOURCE.getLabel()));
         }
 
         return applyFragments(graph, fragmentList, traversal);
