@@ -1,3 +1,15 @@
+---
+title: Using Grakn To Work With Tweet Data
+keywords: analytics, social-media, streaming, twitter
+last_updated: July 2017
+tags: [analytics, social-media, streaming, twitter, examples]
+summary: "Using Grakn To Work With Tweet Data"
+sidebar: documentation_sidebar
+permalink: /documentation/examples/using-grakn-to-work-with-tweet-data.html
+folder: documentation
+comment_issue_id: 27
+---
+
 # Using Grakn To Work With Tweet Data
 In this tutorial we will look at how to stream public tweets into Grakn's knowledge graph. The tutorial aims to demonstrate key concepts such as receiving, inserting and querying data. Upon the completion of this tutorial, you will have learnt about these concepts:
 
@@ -229,7 +241,7 @@ public static void main(String[] args) {
 
 ## Streaming Data From Twitter
 
-Now that we're done with ontology creation, let's develop the code for listening to the public tweet stream. 
+Now that we're done with ontology creation, let's develop the code for listening to the public tweet stream.
 
 Define a new method `listenToTwitterStreamAsync ` and put it in a class named `AsyncTweetStreamProcessorHelper `.  In addition to accepting Twitter credential settings, we will also need to supply a callback `onTweetReceived`, will be invoked whenever the application receives a new tweet. Further down, we will use this callback for storing, querying and displaying tweets as they come.
 
@@ -251,7 +263,7 @@ public class AsyncTweetStreamProcessorHelper {
     Configuration conf = createTwitterConfiguration(consumerKey, consumerSecret, accessToken, accessTokenSecret);
     // ...
   }
-  
+
   private static Configuration createTwitterConfiguration(String consumerKey, String consumerSecret, String accessToken, String accessTokenSecret) {
     return new ConfigurationBuilder()
         .setDebugEnabled(false)
@@ -463,7 +475,7 @@ qb.match(
   var().rel("posts", "user").rel("posted_by", "tweet").isa("user-tweet-relation"))
 ```
 
-The query we've just defined will return every user and tweet along with their relations. We will use it as the basis of the aggregate query. 
+The query we've just defined will return every user and tweet along with their relations. We will use it as the basis of the aggregate query.
 
 Let's do some aggregation over the result here. We will supply `"user"` and `count()` as the argument for `group()`, which essentially tells Grakn to group the result by username, and count the number of occurences per username.
 
@@ -538,7 +550,7 @@ public class Main {
   public static void main(String[] args) {
     try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
       withGraknGraph(session, graknGraph -> initTweetOntology(graknGraph)); // initialize ontology
-  
+
       listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
         withGraknGraph(session, graknGraph -> {
           insertUserTweet(graknGraph, screenName, tweet); // insert tweet
