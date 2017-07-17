@@ -120,7 +120,9 @@ public class GraqlDocsTest {
 
             String graqlString = matcher.group(2);
 
-            if (!graqlString.trim().startsWith("test-ignore")) {
+            String trimmed = graqlString.trim();
+
+            if (!(trimmed.startsWith("test-ignore") || trimmed.startsWith("<!--test-ignore-->"))) {
                 String fileAndLine = file.getName() + ":" + getLineNumber(contents, matcher.toMatchResult().start());
 
                 assertion.accept(graph, fileAndLine, graqlString);

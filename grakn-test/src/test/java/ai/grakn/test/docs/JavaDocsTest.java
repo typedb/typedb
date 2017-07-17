@@ -98,7 +98,10 @@ public class JavaDocsTest {
 
         while (matcher.find()) {
             String match = matcher.group(2);
-            if (!match.trim().startsWith("-test-ignore")) {
+
+            String trimmed = match.trim();
+
+            if (!(trimmed.startsWith("-test-ignore") || trimmed.startsWith("<!--test-ignore-->"))) {
                 numFound += 1;
                 groovyString += matcher.group(2) + "\n";
                 foundGroovy = true;
