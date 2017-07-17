@@ -34,10 +34,10 @@ import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
+import org.janusgraph.core.SchemaViolationException;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import javax.naming.directory.SchemaViolationException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;

@@ -185,7 +185,7 @@
             <version>${slf4j.version}</version>
         </dependency>
 
-        <!--Hadoop-Gremlin requires a logger implementation by default. Without a logger implementation, when depending on the titan-factory library
+        <!--Hadoop-Gremlin requires a logger implementation by default. Without a logger implementation, when depending on the janus-factory library
         from java and running an analytics query, the Hadoop-Gremlin library throws an exception that it cannot find the logger.
         slf4j-NOP is an implementation of the slf4j API that does nothing and means that analytics can run when depending on this library.
         It also means that users may have to resolve logger implementation conflicts if they decide to provide a different logger. -->
