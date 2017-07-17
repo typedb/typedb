@@ -124,7 +124,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveChain()  {
-        final int N = 20;
+        final int N = 1000;
 
         // DJ - differential joins
         // IC - inverse cache
@@ -203,7 +203,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveMatrix(){
-        final int N = 5;
+        final int N = 30;
 
         //                         DJ       IC     FO
         //results @N = 15 14400     ?
@@ -232,6 +232,10 @@ public class BenchmarkTests {
         Concept id = iqb.<MatchQuery>parse("match $x has index 'a';").execute().iterator().next().get("x");
         String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id '" + id.getId().getValue() + "';";
         MatchQuery query3 = iqb.parse(queryString3);
+
+        startTime = System.currentTimeMillis();
+        List<Answer> executeLimit = query.limit(369000).execute();
+        System.out.println("full result with limit: " + (System.currentTimeMillis() - startTime) + " results: " + executeLimit.size());
 
         startTime = System.currentTimeMillis();
         List<Answer> execute = query.execute();

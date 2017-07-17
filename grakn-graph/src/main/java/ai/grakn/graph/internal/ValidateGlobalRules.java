@@ -287,7 +287,7 @@ class ValidateGlobalRules {
      */
     static Set<String> validateRuleIsValidHornClause(GraknGraph graph, Rule rule){
         Set<String> errors = new HashSet<>();
-        if (rule.getWhen().admin().getDisjunctiveNormalForm().getPatterns().size() != 1){
+        if (rule.getWhen().admin().isDisjunction()){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
         }
         errors.addAll(checkRuleHeadInvalid(graph, rule, rule.getThen()));
@@ -295,7 +295,7 @@ class ValidateGlobalRules {
     }
 
     /**
-     * NB: assumes the rule obeys the Horn clause form
+     * NB: this only gets checked if the rule obeys the Horn clause form
      * @param graph graph used to ensure the rule is a valid Horn clause
      * @param rule the rule to be validated ontologically
      * @return Error messages if the rule has ontological inconsistencies
