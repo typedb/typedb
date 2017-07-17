@@ -24,6 +24,8 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
@@ -39,7 +41,23 @@ class IdFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        traversal.has(Schema.VertexProperty.ID.name(), id.getValue());
+        if (id.getValue().startsWith(Schema.PREFIX_EDGE)) {
+            // Handle both edges and vertices
+            traversal.or(
+                    edgeTraversal(),
+                    vertexTraversal(__.identity())
+            );
+        } else {
+            vertexTraversal(traversal);
+        }
+    }
+
+    private <S, E> GraphTraversal<S, E> vertexTraversal(GraphTraversal<S, E> traversal) {
+        return traversal.has(Schema.VertexProperty.ID.name(), id.getValue());
+    }
+
+    private GraphTraversal<Edge, Edge> edgeTraversal() {
+        return __.hasId(id.getValue().substring(1));
     }
 
     @Override
@@ -73,6 +91,11 @@ class IdFragment extends AbstractFragment {
 
     @Override
     public boolean hasFixedFragmentCost() {
+        return true;
+    }
+
+    @Override
+    public boolean operatesOnEdge() {
         return true;
     }
 }
