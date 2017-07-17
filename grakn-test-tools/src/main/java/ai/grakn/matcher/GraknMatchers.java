@@ -264,7 +264,7 @@ public class GraknMatchers {
      * Create a matcher to test that the concept is an instance with a 'name' resource of the given value.
      * See {@link MatchableConcept#NAME_TYPES} for possible 'name' resources.
      */
-    static Matcher<MatchableConcept> instance(Object value) {
+    public static Matcher<MatchableConcept> instance(Object value) {
         return instance(hasValue(value));
     }
 

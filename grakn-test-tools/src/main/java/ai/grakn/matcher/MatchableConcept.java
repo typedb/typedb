@@ -28,6 +28,8 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.Optional;
 
+import static ai.grakn.util.StringUtil.valueToString;
+
 /**
  * Wraps a {@link Concept} in order to provide a prettier {@link Object#toString()} representation. This is done using
  * {@link MatchableConcept#NAME_TYPES}, a hard-coded set of common 'name' variables such as "name" and "title'.
@@ -50,8 +52,9 @@ public class MatchableConcept {
 
     @Override
     public String toString() {
-        if (concept.isThing()) {
-
+        if (concept.isResource()) {
+            return "hasValue(" + valueToString(concept.asResource().getValue()) + ")";
+        } else if (concept.isThing()) {
             Collection<Resource<?>> resources = concept.asThing().resources();
             Optional<?> value = resources.stream()
                     .filter(resource -> NAME_TYPES.contains(resource.type().getLabel()))
