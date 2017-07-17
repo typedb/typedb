@@ -115,4 +115,12 @@ public interface Fragment {
     default boolean hasFixedFragmentCost() {
         return false;
     }
+
+    /**
+     * Indicates whether the fragment can be used on an {@link org.apache.tinkerpop.gremlin.structure.Edge} as well as
+     * a {@link org.apache.tinkerpop.gremlin.structure.Vertex}.
+     */
+    default boolean operatesOnEdge() {
+        return false;
+    }
 }

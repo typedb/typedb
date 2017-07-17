@@ -59,4 +59,9 @@ class OutIsaFragment extends AbstractFragment {
     public double fragmentCost(double previousCost) {
         return previousCost;
     }
+
+    @Override
+    public boolean operatesOnEdge() {
+        return true;
+    }
 }

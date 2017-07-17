@@ -146,4 +146,9 @@ class OutShortcutFragment extends AbstractFragment {
         result = 31 * result + relationTypeLabels.hashCode();
         return result;
     }
+
+    @Override
+    public boolean operatesOnEdge() {
+        return true;
+    }
 }

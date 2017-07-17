@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -87,11 +88,21 @@ public class GraqlTraversal {
     /**
      * @return a gremlin traversal that represents this inner query
      */
-    private GraphTraversal<Vertex, Map<String, Vertex>> getConjunctionTraversal(
+    private GraphTraversal<? extends Element, Map<String, Element>> getConjunctionTraversal(
             GraknGraph graph, ImmutableList<Fragment> fragmentList
     ) {
-        GraphTraversal<Vertex, Vertex> traversal = graph.admin().getTinkerTraversal().V();
+        GraphTraversal traversal = __.V();
 
+        // If the first fragment can operate on edges, then we have to navigate all edges as well
+        if (fragmentList.get(0).operatesOnEdge()) {
+            traversal = __.union(traversal, __.V().outE());
+        }
+
+        return applyFragments(graph, fragmentList, traversal);
+    }
+
+    private GraphTraversal<?, Map<String, Element>> applyFragments(
+            GraknGraph graph, ImmutableList<Fragment> fragmentList, GraphTraversal<Element, Element> traversal) {
         Set<Var> foundNames = new HashSet<>();
 
         // Apply fragments in order into one single traversal
@@ -116,8 +127,8 @@ public class GraqlTraversal {
      * @param names a set of variable names so far encountered in the query
      */
     private void applyFragment(
-            Fragment fragment, GraphTraversal<Vertex, Vertex> traversal, @Nullable Var currentName, Set<Var> names,
-            GraknGraph graph
+            Fragment fragment, GraphTraversal<? extends Element, ? extends Element> traversal,
+            @Nullable Var currentName, Set<Var> names, GraknGraph graph
     ) {
         Var start = fragment.getStart();
 
