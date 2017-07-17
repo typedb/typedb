@@ -84,7 +84,7 @@ public class GraqlShellIT {
         trueErr = System.err;
         
         // TODO: Get these tests working consistently on Jenkins - causes timeouts
-        assumeFalse(GraknTestSetup.usingTitan());
+        assumeFalse(GraknTestSetup.usingJanus());
     }
 
     @Before

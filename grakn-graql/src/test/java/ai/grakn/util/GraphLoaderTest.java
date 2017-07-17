@@ -82,7 +82,7 @@ public class GraphLoaderTest {
             //String comparison is used here because we do not have the class available at compile time
             if(GraknTestSetup.usingTinker()){
                 assertEquals("ai.grakn.graph.internal.GraknTinkerGraph", graph.getClass().getName());
-            } else if (GraknTestSetup.usingTitan()) {
+            } else if (GraknTestSetup.usingJanus()) {
                 assertEquals("ai.grakn.graph.internal.GraknTitanGraph", graph.getClass().getName());
             } else if (GraknTestSetup.usingOrientDB()) {
                 assertEquals("ai.grakn.graph.internal.GraknOrientDBGraph", graph.getClass().getName());

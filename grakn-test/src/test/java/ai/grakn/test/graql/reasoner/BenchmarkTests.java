@@ -140,7 +140,7 @@ public class BenchmarkTests {
         //results @N = 450 101475   ?     ?       ?     14s
         //results @N = 500 125250         ?       ?     21-26s
 
-        //with materialisation            IC    IC titan
+        //with materialisation            IC    IC janus
         //results @N = 100 5050   10s     10s      18s
         //results @N = 150 11325  57s     34s      38s
         //results @N = 200 20100 200s     120s     70 s

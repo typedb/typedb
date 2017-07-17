@@ -46,18 +46,18 @@ public class JanusPreviousPropertyStepTest extends JanusTestBase {
 
     private static final GraphTraversalSource tinker = TinkerGraph.open().traversal();
 
-    private static final GraphTraversalSource titan = janusGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph().traversal();
+    private static final GraphTraversalSource janus = janusGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph().traversal();
 
-    private static final Vertex vertexWithFoo = titan.addV().property("v prop", "foo").next();
-    private static final Vertex vertexWithBar = titan.addV().property("v prop", "bar").next();
-    private static final Vertex vertexWithoutProperty = titan.addV().next();
-    private static final Edge edge = titan.V(vertexWithoutProperty).as("x").addE("self").to("x").property("e prop", "foo").next();
+    private static final Vertex vertexWithFoo = janus.addV().property("v prop", "foo").next();
+    private static final Vertex vertexWithBar = janus.addV().property("v prop", "bar").next();
+    private static final Vertex vertexWithoutProperty = janus.addV().next();
+    private static final Edge edge = janus.V(vertexWithoutProperty).as("x").addE("self").to("x").property("e prop", "foo").next();
 
     @Test
     public void whenFilteringAPropertyToBeEqualToAPreviousProperty_UseTitanGraphStep() {
-        GraphTraversal traversal = optimisableTraversal(titan);
+        GraphTraversal traversal = optimisableTraversal(janus);
 
-        GraphTraversal expected = optimisedTraversal(titan);
+        GraphTraversal expected = optimisedTraversal(janus);
 
         traversal.asAdmin().applyStrategies();
 
@@ -66,7 +66,7 @@ public class JanusPreviousPropertyStepTest extends JanusTestBase {
 
     @Test
     public void whenExecutingOptimisedTraversal_ResultIsCorrect() {
-        GraphTraversal<Vertex, Vertex> traversal = optimisableTraversal(titan);
+        GraphTraversal<Vertex, Vertex> traversal = optimisableTraversal(janus);
 
         List<Vertex> vertices = traversal.toList();
 
@@ -75,7 +75,7 @@ public class JanusPreviousPropertyStepTest extends JanusTestBase {
 
     @Test
     public void whenExecutingManuallyOptimisedTraversal_ResultIsCorrect() {
-        GraphTraversal<Vertex, Vertex> traversal = optimisedTraversal(titan);
+        GraphTraversal<Vertex, Vertex> traversal = optimisedTraversal(janus);
 
         List<Vertex> vertices = traversal.toList();
 
@@ -84,7 +84,7 @@ public class JanusPreviousPropertyStepTest extends JanusTestBase {
 
     @Test
     public void whenUsingATitanGraph_ApplyStrategy() {
-        GraphTraversal<?, ?> traversal = optimisableTraversal(titan);
+        GraphTraversal<?, ?> traversal = optimisableTraversal(janus);
         traversal.asAdmin().applyStrategies();
 
         List<Step> steps = traversal.asAdmin().getSteps();
@@ -102,7 +102,7 @@ public class JanusPreviousPropertyStepTest extends JanusTestBase {
 
     @Test
     public void whenUsingATitanGraph_TheTitanPreviousPropertyStepStrategyIsInList() {
-        GraphTraversal<Vertex, Vertex> traversal = optimisableTraversal(titan);
+        GraphTraversal<Vertex, Vertex> traversal = optimisableTraversal(janus);
         List<TraversalStrategy<?>> strategies = traversal.asAdmin().getStrategies().toList();
 
         assertThat(strategies, hasItem(instanceOf(JanusPreviousPropertyStepStrategy.class)));

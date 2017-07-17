@@ -20,22 +20,23 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
 import ai.grakn.engine.GraknEngineServer;
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
-import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.util.EmbeddedRedis;
 import com.jayway.restassured.RestAssured;
+import org.slf4j.LoggerFactory;
+import spark.Service;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.Set;
 
+import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
+import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.graql.Graql.var;
-import org.slf4j.LoggerFactory;
-import spark.Service;
 
 /**
  * <p>
@@ -74,7 +75,7 @@ public abstract class GraknTestEngineSetup {
         // for a unit tests in an IDE, add the following option:
         // -Dgrakn.conf=../conf/test/tinker/grakn.properties
         //
-        // When using titan, add -Dgrakn.test-profile=titan
+        // When using janus, add -Dgrakn.test-profile=janus
         //
         // The reason is that the default configuration of Grakn uses the Titan factory while the default
         // test profile is tinker: so when running a unit test within an IDE without any extra parameters,

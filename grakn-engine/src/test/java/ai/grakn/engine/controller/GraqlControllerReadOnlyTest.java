@@ -374,7 +374,7 @@ public class GraqlControllerReadOnlyTest {
     @Ignore
     @Test
     public void ZGETGraqlComputePathWithTextType_ResponseIsCorrect() {
-        assumeTrue(GraknTestSetup.usingTitan());
+        assumeTrue(GraknTestSetup.usingJanus());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -390,7 +390,7 @@ public class GraqlControllerReadOnlyTest {
     @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseContentTypeIsHAL() {
-        assumeTrue(GraknTestSetup.usingTitan());
+        assumeTrue(GraknTestSetup.usingJanus());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -405,7 +405,7 @@ public class GraqlControllerReadOnlyTest {
     @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseStatusIs200() {
-        assumeTrue(GraknTestSetup.usingTitan());
+        assumeTrue(GraknTestSetup.usingJanus());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -420,7 +420,7 @@ public class GraqlControllerReadOnlyTest {
     @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseIsNotEmpty() {
-        assumeTrue(GraknTestSetup.usingTitan());
+        assumeTrue(GraknTestSetup.usingJanus());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -435,7 +435,7 @@ public class GraqlControllerReadOnlyTest {
     @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseContainsValidHALObjects() {
-        assumeTrue(GraknTestSetup.usingTitan());
+        assumeTrue(GraknTestSetup.usingJanus());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
