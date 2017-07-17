@@ -24,14 +24,17 @@ import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.Schema.BaseType.RELATION_TYPE;
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
 import static ai.grakn.util.Schema.EdgeLabel.RESOURCE;
 import static ai.grakn.util.Schema.EdgeLabel.SHARD;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
+import static ai.grakn.util.Schema.VertexProperty.IS_IMPLICIT;
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 
 class InIsaFragment extends AbstractFragment {
@@ -44,16 +47,26 @@ class InIsaFragment extends AbstractFragment {
     public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
         Fragments.inSubs((GraphTraversal<Vertex, Vertex>) traversal);
 
-        traversal.union(
-                __.in(SHARD.getLabel()).in(ISA.getLabel()),
-                edgeInstances()
+        GraphTraversal<Vertex, Vertex> isImplicitRelationType =
+                __.<Vertex>hasLabel(RELATION_TYPE.name()).has(IS_IMPLICIT.name(), true);
+
+        traversal.choose(isImplicitRelationType,
+                __.union(
+                        toVertexInstances(),
+                        (GraphTraversal) toEdgeInstances()
+                ),
+                toVertexInstances()
         );
     }
 
-    private GraphTraversal edgeInstances() {
+    private <T> GraphTraversal<T, Vertex> toVertexInstances() {
+        return __.<T>in(SHARD.getLabel()).in(ISA.getLabel());
+    }
+
+    private GraphTraversal<?, Edge> toEdgeInstances() {
         // TODO: This is abysmally slow!
         Var labelId = var();
-        return __.values(LABEL_ID.name()).as(labelId.getValue())
+        return __.<Vertex, String>values(LABEL_ID.name()).as(labelId.getValue())
                 .V().outE(RESOURCE.getLabel()).has(RELATION_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
     }
 
