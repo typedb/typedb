@@ -16,7 +16,7 @@ In this tutorial we will look at how to stream public tweets into Grakn's knowle
 - Defining a simple Grakn.ai ontology using the Java API
 - Streaming public tweets into the application with the [Twitter4J](http://twitter4j.org/ "Twitter4J") library
 - Inserting tweets into the knowledge graph using Grakn's Graph API
-- Performing simple queries using GraQL, the Grakn's Query Language
+- Performing simple queries using Graql, the Grakn's query language
 
 ## Registering Your Own Twitter Application
 As of today, you will need a valid credential in order to call practically every endpoint in the Twitter API. Therefore, you must own a Twitter application (or, register a new one) before proceeding further.
@@ -452,11 +452,11 @@ public static void main(String[] args) {
 
 ```
 
-## Crafting Simple Queries Using GraQL
+## Crafting Simple Queries Using Graql
 
 We will perform a query which will count the number of tweets a user has posted since the program started. It can be achieved it by utilizing the aggregate query feature. Graql has been chosen over the graph API for this task because it is declarative and therefore much easier to use for complex queries than the graph API.
 
-Let's look at how we can build it step-by-step, start by creating a `QueryBuilder` object which we will use to craft the query in GraQL.
+Let's look at how we can build it step-by-step, start by creating a `QueryBuilder` object which we will use to craft the query in Graql.
 
 ```java
 QueryBuilder qb = graknGraph.graql();
@@ -589,4 +589,4 @@ Watch the terminal as the application runs. You should see the following text pr
 ------
 ```
 
-Finally, we have shown you many useful concepts — from creating an ontology, storing data, crafting a GraQL query, as well as displaying the result of the query. These are fundamental concepts that you will likely use in almost every area.
+Finally, we have shown you many useful concepts — from creating an ontology, storing data, crafting a Graql query, as well as displaying the result of the query. These are fundamental concepts that you will likely use in almost every area.
