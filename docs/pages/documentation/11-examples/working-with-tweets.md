@@ -84,18 +84,13 @@ Now that you have basic project structure and `pom.xml` in place, let's start cu
 </build>
 ```
 
-Then continue to the `<dependencies>` section and make sure you have all the required dependencies, i.e., `grakn-graph`, `grakn-graql`, `twitter4j-core`, and `twitter4j-stream`:
+Then continue to the `<dependencies>` section and make sure you have all the required dependencies, i.e., `grakn-graph`, `twitter4j-core`, and `twitter4j-stream`:
 
 ```xml
 <dependencies>
     <dependency>
         <groupId>ai.grakn</groupId>
         <artifactId>grakn-graph</artifactId>
-        <version>0.13.0</version>
-    </dependency>
-    <dependency>
-        <groupId>ai.grakn</groupId>
-        <artifactId>grakn-graql</artifactId>
         <version>0.13.0</version>
     </dependency>
 
