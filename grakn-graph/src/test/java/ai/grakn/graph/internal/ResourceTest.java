@@ -26,6 +26,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import org.junit.Test;
@@ -188,6 +189,23 @@ public class ResourceTest extends GraphTestBase{
 
         //Check new role player has been added as well
         assertEquals(newEntity, Iterables.getOnlyElement(relationStructureAfter.rolePlayers(newRole)));
+    }
+
+    @Test
+    public void whenInsertingAThingWithTwoKeyResources_Throw(){
+        ResourceType<String> resourceType = graknGraph.putResourceType("Key Thingy", ResourceType.DataType.STRING);
+        EntityType entityType = graknGraph.putEntityType("Entity Type Thingy").key(resourceType);
+        Entity entity = entityType.addEntity();
+
+        Resource<String> key1 = resourceType.putResource("key 1");
+        Resource<String> key2 = resourceType.putResource("key 2");
+
+        entity.resource(key1);
+        entity.resource(key2);
+
+        expectedException.expect(InvalidGraphException.class);
+
+        graknGraph.commit();
     }
 
 }

@@ -152,4 +152,11 @@ class RelationEdge implements RelationStructure{
     public void delete() {
         edge().delete();
     }
+
+    @Override
+    public String toString(){
+        return "ID [" + getId() + "] Type [" + type().getLabel() + "] Roles and Role Players: \n" +
+                "Role [" + ownerRole().getLabel() + "] played by [" + owner().getId() + "] \n" +
+                "Role [" + valueRole().getLabel() + "] played by [" + value().getId() + "] \n";
+    }
 }
