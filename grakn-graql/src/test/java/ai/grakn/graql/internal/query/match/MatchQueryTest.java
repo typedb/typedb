@@ -25,10 +25,10 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AskQuery;
@@ -188,6 +188,15 @@ public class MatchQueryTest {
 
     @ClassRule
     public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+
+    // This is a graph to contain unusual edge cases
+    @ClassRule
+    public static final GraphContext weirdGraph = GraphContext.preLoad(graph -> {
+        ResourceType<String> weirdLoopType = graph.putResourceType("name", ResourceType.DataType.STRING);
+        weirdLoopType.resource(weirdLoopType);
+        Resource<String> weird = weirdLoopType.putResource("weird");
+        weird.resource(weird);
+    });
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -981,6 +990,16 @@ public class MatchQueryTest {
 
         assertThat(query, variable("x", everyItem(not(isInstance()))));
         assertThat(query, variable("y", everyItem(not(isInstance()))));
+    }
+
+    @Test
+    public void whenQueryingForAResourceWhichHasItselfAsAResource_ReturnTheResource() {
+        MatchQuery query = weirdGraph.graph().graql().match(var("x").has("name", var("x")));
+
+        // There are actually two results expected here:
+        // This is because the semantics of `$x has foo $y` are "find all connected $x and $y where `$y isa foo`"
+        // Therefore, it's valid to arrive back at `$x` by following the binary relation in _either_ direction.
+        assertThat(query, variable("x", contains(hasValue("weird"), hasValue("weird"))));
     }
 
     @Test
