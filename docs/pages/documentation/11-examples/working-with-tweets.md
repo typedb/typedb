@@ -19,7 +19,7 @@ In this tutorial we will look at how to stream public tweets into Grakn's knowle
 - Performing simple queries using Graql, the Grakn's query language
 
 ## Registering Your Own Twitter Application
-As of today, you will need a valid credential in order to call practically every endpoint in the Twitter API. Therefore, you must own a Twitter application (or, register a new one) before proceeding further.
+As of today, every endpoint in the Twitter API is authenticated. Therefore, you must own a Twitter application (or, register a new one) before proceeding further.
 
 You can register your own application in the [Twitter Application Management](https://apps.twitter.com/). Once you've done so you can  get the credentials by visiting the **Keys and Access Tokens** tab. The value we care about in particular are Consumer Key, Consumer Secret, Access Token, and Access Token Secret.
 
