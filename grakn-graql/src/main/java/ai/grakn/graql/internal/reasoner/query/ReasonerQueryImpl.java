@@ -169,10 +169,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         inferredAtoms.forEach(this::addAtomic);
     }
 
+    @Override
     public GraknGraph graph() {
         return graph;
     }
 
+    @Override
     public Conjunction<PatternAdmin> getPattern() {
         Set<PatternAdmin> patterns = new HashSet<>();
         atomSet.stream()
@@ -180,6 +182,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .flatMap(p -> p.getVars().stream())
                 .forEach(patterns::add);
         return Patterns.conjunction(patterns);
+    }
+
+    @Override
+    public Set<String> validateOntologically() {
+        return getAtoms().stream()
+                .flatMap(at -> at.validateOntologically().stream())
+                .collect(Collectors.toSet());
     }
 
     /**

@@ -97,6 +97,15 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("The rule [%s] of type [%s] does not form a valid Horn clause, as its head contains illegal atomics\n"),
 
+    VALIDATION_RULE_INVALID_RELATION_TYPE("Attempting to define a rule containing a relation pattern with type [%s] which is not a relation type\n"),
+
+    VALIDATION_RULE_INVALID_RESOURCE_TYPE("Attempting to define a rule containing a resource pattern with type [%s] which is not a resource type\n"),
+
+    VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE("Attempting to define a rule containing a resource pattern of type [%s] with type [%s] that cannot have this resource\n"),
+
+    VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED("Attempting to define a rule containing a relation pattern with role [%s] which cannot be played in relation [%s]\n"),
+
+    VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE("Attempting to define a rule containing a relation pattern with type [%s] that cannot play role [%s] in relation [%s]\n"),
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),

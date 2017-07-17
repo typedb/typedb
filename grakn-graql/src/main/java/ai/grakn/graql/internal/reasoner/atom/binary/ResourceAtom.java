@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.Nullable;
@@ -197,6 +198,29 @@ public class ResourceAtom extends Binary{
 
         ValuePredicate predicate = getMultiPredicate().iterator().next();
         return predicate.getPredicate().isSpecific();
+    }
+
+    @Override
+    public Set<String> validateOntologically() {
+        OntologyConcept type = getOntologyConcept();
+        if (type == null) {
+            return new HashSet<>();
+        }
+
+        Set<String> errors = new HashSet<>();
+        if (!type.isResourceType()){
+            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage(type.getLabel()));
+            return errors;
+        }
+
+        OntologyConcept ownerType = getParentQuery().getVarOntologyConceptMap().get(getVarName());
+
+        if (ownerType != null
+                && ownerType.isType()
+                && !ownerType.asType().resources().contains(type.asResourceType())){
+            errors.add(ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage(type.getLabel(), ownerType.getLabel()));
+        }
+        return errors;
     }
 
     @Override
