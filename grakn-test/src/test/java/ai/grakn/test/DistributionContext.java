@@ -21,6 +21,7 @@ package ai.grakn.test;
 import ai.grakn.client.Client;
 import ai.grakn.engine.GraknEngineConfig;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
+import static ai.grakn.engine.GraknEngineConfig.TASKS_RETRY_DELAY;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
@@ -134,6 +135,8 @@ public class DistributionContext extends ExternalResource {
         Properties properties = GraknEngineConfig.create().getProperties();
         properties.setProperty(SERVER_PORT_NUMBER, port.toString());
         properties.setProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
+        // To speed up tests of failure cases
+        properties.setProperty(TASKS_RETRY_DELAY, "5");
 
         // Write new properties to disk
         File propertiesFile = new File("grakn-engine-" + port + ".properties");

@@ -26,7 +26,7 @@ Let's see how we can build the same ontology exclusively via the graph API.
 First we need a graph. For this example we will just use an [in-memory graph](./java-setup.html#initialising-a-graph):
 
 ```java
-GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.Write);
+GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
 ```
 
 We need to define our constructs before we can use them. We will begin by defining our resource types since they are used everywhere. In Graql, they were defined as follows:
@@ -38,8 +38,8 @@ surname sub resource datatype string;
 middlename sub resource datatype string;
 picture sub resource datatype string;
 age sub resource datatype long;
-birth-date sub resource datatype date;
-death-date sub resource datatype date;
+birth-date sub resource datatype string;
+death-date sub resource datatype string;
 gender sub resource datatype string;
 ```
 
@@ -49,10 +49,11 @@ These same resource types can be built with the Graph API as follows:
 ResourceType identifier = graph.putResourceType("identifier", ResourceType.DataType.STRING);
 ResourceType firstname = graph.putResourceType("firstname", ResourceType.DataType.STRING);
 ResourceType surname = graph.putResourceType("surname", ResourceType.DataType.STRING);
+ResourceType middlename = graph.putResourceType("middlename", ResourceType.DataType.STRING);
 ResourceType picture = graph.putResourceType("picture", ResourceType.DataType.STRING);
 ResourceType age = graph.putResourceType("age", ResourceType.DataType.LONG);
-ResourceType birthDate = graph.putResourceType("birth-date", ResourceType.DataType.DATE);
-ResourceType deathDate = graph.putResourceType("death-date", ResourceType.DataType.DATE);
+ResourceType birthDate = graph.putResourceType("birth-date", ResourceType.DataType.STRING);
+ResourceType deathDate = graph.putResourceType("death-date", ResourceType.DataType.STRING);
 ResourceType gender = graph.putResourceType("gender", ResourceType.DataType.STRING);
 ```
 
@@ -78,18 +79,18 @@ child sub role;
 Using the Graph API: 
 
 ```java
-RoleType spouse1 = graph.putRoleType("spouse1");
-RoleType spouse2 = graph.putRoleType("spouse2");
+Role spouse1 = graph.putRole("spouse1");
+Role spouse2 = graph.putRole("spouse2");
 RelationType marriage = graph.putRelationType("marriage")
-                            .relates(spouse1);
+                            .relates(spouse1)
                             .relates(spouse2);
-marriage.hasResource(picture);
+marriage.resource(picture);
                            
-RoleType parent = graph.putRoleType("parent");
-RoleType child = graph.putRoleType("child");
-RelationType marriage = graph.putRelationType("marriage")
-                            .relates(spouse1);
-                            .relates(spouse2);
+Role parent = graph.putRole("parent");
+Role child = graph.putRole("child");
+RelationType parentship = graph.putRelationType("parentship")
+                            .relates(parent)
+                            .relates(child);
 ```
 
 Now the entity types. First, in Graql:
@@ -115,20 +116,20 @@ Using the Graph API:
 
 ```java
 EntityType person = graph.putEntityType("person")
-                        .plasRole(parent)
-                        .plasRole(child)
-                        .plasRole(spouse1)
-                        .plasRole(spouse2);
+                        .plays(parent)
+                        .plays(child)
+                        .plays(spouse1)
+                        .plays(spouse2);
                         
-person.hasResource(identifier);
-person.hasResource(firstname);
-person.hasResource(surname);
-person.hasResource(middlename);
-person.hasResource(picture);
-person.hasResource(age);
-person.hasResource(birth-date);
-person.hasResource(death-date);
-person.hasResource(gender);
+person.resource(identifier);
+person.resource(firstname);
+person.resource(surname);
+person.resource(middlename);
+person.resource(picture);
+person.resource(age);
+person.resource(birthDate);
+person.resource(deathDate);
+person.resource(gender);
 ```
 
 Now to commit the ontology using the Graph API:
@@ -157,8 +158,10 @@ insert $x isa person has firstname "John";
 Now the equivalent Graph API:    
 
 ```java
+graph = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
+
 Resource johnName = firstname.putResource("John"); //Create the resource
-person.addEntity().hasResource(johnName); //Link it to an entity
+person.addEntity().resource(johnName); //Link it to an entity
 ```   
 
 What if we want to create a relation between some entities? 
@@ -184,20 +187,25 @@ Entity john = person.addEntity();
 Entity mary = person.addEntity();
 
 //Create the actual relationships
-Relation theMarriage = marriage.addRelation().putRolePlayer(spouse1, john).putRolePlayer(spouse2, mary);
+Relation theMarriage = marriage.addRelation().addRolePlayer(spouse1, john).addRolePlayer(spouse2, mary);
 ```
 
 Add a picture, first using Graql:
 
 ```graql
-$z has picture "www.LocationOfMyPicture.com";
+match
+    $x isa person has firstname "John";
+    $y isa person has firstname "Mary";
+    $z (spouse1: $x, spouse2: $y) isa marriage;
+insert
+    $z has picture "www.LocationOfMyPicture.com";
 ```
 
 Now the equivalent using the Graph API:
 
 ```java
 Resource weddingPicture = picture.putResource("www.LocationOfMyPicture.com");
-theMarriage.hasResource(weddingPicture);
+theMarriage.resource(weddingPicture);
 ```
 
 
@@ -217,7 +225,7 @@ becomes the following with the Graph API:
 
 ```java 
 EntityType event = graph.putEntityType("event");
-EntityType wedding = graph.putEntityType("event").superType(event);
+EntityType wedding = graph.putEntityType("wedding").sup(event);
 ```
 
 From there, all operations remain the same. 
@@ -236,19 +244,19 @@ Rule instances can be added to the graph both through the Graph API as well as t
 
 ```graql
 $R1 isa inference-rule,
-lhs {
+when {
     (parent: $p, child: $c) isa Parent;
 },
-rhs {
+then {
     (ancestor: $p, descendant: $c) isa Ancestor;
 };
 
 $R2 isa inference-rule,
-lhs {
+when {
     (parent: $p, child: $c) isa Parent;
     (ancestor: $c, descendant: $d) isa Ancestor;
 },
-rhs {
+then {
     (ancestor: $p, descendant: $d) isa Ancestor;
 };
 ```
@@ -256,31 +264,31 @@ rhs {
 As there is more than one way to define Graql patterns through the API, there are several ways to construct rules. One options is through the Pattern factory:
 
 ```java
-Pattern rule1LHS = var().rel("parent", "p").rel("child", "c").isa("Parent");
-Pattern rule1RHS = var().rel("ancestor", "p").rel("descendant", "c").isa("Ancestor");
+Pattern rule1when = var().rel("parent", "p").rel("child", "c").isa("Parent");
+Pattern rule1then = var().rel("ancestor", "p").rel("descendant", "c").isa("Ancestor");
 
-Pattern rule2LHS = and(
+Pattern rule2when = and(
         var().rel("parent", "p").rel("child", "c").isa("Parent')"),
         var().rel("ancestor", "c").rel("descendant", "d").isa("Ancestor")
 );
-Pattern rule2RHS = var().rel("ancestor", "p").rel("descendant", "d").isa("Ancestor");
+Pattern rule2then = var().rel("ancestor", "p").rel("descendant", "d").isa("Ancestor");
 ```
 
 If we have a specific `GraknGraph graph` already defined, we can use the Graql pattern parser:
 
 ```java
-Pattern rule1LHS = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;"));
-Pattern rule1RHS = and(graph.graql().parsePatterns("(ancestor: $p, descendant: $c) isa Ancestor;"));
+rule1when = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;"));
+rule1then = and(graph.graql().parsePatterns("(ancestor: $p, descendant: $c) isa Ancestor;"));
 
-Pattern rule2LHS = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;(ancestor: $c, descendant: $d) isa Ancestor;"));
-Pattern rule2RHS = and(graph.graql().parsePatterns("(ancestor: $p, descendant: $d) isa Ancestor;"));
+rule2when = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;(ancestor: $c, descendant: $d) isa Ancestor;"));
+rule2then = and(graph.graql().parsePatterns("(ancestor: $p, descendant: $d) isa Ancestor;"));
 ```
 
 We conclude the rule creation with defining the rules from their constituent patterns:
 
 ```java
-Rule rule1 = inferenceRule.addRule(rule1LHS, rule1RHS);
-Rule rule2 = inferenceRule.addRule(rule2LHS, rule2RHS);
+Rule rule1 = inferenceRule.putRule(rule1when, rule1then);
+Rule rule2 = inferenceRule.putRule(rule2when, rule2then);
 ```
 
 

@@ -72,6 +72,8 @@ hp sub resource datatype long;
 wt sub resource datatype double;
 gear sub resource datatype long;
 carb sub resource datatype long;
+powerful sub resource datatype string;
+economical sub resource datatype string;
 
 # Roles and Relations
 

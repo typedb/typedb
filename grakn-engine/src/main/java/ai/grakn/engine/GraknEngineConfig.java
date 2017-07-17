@@ -70,6 +70,7 @@ public class GraknEngineConfig {
 
     // Delay for the post processing task in milliseconds
     public static final String POST_PROCESSING_TASK_DELAY = "tasks.postprocessing.delay";
+    public static final String TASKS_RETRY_DELAY = "tasks.retry.delay";
 
     public static final int WEBSOCKET_TIMEOUT = 3600000;
 

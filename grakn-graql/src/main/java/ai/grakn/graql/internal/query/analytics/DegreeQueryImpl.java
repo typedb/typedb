@@ -20,8 +20,10 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Type;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -54,19 +56,23 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
         LOGGER.info("DegreeVertexProgram is called");
         long startTime = System.currentTimeMillis();
         initSubGraph();
-        if (!selectedTypesHaveInstance()) return Collections.emptyMap();
 
-        ComputerResult result;
-
+        // Check if ofType is valid before returning emptyMap
         if (ofLabels.isEmpty()) {
             ofLabels.addAll(subLabels);
         } else {
             ofLabels = ofLabels.stream()
-                    .flatMap(typeLabel -> graph.get().getOntologyConcept(typeLabel).subs().stream())
+                    .flatMap(typeLabel -> {
+                        Type type = graph.get().getOntologyConcept(typeLabel);
+                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
+                        return type.subs().stream();
+                    })
                     .map(OntologyConcept::getLabel)
                     .collect(Collectors.toSet());
             subLabels.addAll(ofLabels);
         }
+
+        if (!selectedTypesHaveInstance()) return Collections.emptyMap();
 
         Set<Label> withResourceRelationTypes = getHasResourceRelationTypes();
         withResourceRelationTypes.addAll(subLabels);
@@ -76,7 +82,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
 
         String randomId = getRandomJobId();
 
-        result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationLabelIds, ofLabelIds, randomId),
+        ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationLabelIds, ofLabelIds, randomId),
                 new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE + randomId));
 
         LOGGER.info("DegreeVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");

@@ -87,8 +87,8 @@ surname sub resource datatype string;
 middlename sub resource datatype string;
 picture sub resource datatype string;
 age sub resource datatype long;
-birth-date sub resource datatype date;
-death-date sub resource datatype date;
+birth-date sub resource datatype string;
+death-date sub resource datatype string;
 gender sub resource datatype string;
 ``` 
 

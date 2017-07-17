@@ -202,6 +202,12 @@ public class ResourceAtom extends Binary{
     @Override
     public boolean requiresMaterialisation(){ return true;}
 
+    private boolean isSuperNode(){
+        return graph().graql().match(getCombinedPattern()).admin().stream()
+                .skip(ResolutionPlan.RESOURCE_SUPERNODE_SIZE)
+                .findFirst().isPresent();
+    }
+
     @Override
     public int computePriority(Set<Var> subbedVars){
         int priority = super.computePriority(subbedVars);
@@ -209,8 +215,8 @@ public class ResourceAtom extends Binary{
         priority += ResolutionPlan.IS_RESOURCE_ATOM;
 
         if (vps.isEmpty()) {
-            if (subbedVars.contains(getVarName())
-                    || subbedVars.contains(getPredicateVariable())) {
+            if (subbedVars.contains(getVarName()) || subbedVars.contains(getPredicateVariable())
+                    && !isSuperNode()) {
                     priority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
             } else{
                     priority += ResolutionPlan.VARIABLE_VALUE_PREDICATE;
@@ -219,14 +225,15 @@ public class ResourceAtom extends Binary{
             int vpsPriority = 0;
             for (ValuePredicateAdmin vp : vps) {
                 //vp with a value
-                if (vp.isSpecific()) {
+                if (vp.isSpecific() && !isSuperNode()) {
                     vpsPriority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
                 } //vp with a variable
                 else if (vp.getInnerVar().isPresent()) {
                     VarPatternAdmin inner = vp.getInnerVar().orElse(null);
                     //variable mapped inside the query
                     if (subbedVars.contains(getVarName())
-                        || subbedVars.contains(inner.getVarName())) {
+                        || subbedVars.contains(inner.getVarName())
+                            && !isSuperNode()) {
                         vpsPriority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
                     } //variable equality
                     else if (vp.equalsValue().isPresent()){

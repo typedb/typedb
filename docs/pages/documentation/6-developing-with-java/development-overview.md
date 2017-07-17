@@ -90,37 +90,38 @@ Here are some links to guides for adding external jars using different IDEs:
 
 You can initialise an in memory graph without having the Grakn server running with:  
 
+<!-- These are ignored in tests because they connect to non-existent servers -->
 ```java
-GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "keyspace").open(GraknTxType.Write);
+GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "keyspace").open(GraknTxType.WRITE);
 ```    
     
 If you are running the Grakn server locally then you can initialise a graph with:
 
-```java    
-GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, "keyspace").getGraph();
+```java-test-ignore
+graph = Grakn.session(Grakn.DEFAULT_URI, "keyspace").open(GraknTxType.WRITE);
 ```
     
 If you are running the Grakn server remotely you must initialise the graph by providing the IP address of your server:
 
-```java
-GraknGraph graph = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.Write);
+```java-test-ignore
+graph = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
 ```
     
 The string "keyspace" uniquely identifies the graph and allows you to create different graphs.  
 
 Please note that graph keyspaces are **not** case sensitive so the following two graphs are actually the same graph:
 
-```java
-    GraknGraph graph1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.Write);
-    GraknGraph graph2 = Grakn.session("127.6.21.2", "KeYsPaCe").open(GraknTxType.Write);
+```java-test-ignore
+    GraknGraph graph1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
+    GraknGraph graph2 = Grakn.session("127.6.21.2", "KeYsPaCe").open(GraknTxType.WRITE);
 ```
    
 All graphs are also singletons specific to their keyspaces so be aware that in the following case:
 
-```java
-   GraknGraph graph1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.Write);
-   GraknGraph graph2 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.Write);
-   GraknGraph graph3 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.Write);
+```java-test-ignore
+   graph1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
+   graph2 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
+   graph3 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
 ```
   
 any changes to `graph1`, `graph2`, or `graph3` will all be persisted to the same graph.

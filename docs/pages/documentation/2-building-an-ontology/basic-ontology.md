@@ -60,8 +60,8 @@ person sub entity
   middlename sub resource datatype string;
   picture sub resource datatype string;
   age sub resource datatype long;
-  birth-date sub resource datatype date;
-  death-date sub resource datatype date;
+  birth-date sub resource datatype string;
+  death-date sub resource datatype string;
   gender sub resource datatype string;    
 ```	    
 
@@ -104,7 +104,7 @@ person sub entity
   plays parent
   plays child
   plays spouse1
-  plays spouse2
+  plays spouse2;
 ```    
 	    
 We have now completed our basic genealogy ontology.
@@ -141,8 +141,8 @@ insert
   middlename sub resource datatype string;
   picture sub resource datatype string;
   age sub resource datatype long;
-  birth-date sub resource datatype date;
-  death-date sub resource datatype date;
+  birth-date sub resource datatype string;
+  death-date sub resource datatype string;
   gender sub resource datatype string;
 
  # Roles and Relations

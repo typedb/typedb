@@ -53,6 +53,13 @@ import java.util.function.Function;
 public interface ResourceType<D> extends Type {
     //------------------------------------- Modifiers ----------------------------------
     /**
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
+     */
+    ResourceType setLabel(Label label);
+
+    /**
      * Sets the ResourceType to be abstract - which prevents it from having any instances.
      *
      * @param isAbstract  Specifies if the ResourceType is to be abstract (true) or not (false).

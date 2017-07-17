@@ -38,6 +38,7 @@ import static ai.grakn.util.ErrorMessage.HAS_INVALID;
 import static ai.grakn.util.ErrorMessage.INVALID_DIRECTION;
 import static ai.grakn.util.ErrorMessage.INVALID_PATH_TO_CONFIG;
 import static ai.grakn.util.ErrorMessage.INVALID_PROPERTY_USE;
+import static ai.grakn.util.ErrorMessage.LABEL_TAKEN;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.NO_TYPE;
 import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
@@ -245,5 +246,12 @@ public class GraphOperationException extends GraknException{
      */
     public static GraphOperationException invalidPropertyUse(Concept concept, Schema.VertexProperty property) {
         return new GraphOperationException(INVALID_PROPERTY_USE.getMessage(concept, property));
+    }
+
+    /**
+     * Thrown when changing the {@link Label} of an {@link OntologyConcept} which is owned by another {@link OntologyConcept}
+     */
+    public static GraphOperationException labelTaken(Label label){
+        throw new GraphOperationException(LABEL_TAKEN.getMessage(label));
     }
 }

@@ -66,7 +66,7 @@ relates
 #### Rules definition
 
 ```graql
-lhs, rhs
+when, then
 ```
 
 #### Statistics 
