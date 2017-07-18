@@ -160,6 +160,20 @@ public class Fragments {
         return traversal.union(__.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
     }
 
+    /**
+     * Create a traversal that filters to only vertices
+     */
+    static GraphTraversal<Vertex, Vertex> isVertex() {
+        return __.has(Schema.VertexProperty.ID.name());
+    }
+
+    /**
+     * Create a traversal that filters to only edges
+     */
+    static GraphTraversal<Edge, Edge> isEdge() {
+        return __.hasNot(Schema.VertexProperty.ID.name());
+    }
+
     static String displayOptionalTypeLabels(String name, Optional<Set<Label>> typeLabels) {
         return typeLabels.map(labels ->
                 " " + name + ":" + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
