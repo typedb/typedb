@@ -21,7 +21,21 @@ public class ProcessSupervision {
   public static void startCassandraIfNotExists() {
     if (!ProcessSupervision.isCassandraRunning()) {
       ProcessSupervision.startCassandra();
-      // TODO: attempt to check if cassandra is started successfully for a number of times every few seconds
+
+      // attempt a check several times to see if it's actually running
+      int attempt = 0;
+      while (attempt < 3) {
+        if (isCassandraRunning()) {
+          return ; // it's running. yay!
+        }
+        else {
+          // it's not yet running. pause for a bit and re-check
+          attempt++;
+          threadSleep(1000);
+        }
+      }
+      // it's still not running after some attempts. something might have gone wrong
+      throw new RuntimeException("unable to start cassandra!");
     }
   }
 
@@ -72,5 +86,9 @@ public class ProcessSupervision {
     Process cat = Runtime.getRuntime().exec(new String[] { "sh", "-c", "cat " + file });
     BufferedReader catStdout = new BufferedReader(new InputStreamReader(cat.getInputStream()));
     return catStdout.lines().collect(Collectors.joining("\n"));
+  }
+
+  private static void threadSleep(long ms) {
+    try { Thread.sleep(ms); } catch (InterruptedException e) { throw new RuntimeException(e); }
   }
 }
