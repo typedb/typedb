@@ -20,13 +20,12 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
-import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -45,8 +44,8 @@ class OutIsaFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        GraphTraversal<? extends Element, Vertex> vertexTraversal = traversal.choose(e -> e instanceof Vertex,
-                __.out(ISA.getLabel()).out(SHARD.getLabel()),
+        GraphTraversal<? extends Element, Vertex> vertexTraversal = traversal.union(
+                Fragments.isVertex().out(ISA.getLabel()).out(SHARD.getLabel()),
                 edgeTraversal()
         );
 
@@ -54,7 +53,7 @@ class OutIsaFragment extends AbstractFragment {
     }
 
     private GraphTraversal<?, Vertex> edgeTraversal() {
-        return Fragments.traverseOntologyConceptFromEdge(__.identity(), RELATION_TYPE_LABEL_ID);
+        return Fragments.traverseOntologyConceptFromEdge(Fragments.isEdge(), RELATION_TYPE_LABEL_ID);
     }
 
     @Override

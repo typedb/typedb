@@ -160,6 +160,20 @@ public class Fragments {
         return traversal.union(__.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
     }
 
+    /**
+     * Create a traversal that filters to only vertices
+     */
+    static GraphTraversal<Vertex, Vertex> isVertex() {
+        return __.has(Schema.VertexProperty.ID.name());
+    }
+
+    /**
+     * Create a traversal that filters to only edges
+     */
+    static GraphTraversal<Edge, Edge> isEdge() {
+        return __.hasNot(Schema.VertexProperty.ID.name());
+    }
+
     static String displayOptionalTypeLabels(String name, Optional<Set<Label>> typeLabels) {
         return typeLabels.map(labels ->
                 " " + name + ":" + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
@@ -185,7 +199,7 @@ public class Fragments {
         role.ifPresent(var -> {
             Var edge = Graql.var();
             traversal.as(edge.getValue());
-            traverseOntologyConceptFromEdge(traversal, edgeProperty);
+            Fragments.outSubs(traverseOntologyConceptFromEdge(traversal, edgeProperty));
             traversal.as(var.getValue()).select(edge.getValue());
         });
     }
@@ -196,11 +210,7 @@ public class Fragments {
         traversal.values(edgeProperty.name()).as(labelId.getValue());
 
         // Look up ontology concept using ID
-        GraphTraversal<?, Vertex> vertexTraversal =
-                traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
-
-        // Navigate up hierarchy
-        return Fragments.outSubs(vertexTraversal);
+        return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
     }
 
 }
