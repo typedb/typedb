@@ -34,6 +34,7 @@ import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.RedissonLockProvider;
 import ai.grakn.engine.session.RemoteSession;
+import ai.grakn.engine.supervision.ProcessSupervision;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
@@ -111,7 +112,11 @@ public class GraknEngineServer implements AutoCloseable {
 
 
     public static void main(String[] args) {
+        // start cassandra (TODO: start redis)
+        ProcessSupervision.startCassandraIfNotExists();
+
         GraknEngineConfig prop = GraknEngineConfig.create();
+        
         // Start Engine
         GraknEngineServer graknEngineServer = new GraknEngineServer(prop);
         graknEngineServer.start();
@@ -130,6 +135,7 @@ public class GraknEngineServer implements AutoCloseable {
     public void close() {
         stopHTTP();
         stopTaskManager();
+        ProcessSupervision.stopCassandraIfRunning();
     }
 
     /**
