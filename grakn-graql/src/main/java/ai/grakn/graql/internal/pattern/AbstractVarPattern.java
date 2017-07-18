@@ -92,7 +92,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final Optional<Label> getTypeLabel() {
-        return getProperty(LabelProperty.class).map(LabelProperty::getLabelValue);
+        return getProperty(LabelProperty.class).map(LabelProperty::label);
     }
 
     @Override
@@ -177,7 +177,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern label(Label label) {
-        return addProperty(new LabelProperty(label));
+        return addProperty(LabelProperty.of(label));
     }
 
     @Override

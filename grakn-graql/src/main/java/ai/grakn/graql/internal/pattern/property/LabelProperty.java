@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.StringConverter;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -41,17 +42,14 @@ import java.util.Set;
  *
  * @author Felix Chapman
  */
-public class LabelProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+@AutoValue
+public abstract class LabelProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
-    private final Label label;
-
-    public LabelProperty(Label label) {
-        this.label = label;
+    public static LabelProperty of(Label label) {
+        return new AutoValue_LabelProperty(label);
     }
 
-    public Label getLabelValue() {
-        return label;
-    }
+    public abstract Label label();
 
     @Override
     public String getName() {
@@ -60,28 +58,12 @@ public class LabelProperty extends AbstractVarProperty implements NamedProperty,
 
     @Override
     public String getProperty() {
-        return StringConverter.typeLabelToString(label);
+        return StringConverter.typeLabelToString(label());
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.label(this, start, label));
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        LabelProperty that = (LabelProperty) o;
-
-        return label.equals(that.label);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return label.hashCode();
+        return ImmutableSet.of(EquivalentFragmentSets.label(this, start, label()));
     }
 
     @Override
