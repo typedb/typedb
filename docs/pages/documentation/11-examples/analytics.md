@@ -209,7 +209,7 @@ Compute queries are computationally intensive and run in parallel on a cluster, 
 ## Inference
 
 ```graql
-match $x has model $s, has powerful "TRUE" has economical "TRUE";
+>>> match $x has model $s, has powerful "TRUE" has economical "TRUE";
 $x id "106584" isa manual-car; $y val "Ferrari Dino" isa model;
 $x id "254120" isa automatic-car; $y val "Pontiac Firebird" isa model;
 ```

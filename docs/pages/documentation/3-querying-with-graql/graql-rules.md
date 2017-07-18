@@ -51,7 +51,7 @@ The implication form of Horn clauses aligns more naturally with Graql semantics 
 ## Graql Rule Syntax
 In Graql we refer to the body of the rule as the "when" of the rule (antecedent of the implication) and the head as the "then" of the rule (consequent of the implication). Therefore, in Graql terms, we define rule objects in the following way:
 
-```graql
+```graql-test-ignore
 $optional-name isa inference-rule,
 when {
     ...;
@@ -65,7 +65,7 @@ then {
 
 Each dotted line corresponds to a single Graql variable. The rule name is optional and can be omitted, but it is useful if we want to be able to refer to and identify particular rules in the graph. This way, as inference-rule is a concept, we can attach resources to it:
 
-```graql
+```graql-test-ignore
 $myRule isa inference-rule,
 when {
     ...;
@@ -84,6 +84,8 @@ In Graql the "when" of the rule is required to be a [conjunctive pattern](https:
 A classic reasoning example is the ancestor example. Yhe two Graql rules R1 and R2 stated below define the ancestor relationship, which can be understood as either happening between two generations directly between a parent and a child or between three generations when the first generation hop is expressed via a parentship relation and the second generation hop is captured by an ancestor relation.
 
 ```graql
+insert
+
 $R1 isa inference-rule,
 when {
     (parent: $p, child: $c) isa Parent;

@@ -100,6 +100,8 @@ This is how reasoning in Graql works. It checks whether the statements in the fi
 As we saw above, it is possible for Grakn to infer the gender-specific roles (`mother`, `father`, `daughter`, `son`) that a `person` entity plays. It does this by applying the following rules:
 
 ```graql
+insert
+
 $genderizeParentships1 isa inference-rule
 when
 {(parent: $p, child: $c) isa parentship;
@@ -161,6 +163,8 @@ In the genealogy-graph example, there should be two results returned. William an
 The *basic-genealogy* file contains a number of rules for setting up family relationships, such as siblings, cousins, in-laws and the following, which sets up a relation called `grandparentship`:
 
 ```graql
+insert
+
 $parentsOfParentsAreGrandparents isa inference-rule
 when
 {(parent:$p, child: $gc) isa parentship;
@@ -182,6 +186,8 @@ If so, the right hand side of the rules state that:
 Some additional rules can add more specifics to the `grandparentship` and assign the entities to the roles `grandson`, `granddaughter`, `grandmother` and `grandfather`:
 
 ```graql
+insert
+
 $grandParents1 isa inference-rule
 when
 {($p, son: $gc) isa parentship;
@@ -241,6 +247,8 @@ In the genealogy-graph example, there should be three results returned. George, 
 Another rule can be used to infer `person` entities who are cousins:
 
 ```
+insert
+
 $peopleWithSiblingsParentsAreCousins isa inference-rule
 when
 {

@@ -158,7 +158,8 @@ To call the migration script on each template:
 
 The resultant Graql for the migration:
 
-```graql
+<!-- TODO -->
+```graql-test-ignore
 
 ```
 
