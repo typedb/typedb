@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.hal;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Thing;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -135,10 +136,17 @@ public class HALBuilder {
                 Representation currentHal = new HALConceptData(currentConcept, MATCH_QUERY_FIXED_DEGREE, true,
                         typesAskedInQuery, keyspace, offset, limit).getRepresentation();
 
+
                 // Local map that will allow us to fetch HAL representation of RolePlayers when populating _embedded of the generated relation (in loopThroughRelations)
                 mapFromVarNameToHALObject.put(currentMapEntry.getKey(), currentHal);
 
-                lines.add(Json.read(currentHal.toString(RepresentationFactory.HAL_JSON)));
+                Json jsonRepresentation = Json.read(currentHal.toString(RepresentationFactory.HAL_JSON));
+                if(!answer.getExplanation().isEmpty() && currentConcept.isRelation()){
+                    jsonRepresentation.set("_baseType","inferred-relation");
+                    jsonRepresentation.at("_links").set("self",Json.read("{\"href\":\""+computeHrefInferred(currentConcept, keyspace, limit)+"\"}"));
+                }
+
+                lines.add(jsonRepresentation);
             });
             // All the variables of current map have an HAL representation. Add _direction OUT
             mapFromVarNameToHALObject.values().forEach(hal -> hal.withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE));
@@ -147,6 +155,36 @@ public class HALBuilder {
                     lines.add(Json.read(generatedRelation.toString(RepresentationFactory.HAL_JSON))));
         });
         return lines;
+    }
+
+    private static String computeHrefInferred(Concept currentConcept, String keyspace, int limit){
+        Set<Thing> settone = new HashSet<>();
+        currentConcept.asRelation().allRolePlayers().values().stream().forEach(set->{
+//            settone.addAll(set);
+            set.forEach(x->{settone.add(x);});
+            });
+        String isaString =  "isa " + currentConcept.asRelation().type().getLabel();
+        StringBuilder stringBuilderVarsWithIds = new StringBuilder();
+        StringBuilder stringBuilderParenthesis = new StringBuilder().append('(');
+        char currentVarLetter = 'a';
+        for (Thing var : settone) {
+            String id = var.getId().getValue();
+            stringBuilderVarsWithIds.append(" $").append(currentVarLetter).append(" id '").append(id).append("';");
+            String role = "";
+            stringBuilderParenthesis.append(role).append("$").append(currentVarLetter++).append(",");
+        }
+        String varsWithIds = stringBuilderVarsWithIds.toString();
+        String parenthesis = stringBuilderParenthesis.deleteCharAt(stringBuilderParenthesis.length() - 1).append(')').toString();
+
+        String dollarR = "";
+        String selectR = "";
+
+        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, dollarR, parenthesis, isaString, selectR, limit);
+
+        String URL = REST.WebPath.Dashboard.EXPLAIN;
+
+        return URL + withoutUrl;
+
     }
 
     private static Collection<Representation> loopThroughRelations(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Map<Var, Representation> mapFromVarNameToHALObject, Map<Var, Concept> resultLine, String keyspace, int limit, Map<VarPatternAdmin, Boolean> inferredRelations) {
