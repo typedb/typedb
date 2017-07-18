@@ -45,7 +45,7 @@ public class IdPredicate extends Predicate<ConceptId>{
         super(pattern, par);
     }
     public IdPredicate(Var varName, IdProperty prop, ReasonerQuery par){
-        this(createIdVar(varName, prop.getId()), par);
+        this(createIdVar(varName, prop.id()), par);
     }
     public IdPredicate(Var varName, LabelProperty prop, ReasonerQuery par){
         this(createIdVar(varName, prop, par.graph()), par);
