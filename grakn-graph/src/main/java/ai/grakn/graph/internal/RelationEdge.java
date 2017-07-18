@@ -69,9 +69,9 @@ class RelationEdge implements RelationStructure{
     RelationEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
         this(edgeElement);
 
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole, ownerRole(), o -> o.getLabelId().getValue());
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, valueRole, valueRole(), v -> v.getLabelId().getValue());
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationType, type(), t -> t.getLabelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.getLabelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.getLabelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationType, null, t -> t.getLabelId().getValue());
 
         this.relationType.set(relationType);
         this.ownerRole.set(ownerRole);

@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import com.google.common.base.Preconditions;
+
 import java.io.Serializable;
 
 /**
@@ -38,6 +40,7 @@ public class LabelId implements Comparable<LabelId>, Serializable {
     private Integer typeId;
 
     private LabelId(Integer typeId){
+        Preconditions.checkNotNull(typeId);
         this.typeId = typeId;
     }
 
@@ -73,7 +76,7 @@ public class LabelId implements Comparable<LabelId>, Serializable {
     }
 
     public boolean isValid(){
-        return typeId != null;
+        return typeId != -1;
     }
 
     /**
@@ -89,6 +92,6 @@ public class LabelId implements Comparable<LabelId>, Serializable {
      * @return a type id which does not match any type
      */
     public static LabelId invalid(){
-        return new LabelId(null);
+        return new LabelId(-1);
     }
 }

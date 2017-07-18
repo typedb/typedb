@@ -154,7 +154,7 @@ abstract class AbstractElement<E extends Element, P extends Enum> {
      * @param foundValue The current value of the property
      * @param converter Helper method to ensure data is persisted in the correct format
      */
-    <X> void propertyImmutable(P property, X newValue, X foundValue, Function<X, Object> converter){
+    <X> void propertyImmutable(P property, X newValue, @Nullable X foundValue, Function<X, Object> converter){
         if(newValue == null){
             throw GraphOperationException.settingNullProperty(property);
         }
