@@ -39,6 +39,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -69,28 +70,17 @@ import static java.util.stream.Collectors.joining;
  *
  * @author Felix Chapman
  */
-public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
-
-    private final Label resourceType;
-    private final VarPatternAdmin resource;
-
-    private HasResourceProperty(Label resourceType, VarPatternAdmin resource) {
-        this.resourceType = resourceType;
-        this.resource = resource;
-    }
+@AutoValue
+public abstract class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
     public static HasResourceProperty of(Label resourceType, VarPatternAdmin resource) {
         resource = resource.isa(label(resourceType)).admin();
-        return new HasResourceProperty(resourceType, resource);
+        return new AutoValue_HasResourceProperty(resourceType, resource);
     }
 
-    public Label getType() {
-        return resourceType;
-    }
+    public abstract Label getType();
 
-    public VarPatternAdmin getResource() {
-        return resource;
-    }
+    public abstract VarPatternAdmin getResource();
 
     @Override
     public String getName() {
@@ -101,12 +91,12 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     public String getProperty() {
         Stream.Builder<String> repr = Stream.builder();
 
-        repr.add(typeLabelToString(resourceType));
+        repr.add(typeLabelToString(getType()));
 
-        if (resource.getVarName().isUserDefinedName()) {
-            repr.add(resource.getVarName().toString());
+        if (getResource().getVarName().isUserDefinedName()) {
+            repr.add(getResource().getVarName().toString());
         } else {
-            resource.getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.getPredicate().toString()));
+            getResource().getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.getPredicate().toString()));
         }
         return repr.build().collect(joining(" "));
     }
@@ -119,27 +109,27 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         return ImmutableSet.of(
                 shortcut(this, relation, edge1, start, Optional.empty()),
-                shortcut(this, relation, edge2, resource.getVarName(), Optional.empty()),
+                shortcut(this, relation, edge2, getResource().getVarName(), Optional.empty()),
                 neq(this, edge1, edge2)
         );
     }
 
     @Override
     public Stream<VarPatternAdmin> getInnerVars() {
-        return Stream.of(resource);
+        return Stream.of(getResource());
     }
 
     @Override
     void checkValidProperty(GraknGraph graph, VarPatternAdmin var) {
-        Type type = graph.getOntologyConcept(resourceType);
+        Type type = graph.getOntologyConcept(getType());
         if(type == null || !type.isResourceType()) {
-            throw GraqlQueryException.mustBeResourceType(resourceType);
+            throw GraqlQueryException.mustBeResourceType(getType());
         }
     }
 
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Resource resourceConcept = insertQueryExecutor.getConcept(resource).asResource();
+        Resource resourceConcept = insertQueryExecutor.getConcept(getResource()).asResource();
         Thing thing = concept.asThing();
         thing.resource(resourceConcept);
     }
@@ -147,10 +137,10 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public void delete(GraknGraph graph, Concept concept) {
         Optional<ValuePredicateAdmin> predicate =
-                resource.getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
+                getResource().getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
 
-        Role owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
-        Role value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
+        Role owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(getType()));
+        Role value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(getType()));
 
         concept.asThing().relations(owner).stream()
                 .filter(relation -> testPredicate(predicate, relation, value))
@@ -168,24 +158,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return Stream.of(label(resourceType).admin());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        HasResourceProperty that = (HasResourceProperty) o;
-
-        return resourceType.equals(that.resourceType) && resource.equals(that.resource);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = resourceType.hashCode();
-        result = 31 * result + resource.hashCode();
-        return result;
+        return Stream.of(label(getType()).admin());
     }
 
     @Override
