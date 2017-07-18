@@ -27,6 +27,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.parser.QueryParser;
 import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -44,17 +45,14 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.dataTy
  *
  * @author Felix Chapman
  */
-public class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+@AutoValue
+public abstract class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
-    private final ResourceType.DataType<?> datatype;
-
-    public DataTypeProperty(ResourceType.DataType<?> datatype) {
-        this.datatype = datatype;
+    public static DataTypeProperty of(ResourceType.DataType<?> datatype) {
+        return new AutoValue_DataTypeProperty(datatype);
     }
 
-    public ResourceType.DataType<?> getDataType() {
-        return datatype;
-    }
+    public abstract ResourceType.DataType<?> getDataType();
 
     @Override
     public String getName() {
@@ -63,28 +61,12 @@ public class DataTypeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public String getProperty() {
-        return QueryParser.DATA_TYPES.inverse().get(datatype);
+        return QueryParser.DATA_TYPES.inverse().get(getDataType());
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(dataType(this, start, datatype));
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        DataTypeProperty that = (DataTypeProperty) o;
-
-        return datatype.equals(that.datatype);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return datatype.hashCode();
+        return ImmutableSet.of(dataType(this, start, getDataType()));
     }
 
     @Override

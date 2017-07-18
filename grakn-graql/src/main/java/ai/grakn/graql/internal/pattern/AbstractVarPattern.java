@@ -66,7 +66,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Stream;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -313,7 +312,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern datatype(ResourceType.DataType<?> datatype) {
-        return addProperty(new DataTypeProperty(requireNonNull(datatype)));
+        return addProperty(DataTypeProperty.of(datatype));
     }
 
     @Override
