@@ -252,7 +252,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern hasScope(VarPattern type) {
-        return addProperty(new HasScopeProperty(type.admin()));
+        return addProperty(HasScopeProperty.of(type.admin()));
     }
 
     @Override
