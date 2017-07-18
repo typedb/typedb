@@ -46,6 +46,16 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.isAbst
  */
 public class IsAbstractProperty extends AbstractVarProperty implements UniqueVarProperty {
 
+    private static final IsAbstractProperty INSTANCE = new IsAbstractProperty();
+
+    private IsAbstractProperty() {
+
+    }
+
+    public static IsAbstractProperty get() {
+        return INSTANCE;
+    }
+
     @Override
     public void buildString(StringBuilder builder) {
         builder.append("is-abstract");
@@ -63,17 +73,6 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
         } else {
             throw GraqlQueryException.insertAbstractOnNonType(concept.asOntologyConcept());
         }
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return this == o || !(o == null || getClass() != o.getClass());
-
-    }
-
-    @Override
-    public int hashCode() {
-        return 31;
     }
 
     @Override

@@ -307,7 +307,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern isAbstract() {
-        return addProperty(new IsAbstractProperty());
+        return addProperty(IsAbstractProperty.get());
     }
 
     @Override
