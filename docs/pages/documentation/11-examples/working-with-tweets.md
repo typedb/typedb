@@ -114,7 +114,8 @@ Let's kick things off by defining a `Main` class inside the `ai.grakn.twitterexa
 
 First, we have decided to use an **in-memory graph** for simplicity's sake — working with an in-memory graph frees us from having to set up a Grakn distribution in the local machine. The in-memory graph is not for storing data and will be lost once the program finishes execution. Second, the graph will be stored in a **keyspace** named `twitter-example`.
 
-```java
+<!-- A lot of these examples are not valid Groovy, so they've been ignored in tests -->
+```java-test-ignore
 package ai.grakn.twitterexample;
 
 import ai.grakn.Grakn;
@@ -139,7 +140,7 @@ public class Main {
 
 We then define a `GraknSession` object in `main()`. Enclosing it in a `try-with-resource` construct is a good practice, lest we forget closing the session by calling `session.close()`.
 
-```java
+```java-test-ignore
 public static void main(String[] args) {
   try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
     // our code will go here
@@ -149,7 +150,7 @@ public static void main(String[] args) {
 
 Following that, another equally important object for operating on the graph is `GraknGraph`. After performing the operations we desire, we must not forget to commit. For convenience, let's define a helper method which opens a `GraknGraph` in write mode, and commits it after executing the function `fn`. We will be using this function in various places throughout the tutorial.
 
-```java
+```java-test-ignore
 public class GraknTweetOntologyHelper {
   public static void withGraknGraph(GraknSession session, Consumer<GraknGraph> fn) {
     GraknGraph graphWriter = session.open(GraknTxType.WRITE);
@@ -175,7 +176,7 @@ The structure can be summarized by the following graph:
 
 With that set, let's define a new method `initTweetOntology` inside `GraknTweetOntologyHelper` class and define our ontology creation there.
 
-```java
+```java-test-ignore
 public class GraknTweetOntologyHelper {
   public static void initTweetOntology(GraknGraph graknGraph) {
 
@@ -204,8 +205,8 @@ Roles and relations:
 
 ```java
 // roles
-RoleType postsType = graknGraph.putRoleType("posts");
-RoleType postedByType = graknGraph.putRoleType("posted_by");
+Role postsType = graknGraph.putRole("posts");
+Role postedByType = graknGraph.putRole("posted_by");
 
 // relations
 RelationType userTweetRelationType = graknGraph.putRelationType("user-tweet-relation").relates(postsType).relates(postedByType);
@@ -224,7 +225,7 @@ tweetType.plays(postedByType);
 
 Now invoke the method in `main` so the ontology is created at the start of the application.
 
-```java
+```java-test-ignore
 public static void main(String[] args) {
   try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
     withGraknGraph(session, graknGraph -> initTweetOntology(graknGraph)); // initialize ontology
@@ -238,18 +239,18 @@ Now that we're done with ontology creation, let's develop the code for listening
 
 Define a new method `listenToTwitterStreamAsync ` and put it in a class named `AsyncTweetStreamProcessorHelper `.  In addition to accepting Twitter credential settings, we will also need to supply a callback `onTweetReceived`, will be invoked whenever the application receives a new tweet. Further down, we will use this callback for storing, querying and displaying tweets as they come.
 
-```java
+```java-test-ignore
 public class AsyncTweetStreamProcessorHelper {
   public static TwitterStream listenToTwitterStreamAsync(String consumerKey, String consumerSecret, String accessToken, String accessTokenSecret, BiConsumer<String, String> onTweetReceived) {
     final String DEFAULT_LANGUAGE = "en";
-    ...
+    // ...
   }
 }
 ```
 
 The first thing we need to do here is to create a `Configuration` object out of the Twitter credential settings. Let's write a dedicated method just for that and name it `createTwitterConfiguration`. Afterwards, use that method to create the `Configuration` object which we will need in `listenToTwitterStreamAsync`.
 
-```java
+```java-test-ignore
 public class AsyncTweetStreamProcessorHelper {
   public static TwitterStream listenToTwitterStreamAsync(String consumerKey, String consumerSecret, String accessToken, String accessTokenSecret, BiConsumer<String, String> onTweetReceived) {
     final String DEFAULT_LANGUAGE = "en";
@@ -275,7 +276,7 @@ The constructor of our `TweetListener` class accepts a callback `onStatusReceive
 
 Once we're done defining the class let's come back to `listenToTwitterStreamAsync` and instantiate it. We will also instantiate two other classes, `TwitterStreamFactory` and `TwitterStream`. Now we can start listening to Twitter by calling the `sample` method. We supplied `"en"` which means we are only interested in English tweets.
 
-```java
+```java-test-ignore
 public class AsyncTweetStreamProcessorHelper {
   public static TwitterStream listenToTwitterStreamAsync(String consumerKey, String consumerSecret, String accessToken, String accessTokenSecret, BiConsumer<String, String> onTweetReceived) {
     final String DEFAULT_LANGUAGE = "en";
@@ -317,7 +318,7 @@ class TweetListener implements StatusListener {
 
 Let's wrap up this section by adding the call to `listenToTwitterStreamAsync` into `main`.
 
-```java
+```java-test-ignore
 public static void main(String[] args) {
   try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
     withGraknGraph(session, graknGraph -> initTweetOntology(graknGraph)); // initialize ontology
@@ -347,7 +348,7 @@ Let's do that with a new method. It will accept a single `String` and inserts it
 
 Pay attention to how we need to retrieve the `EntityTypes` and `ResourceTypes` of entity and resource we are interested in — we need them in order to perform the actual insertion.
 
-```java
+```java-test-ignore
 public static Entity insertTweet(GraknGraph graknGraph, String tweet) {
     EntityType tweetEntityType = graknGraph.getEntityType("tweet");
     ResourceType tweetResouceType = graknGraph.getResourceType("text");
@@ -365,7 +366,7 @@ In addition to the tweet, we also want to store who posted the tweet. A semantic
 
 Therefore, let's add a method for checking whether we've previously stored a particular user. We will be using Java 8's `Optional<T>`, where we return the `Entity` object of that user only if it exists in the knowledge graph. Otherwise, an `Optional.empty()` will be returned.
 
-```java
+```java-test-ignore
 public static Optional<Entity> findUser(QueryBuilder queryBuilder, String user) {
   MatchQuery findUser = queryBuilder.match(var("x").isa("user").has("screen_name", user)).limit(1);
   Iterator<Concept> concepts = findUser.get("x").iterator();
@@ -379,7 +380,7 @@ public static Optional<Entity> findUser(QueryBuilder queryBuilder, String user) 
 
 And the following method for inserting a user. This one is quite similar to the one we made for inserting a tweet.
 
-```java
+```java-test-ignore
 public static Entity insertUser(GraknGraph graknGraph, String user) {
   EntityType userEntityType = graknGraph.getEntityType("user");
   ResourceType userResourceType = graknGraph.getResourceType("screen_name");
@@ -391,7 +392,7 @@ public static Entity insertUser(GraknGraph graknGraph, String user) {
 
 And finally, write a function for inserting a user only if it's not yet there in the knowledge graph.
 
-```java
+```java-test-ignore
 public static Entity insertUserIfNotExist(GraknGraph graknGraph, String screenName) {
   QueryBuilder qb = graknGraph.graql();
   return findUser(qb, screenName).orElse(insertUser(graknGraph, screenName));
@@ -404,7 +405,7 @@ We're almost there with a complete tweet insertion functionality! There's only o
 
 The following function will create a relation between the user and tweet that we specify.
 
-```java
+```java-test-ignore
 public static Relation insertUserTweetRelation(GraknGraph graknGraph, Entity user, Entity tweet) {
   RelationType userTweetRelationType = graknGraph.getRelationType("user-tweet-relation");
   RoleType postsType = graknGraph.getRoleType("posts");
@@ -422,7 +423,7 @@ public static Relation insertUserTweetRelation(GraknGraph graknGraph, Entity use
 
 Finally, let's wrap up by defining a function of which the sole responsibility is to execute all of the methods we have defined above.
 
-```java
+```java-test-ignore
 public static Relation insertUserTweet(GraknGraph graknGraph, String screenName, String tweet) {
   Entity tweetEntity = insertTweet(graknGraph, tweet);
   Entity userEntity = insertUserIfNotExist(graknGraph, screenName);
@@ -432,7 +433,7 @@ public static Relation insertUserTweet(GraknGraph graknGraph, String screenName,
 
 We're done with tweet insertion functionality! Next step: querying the stored data. Before we proceed, let's add the method we've just defined to the main method as shown below.
 
-```java
+```java-test-ignore
 public static void main(String[] args) {
   try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
     withGraknGraph(session, graknGraph -> initTweetOntology(graknGraph)); // initialize ontology
@@ -465,7 +466,7 @@ Also, pay attention to how we also supply the `user-tweet-relation` relation as 
 qb.match(
   var("user").isa("user"),
   var("tweet").isa("tweet"),
-  var().rel("posts", "user").rel("posted_by", "tweet").isa("user-tweet-relation"))
+  var().rel("posts", "user").rel("posted_by", "tweet").isa("user-tweet-relation"));
 ```
 
 The query we've just defined will return every user and tweet along with their relations. We will use it as the basis of the aggregate query.
@@ -482,7 +483,7 @@ qb.match(
 
  The query will now return "the number of tweet a user has posted", which is what we want, as an object of type `Map<Concept, Long>`. To be able to conveniently iterate, we will transform it into the relatively more straightforward type `Stream<Map.Entry<String, Long>>`, i.e., a stream of pairs of username and tweet count.
 
-```java
+```java-test-ignore
   // execute query
   Map<Concept, Long> result = ((Map<Concept, Long>) q.execute());
 
@@ -499,7 +500,7 @@ qb.match(
 
 Voila! Here's how `calculateTweetCountPerUser` should look like.
 
-```java
+```java-test-ignore
 public static Stream<Map.Entry<String, Long>> calculateTweetCountPerUser(GraknGraph graknGraph) {
   // build query
   QueryBuilder qb = graknGraph.graql();
@@ -528,7 +529,7 @@ public static Stream<Map.Entry<String, Long>> calculateTweetCountPerUser(GraknGr
 
 With that done, let's update our `main` like so. We've introduced two changes here. First we've added the call to our newly made function `calculateTweetCountPerUser`. Second, we're adding a pretty print function `prettyPrintQueryResult` to display our query in a nice way.
 
-```java
+```java-test-ignore
 public class Main {
   // Twitter credentials
   private static final String consumerKey = "...";
