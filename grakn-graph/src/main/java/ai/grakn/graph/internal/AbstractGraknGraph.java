@@ -560,7 +560,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private <T extends Concept>T getConceptEdge(ConceptId id){
         String edgeId = id.getValue().substring(1);
-        GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E().hasId(edgeId);
+        GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(edgeId);
         if(traversal.hasNext()){
             return factory().buildConcept(factory().buildEdgeElement(traversal.next()));
         }
