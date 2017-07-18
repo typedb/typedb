@@ -27,7 +27,9 @@ import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
+import ai.grakn.test.GraknTestSetup;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
+import ai.grakn.util.EmbeddedCassandra;
 import ai.grakn.util.EmbeddedRedis;
 import com.google.common.base.StandardSystemProperty;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -53,6 +55,7 @@ public class GraknEngineStartIT {
     @BeforeClass
     public static void setUpClass() {
         EmbeddedRedis.start(REDIS_PORT);
+        GraknTestSetup.startCassandraIfNeeded();
         GraknSystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
     }
 
