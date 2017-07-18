@@ -22,6 +22,7 @@ package ai.grakn.graql.internal.pattern;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringUtils;
 
@@ -33,44 +34,32 @@ import java.util.function.Function;
  *
  * @author Felix Chapman
  */
-final class VarImpl extends AbstractVarPattern implements Var {
-
-    private final String value;
-
-    private final boolean userDefinedName;
-
-    VarImpl(String value, boolean userDefinedName) {
-        this.value = value;
-        this.userDefinedName = userDefinedName;
-    }
+@AutoValue
+abstract class VarImpl extends AbstractVarPattern implements Var {
 
     @Override
-    public String getValue() {
-        return value;
-    }
+    public abstract String getValue();
 
     @Override
     public Var map(Function<String, String> mapper) {
-        return Graql.var(mapper.apply(value));
+        return Graql.var(mapper.apply(getValue()));
     }
 
     @Override
-    public boolean isUserDefinedName() {
-        return userDefinedName;
-    }
+    public abstract boolean isUserDefinedName();
 
     @Override
     public Var asUserDefined() {
-        if (userDefinedName) {
+        if (isUserDefinedName()) {
             return this;
         } else {
-            return new VarImpl(value, true);
+            return new AutoValue_VarImpl(getValue(), true);
         }
     }
 
     @Override
     public String shortName() {
-        return "$" + StringUtils.left(value, 3);
+        return "$" + StringUtils.left(getValue(), 3);
     }
 
     @Override
@@ -85,21 +74,6 @@ final class VarImpl extends AbstractVarPattern implements Var {
 
     @Override
     public String toString() {
-        return "$" + value;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        VarImpl varName = (VarImpl) o;
-
-        return value.equals(varName.value);
-    }
-
-    @Override
-    public int hashCode() {
-        return value.hashCode();
+        return "$" + getValue();
     }
 }

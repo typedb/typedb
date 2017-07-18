@@ -23,6 +23,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -31,23 +32,16 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
-class DisjunctionImpl<T extends PatternAdmin> extends AbstractPattern implements Disjunction<T> {
-
-    private final Set<T> patterns;
-
-    DisjunctionImpl(Set<T> patterns) {
-        this.patterns = patterns;
-    }
+@AutoValue
+abstract class DisjunctionImpl<T extends PatternAdmin> extends AbstractPattern implements Disjunction<T> {
 
     @Override
-    public Set<T> getPatterns() {
-        return patterns;
-    }
+    public abstract Set<T> getPatterns();
 
     @Override
     public Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm() {
         // Concatenate all disjunctions into one big disjunction
-        Set<Conjunction<VarPatternAdmin>> dnf = patterns.stream()
+        Set<Conjunction<VarPatternAdmin>> dnf = getPatterns().stream()
                 .flatMap(p -> p.getDisjunctiveNormalForm().getPatterns().stream())
                 .collect(toSet());
 
@@ -56,7 +50,7 @@ class DisjunctionImpl<T extends PatternAdmin> extends AbstractPattern implements
 
     @Override
     public Set<Var> commonVarNames() {
-        return patterns.stream().map(PatternAdmin::commonVarNames).reduce(Sets::intersection).orElse(ImmutableSet.of());
+        return getPatterns().stream().map(PatternAdmin::commonVarNames).reduce(Sets::intersection).orElse(ImmutableSet.of());
     }
 
     @Override
@@ -70,18 +64,8 @@ class DisjunctionImpl<T extends PatternAdmin> extends AbstractPattern implements
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return (obj instanceof DisjunctionImpl) && patterns.equals(((DisjunctionImpl) obj).patterns);
-    }
-
-    @Override
-    public int hashCode() {
-        return patterns.hashCode();
-    }
-
-    @Override
     public String toString() {
-        return patterns.stream().map(Object::toString).collect(Collectors.joining(" or "));
+        return getPatterns().stream().map(Object::toString).collect(Collectors.joining(" or "));
     }
 
     @Override
