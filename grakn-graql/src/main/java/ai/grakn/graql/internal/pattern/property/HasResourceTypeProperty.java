@@ -116,9 +116,9 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
     public Collection<EquivalentFragmentSet> match(Var start) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
-        traversals.addAll(new PlaysProperty(ownerRole(), required()).match(start));
+        traversals.addAll(PlaysProperty.of(ownerRole(), required()).match(start));
         //TODO: Get this to use real constraints no just the required flag
-        traversals.addAll(new PlaysProperty(valueRole(), false).match(resourceType().getVarName()));
+        traversals.addAll(PlaysProperty.of(valueRole(), false).match(resourceType().getVarName()));
         traversals.addAll(NeqProperty.of(ownerRole()).match(valueRole().getVarName()));
 
         return traversals;

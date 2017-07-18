@@ -247,7 +247,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern plays(VarPattern type) {
-        return addProperty(new PlaysProperty(type.admin(), false));
+        return addProperty(PlaysProperty.of(type.admin(), false));
     }
 
     @Override
