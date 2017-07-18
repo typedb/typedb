@@ -337,7 +337,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern neq(VarPattern varPattern) {
-        return addProperty(new NeqProperty(varPattern.admin()));
+        return addProperty(NeqProperty.of(varPattern.admin()));
     }
 
     @Override

@@ -119,7 +119,7 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
         traversals.addAll(new PlaysProperty(ownerRole(), required()).match(start));
         //TODO: Get this to use real constraints no just the required flag
         traversals.addAll(new PlaysProperty(valueRole(), false).match(resourceType().getVarName()));
-        traversals.addAll(new NeqProperty(ownerRole()).match(valueRole().getVarName()));
+        traversals.addAll(NeqProperty.of(ownerRole()).match(valueRole().getVarName()));
 
         return traversals;
     }
