@@ -1,3 +1,21 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
 package ai.grakn.engine.supervision;
 
 import java.io.BufferedReader;
@@ -27,8 +45,7 @@ public class ProcessSupervision {
       while (attempt < 3) {
         if (isCassandraRunning()) {
           return ; // it's running. yay!
-        }
-        else {
+        } else {
           // it's not yet running. pause for a bit and re-check
           attempt++;
           threadSleep(1000);
@@ -48,8 +65,7 @@ public class ProcessSupervision {
   private static boolean isCassandraRunning() {
     try {
       return fileExists(CASSANDRA_PID_FILE) && psP(Integer.parseInt(cat(CASSANDRA_PID_FILE))) == 0;
-    }
-    catch (IOException | InterruptedException e) {
+    } catch (IOException | InterruptedException e) {
       throw new RuntimeException(e);
     }
   }
@@ -57,8 +73,7 @@ public class ProcessSupervision {
   private static void startCassandra() {
     try {
       Runtime.getRuntime().exec(new String[] { "sh", "-c", CASSANDRA_FULL_PATH + " -p " + CASSANDRA_PID_FILE });
-    }
-    catch (IOException e) {
+    } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -67,8 +82,7 @@ public class ProcessSupervision {
     try {
       Process kill = Runtime.getRuntime().exec(new String[]{ "sh", "-c", "kill " + cat(CASSANDRA_PID_FILE) });
       return kill.waitFor();
-    }
-    catch (IOException | InterruptedException e) {
+    } catch (IOException | InterruptedException e) {
       throw new RuntimeException(e);
     }
   }
@@ -89,6 +103,10 @@ public class ProcessSupervision {
   }
 
   private static void threadSleep(long ms) {
-    try { Thread.sleep(ms); } catch (InterruptedException e) { throw new RuntimeException(e); }
+    try {
+      Thread.sleep(ms);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
