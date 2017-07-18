@@ -205,8 +205,8 @@ Roles and relations:
 
 ```java
 // roles
-RoleType postsType = graknGraph.putRoleType("posts");
-RoleType postedByType = graknGraph.putRoleType("posted_by");
+Role postsType = graknGraph.putRole("posts");
+Role postedByType = graknGraph.putRole("posted_by");
 
 // relations
 RelationType userTweetRelationType = graknGraph.putRelationType("user-tweet-relation").relates(postsType).relates(postedByType);
@@ -243,7 +243,7 @@ Define a new method `listenToTwitterStreamAsync ` and put it in a class named `A
 public class AsyncTweetStreamProcessorHelper {
   public static TwitterStream listenToTwitterStreamAsync(String consumerKey, String consumerSecret, String accessToken, String accessTokenSecret, BiConsumer<String, String> onTweetReceived) {
     final String DEFAULT_LANGUAGE = "en";
-    ...
+    // ...
   }
 }
 ```
@@ -466,7 +466,7 @@ Also, pay attention to how we also supply the `user-tweet-relation` relation as 
 qb.match(
   var("user").isa("user"),
   var("tweet").isa("tweet"),
-  var().rel("posts", "user").rel("posted_by", "tweet").isa("user-tweet-relation"))
+  var().rel("posts", "user").rel("posted_by", "tweet").isa("user-tweet-relation"));
 ```
 
 The query we've just defined will return every user and tweet along with their relations. We will use it as the basis of the aggregate query.
