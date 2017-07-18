@@ -38,7 +38,7 @@ import static ai.grakn.graql.Graql.*;
 A `QueryBuilder` is constructed from a `GraknGraph`:
 
 ```java-test-ignore
-GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "MyGraph").getGraph();
+GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
 QueryBuilder qb = graph.graql();
 ```
 
