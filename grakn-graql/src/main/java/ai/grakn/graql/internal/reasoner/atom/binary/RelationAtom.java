@@ -774,7 +774,7 @@ public class RelationAtom extends IsaAtom {
     public Atom rewriteToUserDefined(){
         VarPattern newVar = Graql.var().asUserDefined();
         VarPattern relVar = getPattern().asVar().getProperty(IsaProperty.class)
-                .map(prop -> newVar.isa(prop.getType()))
+                .map(prop -> newVar.isa(prop.type()))
                 .orElse(newVar);
 
         for (RelationPlayer c: getRelationPlayers()) {

@@ -237,7 +237,7 @@ public class InsertQueryExecutor {
      * @return a concept with the given ID and the specified type
      */
     private Thing putInstance(Optional<ConceptId> id, VarPatternAdmin var, IsaProperty isa) {
-        Type type = getConcept(isa.getType()).asType();
+        Type type = getConcept(isa.type()).asType();
 
         if (type.isEntityType()) {
             return addOrGetInstance(id, type.asEntityType()::addEntity);

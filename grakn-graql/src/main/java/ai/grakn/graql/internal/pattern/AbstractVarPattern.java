@@ -217,7 +217,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern isa(VarPattern type) {
-        return addProperty(new IsaProperty(type.admin()));
+        return addProperty(IsaProperty.of(type.admin()));
     }
 
     @Override

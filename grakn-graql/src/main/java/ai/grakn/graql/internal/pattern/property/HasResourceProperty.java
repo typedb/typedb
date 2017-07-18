@@ -171,7 +171,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         Set<ValuePredicate> predicates = getValuePredicates(resourceVariable, resource, vars, parent);
 
         IsaProperty isaProp = resource.getProperties(IsaProperty.class).findFirst().orElse(null);
-        VarPatternAdmin typeVar = isaProp != null? isaProp.getType() : null;
+        VarPatternAdmin typeVar = isaProp != null? isaProp.type() : null;
         IdPredicate idPredicate = typeVar != null? getIdPredicate(resourceVariable, typeVar, vars, parent) : null;
 
         //add resource atom

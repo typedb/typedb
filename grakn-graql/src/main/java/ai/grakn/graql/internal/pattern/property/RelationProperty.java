@@ -158,7 +158,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                 .collect(toSet());
 
         Optional<Label> maybeLabel =
-                var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarPatternAdmin::getTypeLabel);
+                var.getProperty(IsaProperty.class).map(IsaProperty::type).flatMap(VarPatternAdmin::getTypeLabel);
 
         maybeLabel.ifPresent(label -> {
             Type type = graph.getOntologyConcept(label);
@@ -242,7 +242,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         Var typeVariable = isaProp != null? isaProp.getType().getVarName().asUserDefined() : Graql.var().asUserDefined();
         //Isa present
         if (isaProp != null) {
-            VarPatternAdmin isaVar = isaProp.getType();
+            VarPatternAdmin isaVar = isaProp.type();
             Label label = isaVar.getTypeLabel().orElse(null);
             if (label != null) {
                 VarPatternAdmin idVar = typeVariable.id(parent.graph().getOntologyConcept(label).getId()).admin();
