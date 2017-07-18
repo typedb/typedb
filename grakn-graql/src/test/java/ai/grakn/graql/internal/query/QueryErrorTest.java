@@ -28,6 +28,7 @@ import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.ErrorMessage;
@@ -127,7 +128,7 @@ public class QueryErrorTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("select");
         //noinspection ResultOfMethodCallIgnored
-        qb.match(var("x").isa("movie")).select();
+        qb.match(var("x").isa("movie")).select(new Var[] {});
     }
 
     @Test
