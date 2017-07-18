@@ -42,15 +42,15 @@ import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
-import ai.grakn.graql.internal.pattern.property.WhenProperty;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelatesProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.pattern.property.ThenProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
+import ai.grakn.graql.internal.pattern.property.ThenProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.graql.internal.pattern.property.WhenProperty;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableMultiset;
@@ -262,7 +262,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern has(VarPattern type) {
-        return addProperty(new HasResourceTypeProperty(type.admin(), false));
+        return addProperty(HasResourceTypeProperty.of(type.admin(), false));
     }
 
     @Override
@@ -272,7 +272,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern key(VarPattern type) {
-        return addProperty(new HasResourceTypeProperty(type.admin(), true));
+        return addProperty(HasResourceTypeProperty.of(type.admin(), true));
     }
 
     @Override
