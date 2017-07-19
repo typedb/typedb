@@ -39,8 +39,7 @@ public class ProcessSupervision {
   private static final String CASSANDRA_FULL_PATH = "bin/cassandra"; // TODO: this exe shouldn't even be exposed anymore
   private static final String CASSANDRA_PID_FILE = "/tmp/grakn-cassandra.pid";
 
-
-  public static void startCassandraIfNotExists() {
+  public void startCassandraIfNotExists() {
     LOG.info("checking if there exists a running grakn-cassandra process...");
     if (!isCassandraRunning()) {
       LOG.info("grakn-cassandra isn't yet running. attempting to start...");
@@ -52,7 +51,7 @@ public class ProcessSupervision {
     }
   }
 
-  public static void stopCassandraIfRunning() {
+  public void stopCassandraIfRunning() {
     LOG.info("checking if there exists a running grakn-cassandra process...");
     if (isCassandraRunning()) {
       LOG.info("a grakn-cassandra process found. attempting to stop...");
@@ -66,7 +65,7 @@ public class ProcessSupervision {
     }
   }
 
-  public static boolean isCassandraRunning() {
+  public boolean isCassandraRunning() {
     if (fileExists(CASSANDRA_PID_FILE)) {
       int pid = catPidFile(CASSANDRA_PID_FILE);
       boolean cassandraProcessFound = psP(pid) == 0;
@@ -82,7 +81,7 @@ public class ProcessSupervision {
     }
   }
 
-  public static void startCassandra() {
+  public void startCassandra() {
     try {
       Runtime.getRuntime().exec(new String[] { "sh", "-c", "bin/grakn-cassandra.sh start" });
     } catch (IOException e) {
@@ -90,7 +89,7 @@ public class ProcessSupervision {
     }
   }
 
-  public static int stopCassandra() {
+  public int stopCassandra() {
     try {
       Process kill = Runtime.getRuntime().exec(new String[]{ "sh", "-c", "bin/grakn-cassandra.sh stop" });
       return kill.waitFor();
@@ -99,11 +98,11 @@ public class ProcessSupervision {
     }
   }
 
-  public static boolean fileExists(String path) {
+  public boolean fileExists(String path) {
     return Files.exists(Paths.get(path));
   }
 
-  public static int psP(int pid) {
+  public int psP(int pid) {
     try {
       Process ps = Runtime.getRuntime().exec(new String[]{"sh", "-c", " ps -p " + pid});
 
@@ -113,7 +112,7 @@ public class ProcessSupervision {
     }
   }
 
-  public static int catPidFile(String file) {
+  public int catPidFile(String file) {
     try {
       Process catProcess = Runtime.getRuntime().exec(new String[]{"sh", "-c", "cat " + file});
 
@@ -131,7 +130,7 @@ public class ProcessSupervision {
     }
   }
 
-  private static void waitForCassandraStarted() {
+  private void waitForCassandraStarted() {
     final int MAX_CHECK_ATTEMPT = 3;
     int attempt = 0;
     while (attempt < MAX_CHECK_ATTEMPT) {
@@ -148,7 +147,7 @@ public class ProcessSupervision {
     throw new RuntimeException("unable to start grakn-cassandra!");
   }
 
-  private static void waitForCassandraStopped() {
+  private void waitForCassandraStopped() {
     final int MAX_CHECK_ATTEMPT = 3;
     int attempt = 0;
     while (attempt < MAX_CHECK_ATTEMPT) {
@@ -165,7 +164,7 @@ public class ProcessSupervision {
     throw new RuntimeException("unable to stop grakn-cassandra!");
   }
 
-  private static void threadSleep(long ms) {
+  private void threadSleep(long ms) {
     try {
       Thread.sleep(ms);
     } catch (InterruptedException e) {
