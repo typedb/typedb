@@ -64,7 +64,7 @@ public class GraqlControllerTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(GraknEngineConfig.create().getProperties());
+        EngineGraknGraphFactory factory = EngineGraknGraphFactory.createAndLoadSystemOntology(GraknEngineConfig.create().getProperties());
         new GraqlController(factory, spark, new MetricRegistry());
     });
 

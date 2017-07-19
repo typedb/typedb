@@ -82,11 +82,13 @@ It is not possible to insert a concept with the given id, as this is the job of 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell3">
 <pre>
+<!--test-ignore-->
 insert id "1376496" isa person;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java3">
 <pre>
+<!--test-ignore-->
 qb.insert(var().id(ConceptId.of("1376496")).isa("person")).execute();
 </pre>
 </div> <!-- tab-pane -->

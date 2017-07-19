@@ -43,6 +43,8 @@ So what helps describe a `person`?
 Philosophical debates aside let us go with something simple. A `person` typically has a `firstname`, a `lastname`, and a `gender`. We can model this and other resources that identify a person with:
 
 ```graql
+insert
+
 person sub entity
   has identifier
   has firstname
@@ -77,6 +79,8 @@ In a Grakn, N-ary relationships are also possible. For example, a `person` has a
 In our example, we will add `marriage` and `parentship` relationships. A `marriage` has two roles: `spouse1` and `spouse2`, while `parentship` has a `parent` role and a `child` role.
 
 ```graql
+insert
+
 marriage sub relation
   relates spouse1
   relates spouse2
@@ -100,6 +104,8 @@ The next step is to give our entity types permission to play specific roles.  We
 For this current example we only have one entity type, which can play all our current roles, so we explicitly state that with:  
 
 ```graql
+insert
+
 person sub entity
   plays parent
   plays child

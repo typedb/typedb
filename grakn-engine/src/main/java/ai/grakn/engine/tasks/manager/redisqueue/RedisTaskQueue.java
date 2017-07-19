@@ -73,6 +73,7 @@ class RedisTaskQueue {
     private final Histogram queueSize;
     private final Meter failures;
     private final int processingDelay;
+    private final Timer timer;
     private Pool<Jedis> jedisPool;
     private LockProvider lockProvider;
     private final MetricRegistry metricRegistry;
@@ -94,9 +95,11 @@ class RedisTaskQueue {
         this.putJobMeter = metricRegistry.meter(name(RedisTaskQueue.class, "put-job"));
         this.queueSize = metricRegistry.histogram(name(RedisTaskQueue.class, "queue-size"));
         this.failures = metricRegistry.meter(name(RedisTaskQueue.class, "failures"));
+        this.timer = new Timer();
     }
 
     void close() {
+        timer.cancel();
         synchronized(this) {
             if (workerPool != null) {
                 workerPool.end(false);
@@ -113,7 +116,7 @@ class RedisTaskQueue {
     }
 
     void runInFlightProcessor() {
-        new Timer().scheduleAtFixedRate(new RedisInflightTaskConsumer(jedisPool, Duration.ofSeconds(
+        timer.scheduleAtFixedRate(new RedisInflightTaskConsumer(jedisPool, Duration.ofSeconds(
                 processingDelay), config, QUEUE_NAME), new Date(), 2000);
     }
 
