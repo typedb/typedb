@@ -78,7 +78,7 @@ public class DocTestUtil {
                     .relates(graph.putRole("type-of-pokemon")).relates(graph.putRole("pokemon-with-type"));
 
             pokemonType.resource(typeId).resource(description);
-            pokemon.resource(weight).resource(height).resource(pokedexNo);
+            pokemon.resource(weight).resource(height).resource(pokedexNo).resource(description);
 
             // TODO: Remove these random types when not used
             graph.putEntityType("cluster");
