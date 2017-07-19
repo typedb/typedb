@@ -315,10 +315,10 @@ public class InsertQueryExecutor {
         if (properties.hasNext()) {
             // Value properties are confirmed to be "equals" only in the ValueProperty class
             //noinspection OptionalGetWithoutIsPresent
-            Object value = properties.next().getPredicate().equalsValue().get();
+            Object value = properties.next().predicate().equalsValue().get();
 
             if (properties.hasNext()) {
-                throw GraqlQueryException.insertMultipleValues(properties.next().getPredicate(), value);
+                throw GraqlQueryException.insertMultipleValues(properties.next().predicate(), value);
             }
 
             return value;

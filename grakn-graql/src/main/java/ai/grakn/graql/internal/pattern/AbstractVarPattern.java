@@ -187,7 +187,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern val(ValuePredicate predicate) {
-        return addProperty(new ValueProperty(predicate.admin()));
+        return addProperty(ValueProperty.of(predicate.admin()));
     }
 
     @Override

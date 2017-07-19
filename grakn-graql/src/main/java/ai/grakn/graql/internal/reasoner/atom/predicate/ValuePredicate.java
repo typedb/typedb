@@ -115,7 +115,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
         if (properties.hasNext()) {
             throw GraqlQueryException.valuePredicateAtomWithMultiplePredicates();
         }
-        return property.getPredicate();
+        return property.predicate();
     }
 
     @Override

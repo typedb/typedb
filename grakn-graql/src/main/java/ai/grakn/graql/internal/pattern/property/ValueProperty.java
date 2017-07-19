@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.CommonUtil;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -43,17 +44,14 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-public class ValueProperty extends AbstractVarProperty implements NamedProperty {
+@AutoValue
+public abstract class ValueProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final ValuePredicateAdmin predicate;
-
-    public ValueProperty(ValuePredicateAdmin predicate) {
-        this.predicate = predicate;
+    public static ValueProperty of(ValuePredicateAdmin predicate) {
+        return new AutoValue_ValueProperty(predicate);
     }
 
-    public ValuePredicateAdmin getPredicate() {
-        return predicate;
-    }
+    public abstract ValuePredicateAdmin predicate();
 
     @Override
     public String getName() {
@@ -62,44 +60,28 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public String getProperty() {
-        return predicate.toString();
+        return predicate().toString();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.value(this, start, predicate));
+        return ImmutableSet.of(EquivalentFragmentSets.value(this, start, predicate()));
     }
 
     @Override
     public void checkInsertable(VarPatternAdmin var) {
-        if (!predicate.equalsValue().isPresent()) {
+        if (!predicate().equalsValue().isPresent()) {
             throw GraqlQueryException.insertPredicate();
         }
     }
 
     @Override
     public Stream<VarPatternAdmin> getInnerVars() {
-        return CommonUtil.optionalToStream(predicate.getInnerVar());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        ValueProperty that = (ValueProperty) o;
-
-        return predicate.equals(that.predicate);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return predicate.hashCode();
+        return CommonUtil.optionalToStream(predicate().getInnerVar());
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new ValuePredicate(var.getVarName(), this.getPredicate(), parent);
+        return new ValuePredicate(var.getVarName(), this.predicate(), parent);
     }
 }

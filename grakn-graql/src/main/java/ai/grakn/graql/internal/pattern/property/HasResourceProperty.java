@@ -96,7 +96,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         if (getResource().getVarName().isUserDefinedName()) {
             repr.add(getResource().getVarName().toString());
         } else {
-            getResource().getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.getPredicate().toString()));
+            getResource().getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.predicate().toString()));
         }
         return repr.build().collect(joining(" "));
     }
@@ -137,7 +137,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     @Override
     public void delete(GraknGraph graph, Concept concept) {
         Optional<ValuePredicateAdmin> predicate =
-                getResource().getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
+                getResource().getProperties(ValueProperty.class).map(ValueProperty::predicate).findAny();
 
         Role owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(getType()));
         Role value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(getType()));
