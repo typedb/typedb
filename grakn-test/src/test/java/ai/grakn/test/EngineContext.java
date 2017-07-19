@@ -30,6 +30,7 @@ import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import ai.grakn.engine.util.SimpleURI;
 import static ai.grakn.test.GraknTestEngineSetup.startEngine;
 import static ai.grakn.test.GraknTestEngineSetup.startRedis;
 import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
@@ -91,8 +92,17 @@ public class EngineContext extends ExternalResource {
     }
 
     public RedisCountStorage redis() {
+        return redis(config.getProperty(REDIS_HOST));
+    }
+
+    public RedisCountStorage redis(String uri) {
+        SimpleURI simpleURI = new SimpleURI(uri);
+        return redis(simpleURI.getHost(), simpleURI.getPort());
+    }
+
+    public RedisCountStorage redis(String host, int port) {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
-        JedisPool jedisPool = new JedisPool(poolConfig, config.getProperty(REDIS_HOST));
+        JedisPool jedisPool = new JedisPool(poolConfig, host, port);
         return RedisCountStorage.create(jedisPool);
     }
 
