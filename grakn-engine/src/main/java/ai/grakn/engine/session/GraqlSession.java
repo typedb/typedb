@@ -122,7 +122,6 @@ class GraqlSession {
     private void refreshGraph() {
         if (graph != null && !graph.isClosed()) graph.close();
         graph = factory.open(GraknTxType.WRITE);
-        graph.showImplicitConcepts(showImplicitTypes);
     }
 
     void handleMessage(Json json) {
