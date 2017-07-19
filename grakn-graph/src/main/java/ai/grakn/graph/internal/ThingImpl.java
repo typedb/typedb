@@ -30,6 +30,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -249,7 +250,9 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         Role hasResourceOwner = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
         Role hasResourceValue = vertex().graph().getOntologyConcept(hasValue.getLabel(label));
 
-        if(hasResource == null || hasResourceOwner == null || hasResourceValue == null){
+        Collection<Role> rolesAllowed = CommonUtil.withImplicitConceptsVisible(vertex().graph(), () -> type().plays());
+
+        if(hasResource == null || hasResourceOwner == null || hasResourceValue == null || !rolesAllowed.contains(hasResourceOwner)){
             throw GraphOperationException.hasNotAllowed(this, resource);
         }
 
