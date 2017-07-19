@@ -20,6 +20,7 @@
 package ai.grakn.test.docs;
 
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import groovy.util.Eval;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -43,6 +44,7 @@ import static ai.grakn.test.docs.DocTestUtil.allMarkdownFiles;
 import static ai.grakn.test.docs.DocTestUtil.codeBlockFail;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
 public class JavaDocsTest {
@@ -75,12 +77,13 @@ public class JavaDocsTest {
 
     @BeforeClass
     public static void loadGroovyPrefix() throws IOException {
+        assumeTrue(GraknTestSetup.usingTinker());
         groovyPrefix = new String(Files.readAllBytes(Paths.get("src/test/java/ai/grakn/test/docs/prefix.groovy")));
     }
 
     @AfterClass
     public static void assertEnoughExamplesFound() {
-        if (numFound < 10) {
+        if (GraknTestSetup.usingTinker() && numFound < 10) {
             fail("Only found " + numFound + " Java examples. Perhaps the regex is wrong?");
         }
     }
