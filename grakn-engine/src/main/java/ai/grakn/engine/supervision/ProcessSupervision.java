@@ -36,8 +36,9 @@ import java.util.stream.Collectors;
 
 public class ProcessSupervision {
   private static final Logger LOG = Logger.getLogger(ProcessSupervision.class.getName());
-  private static final String CASSANDRA_FULL_PATH = "Users/lolski/Downloads/grakn-dist-0.14.0/bin/cassandra";
-  private static final String CASSANDRA_PID_FILE = "tmp/grakn-cassandra.pid";
+  private static final String CASSANDRA_FULL_PATH = "bin/cassandra";
+  private static final String CASSANDRA_PID_FILE = "grakn-cassandra.pid";
+
 
   public static void startCassandraIfNotExists() {
     LOG.info("checking if there exists a running grakn-cassandra process...");
@@ -45,17 +46,16 @@ public class ProcessSupervision {
       LOG.info("grakn-cassandra isn't yet running. attempting to start...");
       ProcessSupervision.startCassandra();
 
-      // attempt a check several times to see if it's actually running
+      final int MAX_CHECK_ATTEMPT = 3;
       int attempt = 0;
-      while (attempt < 3) {
+      while (attempt < MAX_CHECK_ATTEMPT) {
         if (isCassandraRunning()) {
           LOG.info("grakn-cassandra has been started successfully!");
           return ;
         } else {
-          // it's not yet running. pause for a bit and re-check
           LOG.info("grakn-cassandra has not yet started. will re-attempt the check...");
           attempt++;
-          threadSleep(1000);
+          threadSleep(2000);
         }
       }
       LOG.info("unable to start grakn-cassandra!");
@@ -66,8 +66,14 @@ public class ProcessSupervision {
   }
 
   public static void stopCassandraIfRunning() {
+    LOG.info("checking if there exists a running grakn-cassandra process...");
     if (ProcessSupervision.isCassandraRunning()) {
+      LOG.info("a grakn-cassandra process found. attempting to stop...");
       ProcessSupervision.stopCassandra();
+      LOG.info("grakn-cassandra has been stopped.");
+    }
+    else {
+      LOG.info("no grakn-cassandra process is found.");
     }
   }
 
