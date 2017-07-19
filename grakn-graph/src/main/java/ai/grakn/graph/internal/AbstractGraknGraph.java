@@ -184,7 +184,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         txCache().openTx(txType);
     }
 
-    String getEngineUrl(){
+    @Override
+    public String getEngineUrl(){
         return engineUri;
     }
 
