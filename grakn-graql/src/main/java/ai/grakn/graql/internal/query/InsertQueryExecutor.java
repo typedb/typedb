@@ -269,7 +269,7 @@ public class InsertQueryExecutor {
      * @return a concept with the given ID and the specified type
      */
     private OntologyConcept putOntologyConcept(Label label, VarPatternAdmin var, SubProperty sub) {
-        OntologyConcept superConcept = getConcept(sub.getSuperType()).asOntologyConcept();
+        OntologyConcept superConcept = getConcept(sub.superType()).asOntologyConcept();
 
         if (superConcept.isEntityType()) {
             return graph.putEntityType(label).sup(superConcept.asEntityType());
@@ -346,6 +346,6 @@ public class InsertQueryExecutor {
     }
 
     private Optional<VarPatternAdmin> getSub(VarPatternAdmin var) {
-        return var.getProperty(SubProperty.class).map(SubProperty::getSuperType);
+        return var.getProperty(SubProperty.class).map(SubProperty::superType);
     }
 }
