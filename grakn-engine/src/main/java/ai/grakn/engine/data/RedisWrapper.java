@@ -99,16 +99,13 @@ public class RedisWrapper {
             if (useSentinel) {
                 jedisPool = new JedisSentinelPool(masterName, uriSet);
                 redissonConfig.useSentinelServers()
-                        .setMasterConnectionPoolSize(3)
-                        .setSlaveConnectionPoolSize(3)
+                        .setMasterName(masterName)
                         .addSentinelAddress(uriSet.toArray(new String[uriSet.size()]));
             } else {
                 String uri = uriSet.stream().findFirst().get();
                 SimpleURI simpleURI = new SimpleURI(uri);
                 jedisPool = new JedisPool(simpleURI.getHost(), simpleURI.getPort());
                 redissonConfig.useSingleServer()
-                        // TODO make connection pool configurable
-                        .setConnectionPoolSize(5)
                         .setAddress(uri);
             }
             return new RedisWrapper(jedisPool, Redisson.create(redissonConfig));

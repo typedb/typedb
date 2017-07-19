@@ -31,13 +31,13 @@ public class MockRedisRule extends ExternalResource {
     public MockRedisRule() {}
 
     @Override
-    synchronized protected void before() throws Throwable {
+    protected void before() throws Throwable {
         server = RedisServer.newRedisServer();
         server.start();
     }
 
     @Override
-    synchronized protected void after() {
+    protected void after() {
         if (server != null) {
             server.stop();
             server = null;

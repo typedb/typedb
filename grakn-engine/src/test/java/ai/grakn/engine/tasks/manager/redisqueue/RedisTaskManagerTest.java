@@ -22,7 +22,9 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
@@ -41,6 +43,7 @@ import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
+import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -53,6 +56,7 @@ import static junit.framework.TestCase.assertNotSame;
 import static junit.framework.TestCase.fail;
 import mjson.Json;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -147,7 +151,7 @@ public class RedisTaskManagerTest {
             } catch (Exception e) {
                 fail("Failed to retrieve task in time");
             }
-            assertEquals(TaskStatus.COMPLETED, taskManager.storage().getState(state.getId()).status());
+            assertTrue("Task retrieved but with unexpected state", ImmutableSet.of(COMPLETED, RUNNING).contains(taskManager.storage().getState(state.getId()).status()));
         });
 
     }

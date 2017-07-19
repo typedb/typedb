@@ -280,7 +280,7 @@ public class GraknEngineServer implements AutoCloseable {
                 throw GraknServerException.serverException(400, e);
             }
             if (!authenticated) {
-                spark.halt(401, "User not authenticated.");
+                throw spark.halt(401, "User not authenticated.");
             }
         }
     }
