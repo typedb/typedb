@@ -521,7 +521,7 @@ public class GraqlControllerGETTest {
         Response response = sendGET(query, APPLICATION_HAL);
 
         assertThat(response.statusCode(), equalTo(200));
-        assertThat(jsonResponse(response), equalTo(Json.array()));
+        assertThat(jsonResponse(response), equalTo(Json.nil()));
     }
 
     private Response sendGET(String acceptType) {
