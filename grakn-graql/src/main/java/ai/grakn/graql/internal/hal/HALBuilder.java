@@ -144,8 +144,8 @@ public class HALBuilder {
                 mapFromVarNameToHALObject.put(currentMapEntry.getKey(), currentHal);
 
                 Json jsonRepresentation = Json.read(currentHal.toString(RepresentationFactory.HAL_JSON));
-                // If current concept is a relation obtained with inference override Explore URL and BaseType
-                if(!answer.getExplanation().isEmpty() && currentConcept.isRelation()){
+                // If current concept is a relation obtained with inference (and we are not building an explanation response) override Explore URL and BaseType
+                if(!answer.getExplanation().isEmpty() && currentConcept.isRelation() && !filterInstances){
                     jsonRepresentation.set(BASETYPE_PROPERTY,INFERRED_RELATION);
                     jsonRepresentation.at(LINKS_PROPERTY).set("self",Json.object().set("href", computeHrefInferred(currentConcept, keyspace, limit)));
                 }
