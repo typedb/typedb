@@ -33,7 +33,9 @@ public class DocTestUtil {
                 name("trainer").sub("role"),
                 name("pokemon-trained").sub("role"),
                 name("type-id").sub("resource").datatype(ResourceType.DataType.STRING),
-                name("pokemon-type").hasResource("type-id")
+                name("pokemon-type").hasResource("type-id"),
+                name("description").sub("resource").datatype(ResourceType.DataType.STRING),
+                name("pokemon").hasResource("description"),
         ).execute();
 
         return graknGraph;
