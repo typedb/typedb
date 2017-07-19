@@ -117,7 +117,7 @@ public class RelationAtom extends IsaAtom {
             relationPlayers = new ArrayList<>();
             getPattern().asVar()
                     .getProperty(RelationProperty.class)
-                    .ifPresent(prop -> prop.getRelationPlayers()
+                    .ifPresent(prop -> prop.relationPlayers()
                             .forEach(relationPlayers::add));
         }
         return relationPlayers;

@@ -365,14 +365,14 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     private VarPattern addCasting(RelationPlayer relationPlayer) {
         Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
 
-        Stream<RelationPlayer> oldCastings = relationProperty
-                .map(RelationProperty::getRelationPlayers)
-                .orElse(Stream.empty());
+        ImmutableMultiset<RelationPlayer> oldCastings = relationProperty
+                .map(RelationProperty::relationPlayers)
+                .orElse(ImmutableMultiset.of());
 
         ImmutableMultiset<RelationPlayer> relationPlayers =
-                Stream.concat(oldCastings, Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
+                Stream.concat(oldCastings.stream(), Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
 
-        RelationProperty newProperty = new RelationProperty(relationPlayers);
+        RelationProperty newProperty = RelationProperty.of(relationPlayers);
 
         return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }
