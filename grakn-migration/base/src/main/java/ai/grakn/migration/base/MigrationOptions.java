@@ -38,7 +38,6 @@ public class MigrationOptions {
 
     private static final String batch = Integer.toString(Migrator.BATCH_SIZE);
     private static final String active = Integer.toString(Migrator.ACTIVE_TASKS);
-    private static final String uri = Grakn.DEFAULT_URI;
     private int numberOptions;
 
     protected final Options options = new Options();
@@ -79,7 +78,7 @@ public class MigrationOptions {
     }
 
     public String getUri() {
-        return command.hasOption("u") ? command.getOptionValue("u") : uri;
+        return command.hasOption("u") ? command.getOptionValue("u") : Grakn.DEFAULT_URI;
     }
 
     public Options getOptions(){

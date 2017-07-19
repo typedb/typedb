@@ -19,6 +19,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.Grakn;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
@@ -54,7 +55,7 @@ public class JsonSessionTest {
     public final ExpectedException exception = ExpectedException.none();
     private GraqlClient client;
     private RemoteEndpoint remote;
-    private final URI uri = URI.create("localhost:4567");
+    private final URI uri = URI.create(Grakn.DEFAULT_URI);
 
     @Before
     public void setUp() {
