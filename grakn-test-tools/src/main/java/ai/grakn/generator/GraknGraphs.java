@@ -109,7 +109,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
         int size = status.size();
 
-        graphSummary = new StringBuilder();
+        startSummary();
+
         graphSummary.append("size: ").append(size).append("\n");
 
         closeGraph(lastGeneratedGraph);
@@ -293,6 +294,10 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary(relation, "addRolePlayer", role, thing);
             }
     );
+
+    private static void startSummary() {
+        graphSummary = new StringBuilder();
+    }
 
     private void summary(Object target, String methodName, Object... args) {
         graphSummary.append(summaryFormat(target)).append(".").append(methodName).append("(");
