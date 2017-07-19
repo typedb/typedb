@@ -20,10 +20,10 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -33,6 +33,7 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.RelatesAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -52,17 +53,14 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  *
  * @author Felix Chapman
  */
-public class RelatesProperty extends AbstractVarProperty implements NamedProperty {
+@AutoValue
+public abstract class RelatesProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final VarPatternAdmin role;
-
-    public RelatesProperty(VarPatternAdmin role) {
-        this.role = role;
+    public static RelatesProperty of(VarPatternAdmin role) {
+        return new AutoValue_RelatesProperty(role);
     }
 
-    public VarPatternAdmin getRole() {
-        return role;
-    }
+    abstract VarPatternAdmin role();
 
     @Override
     public String getName() {
@@ -71,56 +69,40 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
 
     @Override
     public String getProperty() {
-        return role.getPrintableName();
+        return role().getPrintableName();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(relates(this, start, role.getVarName()));
+        return ImmutableSet.of(relates(this, start, role().getVarName()));
     }
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return Stream.of(role);
+        return Stream.of(role());
     }
 
     @Override
     public Stream<VarPatternAdmin> getInnerVars() {
-        return Stream.of(role);
+        return Stream.of(role());
     }
 
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Role role = insertQueryExecutor.getConcept(this.role).asRole();
+        Role role = insertQueryExecutor.getConcept(this.role()).asRole();
         concept.asRelationType().relates(role);
     }
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        Label roleLabel = role.getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
+        Label roleLabel = role().getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
         concept.asRelationType().deleteRelates(graph.getOntologyConcept(roleLabel));
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        RelatesProperty that = (RelatesProperty) o;
-
-        return role.equals(that.role);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return role.hashCode();
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         Var varName = var.getVarName().asUserDefined();
-        VarPatternAdmin roleVar = this.getRole();
+        VarPatternAdmin roleVar = this.role();
         Var roleVariable = roleVar.getVarName().asUserDefined();
         IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent);
 

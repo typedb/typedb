@@ -237,7 +237,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern relates(VarPattern type) {
-        return addProperty(new RelatesProperty(type.admin()));
+        return addProperty(RelatesProperty.of(type.admin()));
     }
 
     @Override
