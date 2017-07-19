@@ -39,7 +39,6 @@ public class GraphWriter {
 
     public GraphWriter(GraknGraph graph){
         this.graph = graph;
-        this.graph.showImplicitConcepts(true);
     }
 
     /**

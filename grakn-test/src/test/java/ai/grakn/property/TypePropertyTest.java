@@ -190,7 +190,7 @@ public class TypePropertyTest {
     public void whenAnOntologyElementHasADirectSuper_ItIsADirectSubOfThatSuper(
             @Open GraknGraph graph, @FromGraph OntologyConcept ontologyConcept) {
         OntologyConcept superType = ontologyConcept.sup();
-        assertThat(directSubs(graph, superType), hasItem(ontologyConcept));
+        assertThat(directSubs(superType), hasItem(ontologyConcept));
     }
 
     @Property
@@ -213,7 +213,7 @@ public class TypePropertyTest {
     @Property
     public void whenGettingIndirectSubTypes_ReturnSelfAndIndirectSubTypesOfDirectSubTypes(
             @Open GraknGraph graph, @FromGraph Type type) {
-        Collection<Type> directSubTypes = directSubs(graph, type);
+        Collection<Type> directSubTypes = directSubs(type);
         Type[] expected = Stream.concat(
                 Stream.of(type),
                 directSubTypes.stream().flatMap(subType -> subType.subs().stream())
@@ -230,7 +230,6 @@ public class TypePropertyTest {
     @Property
     public void whenGettingTheIndirectSubTypesWithoutImplicitConceptsVisible_TheyDoNotContainImplicitConcepts(
             @Open GraknGraph graph, @FromGraph Type type) {
-        assumeFalse(graph.implicitConceptsVisible());
         type.subs().forEach(subType -> {
             assertFalse(subType + " should not be implicit", subType.isImplicit());
         });
@@ -295,13 +294,13 @@ public class TypePropertyTest {
 
         addDirectSubType(superType, subType);
 
-        assertThat(directSubs(graph, superType), hasItem(subType));
+        assertThat(directSubs(superType), hasItem(subType));
     }
 
     @Property
     public void whenGettingIndirectInstances_ReturnDirectInstancesAndIndirectInstancesOfDirectSubTypes(
             @Open GraknGraph graph, @FromGraph Type type) {
-        Collection<Type> directSubTypes = directSubs(graph, type);
+        Collection<Type> directSubTypes = directSubs(type);
         Thing[] expected = Stream.concat(
             directInstances(type).stream(),
             directSubTypes.stream().flatMap(subType -> subType.instances().stream())

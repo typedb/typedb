@@ -243,13 +243,6 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingShowImplicitConcepts_ImplicitConceptsVisibleIsTheSame(GraknGraph graph, boolean flag) {
-        graph.showImplicitConcepts(flag);
-
-        assertEquals(flag, graph.implicitConceptsVisible());
-    }
-
-    @Property
     public void whenCallingClear_TheGraphCloses(@Open GraknGraph graph) {
         graph.admin().delete();
         assertTrue(graph.isClosed());

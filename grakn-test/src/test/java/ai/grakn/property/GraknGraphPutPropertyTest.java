@@ -215,7 +215,6 @@ public class GraknGraphPutPropertyTest {
     public void whenCallingPutRelationType_CreateATypeThatOwnsNoRoles(
             @Open GraknGraph graph, @Unused Label label) {
         RelationType relationType = graph.putRelationType(label);
-        graph.showImplicitConcepts(true);
         assertThat(relationType.relates(), empty());
     }
 
