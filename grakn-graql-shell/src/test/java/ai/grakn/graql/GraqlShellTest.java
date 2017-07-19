@@ -74,7 +74,7 @@ public class GraqlShellTest {
    @Test
     public void testDefaultUri() throws IOException {
        GraqlShell.runShell(new String[]{}, expectedVersion, historyFile, client);
-       verify(client).connect(any(), eq(URI.create(String.format("ws://%s/shell/remote/", Grakn.DEFAULT_URI))));
+       verify(client).connect(any(), eq(URI.create(String.format("ws://%s/shell/remote", Grakn.DEFAULT_URI))));
     }
 
     @Test
