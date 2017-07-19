@@ -118,6 +118,9 @@ public class GraknEngineConfig {
      * If it is not set, it sets it to the default one.
      */
     private static void setConfigFilePath() {
+        if (configFilePath != null && !configFilePath.isEmpty()) {
+            return;
+        }
        configFilePath = (GraknSystemProperty.CONFIGURATION_FILE.value() != null) ? GraknSystemProperty.CONFIGURATION_FILE.value() : GraknEngineConfig.DEFAULT_CONFIG_FILE;
         if (!Paths.get(configFilePath).isAbsolute()) {
             configFilePath = getProjectPath() + configFilePath;

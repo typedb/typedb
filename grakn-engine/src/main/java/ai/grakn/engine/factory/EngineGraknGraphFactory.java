@@ -47,15 +47,19 @@ public class EngineGraknGraphFactory {
     private final String engineURI;
     private final SystemKeyspace systemKeyspace;
 
-    public static EngineGraknGraphFactory create(Properties properties) {
-        return new EngineGraknGraphFactory(properties);
+    public static EngineGraknGraphFactory createAndLoadSystemOntology(Properties properties) {
+        return new EngineGraknGraphFactory(properties, true);
     }
 
-    private EngineGraknGraphFactory(Properties properties) {
+    public static EngineGraknGraphFactory create(Properties properties) {
+        return new EngineGraknGraphFactory(properties, false);
+    }
+
+    private EngineGraknGraphFactory(Properties properties, boolean loadOntology) {
         this.properties = new Properties();
         this.properties.putAll(properties);
         this.engineURI = properties.getProperty(GraknEngineConfig.SERVER_HOST_NAME) + ":" + properties.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER);
-        this.systemKeyspace = new SystemKeyspace(this);
+        this.systemKeyspace = new SystemKeyspace(this, loadOntology);
     }
 
     public synchronized void refreshConnections(){
@@ -66,7 +70,6 @@ public class EngineGraknGraphFactory {
         if(!keyspace.equals(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
             systemKeyspace.ensureKeyspaceInitialised(keyspace);
         }
-
         return FactoryBuilder.getFactory(keyspace, engineURI, properties).open(type);
     }
 
