@@ -21,9 +21,11 @@ package ai.grakn.engine.supervision;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Timer;
+import java.util.List;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -33,26 +35,33 @@ import java.util.stream.Collectors;
  */
 
 public class ProcessSupervision {
-  private static final String CASSANDRA_FULL_PATH = "/Users/lolski/Downloads/grakn-dist-0.14.0/bin/cassandra";
-  private static final String CASSANDRA_PID_FILE = "/tmp/grakn-cassandra.pid";
+  private static final Logger LOG = Logger.getLogger(ProcessSupervision.class.getName());
+  private static final String CASSANDRA_FULL_PATH = "Users/lolski/Downloads/grakn-dist-0.14.0/bin/cassandra";
+  private static final String CASSANDRA_PID_FILE = "tmp/grakn-cassandra.pid";
 
   public static void startCassandraIfNotExists() {
+    LOG.info("checking if there exists a running grakn-cassandra process...");
     if (!ProcessSupervision.isCassandraRunning()) {
+      LOG.info("grakn-cassandra isn't yet running. attempting to start...");
       ProcessSupervision.startCassandra();
 
       // attempt a check several times to see if it's actually running
       int attempt = 0;
       while (attempt < 3) {
         if (isCassandraRunning()) {
-          return ; // it's running. yay!
+          LOG.info("grakn-cassandra has been started successfully!");
+          return ;
         } else {
           // it's not yet running. pause for a bit and re-check
+          LOG.info("grakn-cassandra has not yet started. will re-attempt the check...");
           attempt++;
           threadSleep(1000);
         }
       }
-      // it's still not running after some attempts. something might have gone wrong
-      throw new RuntimeException("unable to start cassandra!");
+      LOG.info("unable to start grakn-cassandra!");
+      throw new RuntimeException("unable to start grakn-cassandra!");
+    } else {
+      LOG.info("found an existing grakn-cassandra process.");
     }
   }
 
@@ -64,7 +73,7 @@ public class ProcessSupervision {
 
   private static boolean isCassandraRunning() {
     try {
-      return fileExists(CASSANDRA_PID_FILE) && psP(Integer.parseInt(cat(CASSANDRA_PID_FILE))) == 0;
+      return fileExists(CASSANDRA_PID_FILE) && psP(catPidFile(CASSANDRA_PID_FILE)) == 0;
     } catch (IOException | InterruptedException e) {
       throw new RuntimeException(e);
     }
@@ -80,7 +89,7 @@ public class ProcessSupervision {
 
   private static int stopCassandra() {
     try {
-      Process kill = Runtime.getRuntime().exec(new String[]{ "sh", "-c", "kill " + cat(CASSANDRA_PID_FILE) });
+      Process kill = Runtime.getRuntime().exec(new String[]{ "sh", "-c", "kill " + catPidFile(CASSANDRA_PID_FILE) });
       return kill.waitFor();
     } catch (IOException | InterruptedException e) {
       throw new RuntimeException(e);
@@ -96,10 +105,18 @@ public class ProcessSupervision {
     return ps.waitFor();
   }
 
-  private static String cat(String file) throws IOException {
-    Process cat = Runtime.getRuntime().exec(new String[] { "sh", "-c", "cat " + file });
-    BufferedReader catStdout = new BufferedReader(new InputStreamReader(cat.getInputStream()));
-    return catStdout.lines().collect(Collectors.joining("\n"));
+  private static int catPidFile(String file) throws IOException {
+    Process catProcess = Runtime.getRuntime().exec(new String[] { "sh", "-c", "cat " + file });
+    try (BufferedReader catStdout =
+             new BufferedReader(new InputStreamReader(catProcess.getInputStream(), StandardCharsets.UTF_8))) {
+      List<String> lines = catStdout.lines().collect(Collectors.toList());
+      if (lines.size() == 1) {
+        return Integer.parseInt(lines.get(0));
+      }
+      else {
+        throw new RuntimeException("a pid file should only have one line, however this one has " + lines.size() + " lines");
+      }
+    }
   }
 
   private static void threadSleep(long ms) {
