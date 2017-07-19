@@ -27,7 +27,7 @@ import ai.grakn.concept.Label;
  *
  * @author Felix Chapman
  */
-public class ResourceTypes extends AbstractOntologyConceptGenerator<ResourceType> {
+public class ResourceTypes extends AbstractTypeGenerator<ResourceType> {
 
     public ResourceTypes() {
         super(ResourceType.class);

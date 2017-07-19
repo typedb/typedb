@@ -35,16 +35,16 @@ import java.util.Collection;
  */
 public abstract class AbstractThingGenerator<T extends Thing, S extends Type> extends FromGraphGenerator<T> {
 
-    private final Class<? extends AbstractOntologyConceptGenerator<S>> generatorClass;
+    private final Class<? extends AbstractTypeGenerator<S>> generatorClass;
 
-    AbstractThingGenerator(Class<T> type, Class<? extends AbstractOntologyConceptGenerator<S>> generatorClass) {
+    AbstractThingGenerator(Class<T> type, Class<? extends AbstractTypeGenerator<S>> generatorClass) {
         super(type);
         this.generatorClass = generatorClass;
     }
 
     @Override
     protected final T generateFromGraph() {
-        S type = genFromGraph(generatorClass).excludeMeta().excludeAbstract().generate(random, status);
+        S type = genFromGraph(generatorClass).excludeAbstract().excludeMeta().generate(random, status);
 
         Collection<T> instances = (Collection<T>) type.instances();
         if (instances.isEmpty()) {

@@ -24,7 +24,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Abstract;
+import ai.grakn.generator.AbstractTypeGenerator.Abstract;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;

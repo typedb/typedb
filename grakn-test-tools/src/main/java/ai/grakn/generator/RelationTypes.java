@@ -27,7 +27,7 @@ import ai.grakn.concept.Label;
  *
  * @author Felix Chapman
  */
-public class RelationTypes extends AbstractOntologyConceptGenerator<RelationType> {
+public class RelationTypes extends AbstractTypeGenerator<RelationType> {
 
     public RelationTypes() {
         super(RelationType.class);
