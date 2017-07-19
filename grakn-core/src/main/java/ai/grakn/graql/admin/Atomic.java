@@ -20,6 +20,7 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.graql.Var;
 
+import java.util.HashSet;
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 
@@ -77,6 +78,12 @@ public interface Atomic {
      */
     @CheckReturnValue
     default boolean isAllowedToFormRuleHead(){ return false; }
+
+    /**
+     * @return error messages indicating ontological inconsistencies of this atomic
+     */
+    @CheckReturnValue
+    default Set<String> validateOntologically(){ return new HashSet<>();}
 
     /**
      * @return true if atom is recursive

@@ -45,7 +45,13 @@ import java.util.Collection;
  */
 public interface Type extends OntologyConcept {
     //------------------------------------- Modifiers ----------------------------------
-    // TODO: Describe behaviour when setting a type with direct instances as abstract
+    /**
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
+     */
+    Type setLabel(Label label);
+
     /**
      * Sets the Entity Type to be abstract - which prevents it from having any instances.
      *

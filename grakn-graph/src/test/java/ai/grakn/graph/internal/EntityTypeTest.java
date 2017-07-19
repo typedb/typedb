@@ -21,12 +21,11 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.ErrorMessage;
@@ -39,10 +38,9 @@ import java.util.Set;
 
 import static ai.grakn.util.ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
+import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
 import static ai.grakn.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
-import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
-import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -252,40 +250,6 @@ public class EntityTypeTest extends GraphTestBase{
         expectedException.expectMessage(META_TYPE_IMMUTABLE.getMessage(meta.getLabel()));
 
         meta.plays(role);
-    }
-
-    @Test
-    public void whenSpecifyingTheResourceTypeOfAnEntityType_EnsureTheImplicitStructureIsCreated(){
-        graknGraph.showImplicitConcepts(true);
-        Label resourceLabel = Label.of("Resource Type");
-        EntityType entityType = graknGraph.putEntityType("Entity1");
-        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
-
-        //Implicit Names
-        Label hasResourceOwnerLabel = Schema.ImplicitType.HAS_OWNER.getLabel(resourceLabel);
-        Label hasResourceValueLabel = Schema.ImplicitType.HAS_VALUE.getLabel(resourceLabel);
-        Label hasResourceLabel = Schema.ImplicitType.HAS.getLabel(resourceLabel);
-
-        entityType.resource(resourceType);
-
-        RelationType relationType = graknGraph.getRelationType(hasResourceLabel.getValue());
-        assertEquals(hasResourceLabel, relationType.getLabel());
-
-        Set<Label> roleLabels = relationType.relates().stream().map(OntologyConcept::getLabel).collect(toSet());
-        assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
-
-        assertThat(entityType.plays(), containsInAnyOrder(graknGraph.getRole(hasResourceOwnerLabel.getValue())));
-        assertThat(resourceType.plays(), containsInAnyOrder(graknGraph.getRole(hasResourceValueLabel.getValue())));
-
-        //Check everything is implicit
-        assertTrue(relationType.isImplicit());
-        relationType.relates().forEach(role -> assertTrue(role.isImplicit()));
-
-        // Check that resource is not required
-        EdgeElement entityPlays = ((EntityTypeImpl) entityType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
-        assertFalse(entityPlays.propertyBoolean(Schema.EdgeProperty.REQUIRED));
-        EdgeElement resourcePlays = ((ResourceTypeImpl <?>) resourceType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
-        assertFalse(resourcePlays.propertyBoolean(Schema.EdgeProperty.REQUIRED));
     }
 
     @Test

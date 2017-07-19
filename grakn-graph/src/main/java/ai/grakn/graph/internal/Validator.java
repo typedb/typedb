@@ -28,6 +28,7 @@ import ai.grakn.util.CommonUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * <p>
@@ -100,8 +101,12 @@ class Validator {
      * @param rule the rule which needs to be validated
      */
     private void validateRule(AbstractGraknGraph<?> graph, Rule rule){
-        errorsFound.addAll(ValidateGlobalRules.validateRuleOntologyElementsExist(graph, rule));
-        errorsFound.addAll(ValidateGlobalRules.validateRuleIsHornClause(graph, rule));
+        Set<String> labelErrors = ValidateGlobalRules.validateRuleOntologyElementsExist(graph, rule);
+        errorsFound.addAll(labelErrors);
+        errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidHornClause(graph, rule));
+        if (labelErrors.isEmpty()){
+            errorsFound.addAll(ValidateGlobalRules.validateRuleOntologically(graph, rule));
+        }
     }
 
     /**

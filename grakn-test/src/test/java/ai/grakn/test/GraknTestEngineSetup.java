@@ -30,13 +30,14 @@ import ai.grakn.engine.util.SimpleURI;
 import static ai.grakn.graql.Graql.var;
 import ai.grakn.util.EmbeddedRedis;
 import com.jayway.restassured.RestAssured;
+import org.slf4j.LoggerFactory;
+import spark.Service;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
-import org.slf4j.LoggerFactory;
-import spark.Service;
 
 /**
  * <p>

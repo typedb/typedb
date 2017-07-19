@@ -15,7 +15,7 @@ This example shows how to use Java in a basic example that can be extended as a 
 ## Dependencies
 All Grakn applications have the following Maven dependency:
 
-```java
+```xml
 <dependency>
 <groupId>ai.grakn</groupId>
 <artifactId>grakn-graph</artifactId>
@@ -25,7 +25,7 @@ All Grakn applications have the following Maven dependency:
 
 This dependency will give you access to the Core API. Your Java application will also require the following dependency when it is running against a Titan backend, which is what is configured for you by default:
 
-```java
+```xml
 <dependency>
 <groupId>ai.grakn</groupId>
 <artifactId>titan-factory</artifactId>
@@ -56,7 +56,7 @@ We will look at the same ontology as is covered in the [Basic Ontology documenta
 First we need a [graph](../developing-with-java/java-setup.html#initialising-a-transaction-on-the-graph):
 
 ```java
-GraknSession session = Grakn.session(Grakn.DEFAULT_URI, keyspace);
+GraknSession session = Grakn.session(uri, keyspace);
 GraknGraph graph = session.open(GraknTxType.WRITE)
 ```
 
@@ -66,30 +66,30 @@ Building the ontology is covered in `writeOntology()`. First, the method adds th
 ```java
 identifier = graph.putResourceType("identifier", ResourceType.DataType.STRING);
 name = graph.putResourceType("name", ResourceType.DataType.STRING);
-firstname = graph.putResourceType("firstname", ResourceType.DataType.STRING).superType(name);
-surname = graph.putResourceType("surname", ResourceType.DataType.STRING).superType(name);
-middlename = graph.putResourceType("middlename", ResourceType.DataType.STRING).superType(name);
-date = graph.putResourceType("date", ResourceType.DataType.DATE);
-birthDate = graph.putResourceType("birth-date", ResourceType.DataType.DATE).superType(date);
-deathDate = graph.putResourceType("death-date", ResourceType.DataType.DATE).superType(date);
+firstname = graph.putResourceType("firstname", ResourceType.DataType.STRING).sup(name);
+surname = graph.putResourceType("surname", ResourceType.DataType.STRING).sup(name);
+middlename = graph.putResourceType("middlename", ResourceType.DataType.STRING).sup(name);
+date = graph.putResourceType("date", ResourceType.DataType.STRING);
+birthDate = graph.putResourceType("birth-date", ResourceType.DataType.STRING).sup(date);
+deathDate = graph.putResourceType("death-date", ResourceType.DataType.STRING).sup(date);
 gender = graph.putResourceType("gender", ResourceType.DataType.STRING);
 ```
 
-Then it adds roles using `putRoleType()`:
+Then it adds roles using `putRole()`:
 
 ```java
-spouse = graph.putRoleType("spouse").setAbstract(true);
-spouse1 = graph.putRoleType("spouse1").superType(spouse);
-spouse2 = graph.putRoleType("spouse2").superType(spouse);
-parent = graph.putRoleType("parent");
-child = graph.putRoleType("child");
+spouse = graph.putRole("spouse");
+spouse1 = graph.putRole("spouse1").sup(spouse);
+spouse2 = graph.putRole("spouse2").sup(spouse);
+parent = graph.putRole("parent");
+child = graph.putRole("child");
 ```
 
 Then to add the relation types, `putRelationType()`, which is followed by `relates()` to set the roles associated with the relation and resource() to state that it has a date resource:
 
 ```java
 marriage = graph.putRelationType("marriage");
-marriage.relates(spouse1).relates(spouse2);
+marriage.relates(spouse).relates(spouse1).relates(spouse2);
 marriage.resource(date);
 parentship = graph.putRelationType("parentship");
 parentship.relates(parent).relates(child);
@@ -121,10 +121,13 @@ Now that we have created the ontology, we can load in some data using the Graph 
 The example project does this in `writeSampleRelation_Marriage()`. First it creates a person entity named homer:
 
 ```java
+// After committing we need to open a new transaction
+graph = session.open(GraknTxType.WRITE)
+
 // Define the resources
-Resource<String> firstNameJohn = firstname.putResource(“John”);
-Resource<String> surnameNiesz = surname.putResource(“Niesz”);
-Resource<String> male = gender.putResource(“Male”);
+Resource<String> firstNameJohn = firstname.putResource("John");
+Resource<String> surnameNiesz = surname.putResource("Niesz");
+Resource<String> male = gender.putResource("male");
 //Now we can create the actual husband entity
 Entity johnNiesz = person.addEntity();
 //Add the resources
@@ -136,14 +139,16 @@ johnNiesz.resource(male);
 We can compare how a Graql statement maps to the Graph API. This is the equivalent in Graql:
 
 ```graql
-insert $x isa person has firstname “John”, has surname “Niesz” has gender “male”;
+insert $x isa person has firstname "John", has surname "Niesz" has gender "male";
 ```
 
 The code goes on to create another `person` entity, named `maryYoung`, and then marries them:
 
 ```java
+Entity maryYoung = person.addEntity();
+
 Relation theMarriage = marriage.addRelation().addRolePlayer(spouse1, johnNiesz).addRolePlayer(spouse2, maryYoung);
-Resource marriageDate = date.putResource(LocalDateTime.of(1880, 8, 12, 0, 0, 0));
+Resource marriageDate = date.putResource(LocalDateTime.of(1880, 8, 12, 0, 0, 0).toString());
 theMarriage.resource(marriageDate);
 ```
 
@@ -158,7 +163,9 @@ match $x isa person;
 In Java:
 
 ```java
-graph.getEntityType(“person”).instances().forEach(p->System.out.println(“ “ + p));
+for (Thing p: graph.getEntityType("person").instances()) {
+    System.out.println(" " + p);
+}
 ```
 
 ## Querying the Graph Using QueryBuilder
@@ -166,9 +173,10 @@ graph.getEntityType(“person”).instances().forEach(p->System.out.println(“ 
 It is also possible to interact with the graph using a separate Java API that forms Graql queries. This is via `GraknGraph.graql()`, which returns a `QueryBuilder` object, discussed in the documentation. It is useful to use `QueryBuilder` if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression. Taking the same query "What are the instances of type person?":
 
 ```java
-graph.graql().match(var(“x”).isa(“person”)).execute().stream().
-  map(Map::entrySet).forEach(p->System.out.println(“ “ + p));
-``` 
+for (Answer a: graph.graql().match(var("x").isa("person"))) {
+    System.out.println(" " + a);
+}
+```
 
 Which leads us to the common question...
 
@@ -184,13 +192,16 @@ This is best for advanced querying where traversals are involved. For example �
 
 ```java
 List<Map<String, Concept>> results = graph.graql().match(
-  var(“x”).has(“firstname”, “John”).isa(“person”),
-  var(“y”).has(“firstname”, var(“y_name”)).isa(“person”),
-  var().isa(“marriage”).
-  rel(“husband”, “x”).
-  rel(“wife”, “y”)).execute();
+  var("x").has("firstname", "John").isa("person"),
+  var("y").has("firstname", var("y_name")).isa("person"),
+  var().isa("marriage").
+  rel("husband", "x").
+  rel("wife", "y")).execute();
 for (Map<String, Concept> result : results) {
-  System.out.println(“ “ + result.get(“y_name”));
+  System.out.println(" " + result.get("y_name"));
+}
+
+graph.close();
 ```
 
 

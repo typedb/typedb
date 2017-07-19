@@ -18,7 +18,7 @@ If you are using the [Graql shell](../graql/graql-shell.html), batch loading is 
 
 To use the loader client API, add the following to your pom.xml:
 
-```
+```xml
 <dependency>
 	<groupId>ai.grakn</groupId>
 	<artifactId>grakn-client</artifactId>
@@ -28,7 +28,7 @@ To use the loader client API, add the following to your pom.xml:
  and add the following to your imports:
  
 ```
-import ai.grakn.client.LoaderClient;
+import ai.grakn.client.BatchMutatorClient;
 ```
 
 # Basic Usage
@@ -36,13 +36,13 @@ import ai.grakn.client.LoaderClient;
 The loader client provides two constructors. The first accepts only the keyspace to load data into and the URI endpoint where Grakn Engine Server is running.
 
 ```java
-LoaderClient loader = new LoaderClient(String keyspace, String uri);
+BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri);
 ```
 
 The second constructor additionally allows the user to specify a callback function that executes on completion of tasks. 
 
 ```java
-LoaderClient loader = new LoaderClient(String keyspace, String uri, Consumer<Json> onCompletionOfTask);
+loader = new BatchMutatorClient(keyspace, uri, callback);
 ```
 
 The loader client can be thought of as an empty bucket in which to dump insert queries that will be batch-loaded into the specified graph. Batching, blocking and callbacks are all executed based on how the user has configured the client, which simplifies usage. The following code will load 100 insert queries into the graph.
@@ -135,7 +135,7 @@ The server response is describes more in deatils in the REST api documentation. 
 
 ```json
 {
-	"creator":"ai.grakn.client.LoaderClient",
+	"creator":"ai.grakn.client.BatchMutatorClient",
 	"runAt":"2017-02-28T10:38:07.585Z",
 	"recurring":false,
 	"className":"ai.grakn.engine.loader.LoaderTask",
@@ -148,7 +148,8 @@ The server response is describes more in deatils in the REST api documentation. 
 
 Migration uses this callback function to track status information about the number of batches that have completed for the running migration.
 
-```java
+<!-- Ignored because it contains a Java lambda, which Groovy doesn't support -->
+```java-test-ignore
 AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
 
 loader.setTaskCompletionConsumer((Json json) -> {

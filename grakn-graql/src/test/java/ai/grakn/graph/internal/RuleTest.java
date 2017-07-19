@@ -101,7 +101,7 @@ public class RuleTest {
     public void whenAddingRuleWithDisjunctionInTheBody_Throw() throws InvalidGraphException{
         validateIllegalRule(
                 graknGraph.graql().parsePattern("(role: $x) or (role: $x, role: $y)"),
-                graknGraph.graql().parsePattern("(role: $x, role: $y) isa relation1"),
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
                 ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY
         );
     }
@@ -226,21 +226,108 @@ public class RuleTest {
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
     }
+
+    @Test
+    public void whenAddingRuleInvalidOntologically_RelationDoesntRelateARole_Throw() throws InvalidGraphException{
+        validateOntologicallyIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role3: $y) isa relation2"),
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage("role1", "relation2")
+        );
+        validateOntologicallyIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("(role1: $x, role3: $y) isa relation2"),
+                ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage("role1", "relation2")
+        );
+    }
+
+    @Test
+    public void whenAddingRuleInvalidOntologically_TypeCantPlayARole_Throw() throws InvalidGraphException{
+        validateOntologicallyIllegalRule(
+                graknGraph.graql().parsePattern("{$y isa entity1; }"),
+                graknGraph.graql().parsePattern("(role3: $x, role3: $y) isa relation2"),
+                ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage("entity1", "role3", "relation2")
+        );
+        validateOntologicallyIllegalRule(
+                graknGraph.graql().parsePattern("{$y isa entity1; (role3: $x, role3: $y) isa relation2;}"),
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage("entity1", "role3", "relation2")
+        );
+        validateOntologicallyIllegalRule(
+                graknGraph.graql().parsePattern("role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("{$y isa entity1; (role3: $x, role3: $y) isa relation2;}"),
+                ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage("entity1", "role3", "relation2")
+        );
+    }
+
+    @Test
+    public void whenAddingRuleInvalidOntologically_EntityCantHaveResource_Throw() throws InvalidGraphException{
+        validateOntologicallyIllegalRule(
+                graknGraph.graql().parsePattern("$x isa relation1"),
+                graknGraph.graql().parsePattern("$x has res1 'value'"),
+                ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage("res1", "relation1")
+        );
+        validateOntologicallyIllegalRule(
+                graknGraph.graql().parsePattern("{$x isa relation1, has res1 'value';}"),
+                graknGraph.graql().parsePattern("$x isa relation2"),
+                ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage("res1", "relation1")
+        );
+        validateOntologicallyIllegalRule(
+                graknGraph.graql().parsePattern("$x isa relation2"),
+                graknGraph.graql().parsePattern("{$x isa relation1, has res1 'value';"),
+                ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage("res1", "relation1")
+        );
+    }
+
+    @Test
+    public void whenAddingRuleInvalidOntologically_RelationWithInvalidType_Throw() throws InvalidGraphException{
+        validateOntologicallyIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role3: $y) isa res1"),
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE.getMessage("res1")
+        );
+        validateOntologicallyIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("(role1: $x, role3: $y) isa res1"),
+                ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE.getMessage("res1")
+        );
+    }
+
+    @Test
+    public void whenAddingRuleInvalidOntologically_ResourceWithInvalidType_Throw() throws InvalidGraphException{
+        validateOntologicallyIllegalRule(
+                graknGraph.graql().parsePattern("$x has relation1 'value'"),
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage("relation1")
+        );
+        validateOntologicallyIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("$x has relation1 'value'"),
+                ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage("relation1")
+        );
+    }
+
+    @Test
+    public void whenAddingRuleWithOntologicallyInvalidHead_RelationDoesntRelateARole_Throw() throws InvalidGraphException{
+        validateOntologicallyIllegalRule(
+                graknGraph.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknGraph.graql().parsePattern("(role1: $x, role3: $y) isa relation2"),
+                ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage("role1", "relation2")
+        );
+    }
+
+    private void validateOntologicallyIllegalRule(Pattern when, Pattern then, String message){
+        initGraph(graknGraph);
+        graknGraph.admin().getMetaRuleInference().putRule(when, then);
+
+        expectedException.expect(InvalidGraphException.class);
+        expectedException.expectMessage(message);
+
+        graknGraph.commit();
+    }
     
     private void validateIllegalRule(Pattern when, Pattern then, ErrorMessage message){
-        ResourceType<Integer> res1 = graknGraph.putResourceType("res1", ResourceType.DataType.INTEGER);
-        graknGraph.putEntityType("entity1").resource(res1);
-        Role role1 = graknGraph.putRole("role1");
-        Role role2 = graknGraph.putRole("role2");
-        Role role3 = graknGraph.putRole("role3");
-
-        graknGraph.putRelationType("relation1")
-                .relates(role1)
-                .relates(role2)
-                .relates(role3);
-        graknGraph.putRelationType("relation2")
-                .relates(role3);
-
+        initGraph(graknGraph);
         Rule rule = graknGraph.admin().getMetaRuleInference().putRule(when, then);
 
         expectedException.expect(InvalidGraphException.class);
@@ -248,6 +335,25 @@ public class RuleTest {
                 message.getMessage(rule.getId(), rule.type().getLabel()));
 
         graknGraph.commit();
+    }
+    
+    private void initGraph(GraknGraph graph){
+        ResourceType<Integer> res1 = graph.putResourceType("res1", ResourceType.DataType.INTEGER);
+        Role role1 = graph.putRole("role1");
+        Role role2 = graph.putRole("role2");
+        Role role3 = graph.putRole("role3");
+
+        graph.putEntityType("entity1")
+                .resource(res1)
+                .plays(role1)
+                .plays(role2);
+
+        graph.putRelationType("relation1")
+                .relates(role1)
+                .relates(role2)
+                .relates(role3);
+        graph.putRelationType("relation2")
+                .relates(role3);
     }
 
     @Test

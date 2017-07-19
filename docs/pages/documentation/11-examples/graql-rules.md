@@ -90,7 +90,7 @@ Then sheep are vegetarians.
 
 The initial statements can be seen as a set of premises. If all the premises are met we can infer a new fact (that sheep are vegatarians). If we hypothetise that sheep are vegetarians then the whole example can be expressed with a particular two-block structure: IF some premises are met, THEN a given hypothesis is true.
 
-This is how reasoning in Graql works. It checks whether the statements in the first block can be verified and, if they can, infers the statement in the second block. The rules are written in Graql, and we call the first set of statements (the IF part or, if you prefer, the antecedent) simply the left hand side (LHS). The second part, not surprisingly, is the right hand side (RHS). Using Graql, both sides of the rule are enclosed in curly braces and preceded by, respectively, the keywords `lhs` and `rhs`.
+This is how reasoning in Graql works. It checks whether the statements in the first block can be verified and, if they can, infers the statement in the second block. The rules are written in Graql, and we call the first set of statements (the IF part or, if you prefer, the antecedent) simply the "when". The second part, not surprisingly, is the "then". Using Graql, both sides of the rule are enclosed in curly braces and preceded by, respectively, the keywords `when` and `then`.
 
 {% include note.html content="The full documentation for writing rules in Graql is available from [here](https://grakn.ai/pages/documentation/graql/graql-rules.html)." %}
 
@@ -100,53 +100,55 @@ This is how reasoning in Graql works. It checks whether the statements in the fi
 As we saw above, it is possible for Grakn to infer the gender-specific roles (`mother`, `father`, `daughter`, `son`) that a `person` entity plays. It does this by applying the following rules:
 
 ```graql
+insert
+
 $genderizeParentships1 isa inference-rule
-lhs
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "male";
 $c has gender "male";
 }
-rhs
+then
 {(father: $p, son: $c) isa parentship;};
 
 $genderizeParentships2 isa inference-rule
-lhs
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "male";
 $c has gender "female";
 }
-rhs
+then
 {(father: $p, daughter: $c) isa parentship;};
 
 $genderizeParentships3 isa inference-rule
-lhs
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "female";
 $c has gender "male";
 }
-rhs
+then
 {(mother: $p, son: $c) isa parentship;};
 
 $genderizeParentships4 isa inference-rule
-lhs
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "female";
 $c has gender "female";
 }
-rhs
+then
 {(mother: $p, daughter: $c) isa parentship;};
 ```
 
 The four rules can be broken down as follows:
 
-* LHS: In the `parentship` relation between child `$c` and parent `$p`, do they both have a `gender` resource that is `male`?
-	* RHS: The `parentship` relation is between `father` and `son`
-* LHS: In the `parentship` relation between child `$c` and parent `$p`, does `$c` have a `gender` resource that is `female` and `$p` have a `gender` resource that is `male`?
-	* RHS: The `parentship` relation is between `father` and `daughter`
-* LHS: In the `parentship` relation between child `$c` and parent `$p`, does `$c` have a `gender` resource that is `male` and `$p` have a `gender` resource that is `female`?
-	* RHS: The `parentship` relation is between `mother` and `son`
-* LHS: In the `parentship` relation between child `$c` and parent `$p`, do both have a `gender` resource that is `female`?
-	* RHS: The `parentship` relation is between `mother` and `daughter`
+* when: In the `parentship` relation between child `$c` and parent `$p`, do they both have a `gender` resource that is `male`?
+	* then: The `parentship` relation is between `father` and `son`
+* when: In the `parentship` relation between child `$c` and parent `$p`, does `$c` have a `gender` resource that is `female` and `$p` have a `gender` resource that is `male`?
+	* then: The `parentship` relation is between `father` and `daughter`
+* when: In the `parentship` relation between child `$c` and parent `$p`, does `$c` have a `gender` resource that is `male` and `$p` have a `gender` resource that is `female`?
+	* then: The `parentship` relation is between `mother` and `son`
+* when: In the `parentship` relation between child `$c` and parent `$p`, do both have a `gender` resource that is `female`?
+	* then: The `parentship` relation is between `mother` and `daughter`
 
 We can use the rule to easily discover the sons who have the same name as their fathers:
 
@@ -161,16 +163,18 @@ In the genealogy-graph example, there should be two results returned. William an
 The *basic-genealogy* file contains a number of rules for setting up family relationships, such as siblings, cousins, in-laws and the following, which sets up a relation called `grandparentship`:
 
 ```graql
+insert
+
 $parentsOfParentsAreGrandparents isa inference-rule
-lhs
+when
 {(parent:$p, child: $gc) isa parentship;
 (parent: $gp, child: $p) isa parentship;
 }
-rhs
+then
 {(grandparent: $gp, grandchild: $gc) isa grandparentship;};
 ```
 
-Here, the left hand side rules check two statements:
+Here, the "when" rules check two statements:
 
 * does `$p` play the `parent` role in a `parentship` relation, with (`$gc`) playing the `child` role?
 * does `$p` also play the `child` role in a `parentship` relation, with (`$gp`) playing the `parent` role?
@@ -182,49 +186,51 @@ If so, the right hand side of the rules state that:
 Some additional rules can add more specifics to the `grandparentship` and assign the entities to the roles `grandson`, `granddaughter`, `grandmother` and `grandfather`:
 
 ```graql
+insert
+
 $grandParents1 isa inference-rule
-lhs
+when
 {($p, son: $gc) isa parentship;
 (father: $gp, $p) isa parentship;
 }
-rhs
+then
 {(grandfather: $gp, grandson: $gc) isa grandparentship;};
 
 $grandParents2 isa inference-rule
-lhs
+when
 {($p, daughter: $gc) isa parentship;
 (father: $gp, $p) isa parentship;
 }
-rhs
+then
 {(grandfather: $gp, granddaughter: $gc) isa grandparentship;};
 
 $grandParents3 isa inference-rule
-lhs
+when
 {($p, daughter: $gc) isa parentship;
 (mother: $gp, $p) isa parentship;
 }
-rhs
+then
 {(grandmother: $gp, granddaughter: $gc) isa grandparentship;};
 
 $grandParents4 isa inference-rule
-lhs
+when
 {($p, son: $gc) isa parentship;
 (mother: $gp, $p) isa parentship;
 }
-rhs
+then
 {(grandmother: $gp, grandson: $gc) isa grandparentship;};
 ```
 
 Much as above for the `parentship` relation, the rules can be broken down as follows:
 
-* LHS: There is a `parentship` relation between son `$gc` and parent `$p`, and another `parentship` relation where `$p` is now in the child role and `$gp` is a father. 
-	* RHS: The `grandparentship` relation is between `grandfather` and `grandson`
-* LHS: There is a `parentship` relation between daughter `$gc` and parent `$p`, and another `parentship` relation where `$p` is now in the child role and `$gp` is a father. 
-	* RHS: The `grandparentship` relation is between `grandfather` and `granddaughter`
-* LHS: There is a `parentship` relation between daughter `$gc` and parent `$p`, and another `parentship` relation where `$p` is now in the child role and `$gp` is a mother. 
-	* RHS: The `grandparentship` relation is between `grandmother` and `granddaughter`
-* LHS: There is a `parentship` relation between son `$gc` and parent `$p`, and another `parentship` relation where `$p` is now in the child role and `$gp` is a mother. 
-	* RHS: The `grandparentship` relation is between `grandmother` and `grandson`
+* when: There is a `parentship` relation between son `$gc` and parent `$p`, and another `parentship` relation where `$p` is now in the child role and `$gp` is a father.
+	* then: The `grandparentship` relation is between `grandfather` and `grandson`
+* when: There is a `parentship` relation between daughter `$gc` and parent `$p`, and another `parentship` relation where `$p` is now in the child role and `$gp` is a father.
+	* then: The `grandparentship` relation is between `grandfather` and `granddaughter`
+* when: There is a `parentship` relation between daughter `$gc` and parent `$p`, and another `parentship` relation where `$p` is now in the child role and `$gp` is a mother.
+	* then: The `grandparentship` relation is between `grandmother` and `granddaughter`
+* when: There is a `parentship` relation between son `$gc` and parent `$p`, and another `parentship` relation where `$p` is now in the child role and `$gp` is a mother.
+	* then: The `grandparentship` relation is between `grandmother` and `grandson`
 
 These rules allow us to find all `grandparentship` relations, and further, it allows us to query, for example, which grandfather/grandson pairs share the same name:
 
@@ -241,14 +247,16 @@ In the genealogy-graph example, there should be three results returned. George, 
 Another rule can be used to infer `person` entities who are cousins:
 
 ```
+insert
+
 $peopleWithSiblingsParentsAreCousins isa inference-rule
-lhs
+when
 {
 (parent: $p, child: $c1) isa parentship;
 ($p, $p2) isa siblings;
 (parent: $p2, child: $c2) isa parentship;
 }
-rhs
+then
 {(cousin1: $c1, cousin2: $c2) isa cousins;};
 
 ```

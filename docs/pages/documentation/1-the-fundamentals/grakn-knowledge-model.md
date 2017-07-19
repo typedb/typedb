@@ -144,7 +144,7 @@ insert
   plays employer;  
   
   name sub resource, datatype string;
-  "date" sub resource, datatype date;
+  "date" sub resource, datatype string;
   
   employment sub relation,
     relates employee, relates employer,
@@ -259,14 +259,15 @@ A relation is valid if:
 Let us say that we want to model a marriage between a man `Bob` and woman `Alice`.
 This will be our first attempt:
 
-```graql
+<!-- This example is meant to fail TODO: Make this only parse, not execute -->
+```graql-test-ignore
 insert
-  person is-abstract sub entity;
-  person has name;
+  human is-abstract sub entity;
+  human has name;
   name sub resource datatype string;
   
-  man is-abstract sub person;
-  woman sub person;
+  man is-abstract sub human;
+  woman sub human;
   
   marriage sub relation;
   marriage relates husband;
@@ -305,12 +306,12 @@ Let's fix these issues and try again:
 
 ```graql
 insert
-  person is-abstract sub entity;                   
-  person has name;
+  human is-abstract sub entity;
+  human has name;
   name sub resource datatype string;
   
-  man sub person; # Fix (3)
-  woman sub person;
+  man sub human; # Fix (3)
+  woman sub human;
   
   marriage sub relation;
   marriage relates husband;
@@ -338,7 +339,7 @@ Inference is a process of extracting implicit information from explicit data. Gr
 Both mechanisms can be employed when querying the knowledge graph with Graql, thus supporting retrieval of both explicit and implicit information at query time.      
 
 ### Type Inference
-The type inference is based on a simple graph traversal along the `sub` edges. Every instance of a given concept type is automatically classified as an (indirect) instance of all (possibly indirect) supertypes of that type. For example, whenever `customer sub person` is in the ontology, every instance of `customer` will be retrieved on the query `match $x isa person`. 
+The type inference is based on a simple graph traversal along the `sub` edges. Every instance of a given concept type is automatically classified as an (indirect) instance of all (possibly indirect) supertypes of that type. For example, whenever `customer sub human` is in the ontology, every instance of `customer` will be retrieved on the query `match $x isa human`.
 
 Similarly for roles, every instance playing a given role is inferred to also play all its (possibly indirect) super-roles. <!--For example, whenever `inst` plays the role of wife in a relation of the type `marriage`, the system will infer that `inst` plays also the role of `partner1` in that relation, given the ontology from Figure 2.-->
 
@@ -347,7 +348,7 @@ The type inference is set ON by default when querying Grakn.
 ### Rule-Based Inference
 The rule-based inference exploits a set of user-defined datalog rules and is conducted by means of the  reasoner built natively into Grakn. Every rule is declared as an instance of a built-in Grakn type `inference-rule`.
 
-A rule is an expression of the form `lhs G1 rhs G2`, where `G1` and `G2` are a pair of Graql patterns. Whenever the left-hand-side (lhs) pattern `G1` is found in the data, the right-hand-side (rhs) pattern `G2` can be assumed to exist and optionally materialised (inserted). For example:
+A rule is an expression of the form `when G1 then G2`, where `G1` and `G2` are a pair of Graql patterns. Whenever the "when" pattern `G1` is found in the data, the "then" pattern `G2` can be assumed to exist and optionally materialised (inserted). For example:
 
 ```graql
 insert
@@ -359,14 +360,14 @@ insert
   located-subject sub role;
   subject-location sub role;
 
-  transitive-location sub rule,
-    lhs {
+  $transitive-location isa inference-rule,
+    when {
       ($x, $y) isa located-in;
       ($y, $z) isa located-in;
     }
-    rhs {
+    then {
       ($x, $z) isa located-in;
-    }
+    };
 
 ```
 

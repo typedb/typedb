@@ -29,7 +29,7 @@ The following list Graql's reserved keywords:
 
 #### Querying and query modifiers
 
-```graql
+```graql-test-ignore
 aggregate, asc, ask
 by
 compute, contains
@@ -47,7 +47,7 @@ val
 
 #### Datatypes
 
-```graql
+```graql-test-ignore
 datatype
 boolean, double, long, string, date
 true, false
@@ -55,7 +55,7 @@ true, false
 
 #### Ontology definition
 
-```graql
+```graql-test-ignore
 has, has-scope, 
 is-abstract, isa, 
 key,
@@ -65,14 +65,14 @@ relates
 
 #### Rules definition
 
-```graql
-lhs, rhs
+```graql-test-ignore
+when, then
 ```
 
 #### Statistics 
 Used with `compute` and `aggregate`:
 
-```graql
+```graql-test-ignore
 count
 group
 max, mean, median, min
