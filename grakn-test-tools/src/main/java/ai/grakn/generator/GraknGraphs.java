@@ -172,7 +172,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 Label label = typeLabel();
                 Role superType = roleType();
                 Role role = graph.putRole(label).sup(superType);
-                summaryAssign(role, "graph", "putRoleType", label);
+                summaryAssign(role, "graph", "putRole", label);
                 summary(role, "superType", superType);
             },
             () -> {
@@ -305,8 +305,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private String summaryFormat(Object object) {
-        if (object instanceof Type) {
-            return ((Type) object).getLabel().getValue().replaceAll("-", "_");
+        if (object instanceof OntologyConcept) {
+            return ((OntologyConcept) object).getLabel().getValue().replaceAll("-", "_");
         } else if (object instanceof Thing) {
             Thing thing = (Thing) object;
             return summaryFormat(thing.type()) + thing.getId().getValue();
