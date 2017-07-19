@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.graql.Pattern;
+import com.google.auto.value.AutoValue;
 
 
 /**
@@ -31,10 +32,11 @@ import ai.grakn.graql.Pattern;
  *
  * @author Felix Chapman
  */
-public class ThenProperty extends RuleProperty {
+@AutoValue
+public abstract class ThenProperty extends RuleProperty {
 
-    public ThenProperty(Pattern then) {
-        super(then);
+    public static ThenProperty of(Pattern then) {
+        return new AutoValue_ThenProperty(then);
     }
 
     @Override

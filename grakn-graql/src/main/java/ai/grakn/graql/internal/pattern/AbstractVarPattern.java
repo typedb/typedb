@@ -322,12 +322,12 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern when(Pattern when) {
-        return addProperty(new WhenProperty(when));
+        return addProperty(WhenProperty.of(when));
     }
 
     @Override
     public final VarPattern then(Pattern then) {
-        return addProperty(new ThenProperty(then));
+        return addProperty(ThenProperty.of(then));
     }
 
     @Override

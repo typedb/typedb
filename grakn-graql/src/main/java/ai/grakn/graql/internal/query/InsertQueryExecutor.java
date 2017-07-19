@@ -253,7 +253,7 @@ public class InsertQueryExecutor {
                         .orElseThrow(() -> GraqlQueryException.insertRuleWithoutLhs(var));
                 ThenProperty then = var.getProperty(ThenProperty.class)
                         .orElseThrow(() -> GraqlQueryException.insertRuleWithoutRhs(var));
-                return type.asRuleType().putRule(when.getPattern(), then.getPattern());
+                return type.asRuleType().putRule(when.pattern(), then.pattern());
             });
         } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
