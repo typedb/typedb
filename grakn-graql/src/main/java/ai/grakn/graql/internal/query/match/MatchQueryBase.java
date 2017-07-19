@@ -65,7 +65,6 @@ public class MatchQueryBase extends AbstractMatchQuery {
     protected final Logger LOG = LoggerFactory.getLogger(MatchQueryBase.class);
 
     private final Conjunction<PatternAdmin> pattern;
-    private ImmutableSet<Label> labels;
 
     /**
      * @param pattern a pattern to match in the graph
@@ -83,8 +82,6 @@ public class MatchQueryBase extends AbstractMatchQuery {
     @Override
     public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
         GraknGraph graph = optionalGraph.orElseThrow(GraqlQueryException::noGraph);
-
-        this.labels = getAllTypeLabels(graph);
 
         for (VarPatternAdmin var : pattern.getVars()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
