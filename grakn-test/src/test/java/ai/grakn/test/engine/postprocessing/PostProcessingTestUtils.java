@@ -18,7 +18,7 @@ public class PostProcessingTestUtils {
     
     static <T> String indexOf(GraknGraph graph, Resource<T> resource) {
         Vertex originalResource = graph.admin().getTinkerTraversal().V()
-                                        .hasId(resource.getId().getValue()).next();
+                                        .has(Schema.VertexProperty.ID.name(), resource.getId().getValue()).next();
         return originalResource.value(Schema.VertexProperty.INDEX.name());
     }
     
@@ -27,9 +27,9 @@ public class PostProcessingTestUtils {
         ResourceType<T> resourceType = resource.type();
         AbstractGraknGraph<?> graph = (AbstractGraknGraph<?>) graknGraph;
         Vertex originalResource = graph.getTinkerTraversal().V()
-                .hasId(resource.getId().getValue()).next();
+                .has(Schema.VertexProperty.ID.name(), resource.getId().getValue()).next();
         Vertex vertexResourceTypeShard = graph.getTinkerTraversal().V()
-                .hasId(resourceType.getId().getValue()).in(Schema.EdgeLabel.SHARD.getLabel()).next();
+                .has(Schema.VertexProperty.ID.name(), resourceType.getId().getValue()).in(Schema.EdgeLabel.SHARD.getLabel()).next();
         Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
         resourceVertex.property(Schema.VertexProperty.INDEX.name(),originalResource.value(Schema.VertexProperty.INDEX.name()));
         resourceVertex.property(resourceType.getDataType().getVertexProperty().name(), resource.getValue());
