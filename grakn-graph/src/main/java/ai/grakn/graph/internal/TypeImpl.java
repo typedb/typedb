@@ -159,7 +159,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         Set<Role> allRoles = new HashSet<>();
 
         //Get the immediate plays which may be cached
-        allRoles.addAll(cachedDirectPlays.get().keySet());
+        allRoles.addAll(directPlays().keySet());
 
         //Now get the super type plays (Which may also be cached locally within their own context
         Set<T> superSet = superSet();
@@ -459,5 +459,9 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         if(resources(implicitType).contains(resourceType)) {
             throw GraphOperationException.duplicateHas(this, resourceType);
         }
+    }
+
+    public static TypeImpl from(Type type){
+        return (TypeImpl) type;
     }
 }

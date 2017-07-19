@@ -170,17 +170,21 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         if(isImplicit()){
             //If the relation type is implicit then we need to get any relation edges it may have.
             //Unfortunately this is a slow process
-            vertex().graph().getTinkerTraversal().V().
-                    has(Schema.VertexProperty.ID.name(), getId().getValue()).
-                    out(Schema.EdgeLabel.RELATES.getLabel()).
-                    in(Schema.EdgeLabel.PLAYS.getLabel()).
-                    in(Schema.EdgeLabel.SHARD.getLabel()).
-                    in(Schema.EdgeLabel.ISA.getLabel()).
-                    outE(Schema.EdgeLabel.RESOURCE.getLabel()).
-                    has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), getLabelId().getValue()).
-                    toStream().
-                    map(edge -> vertex().graph().factory().buildConcept(edge).asRelation()).
-                    forEach(instances::add);
+
+            relates().stream().
+                    flatMap(role -> role.playedByTypes().stream()).
+                    forEach(type ->{
+                        //Traversal is used here to take advantage of vertex centric index
+                        vertex().graph().getTinkerTraversal().V().
+                                has(Schema.VertexProperty.ID.name(), type.getId().getValue()).
+                                in(Schema.EdgeLabel.SHARD.getLabel()).
+                                in(Schema.EdgeLabel.ISA.getLabel()).
+                                outE(Schema.EdgeLabel.RESOURCE.getLabel()).
+                                has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), getLabelId().getValue()).
+                                toStream().
+                                map(edge -> vertex().graph().factory().buildConcept(edge).asRelation()).
+                                forEach(instances::add);
+                    });
         }
 
         return instances;

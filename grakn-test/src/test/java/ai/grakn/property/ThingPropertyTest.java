@@ -24,7 +24,6 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 import static ai.grakn.property.PropertyUtil.choose;
@@ -42,8 +41,6 @@ import static org.junit.Assume.assumeThat;
 @RunWith(JUnitQuickcheck.class)
 public class ThingPropertyTest {
 
-    //TODO: Un-ignore this when we can return RelationEdges from RelationType.instances()
-    @Ignore
     @Property
     public void whenGettingTheDirectTypeOfAThing_TheThingIsADirectInstanceOfThatType(Thing thing) {
         Type type = thing.type();
