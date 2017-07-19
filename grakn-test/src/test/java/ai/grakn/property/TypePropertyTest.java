@@ -228,14 +228,6 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void whenGettingTheIndirectSubTypesWithoutImplicitConceptsVisible_TheyDoNotContainImplicitConcepts(
-            @Open GraknGraph graph, @FromGraph Type type) {
-        type.subs().forEach(subType -> {
-            assertFalse(subType + " should not be implicit", subType.isImplicit());
-        });
-    }
-
-    @Property
     public void whenSettingTheDirectSuperTypeOfAMetaType_Throw(
             @Meta Type subType, @FromGraph Type superType) {
         assumeTrue(sameType(subType, superType));
