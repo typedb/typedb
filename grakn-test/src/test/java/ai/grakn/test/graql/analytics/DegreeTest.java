@@ -56,8 +56,7 @@ import static org.junit.Assume.assumeFalse;
 public class DegreeTest {
 
     @ClassRule
-    // TODO: Don't set port once bug #15130 is fixed
-    public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
+    public static final EngineContext context = EngineContext.startInMemoryServer();
     private GraknSession factory;
     private GraknGraph graph;
 
