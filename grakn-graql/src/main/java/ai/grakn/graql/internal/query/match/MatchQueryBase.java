@@ -104,7 +104,6 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
         return traversal.toStream()
                 .map(vertices -> makeResults(graph, vertices))
-                .filter(result -> shouldShowResult(graph, result))
                 .sequential()
                 .map(QueryAnswer::new);
     }
@@ -177,24 +176,6 @@ public class MatchQueryBase extends AbstractMatchQuery {
                 Function.identity(),
                 name -> graph.admin().buildConcept(vertices.get(name.getValue()))
         ));
-    }
-
-    /**
-     * Only show results if all concepts in them should be shown
-     */
-    private boolean shouldShowResult(GraknGraph graph, Map<Var, Concept> result) {
-        return result.values().stream().allMatch(concept -> shouldShowConcept(graph, concept));
-    }
-
-    /**
-     * Only show a concept if it not an implicit type and not explicitly mentioned
-     */
-    private boolean shouldShowConcept(GraknGraph graph, Concept concept) {
-        if (graph.implicitConceptsVisible() || !concept.isType()) return true;
-
-        Type type = concept.asType();
-
-        return !type.isImplicit() || labels.contains(type.getLabel());
     }
 
     @Override

@@ -37,7 +37,6 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.util.CommonUtil.withImplicitConceptsVisible;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -177,9 +176,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         Preconditions.checkState(this.role.isPresent());
         Preconditions.checkState(!roleTypeLabels.isPresent());
 
-        Collection<Role> subTypes = withImplicitConceptsVisible(graph, role::subs);
-
-        Set<Label> newRoleLabels = subTypes.stream().map(OntologyConcept::getLabel).collect(toSet());
+        Set<Label> newRoleLabels = role.subs().stream().map(OntologyConcept::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(varProperty,
                 relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleLabels), relationTypeLabels
@@ -194,9 +191,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
     private ShortcutFragmentSet addRelationTypeLabel(GraknGraph graph, RelationType relationType) {
         Preconditions.checkState(!relationTypeLabels.isPresent());
 
-        Collection<RelationType> subTypes = withImplicitConceptsVisible(graph, relationType::subs);
-
-        Set<Label> newRelationLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
+        Set<Label> newRelationLabels = relationType.subs().stream().map(Type::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(varProperty,
                 relation, edge, rolePlayer, role, roleTypeLabels, Optional.of(newRelationLabels)
