@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -28,10 +29,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +42,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
 
 /**
  * <p>
@@ -247,22 +243,25 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
     @SuppressWarnings("unchecked")
     @Override
     public Collection<V> instances() {
-        final Set<V> instances = new HashSet<>();
+        Set<V> instances = new HashSet<>();
 
-        GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerPopGraph().traversal().V()
-                .has(Schema.VertexProperty.LABEL_ID.name(), getLabelId().getValue())
-                .union(__.identity(),
-                        __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
-                ).unfold()
-                .in(Schema.EdgeLabel.SHARD.getLabel())
-                .in(Schema.EdgeLabel.ISA.getLabel());
-
-        traversal.forEachRemaining(vertex -> {
-            Concept concept = vertex().graph().factory().buildConcept(vertex);
-            if (concept != null) instances.add((V) concept);
-        });
+        //TODO: Clean this up. Maybe remove role from the meta ontology
+        //OntologyConcept is used here because when calling `graph.admin().getMataConcept().instances()` a role can appear
+        //When that happens this leads to a crash
+        for (OntologyConcept sub : subs()) {
+            if(!sub.isRole()){
+                TypeImpl<?, V> typeImpl = (TypeImpl) sub;
+                instances.addAll(typeImpl.directInstances());
+            }
+        }
 
         return Collections.unmodifiableCollection(filterImplicitStructures(instances));
+    }
+
+    Collection<V> directInstances(){
+        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
+                map(edge -> vertex().graph().factory().buildShard(edge.source())).
+                flatMap(Shard::<V>links).collect(Collectors.toSet());
     }
 
     /**
