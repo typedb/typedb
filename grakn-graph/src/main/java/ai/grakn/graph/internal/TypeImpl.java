@@ -26,7 +26,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -170,7 +169,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         superSet.remove(this); //We already have the plays from ourselves
         superSet.forEach(superParent -> allRoles.addAll(((TypeImpl<?,?>) superParent).directPlays().keySet()));
 
-        return Collections.unmodifiableCollection(filterImplicitStructures(allRoles));
+        return Collections.unmodifiableCollection(allRoles);
     }
 
     @Override
@@ -186,26 +185,22 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
     }
 
     private Collection<ResourceType> resources(Schema.ImplicitType implicitType){
-        return CommonUtil.withImplicitConceptsVisible(vertex().graph(), () -> {
-            //TODO: Make this less convoluted
-            String [] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
-            String prefix = implicitIdentifiers[0] + "-";
-            String suffix = "-" + implicitIdentifiers[1];
+        //TODO: Make this less convoluted
+        String [] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
+        String prefix = implicitIdentifiers[0] + "-";
+        String suffix = "-" + implicitIdentifiers[1];
 
-            vertex().graph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retrieved
+        Set<ResourceType> resourceTypes = new HashSet<>();
+        //A traversal is not used in this caching so that ontology caching can be taken advantage of.
+        plays().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
+            String roleTypeLabel = roleType.getLabel().getValue();
+            if(roleTypeLabel.startsWith(prefix) && roleTypeLabel.endsWith(suffix)){ //This is the implicit type we want
+                String resourceTypeLabel = roleTypeLabel.replace(prefix, "").replace(suffix, "");
+                resourceTypes.add(vertex().graph().getResourceType(resourceTypeLabel));
+            }
+        }));
 
-            Set<ResourceType> resourceTypes = new HashSet<>();
-            //A traversal is not used in this caching so that ontology caching can be taken advantage of.
-            plays().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
-                String roleTypeLabel = roleType.getLabel().getValue();
-                if(roleTypeLabel.startsWith(prefix) && roleTypeLabel.endsWith(suffix)){ //This is the implicit type we want
-                    String resourceTypeLabel = roleTypeLabel.replace(prefix, "").replace(suffix, "");
-                    resourceTypes.add(vertex().graph().getResourceType(resourceTypeLabel));
-                }
-            }));
-
-            return resourceTypes;
-        });
+        return resourceTypes;
     }
 
     Map<Role, Boolean> directPlays(){
@@ -237,7 +232,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
      */
     @Override
     public Collection<T> subs(){
-        return Collections.unmodifiableCollection(filterImplicitStructures(super.subs()));
+        return Collections.unmodifiableCollection(super.subs());
     }
 
     /**
@@ -262,7 +257,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
             if (concept != null) instances.add((V) concept);
         });
 
-        return Collections.unmodifiableCollection(filterImplicitStructures(instances));
+        return Collections.unmodifiableCollection(instances);
     }
 
     /**

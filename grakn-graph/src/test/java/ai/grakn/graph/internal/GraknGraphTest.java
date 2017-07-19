@@ -6,6 +6,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -13,7 +14,6 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
@@ -35,7 +35,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -146,44 +145,6 @@ public class GraknGraphTest extends GraphTestBase {
     public void whenBuildingAConceptFromAVertex_ReturnConcept(){
         EntityTypeImpl et = (EntityTypeImpl) graknGraph.putEntityType("Sample Entity Type");
         assertEquals(et, graknGraph.factory().buildConcept(et.vertex()));
-    }
-
-    @Test
-    public void whenAllowingImplicitTypesToBeShow_ReturnImplicitTypes(){
-        //Build Implicit structures
-        EntityType type = graknGraph.putEntityType("Concept Type ");
-        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
-        type.resource(resourceType);
-
-        assertFalse(graknGraph.implicitConceptsVisible());
-
-        //Meta Types
-        RelationType relationType = graknGraph.admin().getMetaRelationType();
-        Role role = graknGraph.admin().getMetaRoleType();
-
-        //Check nothing is revealed when returning result sets
-        assertThat(type.plays(), is(empty()));
-        assertThat(resourceType.plays(), is(empty()));
-        assertThat(graknGraph.getMetaRelationType().subs(), containsInAnyOrder(relationType));
-        assertThat(graknGraph.getMetaRoleType().subs(), containsInAnyOrder(role));
-
-        //Check things are still returned when explicitly asking for them
-        RelationType has = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
-        Role hasOwner = graknGraph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType.getLabel()).getValue());
-        Role hasValue = graknGraph.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType.getLabel()).getValue());
-        assertNotNull(hasOwner);
-        assertNotNull(hasValue);
-        assertNotNull(has);
-
-        //Switch on flag
-        graknGraph.showImplicitConcepts(true);
-        assertTrue(graknGraph.implicitConceptsVisible());
-
-        //Now check the result sets again
-        assertThat(graknGraph.getMetaRelationType().subs(), containsInAnyOrder(relationType, has));
-        assertThat(graknGraph.getMetaRoleType().subs(), containsInAnyOrder(role, hasOwner, hasValue));
-        assertThat(type.plays(), containsInAnyOrder(hasOwner));
-        assertThat(resourceType.plays(), containsInAnyOrder(hasValue));
     }
 
     @Test
