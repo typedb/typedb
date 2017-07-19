@@ -243,19 +243,23 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
     @SuppressWarnings("unchecked")
     @Override
     public Collection<V> instances() {
-        Set<V> instances = new HashSet<>();
+        Collection<V> result = CommonUtil.withImplicitConceptsVisible(vertex().graph(), () -> {
+            Set<V> instances = new HashSet<>();
 
-        //TODO: Clean this up. Maybe remove role from the meta ontology
-        //OntologyConcept is used here because when calling `graph.admin().getMataConcept().instances()` a role can appear
-        //When that happens this leads to a crash
-        for (OntologyConcept sub : subs()) {
-            if(!sub.isRole()){
-                TypeImpl<?, V> typeImpl = (TypeImpl) sub;
-                instances.addAll(typeImpl.directInstances());
+            //TODO: Clean this up. Maybe remove role from the meta ontology
+            //OntologyConcept is used here because when calling `graph.admin().getMataConcept().instances()` a role can appear
+            //When that happens this leads to a crash
+            for (OntologyConcept sub : subs()) {
+                if (!sub.isRole()) {
+                    TypeImpl<?, V> typeImpl = (TypeImpl) sub;
+                    instances.addAll(typeImpl.directInstances());
+                }
             }
-        }
 
-        return Collections.unmodifiableCollection(filterImplicitStructures(instances));
+            return instances;
+        });
+
+        return Collections.unmodifiableCollection(filterImplicitStructures(result));
     }
 
     Collection<V> directInstances(){

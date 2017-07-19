@@ -27,7 +27,6 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -165,12 +164,10 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     }
 
     @Override
-    public Collection<Relation> instances(){
-        Collection<Relation> instances = super.instances();
-        if(isImplicit()){
-            Set<Relation> instancesWithImplicit = new HashSet<>();
-            instancesWithImplicit.addAll(instances); //This transfer is needed because instances is immutable
+    public Collection<Relation> directInstances(){
+        Collection<Relation> instances = super.directInstances();
 
+        if(isImplicit()){
             //If the relation type is implicit then we need to get any relation edges it may have.
             //Unfortunately this is a slow process
             vertex().graph().getTinkerTraversal().V().
@@ -183,9 +180,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
                     has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), getLabelId().getValue()).
                     toStream().
                     map(edge -> vertex().graph().factory().buildConcept(edge).asRelation()).
-                    forEach(instancesWithImplicit::add);
-
-            instances = instancesWithImplicit;
+                    forEach(instances::add);
         }
 
         return instances;
