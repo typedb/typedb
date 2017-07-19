@@ -31,7 +31,7 @@ import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.property.RegexAtom;
 import ai.grakn.util.StringUtil;
-
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -47,17 +47,14 @@ import java.util.Set;
  *
  * @author Felix Chapman
  */
-public class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
+@AutoValue
+public abstract class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
-    private final String regex;
-
-    public RegexProperty(String regex) {
-        this.regex = regex;
+    public static RegexProperty of(String regex) {
+        return new AutoValue_RegexProperty(regex);
     }
 
-    public String getRegex() {
-        return regex;
-    }
+    public abstract String regex();
 
     @Override
     public String getName() {
@@ -66,33 +63,17 @@ public class RegexProperty extends AbstractVarProperty implements UniqueVarPrope
 
     @Override
     public String getProperty() {
-        return StringUtil.valueToString(regex);
+        return StringUtil.valueToString(regex());
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.regex(this, start, regex));
+        return ImmutableSet.of(EquivalentFragmentSets.regex(this, start, regex()));
     }
 
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        concept.asResourceType().setRegex(regex);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        RegexProperty that = (RegexProperty) o;
-
-        return regex.equals(that.regex);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return regex.hashCode();
+        concept.asResourceType().setRegex(regex());
     }
 
     @Override

@@ -317,7 +317,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern regex(String regex) {
-        return addProperty(new RegexProperty(regex));
+        return addProperty(RegexProperty.of(regex));
     }
 
     @Override
