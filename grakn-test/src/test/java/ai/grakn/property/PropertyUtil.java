@@ -50,15 +50,15 @@ public class PropertyUtil {
         return (Collection<T>)ret;
     }
 
-    public static Collection<Type> indirectSuperTypes(Type type) {
-        Collection<Type> superTypes = Lists.newArrayList();
+    public static Collection<OntologyConcept> indirectSupers(OntologyConcept ontologyConcept) {
+        Collection<OntologyConcept> supers = Lists.newArrayList();
 
         do {
-            superTypes.add(type);
-            type = type.sup();
-        } while (type != null);
+            supers.add(ontologyConcept);
+            ontologyConcept = ontologyConcept.sup();
+        } while (ontologyConcept != null);
 
-        return superTypes;
+        return supers;
     }
 
     public static Collection<Thing> directInstances(Type type) {

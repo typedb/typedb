@@ -133,6 +133,8 @@ public class ConceptPropertyTest {
     public void whenConceptIsASubClass_TheConceptCanBeConvertedToThatSubClass(Concept concept) {
         // These are all in one test only because they are trivial
 
+        if (concept.isOntologyConcept()) assertEquals(concept, concept.asOntologyConcept());
+
         if (concept.isType()) assertEquals(concept, concept.asType());
 
         if (concept.isEntityType()) assertEquals(concept, concept.asEntityType());
@@ -165,6 +167,14 @@ public class ConceptPropertyTest {
     }
 
     @Property
+    public void whenConceptIsNotAnOntologyConcept_TheConceptCannotBeConvertedToAnOntologyConcept(Concept concept) {
+        assumeFalse(concept.isOntologyConcept());
+        exception.expect(GraphOperationException.class);
+        //noinspection ResultOfMethodCallIgnored
+        concept.asOntologyConcept();
+    }
+
+    @Property
     public void whenConceptIsNotAnEntityType_TheConceptCannotBeConvertedToAnEntityType(Concept concept) {
         assumeFalse(concept.isEntityType());
         exception.expect(GraphOperationException.class);
@@ -181,7 +191,7 @@ public class ConceptPropertyTest {
     }
 
     @Property
-    public void whenConceptIsNotARoleType_TheConceptCannotBeConvertedToARoleType(Concept concept) {
+    public void whenConceptIsNotARole_TheConceptCannotBeConvertedToARole(Concept concept) {
         assumeFalse(concept.isRole());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
