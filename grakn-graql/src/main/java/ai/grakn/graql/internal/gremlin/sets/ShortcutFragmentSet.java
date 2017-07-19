@@ -107,7 +107,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
                     newShortcut = shortcut.removeRoleVar();
                 } else {
                     Role role = graph.getOntologyConcept(roleLabel.label());
-                    newShortcut = shortcut.substituteRoleTypeLabel(graph, role);
+                    newShortcut = shortcut.substituteRoleTypeLabel(role);
                 }
 
                 fragmentSets.remove(shortcut);
@@ -158,7 +158,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
                 RelationType relationType = graph.getOntologyConcept(relationLabel.label());
 
                 fragmentSets.remove(shortcut);
-                fragmentSets.add(shortcut.addRelationTypeLabel(graph, relationType));
+                fragmentSets.add(shortcut.addRelationTypeLabel(relationType));
 
                 return true;
             }
@@ -172,7 +172,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * @param role the role-type that this shortcut fragment must link to
      * @return a new {@link ShortcutFragmentSet} with the same properties excepting role-types
      */
-    private ShortcutFragmentSet substituteRoleTypeLabel(GraknGraph graph, Role role) {
+    private ShortcutFragmentSet substituteRoleTypeLabel(Role role) {
         Preconditions.checkState(this.role.isPresent());
         Preconditions.checkState(!roleTypeLabels.isPresent());
 
@@ -188,7 +188,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * @param relationType the relation-type that this shortcut fragment must link to
      * @return a new {@link ShortcutFragmentSet} with the same properties excepting relation-type labels
      */
-    private ShortcutFragmentSet addRelationTypeLabel(GraknGraph graph, RelationType relationType) {
+    private ShortcutFragmentSet addRelationTypeLabel(RelationType relationType) {
         Preconditions.checkState(!relationTypeLabels.isPresent());
 
         Set<Label> newRelationLabels = relationType.subs().stream().map(Type::getLabel).collect(toSet());

@@ -181,10 +181,6 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary(relationType, "superType", superType);
             },
             () -> {
-                boolean flag = gen(Boolean.class);
-                summary("graph", "showImplicitConcepts", flag);
-            },
-            () -> {
                 Type type = type();
                 Role role = roleType();
                 type.plays(role);
