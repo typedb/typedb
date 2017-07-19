@@ -85,6 +85,17 @@ public class HALBuilderTest {
     }
 
     @Test
+    public void whenSelectInferredRelationWithSingleVar_EnsureValidExplanationHrefIsContainedInResponse(){
+        Json response = getHALRepresentationNoInference(academyGraph.graph(), "match $x isa located-in; offset 0; limit 5;");
+        assertEquals(5, response.asList().size());
+        response.asJsonList().forEach(halObj -> {
+            assertEquals(halObj.at("_baseType").asString(), "inferred-relation");
+            String href = halObj.at("_links").at("self").at("href").asString();
+            assertTrue(href.contains("($a,$b) isa located-in;"));
+        });
+    }
+
+    @Test
     public void whenTriggerReasonerWithTransitiveRule_EnsureWeReceiveAValidHALResponse() {
         Json response = getHALRepresentation(academyGraph.graph(), "match $x isa region; $y isa oil-platform; (located: $y, location: $x) isa located-in; limit 20;");
         // Limit to 20 results, each result will contain 3 variables, expected size 60

@@ -47,8 +47,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.DIRECTION_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.HAS_EMPTY_ROLE_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.INFERRED_RELATION;
+import static ai.grakn.graql.internal.hal.HALUtils.LINKS_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.buildInferredRelationsMap;
 import static ai.grakn.graql.internal.hal.HALUtils.computeRoleTypesFromQuery;
@@ -141,9 +144,10 @@ public class HALBuilder {
                 mapFromVarNameToHALObject.put(currentMapEntry.getKey(), currentHal);
 
                 Json jsonRepresentation = Json.read(currentHal.toString(RepresentationFactory.HAL_JSON));
+                // If current concept is a relation obtained with inference override Explore URL and BaseType
                 if(!answer.getExplanation().isEmpty() && currentConcept.isRelation()){
-                    jsonRepresentation.set("_baseType","inferred-relation");
-                    jsonRepresentation.at("_links").set("self",Json.read("{\"href\":\""+computeHrefInferred(currentConcept, keyspace, limit)+"\"}"));
+                    jsonRepresentation.set(BASETYPE_PROPERTY,INFERRED_RELATION);
+                    jsonRepresentation.at(LINKS_PROPERTY).set("self",Json.object().set("href", computeHrefInferred(currentConcept, keyspace, limit)));
                 }
 
                 lines.add(jsonRepresentation);
@@ -158,28 +162,20 @@ public class HALBuilder {
     }
 
     private static String computeHrefInferred(Concept currentConcept, String keyspace, int limit){
-        Set<Thing> settone = new HashSet<>();
-        currentConcept.asRelation().allRolePlayers().values().stream().forEach(set->{
-//            settone.addAll(set);
-            set.forEach(x->{settone.add(x);});
-            });
+        Set<Thing> thingSet = new HashSet<>();
+        currentConcept.asRelation().allRolePlayers().values().forEach(set -> set.forEach(thingSet::add));
         String isaString =  "isa " + currentConcept.asRelation().type().getLabel();
         StringBuilder stringBuilderVarsWithIds = new StringBuilder();
         StringBuilder stringBuilderParenthesis = new StringBuilder().append('(');
         char currentVarLetter = 'a';
-        for (Thing var : settone) {
-            String id = var.getId().getValue();
-            stringBuilderVarsWithIds.append(" $").append(currentVarLetter).append(" id '").append(id).append("';");
-            String role = "";
-            stringBuilderParenthesis.append(role).append("$").append(currentVarLetter++).append(",");
+        for (Thing var : thingSet) {
+            stringBuilderVarsWithIds.append(" $").append(currentVarLetter).append(" id '").append(var.getId().getValue()).append("';");
+            stringBuilderParenthesis.append("$").append(currentVarLetter++).append(",");
         }
         String varsWithIds = stringBuilderVarsWithIds.toString();
         String parenthesis = stringBuilderParenthesis.deleteCharAt(stringBuilderParenthesis.length() - 1).append(')').toString();
 
-        String dollarR = "";
-        String selectR = "";
-
-        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, dollarR, parenthesis, isaString, selectR, limit);
+        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, "", parenthesis, isaString, "", limit);
 
         String URL = REST.WebPath.Dashboard.EXPLAIN;
 
