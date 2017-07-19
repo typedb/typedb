@@ -51,6 +51,7 @@ public class EmbeddedCassandra {
             try {
                 LOG.info("starting cassandra...");
                 EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
+                EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
                 //This thread sleep is to give time for cass to startup
                 //TODO: Determine if this is still needed
                 try {

@@ -139,10 +139,10 @@ public class GraknEngineServer implements AutoCloseable {
     private void lockAndInitializeSystemOntology() {
         try {
             Lock lock = lockProvider.getLock(LOAD_SYSTEM_ONTOLOGY_LOCK_NAME);
-            if (lock.tryLock(60, TimeUnit.SECONDS)) {
+            if (lock.tryLock(2, TimeUnit.MINUTES)) {
                 loadAndUnlock(lock);
             } else {
-                LOG.info("{} found system ontology lock already acquired by other engine", this.engineId);
+                LOG.info("{} could not acquire lock within timeout", this.engineId.value());
             }
         } catch (InterruptedException e) {
             LOG.warn("{} was interrupted while initializing system ontology", this.engineId);
@@ -151,7 +151,6 @@ public class GraknEngineServer implements AutoCloseable {
 
     private void loadAndUnlock(Lock lock) {
         try {
-            LOG.info("{} is initializing the system ontology", this.engineId);
             factory.systemKeyspace().loadSystemOntology();
         } finally {
             lock.unlock();
@@ -354,8 +353,7 @@ public class GraknEngineServer implements AutoCloseable {
         LOG.info("Connecting redisCountStorage client to {}:{}", redisUrl, redisPort);
         Config redissonConfig = new Config();
         redissonConfig.useSingleServer()
-                .setAddress(String.format("%s:%d", redisUrl, redisPort))
-                .setConnectionPoolSize(5);
+                .setAddress(String.format("redis://%s:%d", redisUrl, redisPort));
         return new RedissonLockProvider(Redisson.create(redissonConfig));
     }
 
