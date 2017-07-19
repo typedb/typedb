@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.function.BiFunction;
 
 /**
- * Generator that produces {@link GraknGraph} methods that put an ontology concept in the graph, given {@link Label}.
+ * Generator that produces {@link GraknGraph} methods that put a type in the graph, given {@link Label}.
  *
  * @author Felix Chapman
  */
