@@ -64,7 +64,7 @@ public class GraknGraphPutPropertyTest {
     public ExpectedException exception = ExpectedException.none();
 
     @Property
-    public void whenCallingAnyPutOntologyConceptMethod_CreateAnOntologyElementWithTheGivenName(
+    public void whenCallingAnyPutOntologyConceptMethod_CreateAnOntologyConceptWithTheGivenLabel(
             @Open GraknGraph graph, @Unused Label label,
             @From(PutOntologyConceptFunctions.class) BiFunction<GraknGraph, Label, OntologyConcept> putOntologyConcept
     ) {
@@ -79,7 +79,6 @@ public class GraknGraphPutPropertyTest {
     ) {
         OntologyConcept concept = putOntologyConcept.apply(graph, label);
 
-        assertEquals("Concept concept should have correct label", label, concept.getLabel());
         assertThat("Concept should only have one sub-type: itself", concept.subs(), contains(concept));
         assertFalse("Concept should not be implicit", concept.isImplicit());
         assertThat("Rules of hypotheses should be empty", concept.getRulesOfHypothesis(), empty());
