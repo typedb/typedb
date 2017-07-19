@@ -70,7 +70,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
     private static GraknGraph lastGeneratedGraph;
 
-    private StringBuilder graphSummary;
+    private static StringBuilder graphSummary;
 
     private GraknGraph graph;
     private Boolean open = null;
