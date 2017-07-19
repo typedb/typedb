@@ -130,16 +130,17 @@ public class GraknEngineServer implements AutoCloseable {
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
     }
 
+    @Override
+    public void close() {
+        stopHTTP();
+        stopTaskManager();
+    }
+
     private void lockAndInitializeSystemOntology() {
         try {
             Lock lock = lockProvider.getLock(LOAD_SYSTEM_ONTOLOGY_LOCK_NAME);
             if (lock.tryLock(60, TimeUnit.SECONDS)) {
-                try {
-                    LOG.info("{} is initializing the system ontology", this.engineId);
-                    factory.systemKeyspace().loadSystemOntology();
-                } finally {
-                    lock.unlock();
-                }
+                loadAndUnlock(lock);
             } else {
                 LOG.info("{} found system ontology lock already acquired by other engine", this.engineId);
             }
@@ -148,10 +149,13 @@ public class GraknEngineServer implements AutoCloseable {
         }
     }
 
-    @Override
-    public void close() {
-        stopHTTP();
-        stopTaskManager();
+    private void loadAndUnlock(Lock lock) {
+        try {
+            LOG.info("{} is initializing the system ontology", this.engineId);
+            factory.systemKeyspace().loadSystemOntology();
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**

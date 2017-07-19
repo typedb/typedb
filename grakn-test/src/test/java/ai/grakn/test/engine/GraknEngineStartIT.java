@@ -49,8 +49,8 @@ import org.junit.runner.RunWith;
 @RunWith(JUnitQuickcheck.class)
 public class GraknEngineStartIT {
 
-    private static final int[] PORTS = {7000, 7001, 7003};
-    public static final int REDIS_PORT = 6999;
+    private static final int[] PORTS = {50120, 50121, 50122};
+    public static final int REDIS_PORT = 50123;
 
     @BeforeClass
     public static void setUpClass() {
