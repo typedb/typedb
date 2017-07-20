@@ -34,8 +34,8 @@ import java.util.stream.Collectors;
  * @author Ganeshwara Herawan Hananda
  */
 
-public class ProcessSupervision {
-  private static final Logger LOG = Logger.getLogger(ProcessSupervision.class.getName());
+public class GraknComponentSupervisor {
+  private static final Logger LOG = Logger.getLogger(GraknComponentSupervisor.class.getName());
   private static final String CASSANDRA_FULL_PATH = "bin/cassandra"; // TODO: this exe shouldn't even be exposed anymore
   private static final String CASSANDRA_PID_FILE = "/tmp/grakn-cassandra.pid";
 
@@ -126,7 +126,7 @@ public class ProcessSupervision {
       }
     }
     LOG.info("unable to start grakn-cassandra!");
-    throw new ProcessSupervisionException("unable to start grakn-cassandra!");
+    throw new GraknComponentSupervisionException("unable to start grakn-cassandra!");
   }
 
   private void waitForCassandraStopped() throws MalformedPidFileException, IOException, InterruptedException {
@@ -143,6 +143,6 @@ public class ProcessSupervision {
       }
     }
     LOG.info("unable to stop grakn-cassandra!");
-    throw new ProcessSupervisionException("unable to stop grakn-cassandra!");
+    throw new GraknComponentSupervisionException("unable to stop grakn-cassandra!");
   }
 }

@@ -24,8 +24,8 @@ package ai.grakn.engine.supervision;
  * @author Ganeshwara Herawan Hananda
  */
 
-public class ProcessSupervisionException extends RuntimeException {
-  public ProcessSupervisionException(String msg) {
+public class GraknComponentSupervisionException extends RuntimeException {
+  public GraknComponentSupervisionException(String msg) {
     super(msg);
   }
 }
