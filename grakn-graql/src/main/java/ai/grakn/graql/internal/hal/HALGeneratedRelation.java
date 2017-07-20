@@ -24,7 +24,9 @@ import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 
 import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.EXPLORE_CONCEPT_LINK;
+import static ai.grakn.graql.internal.hal.HALUtils.GENERATED_RELATION;
 import static ai.grakn.graql.internal.hal.HALUtils.ID_PROPERTY;
+import static ai.grakn.graql.internal.hal.HALUtils.INFERRED_RELATION;
 import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
 
 /**
@@ -43,7 +45,7 @@ public class HALGeneratedRelation {
 
 
     Representation getNewGeneratedRelation(String relationId, String relationHref, String relationType, boolean isInferred) {
-        String relationBaseType = (isInferred) ? "inferred-relation" : "generated-relation";
+        String relationBaseType = (isInferred) ? INFERRED_RELATION : GENERATED_RELATION;
         Representation representation = factory.newRepresentation(relationHref)
                 .withProperty(ID_PROPERTY, relationId)
                 .withProperty(BASETYPE_PROPERTY, relationBaseType)
