@@ -26,7 +26,7 @@ import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 import java.util.Map;
 import java.util.Set;
@@ -40,8 +40,9 @@ class InHasScopeFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.in(HAS_SCOPE.getLabel());
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+        return Fragments.isVertex(traversal).in(HAS_SCOPE.getLabel());
     }
 
     @Override

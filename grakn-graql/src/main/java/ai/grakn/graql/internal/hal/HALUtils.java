@@ -73,6 +73,7 @@ public class HALUtils {
     public final static String DIRECTION_PROPERTY = "_direction";
     public final static String VALUE_PROPERTY = "_value";
     public final static String NAME_PROPERTY = "_name";
+    public final static String IMPLICIT_PROPERTY = "_implicit";
 
 
     static Schema.BaseType getBaseType(Thing thing) {
@@ -124,6 +125,7 @@ public class HALUtils {
         }
         if (concept.isType()) {
             resource.withProperty(NAME_PROPERTY, concept.asType().getLabel().getValue());
+            resource.withProperty(IMPLICIT_PROPERTY, ((OntologyConcept)concept).isImplicit());
         }
     }
 

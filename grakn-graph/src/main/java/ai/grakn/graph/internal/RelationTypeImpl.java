@@ -155,8 +155,38 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
 
     @Override
     void trackRolePlayers(){
-        //TODO this operation should not call reify() rather it should call reified. Need to think of a way to validate Relation Type changes when the instances of the relation type are not reified
-        instances().forEach(concept -> ((RelationImpl) concept).reify().castingsInstance().forEach(
-                rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer)));
+        instances().forEach(concept -> {
+            RelationImpl relation = RelationImpl.from(concept);
+            if(relation.reified().isPresent()){
+                relation.reified().get().castingsRelation().forEach(rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
+            }
+        });
+    }
+
+    @Override
+    public Collection<Relation> directInstances(){
+        Collection<Relation> instances = super.directInstances();
+
+        if(isImplicit()){
+            //If the relation type is implicit then we need to get any relation edges it may have.
+            //Unfortunately this is a slow process
+
+            relates().stream().
+                    flatMap(role -> role.playedByTypes().stream()).
+                    forEach(type ->{
+                        //Traversal is used here to take advantage of vertex centric index
+                        vertex().graph().getTinkerTraversal().V().
+                                has(Schema.VertexProperty.ID.name(), type.getId().getValue()).
+                                in(Schema.EdgeLabel.SHARD.getLabel()).
+                                in(Schema.EdgeLabel.ISA.getLabel()).
+                                outE(Schema.EdgeLabel.RESOURCE.getLabel()).
+                                has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), getLabelId().getValue()).
+                                toStream().
+                                map(edge -> vertex().graph().factory().buildConcept(edge).asRelation()).
+                                forEach(instances::add);
+                    });
+        }
+
+        return instances;
     }
 }

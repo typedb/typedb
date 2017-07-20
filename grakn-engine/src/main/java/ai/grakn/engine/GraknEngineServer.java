@@ -50,6 +50,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import javax.annotation.Nullable;
 import mjson.Json;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
@@ -76,6 +78,7 @@ import spark.Service;
 
 public class GraknEngineServer implements AutoCloseable {
 
+    private static final String LOAD_SYSTEM_ONTOLOGY_LOCK_NAME = "load-system-ontology";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
             REST.WebPath.NEW_SESSION_URI,
@@ -100,12 +103,12 @@ public class GraknEngineServer implements AutoCloseable {
         String redisUrl = prop.tryProperty(REDIS_SERVER_URL).orElse("localhost");
         this.jedisPool = instantiateRedis(prop, redisUrl, redisPort);
         this.redisCountStorage = RedisCountStorage.create(jedisPool);
-        this.factory = EngineGraknGraphFactory.create(prop.getProperties());
-        this.metricRegistry = new MetricRegistry();
         String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
         this.inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
         this.lockProvider = this.inMemoryQueue ? new ProcessWideLockProvider()
                 : instantiateRedissonLockProvider(redisPort, redisUrl);
+        this.factory = EngineGraknGraphFactory.create(prop.getProperties());
+        this.metricRegistry = new MetricRegistry();
         this.taskManager = startTaskManager(inMemoryQueue, redisCountStorage, jedisPool, lockProvider);
     }
 
@@ -121,6 +124,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public void start() {
+        lockAndInitializeSystemOntology();
         startHTTP();
         printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
@@ -130,6 +134,28 @@ public class GraknEngineServer implements AutoCloseable {
     public void close() {
         stopHTTP();
         stopTaskManager();
+    }
+
+    private void lockAndInitializeSystemOntology() {
+        try {
+            Lock lock = lockProvider.getLock(LOAD_SYSTEM_ONTOLOGY_LOCK_NAME);
+            if (lock.tryLock(60, TimeUnit.SECONDS)) {
+                loadAndUnlock(lock);
+            } else {
+                LOG.info("{} found system ontology lock already acquired by other engine", this.engineId);
+            }
+        } catch (InterruptedException e) {
+            LOG.warn("{} was interrupted while initializing system ontology", this.engineId);
+        }
+    }
+
+    private void loadAndUnlock(Lock lock) {
+        try {
+            LOG.info("{} is initializing the system ontology", this.engineId);
+            factory.systemKeyspace().loadSystemOntology();
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**
@@ -328,8 +354,8 @@ public class GraknEngineServer implements AutoCloseable {
         LOG.info("Connecting redisCountStorage client to {}:{}", redisUrl, redisPort);
         Config redissonConfig = new Config();
         redissonConfig.useSingleServer()
-                .setConnectionPoolSize(5)
-                .setAddress(String.format("%s:%s", redisUrl, redisPort));
+                .setAddress(String.format("%s:%d", redisUrl, redisPort))
+                .setConnectionPoolSize(5);
         return new RedissonLockProvider(Redisson.create(redissonConfig));
     }
 

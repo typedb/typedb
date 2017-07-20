@@ -24,8 +24,8 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.GraphContext;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -45,7 +45,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -300,8 +299,6 @@ public class ReasoningTests {
 
     @Test
     public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
-        assertFalse(testSet14.graph().implicitConceptsVisible());
-
         QueryBuilder withInference = testSet14.graph().graql().infer(true);
         QueryBuilder withoutInference = testSet14.graph().graql().infer(false);
 

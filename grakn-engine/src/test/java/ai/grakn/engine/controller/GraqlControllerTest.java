@@ -64,7 +64,7 @@ public class GraqlControllerTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(GraknEngineConfig.create().getProperties());
+        EngineGraknGraphFactory factory = EngineGraknGraphFactory.createAndLoadSystemOntology(GraknEngineConfig.create().getProperties());
         new GraqlController(factory, spark, new MetricRegistry());
     });
 
@@ -97,7 +97,7 @@ public class GraqlControllerTest {
             resp.then().statusCode(200);
             Assert.assertFalse(resp.jsonPath().getList(".").isEmpty());
         } finally {
-            ConceptId id = ConceptId.of(resp.jsonPath().getList("x.id").get(0));
+            ConceptId id = ConceptId.of(resp.jsonPath().getList("x.id").get(0).toString());
             graphContext.rollback();
             graphContext.graph().graql().match(var("x").id(id)).delete("x").execute();
         }

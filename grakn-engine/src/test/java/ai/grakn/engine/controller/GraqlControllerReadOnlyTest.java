@@ -29,13 +29,13 @@ import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
+import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
@@ -56,7 +56,6 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static ai.grakn.util.REST.Response.EXCEPTION;
-import com.codahale.metrics.MetricRegistry;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -95,7 +94,7 @@ public class GraqlControllerReadOnlyTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         new SystemController(mockFactory, spark, metricRegistry);
         new GraqlController(mockFactory, spark, metricRegistry);
-    }).port(8080); // TODO: Don't use the default port when bug #15130 is fixed
+    }).port(4567);
 
     @Before
     public void setupMock() {
@@ -342,7 +341,6 @@ public class GraqlControllerReadOnlyTest {
         assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
     }
 
-    @Ignore
     @Test
     public void GETGraqlComputeWithTextType_ResponseContentTypeIsText() {
         String query = "compute count in movie;";
@@ -351,7 +349,6 @@ public class GraqlControllerReadOnlyTest {
         assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
     }
 
-    @Ignore
     @Test
     public void GETGraqlComputeWithTextType_ResponseStatusIs200() {
         String query = "compute count in movie;";
@@ -360,7 +357,6 @@ public class GraqlControllerReadOnlyTest {
         assertThat(response.statusCode(), equalTo(200));
     }
 
-    @Ignore
     @Test
     public void GETGraqlComputeWithTextType_ResponseIsCorrect() {
         String query = "compute count in movie;";
@@ -371,7 +367,6 @@ public class GraqlControllerReadOnlyTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
-    @Ignore
     @Test
     public void ZGETGraqlComputePathWithTextType_ResponseIsCorrect() {
         assumeTrue(GraknTestSetup.usingJanus());
@@ -387,7 +382,6 @@ public class GraqlControllerReadOnlyTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
-    @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseContentTypeIsHAL() {
         assumeTrue(GraknTestSetup.usingJanus());
@@ -402,7 +396,6 @@ public class GraqlControllerReadOnlyTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
-    @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseStatusIs200() {
         assumeTrue(GraknTestSetup.usingJanus());
@@ -417,7 +410,6 @@ public class GraqlControllerReadOnlyTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
-    @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseIsNotEmpty() {
         assumeTrue(GraknTestSetup.usingJanus());
@@ -432,7 +424,6 @@ public class GraqlControllerReadOnlyTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
-    @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseContainsValidHALObjects() {
         assumeTrue(GraknTestSetup.usingJanus());
@@ -451,7 +442,6 @@ public class GraqlControllerReadOnlyTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
-    @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALTypeAndNoPath_ResponseIsEmptyJson() {
         String fromId = graphContext.graph().getResourcesByValue("Apocalypse Now").iterator().next().owner().getId().getValue();
@@ -461,7 +451,7 @@ public class GraqlControllerReadOnlyTest {
         Response response = sendRequest(query, APPLICATION_HAL);
 
         assertThat(response.statusCode(), equalTo(200));
-        assertThat(jsonResponse(response), equalTo(Json.array()));
+        assertThat(jsonResponse(response), equalTo(Json.nil()));
     }
 
     private Response sendRequest(String acceptType) {

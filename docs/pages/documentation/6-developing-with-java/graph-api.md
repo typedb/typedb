@@ -32,6 +32,8 @@ GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WR
 We need to define our constructs before we can use them. We will begin by defining our resource types since they are used everywhere. In Graql, they were defined as follows:
 
 ```graql
+insert
+
 identifier sub resource datatype string;
 firstname sub resource datatype string;
 surname sub resource datatype string;
@@ -60,6 +62,8 @@ ResourceType gender = graph.putResourceType("gender", ResourceType.DataType.STRI
 Now the role and relation types. In Graql:
 
 ```graql
+insert
+
 marriage sub relation
   relates spouse1
   relates spouse2
@@ -96,6 +100,8 @@ RelationType parentship = graph.putRelationType("parentship")
 Now the entity types. First, in Graql:
 
 ```graql
+insert
+
 person sub entity
   has identifier
   has firstname
@@ -179,7 +185,7 @@ With the Graph API this would be:
 
 ```java
 //Create the resources
-Resource johnName = firstname.putResource("John"); 
+johnName = firstname.putResource("John");
 Resource maryName = firstname.putResource("Mary");
 
 //Create the entities
@@ -243,6 +249,8 @@ RuleType inferenceRule = graknGraph.getMetaRuleInference();
 Rule instances can be added to the graph both through the Graph API as well as through Graql. We will consider an example:
 
 ```graql
+insert
+
 $R1 isa inference-rule,
 when {
     (parent: $p, child: $c) isa Parent;

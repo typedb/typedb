@@ -84,7 +84,9 @@ function filterNodesToRender(responseObject:Object|Object[], parsedResponse:Obje
     // - the current node is contained in the response as first level object (not embdedded)
     //    if it's contained in firstLevelNodes it means it MUST be drawn and so all the edges pointing to it.
 
-  return parsedResponse.nodes.filter(node => (((node.properties.baseType !== API.RESOURCE_TYPE)
+  return parsedResponse.nodes
+          .filter(node=> !node.properties.implicit)
+          .filter(node => (((node.properties.baseType !== API.RESOURCE_TYPE)
           && (node.properties.baseType !== API.RESOURCE)
           || showResources)
           || (firstLevelNodes[node.properties.id])

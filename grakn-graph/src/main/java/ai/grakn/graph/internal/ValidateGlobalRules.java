@@ -21,6 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -52,6 +53,7 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
 import static ai.grakn.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
 import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
+import static ai.grakn.util.ErrorMessage.VALIDATION_TOO_MANY_KEYS;
 
 /**
  * <p>
@@ -254,8 +256,12 @@ class ValidateGlobalRules {
                 if(playsEntry.getValue()){
                     Role role = playsEntry.getKey();
                     // Assert there is a relation for this type
-                    if (thing.relations(role).isEmpty()) {
+                    Collection<Relation> relations = thing.relations(role);
+                    if (relations.isEmpty()) {
                         return Optional.of(VALIDATION_INSTANCE.getMessage(thing.getId(), thing.type().getLabel(), role.getLabel()));
+                    } else if(relations.size() > 1){
+                        Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.getLabel());
+                        return Optional.of(VALIDATION_TOO_MANY_KEYS.getMessage(thing.getId(), resourceTypeLabel));
                     }
                 }
             }
@@ -285,7 +291,7 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated
      * @return Error messages if the rule is not a valid Horn clause (in implication form, conjunction in the body, single-atom conjunction in the head)
      */
-    static Set<String> validateRuleIsHornClause(GraknGraph graph, Rule rule){
+    static Set<String> validateRuleIsValidHornClause(GraknGraph graph, Rule rule){
         Set<String> errors = new HashSet<>();
         if (rule.getWhen().admin().isDisjunction()){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
@@ -295,10 +301,31 @@ class ValidateGlobalRules {
     }
 
     /**
+     * NB: this only gets checked if the rule obeys the Horn clause form
+     * @param graph graph used to ensure the rule is a valid Horn clause
+     * @param rule the rule to be validated ontologically
+     * @return Error messages if the rule has ontological inconsistencies
+     */
+    static Set<String> validateRuleOntologically(GraknGraph graph, Rule rule) {
+        Set<String> errors = new HashSet<>();
+
+        //both body and head refer to the same graph and have to be valid with respect to the ontology that governs it
+        //as a result the rule can be ontologically validated by combining them into a conjunction
+        //this additionally allows to cross check body-head references
+        ReasonerQuery combined = rule
+                .getWhen()
+                .and(rule.getThen())
+                .admin().getDisjunctiveNormalForm().getPatterns().iterator().next()
+                .toReasonerQuery(graph);
+        errors.addAll(combined.validateOntologically());
+        return errors;
+    }
+
+    /**
      * @param graph graph used to ensure the rule head is valid
      * @param rule the rule to be validated
      * @param head head of the rule of interest
-     * @return Error messages if the rule head is invalid - is not a single-atom conjunction or contains illegal atomics
+     * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain  illegal atomics and is ontologically valid
      */
     private static Set<String> checkRuleHeadInvalid(GraknGraph graph, Rule rule, Pattern head) {
         Set<String> errors = new HashSet<>();

@@ -34,6 +34,7 @@ import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -72,6 +73,7 @@ public class AnalyticsTest {
         factory = context.factoryWithNewKeyspace();
     }
 
+    @Ignore // No longer applicable
     @Test
     public void testInferredResourceRelation() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {

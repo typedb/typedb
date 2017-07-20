@@ -23,7 +23,7 @@ To use the API, add the following to your `pom.xml`:
 
 and add the following to your imports.
 
-```
+```java-test-ignore
 import ai.grakn.graql.QueryBuilder;
 ```
 
@@ -31,14 +31,14 @@ import ai.grakn.graql.QueryBuilder;
 
 `Graql` contains several useful static methods such as `var` and `eq`, so it's recommended that you use a static import:
 
-```java
+```java-test-ignore
 import static ai.grakn.graql.Graql.*;
 ```
 
 A `QueryBuilder` is constructed from a `GraknGraph`:
 
 ```java-test-ignore
-GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "MyGraph").getGraph();
+GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
 QueryBuilder qb = graph.graql();
 ```
 
@@ -137,14 +137,14 @@ Reasoning can be configured using `QueryBuilder` objects in the following way:
 
 ```java
 //graph is a GraknGraph instance
-QueryBuilder qb = graph.graql().infer(true);
+qb = graph.graql().infer(true);
 ```
 
 ### Switching materialisation on
 
 ```java
 //graph is a GraknGraph instance
-QueryBuilder qb = graph.graql().infer(true).materialise(true);
+qb = graph.graql().infer(true).materialise(true);
 ```
 
 Once the `QueryBuilder` has been defined, the constructed queries will obey the specified reasoning variants.

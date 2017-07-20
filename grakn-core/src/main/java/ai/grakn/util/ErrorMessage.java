@@ -45,10 +45,9 @@ public enum ErrorMessage {
     CLOSED_CLEAR("The session for graph has been closed due to deleting the graph"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The transaction was not %s. The graph was actually effected directly"),
     IMMUTABLE_VALUE("The value [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
-    NULL_VALUE("The value of [%s] cannot be set to [null]"),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
-    HAS_INVALID("The type [%s] is not allowed to have a %s of type [%s]"),
+    HAS_INVALID("The type [%s] is not allowed to have a resource of type [%s]"),
     INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
     BACKEND_EXCEPTION("Backend Exception."),
     GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
@@ -67,6 +66,8 @@ public enum ErrorMessage {
     INVALID_DIRECTION("Cannot traverse an edge in direction [%s]"),
     RESERVED_WORD("The word [%s] is reserved internally and cannot be used"),
     INVALID_PROPERTY_USE("The concept [%s] cannot contain vertex property [%s]"),
+    UNKNOWN_CONCEPT("Uknown concept type [%s]"),
+    INVALID_IMPLICIT_TYPE("Label [%s] is not an implicit label"),
     LABEL_TAKEN("The label [%s] has already been used"),
 
     //--------------------------------------------- Validation Errors
@@ -80,6 +81,8 @@ public enum ErrorMessage {
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relation Type. \n"),
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
     VALIDATION_INSTANCE("Thing [%s] of type [%s] does not play the required role [%s] \n"),
+
+    VALIDATION_TOO_MANY_KEYS("Thing [%s] has more than one key of type [%s] \n"),
 
     VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role Type [%s] which is connected to Relation Type [%s] " +
             "does not have a %s Role Type which is connected to the %s Relation Type [%s] \n"),
@@ -97,6 +100,15 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("The rule [%s] of type [%s] does not form a valid Horn clause, as its head contains illegal atomics\n"),
 
+    VALIDATION_RULE_INVALID_RELATION_TYPE("Attempting to define a rule containing a relation pattern with type [%s] which is not a relation type\n"),
+
+    VALIDATION_RULE_INVALID_RESOURCE_TYPE("Attempting to define a rule containing a resource pattern with type [%s] which is not a resource type\n"),
+
+    VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE("Attempting to define a rule containing a resource pattern of type [%s] with type [%s] that cannot have this resource\n"),
+
+    VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED("Attempting to define a rule containing a relation pattern with role [%s] which cannot be played in relation [%s]\n"),
+
+    VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE("Attempting to define a rule containing a relation pattern with type [%s] that cannot play role [%s] in relation [%s]\n"),
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),

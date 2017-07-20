@@ -50,6 +50,7 @@ import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.OntologyConceptConverterImpl;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleTypeConverter;
 import ai.grakn.util.CommonUtil;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
@@ -213,6 +214,39 @@ public class RelationAtom extends IsaAtom {
         //can form a rule head if specified type and all relation players have a specified/unambiguously inferrable role type
         return super.isAllowedToFormRuleHead()
                 && !hasMetaRoles();
+    }
+
+    @Override
+    public Set<String> validateOntologically() {
+        Set<String> errors = new HashSet<>();
+        OntologyConcept type = getOntologyConcept();
+        if (type != null && !type.isRelationType()){
+            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE.getMessage(type.getLabel()));
+            return errors;
+        }
+
+        //check roles are ok
+        Collection<Role> possibleRoles = type != null? type.asRelationType().relates() : Collections.EMPTY_SET;
+        Map<Var, OntologyConcept> varOntologyConceptMap = getParentQuery().getVarOntologyConceptMap();
+
+        for (Map.Entry<Role, Collection<Var>> e : getRoleVarMap().asMap().entrySet() ){
+            Role role = e.getKey();
+            if (!Schema.MetaSchema.isMetaLabel(role.getLabel())) {
+                //check whether this role can be played in this relation
+                if (type != null && !possibleRoles.contains(role)) {
+                    errors.add(ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage(role.getLabel(), type.getLabel()));
+                }
+
+                //check whether the role player's type allows playing this role
+                for (Var player : e.getValue()) {
+                    OntologyConcept playerType = varOntologyConceptMap.get(player);
+                    if (playerType != null && !playerType.asType().plays().contains(role)) {
+                        errors.add(ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage(playerType.getLabel(), role.getLabel(), type == null? "" : type.getLabel()));
+                    }
+                }
+            }
+        }
+        return errors;
     }
 
     @Override

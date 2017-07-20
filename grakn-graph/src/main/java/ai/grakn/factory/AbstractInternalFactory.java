@@ -25,6 +25,7 @@ import ai.grakn.graph.internal.AbstractGraknGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Objects;
 import java.util.Properties;
 
 import static javax.annotation.meta.When.NEVER;
@@ -59,7 +60,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     private G batchLoadingGraph = null;
 
     AbstractInternalFactory(String keyspace, String engineUrl, Properties properties){
-        if(keyspace == null) throw GraphOperationException.nullKeyspace();
+        Objects.requireNonNull(keyspace);
 
         this.keyspace = keyspace.toLowerCase();
         this.engineUrl = engineUrl;
