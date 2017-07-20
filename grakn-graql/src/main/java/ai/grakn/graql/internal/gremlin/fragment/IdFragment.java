@@ -55,6 +55,9 @@ class IdFragment extends AbstractFragment {
     }
 
     private GraphTraversal<Element, Vertex> vertexTraversal(GraphTraversal<Element, ? extends Element> traversal) {
+        // A vertex should always be looked up by vertex property, not the actual vertex ID which may be incorrect.
+        // This is because a vertex may represent a reified relation, which will use the original edge ID as an ID.
+        
         // We know only vertices have this property, so the cast is safe
         //noinspection unchecked
         return (GraphTraversal<Element, Vertex>) traversal.has(Schema.VertexProperty.ID.name(), id.getValue());
