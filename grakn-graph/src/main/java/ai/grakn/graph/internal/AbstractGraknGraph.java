@@ -282,17 +282,31 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         //Copy entire ontology to the graph cache. This may be a bad idea as it will slow down graph initialisation
-        getMetaConcept().subs().forEach(type -> {
-            getGraphCache().cacheLabel(type.getLabel(), type.getLabelId());
-            getGraphCache().cacheType(type.getLabel(), type);
-        });
+        copyToCache(getMetaConcept());
+
+        //Role has to be copied separately due to not being connected to meta ontology
+        copyToCache(getMetaRole());
 
         return ontologyInitialised;
     }
+
     private void createMetaShard(VertexElement metaNode){
         VertexElement metaShard = addVertex(Schema.BaseType.SHARD);
         metaShard.addEdge(metaNode, Schema.EdgeLabel.SHARD);
         metaNode.property(Schema.VertexProperty.CURRENT_SHARD, metaShard.id().toString());
+    }
+
+    /**
+     * Copies the {@link OntologyConcept} and it's subs into the {@link TxCache}.
+     * This is important as lookups for {@link OntologyConcept}s based on {@link Label} depend on this caching.
+     *
+     * @param ontologyConcept the {@link OntologyConcept} to be copied into the {@link TxCache}
+     */
+    private void copyToCache(OntologyConcept ontologyConcept){
+        ontologyConcept.subs().forEach(concept -> {
+            getGraphCache().cacheLabel(concept.getLabel(), concept.getLabelId());
+            getGraphCache().cacheType(concept.getLabel(), concept);
+        });
     }
 
     private boolean isMetaOntologyNotInitialised(){
