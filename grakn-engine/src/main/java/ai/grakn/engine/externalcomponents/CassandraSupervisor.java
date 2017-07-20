@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 /**
- * Responsible for supervising cassandra and redis processes.
+ * Responsible for supervising cassandra.
  *
  * @author Ganeshwara Herawan Hananda
  */
@@ -58,9 +58,10 @@ public class CassandraSupervisor {
         }
     }
 
+    // TODO: fix path
     public boolean isRunning() throws IOException {
         final String RESPONSE_IF_RUNNING = "running";
-        Process nodeTool = osCalls.exec(new String[]{"sh", "-c", "/Users/lolski/grakn.ai/grakn/grakn-dist/target/grakn-dist-0.16.0-SNAPSHOT/bin/nodetool statusthrift 2>/dev/null | tr -d '\\n\\r'"});
+        Process nodeTool = osCalls.exec(new String[]{"sh", "-c", "bin/nodetool statusthrift 2>/dev/null | tr -d '\\n\\r'"});
         String lines = osCalls.readStdoutFromProcess(nodeTool);
         return lines.equals(RESPONSE_IF_RUNNING);
     }

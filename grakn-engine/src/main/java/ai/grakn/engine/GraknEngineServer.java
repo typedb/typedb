@@ -29,6 +29,7 @@ import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
+import ai.grakn.engine.externalcomponents.RedisSupervisor;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.lock.LockProvider;
@@ -101,6 +102,7 @@ public class GraknEngineServer implements AutoCloseable {
     private final boolean inMemoryQueue;
     private final LockProvider lockProvider;
     private final CassandraSupervisor cassandraSupervisor;
+    private final RedisSupervisor redisSupervisor;
 
     public GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
@@ -115,7 +117,9 @@ public class GraknEngineServer implements AutoCloseable {
         this.factory = EngineGraknGraphFactory.create(prop.getProperties());
         this.metricRegistry = new MetricRegistry();
         this.taskManager = startTaskManager(inMemoryQueue, redisCountStorage, jedisPool, lockProvider);
-        this.cassandraSupervisor = new CassandraSupervisor(new OperatingSystemCalls());
+        OperatingSystemCalls osCalls = new OperatingSystemCalls();
+        this.cassandraSupervisor = new CassandraSupervisor(osCalls);
+        this.redisSupervisor = new RedisSupervisor(osCalls);
     }
 
     public static void main(String[] args) {
@@ -148,6 +152,7 @@ public class GraknEngineServer implements AutoCloseable {
     private void startExternalComponents() {
         try {
             cassandraSupervisor.startIfNotRunning();
+            redisSupervisor.startIfNotRunning();
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -156,6 +161,7 @@ public class GraknEngineServer implements AutoCloseable {
     private void stopExternalComponents() {
         try {
             cassandraSupervisor.stopIfRunning();
+            redisSupervisor.stopIfRunning();
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
