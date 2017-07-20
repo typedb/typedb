@@ -129,10 +129,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //Initialise Graph
         txCache().openTx(GraknTxType.WRITE);
 
-        txCache().showImplicitTypes(true);
         if(initialiseMetaConcepts()) close(true, false);
-        txCache().showImplicitTypes(false);
-
     }
 
     @Override
@@ -221,18 +218,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public abstract boolean isSessionClosed();
 
     @Override
-    public boolean implicitConceptsVisible(){
-        return txCache().implicitTypesVisible();
-    }
-
-    @Override
     public boolean isReadOnly(){
         return GraknTxType.READ.equals(txCache().txType());
-    }
-
-    @Override
-    public void showImplicitConcepts(boolean flag){
-        txCache().showImplicitTypes(flag);
     }
 
     @Override

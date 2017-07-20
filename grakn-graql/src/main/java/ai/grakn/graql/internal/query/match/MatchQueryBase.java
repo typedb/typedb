@@ -20,9 +20,7 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.MatchQuery;
@@ -33,11 +31,8 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
-import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.util.CommonUtil;
-import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -53,8 +48,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.optionalToStream;
-import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -68,7 +61,6 @@ public class MatchQueryBase extends AbstractMatchQuery {
     protected final Logger LOG = LoggerFactory.getLogger(MatchQueryBase.class);
 
     private final Conjunction<PatternAdmin> pattern;
-    private ImmutableSet<Label> labels;
 
     /**
      * @param pattern a pattern to match in the graph
@@ -86,8 +78,6 @@ public class MatchQueryBase extends AbstractMatchQuery {
     @Override
     public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
         GraknGraph graph = optionalGraph.orElseThrow(GraqlQueryException::noGraph);
-
-        this.labels = getAllTypeLabels(graph);
 
         for (VarPatternAdmin var : pattern.getVars()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
@@ -107,7 +97,6 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
         return traversal.toStream()
                 .map(elements -> makeResults(graph, elements))
-                .filter(result -> shouldShowResult(graph, result))
                 .sequential()
                 .map(QueryAnswer::new);
     }
@@ -151,25 +140,6 @@ public class MatchQueryBase extends AbstractMatchQuery {
         return new MatchQueryInfer(this, materialise);
     }
 
-    private ImmutableSet<Label> getAllTypeLabels(GraknGraph graph) {
-        Stream<Label> explicitTypeLabels = pattern.getVars().stream()
-                .flatMap(var -> var.getInnerVars().stream())
-                .map(VarPatternAdmin::getTypeLabel)
-                .flatMap(CommonUtil::optionalToStream);
-
-        Stream<Label> typeLabelsFromIds = pattern.getVars().stream()
-                .flatMap(var -> var.getInnerVars().stream())
-                .map(var -> var.getProperty(IdProperty.class))
-                .flatMap(CommonUtil::optionalToStream)
-                .map(IdProperty::getId)
-                .flatMap(id -> optionalToStream(Optional.ofNullable(graph.<Concept>getConcept(id))))
-                .filter(Concept::isType)
-                .map(Concept::asType)
-                .map(Type::getLabel);
-
-        return Stream.concat(explicitTypeLabels, typeLabelsFromIds).collect(toImmutableSet());
-    }
-
     /**
      * @param graph the graph to get results from
      * @param elements a map of vertices and edges where the key is the variable name
@@ -188,24 +158,6 @@ public class MatchQueryBase extends AbstractMatchQuery {
         } else {
             return graph.buildConcept((Edge) element);
         }
-    }
-
-    /**
-     * Only show results if all concepts in them should be shown
-     */
-    private boolean shouldShowResult(GraknGraph graph, Map<Var, Concept> result) {
-        return result.values().stream().allMatch(concept -> shouldShowConcept(graph, concept));
-    }
-
-    /**
-     * Only show a concept if it not an implicit type and not explicitly mentioned
-     */
-    private boolean shouldShowConcept(GraknGraph graph, Concept concept) {
-        if (graph.implicitConceptsVisible() || !concept.isType()) return true;
-
-        Type type = concept.asType();
-
-        return !type.isImplicit() || labels.contains(type.getLabel());
     }
 
     @Override

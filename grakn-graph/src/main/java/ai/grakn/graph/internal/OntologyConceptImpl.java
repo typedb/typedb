@@ -18,7 +18,6 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
@@ -199,14 +198,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      */
     @Override
     public Collection<T> subs(){
-        return Collections.unmodifiableCollection(filterImplicitStructures(nextSubLevel(this)));
-    }
-
-    <X extends Concept> Collection<X> filterImplicitStructures(Collection<X> types){
-        if (!vertex().graph().implicitConceptsVisible() && !types.isEmpty() && types.iterator().next().isOntologyConcept()) {
-            return types.stream().filter(t -> !t.asOntologyConcept().isImplicit()).collect(Collectors.toSet());
-        }
-        return types;
+        return Collections.unmodifiableCollection(nextSubLevel(this));
     }
 
     /**

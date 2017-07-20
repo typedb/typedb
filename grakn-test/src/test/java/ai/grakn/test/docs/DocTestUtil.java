@@ -47,7 +47,6 @@ public class DocTestUtil {
         GraknSession session = Grakn.session(uri, keyspace);
 
         try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
-            graph.showImplicitConcepts(true);
             GenealogyGraph.get().accept(graph);
 
             // TODO: Remove custom genealogy ontology when not used
