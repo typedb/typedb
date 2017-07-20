@@ -24,9 +24,14 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Responsible for supervising cassandra and redis processes.
@@ -35,9 +40,11 @@ import java.util.stream.Collectors;
  */
 
 public class GraknComponentSupervisor {
-  private static final Logger LOG = Logger.getLogger(GraknComponentSupervisor.class.getName());
-  private static final String CASSANDRA_FULL_PATH = "bin/cassandra"; // TODO: this exe shouldn't even be exposed anymore
-  private static final String CASSANDRA_PID_FILE = "/tmp/grakn-cassandra.pid";
+  private final Logger LOG = Logger.getLogger(GraknComponentSupervisor.class.getName());
+  private final String CASSANDRA_FULL_PATH = "bin/cassandra"; // TODO: this exe shouldn't even be exposed anymore
+  private final String CASSANDRA_PID_FILE = "/tmp/grakn-cassandra.pid";
+  private final long WAIT_BETWEEN_ATTEMPT_MS = 2000;
+  private OperatingSystemCalls osCalls = new OperatingSystemCalls();
 
   public void startCassandraIfNotExists() throws MalformedPidFileException, IOException, InterruptedException {
     LOG.info("checking if there exists a running grakn-cassandra process...");
@@ -66,9 +73,9 @@ public class GraknComponentSupervisor {
   }
 
   public boolean isCassandraRunning() throws MalformedPidFileException, IOException, InterruptedException {
-    if (fileExists(CASSANDRA_PID_FILE)) {
-      int pid = catPidFile(CASSANDRA_PID_FILE);
-      boolean cassandraProcessFound = psP(pid) == 0;
+    if (osCalls.fileExists(CASSANDRA_PID_FILE)) {
+      int pid = osCalls.catPidFile(CASSANDRA_PID_FILE);
+      boolean cassandraProcessFound = osCalls.psP(pid) == 0;
       if (cassandraProcessFound) {
         return true;
       } else {
@@ -80,36 +87,12 @@ public class GraknComponentSupervisor {
   }
 
   public void startCassandra() throws IOException {
-    Runtime.getRuntime().exec(new String[] { "sh", "-c", "bin/grakn-cassandra.sh start" });
+    osCalls.exec(new String[] { "sh", "-c", "bin/grakn-cassandra.sh start" });
   }
 
   public int stopCassandra() throws IOException, InterruptedException {
-    Process kill = Runtime.getRuntime().exec(new String[]{ "sh", "-c", "bin/grakn-cassandra.sh stop" });
+    Process kill = osCalls.exec(new String[]{ "sh", "-c", "bin/grakn-cassandra.sh stop" });
     return kill.waitFor();
-  }
-
-  public boolean fileExists(String path) {
-    return Files.exists(Paths.get(path));
-  }
-
-  public int psP(int pid) throws IOException, InterruptedException {
-    Process ps = Runtime.getRuntime().exec(new String[]{"sh", "-c", " ps -p " + pid});
-
-    return ps.waitFor();
-  }
-
-  public int catPidFile(String file) throws MalformedPidFileException, IOException {
-    Process catProcess = Runtime.getRuntime().exec(new String[]{"sh", "-c", "cat " + file});
-
-    try (BufferedReader catStdout =
-             new BufferedReader(new InputStreamReader(catProcess.getInputStream(), StandardCharsets.UTF_8))) {
-      List<String> lines = catStdout.lines().collect(Collectors.toList());
-      if (lines.size() == 1) {
-        return Integer.parseInt(lines.get(0));
-      } else {
-        throw new MalformedPidFileException("a pid file should only have one line, however this one has " + lines.size() + " lines");
-      }
-    }
   }
 
   private void waitForCassandraStarted() throws MalformedPidFileException, IOException, InterruptedException {
@@ -122,7 +105,7 @@ public class GraknComponentSupervisor {
       } else {
         LOG.info("grakn-cassandra has not yet started. will re-attempt the check...");
         attempt++;
-        Thread.sleep(2000);
+        Thread.sleep(WAIT_BETWEEN_ATTEMPT_MS);
       }
     }
     LOG.info("unable to start grakn-cassandra!");
@@ -139,7 +122,7 @@ public class GraknComponentSupervisor {
       } else {
         LOG.info("grakn-cassandra has not been stopped. will re-attempt the check...");
         attempt++;
-        Thread.sleep(2000);
+        Thread.sleep(WAIT_BETWEEN_ATTEMPT_MS);
       }
     }
     LOG.info("unable to stop grakn-cassandra!");
