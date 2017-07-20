@@ -48,6 +48,8 @@ import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableSet;
+
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
@@ -98,7 +100,7 @@ public class GraknEngineServer implements AutoCloseable {
     private final Pool<Jedis> jedisPool;
     private final boolean inMemoryQueue;
     private final LockProvider lockProvider;
-    private final CassandraSupervisor componentSupervisor;
+    private final CassandraSupervisor cassandraSupervisor;
 
     public GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
@@ -113,7 +115,7 @@ public class GraknEngineServer implements AutoCloseable {
         this.factory = EngineGraknGraphFactory.create(prop.getProperties());
         this.metricRegistry = new MetricRegistry();
         this.taskManager = startTaskManager(inMemoryQueue, redisCountStorage, jedisPool, lockProvider);
-        this.componentSupervisor = new CassandraSupervisor(new OperatingSystemCalls());
+        this.cassandraSupervisor = new CassandraSupervisor(new OperatingSystemCalls());
     }
 
     public static void main(String[] args) {
@@ -129,13 +131,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public void start() {
-        try {
-            componentSupervisor.start();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-
+        startExternalComponents();
         lockAndInitializeSystemOntology();
         startHTTP();
         printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
@@ -146,13 +142,22 @@ public class GraknEngineServer implements AutoCloseable {
     public void close() {
         stopHTTP();
         stopTaskManager();
+        stopExternalComponents();
+    }
 
+    private void startExternalComponents() {
         try {
-            componentSupervisor.stop();
-            Thread.sleep(6000);
+            cassandraSupervisor.startIfNotRunning();
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
         }
-        catch (Exception e) {
-            e.printStackTrace();
+    }
+
+    private void stopExternalComponents() {
+        try {
+            cassandraSupervisor.stopIfRunning();
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 

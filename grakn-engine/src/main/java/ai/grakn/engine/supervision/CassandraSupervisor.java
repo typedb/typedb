@@ -36,19 +36,17 @@ public class CassandraSupervisor {
         this.osCalls = osCalls;
     }
 
-    public void startIfNotRunning() throws MalformedPidFileException, IOException, InterruptedException {
+    public void startIfNotRunning() throws IOException, InterruptedException {
         LOG.info("checking if there exists a running grakn-cassandra process...");
         if (!isRunning()) {
             LOG.info("grakn-cassandra isn't yet running. attempting to start...");
             start();
-            waitForCassandraStarted();
-
         } else {
             LOG.info("found an existing grakn-cassandra process.");
         }
     }
 
-    public void stopIfRunning() throws MalformedPidFileException, IOException, InterruptedException {
+    public void stopIfRunning() throws IOException, InterruptedException {
         LOG.info("checking if there exists a running grakn-cassandra process...");
         if (isRunning()) {
             LOG.info("a grakn-cassandra process found. attempting to stop...");
@@ -68,8 +66,9 @@ public class CassandraSupervisor {
         return lines.equals(RESPONSE_IF_RUNNING);
     }
 
-    public void start() throws IOException {
+    public void start() throws IOException, InterruptedException {
         osCalls.exec(new String[]{"sh", "-c", "bin/grakn-cassandra.sh start"});
+        waitForCassandraStarted();
     }
 
     public int stop() throws IOException, InterruptedException {
@@ -77,7 +76,7 @@ public class CassandraSupervisor {
         return kill.waitFor();
     }
 
-    private void waitForCassandraStarted() throws MalformedPidFileException, IOException, InterruptedException {
+    private void waitForCassandraStarted() throws IOException, InterruptedException {
         final int MAX_CHECK_ATTEMPT = 3;
         int attempt = 0;
         while (attempt < MAX_CHECK_ATTEMPT) {
@@ -94,7 +93,7 @@ public class CassandraSupervisor {
         throw new GraknComponentSupervisionException("unable to start grakn-cassandra!");
     }
 
-    private void waitForCassandraStopped() throws MalformedPidFileException, IOException, InterruptedException {
+    private void waitForCassandraStopped() throws IOException, InterruptedException {
         final int MAX_CHECK_ATTEMPT = 3;
         int attempt = 0;
         while (attempt < MAX_CHECK_ATTEMPT) {
