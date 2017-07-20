@@ -35,6 +35,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
 
+import static ai.grakn.util.ErrorMessage.INVALID_IMPLICIT_TYPE;
+
 /**
  * A type enum which restricts the types of links/concepts which can be created
  *
@@ -250,6 +252,26 @@ public final class Schema {
         @CheckReturnValue
         public Label getLabel(String resourceType) {
             return Label.of(String.format(label, resourceType));
+        }
+
+        /**
+         * Helper method which converts the implicit type label back into the original label from which is was built.
+         *
+         * @param implicitType the implicit type label
+         * @return The original label which was used to build this type
+         */
+        @CheckReturnValue
+        public static Label explicitLabel(Label implicitType){
+            if(!implicitType.getValue().startsWith("key") && implicitType.getValue().startsWith("has")){
+                throw new IllegalArgumentException(INVALID_IMPLICIT_TYPE.getMessage(implicitType));
+            }
+
+            int endIndex = implicitType.getValue().length();
+            if(implicitType.getValue().endsWith("-value") || implicitType.getValue().endsWith("-owner")) {
+                endIndex = implicitType.getValue().lastIndexOf("-");
+            }
+
+            return Label.of(implicitType.getValue().substring(4, endIndex));
         }
     }
 
