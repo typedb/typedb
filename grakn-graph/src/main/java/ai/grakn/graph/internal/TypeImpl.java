@@ -119,7 +119,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
      * @return A new or already existing instance
      */
     V putInstance(Schema.BaseType instanceBaseType, Supplier<V> finder, BiFunction<VertexElement, T, V> producer) {
-        vertex().graph().checkMutationAllowed();
+        preCheckForInstanceCreation();
 
         V instance = finder.get();
         if(instance == null) instance = addInstance(instanceBaseType, producer);
@@ -134,11 +134,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
      * @return A new instance
      */
     V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer){
-        vertex().graph().checkMutationAllowed();
-
-        if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
-            throw GraphOperationException.metaTypeImmutable(getLabel());
-        }
+        preCheckForInstanceCreation();
 
         if(isAbstract()) throw GraphOperationException.addingInstancesToAbstractType(this);
 
@@ -147,6 +143,19 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
             vertex().graph().txCache().addedInstance(getId());
         }
         return producer.apply(instanceVertex, getThis());
+    }
+
+    /**
+     * Checks if an {@link Thing} is allowed to be created and linked to this {@link Type}.
+     * This can fail is the {@link ai.grakn.GraknTxType} is read only.
+     * It can also fail when attempting to attach a resource to a meta type
+     */
+    void preCheckForInstanceCreation(){
+        vertex().graph().checkMutationAllowed();
+
+        if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
+            throw GraphOperationException.metaTypeImmutable(getLabel());
+        }
     }
 
     /**

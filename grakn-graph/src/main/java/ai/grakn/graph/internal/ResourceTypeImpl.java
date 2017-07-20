@@ -26,6 +26,7 @@ import ai.grakn.util.Schema;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -107,12 +108,14 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     public Resource<D> putResource(D value) {
         Objects.requireNonNull(value);
 
-        if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
-
-        Object persistenceValue = castValue(value);
+        BiFunction<VertexElement, ResourceType<D>, Resource<D>> instanceBuilder = (vertex, type) -> {
+            if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
+            Object persistenceValue = castValue(value);
+            return vertex().graph().factory().buildResource(vertex, type, persistenceValue);
+        };
 
         return putInstance(Schema.BaseType.RESOURCE,
-                () -> getResource(value), (vertex, type) -> vertex().graph().factory().buildResource(vertex, type, persistenceValue));
+                () -> getResource(value), instanceBuilder);
     }
 
     /**
@@ -156,7 +159,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
 
     @Override
     public Resource<D> getResource(D value) {
-        String index = Schema.generateResourceIndex(getLabel(), getDataType().getPersistenceValue(value).toString());
+        String index = Schema.generateResourceIndex(getLabel(), castValue(value).toString());
         return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);
     }
 
