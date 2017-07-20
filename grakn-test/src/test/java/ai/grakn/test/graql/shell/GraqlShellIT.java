@@ -240,7 +240,7 @@ public class GraqlShellIT {
     public void testAggregateQuery() throws Exception {
         assertShellMatches(
                 "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate count;",
-                is("8") // Expect to see the whole meta-ontology
+                is("7") // Expect to see the whole meta-ontology
         );
     }
 
