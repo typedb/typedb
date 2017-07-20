@@ -34,6 +34,8 @@ import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.RedissonLockProvider;
 import ai.grakn.engine.session.RemoteSession;
+import ai.grakn.engine.supervision.CassandraSupervisor;
+import ai.grakn.engine.supervision.OperatingSystemCalls;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
@@ -96,6 +98,7 @@ public class GraknEngineServer implements AutoCloseable {
     private final Pool<Jedis> jedisPool;
     private final boolean inMemoryQueue;
     private final LockProvider lockProvider;
+    private final CassandraSupervisor componentSupervisor;
 
     public GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
@@ -110,24 +113,29 @@ public class GraknEngineServer implements AutoCloseable {
         this.factory = EngineGraknGraphFactory.create(prop.getProperties());
         this.metricRegistry = new MetricRegistry();
         this.taskManager = startTaskManager(inMemoryQueue, redisCountStorage, jedisPool, lockProvider);
+        this.componentSupervisor = new CassandraSupervisor(new OperatingSystemCalls());
     }
 
-
     public static void main(String[] args) {
-        // start cassandra (TODO: start redis)
-//        (new ProcessSupervision()).startCassandraIfNotExists();
-
         GraknEngineConfig prop = GraknEngineConfig.create();
         
         // Start Engine
         GraknEngineServer graknEngineServer = new GraknEngineServer(prop);
         graknEngineServer.start();
+
         // close GraknEngineServer on SIGTERM
         Thread closeThread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
         Runtime.getRuntime().addShutdownHook(closeThread);
     }
 
     public void start() {
+        try {
+            componentSupervisor.start();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+
         lockAndInitializeSystemOntology();
         startHTTP();
         printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
@@ -138,6 +146,14 @@ public class GraknEngineServer implements AutoCloseable {
     public void close() {
         stopHTTP();
         stopTaskManager();
+
+        try {
+            componentSupervisor.stop();
+            Thread.sleep(6000);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void lockAndInitializeSystemOntology() {
