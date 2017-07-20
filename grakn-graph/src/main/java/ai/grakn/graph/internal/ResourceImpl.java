@@ -99,7 +99,7 @@ class ResourceImpl<D> extends ThingImpl<Resource<D>, ResourceType<D>> implements
     private Resource<D> setValue(Object value) {
         Schema.VertexProperty property = dataType().getVertexProperty();
         //noinspection unchecked
-        vertex().propertyImmutable(property, value, vertex().property(property), (v) -> (v));
+        vertex().propertyImmutable(property, value, vertex().property(property));
         vertex().propertyUnique(Schema.VertexProperty.INDEX, generateResourceIndex(type().getLabel(), value.toString()));
 
         return getThis();
