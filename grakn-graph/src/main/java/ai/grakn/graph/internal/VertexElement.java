@@ -28,6 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -145,9 +146,7 @@ class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty>{
      * @param converter Helper method to ensure data is persisted in the correct format
      */
     <X> void propertyImmutable(Schema.VertexProperty vertexProperty, X newValue, X foundValue, Function<X, Object> converter){
-        if(newValue == null){
-            throw GraphOperationException.settingNullProperty(vertexProperty);
-        }
+        Objects.requireNonNull(newValue);
 
         if(foundValue != null){
             if(!foundValue.equals(newValue)){

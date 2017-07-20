@@ -139,20 +139,6 @@ public class GraphOperationException extends GraknException{
     }
 
     /**
-     * Thrown when attempting to set a property to null
-     */
-    public static GraphOperationException settingNullProperty(Schema.VertexProperty property){
-        return new GraphOperationException(ErrorMessage.NULL_VALUE.getMessage(property.name()));
-    }
-
-    /**
-     * Thrown when trying to make the keysoace null
-     */
-    public static GraphOperationException nullKeyspace(){
-        return new GraphOperationException(ErrorMessage.NULL_VALUE.getMessage("keyspace"));
-    }
-
-    /**
      * Thrown when trying to set a {@code value} on the {@code resource} which does not conform to it's regex
      */
     public static GraphOperationException regexFailure(Resource resource, String value, String regex){

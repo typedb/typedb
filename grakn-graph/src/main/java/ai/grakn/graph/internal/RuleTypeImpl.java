@@ -20,12 +20,12 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 /**
  * <p>
@@ -50,8 +50,8 @@ class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
 
     @Override
     public Rule putRule(Pattern when, Pattern then) {
-        if(when == null) throw GraphOperationException.settingNullProperty(Schema.VertexProperty.RULE_WHEN);
-        if(then == null) throw GraphOperationException.settingNullProperty(Schema.VertexProperty.RULE_THEN);
+        Objects.requireNonNull(when);
+        Objects.requireNonNull(then);
 
         return putInstance(Schema.BaseType.RULE,
                 () -> getRule(when, then), (vertex, type) -> vertex().graph().factory().buildRule(vertex, type, when, then));

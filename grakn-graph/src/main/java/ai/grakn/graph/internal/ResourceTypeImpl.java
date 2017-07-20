@@ -25,6 +25,7 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -104,7 +105,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @SuppressWarnings("unchecked")
     @Override
     public Resource<D> putResource(D value) {
-        if(value == null) throw GraphOperationException.settingNullProperty(getDataType().getVertexProperty());
+        Objects.requireNonNull(value);
         return putInstance(Schema.BaseType.RESOURCE,
                 () -> getResource(value), (vertex, type) -> vertex().graph().factory().buildResource(vertex, type, value));
     }
