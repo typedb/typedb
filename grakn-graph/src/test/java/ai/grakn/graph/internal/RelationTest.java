@@ -25,16 +25,16 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Iterators;
+import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
@@ -283,7 +283,7 @@ public class RelationTest extends GraphTestBase{
         Resource<String> resource = resourceType.putResource("a real pain");
 
         EntityType entityType = graknGraph.putEntityType("yay").resource(resourceType);
-        Relation implicitRelation = Iterators.getOnlyElement(entityType.addEntity().resource(resource).relations().iterator());
+        Relation implicitRelation = Iterables.getOnlyElement(entityType.addEntity().resource(resource).relations());
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.hasNotAllowed(implicitRelation, resource).getMessage());

@@ -29,7 +29,6 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graql.Pattern;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -261,7 +260,7 @@ class ValidateGlobalRules {
                     if (relations.isEmpty()) {
                         return Optional.of(VALIDATION_INSTANCE.getMessage(thing.getId(), thing.type().getLabel(), role.getLabel()));
                     } else if(relations.size() > 1){
-                        Label resourceTypeLabel = CommonUtil.explicitLabel(role.getLabel());
+                        Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.getLabel());
                         return Optional.of(VALIDATION_TOO_MANY_KEYS.getMessage(thing.getId(), resourceTypeLabel));
                     }
                 }
