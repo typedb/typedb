@@ -27,8 +27,9 @@ public class InPlaysFragmentTest {
         GraphTraversal<Element, Vertex> traversal = __.V();
         fragment.applyTraversal(traversal, null);
 
-        // Make sure we traverse plays and downwards subs once
+        // Make sure we check this is a vertex, then traverse plays and downwards subs once
         assertThat(traversal, is(__.V()
+                .has(Schema.VertexProperty.ID.name())
                 .in(PLAYS.getLabel())
                 .union(__.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.repeat(__.in(SUB.getLabel())).emit()).unfold()
         ));

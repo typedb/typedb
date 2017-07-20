@@ -27,8 +27,9 @@ public class OutPlaysFragmentTest {
         GraphTraversal<Element, Vertex> traversal = __.V();
         fragment.applyTraversal(traversal, null);
 
-        // Make sure we traverse upwards subs once and plays
+        // Make sure we check this is a vertex, then traverse upwards subs once and plays
         assertThat(traversal, is(__.V()
+                .has(Schema.VertexProperty.ID.name())
                 .union(__.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.repeat(__.out(SUB.getLabel())).emit()).unfold()
                 .out(PLAYS.getLabel())
         ));
