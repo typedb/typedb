@@ -26,6 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.function.Function;
 
 import static org.apache.tinkerpop.gremlin.structure.T.id;
@@ -155,9 +156,7 @@ abstract class AbstractElement<E extends Element, P extends Enum> {
      * @param converter Helper method to ensure data is persisted in the correct format
      */
     <X> void propertyImmutable(P property, X newValue, @Nullable X foundValue, Function<X, Object> converter){
-        if(newValue == null){
-            throw GraphOperationException.settingNullProperty(property);
-        }
+        Objects.requireNonNull(property);
 
         if(foundValue != null){
             if(!foundValue.equals(newValue)){
