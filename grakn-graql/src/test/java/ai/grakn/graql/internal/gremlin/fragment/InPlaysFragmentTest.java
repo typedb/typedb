@@ -5,12 +5,13 @@ import ai.grakn.graql.Var;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
-import static ai.grakn.util.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
+import static ai.grakn.util.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -23,7 +24,7 @@ public class InPlaysFragmentTest {
     @Test
     @SuppressWarnings("unchecked")
     public void testApplyTraversalFollowsSubsDownwards() {
-        GraphTraversal<Vertex, Vertex> traversal = __.V();
+        GraphTraversal<Element, Vertex> traversal = __.V();
         fragment.applyTraversal(traversal, null);
 
         // Make sure we traverse plays and downwards subs once
