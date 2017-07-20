@@ -27,7 +27,6 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
@@ -38,8 +37,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static ai.grakn.util.ErrorMessage.NULL_VALUE;
-import static ai.grakn.util.Schema.VertexProperty.RULE_WHEN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -76,8 +73,7 @@ public class RuleTest {
         assertEquals(when, rule.getWhen());
         assertEquals(then, rule.getThen());
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(NULL_VALUE.getMessage(RULE_WHEN));
+        expectedException.expect(NullPointerException.class);
 
         conceptType.putRule(null, null);
     }
