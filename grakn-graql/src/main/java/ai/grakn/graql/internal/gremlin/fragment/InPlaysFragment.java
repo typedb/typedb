@@ -45,14 +45,16 @@ class InPlaysFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+        GraphTraversal<Element, Vertex> vertexTraversal = Fragments.isVertex(traversal);
         if (required) {
-            traversal.inE(PLAYS.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
+            vertexTraversal.inE(PLAYS.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
         } else {
-            traversal.in(PLAYS.getLabel());
+            vertexTraversal.in(PLAYS.getLabel());
         }
 
-        Fragments.inSubs((GraphTraversal<Vertex, Vertex>) traversal);
+        return Fragments.inSubs(vertexTraversal);
     }
 
     @Override

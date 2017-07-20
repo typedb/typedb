@@ -27,6 +27,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
@@ -40,20 +41,26 @@ class IdFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        if (operatesOnEdge()) {
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+        if (canOperateOnEdges()) {
             // Handle both edges and vertices
-            traversal.or(
+            return traversal.or(
                     edgeTraversal(),
                     vertexTraversal(__.identity())
             );
         } else {
-            vertexTraversal(traversal);
+            return vertexTraversal(traversal);
         }
     }
 
-    private <S, E> GraphTraversal<S, E> vertexTraversal(GraphTraversal<S, E> traversal) {
-        return traversal.has(Schema.VertexProperty.ID.name(), id.getValue());
+    private GraphTraversal<Element, Vertex> vertexTraversal(GraphTraversal<Element, ? extends Element> traversal) {
+        // A vertex should always be looked up by vertex property, not the actual vertex ID which may be incorrect.
+        // This is because a vertex may represent a reified relation, which will use the original edge ID as an ID.
+        
+        // We know only vertices have this property, so the cast is safe
+        //noinspection unchecked
+        return (GraphTraversal<Element, Vertex>) traversal.has(Schema.VertexProperty.ID.name(), id.getValue());
     }
 
     private GraphTraversal<Edge, Edge> edgeTraversal() {
@@ -95,7 +102,7 @@ class IdFragment extends AbstractFragment {
     }
 
     @Override
-    public boolean operatesOnEdge() {
+    public boolean canOperateOnEdges() {
         return id.getValue().startsWith(Schema.PREFIX_EDGE);
     }
 }

@@ -71,7 +71,8 @@ public interface Fragment {
      * @param traversal the traversal to extend with this Fragment
      * @param graph     the graph to execute the traversal on
      */
-    void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph);
+    GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph);
 
     /**
      * The name of the fragment
@@ -138,7 +139,7 @@ public interface Fragment {
      * Indicates whether the fragment can be used on an {@link org.apache.tinkerpop.gremlin.structure.Edge} as well as
      * a {@link org.apache.tinkerpop.gremlin.structure.Vertex}.
      */
-    default boolean operatesOnEdge() {
+    default boolean canOperateOnEdges() {
         return false;
     }
 }

@@ -25,7 +25,9 @@ import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -43,17 +45,19 @@ class OutIsaFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        GraphTraversal<? extends Element, Vertex> vertexTraversal = traversal.union(
-                Fragments.isVertex().out(ISA.getLabel()).out(SHARD.getLabel()),
-                edgeTraversal()
-        );
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
 
-        Fragments.outSubs(vertexTraversal);
+        GraphTraversal<Element, Vertex> vertexTraversal = Fragments.union(traversal, ImmutableSet.of(
+                Fragments.isVertex(__.identity()).out(ISA.getLabel()).out(SHARD.getLabel()),
+                edgeTraversal()
+        ));
+
+        return Fragments.outSubs(vertexTraversal);
     }
 
-    private GraphTraversal<?, Vertex> edgeTraversal() {
-        return Fragments.traverseOntologyConceptFromEdge(Fragments.isEdge(), RELATION_TYPE_LABEL_ID);
+    private GraphTraversal<Element, Vertex> edgeTraversal() {
+        return Fragments.traverseOntologyConceptFromEdge(Fragments.isEdge(__.identity()), RELATION_TYPE_LABEL_ID);
     }
 
     @Override
@@ -73,7 +77,7 @@ class OutIsaFragment extends AbstractFragment {
     }
 
     @Override
-    public boolean operatesOnEdge() {
+    public boolean canOperateOnEdges() {
         return true;
     }
 }

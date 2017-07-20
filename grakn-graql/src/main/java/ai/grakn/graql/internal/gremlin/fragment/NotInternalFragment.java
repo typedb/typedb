@@ -33,8 +33,9 @@ class NotInternalFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        traversal.not(__.hasLabel(Schema.BaseType.SHARD.name()));
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+        return traversal.not(__.hasLabel(Schema.BaseType.SHARD.name()));
     }
 
     @Override

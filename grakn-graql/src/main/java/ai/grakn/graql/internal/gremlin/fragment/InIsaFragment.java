@@ -21,22 +21,23 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import com.google.common.collect.ImmutableSet;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.BaseType.RELATION_TYPE;
 import java.util.Map;
 import java.util.Set;
 
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.Schema.BaseType.RELATION_TYPE;
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 import static ai.grakn.util.Schema.EdgeLabel.RELATES;
@@ -53,26 +54,43 @@ class InIsaFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        Fragments.inSubs((GraphTraversal<Vertex, Vertex>) traversal);
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+        GraphTraversal<Element, Vertex> vertexTraversal = Fragments.inSubs(Fragments.isVertex(traversal));
 
         GraphTraversal<Vertex, Vertex> isImplicitRelationType =
                 __.<Vertex>hasLabel(RELATION_TYPE.name()).has(IS_IMPLICIT.name(), true);
 
-        traversal.choose(isImplicitRelationType,
-                __.union(
-                        toVertexInstances(__.identity()),
-                        (GraphTraversal) toEdgeInstances()
-                ),
+        GraphTraversal<Vertex, Element> toVertexAndEdgeInstances = Fragments.union(ImmutableSet.of(
+                toVertexInstances(__.identity()),
+                toEdgeInstances()
+        ));
+
+        return choose(vertexTraversal, isImplicitRelationType,
+                toVertexAndEdgeInstances,
                 toVertexInstances(__.identity())
         );
     }
 
-    private <T> GraphTraversal<T, Vertex> toVertexInstances(GraphTraversal<T, Vertex> traversal) {
+    /**
+     * A type-safe way to do `a.choose(pred, whenTrue, whenFalse)`, as `choose(a, pred, whenTrue, whenFalse)`.
+     * This is because the default signature is too restrictive
+     */
+    private <S, E1, E2> GraphTraversal<S, E2> choose(
+            GraphTraversal<S, E1> traversal, GraphTraversal<E1, ?> traversalPredicate,
+            GraphTraversal<E1, ? extends E2> trueChoice, GraphTraversal<E1, ? extends E2> falseChoice) {
+
+        // This is safe. The generics for `GraphTraversal#choose` are more restrictive than necessary
+        //noinspection unchecked
+        return traversal.choose(
+                traversalPredicate, (GraphTraversal<S, E2>) trueChoice, (GraphTraversal<S, E2>) falseChoice);
+    }
+
+    private <S> GraphTraversal<S, Vertex> toVertexInstances(GraphTraversal<S, Vertex> traversal) {
         return traversal.in(SHARD.getLabel()).in(ISA.getLabel());
     }
 
-    private GraphTraversal<?, Edge> toEdgeInstances() {
+    private GraphTraversal<Vertex, Edge> toEdgeInstances() {
         Var type = var();
         Var labelId = var();
 

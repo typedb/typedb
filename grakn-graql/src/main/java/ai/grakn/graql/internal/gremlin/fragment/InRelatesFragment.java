@@ -40,8 +40,9 @@ class InRelatesFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        traversal.in(RELATES.getLabel());
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+        return Fragments.isVertex(traversal).in(RELATES.getLabel());
     }
 
     @Override

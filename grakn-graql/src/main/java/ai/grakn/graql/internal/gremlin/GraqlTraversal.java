@@ -95,7 +95,7 @@ public class GraqlTraversal {
         GraphTraversal traversal = __.V();
 
         // If the first fragment can operate on edges, then we have to navigate all edges as well
-        if (fragmentList.get(0).operatesOnEdge()) {
+        if (fragmentList.get(0).canOperateOnEdges()) {
             traversal = __.union(traversal, __.V().outE(Schema.EdgeLabel.RESOURCE.getLabel()));
         }
 
@@ -128,7 +128,7 @@ public class GraqlTraversal {
      * @param names a set of variable names so far encountered in the query
      */
     private void applyFragment(
-            Fragment fragment, GraphTraversal<? extends Element, ? extends Element> traversal,
+            Fragment fragment, GraphTraversal<Element, ? extends Element> traversal,
             @Nullable Var currentName, Set<Var> names, GraknGraph graph
     ) {
         Var start = fragment.getStart();
