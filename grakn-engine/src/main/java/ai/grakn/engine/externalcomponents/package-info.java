@@ -20,4 +20,4 @@
  * Implements cassandra and redis supervision
  */
 
-package ai.grakn.engine.supervision;
+package ai.grakn.engine.externalcomponents;

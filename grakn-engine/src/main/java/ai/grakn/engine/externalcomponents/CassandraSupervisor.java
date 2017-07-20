@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.supervision;
+package ai.grakn.engine.externalcomponents;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -90,7 +90,7 @@ public class CassandraSupervisor {
             }
         }
         LOG.info("unable to start grakn-cassandra!");
-        throw new GraknComponentSupervisionException("unable to start grakn-cassandra!");
+        throw new ExternalComponentException("unable to start grakn-cassandra!");
     }
 
     private void waitForCassandraStopped() throws IOException, InterruptedException {
@@ -107,6 +107,6 @@ public class CassandraSupervisor {
             }
         }
         LOG.info("unable to stop grakn-cassandra!");
-        throw new GraknComponentSupervisionException("unable to stop grakn-cassandra!");
+        throw new ExternalComponentException("unable to stop grakn-cassandra!");
     }
 }

@@ -17,7 +17,7 @@
  */
 
 
-package ai.grakn.engine.supervision;
+package ai.grakn.engine.externalcomponents;
 
 import java.io.BufferedReader;
 import java.io.IOException;

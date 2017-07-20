@@ -16,16 +16,16 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.supervision;
+package ai.grakn.engine.externalcomponents;
 
 /**
- * Should be thrown upon encountering any error when unable to start / stop a process
+ * Should be thrown upon encountering any error when unable to start / stop an external component
  *
  * @author Ganeshwara Herawan Hananda
  */
 
-public class GraknComponentSupervisionException extends RuntimeException {
-  public GraknComponentSupervisionException(String msg) {
+public class ExternalComponentException extends RuntimeException {
+  public ExternalComponentException(String msg) {
     super(msg);
   }
 }
