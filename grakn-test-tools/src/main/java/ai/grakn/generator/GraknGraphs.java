@@ -317,10 +317,6 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return gen().make(Labels.class, gen().make(MetasyntacticStrings.class)).generate(random, status);
     }
 
-    private OntologyConcept ontologyConcept() {
-        return random.choose(graph.admin().getMetaConcept().subs());
-    }
-
     private Type type() {
         // TODO: Revise this when meta concept is a type
         Collection<? extends Type> candidates = graph.admin().getMetaConcept().subs().stream().
