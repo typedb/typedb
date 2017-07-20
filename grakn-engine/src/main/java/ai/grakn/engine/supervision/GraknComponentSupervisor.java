@@ -40,11 +40,15 @@ import java.util.stream.Stream;
  */
 
 public class GraknComponentSupervisor {
+  private OperatingSystemCalls osCalls;
   private final Logger LOG = Logger.getLogger(GraknComponentSupervisor.class.getName());
   private final String CASSANDRA_FULL_PATH = "bin/cassandra"; // TODO: this exe shouldn't even be exposed anymore
   private final String CASSANDRA_PID_FILE = "/tmp/grakn-cassandra.pid";
   private final long WAIT_BETWEEN_ATTEMPT_MS = 2000;
-  private OperatingSystemCalls osCalls = new OperatingSystemCalls();
+
+  public GraknComponentSupervisor(OperatingSystemCalls osCalls) {
+    this.osCalls = osCalls;
+  }
 
   public void startCassandraIfNotExists() throws MalformedPidFileException, IOException, InterruptedException {
     LOG.info("checking if there exists a running grakn-cassandra process...");

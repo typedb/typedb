@@ -44,33 +44,37 @@ public class GraknComponentSupervisionTest {
   @Test
   public void shouldReturnTrueIfCassandraIsRunning() throws MalformedPidFileException, IOException, InterruptedException {
     final int SUCCESS_EXIT_CODE = 0;
-    GraknComponentSupervisor supervisionSpy = spy(GraknComponentSupervisor.class);
 
-    doReturn(true).when(supervisionSpy).fileExists(anyString());
-    doReturn(-1).when(supervisionSpy).catPidFile(anyString());
-    doReturn(SUCCESS_EXIT_CODE).when(supervisionSpy).psP(anyInt()); // mock a successful ps -p call
+    OperatingSystemCalls osCalls = spy(OperatingSystemCalls.class);
+    GraknComponentSupervisor supervision = new GraknComponentSupervisor(osCalls);
 
-    assertEquals(supervisionSpy.isCassandraRunning(), true);
+    doReturn(true).when(osCalls).fileExists(anyString());
+    doReturn(-1).when(osCalls).catPidFile(anyString());
+    doReturn(SUCCESS_EXIT_CODE).when(osCalls).psP(anyInt()); // mock a successful ps -p call
+
+    assertEquals(supervision.isCassandraRunning(), true);
   }
 
   @Test
   public void shouldReturnFalseIfCassandraIsNotRunning() throws IOException, InterruptedException, MalformedPidFileException {
-    GraknComponentSupervisor supervisionSpy = spy(GraknComponentSupervisor.class);
+    OperatingSystemCalls osCalls = spy(OperatingSystemCalls.class);
+    GraknComponentSupervisor supervision = new GraknComponentSupervisor(osCalls);
 
-    doReturn(false).when(supervisionSpy).fileExists(anyString()); // simulate file not found
-    doReturn(0).when(supervisionSpy).psP(anyInt());
+    doReturn(false).when(osCalls).fileExists(anyString()); // simulate file not found
+    doReturn(0).when(osCalls).psP(anyInt());
 
-    assertEquals(supervisionSpy.isCassandraRunning(), false);
+    assertEquals(supervision.isCassandraRunning(), false);
   }
 
   @Test
   public void shouldThrowIfPsExitCodeIsNonZero() throws IOException, InterruptedException, MalformedPidFileException {
     final int NON_ZERO_EXIT_CODE = 1;
-    GraknComponentSupervisor supervision = spy(GraknComponentSupervisor.class);
+    OperatingSystemCalls osCalls = spy(OperatingSystemCalls.class);
+    GraknComponentSupervisor supervision = new GraknComponentSupervisor(osCalls);
 
-    doReturn(true).when(supervision).fileExists(anyString());
-    doReturn(-1).when(supervision).catPidFile(anyString());
-    doReturn(NON_ZERO_EXIT_CODE).when(supervision).psP(anyInt()); // mock an unsuccessful ps -p call (i.e., due to incorrect PID)
+    doReturn(true).when(osCalls).fileExists(anyString());
+    doReturn(-1).when(osCalls).catPidFile(anyString());
+    doReturn(NON_ZERO_EXIT_CODE).when(osCalls).psP(anyInt()); // mock an unsuccessful ps -p call (i.e., due to incorrect PID)
 
     try {
       supervision.isCassandraRunning();
