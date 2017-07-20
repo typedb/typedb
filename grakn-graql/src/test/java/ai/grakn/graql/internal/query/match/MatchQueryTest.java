@@ -91,7 +91,6 @@ import static ai.grakn.matcher.GraknMatchers.resource;
 import static ai.grakn.matcher.GraknMatchers.results;
 import static ai.grakn.matcher.GraknMatchers.role;
 import static ai.grakn.matcher.GraknMatchers.rule;
-import static ai.grakn.matcher.GraknMatchers.type;
 import static ai.grakn.matcher.GraknMatchers.variable;
 import static ai.grakn.matcher.MovieMatchers.aRuleType;
 import static ai.grakn.matcher.MovieMatchers.action;
@@ -235,7 +234,7 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var().rel(x, var().has("name", "Michael Corleone"))).distinct();
 
         assertThat(query, variable("x", containsInAnyOrder(
-                type(Schema.MetaSchema.THING.getLabel()), role("role"), role("character-being-played"),
+                role("role"), role("character-being-played"),
                 role("has-name-owner")
         )));
     }
