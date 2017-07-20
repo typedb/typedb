@@ -77,7 +77,7 @@ class OutIsaFragment extends AbstractFragment {
     }
 
     @Override
-    public boolean operatesOnEdge() {
+    public boolean canOperateOnEdges() {
         return true;
     }
 }

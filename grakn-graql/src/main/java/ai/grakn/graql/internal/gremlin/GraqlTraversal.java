@@ -95,7 +95,7 @@ public class GraqlTraversal {
         GraphTraversal traversal = __.V();
 
         // If the first fragment can operate on edges, then we have to navigate all edges as well
-        if (fragmentList.get(0).operatesOnEdge()) {
+        if (fragmentList.get(0).canOperateOnEdges()) {
             traversal = __.union(traversal, __.V().outE(Schema.EdgeLabel.RESOURCE.getLabel()));
         }
 

@@ -43,7 +43,7 @@ class IdFragment extends AbstractFragment {
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
             GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
-        if (operatesOnEdge()) {
+        if (canOperateOnEdges()) {
             // Handle both edges and vertices
             return traversal.or(
                     edgeTraversal(),
@@ -102,7 +102,7 @@ class IdFragment extends AbstractFragment {
     }
 
     @Override
-    public boolean operatesOnEdge() {
+    public boolean canOperateOnEdges() {
         return id.getValue().startsWith(Schema.PREFIX_EDGE);
     }
 }
