@@ -24,6 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
+import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import com.pholser.junit.quickcheck.Property;
@@ -78,7 +79,7 @@ public class OntologyConceptPropertyTest {
     }
 
     @Property
-    public void whenDeletingAnOntologyConceptWithDirectSubs_Throw(@Meta(false) OntologyConcept ontologyConcept) {
+    public void whenDeletingAnOntologyConceptWithDirectSubs_Throw(@NonMeta OntologyConcept ontologyConcept) {
         OntologyConcept superConcept = ontologyConcept.sup();
         assumeFalse(isMetaLabel(superConcept.getLabel()));
 
@@ -166,7 +167,7 @@ public class OntologyConceptPropertyTest {
 
     @Property
     public void whenSettingTheDirectSuperToAnIndirectSub_Throw(
-            @Meta(false) OntologyConcept concept, long seed) {
+            @NonMeta OntologyConcept concept, long seed) {
         OntologyConcept newSuperConcept = choose(concept.subs(), seed);
 
         exception.expect(GraphOperationException.class);
@@ -176,7 +177,7 @@ public class OntologyConceptPropertyTest {
 
     @Property
     public void whenSettingTheDirectSuper_TheDirectSuperIsSet(
-            @Meta(false) OntologyConcept subConcept, @FromGraph OntologyConcept superConcept) {
+            @NonMeta OntologyConcept subConcept, @FromGraph OntologyConcept superConcept) {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
         assumeThat((Collection<OntologyConcept>) subConcept.subs(), not(hasItem(superConcept)));
 
@@ -197,7 +198,7 @@ public class OntologyConceptPropertyTest {
 
     @Property
     public void whenAddingADirectSubWhichIsAnIndirectSuper_Throw(
-            @Meta(false) OntologyConcept newSubConcept, long seed) {
+            @NonMeta OntologyConcept newSubConcept, long seed) {
         OntologyConcept concept = choose(newSubConcept.subs(), seed);
 
         exception.expect(GraphOperationException.class);
@@ -208,7 +209,7 @@ public class OntologyConceptPropertyTest {
     @Property
     public void whenAddingADirectSub_TheDirectSubIsAdded(
             @Open GraknGraph graph,
-            @FromGraph OntologyConcept superConcept, @Meta(false) @FromGraph OntologyConcept subConcept) {
+            @FromGraph OntologyConcept superConcept, @NonMeta @FromGraph OntologyConcept subConcept) {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
         assumeThat((Collection<OntologyConcept>) subConcept.subs(), not(hasItem(superConcept)));
 

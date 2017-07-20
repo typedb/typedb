@@ -27,7 +27,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
+import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.Methods.MethodOf;
@@ -72,7 +72,7 @@ public class ConceptPropertyTest {
     @Ignore // TODO: Either fix this, remove test or add exceptions to this rule
     @Property
     public void whenCallingAnyMethodOnADeletedConcept_Throw(
-            @Meta(false) Concept concept, @MethodOf(Concept.class) Method method) throws Throwable {
+            @NonMeta Concept concept, @MethodOf(Concept.class) Method method) throws Throwable {
         concept.delete();
 
         Object[] params = mockParamsOf(method);
@@ -100,7 +100,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenCallingToStringOnADeletedConcept_TheStringContainsTheId(
-            @Open GraknGraph graph, @FromGraph @Meta(false) Concept concept) {
+            @Open GraknGraph graph, @FromGraph @NonMeta Concept concept) {
         assumeDeletable(graph, concept);
         concept.delete();
         assertThat(concept.toString(), containsString(concept.getId().getValue()));
@@ -121,7 +121,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenCallingDelete_TheConceptIsNoLongerInTheGraph(
-            @Open GraknGraph graph, @Meta(false) @FromGraph Concept concept) {
+            @Open GraknGraph graph, @NonMeta @FromGraph Concept concept) {
         assumeDeletable(graph, concept);
 
         assertThat(allConceptsFrom(graph), hasItem(concept));

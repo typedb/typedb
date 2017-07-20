@@ -27,6 +27,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
+import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import com.google.common.collect.ImmutableSet;
@@ -96,7 +97,7 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void whenDeletingATypeWithIndirectInstances_Throw(@Meta(false) Type type) {
+    public void whenDeletingATypeWithIndirectInstances_Throw(@NonMeta Type type) {
         assumeThat(type.instances(), not(empty()));
 
         exception.expect(GraphOperationException.class);
@@ -115,7 +116,7 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void whenSettingATypeAbstractFlag_TheTypesAbstractFlagIsSet(@Meta(false) Type type, boolean isAbstract) {
+    public void whenSettingATypeAbstractFlag_TheTypesAbstractFlagIsSet(@NonMeta Type type, boolean isAbstract) {
         assumeThat(directInstances(type), empty());
 
         type.setAbstract(isAbstract);
@@ -147,7 +148,7 @@ public class TypePropertyTest {
 
     @Property
     public void whenAddingAPlays_TheTypePlaysThatRoleAndNoOtherNewRoles(
-            @Meta(false) Type type, @FromGraph Role role) {
+            @NonMeta Type type, @FromGraph Role role) {
         Set<Role> previousPlays = Sets.newHashSet(type.plays());
         type.plays(role);
         Set<Role> newPlays = Sets.newHashSet(type.plays());
@@ -173,7 +174,7 @@ public class TypePropertyTest {
 
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypeDoesNotPlaysThatRole_TheTypeNoLongerPlaysThatRole(
-            @Meta(false) Type type, @FromGraph Role role) {
+            @NonMeta Type type, @FromGraph Role role) {
         assumeThat(type.sup().plays(), not(hasItem(role)));
         type.deletePlays(role);
         assertThat(type.plays(), not(hasItem(role)));
@@ -181,7 +182,7 @@ public class TypePropertyTest {
 
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypePlaysThatRole_TheTypeStillPlaysThatRole(
-            @Meta(false) Type type, long seed) {
+            @NonMeta Type type, long seed) {
         Role role = choose(type.sup() + " plays no roles", type.sup().plays(), seed);
         type.deletePlays(role);
         assertThat(type.plays(), hasItem(role));

@@ -19,10 +19,10 @@
 
 package ai.grakn.property;
 
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Relation;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
+import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -49,7 +49,7 @@ public class RelationPropertyTest {
 
     @Property
     public void whenAddingARolePlayer_ItIsAddedToTheCollectionOfRolePlayers(
-            Relation relation, @Meta(false) @FromGraph Role role, @FromGraph Thing rolePlayer) {
+            Relation relation, @NonMeta @FromGraph Role role, @FromGraph Thing rolePlayer) {
 
         relation.addRolePlayer(role, rolePlayer);
 
@@ -58,7 +58,7 @@ public class RelationPropertyTest {
 
     @Property
     public void whenAddingARolePlayerPlayingARole_TheRolePlayerIsAddedToTheCollectionOfRolePlayersForThatRole(
-            Relation relation, @Meta(false) @FromGraph Role role, @FromGraph Thing rolePlayer) {
+            Relation relation, @NonMeta @FromGraph Role role, @FromGraph Thing rolePlayer) {
 
         relation.addRolePlayer(role, rolePlayer);
 
@@ -67,7 +67,7 @@ public class RelationPropertyTest {
 
     @Property
     public void whenAddingARolePlayer_NoRolePlayersAreRemoved(
-            Relation relation, @Meta(false) @FromGraph Role role, @FromGraph Thing rolePlayer) {
+            Relation relation, @NonMeta @FromGraph Role role, @FromGraph Thing rolePlayer) {
 
         Thing[] rolePlayers = relation.rolePlayers(role).toArray(new Thing[0]);
 

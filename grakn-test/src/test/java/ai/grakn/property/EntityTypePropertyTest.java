@@ -24,6 +24,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
+import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
 import ai.grakn.generator.AbstractTypeGenerator.Abstract;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
@@ -52,7 +53,7 @@ public class EntityTypePropertyTest {
 
     @Property
     public void whenANonMetaEntityTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
-            @Open GraknGraph graph, @FromGraph @Meta(false) EntityType type) {
+            @Open GraknGraph graph, @FromGraph @NonMeta EntityType type) {
         assumeThat(type.instances(), empty());
         assumeThat(type.subs(), contains(type));
         assumeThat(type.getRulesOfHypothesis(), empty());
@@ -71,21 +72,21 @@ public class EntityTypePropertyTest {
     }
 
     @Property
-    public void whenAddingAnEntity_TheDirectTypeOfTheEntityIsTheTypeItWasCreatedFrom(@Meta(false) @Abstract(false) EntityType type) {
+    public void whenAddingAnEntity_TheDirectTypeOfTheEntityIsTheTypeItWasCreatedFrom(@NonMeta @Abstract(false) EntityType type) {
         Entity entity = type.addEntity();
 
         assertEquals(type, entity.type());
     }
 
     @Property
-    public void whenAddingAnEntity_TheEntityIsInNoRelations(@Meta(false) @Abstract(false) EntityType type) {
+    public void whenAddingAnEntity_TheEntityIsInNoRelations(@NonMeta @Abstract(false) EntityType type) {
         Entity entity = type.addEntity();
 
         assertThat(entity.relations(), empty());
     }
 
     @Property
-    public void whenAddingAnEntity_TheEntityHasNoResources(@Meta(false) @Abstract(false) EntityType type) {
+    public void whenAddingAnEntity_TheEntityHasNoResources(@NonMeta @Abstract(false) EntityType type) {
         Entity entity = type.addEntity();
 
         assertThat(entity.resources(), empty());

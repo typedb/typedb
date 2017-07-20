@@ -35,8 +35,8 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
 import ai.grakn.generator.AbstractTypeGenerator.Abstract;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.MetaLabels;
@@ -163,7 +163,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingGetResourcesByValueAfterAddingAResource_TheResultIncludesTheResource(
             @Open GraknGraph graph,
-            @FromGraph @Meta(false) @Abstract(false)  ResourceType resourceType, @From(ResourceValues.class) Object value) {
+            @FromGraph @NonMeta @Abstract(false)  ResourceType resourceType, @From(ResourceValues.class) Object value) {
         assumeThat(value.getClass().getName(), is(resourceType.getDataType().getName()));
 
         Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(value);

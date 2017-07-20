@@ -21,7 +21,7 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
+import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
 
 import java.util.Collection;
 
@@ -54,11 +54,7 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
         }
     }
 
-    public final void configure(Meta meta) {
-        // Instances are never meta types
-        if (meta.value()) {
-            throw new IllegalArgumentException("Cannot generate meta instances");
-        }
+    public final void configure(NonMeta nonMeta) {
     }
 
     protected abstract T newInstance(S type);

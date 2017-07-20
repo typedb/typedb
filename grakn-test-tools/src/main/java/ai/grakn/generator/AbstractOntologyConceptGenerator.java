@@ -21,6 +21,7 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
@@ -105,7 +106,15 @@ public abstract class AbstractOntologyConceptGenerator<T extends OntologyConcept
     }
 
     public final void configure(Meta meta) {
-        this.meta = Optional.of(meta.value());
+        Preconditions.checkArgument(
+                !this.meta.isPresent() || this.meta.get(), "Cannot specify parameter is both meta and non-meta");
+        this.meta = Optional.of(true);
+    }
+
+    public final void configure(NonMeta nonMeta) {
+        Preconditions.checkArgument(
+                !this.meta.isPresent() || !this.meta.get(), "Cannot specify parameter is both meta and non-meta");
+        this.meta = Optional.of(false);
     }
 
     /**
@@ -115,6 +124,14 @@ public abstract class AbstractOntologyConceptGenerator<T extends OntologyConcept
     @Retention(RUNTIME)
     @GeneratorConfiguration
     public @interface Meta {
-        boolean value() default true;
+    }
+
+    /**
+     * Specify whether the generated {@link OntologyConcept} should not be a meta concept
+     */
+    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
+    @Retention(RUNTIME)
+    @GeneratorConfiguration
+    public @interface NonMeta {
     }
 }
