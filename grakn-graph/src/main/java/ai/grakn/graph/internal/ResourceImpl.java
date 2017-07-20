@@ -28,8 +28,6 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.Schema.generateResourceIndex;
-
 /**
  * <p>
  *     Represent a literal resource in the graph.
@@ -100,8 +98,6 @@ class ResourceImpl<D> extends ThingImpl<Resource<D>, ResourceType<D>> implements
         Schema.VertexProperty property = dataType().getVertexProperty();
         //noinspection unchecked
         vertex().propertyImmutable(property, value, vertex().property(property));
-        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateResourceIndex(type().getLabel(), value.toString()));
-
         return getThis();
     }
 

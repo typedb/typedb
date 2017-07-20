@@ -111,7 +111,9 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         BiFunction<VertexElement, ResourceType<D>, Resource<D>> instanceBuilder = (vertex, type) -> {
             if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
             Object persistenceValue = castValue(value);
-            return vertex().graph().factory().buildResource(vertex, type, persistenceValue);
+            ResourceImpl<D> resource = vertex().graph().factory().buildResource(vertex, type, persistenceValue);
+            resource.vertex().propertyUnique(Schema.VertexProperty.INDEX, Schema.generateResourceIndex(getLabel(), value.toString()));
+            return resource;
         };
 
         return putInstance(Schema.BaseType.RESOURCE,
@@ -159,7 +161,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
 
     @Override
     public Resource<D> getResource(D value) {
-        String index = Schema.generateResourceIndex(getLabel(), castValue(value).toString());
+        String index = Schema.generateResourceIndex(getLabel(), value.toString());
         return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);
     }
 
