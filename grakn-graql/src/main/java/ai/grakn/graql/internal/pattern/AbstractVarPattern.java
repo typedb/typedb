@@ -287,23 +287,23 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final VarPattern rel(String roletype, String roleplayer) {
-        return rel(Graql.label(roletype), Graql.var(roleplayer));
+    public final VarPattern rel(String role, String roleplayer) {
+        return rel(Graql.label(role), Graql.var(roleplayer));
     }
 
     @Override
-    public final VarPattern rel(VarPattern roletype, String roleplayer) {
-        return rel(roletype, Graql.var(roleplayer));
+    public final VarPattern rel(VarPattern role, String roleplayer) {
+        return rel(role, Graql.var(roleplayer));
     }
 
     @Override
-    public final VarPattern rel(String roletype, VarPattern roleplayer) {
-        return rel(Graql.label(roletype), roleplayer);
+    public final VarPattern rel(String role, VarPattern roleplayer) {
+        return rel(Graql.label(role), roleplayer);
     }
 
     @Override
-    public final VarPattern rel(VarPattern roletype, VarPattern roleplayer) {
-        return addCasting(RelationPlayer.of(roletype.admin(), roleplayer.admin()));
+    public final VarPattern rel(VarPattern role, VarPattern roleplayer) {
+        return addCasting(RelationPlayer.of(role.admin(), roleplayer.admin()));
     }
 
     @Override

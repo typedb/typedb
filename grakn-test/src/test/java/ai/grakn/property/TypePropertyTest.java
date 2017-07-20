@@ -30,6 +30,7 @@ import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
