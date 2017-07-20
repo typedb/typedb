@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import com.google.common.base.Preconditions;
+
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
@@ -36,10 +38,10 @@ import java.io.Serializable;
 public class ConceptId implements Comparable<ConceptId>, Serializable {
     private static final long serialVersionUID = -1723590529071614152L;
 
-    private Object conceptId;
+    private String conceptId;
     private int hashCode = 0;
 
-    private ConceptId(Object conceptId){
+    private ConceptId(String conceptId){
         this.conceptId = conceptId;
     }
 
@@ -49,15 +51,6 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
      */
     @CheckReturnValue
     public String getValue(){
-        return conceptId.toString();
-    }
-
-    /**
-     *
-     * @return the raw vertex id. This is used for traversing across vertices directly.
-     */
-    @CheckReturnValue
-    public Object getRawValue(){
         return conceptId;
     }
 
@@ -66,19 +59,13 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ConceptId cast = (ConceptId) o;
-        if (conceptId instanceof String) {
-            return conceptId.equals(cast.conceptId.toString());
-        }
-        else if (cast.conceptId instanceof String) {
-            return cast.conceptId.equals(conceptId.toString());
-        }
         return conceptId.equals(cast.conceptId);
     }
 
     @Override
     public int hashCode() {
         if (hashCode == 0 ){
-            hashCode = conceptId.toString().hashCode();
+            hashCode = conceptId.hashCode();
         }
         return hashCode;
     }
@@ -99,7 +86,8 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
      * @return The matching concept ID
      */
     @CheckReturnValue
-    public static ConceptId of(Object value){
+    public static ConceptId of(String value){
+        Preconditions.checkNotNull(value);
         return new ConceptId(value);
     }
 }

@@ -37,7 +37,7 @@ import javax.annotation.Nullable;
 class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
 
     EdgeElement(AbstractGraknGraph graknGraph, Edge e){
-        super(graknGraph, e);
+        super(graknGraph, e, Schema.PREFIX_EDGE);
     }
 
     /**

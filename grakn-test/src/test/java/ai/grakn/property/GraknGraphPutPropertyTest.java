@@ -111,7 +111,7 @@ public class GraknGraphPutPropertyTest {
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
+            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.ONTOLOGY_LABEL.name(), type.getLabel(), type));
         }
         graph.putEntityType(type.getLabel());
     }
@@ -154,7 +154,7 @@ public class GraknGraphPutPropertyTest {
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
+            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.ONTOLOGY_LABEL.name(), type.getLabel(), type));
         }
         graph.putResourceType(type.getLabel(), dataType);
     }
@@ -198,7 +198,7 @@ public class GraknGraphPutPropertyTest {
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
+            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.ONTOLOGY_LABEL.name(), type.getLabel(), type));
         }
 
         graph.putRuleType(type.getLabel());
@@ -234,7 +234,7 @@ public class GraknGraphPutPropertyTest {
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
+            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.ONTOLOGY_LABEL.name(), type.getLabel(), type));
         }
         graph.putRelationType(type.getLabel());
     }
@@ -270,7 +270,7 @@ public class GraknGraphPutPropertyTest {
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
+            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.ONTOLOGY_LABEL.name(), type.getLabel(), type));
         }
         graph.putRole(type.getLabel());
     }

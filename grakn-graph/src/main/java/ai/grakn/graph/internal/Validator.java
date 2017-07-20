@@ -66,7 +66,7 @@ class Validator {
         //Validate Entity Types
         //Not Needed
         //Validate Entities
-        graknGraph.txCache().getModifiedEntities().forEach(this::validateInstance);
+        graknGraph.txCache().getModifiedEntities().forEach(this::validateThing);
 
         //Validate RoleTypes
         graknGraph.txCache().getModifiedRoles().forEach(this::validateRole);
@@ -86,7 +86,7 @@ class Validator {
         //Validate Resource Types
         //Not Needed
         //Validate Resource
-        graknGraph.txCache().getModifiedResources().forEach(this::validateInstance);
+        graknGraph.txCache().getModifiedResources().forEach(this::validateThing);
 
         return errorsFound.size() == 0;
     }
@@ -110,7 +110,7 @@ class Validator {
      * @param relation The relation to validate
      */
     private void validateRelation(AbstractGraknGraph<?> graph, Relation relation){
-        validateInstance(relation);
+        validateThing(relation);
         Optional<RelationReified> relationReified = ((RelationImpl) relation).reified();
         //TODO: We need new validation mechanisms for non-reified relations
         if(relationReified.isPresent()) {
@@ -146,9 +146,9 @@ class Validator {
 
     /**
      * Validation rules exclusive to instances
-     * @param instance The instance to validate
+     * @param thing The {@link Thing} to validate
      */
-    private void validateInstance(Thing instance) {
-        ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(instance).ifPresent(errorsFound::add);
+    private void validateThing(Thing thing) {
+        ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(thing).ifPresent(errorsFound::add);
     }
 }

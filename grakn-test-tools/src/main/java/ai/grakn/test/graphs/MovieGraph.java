@@ -90,6 +90,8 @@ public class MovieGraph extends TestGraph {
                 .relates(clusterOfProduction).relates(productionWithCluster);
 
         title = graph.putResourceType("title", ResourceType.DataType.STRING);
+        title.resource(title);
+
         tmdbVoteCount = graph.putResourceType("tmdb-vote-count", ResourceType.DataType.LONG);
         tmdbVoteAverage = graph.putResourceType("tmdb-vote-average", ResourceType.DataType.DOUBLE);
         releaseDate = graph.putResourceType("release-date", ResourceType.DataType.DATE);

@@ -21,11 +21,14 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
@@ -72,11 +75,11 @@ public class GraqlTraversal {
      */
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    public GraphTraversal<Vertex, Map<String, Vertex>> getGraphTraversal(GraknGraph graph) {
+    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(GraknGraph graph) {
         Traversal[] traversals =
                 fragments.stream().map(list -> getConjunctionTraversal(graph, list)).toArray(Traversal[]::new);
 
-        return graph.admin().getTinkerTraversal().limit(1).union(traversals);
+        return graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
     }
 
     public ImmutableSet<ImmutableList<Fragment>> fragments() {
@@ -86,11 +89,21 @@ public class GraqlTraversal {
     /**
      * @return a gremlin traversal that represents this inner query
      */
-    private GraphTraversal<Vertex, Map<String, Vertex>> getConjunctionTraversal(
+    private GraphTraversal<? extends Element, Map<String, Element>> getConjunctionTraversal(
             GraknGraph graph, ImmutableList<Fragment> fragmentList
     ) {
-        GraphTraversal<Vertex, Vertex> traversal = graph.admin().getTinkerTraversal();
+        GraphTraversal traversal = __.V();
 
+        // If the first fragment can operate on edges, then we have to navigate all edges as well
+        if (fragmentList.get(0).canOperateOnEdges()) {
+            traversal = __.union(traversal, __.V().outE(Schema.EdgeLabel.RESOURCE.getLabel()));
+        }
+
+        return applyFragments(graph, fragmentList, traversal);
+    }
+
+    private GraphTraversal<?, Map<String, Element>> applyFragments(
+            GraknGraph graph, ImmutableList<Fragment> fragmentList, GraphTraversal<Element, Element> traversal) {
         Set<Var> foundNames = new HashSet<>();
 
         // Apply fragments in order into one single traversal
@@ -115,8 +128,8 @@ public class GraqlTraversal {
      * @param names a set of variable names so far encountered in the query
      */
     private void applyFragment(
-            Fragment fragment, GraphTraversal<Vertex, Vertex> traversal, @Nullable Var currentName, Set<Var> names,
-            GraknGraph graph
+            Fragment fragment, GraphTraversal<Element, ? extends Element> traversal,
+            @Nullable Var currentName, Set<Var> names, GraknGraph graph
     ) {
         Var start = fragment.getStart();
 

@@ -68,7 +68,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
     private static GraknGraph lastGeneratedGraph;
 
-    private StringBuilder graphSummary;
+    private static StringBuilder graphSummary;
 
     private GraknGraph graph;
     private Boolean open = null;
@@ -107,7 +107,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
         int size = status.size();
 
-        graphSummary = new StringBuilder();
+        startSummary();
+
         graphSummary.append("size: ").append(size).append("\n");
 
         closeGraph(lastGeneratedGraph);
@@ -170,7 +171,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 Label label = typeLabel();
                 Role superType = roleType();
                 Role role = graph.putRole(label).sup(superType);
-                summaryAssign(role, "graph", "putRoleType", label);
+                summaryAssign(role, "graph", "putRole", label);
                 summary(role, "superType", superType);
             },
             () -> {
@@ -287,6 +288,10 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             }
     );
 
+    private static void startSummary() {
+        graphSummary = new StringBuilder();
+    }
+
     private void summary(Object target, String methodName, Object... args) {
         graphSummary.append(summaryFormat(target)).append(".").append(methodName).append("(");
         graphSummary.append(Stream.of(args).map(this::summaryFormat).collect(joining(", ")));
@@ -298,8 +303,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private String summaryFormat(Object object) {
-        if (object instanceof Type) {
-            return ((Type) object).getLabel().getValue().replaceAll("-", "_");
+        if (object instanceof OntologyConcept) {
+            return ((OntologyConcept) object).getLabel().getValue().replaceAll("-", "_");
         } else if (object instanceof Thing) {
             Thing thing = (Thing) object;
             return summaryFormat(thing.type()) + thing.getId().getValue();
