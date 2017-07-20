@@ -73,7 +73,6 @@ public class ProcessSupervision {
         return true;
       } else {
         throw new RuntimeException("there is no grakn-cassandra process with PID " + pid);
-
       }
     } else {
       return false;
@@ -127,7 +126,7 @@ public class ProcessSupervision {
       }
     }
     LOG.info("unable to start grakn-cassandra!");
-    throw new RuntimeException("unable to start grakn-cassandra!");
+    throw new ProcessSupervisionException("unable to start grakn-cassandra!");
   }
 
   private void waitForCassandraStopped() throws MalformedPidFileException, IOException, InterruptedException {
@@ -144,6 +143,6 @@ public class ProcessSupervision {
       }
     }
     LOG.info("unable to stop grakn-cassandra!");
-    throw new RuntimeException("unable to stop grakn-cassandra!");
+    throw new ProcessSupervisionException("unable to stop grakn-cassandra!");
   }
 }
