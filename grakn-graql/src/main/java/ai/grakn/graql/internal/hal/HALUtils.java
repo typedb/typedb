@@ -77,6 +77,7 @@ public class HALUtils {
 
     public final static String INFERRED_RELATION = "inferred-relation";
     public final static String GENERATED_RELATION = "generated-relation";
+    public final static String IMPLICIT_PROPERTY = "_implicit";
 
 
     static Schema.BaseType getBaseType(Thing thing) {
@@ -128,6 +129,7 @@ public class HALUtils {
         }
         if (concept.isType()) {
             resource.withProperty(NAME_PROPERTY, concept.asType().getLabel().getValue());
+            resource.withProperty(IMPLICIT_PROPERTY, ((OntologyConcept)concept).isImplicit());
         }
     }
 

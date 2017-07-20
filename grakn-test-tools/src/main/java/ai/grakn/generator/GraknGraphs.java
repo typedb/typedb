@@ -37,7 +37,6 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.MinimalCounterexampleHook;
@@ -48,7 +47,6 @@ import java.lang.annotation.Target;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -181,11 +179,6 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 RelationType relationType = graph.putRelationType(label).sup(superType);
                 summaryAssign(relationType, "graph", "putRelationType", label);
                 summary(relationType, "superType", superType);
-            },
-            () -> {
-                boolean flag = gen(Boolean.class);
-                graph.showImplicitConcepts(flag);
-                summary("graph", "showImplicitConcepts", flag);
             },
             () -> {
                 Type type = type();
@@ -387,16 +380,14 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     public static Collection<? extends OntologyConcept> allOntologyElementsFrom(GraknGraph graph) {
-        Function<GraknGraph, ? extends Collection<? extends OntologyConcept>> function = g -> g.admin().getMetaConcept().subs();
-        return CommonUtil.withImplicitConceptsVisible(graph, function);
+        return graph.admin().getMetaConcept().subs();
     }
 
     public static Collection<? extends Thing> allInstancesFrom(GraknGraph graph) {
-        Function<GraknGraph, ? extends Collection<? extends Thing>> function = g -> g.admin().getMetaConcept().subs().stream().
+        return graph.admin().getMetaConcept().subs().stream().
                 filter(element -> !element.isRole()).
                 flatMap(element -> ((Type) element).instances().stream()).
                 collect(Collectors.toSet());
-        return CommonUtil.withImplicitConceptsVisible(graph, function);
     }
 
     @Override

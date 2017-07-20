@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import static ai.grakn.graql.internal.hal.HALBuilder.HALExploreConcept;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
+import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -38,6 +39,7 @@ public class HALBuilderTest {
             assertTrue(halObj.at("_links").at("explore").asJsonList().get(0).at("href").asString().contains("explore"));
             assertTrue(halObj.has("_type"));
             assertTrue(halObj.has("_id"));
+            assertFalse(halObj.has("_implicit"));
         });
     }
 
@@ -47,6 +49,17 @@ public class HALBuilderTest {
         String conceptId = response.asJsonList().get(0).at("_id").asString();
         Json halObj = getHALExploreRepresentation(academyGraph.graph(), conceptId);
         assertTrue(halObj.at("_links").at("explore").asJsonList().get(0).at("href").asString().contains("explore"));
+    }
+
+    @Test
+    public void whenAskForRelationTypes_EnsureAllObjectsHaveImplicitField() {
+        Json response = getHALRepresentation(academyGraph.graph(), "match $x sub relation;");
+        response.asJsonList().forEach(halObj -> {
+            assertTrue(halObj.has("_implicit"));
+            if(halObj.at("_name").asString().startsWith("has-")){
+                assertTrue(halObj.at("_implicit").asBoolean());
+            }
+        });
     }
 
 
