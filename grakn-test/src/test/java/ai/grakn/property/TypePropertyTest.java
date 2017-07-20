@@ -30,6 +30,7 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
@@ -189,6 +190,7 @@ public class TypePropertyTest {
     @Property
     public void whenAnOntologyElementHasADirectSuper_ItIsADirectSubOfThatSuper(
             @Open GraknGraph graph, @FromGraph OntologyConcept ontologyConcept) {
+        assumeFalse(Schema.MetaSchema.ROLE.getLabel().equals(ontologyConcept.getLabel()));
         OntologyConcept superType = ontologyConcept.sup();
         assertThat(directSubs(graph, superType), hasItem(ontologyConcept));
     }

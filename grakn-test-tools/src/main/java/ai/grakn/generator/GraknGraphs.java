@@ -46,6 +46,7 @@ import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -387,7 +388,12 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     public static Collection<? extends OntologyConcept> allOntologyElementsFrom(GraknGraph graph) {
-        Function<GraknGraph, ? extends Collection<? extends OntologyConcept>> function = g -> g.admin().getMetaConcept().subs();
+        Function<GraknGraph, ? extends Collection<? extends OntologyConcept>> function = g -> {
+            Set<OntologyConcept> allOntologyConcepts = new HashSet<>();
+            allOntologyConcepts.addAll(g.admin().getMetaConcept().subs());
+            allOntologyConcepts.addAll(g.admin().getMetaRole().subs());
+            return allOntologyConcepts;
+        };
         return CommonUtil.withImplicitConceptsVisible(graph, function);
     }
 
