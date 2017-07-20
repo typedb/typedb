@@ -21,6 +21,7 @@ package ai.grakn.graql;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Role;
 import ai.grakn.graql.admin.VarPatternAdmin;
 
 import javax.annotation.CheckReturnValue;
@@ -151,28 +152,28 @@ public interface VarPattern extends Pattern {
     VarPattern sub(VarPattern type);
 
     /**
-     * @param type a role type id that this relation type variable must have
+     * @param type a {@link Role} id that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
     VarPattern relates(String type);
 
     /**
-     * @param type a role type that this relation type variable must have
+     * @param type a {@link Role} that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
     VarPattern relates(VarPattern type);
 
     /**
-     * @param type a role type id that this concept type variable must play
+     * @param type a {@link Role} id that this concept type variable must play
      * @return this
      */
     @CheckReturnValue
     VarPattern plays(String type);
 
     /**
-     * @param type a role type that this concept type variable must play
+     * @param type a {@link Role} that this concept type variable must play
      * @return this
      */
     @CheckReturnValue
@@ -232,44 +233,44 @@ public interface VarPattern extends Pattern {
     VarPattern rel(VarPattern roleplayer);
 
     /**
-     * the variable must be a relation with the given roleplayer playing the given roletype
+     * the variable must be a relation with the given roleplayer playing the given {@link Role}
      *
-     * @param roletype   a role type in the ontology
+     * @param role   a {@link Role} in the ontology
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
     @CheckReturnValue
-    VarPattern rel(String roletype, String roleplayer);
+    VarPattern rel(String role, String roleplayer);
 
     /**
-     * the variable must be a relation with the given roleplayer playing the given roletype
+     * the variable must be a relation with the given roleplayer playing the given {@link Role}
      *
-     * @param roletype   a variable pattern representing a roletype
+     * @param role   a variable pattern representing a {@link Role}
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
     @CheckReturnValue
-    VarPattern rel(VarPattern roletype, String roleplayer);
+    VarPattern rel(VarPattern role, String roleplayer);
 
     /**
-     * the variable must be a relation with the given roleplayer playing the given roletype
+     * the variable must be a relation with the given roleplayer playing the given {@link Role}
      *
-     * @param roletype   a role type in the ontology
+     * @param role   a {@link Role} in the ontology
      * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */
     @CheckReturnValue
-    VarPattern rel(String roletype, VarPattern roleplayer);
+    VarPattern rel(String role, VarPattern roleplayer);
 
     /**
-     * the variable must be a relation with the given roleplayer playing the given roletype
+     * the variable must be a relation with the given roleplayer playing the given {@link Role}
      *
-     * @param roletype   a variable pattern representing a roletype
+     * @param role   a variable pattern representing a {@link Role}
      * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */
     @CheckReturnValue
-    VarPattern rel(VarPattern roletype, VarPattern roleplayer);
+    VarPattern rel(VarPattern role, VarPattern roleplayer);
 
     /**
      * set this concept type variable as abstract, meaning it cannot have direct instances

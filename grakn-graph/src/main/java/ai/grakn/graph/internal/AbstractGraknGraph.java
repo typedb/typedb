@@ -250,21 +250,20 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             VertexElement entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
             VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
             VertexElement resourceType = addTypeVertex(Schema.MetaSchema.RESOURCE.getId(), Schema.MetaSchema.RESOURCE.getLabel(), Schema.BaseType.RESOURCE_TYPE);
-            VertexElement roleType = addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
+            VertexElement role = addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
             VertexElement ruleType = addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
             VertexElement inferenceRuleType = addTypeVertex(Schema.MetaSchema.INFERENCE_RULE.getId(), Schema.MetaSchema.INFERENCE_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
             VertexElement constraintRuleType = addTypeVertex(Schema.MetaSchema.CONSTRAINT_RULE.getId(), Schema.MetaSchema.CONSTRAINT_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
 
             relationType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-            roleType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+            role.property(Schema.VertexProperty.IS_ABSTRACT, true);
             resourceType.property(Schema.VertexProperty.IS_ABSTRACT, true);
             ruleType.property(Schema.VertexProperty.IS_ABSTRACT, true);
             entityType.property(Schema.VertexProperty.IS_ABSTRACT, true);
 
             relationType.addEdge(type, Schema.EdgeLabel.SUB);
-            roleType.addEdge(type, Schema.EdgeLabel.SUB);
-            resourceType.addEdge(type, Schema.EdgeLabel.SUB);
             ruleType.addEdge(type, Schema.EdgeLabel.SUB);
+            resourceType.addEdge(type, Schema.EdgeLabel.SUB);
             entityType.addEdge(type, Schema.EdgeLabel.SUB);
             inferenceRuleType.addEdge(ruleType, Schema.EdgeLabel.SUB);
             constraintRuleType.addEdge(ruleType, Schema.EdgeLabel.SUB);
@@ -277,17 +276,31 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         //Copy entire ontology to the graph cache. This may be a bad idea as it will slow down graph initialisation
-        getMetaConcept().subs().forEach(type -> {
-            getGraphCache().cacheLabel(type.getLabel(), type.getLabelId());
-            getGraphCache().cacheType(type.getLabel(), type);
-        });
+        copyToCache(getMetaConcept());
+
+        //Role has to be copied separately due to not being connected to meta ontology
+        copyToCache(getMetaRole());
 
         return ontologyInitialised;
     }
+
     private void createMetaShard(VertexElement metaNode){
         VertexElement metaShard = addVertex(Schema.BaseType.SHARD);
         metaShard.addEdge(metaNode, Schema.EdgeLabel.SHARD);
         metaNode.property(Schema.VertexProperty.CURRENT_SHARD, metaShard.id().toString());
+    }
+
+    /**
+     * Copies the {@link OntologyConcept} and it's subs into the {@link TxCache}.
+     * This is important as lookups for {@link OntologyConcept}s based on {@link Label} depend on this caching.
+     *
+     * @param ontologyConcept the {@link OntologyConcept} to be copied into the {@link TxCache}
+     */
+    private void copyToCache(OntologyConcept ontologyConcept){
+        ontologyConcept.subs().forEach(concept -> {
+            getGraphCache().cacheLabel(concept.getLabel(), concept.getLabelId());
+            getGraphCache().cacheType(concept.getLabel(), concept);
+        });
     }
 
     private boolean isMetaOntologyNotInitialised(){
@@ -488,12 +501,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public Role putRole(Label label) {
         return putOntologyElement(label, Schema.BaseType.ROLE,
-                v -> factory().buildRole(v, getMetaRoleType(), Boolean.FALSE));
+                v -> factory().buildRole(v, getMetaRole(), Boolean.FALSE));
     }
 
     Role putRoleTypeImplicit(Label label) {
         return putOntologyElement(label, Schema.BaseType.ROLE,
-                v -> factory().buildRole(v, getMetaRoleType(), Boolean.TRUE));
+                v -> factory().buildRole(v, getMetaRole(), Boolean.TRUE));
     }
 
     @Override
@@ -635,7 +648,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public Role getMetaRoleType() {
+    public Role getMetaRole() {
         return getOntologyConcept(Schema.MetaSchema.ROLE.getId());
     }
 
