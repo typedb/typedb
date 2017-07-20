@@ -89,7 +89,6 @@ class TxCache {
 
     //Transaction Specific Meta Data
     private boolean isTxOpen = false;
-    private boolean showImplicitTypes = false;
     private GraknTxType txType;
     private String closedReason = null;
 
@@ -407,13 +406,6 @@ class TxCache {
     }
     boolean isTxOpen(){
         return isTxOpen;
-    }
-
-    void showImplicitTypes(boolean flag){
-        showImplicitTypes = flag;
-    }
-    boolean implicitTypesVisible(){
-        return showImplicitTypes;
     }
 
     GraknTxType txType(){

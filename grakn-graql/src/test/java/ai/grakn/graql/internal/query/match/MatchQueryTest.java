@@ -47,7 +47,6 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.hamcrest.Matcher;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -163,7 +162,6 @@ import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -194,11 +192,6 @@ public class MatchQueryTest {
     @Before
     public void setUp() {
         qb = movieGraph.graph().graql();
-    }
-
-    @After
-    public void tearDown() {
-        if (movieGraph.graph() != null) movieGraph.graph().showImplicitConcepts(false);
     }
 
     @Test
@@ -887,12 +880,6 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testHideImplicitTypes() {
-        MatchQuery query = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
-        assertThat(query, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
-    }
-
-    @Test
     public void testDontHideImplicitTypesIfExplicitlyMentioned() {
         MatchQuery query = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()).label(HAS.getLabel("title")));
         assertThat(query, variable("x", (Matcher) hasItem(hasTitle)));
@@ -908,26 +895,6 @@ public class MatchQueryTest {
         MatchQuery explicitQuery = qb.match(var().isa(hasTitle).rel(titleOwner, y).rel(titleValue, z));
 
         assertEquals(hasQuery.stream().collect(toSet()), explicitQuery.stream().collect(toSet()));
-    }
-
-    @Test
-    public void testDontHideImplicitTypesIfImplicitTypesOn() {
-        movieGraph.graph().showImplicitConcepts(true);
-        MatchQuery query = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
-        assertThat(query, variable("x", hasItems(movie, hasTitle)));
-    }
-
-    @Test
-    public void testHideImplicitTypesTwice() {
-        MatchQuery query1 = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
-        assertThat(query1, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
-        List<Answer> results1 = query1.execute();
-
-        movieGraph.graph().close();
-        GraknGraph graph2 = movieGraph.graph();
-
-        MatchQuery query2 = graph2.graql().match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
-        assertEquals(results1, query2.execute());
     }
 
     @Test

@@ -19,17 +19,18 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
-import static ai.grakn.GraknTxType.READ;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import java.util.Arrays;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import spark.Request;
@@ -39,9 +40,11 @@ import spark.Service;
 import javax.annotation.Nullable;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static ai.grakn.GraknTxType.READ;
 import static ai.grakn.engine.controller.GraqlController.getAcceptType;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
@@ -60,10 +63,7 @@ import static ai.grakn.util.REST.Response.Json.RESOURCES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.ROLES_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Concept.CONCEPT;
 import static ai.grakn.util.REST.WebPath.Concept.ONTOLOGY;
-import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
-import com.codahale.metrics.Timer;
-import com.codahale.metrics.Timer.Context;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -164,6 +164,7 @@ public class ConceptController {
 
     private List<String> subLabels(OntologyConcept ontologyConcept) {
         return ontologyConcept.subs().stream().
+                filter(concept-> !concept.isImplicit()).
                 map(OntologyConcept::getLabel).
                 map(Label::getValue).collect(toList());
     }

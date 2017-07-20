@@ -23,7 +23,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
-import ai.grakn.util.CommonUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,33 +63,30 @@ class Validator {
      * @return True if the data and schema conforms to our concept.
      */
     public boolean validate(){
-        CommonUtil.withImplicitConceptsVisible(graknGraph, () -> {
-            //Validate Entity Types
-            //Not Needed
-            //Validate Entities
-            graknGraph.txCache().getModifiedEntities().forEach(this::validateInstance);
+        //Validate Entity Types
+        //Not Needed
+        //Validate Entities
+        graknGraph.txCache().getModifiedEntities().forEach(this::validateInstance);
 
-            //Validate RoleTypes
-            graknGraph.txCache().getModifiedRoles().forEach(this::validateRole);
-            //Validate Role Players
-            graknGraph.txCache().getModifiedCastings().forEach(this::validateCasting);
+        //Validate RoleTypes
+        graknGraph.txCache().getModifiedRoles().forEach(this::validateRole);
+        //Validate Role Players
+        graknGraph.txCache().getModifiedCastings().forEach(this::validateCasting);
 
-            //Validate Relation Types
-            graknGraph.txCache().getModifiedRelationTypes().forEach(this::validateRelationType);
-            //Validate Relations
-            graknGraph.txCache().getModifiedRelations().forEach(relation -> validateRelation(graknGraph, relation));
+        //Validate Relation Types
+        graknGraph.txCache().getModifiedRelationTypes().forEach(this::validateRelationType);
+        //Validate Relations
+        graknGraph.txCache().getModifiedRelations().forEach(relation -> validateRelation(graknGraph, relation));
 
-            //Validate Rule Types
-            //Not Needed
-            //Validate Rules
-            graknGraph.txCache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
+        //Validate Rule Types
+        //Not Needed
+        //Validate Rules
+        graknGraph.txCache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
 
-            //Validate Resource Types
-            //Not Needed
-            //Validate Resource
-            graknGraph.txCache().getModifiedResources().forEach(this::validateInstance);
-
-        });
+        //Validate Resource Types
+        //Not Needed
+        //Validate Resource
+        graknGraph.txCache().getModifiedResources().forEach(this::validateInstance);
 
         return errorsFound.size() == 0;
     }
