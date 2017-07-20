@@ -39,7 +39,7 @@ public class ProcessSupervision {
   private static final String CASSANDRA_FULL_PATH = "bin/cassandra"; // TODO: this exe shouldn't even be exposed anymore
   private static final String CASSANDRA_PID_FILE = "/tmp/grakn-cassandra.pid";
 
-  public void startCassandraIfNotExists() {
+  public void startCassandraIfNotExists() throws MalformedPidFileException, IOException, InterruptedException {
     LOG.info("checking if there exists a running grakn-cassandra process...");
     if (!isCassandraRunning()) {
       LOG.info("grakn-cassandra isn't yet running. attempting to start...");
@@ -51,7 +51,7 @@ public class ProcessSupervision {
     }
   }
 
-  public void stopCassandraIfRunning() {
+  public void stopCassandraIfRunning() throws MalformedPidFileException, IOException, InterruptedException {
     LOG.info("checking if there exists a running grakn-cassandra process...");
     if (isCassandraRunning()) {
       LOG.info("a grakn-cassandra process found. attempting to stop...");
@@ -65,72 +65,55 @@ public class ProcessSupervision {
     }
   }
 
-  public boolean isCassandraRunning() {
+  public boolean isCassandraRunning() throws MalformedPidFileException, IOException, InterruptedException {
     if (fileExists(CASSANDRA_PID_FILE)) {
       int pid = catPidFile(CASSANDRA_PID_FILE);
       boolean cassandraProcessFound = psP(pid) == 0;
       if (cassandraProcessFound) {
         return true;
-      }
-      else {
+      } else {
         throw new RuntimeException("there is no grakn-cassandra process with PID " + pid);
+
       }
-    }
-    else {
+    } else {
       return false;
     }
   }
 
-  public void startCassandra() {
-    try {
-      Runtime.getRuntime().exec(new String[] { "sh", "-c", "bin/grakn-cassandra.sh start" });
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+  public void startCassandra() throws IOException {
+    Runtime.getRuntime().exec(new String[] { "sh", "-c", "bin/grakn-cassandra.sh start" });
   }
 
-  public int stopCassandra() {
-    try {
-      Process kill = Runtime.getRuntime().exec(new String[]{ "sh", "-c", "bin/grakn-cassandra.sh stop" });
-      return kill.waitFor();
-    } catch (IOException | InterruptedException e) {
-      throw new RuntimeException(e);
-    }
+  public int stopCassandra() throws IOException, InterruptedException {
+    Process kill = Runtime.getRuntime().exec(new String[]{ "sh", "-c", "bin/grakn-cassandra.sh stop" });
+    return kill.waitFor();
   }
 
   public boolean fileExists(String path) {
     return Files.exists(Paths.get(path));
   }
 
-  public int psP(int pid) {
-    try {
-      Process ps = Runtime.getRuntime().exec(new String[]{"sh", "-c", " ps -p " + pid});
+  public int psP(int pid) throws IOException, InterruptedException {
+    Process ps = Runtime.getRuntime().exec(new String[]{"sh", "-c", " ps -p " + pid});
 
-      return ps.waitFor();
-    } catch (IOException | InterruptedException e) {
-      throw new RuntimeException(e);
-    }
+    return ps.waitFor();
   }
 
-  public int catPidFile(String file) {
-    try {
-      Process catProcess = Runtime.getRuntime().exec(new String[]{"sh", "-c", "cat " + file});
+  public int catPidFile(String file) throws MalformedPidFileException, IOException {
+    Process catProcess = Runtime.getRuntime().exec(new String[]{"sh", "-c", "cat " + file});
 
-      try (BufferedReader catStdout =
-               new BufferedReader(new InputStreamReader(catProcess.getInputStream(), StandardCharsets.UTF_8))) {
-        List<String> lines = catStdout.lines().collect(Collectors.toList());
-        if (lines.size() == 1) {
-          return Integer.parseInt(lines.get(0));
-        } else {
-          throw new RuntimeException("a pid file should only have one line, however this one has " + lines.size() + " lines");
-        }
+    try (BufferedReader catStdout =
+             new BufferedReader(new InputStreamReader(catProcess.getInputStream(), StandardCharsets.UTF_8))) {
+      List<String> lines = catStdout.lines().collect(Collectors.toList());
+      if (lines.size() == 1) {
+        return Integer.parseInt(lines.get(0));
+      } else {
+        throw new MalformedPidFileException("a pid file should only have one line, however this one has " + lines.size() + " lines");
       }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
     }
   }
 
-  private void waitForCassandraStarted() {
+  private void waitForCassandraStarted() throws MalformedPidFileException, IOException, InterruptedException {
     final int MAX_CHECK_ATTEMPT = 3;
     int attempt = 0;
     while (attempt < MAX_CHECK_ATTEMPT) {
@@ -140,14 +123,14 @@ public class ProcessSupervision {
       } else {
         LOG.info("grakn-cassandra has not yet started. will re-attempt the check...");
         attempt++;
-        threadSleep(2000);
+        Thread.sleep(2000);
       }
     }
     LOG.info("unable to start grakn-cassandra!");
     throw new RuntimeException("unable to start grakn-cassandra!");
   }
 
-  private void waitForCassandraStopped() {
+  private void waitForCassandraStopped() throws MalformedPidFileException, IOException, InterruptedException {
     final int MAX_CHECK_ATTEMPT = 3;
     int attempt = 0;
     while (attempt < MAX_CHECK_ATTEMPT) {
@@ -157,18 +140,10 @@ public class ProcessSupervision {
       } else {
         LOG.info("grakn-cassandra has not been stopped. will re-attempt the check...");
         attempt++;
-        threadSleep(2000);
+        Thread.sleep(2000);
       }
     }
     LOG.info("unable to stop grakn-cassandra!");
     throw new RuntimeException("unable to stop grakn-cassandra!");
-  }
-
-  private void threadSleep(long ms) {
-    try {
-      Thread.sleep(ms);
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
   }
 }

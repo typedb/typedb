@@ -116,7 +116,7 @@ public class GraknEngineServer implements AutoCloseable {
 
     public static void main(String[] args) {
         // start cassandra (TODO: start redis)
-        (new ProcessSupervision()).startCassandraIfNotExists();
+//        (new ProcessSupervision()).startCassandraIfNotExists();
 
         GraknEngineConfig prop = GraknEngineConfig.create();
         
@@ -139,7 +139,7 @@ public class GraknEngineServer implements AutoCloseable {
     public void close() {
         stopHTTP();
         stopTaskManager();
-        (new ProcessSupervision()).stopCassandraIfRunning();
+//        (new ProcessSupervision()).stopCassandraIfRunning();
     }
 
     private void lockAndInitializeSystemOntology() {
