@@ -219,7 +219,6 @@ public class REST {
         public static final String PASSWORD = "password";
         public static final String KEYSPACE = "keyspace";
         public static final String OUTPUT_FORMAT = "outputFormat";
-        public static final String IMPLICIT = "implicit";
         public static final String INFER = "infer";
         public static final String MATERIALISE = "materialise";
         public static final String QUERY = "query";
