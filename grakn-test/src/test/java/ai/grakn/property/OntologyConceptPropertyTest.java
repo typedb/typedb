@@ -104,6 +104,8 @@ public class OntologyConceptPropertyTest {
     public void whenAnOntologyElementHasADirectSuper_ItIsADirectSubOfThatSuper(
             @Open GraknGraph graph, @FromGraph OntologyConcept ontologyConcept) {
         OntologyConcept superConcept = ontologyConcept.sup();
+        assumeTrue(superConcept != null);
+
         assertThat(directSubs(graph, superConcept), hasItem(ontologyConcept));
     }
 
