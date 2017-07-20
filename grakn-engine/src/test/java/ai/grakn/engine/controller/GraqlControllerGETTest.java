@@ -438,6 +438,7 @@ public class GraqlControllerGETTest {
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
+    @Ignore
     public void ZGETGraqlComputePathWithTextType_ResponseIsCorrect() {
         assumeTrue(GraknTestSetup.usingTitan());
 
@@ -481,6 +482,7 @@ public class GraqlControllerGETTest {
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
+    @Ignore
     public void ZGETGraqlComputePathWithHALType_ResponseIsNotEmpty() {
         assumeTrue(GraknTestSetup.usingTitan());
 
