@@ -621,8 +621,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 })
                 .collect(Collectors.toList());
 
-        if (atomOptions.stream().mapToInt(Set::size).sum() == atomOptions.size())
+        if (atomOptions.stream().mapToInt(Set::size).sum() == atomOptions.size()) {
             return Stream.of(this);
+        }
 
         return Sets.cartesianProduct(atomOptions).stream()
                 .map(atomList -> ReasonerQueries.create(new HashSet<>(atomList), graph()));
