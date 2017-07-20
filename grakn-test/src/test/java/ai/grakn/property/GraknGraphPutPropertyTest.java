@@ -243,7 +243,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutRoleType_CreateATypeWithSuperTypeRole(@Open GraknGraph graph, @Unused Label label) {
         Role role = graph.putRole(label);
-        assertEquals(graph.admin().getMetaRoleType(), role.sup());
+        assertEquals(graph.admin().getMetaRole(), role.sup());
     }
 
     @Property

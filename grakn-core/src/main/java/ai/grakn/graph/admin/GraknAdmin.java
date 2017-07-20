@@ -95,7 +95,7 @@ public interface GraknAdmin {
      * @return The meta role type -> role-type.
      */
     @CheckReturnValue
-    Role getMetaRoleType();
+    Role getMetaRole();
 
     /**
      * Get the root of all the Resource Types.

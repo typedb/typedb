@@ -336,7 +336,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private Role roleType() {
-        return random.choose(graph.admin().getMetaRoleType().subs());
+        return random.choose(graph.admin().getMetaRole().subs());
     }
 
     private ResourceType resourceType() {

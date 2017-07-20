@@ -102,11 +102,9 @@ public class GraknGraphTest extends GraphTestBase {
     public void whenGettingSubTypesFromRootMeta_IncludeAllTypes(){
         EntityType sampleEntityType = graknGraph.putEntityType("Sample Entity Type");
         RelationType sampleRelationType = graknGraph.putRelationType("Sample Relation Type");
-        Role sampleRole = graknGraph.putRole("Sample Role Type");
 
         assertThat(graknGraph.admin().getMetaConcept().subs(), containsInAnyOrder(
                 graknGraph.admin().getMetaConcept(),
-                graknGraph.admin().getMetaRoleType(),
                 graknGraph.admin().getMetaRelationType(),
                 graknGraph.admin().getMetaEntityType(),
                 graknGraph.admin().getMetaRuleType(),
@@ -114,8 +112,7 @@ public class GraknGraphTest extends GraphTestBase {
                 graknGraph.admin().getMetaRuleConstraint(),
                 graknGraph.admin().getMetaRuleInference(),
                 sampleEntityType,
-                sampleRelationType,
-                sampleRole
+                sampleRelationType
         ));
     }
 
@@ -159,13 +156,13 @@ public class GraknGraphTest extends GraphTestBase {
 
         //Meta Types
         RelationType relationType = graknGraph.admin().getMetaRelationType();
-        Role role = graknGraph.admin().getMetaRoleType();
+        Role role = graknGraph.admin().getMetaRole();
 
         //Check nothing is revealed when returning result sets
         assertThat(type.plays(), is(empty()));
         assertThat(resourceType.plays(), is(empty()));
         assertThat(graknGraph.getMetaRelationType().subs(), containsInAnyOrder(relationType));
-        assertThat(graknGraph.getMetaRoleType().subs(), containsInAnyOrder(role));
+        assertThat(graknGraph.getMetaRole().subs(), containsInAnyOrder(role));
 
         //Check things are still returned when explicitly asking for them
         RelationType has = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
@@ -181,7 +178,7 @@ public class GraknGraphTest extends GraphTestBase {
 
         //Now check the result sets again
         assertThat(graknGraph.getMetaRelationType().subs(), containsInAnyOrder(relationType, has));
-        assertThat(graknGraph.getMetaRoleType().subs(), containsInAnyOrder(role, hasOwner, hasValue));
+        assertThat(graknGraph.getMetaRole().subs(), containsInAnyOrder(role, hasOwner, hasValue));
         assertThat(type.plays(), containsInAnyOrder(hasOwner));
         assertThat(resourceType.plays(), containsInAnyOrder(hasValue));
     }
