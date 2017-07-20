@@ -25,7 +25,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -46,17 +45,16 @@ public class OperatingSystemCalls {
     return ps.waitFor();
   }
 
-  public int catPidFile(String file) throws MalformedPidFileException, IOException {
+  public int catPidFile(String file) throws IOException {
     Process catProcess = Runtime.getRuntime().exec(new String[]{"sh", "-c", "cat " + file});
+    String lines = readStdoutFromProcess(catProcess);
+    return Integer.parseInt(lines);
+  }
 
+  public String readStdoutFromProcess(Process process) throws IOException {
     try (BufferedReader catStdout =
-             new BufferedReader(new InputStreamReader(catProcess.getInputStream(), StandardCharsets.UTF_8))) {
-      List<String> lines = catStdout.lines().collect(Collectors.toList());
-      if (lines.size() == 1) {
-        return Integer.parseInt(lines.get(0));
-      } else {
-        throw new MalformedPidFileException("a pid file should only have one line, however this one has " + lines.size() + " lines");
-      }
+             new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+      return catStdout.lines().collect(Collectors.joining());
     }
   }
 
