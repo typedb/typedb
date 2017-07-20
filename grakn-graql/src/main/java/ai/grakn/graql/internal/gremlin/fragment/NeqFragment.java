@@ -36,8 +36,9 @@ class NeqFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        traversal.where(P.neq(other.getValue()));
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+        return traversal.where(P.neq(other.getValue()));
     }
 
     @Override

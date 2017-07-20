@@ -40,8 +40,10 @@ class OutRelatesFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        traversal.out(RELATES.getLabel());
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+
+        return Fragments.isVertex(traversal).out(RELATES.getLabel());
     }
 
     @Override

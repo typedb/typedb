@@ -27,6 +27,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
@@ -40,20 +41,23 @@ class IdFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
         if (operatesOnEdge()) {
             // Handle both edges and vertices
-            traversal.or(
+            return traversal.or(
                     edgeTraversal(),
                     vertexTraversal(__.identity())
             );
         } else {
-            vertexTraversal(traversal);
+            return vertexTraversal(traversal);
         }
     }
 
-    private <S, E> GraphTraversal<S, E> vertexTraversal(GraphTraversal<S, E> traversal) {
-        return traversal.has(Schema.VertexProperty.ID.name(), id.getValue());
+    private GraphTraversal<Element, Vertex> vertexTraversal(GraphTraversal<Element, ? extends Element> traversal) {
+        // We know only vertices have this property, so the cast is safe
+        //noinspection unchecked
+        return (GraphTraversal<Element, Vertex>) traversal.has(Schema.VertexProperty.ID.name(), id.getValue());
     }
 
     private GraphTraversal<Edge, Edge> edgeTraversal() {

@@ -40,8 +40,9 @@ class InHasScopeFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        traversal.in(HAS_SCOPE.getLabel());
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+        return Fragments.isVertex(traversal).in(HAS_SCOPE.getLabel());
     }
 
     @Override

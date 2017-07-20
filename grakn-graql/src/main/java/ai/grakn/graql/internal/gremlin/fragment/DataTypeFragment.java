@@ -37,8 +37,9 @@ class DataTypeFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        traversal.has(DATA_TYPE.name(), dataType.getName());
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+        return traversal.has(DATA_TYPE.name(), dataType.getName());
     }
 
     @Override

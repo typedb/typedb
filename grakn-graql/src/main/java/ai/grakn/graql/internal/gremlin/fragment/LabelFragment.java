@@ -38,8 +38,10 @@ class LabelFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        traversal.has(LABEL_ID.name(), graph.admin().convertToId(label).getValue());
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+
+        return traversal.has(LABEL_ID.name(), graph.admin().convertToId(label).getValue());
     }
 
     @Override

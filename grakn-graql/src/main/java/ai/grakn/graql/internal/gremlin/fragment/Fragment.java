@@ -71,7 +71,8 @@ public interface Fragment {
      * @param traversal the traversal to extend with this Fragment
      * @param graph     the graph to execute the traversal on
      */
-    void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph);
+    GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph);
 
     /**
      * The name of the fragment

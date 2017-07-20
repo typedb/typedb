@@ -23,17 +23,19 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
+import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Map;
 import java.util.Optional;
@@ -76,16 +78,18 @@ class InShortcutFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<? extends Element, ? extends Element> traversal, GraknGraph graph) {
-        traversal.union(
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+
+        return Fragments.union(Fragments.isVertex(traversal), ImmutableSet.of(
                 reifiedRelationTraversal(graph),
                 edgeRelationTraversal(graph, Direction.OUT, RELATION_ROLE_OWNER_LABEL_ID),
                 edgeRelationTraversal(graph, Direction.IN, RELATION_ROLE_VALUE_LABEL_ID)
-        );
+        ));
     }
 
-    private GraphTraversal reifiedRelationTraversal(GraknGraph graph) {
-        GraphTraversal<Object, Edge> edgeTraversal = __.inE(SHORTCUT.getLabel()).as(edge.getValue());
+    private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal(GraknGraph graph) {
+        GraphTraversal<Vertex, Edge> edgeTraversal = __.<Vertex>inE(SHORTCUT.getLabel()).as(edge.getValue());
 
         // Filter by any provided type labels
         applyTypeLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels, graph);
@@ -96,8 +100,10 @@ class InShortcutFragment extends AbstractFragment {
         return edgeTraversal.outV();
     }
 
-    private GraphTraversal edgeRelationTraversal(GraknGraph graph, Direction direction, Schema.EdgeProperty roleProperty) {
-        GraphTraversal<Object, Edge> edgeTraversal = __.toE(direction, Schema.EdgeLabel.RESOURCE.getLabel());
+    private GraphTraversal<Vertex, Edge> edgeRelationTraversal(
+            GraknGraph graph, Direction direction, Schema.EdgeProperty roleProperty) {
+
+        GraphTraversal<Vertex, Edge> edgeTraversal = __.toE(direction, Schema.EdgeLabel.RESOURCE.getLabel());
 
         // Identify the relation - role-player pair by combining the relation edge and direction into a map
         edgeTraversal.as(RELATION_EDGE).constant(direction).as(RELATION_DIRECTION);

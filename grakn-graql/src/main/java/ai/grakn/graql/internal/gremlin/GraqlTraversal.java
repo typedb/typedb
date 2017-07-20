@@ -128,7 +128,7 @@ public class GraqlTraversal {
      * @param names a set of variable names so far encountered in the query
      */
     private void applyFragment(
-            Fragment fragment, GraphTraversal<? extends Element, ? extends Element> traversal,
+            Fragment fragment, GraphTraversal<Element, ? extends Element> traversal,
             @Nullable Var currentName, Set<Var> names, GraknGraph graph
     ) {
         Var start = fragment.getStart();
