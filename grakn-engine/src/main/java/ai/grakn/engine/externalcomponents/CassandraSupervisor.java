@@ -51,7 +51,6 @@ public class CassandraSupervisor {
         if (isRunning()) {
             LOG.info("a grakn-cassandra process found. attempting to stop...");
             stop();
-            waitForCassandraStopped();
 
             LOG.info("grakn-cassandra has been stopped.");
         } else {
@@ -71,9 +70,9 @@ public class CassandraSupervisor {
         waitForCassandraStarted();
     }
 
-    public int stop() throws IOException, InterruptedException {
-        Process kill = osCalls.exec(new String[]{"sh", "-c", "bin/grakn-cassandra.sh stop"});
-        return kill.waitFor();
+    public void stop() throws IOException, InterruptedException {
+        osCalls.exec(new String[]{"sh", "-c", "bin/grakn-cassandra.sh stop"});
+        waitForCassandraStopped();
     }
 
     private void waitForCassandraStarted() throws IOException, InterruptedException {
