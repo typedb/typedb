@@ -346,6 +346,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public Iterator<Answer> iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return extendedIterator(sub, subGoals, cache);
+    }
+
+    @Override
+    public Iterator<Answer> extendedIterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         Iterator<ReasonerAtomicQueryIterator> qIterator = getQueryStream(sub)
                 .map(q -> new ReasonerAtomicQueryIterator(q, sub, subGoals, cache))
                 .iterator();
