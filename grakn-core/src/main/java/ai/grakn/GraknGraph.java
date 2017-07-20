@@ -324,22 +324,6 @@ public interface GraknGraph extends AutoCloseable{
 
     // TODO: what does this do when the graph is closed?
     /**
-     * Utility function to specify whether implicit and system-generated types should be returned.
-     * @param flag Specifies if implicit and system-generated types should be returned.
-     */
-    void showImplicitConcepts(boolean flag);
-
-    // TODO: what does this do when the graph is closed?
-    /**
-     * Utility function to specify whether implicit concepts should be exposed.
-     *
-     * @return true if implicit concepts are exposed.
-     */
-    @CheckReturnValue
-    boolean implicitConceptsVisible();
-
-    // TODO: what does this do when the graph is closed?
-    /**
      * Utility function to get the name of the keyspace where the graph is persisted.
      *
      * @return The name of the keyspace where the graph is persisted

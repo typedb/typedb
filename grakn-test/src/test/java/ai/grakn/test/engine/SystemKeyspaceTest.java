@@ -12,7 +12,6 @@ import ai.grakn.test.EngineContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
-import java.util.function.Function;
 import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -21,10 +20,10 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Arrays;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static ai.grakn.engine.SystemKeyspace.SYSTEM_GRAPH_NAME;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -99,7 +98,6 @@ public class SystemKeyspaceTest {
     @Test
     public void whenConnectingToSystemGraph_EnsureUserOntologyIsLoaded(){
         try(GraknGraph graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
-            graph.showImplicitConcepts(true);
 
             EntityType user = graph.getEntityType("user");
             ResourceType userName = graph.getResourceType("user-name");
